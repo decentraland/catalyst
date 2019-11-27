@@ -2,6 +2,15 @@ load("@npm_bazel_typescript//:index.bzl", "ts_devserver", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "static",
+    srcs = glob(
+        include = [
+            "static/**/*"
+        ]
+    ),
+)
+
 ts_library(
     name = "peer",
     srcs = glob(include =
@@ -34,13 +43,8 @@ ts_devserver(
         "npm/node_modules/react-dom/umd",
         "react_samples/src/styles"
     ],
-    data = [
-        ":static",
-        ":peer",
-        "@npm//react",
-        "@npm//react-dom"
-    ],
     deps = [
+        "static/config.js",
         ":peer",
         "@npm//react",
         "@npm//react-dom"
