@@ -45,11 +45,6 @@ export class Peer implements IPeer {
 }
 
 export interface IPeer {
-<<<<<<< Updated upstream
   nickname: string
   joinRoom(room: string): Promise<void>
 }
-=======
-  joinRoom(room: string): Promise<void>;
-}
->>>>>>> Stashed changes
