@@ -1,1 +1,13 @@
-console.log("Hello world!!")
+import cors from 'cors'
+import express from 'express'
+
+const port = process.env.PORT ?? 9000
+
+const app = express()
+app.use(cors())
+
+app.get("/hello", (req, res, next) => {
+    res.send("Hello world!!!")
+})
+
+app.listen(port)

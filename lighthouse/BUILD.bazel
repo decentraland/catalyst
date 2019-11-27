@@ -7,8 +7,8 @@ ts_library(
     srcs = glob(["*.ts"]),
     deps = [
       "@npm//@types",
-      "@npm//react",
-      "@npm//react-dom"
+      "@npm//express",
+      "@npm//cors"
     ]
 )
 
