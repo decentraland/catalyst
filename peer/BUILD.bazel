@@ -1,53 +1,13 @@
-load("@npm_bazel_typescript//:index.bzl", "ts_devserver", "ts_library")
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "static",
-    srcs = glob(
-        include = [
-            "static/**/*",
-        ],
-    ),
-)
-
 ts_library(
     name = "peer",
-    srcs = glob(include =
-                    [
-                        "*.tsx",
-                        "*.ts",
-                    ]),
+    module_name = "@comms/peer",
+    srcs = glob(["*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
-        "@npm//@types/react",
-        "@npm//@types/react-dom",
-        "@npm//peerjs",
-        "@npm//react",
-        "@npm//react-dom",
-    ],
-)
-
-ts_devserver(
-    name = "devserver",
-    additional_root_paths = [
-        "npm/node_modules/react/umd",
-        "npm/node_modules/react-dom/umd",
-        "react_samples/src/styles",
-    ],
-    entry_module = "dcl_comms_proto/peer/index",
-    port = 3001,
-    # This is the path we'll request from the browser, see index.html
-    serving_path = "/bundle.js",
-    # The devserver can serve our static files too
-    static_files = [
-        "index.html",
-        "static/index.css",
-    ],
-    deps = [
-        "static/config.js",
-        ":peer",
-        "@npm//react",
-        "@npm//react-dom",
-    ],
+        "@npm//peerjs"
+    ]
 )

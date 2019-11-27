@@ -1,5 +1,5 @@
 {
-    "name": "dcl_comms_proto",
+    "name": "comms",
     "version": "0.1.0",
     "private": true,
     "devDependencies": {
@@ -13,9 +13,9 @@
         "typescript": "^3.7.2"
     },
     "scripts": {
-        "startClient": "ibazel run peer:devserver",
+        "startClient": "ibazel run peer-react-app:devserver",
         "startServer": "ibazel run lighthouse:server",
-        "start": "ibazel run peer:devserver & ibazel run lighthouse:server"
+        "start": "ibazel run peer-react-app:devserver & ibazel run lighthouse:server"
     },
     "dependencies": {
         "@types/cors": "^2.8.6",

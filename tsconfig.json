@@ -33,5 +33,5 @@
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"]
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*"],
-  "include": ["peer/**/*", "lighthouse/**/*"]
+  "include": ["peer/**/*", "lighthouse/**/*", "peer-react-client"]
 }

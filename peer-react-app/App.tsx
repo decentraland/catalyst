@@ -1,16 +1,9 @@
 // currently third part packages frmo npm are not available due to issue:
 import React from "react";
 import ReactDOM from "react-dom";
+import {connect} from "comms/peer"
 
-import Peer from 'peerjs';
-
-const peer = new Peer(new Date().getTime().toString()); 
-
-const conn = peer.connect('another-peers-id');
-
-conn.on('open', () => {
-  conn.send('hi!');
-});
+connect()
 
 class App extends React.Component {
   constructor(props: {}) {
