@@ -4,29 +4,34 @@
     "devmodeTargetOverride": "es2017"
   },
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "dcl/*": ["*"]
-    },
-    "module": "esnext",
+    "module": "commonjs",
+    "target": "es2017",
     "diagnostics": false,
+    "inlineSourceMap": false,
+    "inlineSources": false,
+    "sourceMap": true,
     "moduleResolution": "node",
-    "inlineSourceMap": true,
-    "downlevelIteration": true,
-    "inlineSources": true,
+    "stripInternal": true,
+    "strictNullChecks": true,
+    "pretty": true,
     "esModuleInterop": true,
-    "noImplicitAny": false,
-    "noUnusedLocals": true,
-    "declaration": true,
-    "preserveConstEnums": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo",
-    "removeComments": false,
-    "target": "es2017",
-    "skipLibCheck": true,
-    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noUnusedLocals": true,
     "jsx": "react",
-    "lib": ["esnext", "es2017", "dom"]
+    "jsxFactory": "createElement",
+    "plugins": [
+      {
+        "name": "tslint-language-service"
+      }
+    ],
+    "baseUrl": "./packages",
+    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"]
   },
-  "exclude": ["bazel-*", "node_modules", "**/node_modules/*"]
+  "exclude": ["node_modules", "bazel-*", "**/node_modules/*"],
+  "include": ["peer/**/*", "lighthouse/**/*"]
 }
