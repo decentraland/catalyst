@@ -13,8 +13,9 @@
         "typescript": "^3.7.2"
     },
     "scripts": {
-        "build": "bazel build //...",
-        "test": "bazel test //..."
+        "startClient": "ibazel run peer:devserver",
+        "startServer": "ibazel run lighthouse:server",
+        "start": "ibazel run peer:devserver & ibazel run lighthouse:server"
     },
     "dependencies": {
         "@types/cors": "^2.8.6",
