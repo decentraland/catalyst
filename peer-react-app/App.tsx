@@ -1,7 +1,7 @@
 // currently third part packages frmo npm are not available due to issue:
 import React from "react";
 import ReactDOM from "react-dom";
-import { connect } from "@comms/peer";
+import { connect } from "comms/peer";
 
 connect();
 

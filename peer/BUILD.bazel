@@ -4,10 +4,10 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "peer",
-    module_name = "@comms/peer",
     srcs = glob(["*.ts"]),
+    module_name = "comms/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
-        "@npm//peerjs"
-    ]
+        "@npm//peerjs",
+    ],
 )

@@ -23,7 +23,6 @@
     "emitDecoratorMetadata": true,
     "noUnusedLocals": true,
     "jsx": "react",
-    "jsxFactory": "createElement",
     "plugins": [
       {
         "name": "tslint-language-service"
@@ -32,6 +31,5 @@
     "baseUrl": ".",
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"]
   },
-  "exclude": ["node_modules", "bazel-*", "**/node_modules/*"],
-  "include": ["peer/**/*", "lighthouse/**/*", "peer-react-client"]
+  "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
 }
