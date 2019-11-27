@@ -5,14 +5,12 @@ export class Peer implements IPeer {
   public readonly currentRooms: string[] = [];
 
   constructor(private lighthouseUrl: string, public nickname: string) {
-    this.peer = new PeerJS(
-      nickname
-      //   {
-      //   host: "localhost",
-      //   port: 9000,
-      //   path: "/"
-      // }
-    );
+    // TODO - change peer js server to use actual lighthouse url - moliva - 27/11/2019
+    this.peer = new PeerJS(nickname, {
+      host: "localhost",
+      port: 9000,
+      path: "/"
+    });
     this.peer.on("connection", conn => {
       conn.on("data", data => {
         console.log(data);
@@ -34,15 +32,17 @@ export class Peer implements IPeer {
     console.log(room);
     this.currentRooms.push(room);
 
-    room.forEach(user => {
-      const conn = this.peer.connect(user.id);
+    room
+      .filter(user => user.id !== this.nickname)
+      .forEach(user => {
+        const conn = this.peer.connect(user.id);
 
-      console.log(`opening connection to ${user.id}`);
-      conn.on("open", () => {
-        console.log(`connection open hi to ${user.id}`);
-        conn.send(`hi, I'm ${this.nickname}!`);
+        console.log(`opening connection to ${user.id}`);
+        conn.on("open", () => {
+          console.log(`connection open hi to ${user.id}`);
+          conn.send(`hi, I'm ${this.nickname}!`);
+        });
       });
-    });
   }
 }
 

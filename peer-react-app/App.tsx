@@ -3,12 +3,11 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Center, Page } from "decentraland-ui";
 import { ConnectForm } from "./components/ConnectForm";
-import { PeerStub } from "../peer/PeerStub";
-import { IPeer } from "../peer/Peer";
+// @ts-ignore
+import { IPeer , Peer} from "../peer/Peer";
+// @ts-ignore
+import { PeerStub } from '../peer/PeerStub';
 import { Chat } from "./components/Chat";
-// import { connect } from "comms/peer";
-
-// connect();
 
 type ScreenEnum = "connect" | "chat";
 

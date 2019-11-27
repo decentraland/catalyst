@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import morgan from "morgan";
+import { ExpressPeerServer } from "peerjs-server";
 
 const port = process.env.PORT ?? 9000;
 
@@ -62,6 +63,12 @@ app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
 
 // [If needed] POST /offer/:userId { myUserId, nickname, room } -> Creates an offer of connection to a userId
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.info(`==> Lighthouse listening on port ${port}.`);
 });
+
+const options = {
+  debug: false
+};
+
+app.use("/", ExpressPeerServer(server, options));
