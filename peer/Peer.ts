@@ -2,6 +2,7 @@ import PeerJS from "peerjs";
 
 export class Peer implements IPeer {
   private peer: PeerJS;
+  public readonly currentRooms: string[] = [];
 
   constructor(private lighthouseUrl: string, public nickname: string) {
     this.peer = new PeerJS(
@@ -31,6 +32,7 @@ export class Peer implements IPeer {
       body: JSON.stringify({ id: this.nickname })
     }).then(res => res.json());
     console.log(room);
+    this.currentRooms.push(room);
 
     room.forEach(user => {
       const conn = this.peer.connect(user.id);
@@ -45,6 +47,7 @@ export class Peer implements IPeer {
 }
 
 export interface IPeer {
-  nickname: string
-  joinRoom(room: string): Promise<void>
+  nickname: string;
+  currentRooms: string[];
+  joinRoom(room: string): Promise<void>;
 }
