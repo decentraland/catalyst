@@ -17,7 +17,7 @@ export function ConnectForm(props: {
   onConnected: (peer: IPeer) => any;
   peerClass: { new (url: string, nickname: string): IPeer };
 }) {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState("http://localhost:9000");
   const [nickname, setNickname] = useState("");
   const [room, setRoom] = useState("");
   const [isLoading, setLoading] = useState(false);

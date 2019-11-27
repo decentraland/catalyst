@@ -11,6 +11,7 @@ ts_library(
         "@npm//@types",
         "@npm//cors",
         "@npm//express",
+        "@npm//morgan",
     ],
 )
 
