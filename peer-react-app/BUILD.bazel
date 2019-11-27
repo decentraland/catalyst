@@ -15,14 +15,15 @@ ts_library(
     name = "peer-react-app",
     srcs = glob(include =
                     [
-                        "*.tsx",
-                        "*.ts",
+                        "**/*.tsx",
+                        "**/*.ts",
                     ]),
     tsconfig = "//:tsconfig.json",
     deps = [
         "//peer",
         "@npm//@types/react",
         "@npm//@types/react-dom",
+        "@npm//decentraland-ui",
         "@npm//react",
         "@npm//react-dom",
     ],
@@ -47,6 +48,7 @@ ts_devserver(
     deps = [
         "static/config.js",
         ":peer-react-app",
+        "@npm//decentraland-ui",
         "@npm//react",
         "@npm//react-dom",
     ],

@@ -1,9 +1,11 @@
 // currently third part packages frmo npm are not available due to issue:
 import React from "react";
 import ReactDOM from "react-dom";
-import { connect } from "comms/peer";
+import { Center, Page } from "decentraland-ui";
+import { ConnectForm } from "./components/ConnectForm";
+// import { connect } from "comms/peer";
 
-connect();
+// connect();
 
 class App extends React.Component {
   constructor(props: {}) {
@@ -12,8 +14,12 @@ class App extends React.Component {
 
   render() {
     return (
-      <div>
-        <p>Hello World!!</p>
+      <div className="container">
+        <Page>
+          <Center>
+            <ConnectForm />
+          </Center>
+        </Page>
       </div>
     );
   }
