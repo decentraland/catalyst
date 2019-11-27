@@ -1,11 +1,18 @@
-import Peer from "peerjs";
+// import PeerJS from "peerjs";
 
-export function connect() {
-  const peer = new Peer(new Date().getTime().toString());
 
-  const conn = peer.connect("another-peers-id");
 
-  conn.on("open", () => {
-    conn.send("hi!");
-  });
+export class Peer implements IPeer {
+//@ts-ignore
+  constructor(private lighthouseUrl: string, private nickname: string) {
+  
+  }
+
+  joinRoom(room: string): Promise<void> {
+    return Promise.resolve();   
+  }
+}
+
+export interface IPeer {
+  joinRoom(room: string): Promise<void>
 }

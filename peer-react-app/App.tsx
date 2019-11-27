@@ -3,6 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Center, Page } from "decentraland-ui";
 import { ConnectForm } from "./components/ConnectForm";
+import { Peer } from "../peer/Peer";
 // import { connect } from "comms/peer";
 
 // connect();
@@ -17,7 +18,7 @@ class App extends React.Component {
       <div className="container">
         <Page>
           <Center>
-            <ConnectForm />
+            <ConnectForm onConnected={() => {}} peerClass={Peer} />
           </Center>
         </Page>
       </div>
