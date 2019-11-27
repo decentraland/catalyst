@@ -6,8 +6,8 @@ filegroup(
     name = "static",
     srcs = glob(
         include = [
-            "static/**/*"
-        ]
+            "static/**/*",
+        ],
     ),
 )
 
@@ -22,6 +22,7 @@ ts_library(
     deps = [
         "@npm//@types/react",
         "@npm//@types/react-dom",
+        "@npm//peerjs",
         "@npm//react",
         "@npm//react-dom",
     ],
@@ -29,6 +30,11 @@ ts_library(
 
 ts_devserver(
     name = "devserver",
+    additional_root_paths = [
+        "npm/node_modules/react/umd",
+        "npm/node_modules/react-dom/umd",
+        "react_samples/src/styles",
+    ],
     entry_module = "dcl_comms_proto/peer/index",
     port = 3001,
     # This is the path we'll request from the browser, see index.html
@@ -38,15 +44,10 @@ ts_devserver(
         "index.html",
         "static/index.css",
     ],
-    additional_root_paths = [
-        "npm/node_modules/react/umd",
-        "npm/node_modules/react-dom/umd",
-        "react_samples/src/styles"
-    ],
     deps = [
         "static/config.js",
         ":peer",
         "@npm//react",
-        "@npm//react-dom"
-    ]
+        "@npm//react-dom",
+    ],
 )
