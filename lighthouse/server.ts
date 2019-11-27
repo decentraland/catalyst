@@ -15,7 +15,13 @@ app.get("/hello", (req, res, next) => {
 
 // GET /rooms[?userId=] -> returns list of rooms. Includes users per room by default. If a userId is specified, it returns the rooms which that user has joined.
 app.get("/rooms", (req, res, next) => {
-  res.send(JSON.stringify(Object.keys(rooms)));
+  const { userId } = req.query;
+  const _rooms = userId
+    ? Object.entries(rooms)
+        .filter(([, users]) => users.some(user => user.id === userId))
+        .map(([id]) => id)
+    : Object.keys(rooms);
+  res.send(JSON.stringify(_rooms));
 });
 
 // GET /room/:id -> returns list of users in a room with :id
@@ -45,6 +51,9 @@ app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
     if (index !== -1) {
       room.splice(index, 1);
     }
+  }
+  if (room.length === 0) {
+    delete rooms[roomId];
   }
   res.end();
 });
