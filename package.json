@@ -1,0 +1,23 @@
+{
+    "name": "dcl_comms_proto",
+    "version": "0.1.0",
+    "private": true,
+    "devDependencies": {
+        "@bazel/bazel": "latest",
+        "@bazel/buildifier": "latest",
+        "@bazel/ibazel": "latest",
+        "@bazel/typescript": "^0.39.0",
+        "@types/react": "^16.9.13",
+        "@types/react-dom": "^16.9.4",
+        "tslint": "^5.20.1",
+        "typescript": "^3.7.2"
+    },
+    "scripts": {
+        "build": "bazel build //...",
+        "test": "bazel test //..."
+    },
+    "dependencies": {
+        "react": "^16.12.0",
+        "react-dom": "^16.12.0"
+    }
+}

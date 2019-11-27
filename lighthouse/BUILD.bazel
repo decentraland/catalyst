@@ -1,0 +1,21 @@
+package(default_visibility = ["//visibility:public"])
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
+
+ts_library(
+    name = "comms_lighthouse",
+    srcs = glob(["*.ts"]),
+    deps = [
+      "@npm//@types",
+      "@npm//react",
+      "@npm//react-dom"
+    ]
+)
+
+nodejs_binary(
+    name = "server",
+    data = [
+        ":comms_lighthouse",
+    ],
+    entry_point = "server.ts",
+)
