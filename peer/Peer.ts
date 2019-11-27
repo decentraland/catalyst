@@ -4,7 +4,7 @@
 
 export class Peer implements IPeer {
 //@ts-ignore
-  constructor(private lighthouseUrl: string, private nickname: string) {
+  constructor(private lighthouseUrl: string, public nickname: string) {
   
   }
 
@@ -14,5 +14,6 @@ export class Peer implements IPeer {
 }
 
 export interface IPeer {
+  nickname: string
   joinRoom(room: string): Promise<void>
 }

@@ -20,11 +20,17 @@ export function ConnectForm(props: {
   const [url, setUrl] = useState("");
   const [nickname, setNickname] = useState("");
   const [room, setRoom] = useState("");
+  const [isLoading, setLoading] = useState(false);
 
-  function joinRoom() {
+  async function joinRoom() {
+    setLoading(true);
+    try {
       const peer = new props.peerClass(url, nickname);
-      peer.joinRoom(room)
-      props.onConnected(peer)
+      await peer.joinRoom(room);
+      props.onConnected(peer);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -35,8 +41,9 @@ export function ConnectForm(props: {
 
       <Button
         primary
-        disabled={[url, nickname, room].some(it => it === "")}
+        disabled={[url, nickname, room].some(it => it === "") || isLoading}
         onClick={joinRoom}
+        loading={isLoading}
       >
         Connect
       </Button>
