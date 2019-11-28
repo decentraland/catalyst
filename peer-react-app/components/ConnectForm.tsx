@@ -14,7 +14,7 @@ function fieldFor(label: string, value: string, setter: (s: string) => any) {
 }
 
 export function ConnectForm(props: {
-  onConnected: (peer: IPeer) => any;
+  onConnected: (peer: IPeer, room: string) => any;
   peerClass: { new (url: string, nickname: string): IPeer };
 }) {
   const [url, setUrl] = useState("http://localhost:9000");
@@ -27,7 +27,7 @@ export function ConnectForm(props: {
     try {
       const peer = new props.peerClass(url, nickname);
       await peer.joinRoom(room);
-      props.onConnected(peer);
+      props.onConnected(peer, room);
     } finally {
       setLoading(false);
     }
