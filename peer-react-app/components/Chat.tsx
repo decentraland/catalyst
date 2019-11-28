@@ -141,7 +141,7 @@ export function Chat(props: { peer: IPeer; room: string }) {
         <h3>{props.room}</h3>
         <Radio
           toggle
-          label="Update cursors"
+          label="Sync cursors"
           checked={updatingCursors}
           onChange={(ev, data) => setUpdatingCursors(!!data.checked)}
         />
