@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { IPeer } from "../../peer/Peer";
 import { Button } from "decentraland-ui";
 
@@ -31,9 +31,10 @@ export function Chat(props: { peer: IPeer; room: string }) {
   ] as Message[]);
 
   const [message, setMessage] = useState("");
+  const messagesEndRef: any = useRef();
 
   props.peer.callback = (sender, room, payload) => {
-    console.log(`received message from ${sender} on room ${room}`)
+    console.log(`received message from ${sender} on room ${room}`);
     if (room !== props.room) {
       return;
     }
@@ -48,6 +49,7 @@ export function Chat(props: { peer: IPeer; room: string }) {
 
   function appendMessage(sender, content) {
     setMessages([...messages, { sender, content }]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   return (
@@ -64,6 +66,10 @@ export function Chat(props: { peer: IPeer; room: string }) {
             own={it.sender === props.peer.nickname}
           />
         ))}
+        <div
+          style={{ float: "left", clear: "both" }}
+          ref={messagesEndRef}
+        ></div>
       </div>
       <div className="message-container">
         <textarea

@@ -21,8 +21,10 @@ export function ConnectForm(props: {
   const [nickname, setNickname] = useState("");
   const [room, setRoom] = useState("");
   const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function joinRoom() {
+    setError("")
     setLoading(true);
     try {
       const peer = new props.peerClass(url, nickname);
@@ -30,6 +32,7 @@ export function ConnectForm(props: {
       setLoading(false);
       props.onConnected(peer, room);
     } catch(e) {
+      setError(e.toString())
       setLoading(false);
     }
   }
@@ -39,7 +42,7 @@ export function ConnectForm(props: {
       {fieldFor("URL", url, setUrl)}
       {fieldFor("Nickname", nickname, setNickname)}
       {fieldFor("Room", room, setRoom)}
-
+      {error && <p style={{color: "red"}}>error</p>}
       <Button
         primary
         disabled={[url, nickname, room].some(it => it === "") || isLoading}

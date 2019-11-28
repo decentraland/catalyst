@@ -15,10 +15,11 @@ body {
 }
 
 .messages-container {
-    min-height: 300px;
+    height: 300px;
     border-bottom: 1px solid;
     padding-top: 10px;
     padding-bottom 10px;
+    overflow: auto;
 }
 
 .message-container {
@@ -74,5 +75,4 @@ body {
     margin-left: 30%;
     background-color: #f0f0ff;
 }
-
 
