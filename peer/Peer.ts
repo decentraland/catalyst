@@ -8,7 +8,7 @@ export interface IPeer {
   currentRooms: Room[];
   callback: (sender: string, room: string, payload: any) => void;
   joinRoom(room: string): Promise<void>;
-  sendMessage(room: string, payload: string): Promise<void>;
+  sendMessage(room: string, payload: any, reliable?: boolean): Promise<void>;
 }
 
 type PeerData = { id: string; connection: PeerJS.DataConnection };
@@ -86,7 +86,7 @@ export class Peer implements IPeer {
       });
   }
 
-  sendMessage(roomId: string, payload: string) {
+  sendMessage(roomId: string, payload: any, reliable: boolean = true) {
     const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
       return Promise.reject(

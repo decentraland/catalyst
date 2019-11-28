@@ -37,14 +37,19 @@ export function Chat(props: { peer: IPeer; room: string }) {
     if (room !== props.room) {
       return;
     }
-
-    appendMessage(sender, payload);
+    switch (payload.type) {
+      case "chat":
+        appendMessage(sender, payload.message);
+        break;
+      default:
+        console.log("Received unknown message type: " + payload.type)
+    }
   };
 
   function sendMessage() {
     appendMessage(props.peer.nickname, message);
-    props.peer.sendMessage(props.room, message);
-    setMessage("")
+    props.peer.sendMessage(props.room, { type: "chat", message });
+    setMessage("");
   }
 
   function appendMessage(sender, content) {
@@ -53,7 +58,7 @@ export function Chat(props: { peer: IPeer; room: string }) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  })
+  });
 
   return (
     <div className="chat">
