@@ -32,7 +32,7 @@ export class Peer implements IPeer {
     const url = new URL(lighthouseUrl)
     this.peer = new PeerJS(nickname, {
       host: url.hostname,
-      port: parseInt(url.port),
+      port: url.port ? parseInt(url.port): 80,
       path: url.pathname,
       config: {
         iceServers: [
