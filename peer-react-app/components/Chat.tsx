@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { IPeer } from "../../peer/Peer";
 import { Button } from "decentraland-ui";
 
@@ -45,12 +45,16 @@ export function Chat(props: { peer: IPeer; room: string }) {
   function sendMessage() {
     appendMessage(props.peer.nickname, message);
     props.peer.sendMessage(props.room, message);
+    setMessage("")
   }
 
   function appendMessage(sender, content) {
     setMessages([...messages, { sender, content }]);
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  })
 
   return (
     <div className="chat">
