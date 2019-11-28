@@ -29,10 +29,11 @@ export class Peer implements IPeer {
     ) => void = () => {}
   ) {
     // TODO - change peer js server to use actual lighthouse url - moliva - 27/11/2019
+    const url = new URL(lighthouseUrl)
     this.peer = new PeerJS(nickname, {
-      host: "localhost",
-      port: 9000,
-      path: "/",
+      host: url.hostname,
+      port: parseInt(url.port),
+      path: url.pathname,
       config: {
         iceServers: [
           {
