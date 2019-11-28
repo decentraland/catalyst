@@ -3,7 +3,7 @@ body {
 }
 
 .chat {
-  width: 50%;
+  width: 800px;
   padding: 10px;
 }
 
@@ -75,5 +75,14 @@ body {
 .message-bubble.own {
     margin-left: 30%;
     background-color: #f0f0ff;
+}
+
+.other-cursor {
+    width: 10px;
+    height: 10px;
+    margin-top: -5px;
+    margin-left: -5px;
+    position: fixed;
+    transition: all ease-in-out 100ms;
 }
 
