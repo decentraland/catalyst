@@ -8,6 +8,7 @@ ts_library(
     module_name = "comms/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "@npm//fp-future",
         "@npm//peerjs",
     ],
 )

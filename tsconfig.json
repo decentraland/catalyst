@@ -4,7 +4,7 @@
     "devmodeTargetOverride": "es2017"
   },
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "esnext",
     "target": "es2017",
     "diagnostics": false,
     "inlineSourceMap": false,
