@@ -69,6 +69,7 @@ body {
     color: black;
     font-size: 1.4em;
     margin-top: 5px;
+    overflow-wrap: break-word;
 }
 
 .message-bubble.own {
