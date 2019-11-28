@@ -29,7 +29,7 @@ export function Chat(props: { peer: IPeer; room: string }) {
 
   function sendMessage() {
     setMessages([...messages, {sender: props.peer.nickname, content: message}])
-    // props.peer.sendMessage(props.room, message)
+    props.peer.sendMessage(props.room, message)
   }
 
   return (

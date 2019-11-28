@@ -10,7 +10,7 @@ export interface IPeer {
   sendMessage(room: string, message: string): Promise<void>;
 }
 
-type PeerData = { id: string; connection: any };
+type PeerData = { id: string; connection: PeerJS.DataConnection };
 
 export class Peer implements IPeer {
   private peer: PeerJS;
@@ -62,12 +62,21 @@ export class Peer implements IPeer {
         conn.on("open", () => {
           console.log(`connection open to ${user.id}`);
           this.peers.push({ id: user.id, connection: conn });
-          // conn.send(`hi, I'm ${this.nickname}!`);
         });
       });
   }
 
   sendMessage(roomId: string, message: string) {
+    const room = this.currentRooms.find(room=> room.id === roomId)
+    if (!room) {
+      return Promise.reject(`cannot send a message in a room not joined (${roomId})`)
+    }
+    room.users.forEach(user => {
+      const peer = this.peers.find(peer => peer.id === user.id)
+      if (peer) {
+        peer.connection.send({ message} )
+      }
+    })
     return Promise.resolve();
   }
 }
