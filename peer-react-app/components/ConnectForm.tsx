@@ -15,7 +15,7 @@ function fieldFor(label: string, value: string, setter: (s: string) => any) {
 
 export function ConnectForm(props: {
   onConnected: (peer: IPeer, room: string) => any;
-  peerClass: { new (url: string, nickname: string): IPeer };
+  peerClass: { new (url: string, nickname: string, config: any): IPeer };
 }) {
   const [url, setUrl] = useState("http://localhost:9000");
   const [nickname, setNickname] = useState("");
@@ -27,7 +27,27 @@ export function ConnectForm(props: {
     setError("")
     setLoading(true);
     try {
-      const peer = new props.peerClass(url, nickname);
+      const peer = new props.peerClass(url, nickname, {
+        iceServers: [
+          {
+            urls: "stun:stun.l.google.com:19302"
+          },
+          {
+            urls: "stun:stun2.l.google.com:19302"
+          },
+          {
+            urls: "stun:stun3.l.google.com:19302"
+          },
+          {
+            urls: "stun:stun4.l.google.com:19302"
+          },
+          {
+            urls: "turn:stun.decentraland.org:3478",
+            credential: "passworddcl",
+            username: "usernamedcl"
+          }
+        ]
+      });
       await peer.joinRoom(room);
       setLoading(false);
       props.onConnected(peer, room);
