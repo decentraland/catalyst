@@ -1,3 +1,53 @@
 body {
-    font-family: sans-serif;
+  font-family: sans-serif;
 }
+
+.chat {
+  width: 50%;
+  padding: 10px;
+}
+
+.room-title {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-top: 1px solid;
+  border-bottom: 1px solid;
+}
+
+.messages-container {
+    min-height: 300px;
+    border-bottom: 1px solid;
+    padding-top: 10px;
+    padding-bottom 10px;
+}
+
+.message-container {
+    position: relative;
+    padding-top: 10px;
+}
+
+.message-container textarea {
+    position: relative;
+    width: 70%;
+    min-height: 100px;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    background-color: #fafafa;
+}
+
+.message-container textarea:focus {
+    outline: none;
+    border-bottom: 2px solid red;
+}
+
+.message-container .send {
+    position: absolute;
+    right: 50px;
+    top: 50%;
+    width: 150px;
+    height: 80px;
+    margin-top: -40px;
+}
+
+

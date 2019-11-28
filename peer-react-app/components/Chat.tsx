@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { IPeer } from "../../peer/Peer";
+import { Button } from "decentraland-ui";
 
 type Message = {
   sender: string;
@@ -24,6 +25,12 @@ export function Chat(props: { peer: IPeer }) {
     // { sender: "pablo", content: "world!" }
   ] as Message[]);
 
+  const [message, setMessage] = useState("");
+
+  function sendMessage() {
+    console.log(message.trim());
+  }
+
   return (
     <div className="chat">
       <h2>Welcome to the Chat {props.peer.nickname}</h2>
@@ -34,6 +41,23 @@ export function Chat(props: { peer: IPeer }) {
         {messages.map((it, i) => (
           <MessageBubble message={it} key={i} />
         ))}
+      </div>
+      <div className="message-container">
+        <textarea
+          value={message}
+          onChange={ev => setMessage(ev.currentTarget.value)}
+          onKeyDown={ev => {
+            if (message && ev.keyCode === 13 && ev.ctrlKey) sendMessage();
+          }}
+        />
+        <Button
+          className="send"
+          primary
+          disabled={!message}
+          onClick={sendMessage}
+        >
+          Send
+        </Button>
       </div>
     </div>
   );
