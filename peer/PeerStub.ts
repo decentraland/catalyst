@@ -1,13 +1,13 @@
-import { IPeer } from "./Peer";
+import { IPeer , Room} from "./Peer";
 
 export class PeerStub implements IPeer {
-    currentRooms: string[] = []
+    currentRooms: Room[] = []
     joinRoom(room: string): Promise<void> {
         console.log("Joining room...") 
         return new Promise((resolve, _) => {
             setTimeout(() => {
                 console.log("Room Joined")
-                this.currentRooms.push(room)
+                this.currentRooms.push({id: room, users: []})
                 resolve()
             }, 800)
              

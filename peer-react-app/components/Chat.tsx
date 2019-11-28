@@ -6,12 +6,13 @@ type Message = {
   content: string;
 };
 
-function MessageBubble(props: { message: Message }) {
+function MessageBubble(props: { message: Message; key: number }) {
   const { sender, content } = props.message;
   return (
-    <div className="message-bubble">
-      <em className="sender">{sender}</em>
-      <p className="content">{content}</p>
+    <div className="message-bubble" key={props.key}>
+      <p>
+        <em className="sender">{sender}</em>: {content}
+      </p>
     </div>
   );
 }
@@ -19,19 +20,19 @@ function MessageBubble(props: { message: Message }) {
 export function Chat(props: { peer: IPeer }) {
   //@ts-ignore
   const [messages, _] = useState([
-    { sender: "migue", content: "hello" },
-    { sender: "pablo", content: "world!" }
+    // { sender: "migue", content: "hello" },
+    // { sender: "pablo", content: "world!" }
   ] as Message[]);
 
   return (
     <div className="chat">
       <h2>Welcome to the Chat {props.peer.nickname}</h2>
       <div className="room-title">
-        <h3>{props.peer.currentRooms.join(", ")}</h3>
+        <h3>{props.peer.currentRooms.map(room => room.id).join(", ")}</h3>
       </div>
       <div className="messages-container">
-        {messages.map(it => (
-          <MessageBubble message={it} />
+        {messages.map((it, i) => (
+          <MessageBubble message={it} key={i} />
         ))}
       </div>
     </div>
