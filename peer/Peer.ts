@@ -44,15 +44,19 @@ export class Peer implements IPeer {
         .find(room => room.id === conn.label)
         ?.users.push({ id: conn.peer });
 
-      conn.on("data", data => {
-        console.log(data);
-        this.callback(conn.peer, data.room, data.payload);
-      });
+      this.subscribeToConnection(conn);
 
       conn.on("close", () => {
         // remove peer from channels and peer list
         // const room = this.currentRooms[conn.label];
       });
+    });
+  }
+
+  private subscribeToConnection(conn: PeerJS.DataConnection) {
+    conn.on("data", data => {
+      console.log(data);
+      this.callback(conn.peer, data.room, data.payload);
     });
   }
 
@@ -76,6 +80,8 @@ export class Peer implements IPeer {
           console.log(`connection open to ${user.id}`);
           this.peers.push({ id: user.id, connection: conn });
         });
+
+        this.subscribeToConnection(conn);
       });
   }
 
