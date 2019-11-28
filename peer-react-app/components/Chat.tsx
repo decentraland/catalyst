@@ -34,7 +34,6 @@ export function Chat(props: { peer: IPeer; room: string }) {
   const messagesEndRef: any = useRef();
 
   props.peer.callback = (sender, room, payload) => {
-    console.log(`received message from ${sender} on room ${room}`);
     if (room !== props.room) {
       return;
     }
