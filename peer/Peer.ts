@@ -32,7 +32,28 @@ export class Peer implements IPeer {
     this.peer = new PeerJS(nickname, {
       host: "localhost",
       port: 9000,
-      path: "/"
+      path: "/",
+      config: {
+        iceServers: [
+          {
+            urls: "stun:stun.l.google.com:19302"
+          },
+          {
+            urls: "stun:stun2.l.google.com:19302"
+          },
+          {
+            urls: "stun:stun3.l.google.com:19302"
+          },
+          {
+            urls: "stun:stun4.l.google.com:19302"
+          },
+          {
+            urls: "turn:stun.decentraland.org:3478",
+            credential: "passworddcl",
+            username: "usernamedcl"
+          }
+        ]
+      }
     });
 
     this.peer.on("connection", conn => {
@@ -74,7 +95,10 @@ export class Peer implements IPeer {
     room
       .filter(user => user.id !== this.nickname)
       .forEach(user => {
-        const conn = this.peer.connect(user.id, { label: roomId });
+        const conn = this.peer.connect(user.id, {
+          label: roomId,
+          reliable: true
+        });
 
         conn.on("open", () => {
           console.log(`connection open to ${user.id}`);
@@ -93,13 +117,15 @@ export class Peer implements IPeer {
       );
     }
     console.log(`sending message ${payload} to room ${roomId}`);
-    room.users.forEach(user => {
-      console.log(`sending message to ${user.id}`);
-      const peer = this.peers.find(peer => peer.id === user.id);
-      if (peer) {
-        peer.connection.send({ room: roomId, payload });
-      }
-    });
+    room.users
+      .filter(user => user.id !== this.nickname)
+      .forEach(user => {
+        console.log(`sending message to ${user.id}`);
+        const peer = this.peers.find(peer => peer.id === user.id);
+        if (peer) {
+          peer.connection.send({ room: roomId, payload });
+        }
+      });
     return Promise.resolve();
   }
 }
