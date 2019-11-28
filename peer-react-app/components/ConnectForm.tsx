@@ -27,8 +27,9 @@ export function ConnectForm(props: {
     try {
       const peer = new props.peerClass(url, nickname);
       await peer.joinRoom(room);
+      setLoading(false);
       props.onConnected(peer, room);
-    } finally {
+    } catch(e) {
       setLoading(false);
     }
   }
