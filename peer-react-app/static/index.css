@@ -50,4 +50,29 @@ body {
     margin-top: -40px;
 }
 
+.message-bubble {
+    padding: 10px 20px;
+    background: var(--secondary);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    width: 70%;
+    font-size: 1.1em;
+}
+
+.message-bubble .sender {
+    color: gray;
+    display: block;
+}
+
+.message-bubble .content {
+    color: black;
+    font-size: 1.4em;
+    margin-top: 5px;
+}
+
+.message-bubble.own {
+    margin-left: 30%;
+    background-color: #f0f0ff;
+}
+
 

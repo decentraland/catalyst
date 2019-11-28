@@ -7,13 +7,21 @@ type Message = {
   content: string;
 };
 
-function MessageBubble(props: { message: Message; key: number }) {
+function MessageBubble(props: {
+  message: Message;
+  own?: boolean;
+}) {
   const { sender, content } = props.message;
+
+  const classes = ["message-bubble"];
+  if (props.own) {
+    classes.push("own");
+  }
+
   return (
-    <div className="message-bubble" key={props.key}>
-      <p>
-        <em className="sender">{sender}</em>: {content}
-      </p>
+    <div className={classes.join(" ")}>
+      <em className="sender">{sender}</em>
+      <p className="content">{content}</p>
     </div>
   );
 }
@@ -39,7 +47,11 @@ export function Chat(props: { peer: IPeer }) {
       </div>
       <div className="messages-container">
         {messages.map((it, i) => (
-          <MessageBubble message={it} key={i} />
+          <MessageBubble
+            message={it}
+            key={i}
+            own={it.sender === props.peer.nickname}
+          />
         ))}
       </div>
       <div className="message-container">
