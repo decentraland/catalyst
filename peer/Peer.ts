@@ -6,8 +6,9 @@ export type Room = { id: string; users: User[] };
 export interface IPeer {
   nickname: string;
   currentRooms: Room[];
+  callback: (sender: string, room: string, payload: any) => void;
   joinRoom(room: string): Promise<void>;
-  sendMessage(room: string, message: string): Promise<void>;
+  sendMessage(room: string, payload: string): Promise<void>;
 }
 
 type PeerData = { id: string; connection: PeerJS.DataConnection };
@@ -18,7 +19,15 @@ export class Peer implements IPeer {
 
   public readonly currentRooms: Room[] = [];
 
-  constructor(private lighthouseUrl: string, public nickname: string) {
+  constructor(
+    private lighthouseUrl: string,
+    public nickname: string,
+    public callback: (
+      sender: string,
+      room: string,
+      payload: any
+    ) => void = () => {}
+  ) {
     // TODO - change peer js server to use actual lighthouse url - moliva - 27/11/2019
     this.peer = new PeerJS(nickname, {
       host: "localhost",
@@ -31,9 +40,13 @@ export class Peer implements IPeer {
         `connection received from ${conn.peer}, in channel ${conn.label}`
       );
       this.peers.push({ id: conn.peer, connection: conn });
+      this.currentRooms
+        .find(room => room.id === conn.label)
+        ?.users.push({ id: conn.peer });
 
       conn.on("data", data => {
         console.log(data);
+        this.callback(conn.peer, data.room, data.payload);
       });
 
       conn.on("close", () => {
@@ -66,17 +79,21 @@ export class Peer implements IPeer {
       });
   }
 
-  sendMessage(roomId: string, message: string) {
-    const room = this.currentRooms.find(room=> room.id === roomId)
+  sendMessage(roomId: string, payload: string) {
+    const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
-      return Promise.reject(`cannot send a message in a room not joined (${roomId})`)
+      return Promise.reject(
+        `cannot send a message in a room not joined (${roomId})`
+      );
     }
+    console.log(`sending message ${payload} to room ${roomId}`);
     room.users.forEach(user => {
-      const peer = this.peers.find(peer => peer.id === user.id)
+      console.log(`sending message to ${user.id}`);
+      const peer = this.peers.find(peer => peer.id === user.id);
       if (peer) {
-        peer.connection.send({ message} )
+        peer.connection.send({ room: roomId, payload });
       }
-    })
+    });
     return Promise.resolve();
   }
 }

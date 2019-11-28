@@ -7,10 +7,7 @@ type Message = {
   content: string;
 };
 
-function MessageBubble(props: {
-  message: Message;
-  own?: boolean;
-}) {
+function MessageBubble(props: { message: Message; own?: boolean }) {
   const { sender, content } = props.message;
 
   const classes = ["message-bubble"];
@@ -35,9 +32,22 @@ export function Chat(props: { peer: IPeer; room: string }) {
 
   const [message, setMessage] = useState("");
 
+  props.peer.callback = (sender, room, payload) => {
+    console.log(`received message from ${sender} on room ${room}`)
+    if (room !== props.room) {
+      return;
+    }
+
+    appendMessage(sender, payload);
+  };
+
   function sendMessage() {
-    setMessages([...messages, {sender: props.peer.nickname, content: message}])
-    props.peer.sendMessage(props.room, message)
+    appendMessage(props.peer.nickname, message);
+    props.peer.sendMessage(props.room, message);
+  }
+
+  function appendMessage(sender, content) {
+    setMessages([...messages, { sender, content }]);
   }
 
   return (

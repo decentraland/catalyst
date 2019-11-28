@@ -2,6 +2,7 @@ import { IPeer, Room } from "./Peer";
 
 export class PeerStub implements IPeer {
   currentRooms: Room[] = [];
+  callback: any
 
   constructor(public url: string, public nickname: string) {
     console.log(`Created peer: ${url} - ${nickname}`);
