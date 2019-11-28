@@ -40,6 +40,10 @@ export class Peer implements IPeer {
         });
       });
   }
+
+  sendMessage(roomId: string, message: string) {
+    return Promise.resolve()
+  }
 }
 
 export type User = { id: string }
@@ -49,4 +53,5 @@ export interface IPeer {
   nickname: string;
   currentRooms: Room[];
   joinRoom(room: string): Promise<void>;
+  sendMessage(room: string, message: string): Promise<void>;
 }
