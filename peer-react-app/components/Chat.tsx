@@ -147,20 +147,26 @@ export function Chat(props: { peer: IPeer; room: string }) {
       </div>
       <div className="users-container">
         <table>
-          <tr>
-            <th>Users</th>
-          </tr>
-          {[
-            ...(
-              props.peer.currentRooms.find(room => room.id === props.room) ?? {
-                users: []
-              }
-            ).users
-          ].map(user => (
+          <thead>
             <tr>
-              <td>{user}</td>
+              <th>Users</th>
             </tr>
-          ))}
+          </thead>
+          <tbody>
+            {[
+              ...(
+                props.peer.currentRooms.find(
+                  room => room.id === props.room
+                ) ?? {
+                  users: []
+                }
+              ).users
+            ].map((user, i) => (
+              <tr key={i}>
+                <td>{user}</td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
       <div className="messages-container">
