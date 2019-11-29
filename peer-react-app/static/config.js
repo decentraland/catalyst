@@ -5,6 +5,7 @@ require.config({
       'peerjs': '/npm/node_modules/peerjs/dist/peerjs',
       //'react-router': '/npm/node_modules/react-router/umd/react-router',
       'decentraland-ui': '/npm/node_modules/decentraland-ui/lib/index',
+      'fp-future': 'npm/node_modules/fp-future/index'
       //redux: '/npm/node_modules/redux/dist/redux',
       //d3: '/npm/node_modules/d3/dist/d3',
       //jsonwebtoken: 'static/jsonwebtoken.umd',

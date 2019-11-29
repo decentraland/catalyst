@@ -56,12 +56,7 @@ function randomColor() {
 let intervalId: number | undefined = undefined
 
 export function Chat(props: { peer: IPeer; room: string }) {
-  //@ts-ignore
-  const [messages, setMessages] = useState([
-    // { sender: "migue", content: "hello" },
-    // { sender: "pablo", content: "world!" }
-  ] as Message[]);
-
+  const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
   const [cursors, setCursors] = useState<Record<string, Cursor>>({})
   const [updatingCursors, setUpdatingCursors] = useState(false)

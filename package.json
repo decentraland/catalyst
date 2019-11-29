@@ -23,6 +23,7 @@
     "cors": "^2.8.5",
     "decentraland-ui": "^2.10.2",
     "express": "^4.17.1",
+    "fp-future": "^1.0.1",
     "morgan": "^1.9.1",
     "peerjs": "^1.1.0",
     "peerjs-server": "^0.2.9",
