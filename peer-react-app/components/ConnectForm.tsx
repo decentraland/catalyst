@@ -40,11 +40,6 @@ export function ConnectForm(props: {
           },
           {
             urls: "stun:stun4.l.google.com:19302"
-          },
-          {
-            urls: "turn:stun.decentraland.org:3478",
-            credential: "passworddcl",
-            username: "usernamedcl"
           }
         ]
       });
