@@ -12,3 +12,14 @@ ts_library(
         "@npm//peerjs",
     ],
 )
+
+load("//tools/npm:package.bzl", "dataform_npm_package")
+
+dataform_npm_package(
+    name = "package",
+    package_layers = [
+        "//:common.package.json",
+        "peer.package.json",
+    ],
+    deps = [],
+)

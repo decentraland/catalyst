@@ -1,0 +1,6 @@
+{
+    "version": "$LH_VERSION",
+    "publishConfig": {
+      "access": "public"
+    }
+}

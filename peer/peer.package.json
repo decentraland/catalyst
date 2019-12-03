@@ -1,0 +1,6 @@
+{
+  "name": "@katalyst/lighthouse-peer",
+  "description": "Lighthouse peer library",
+  "dependencies": {
+  }
+}
