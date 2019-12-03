@@ -36,3 +36,43 @@ install_bazel_dependencies()
 # Set up TypeScript toolchain
 load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
 ts_setup_workspace()
+
+# load("@npm_bazel_karma//:package.bzl", "npm_bazel_karma_dependencies")
+# npm_bazel_karma_dependencies()
+
+# load("@io_bazel_rules_webtesting//web:repositories.bzl", "browser_repositories", "web_test_repositories")
+
+rules_webtesting_vers = "0.3.1"
+http_archive(
+    name = "io_bazel_rules_webtesting",
+    sha256 = "d71b9dc5fef03cc0c0974305b1c9a3c36f4df1b52ed3d5898f8fa4c5d9d4edb1",
+    strip_prefix = "rules_webtesting-{v}".format(v = rules_webtesting_vers),
+
+    urls = [
+        "https://github.com/bazelbuild/rules_webtesting/archive/{v}.tar.gz".format(v = rules_webtesting_vers),
+    ],
+)
+
+load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
+load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.1.bzl", "browser_repositories")
+
+
+web_test_repositories()
+browser_repositories(
+    chromium = True,
+)
+
+http_archive(
+    name = "io_bazel_rules_go",
+    urls = [
+        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/v0.20.2/rules_go-v0.20.2.tar.gz",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.20.2/rules_go-v0.20.2.tar.gz",
+    ],
+    sha256 = "b9aa86ec08a292b97ec4591cf578e020b35f98e12173bbd4a921f84f583aebd9",
+)
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
+
+go_rules_dependencies()
+
+go_register_toolchains()
