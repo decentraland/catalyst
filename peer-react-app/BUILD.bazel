@@ -37,7 +37,7 @@ ts_devserver(
         "react_samples/src/styles",
     ],
     data = ["//:node_modules"],
-    entry_module = "comms/peer-react-app/index",
+    entry_module = "katalyst/peer-react-app/index",
     port = 3001,
     # This is the path we'll request from the browser, see index.html
     serving_path = "/bundle.js",

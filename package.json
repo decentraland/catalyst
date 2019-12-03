@@ -1,5 +1,5 @@
 {
-  "name": "comms",
+  "name": "katalyst",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
@@ -15,7 +15,9 @@
   "scripts": {
     "startClient": "ibazel run peer-react-app:devserver",
     "startServer": "yarn ibazel run lighthouse:server",
-    "start": "ibazel run peer-react-app:devserver & yarn ibazel run lighthouse:server"
+    "start": "ibazel run peer-react-app:devserver & yarn ibazel run lighthouse:server",
+
+    "startContentServer": "yarn ibazel run content:server"
   },
   "dependencies": {
     "@types/cors": "^2.8.6",

@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 ts_library(
     name = "peer",
     srcs = glob(["*.ts"]),
-    module_name = "comms/peer",
+    module_name = "katalyst/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
         "@npm//fp-future",

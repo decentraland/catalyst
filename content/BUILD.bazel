@@ -4,22 +4,21 @@ load("@npm_bazel_typescript//:index.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 
 ts_library(
-    name = "lighthouse",
+    name = "content",
     srcs = glob(["*.ts"]),
-    module_name = "@katalyst/lighthouse",
+    module_name = "@katalyst/content",
     deps = [
         "@npm//@types",
         "@npm//cors",
         "@npm//express",
         "@npm//morgan",
-        "@npm//peerjs-server",
     ],
 )
 
 nodejs_binary(
     name = "server",
     data = [
-        ":lighthouse",
+        ":content",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
