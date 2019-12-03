@@ -9,7 +9,7 @@
 ## Set up
 
 ```
-yarn i
+yarn install
 # lighthouse
 yarn bazel run lighthouse:server # sets up a lighthouse instance on localhost:9000 by default
 # example client
