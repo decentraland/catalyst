@@ -22,6 +22,7 @@
   "dependencies": {
     "@types/cors": "^2.8.6",
     "@types/express": "^4.17.2",
+    "@types/yargs": "^13.0.3",
     "cors": "^2.8.5",
     "decentraland-ui": "^2.10.2",
     "express": "^4.17.1",
@@ -30,6 +31,7 @@
     "peerjs": "^1.1.0",
     "peerjs-server": "^0.2.9",
     "react": "^16.12.0",
-    "react-dom": "^16.12.0"
+    "react-dom": "^16.12.0",
+    "yargs": "^15.0.2"
   }
 }
