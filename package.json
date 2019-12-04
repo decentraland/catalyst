@@ -9,6 +9,7 @@
     "@bazel/karma": "^0.42.1",
     "@bazel/typescript": "^0.39.0",
     "@types/chai": "^4.2.6",
+    "@types/jasmine": "^3.5.0",
     "@types/mocha": "^5.2.7",
     "@types/react": "^16.9.13",
     "@types/react-dom": "^16.9.4",

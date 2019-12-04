@@ -31,53 +31,19 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":peer",
-        "@npm//@types/chai",
-        "@npm//@types/mocha",
-        "@npm//chai",
-        "@npm//mocha",
-        # "@npm//jasmine",
-        # "@npm//@types/jasmine",
+        "@npm//jasmine",
+        "@npm//@types/jasmine",
     ],
 )
 
-# load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
-
-# Create a karma rule to use in ts_web_test_suite karma
-# attribute when using self-managed dependencies
-# nodejs_binary(
-#     name = "karma/karma",
-#     entry_point = "//:node_modules/karma/bin/karma",
-#     # Point bazel to your node_modules to find the entry point
-#     node_modules = "//:node_modules",
-# )
-
 load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
-
-# karma_web_test(
-#     srcs = ["test/index.ts"],
-#     data = [],
-#     deps = [
-#         ":peer",
-#         ":tests",
-#     ],
-# )
 
 karma_web_test_suite(
     name = "config_test",
-    # browsers = [
-        # "@io_bazel_rules_webtesting//browsers:chromium-local",
-        # "@io_bazel_rules_webtesting//browsers:firefox-local",
-    # ],
-    # config_file = ":karma.conf.js",
-    static_files = [
-        # "static_script.js",
-    ],
-    tags = ["native"],
+    tags = [],
     runtime_deps = [
-        # ":tests_setup",
     ],
     deps = [
         ":tests",
-        # "@npm//karma-json-result-reporter",
     ],
 )
