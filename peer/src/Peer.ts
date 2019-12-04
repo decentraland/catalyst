@@ -112,7 +112,6 @@ export class Peer implements IPeer {
     });
 
     conn.on("open", () => {
-      console.log(`opened connection`);
       this.subscribeToConnection(conn);
       const connKey = reliable ? "reliableConnection" : "unreliableConnection";
       peer[connKey].resolve(conn);
