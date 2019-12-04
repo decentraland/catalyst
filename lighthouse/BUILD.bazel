@@ -5,7 +5,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 
 ts_library(
     name = "lighthouse",
-    srcs = glob(["*.ts"]),
+    srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/lighthouse",
     deps = [
         "@npm//@types",
@@ -23,7 +23,7 @@ nodejs_binary(
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "server.ts",
+    entry_point = "src/server.ts",
 )
 
 load("//tools/npm:package.bzl", "dataform_npm_package")

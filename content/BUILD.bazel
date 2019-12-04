@@ -22,7 +22,7 @@ nodejs_binary(
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "server.ts",
+    entry_point = "src/server.ts",
 )
 
 load("//tools/npm:package.bzl", "dataform_npm_package")
