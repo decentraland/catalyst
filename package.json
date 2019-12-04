@@ -6,11 +6,13 @@
     "@bazel/bazel": "latest",
     "@bazel/buildifier": "latest",
     "@bazel/ibazel": "latest",
+    "@bazel/jasmine": "^0.42.1",
     "@bazel/karma": "^0.42.1",
     "@bazel/typescript": "^0.39.0",
     "@types/jasmine": "^3.5.0",
     "@types/react": "^16.9.13",
     "@types/react-dom": "^16.9.4",
+    "@types/simple-peer": "^9.6.0",
     "jasmine": "^3.5.0",
     "karma": "^4.4.1",
     "karma-chrome-launcher": "^3.1.0",
@@ -38,9 +40,9 @@
     "express": "^4.17.1",
     "fp-future": "^1.0.1",
     "morgan": "^1.9.1",
-    "peerjs": "^1.1.0",
     "peerjs-server": "^0.2.9",
     "react": "^16.12.0",
-    "react-dom": "^16.12.0"
+    "react-dom": "^16.12.0",
+    "simple-peer": "^9.6.2"
   }
 }

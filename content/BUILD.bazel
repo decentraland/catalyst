@@ -43,19 +43,17 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":content",
-        "@npm//jasmine",
         "@npm//@types/jasmine",
     ],
 )
 
-load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
+load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
 
-karma_web_test_suite(
-    name = "config_test",
-    tags = [],
-    runtime_deps = [
-    ],
+jasmine_node_test(
+    name = "unit_test",
     deps = [
         ":tests",
+        "@npm//jasmine",
     ],
 )
+
