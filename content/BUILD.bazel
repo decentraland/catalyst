@@ -9,6 +9,7 @@ ts_library(
     module_name = "@katalyst/content",
     deps = [
         "@npm//@types",
+        "@npm//@types/node",
         "@npm//cors",
         "@npm//express",
         "@npm//morgan",
@@ -43,6 +44,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":content",
+        "@npm//@types/node",
         "@npm//@types/jasmine",
     ],
 )

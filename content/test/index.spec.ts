@@ -1,4 +1,4 @@
-describe("tests in jasmine running on karma", function() {
+describe("unit tests in jasmine", function() {
   it(`works correctly`, () => {
     expect(true).toBe(true);
   });
