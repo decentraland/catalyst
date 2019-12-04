@@ -37,11 +37,6 @@ install_bazel_dependencies()
 load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
 ts_setup_workspace()
 
-# load("@npm_bazel_karma//:package.bzl", "npm_bazel_karma_dependencies")
-# npm_bazel_karma_dependencies()
-
-# load("@io_bazel_rules_webtesting//web:repositories.bzl", "browser_repositories", "web_test_repositories")
-
 rules_webtesting_vers = "0.3.1"
 http_archive(
     name = "io_bazel_rules_webtesting",
