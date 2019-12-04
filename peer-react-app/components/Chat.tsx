@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { IPeer } from "../../peer/Peer";
+import { IPeer } from "../../peer/src/Peer";
 import { Button, Radio } from "decentraland-ui";
 
 type Message = {

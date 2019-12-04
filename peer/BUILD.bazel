@@ -4,7 +4,7 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "peer",
-    srcs = glob(["**/*.ts"]),
+    srcs = glob(["src/**/*.ts"]),
     module_name = "katalyst/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
@@ -24,4 +24,28 @@ dataform_npm_package(
         "peer.package.json",
     ],
     deps = [":peer"],
+)
+
+ts_library(
+    name = "tests",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":peer",
+        "@npm//jasmine",
+        "@npm//@types/jasmine",
+    ],
+)
+
+load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
+
+karma_web_test_suite(
+    name = "config_test",
+    tags = [],
+    runtime_deps = [
+    ],
+    deps = [
+        ":tests",
+    ],
 )

@@ -5,7 +5,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 
 ts_library(
     name = "content",
-    srcs = glob(["*.ts"]),
+    srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/content",
     deps = [
         "@npm//@types",
@@ -22,7 +22,7 @@ nodejs_binary(
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "server.ts",
+    entry_point = "src/server.ts",
 )
 
 load("//tools/npm:package.bzl", "dataform_npm_package")
@@ -35,3 +35,25 @@ dataform_npm_package(
     ],
     deps = [],
 )
+
+ts_library(
+    name = "tests",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":content",
+        "@npm//@types/jasmine",
+    ],
+)
+
+load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+
+jasmine_node_test(
+    name = "unit_test",
+    deps = [
+        ":tests",
+        "@npm//jasmine",
+    ],
+)
+
