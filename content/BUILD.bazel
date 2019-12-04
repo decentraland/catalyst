@@ -5,7 +5,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 
 ts_library(
     name = "content",
-    srcs = glob(["*.ts"]),
+    srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/content",
     deps = [
         "@npm//@types",
@@ -34,4 +34,28 @@ dataform_npm_package(
         "content.package.json",
     ],
     deps = [],
+)
+
+ts_library(
+    name = "tests",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":content",
+        "@npm//jasmine",
+        "@npm//@types/jasmine",
+    ],
+)
+
+load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
+
+karma_web_test_suite(
+    name = "config_test",
+    tags = [],
+    runtime_deps = [
+    ],
+    deps = [
+        ":tests",
+    ],
 )

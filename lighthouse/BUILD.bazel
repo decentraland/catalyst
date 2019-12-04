@@ -36,3 +36,27 @@ dataform_npm_package(
     ],
     deps = [],
 )
+
+ts_library(
+    name = "tests",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":lighthouse",
+        "@npm//jasmine",
+        "@npm//@types/jasmine",
+    ],
+)
+
+load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
+
+karma_web_test_suite(
+    name = "config_test",
+    tags = [],
+    runtime_deps = [
+    ],
+    deps = [
+        ":tests",
+    ],
+)
