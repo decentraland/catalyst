@@ -4,12 +4,14 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "peer",
-    srcs = glob(["*.ts"]),
+    srcs = glob(["**/*.ts"]),
     module_name = "katalyst/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
         "@npm//fp-future",
-        "@npm//peerjs",
+        "@npm//eventemitter3",
+        "@npm//simple-peer",
+        "@npm//@types/simple-peer"
     ],
 )
 
