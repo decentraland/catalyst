@@ -1,6 +1,4 @@
-import {
-  PeerJSServerConnection
-} from "./peerjs-server-connector/peerjsserverconnection";
+import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
@@ -72,15 +70,11 @@ export class Peer implements IPeer {
     ) => void = () => {}
   ) {
     const url = new URL(lighthouseUrl);
-    this.peerJsConnection = new PeerJSServerConnection(
-      this,
-      nickname,
-      {
-        host: url.hostname,
-        port: url.port ? parseInt(url.port) : 80,
-        path: url.pathname
-      }
-    );
+    this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
+      host: url.hostname,
+      port: url.port ? parseInt(url.port) : 80,
+      path: url.pathname
+    });
 
     this.connectionConfig = { ...defaultConnectionConfig, ...config };
   }
@@ -125,7 +119,14 @@ export class Peer implements IPeer {
           connectionIdFor(this.nickname, peerId, reliable)
       );
       this.peers[peerId].connected = true;
-      //TODO
+      /*
+       * TODO: Currently there is no way of knowing for an incomming
+       * connection to which room the othe peer belongs, so we are adding them
+       * to the all the rooms. There are multiple options:
+       * - We refresh all the rooms when a user connects
+       * - We make the peers exchange their rooms as their first messages
+       * - We make the rooms a part of the handshake 
+       */
       this.currentRooms.forEach(it => it.users.add(peerId));
     });
 
