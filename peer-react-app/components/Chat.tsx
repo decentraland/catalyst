@@ -90,7 +90,6 @@ export function Chat(props: { peer: IPeer; room: string }) {
   }
 
   function sendCursorMessage() {
-    console.log({ type: "cursorPosition", position: { ...mouse } })
     props.peer.sendMessage(
       props.room,
       { type: "cursorPosition", position: { ...mouse } },

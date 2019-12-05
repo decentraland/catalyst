@@ -32,3 +32,22 @@ export const util = new (class {
     return location.protocol === "https:";
   }
 })();
+
+export const ConnectionSuffixes = {
+  reliable: "reliable",
+  unreliable: "unreliable"
+};
+
+export function connectionIdFor(
+  myId: string,
+  peerId: string,
+  reliable: boolean
+) {
+  return `${myId}_${peerId}_${
+    reliable ? ConnectionSuffixes.reliable : ConnectionSuffixes.unreliable
+  }`;
+}
+
+export function isReliable(connectionId: string) {
+  return !connectionId.endsWith(ConnectionSuffixes.unreliable)
+}

@@ -1,5 +1,5 @@
 import { EventEmitter } from "eventemitter3";
-import { util } from "./util";
+import { util, isReliable } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import {
@@ -22,7 +22,6 @@ class PeerOptions {
   path?: string;
   key?: string;
   token?: string;
-  config?: any;
   secure?: boolean;
   pingInterval?: number;
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
@@ -308,13 +307,13 @@ export class PeerJSServerConnection extends EventEmitter {
     }
   }
 
-  sendOffer(userId: string, room: string, offerData: any) {
+  sendOffer(userId: string, offerData: any, connectionId: string) {
     const payload = {
       browser: "chrome",
       sdp: offerData,
-      connectionId: `${this.id}_${userId}`,
-      label: room,
-      reliable: true,
+      connectionId: connectionId,
+      label: connectionId,
+      reliable: isReliable(connectionId),
       serialization: "binary"
     };
 
@@ -328,11 +327,11 @@ export class PeerJSServerConnection extends EventEmitter {
     this.socket.send(offer);
   }
 
-  sendAnswer(userId: string, answerData: any) {
+  sendAnswer(userId: string, answerData: any, connectionId: string) {
     const payload = {
       browser: "chrome",
       sdp: answerData,
-      connectionId: `${this.id}_${userId}`,
+      connectionId: connectionId,
       type: "data"
     };
 
@@ -346,10 +345,10 @@ export class PeerJSServerConnection extends EventEmitter {
     this.socket.send(answer);
   }
 
-  sendCandidate(userId: string, candidateData: any) {
+  sendCandidate(userId: string, candidateData: any, connectionId: string) {
     const payload = {
       ...candidateData,
-      connectionId: `${this.id}_${userId}`,
+      connectionId: connectionId,
       type: "data"
     };
 
