@@ -36,6 +36,7 @@
   "dependencies": {
     "@types/cors": "^2.8.6",
     "@types/express": "^4.17.2",
+    "@types/jest": "^24.0.23",
     "@types/yargs": "^13.0.3",
     "cors": "^2.8.5",
     "decentraland-ui": "^2.10.2",
