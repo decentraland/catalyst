@@ -61,9 +61,10 @@ export class Peer implements IPeer {
       }, 1000);
 
       ws.onmessage = function(e) {
-        const { data } = e;
+        const data = JSON.parse(e.data)
         console.log(`ws.onmessage ${JSON.stringify(data)}`);
         if (data.type === "ANSWER" || data.type === "CANDIDATE") {
+          console.log(`signal on message! ${JSON.stringify(data)}`);
           self.connections[data.payload.connectionId].signal(data.payload.sdp);
         }
       };
