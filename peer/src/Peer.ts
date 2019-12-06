@@ -179,7 +179,7 @@ export class Peer implements IPeer {
         ? "reliableConnection"
         : "unreliableConnection";
       const conn = peer[connection];
-      if (!conn.writableEnded) {
+      if (conn.writable) {
         conn?.write(
           JSON.stringify({
             room: roomId,
