@@ -15,7 +15,9 @@ function fieldFor(label: string, value: string, setter: (s: string) => any) {
 
 export function ConnectForm(props: {
   onConnected: (peer: IPeer, room: string) => any;
-  peerClass: { new (url: string, nickname: string, config: any): IPeer };
+  peerClass: {
+    new (url: string, nickname: string, callback: any, config: any): IPeer;
+  };
 }) {
   const [url, setUrl] = useState("http://localhost:9000");
   const [nickname, setNickname] = useState("");
@@ -24,10 +26,10 @@ export function ConnectForm(props: {
   const [error, setError] = useState("");
 
   async function joinRoom() {
-    setError("")
+    setError("");
     setLoading(true);
     try {
-      const peer = new props.peerClass(url, nickname, {
+      const peer = new props.peerClass(url, nickname, () => {}, {
         iceServers: [
           {
             urls: "stun:stun.l.google.com:19302"
@@ -46,8 +48,8 @@ export function ConnectForm(props: {
       await peer.joinRoom(room);
       setLoading(false);
       props.onConnected(peer, room);
-    } catch(e) {
-      setError(e.toString())
+    } catch (e) {
+      setError(e.toString());
       setLoading(false);
     }
   }
@@ -57,7 +59,7 @@ export function ConnectForm(props: {
       {fieldFor("URL", url, setUrl)}
       {fieldFor("Nickname", nickname, setNickname)}
       {fieldFor("Room", room, setRoom)}
-      {error && <p style={{color: "red"}}>error</p>}
+      {error && <p style={{ color: "red" }}>error</p>}
       <Button
         primary
         disabled={[url, nickname, room].some(it => it === "") || isLoading}

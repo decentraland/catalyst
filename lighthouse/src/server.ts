@@ -2,10 +2,15 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import { ExpressPeerServer } from "peerjs-server";
+import { Peer } from "../../peer/src/Peer";
+import * as wrtc from "wrtc";
+import WebSocket from "ws";
 
 const port = process.env.PORT ?? 9000;
 
 const rooms: Record<string, { id: string }[]> = {};
+
+let peer: Peer;
 
 const app = express();
 app.use(cors());
@@ -38,6 +43,7 @@ app.put("/rooms/:roomId", (req, res, next) => {
   let room = rooms[roomId];
   if (!room) {
     rooms[roomId] = room = [];
+    peer.joinRoom(roomId);
   }
   if (!room.some($ => $.id === req.body.id)) {
     room.push(req.body);
@@ -61,10 +67,28 @@ app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
   res.end();
 });
 
+require("isomorphic-fetch");
 // [If needed] POST /offer/:userId { myUserId, nickname, room } -> Creates an offer of connection to a userId
 
 const server = app.listen(port, () => {
   console.info(`==> Lighthouse listening on port ${port}.`);
+  peer = new Peer(
+    "http://localhost:9000",
+    "lighthouse",
+    (sender, room, payload) => {
+      console.log(
+        `Received message from ${sender} in ${room}: ${JSON.stringify(
+          payload,
+          null,
+          3
+        )}`
+      );
+    },
+    {
+      wrtc,
+      socketBuilder: url => new WebSocket(url)
+    }
+  );
 });
 
 const options = {

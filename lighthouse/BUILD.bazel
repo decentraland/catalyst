@@ -1,18 +1,24 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@npm_bazel_typescript//:index.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
+load("//tools/npm:package.bzl", "dataform_npm_package")
+load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+
+package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "lighthouse",
     srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/lighthouse",
     deps = [
+        "//peer",
         "@npm//@types",
         "@npm//cors",
         "@npm//express",
         "@npm//morgan",
         "@npm//peerjs-server",
+        "@npm//wrtc",
+        "@npm//ws",
+        "@npm//isomorphic-fetch"
     ],
 )
 
@@ -25,8 +31,6 @@ nodejs_binary(
     ],
     entry_point = "src/server.ts",
 )
-
-load("//tools/npm:package.bzl", "dataform_npm_package")
 
 dataform_npm_package(
     name = "package",
@@ -47,8 +51,6 @@ ts_library(
         "@npm//@types/jasmine",
     ],
 )
-
-load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
 
 jasmine_node_test(
     name = "unit_test",

@@ -2,6 +2,17 @@ import { EventEmitter } from "eventemitter3";
 import logger from "./logger";
 import { SocketEventType, ServerMessageType } from "./enums";
 
+export type SocketType = {
+  onmessage: any;
+  onclose: any;
+  onopen: any;
+  readyState: number;
+  close(code?: number, reason?: string): void;
+  send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
+};
+
+export type SocketBuilder = (url: string) => SocketType;
+
 /**
  * An abstraction on top of WebSockets to provide fastest
  * possible connection for peers.
@@ -11,7 +22,7 @@ export class Socket extends EventEmitter {
   private _id?: string;
   private _messagesQueue: Array<any> = [];
   private _wsUrl: string;
-  private _socket?: WebSocket;
+  private _socket: SocketType;
   private _wsPingTimer: any;
 
   constructor(
@@ -21,6 +32,7 @@ export class Socket extends EventEmitter {
     path: string,
     key: string,
     private readonly pingInterval: number = 5000,
+    private socketBuilder: SocketBuilder
   ) {
     super();
 
@@ -44,9 +56,9 @@ export class Socket extends EventEmitter {
       return;
     }
 
-    this._socket = new WebSocket(this._wsUrl);
+    this._socket = this.socketBuilder(this._wsUrl);
 
-    this._socket.onmessage = (event) => {
+    this._socket.onmessage = event => {
       let data;
 
       try {
@@ -60,7 +72,7 @@ export class Socket extends EventEmitter {
       this.emit(SocketEventType.Message, data);
     };
 
-    this._socket.onclose = (event) => {
+    this._socket.onclose = event => {
       logger.log("Socket closed.", event);
 
       this._disconnected = true;

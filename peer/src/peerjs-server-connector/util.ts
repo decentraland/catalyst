@@ -28,9 +28,6 @@ export const util = new (class {
       .substr(2);
   }
 
-  isSecure(): boolean {
-    return location.protocol === "https:";
-  }
 })();
 
 export const ConnectionSuffixes = {
@@ -38,6 +35,7 @@ export const ConnectionSuffixes = {
   unreliable: "unreliable"
 };
 
+//TODO: Currently the connection id is mirrored, from peer to peer. We may want to make them the same.
 export function connectionIdFor(
   myId: string,
   peerId: string,
