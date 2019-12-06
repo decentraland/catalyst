@@ -1,10 +1,9 @@
-import {
-  PeerJSServerConnection
-} from "./peerjs-server-connector/peerjsserverconnection";
+import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { isReliable, connectionIdFor } from "./peerjs-server-connector/util";
+import { SocketBuilder } from "./peerjs-server-connector/socket";
 
 export type User = string;
 export type Room = { id: string; users: Set<User> };
@@ -19,7 +18,6 @@ export interface IPeer {
 
 type PeerData = {
   id: string;
-  connected?: boolean;
   reliableConnection: SimplePeer.Instance;
   unreliableConnection: SimplePeer.Instance;
 };
@@ -54,35 +52,44 @@ function signalMessage(
     peer.unreliableConnection.signal(signal);
   }
 }
+
+type PeerConfig = {
+  connectionConfig?: any;
+  wrtc?: any;
+  socketBuilder?: SocketBuilder;
+};
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private peers: Record<string, PeerData> = {};
 
   public readonly currentRooms: Room[] = [];
   private connectionConfig: any;
+  private wrtc: any;
 
   constructor(
     private lighthouseUrl: string,
     public nickname: string,
-    config: any = {},
     public callback: (
       sender: string,
       room: string,
       payload: any
-    ) => void = () => {}
+    ) => void = () => {},
+    config: PeerConfig = {}
   ) {
     const url = new URL(lighthouseUrl);
-    this.peerJsConnection = new PeerJSServerConnection(
-      this,
-      nickname,
-      {
-        host: url.hostname,
-        port: url.port ? parseInt(url.port) : 80,
-        path: url.pathname
-      }
-    );
+    this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
+      host: url.hostname,
+      port: url.port ? parseInt(url.port) : 80,
+      path: url.pathname,
+      ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
+    });
 
-    this.connectionConfig = { ...defaultConnectionConfig, ...config };
+    this.wrtc = config.wrtc;
+
+    this.connectionConfig = {
+      ...defaultConnectionConfig,
+      ...(config.connectionConfig || {})
+    };
   }
 
   async joinRoom(roomId: string): Promise<void> {
@@ -103,11 +110,13 @@ export class Peer implements IPeer {
     });
 
     room
-      .filter(user => user.id !== this.nickname && !this.isConnectedTo(user.id))
+      .filter(
+        user => user.id !== this.nickname && !this.hasConnectionsFor(user.id)
+      )
       .forEach(user => this.getOrCreatePeer(user.id, true));
   }
 
-  private isConnectedTo(userId: string) {
+  private hasConnectionsFor(userId: string) {
     return !!this.peers[userId];
   }
 
@@ -124,8 +133,14 @@ export class Peer implements IPeer {
           " through " +
           connectionIdFor(this.nickname, peerId, reliable)
       );
-      this.peers[peerId].connected = true;
-      //TODO
+      /*
+       * TODO: Currently there is no way of knowing for an incomming
+       * connection to which room the othe peer belongs, so we are adding them
+       * to the all the rooms. There are multiple options:
+       * - We refresh all the rooms when a user connects
+       * - We make the peers exchange their rooms as their first messages
+       * - We make the rooms a part of the handshake
+       */
       this.currentRooms.forEach(it => it.users.add(peerId));
     });
 
@@ -159,17 +174,19 @@ export class Peer implements IPeer {
     reliable: boolean
   ) {
     const peer = this.peers[user];
-    if (peer && peer.connected) {
+    if (peer) {
       const connection = reliable
         ? "reliableConnection"
         : "unreliableConnection";
       const conn = peer[connection];
-      conn?.write(
-        JSON.stringify({
-          room: roomId,
-          payload
-        })
-      );
+      if (!conn.writableEnded) {
+        conn?.write(
+          JSON.stringify({
+            room: roomId,
+            payload
+          })
+        );
+      }
     }
   }
 
@@ -198,6 +215,7 @@ export class Peer implements IPeer {
           channelConfig: {
             label: connectionIdFor(this.nickname, peerId, true)
           },
+          wrtc: this.wrtc,
           objectMode: true
         }),
         unreliableConnection: new SimplePeer({
@@ -208,6 +226,7 @@ export class Peer implements IPeer {
             ordered: false,
             maxPacketLifetime: 1000 //This value should be aligned with frame refreshes. Maybe configurable?
           },
+          wrtc: this.wrtc,
           objectMode: true
         })
       };

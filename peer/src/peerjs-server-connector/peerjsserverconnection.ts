@@ -1,7 +1,7 @@
 import { EventEmitter } from "eventemitter3";
 import { util, isReliable } from "./util";
 import logger, { LogLevel } from "./logger";
-import { Socket } from "./socket";
+import { Socket, SocketBuilder } from "./socket";
 import {
   PeerErrorType,
   PeerEventType,
@@ -24,6 +24,7 @@ class PeerOptions {
   token?: string;
   secure?: boolean;
   pingInterval?: number;
+  socketBuilder?: SocketBuilder;
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
@@ -90,16 +91,13 @@ export class PeerJSServerConnection extends EventEmitter {
       path: "/",
       key: PeerJSServerConnection.DEFAULT_KEY,
       token: util.randomToken(),
+      socketBuilder: url => new WebSocket(url),
       ...options
     };
+
     this._options = options;
 
     this._messageHandler = handler;
-
-    // Detect relative URL host.
-    if (this._options.host === "/") {
-      this._options.host = window.location.hostname;
-    }
 
     // Set path correctly.
     if (this._options.path) {
@@ -111,15 +109,6 @@ export class PeerJSServerConnection extends EventEmitter {
       }
     }
 
-    // Set whether we use SSL to same as current host
-    if (
-      this._options.secure === undefined &&
-      this._options.host !== util.CLOUD_HOST
-    ) {
-      this._options.secure = util.isSecure();
-    } else if (this._options.host == util.CLOUD_HOST) {
-      this._options.secure = true;
-    }
     // Set a custom log function if present
     if (this._options.logFunction) {
       logger.setLogFunction(this._options.logFunction);
@@ -153,11 +142,12 @@ export class PeerJSServerConnection extends EventEmitter {
   private _initializeServerConnection(): void {
     this._socket = new Socket(
       this._options.secure,
-      this._options.host || "",
-      this._options.port || 8080,
-      this._options.path || "",
-      this._options.key || PeerJSServerConnection.DEFAULT_KEY,
-      this._options.pingInterval
+      this._options.host!,
+      this._options.port!,
+      this._options.path!,
+      this._options.key!,
+      this._options.pingInterval,
+      this._options.socketBuilder!
     );
 
     this.socket.on(SocketEventType.Message, data => {

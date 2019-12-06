@@ -1,4 +1,6 @@
 load("@npm_bazel_typescript//:index.bzl", "ts_library")
+load("//tools/npm:package.bzl", "dataform_npm_package")
+load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -8,14 +10,12 @@ ts_library(
     module_name = "katalyst/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
-        "@npm//fp-future",
+        "@npm//@types/simple-peer",
         "@npm//eventemitter3",
-        "@npm//simple-peer",
-        "@npm//@types/simple-peer"
+        "@npm//fp-future",
+        "@npm//simple-peer"
     ],
 )
-
-load("//tools/npm:package.bzl", "dataform_npm_package")
 
 dataform_npm_package(
     name = "package",
@@ -33,12 +33,10 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":peer",
-        "@npm//jasmine",
         "@npm//@types/jasmine",
+        "@npm//jasmine",
     ],
 )
-
-load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
 
 karma_web_test_suite(
     name = "config_test",
