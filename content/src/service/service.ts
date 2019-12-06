@@ -19,7 +19,7 @@ export class Service {
     }
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        return Promise.resolve(new AuditInfo())
+        return Promise.resolve({})
     }
 
     getHistory(from?: Timestamp, to?: Timestamp, type?: HistoryType): Promise<HistoryEvent[]> {
@@ -35,22 +35,22 @@ export class Service {
 
 }
 
-export class HistoryEvent {
+type HistoryEvent = {
     timestamp: Timestamp
 }
 
-export class DeploymentEvent extends HistoryEvent {
+export type DeploymentEvent = HistoryEvent & {
     entityType: EntityType
     entityId: EntityId
 }
 
-export class SnapshotEvent extends HistoryEvent {
+export type SnapshotEvent = HistoryEvent & {
     activeEntities: Map<EntityType, Map<Pointer, EntityId>>
     deltaEventsHash: FileHash
     previousSnapshotTimestamp: Timestamp
 }
 
-export class AuditInfo {
+export type AuditInfo = {
     deployedTimestamp: Timestamp    
     ethAddress: EthAddress
     signature: Signature    
@@ -64,19 +64,19 @@ export class Entity {
     timestamp: Timestamp
 }
 
-type EthAddress = string
-type Timestamp = number
-type Signature = string
-type FileHash = string
-type Pointer = string
-type EntityId = FileHash
+export type EthAddress = string
+export type Timestamp = number
+export type Signature = string
+export type FileHash = string
+export type Pointer = string
+export type EntityId = FileHash
 
-enum HistoryType {
+export enum HistoryType {
     DEPLOYMENT,
     SNAPSHOT,
 }
 
-enum EntityType {
+export enum EntityType {
     SCENE, 
     WEARABLE,
     PROFILE,
