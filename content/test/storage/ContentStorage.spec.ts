@@ -1,61 +1,59 @@
-import { FileSystemContentStorage } from "../../src/storage/FileSystemContentStorage";
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import { ContentStorageFactory } from "../../src/storage/ContentStorageFactory";
+import { FileSystemUtils as fsu } from "./FileSystemUtils";
 
 describe("ContentStorage", function() {
-  let tmpRootDir:string = fs.mkdtempSync(path.join(os.tmpdir(), 'foo-'))
+  let tmpRootDir = fsu.createTempDirectory()
   console.log(`Root Tmp Dir: ${tmpRootDir}`)
-  const fss = new FileSystemContentStorage(tmpRootDir)
+  const storage = ContentStorageFactory.local(tmpRootDir)
 
   const category = "some-category"
   const id = "some-id"
   const content = Buffer.from("123")
   
   it(`When content is stored, then it can be retrieved`, async () => {
-    await fss.store(category, id, content)
+    await storage.store(category, id, content)
     
-    const retrievedContent = await fss.getContent(category, id)
+    const retrievedContent = await storage.getContent(category, id)
     expect(retrievedContent).toEqual(content);
   });
 
   it(`When content is stored, then it can be listed`, async () => {
-    await fss.store(category, id, content)
+    await storage.store(category, id, content)
 
-    const ids = await fss.listIds(category)
+    const ids = await storage.listIds(category)
 
     expect(ids).toEqual([id])
   });
 
   it(`When content is stored, then we can check if it exists`, async () => {
-    await fss.store(category, id, content)
+    await storage.store(category, id, content)
 
-    const exists = await fss.exists(category, id)
+    const exists = await storage.exists(category, id)
 
-    expect(exists).toBeTrue
+    expect(exists).toBe(true)
   });
 
   it(`When content is stored on already existing id, then it overwrites the previous content`, async () => {
     const newContent = Buffer.from("456")
     
-    await fss.store(category, id, content)
-    await fss.store(category, id, newContent)
+    await storage.store(category, id, content)
+    await storage.store(category, id, newContent)
 
-    const retrievedContent = await fss.getContent(category, id)
+    const retrievedContent = await storage.getContent(category, id)
     expect(retrievedContent).toEqual(newContent);
   });
 
   it(`When content is deleted, then it is no longer available`, async () => {
-    await fss.store(category, id, content)
+    await storage.store(category, id, content)
 
-    var exists = await fss.exists(category, id)
-    expect(exists).toBeTrue
+    var exists = await storage.exists(category, id)
+    expect(exists).toBe(true)
 
-    await fss.delete(category, id)
+    await storage.delete(category, id)
 
-    exists = await fss.exists(category, id)
-    expect(exists).toBeFalse
-    const ids = await fss.listIds(category)
+    exists = await storage.exists(category, id)
+    expect(exists).toBe(false)
+    const ids = await storage.listIds(category)
     expect(ids).toEqual([])
   });
 
