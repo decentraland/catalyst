@@ -8,8 +8,9 @@ ts_library(
     module_name = "katalyst/peer",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "@npm//@types/simple-peer",
         "@npm//fp-future",
-        "@npm//peerjs",
+        "@npm//simple-peer",
     ],
 )
 
@@ -31,8 +32,8 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":peer",
-        "@npm//jasmine",
         "@npm//@types/jasmine",
+        "@npm//jasmine",
     ],
 )
 
