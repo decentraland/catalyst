@@ -10,10 +10,13 @@ export class FileSystemContentStorage implements ContentStorage {
        // TODO: Avoid trailing slashes in root
     } 
 
-    async store(category: string, id: string, content: Buffer): Promise<void> {
+    async store(category: string, id: string, content: Buffer, append?: boolean): Promise<void> {
         let categoryDir = this.getDirPath(category);
         if (!fs.existsSync(categoryDir)) {
             await fs.promises.mkdir(categoryDir);
+        }
+        if (append) {
+            return await fs.promises.appendFile(this.getFilePath(category, id), content);
         }
         return await fs.promises.writeFile(this.getFilePath(category, id), content);
     }
