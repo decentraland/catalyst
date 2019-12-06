@@ -2,13 +2,14 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import { ExpressPeerServer } from "peerjs-server";
-import { Peer } from "../../peer/src/Peer";
+import { Peer, RelayMode, PeerConnectionData } from "../../peer/src/Peer";
 import * as wrtc from "wrtc";
 import WebSocket from "ws";
 
+const relay = true;
 const port = process.env.PORT ?? 9000;
 
-const rooms: Record<string, { id: string }[]> = {};
+const rooms: Record<string, PeerConnectionData[]> = {};
 
 let peer: Peer;
 
@@ -26,7 +27,7 @@ app.get("/rooms", (req, res, next) => {
   const { userId } = req.query;
   const _rooms = userId
     ? Object.entries(rooms)
-        .filter(([, users]) => users.some(user => user.id === userId))
+        .filter(([, users]) => users.some(user => user.userId === userId))
         .map(([id]) => id)
     : Object.keys(rooms);
   res.send(_rooms);
@@ -43,10 +44,9 @@ app.put("/rooms/:roomId", (req, res, next) => {
   let room = rooms[roomId];
   if (!room) {
     rooms[roomId] = room = [];
-    peer.joinRoom(roomId);
   }
-  if (!room.some($ => $.id === req.body.id)) {
-    room.push(req.body);
+  if (!room.some($ => $.userId === req.body.id)) {
+    room.push(relay ? { ...req.body, peerId: peer.nickname } : req.body);
   }
   res.send(room);
 });
@@ -56,7 +56,7 @@ app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
   const { roomId, userId } = req.params;
   let room = rooms[roomId];
   if (room) {
-    const index = room.indexOf(room.find($ => $.id === userId) as any);
+    const index = room.indexOf(room.find($ => $.userId === userId) as any);
     if (index !== -1) {
       room.splice(index, 1);
     }
@@ -68,27 +68,24 @@ app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
 });
 
 require("isomorphic-fetch");
-// [If needed] POST /offer/:userId { myUserId, nickname, room } -> Creates an offer of connection to a userId
 
 const server = app.listen(port, () => {
   console.info(`==> Lighthouse listening on port ${port}.`);
-  peer = new Peer(
-    "http://localhost:9000",
-    "lighthouse",
-    (sender, room, payload) => {
-      console.log(
-        `Received message from ${sender} in ${room}: ${JSON.stringify(
-          payload,
-          null,
-          3
-        )}`
-      );
-    },
-    {
-      wrtc,
-      socketBuilder: url => new WebSocket(url)
-    }
-  );
+  if (relay) {
+    peer = new Peer(
+      `http://localhost:${port}`,
+      "lighthouse",
+      (sender, room, payload) => {
+        const message = JSON.stringify(payload, null, 3);
+        console.log(`Received message from ${sender} in ${room}: ${message}`);
+      },
+      {
+        wrtc,
+        socketBuilder: url => new WebSocket(url),
+        relay: RelayMode.All
+      }
+    );
+  }
 });
 
 const options = {

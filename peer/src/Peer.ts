@@ -5,8 +5,8 @@ import SimplePeer, { SignalData } from "simple-peer";
 import { isReliable, connectionIdFor } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 
-export type User = string;
-export type Room = { id: string; users: Set<User> };
+export type PeerConnectionData = { userId: string; peerId: string };
+export type Room = { id: string; users: Map<string, PeerConnectionData> };
 
 export interface IPeer {
   nickname: string;
@@ -19,27 +19,10 @@ export interface IPeer {
 type PeerData = {
   id: string;
   reliableConnection: SimplePeer.Instance;
-  unreliableConnection: SimplePeer.Instance;
+  // unreliableConnection: SimplePeer.Instance;
 };
 
 const PeerSignals = { offer: "offer", answer: "answer" };
-
-const defaultConnectionConfig = {
-  iceServers: [
-    {
-      urls: "stun:stun.l.google.com:19302"
-    },
-    {
-      urls: "stun:stun2.l.google.com:19302"
-    },
-    {
-      urls: "stun:stun3.l.google.com:19302"
-    },
-    {
-      urls: "stun:stun4.l.google.com:19302"
-    }
-  ]
-};
 
 function signalMessage(
   peer: PeerData,
@@ -48,16 +31,23 @@ function signalMessage(
 ) {
   if (isReliable(connectionId)) {
     peer.reliableConnection.signal(signal);
-  } else {
-    peer.unreliableConnection.signal(signal);
+    // } else {
+    // peer.unreliableConnection.signal(signal);
   }
+}
+
+export enum RelayMode {
+  None,
+  All
 }
 
 type PeerConfig = {
   connectionConfig?: any;
   wrtc?: any;
   socketBuilder?: SocketBuilder;
+  relay?: RelayMode;
 };
+
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private peers: Record<string, PeerData> = {};
@@ -74,7 +64,7 @@ export class Peer implements IPeer {
       room: string,
       payload: any
     ) => void = () => {},
-    config: PeerConfig = {}
+    private config: PeerConfig = { relay: RelayMode.None }
   ) {
     const url = new URL(lighthouseUrl);
     this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
@@ -87,37 +77,41 @@ export class Peer implements IPeer {
     this.wrtc = config.wrtc;
 
     this.connectionConfig = {
-      ...defaultConnectionConfig,
       ...(config.connectionConfig || {})
     };
   }
 
   async joinRoom(roomId: string): Promise<void> {
-    const room: { id: string }[] = await fetch(
+    const room: PeerConnectionData[] = await fetch(
       `${this.lighthouseUrl}/rooms/${roomId}`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ id: this.nickname })
+        body: JSON.stringify({ userId: this.nickname, peerId: this.nickname })
       }
     ).then(res => res.json());
 
     this.currentRooms.push({
       id: roomId,
-      users: new Set(room.map(user => user.id))
+      users: new Map(room.map(data => [this.key(data), data]))
     });
 
     room
       .filter(
-        user => user.id !== this.nickname && !this.hasConnectionsFor(user.id)
+        user =>
+          user.userId !== this.nickname && !this.hasConnectionsFor(user.peerId)
       )
-      .forEach(user => this.getOrCreatePeer(user.id, true));
+      .forEach(user => this.getOrCreatePeer(user.peerId, true));
   }
 
-  private hasConnectionsFor(userId: string) {
-    return !!this.peers[userId];
+  private key(data: PeerConnectionData) {
+    return `${data.userId}:${data.peerId}`;
+  }
+
+  private hasConnectionsFor(peerId: string) {
+    return !!this.peers[peerId];
   }
 
   private subscribeToConnection(
@@ -141,14 +135,27 @@ export class Peer implements IPeer {
        * - We make the peers exchange their rooms as their first messages
        * - We make the rooms a part of the handshake
        */
-      this.currentRooms.forEach(it => it.users.add(peerId));
+      const data = { userId: peerId, peerId };
+      this.currentRooms.forEach(it => it.users.set(this.key(data), data));
     });
 
     connection.on("data", data => {
       // if (data instanceof Uint8Array)
       //   data = new TextDecoder("utf-8").decode(data);
       const parsed = JSON.parse(data);
-      this.callback(peerId, parsed.room, parsed.payload);
+      if (parsed.dst !== this.nickname && this.config.relay === RelayMode.All) {
+        console.log(`relaying message to ${parsed.dst}`);
+        this.sendMessageTo(
+          { userId: parsed.dst, peerId: parsed.dst },
+          parsed.room,
+          parsed.payload,
+          parsed.src,
+          true // TODO - for the time being
+        );
+      } else {
+        // assume it's for me
+        this.callback(parsed.src, parsed.room, parsed.payload);
+      }
     });
   }
 
@@ -160,29 +167,36 @@ export class Peer implements IPeer {
       );
     }
 
-    [...room.users]
-      .filter(user => user !== this.nickname)
-      .forEach(user => this.sendMessageTo(user, roomId, payload, reliable));
+    [...room.users.values()]
+      .filter(user => user.userId !== this.nickname)
+      .forEach(user =>
+        this.sendMessageTo(user, roomId, payload, this.nickname, reliable)
+      );
 
     return Promise.resolve();
   }
 
   private sendMessageTo(
-    user: string,
+    user: PeerConnectionData,
     roomId: string,
     payload: any,
-    reliable: boolean
+    src: string = this.nickname,
+    reliable: boolean = true
   ) {
-    const peer = this.peers[user];
+    const peer = this.peers[user.peerId];
     if (peer) {
-      const connection = reliable
-        ? "reliableConnection"
-        : "unreliableConnection";
+      // const connection = reliable
+      //   ? "reliableConnection"
+      //   : "unreliableConnection";
+      console.log(`sending message`);
+      const connection = "reliableConnection";
       const conn = peer[connection];
       if (conn.writable) {
         conn?.write(
           JSON.stringify({
             room: roomId,
+            src,
+            dst: user.userId,
             payload
           })
         );
@@ -217,22 +231,22 @@ export class Peer implements IPeer {
           },
           wrtc: this.wrtc,
           objectMode: true
-        }),
-        unreliableConnection: new SimplePeer({
-          initiator,
-          config: this.connectionConfig,
-          channelConfig: {
-            label: connectionIdFor(this.nickname, peerId, false),
-            ordered: false,
-            maxPacketLifetime: 1000 //This value should be aligned with frame refreshes. Maybe configurable?
-          },
-          wrtc: this.wrtc,
-          objectMode: true
         })
+        // unreliableConnection: new SimplePeer({
+        //   initiator,
+        //   config: this.connectionConfig,
+        //   channelConfig: {
+        //     label: connectionIdFor(this.nickname, peerId, false),
+        //     ordered: false,
+        //     maxPacketLifetime: 1000 //This value should be aligned with frame refreshes. Maybe configurable?
+        //   },
+        //   wrtc: this.wrtc,
+        //   objectMode: true
+        // })
       };
 
       this.subscribeToConnection(peerId, peer.reliableConnection, true);
-      this.subscribeToConnection(peerId, peer.unreliableConnection, false);
+      // this.subscribeToConnection(peerId, peer.unreliableConnection, false);
     }
     return peer;
   }
