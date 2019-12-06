@@ -9,7 +9,9 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "@npm//fp-future",
-        "@npm//peerjs",
+        "@npm//eventemitter3",
+        "@npm//simple-peer",
+        "@npm//@types/simple-peer"
     ],
 )
 
