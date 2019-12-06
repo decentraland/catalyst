@@ -19,7 +19,11 @@ export class Service {
     }
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        return Promise.resolve({})
+        return Promise.resolve({
+            deployedTimestamp: 1,
+            ethAddress: "",
+            signature: ""
+        })
     }
 
     getHistory(from?: Timestamp, to?: Timestamp, type?: HistoryType): Promise<HistoryEvent[]> {

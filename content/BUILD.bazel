@@ -13,6 +13,8 @@ ts_library(
         "@npm//cors",
         "@npm//express",
         "@npm//morgan",
+        "@npm//multer",
+        "@npm//@types/multer",
     ],
 )
 
