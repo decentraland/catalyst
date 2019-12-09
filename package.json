@@ -49,6 +49,7 @@
     "isomorphic-fetch": "^2.2.1",
     "morgan": "^1.9.1",
     "multer": "^1.4.2",
+    "multihashing-async": "^0.8.0",
     "peerjs-server": "^0.2.9",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",

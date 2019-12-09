@@ -30,7 +30,7 @@ export class Service {
 
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
-        if (entityId !== Hashing.calculateHash(entityFile)) {
+        if (entityId !== await Hashing.calculateHash(entityFile)) {
             throw new Error("Entity file's hash didn't match the signed entity id.")    
         }
 
@@ -48,7 +48,7 @@ export class Service {
         Validation.validateType(entity)
 
         // Hash all files, and validate them
-        const hashes: Map<FileHash, File> = Hashing.calculateHashes(files)
+        const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
         const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(hashes.keys()));
         Validation.validateHashes(entity, hashes, alreadyStoredHashes)
 

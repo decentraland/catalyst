@@ -16,6 +16,7 @@ ts_library(
         "@npm//multer",
         "@npm//@types/multer",
         "@npm//cids",
+        "@npm//multihashing-async",
     ],
 )
 
