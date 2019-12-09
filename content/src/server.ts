@@ -2,7 +2,7 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import multer from "multer";
-import { Controller } from "./controller/controller";
+import { Controller } from "./controller/Controller";
 import { Service } from "./service/Service";
 import { ServiceFactory } from "./service/ServiceFactory";
 
