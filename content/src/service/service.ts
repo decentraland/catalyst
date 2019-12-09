@@ -11,12 +11,26 @@ export class Service {
     private entities: Map<EntityId, Entity> = new Map();
     private storage: ContentStorage;
 
-    getEntitiesByPointers(type: EntityType, ids: Pointer[]): Promise<Entity[]> {
-        return Promise.resolve([])
+    constructor(storage: ContentStorage) {
+        this.storage = storage
+    }
+
+    getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
+        const entityIdsWithDuplicates: EntityId[] = pointers.map((pointer: Pointer) => this.referencedEntities.get(type)?.get(pointer))
+            .filter((entityId: EntityId | undefined) => !!entityId)
+            .map((entityId: EntityId) => entityId)
+
+        return this.getEntitiesByIds(type, entityIdsWithDuplicates)
     }
 
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
-        return Promise.resolve([])
+        const entities: Entity[] = ids
+            .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
+            .map((entityId: EntityId) => this.entities.get(entityId))
+            .filter((entity: Entity | undefined) => !!entity)
+            .map((entity: Entity) => entity)
+
+        return Promise.resolve(entities)
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
@@ -36,8 +50,7 @@ export class Service {
             throw new Error("Entity file's hash didn't match the signed entity id.")    
         }
 
-        // Remove entity file from files set and parse it into an Entity
-        files.delete(entityFile)
+        // Parse entity file into an Entity        
         const entity: Entity = this.parseEntityFile(entityFile)
 
         // Validate ethAddress access
@@ -65,7 +78,7 @@ export class Service {
         await this.deleteOverwrittenEntities(entity)
 
         // Register the new entity on global variables
-        await this.commitNewEntity(hashes, alreadyStoredHashes, entityId, entity)    
+        await this.commitNewEntity(hashes, alreadyStoredHashes, entity)    
     
         // TODO: Save audit information
 
@@ -74,13 +87,13 @@ export class Service {
         return Promise.resolve(0)
     }
 
-    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entityId: EntityId, entity: Entity): Promise<void> {
+    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity): Promise<void> {
         // Register entity
-        this.entities.set(entityId, entity)    
+        this.entities.set(entity.id, entity)    
 
         // Make each pointer point to new entity
         let entitiesInType: Map<Pointer, EntityId> | undefined = this.referencedEntities.get(entity.type)
-        entity.pointers.forEach(pointer => entitiesInType?.set(pointer, entityId))
+        entity.pointers.forEach(pointer => entitiesInType?.set(pointer, entity.id))
 
         // Store content that isn't already stored
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
@@ -90,7 +103,7 @@ export class Service {
         
         // Store reference from pointers to entity
         const pointerStorageActions: Promise<void>[]= Array.from(entity.pointers)
-            .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entityId)));
+            .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)));
         
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
     }
