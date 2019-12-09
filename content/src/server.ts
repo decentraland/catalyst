@@ -3,7 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import multer from "multer";
 import { Controller } from "./controller/controller";
-import { Service } from "./service/service";
+import { Service } from "./service/Service";
 import { ServiceFactory } from "./service/ServiceFactory";
 
 const port = process.env.PORT ?? 6969;

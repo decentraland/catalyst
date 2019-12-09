@@ -1,4 +1,4 @@
-import { Service } from "./service";
+import { Service } from "./Service";
 import { MockedService } from "./MockedService";
 
 export class ServiceFactory {

@@ -15,6 +15,7 @@ ts_library(
         "@npm//morgan",
         "@npm//multer",
         "@npm//@types/multer",
+        "@npm//cids",
     ],
 )
 

@@ -1,5 +1,6 @@
 import express from "express";
-import { Service, EntityType, Entity } from "../service/service"
+import { EntityType, Entity } from "../service/Entity"
+import { Service } from "../service/Service";
 
 export class Controller {
     private service: Service;
