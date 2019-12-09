@@ -1,6 +1,7 @@
 import express from "express";
-import { EntityType, Entity } from "../service/Entity"
-import { Service } from "../service/Service";
+import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
+import { Service, Timestamp, File, Signature, EthAddress } from "../service/Service";
+import { FileHash } from "../service/Hashing";
 
 export class Controller {
     private service: Service;
@@ -18,8 +19,6 @@ export class Controller {
     } 
 
     getEntities(req: express.Request, res: express.Response) {
-        console.log("this: " + this)
-        console.log("this.service: " + this.service)
         // Method: GET
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
@@ -40,7 +39,7 @@ export class Controller {
         // Validate fields are correct or empty
         let enumFields: EntityField[]|undefined = undefined
         if (fields) {
-            enumFields = fields.split(',').map(f => EntityField[f])
+            enumFields = fields.split(',').map(f => (<any>EntityField)[f.toUpperCase().trim()])
         }
 
         // Calculate and maks entities
@@ -55,22 +54,19 @@ export class Controller {
         .then(maskedEntities => res.send(maskedEntities))
     }
 
-    private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): Entity {
-        if (!fields) {
-            return fullEntity
-        }
-        let maskedEntity = new Entity()
+    private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): ControllerEntity {
+        let maskedEntity = new ControllerEntity()
         maskedEntity.id = fullEntity.id
         maskedEntity.type = fullEntity.type
         maskedEntity.timestamp = fullEntity.timestamp
-        if (fields.includes(EntityField.CONTENTS)) {
-            maskedEntity.content = fullEntity.content
+        if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
+            maskedEntity.content = [...fullEntity.content]
         }
-        if (fields.includes(EntityField.METADATA)) {
+        if (!fields || fields.includes(EntityField.METADATA)) {
             maskedEntity.metadata = fullEntity.metadata
         }
-        if (fields.includes(EntityField.POINTERS)) {
-            maskedEntity.pointers = fullEntity.pointers
+        if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
+            maskedEntity.pointers = [...fullEntity.pointers]
         }
         return maskedEntity
     }
@@ -79,17 +75,21 @@ export class Controller {
         // Method: POST
         // Path: /entities
         // Body: JSON with entityId,ethAddress,signature; and a set of files
-        const entityId   = req.body.entityId;
-        const ethAddress = req.body.ethAddress;
-        const signature  = req.body.signature;
-        const files      = req.files
+        const entityId:EntityId     = req.body.entityId;
+        const ethAddress:EthAddress = req.body.ethAddress;
+        const signature:Signature   = req.body.signature;
+        const files                 = req.files
       
-        res.send({
-            entityId: entityId,
-            ethAddress: ethAddress,
-            signature: signature,
-            files: files,
-        })
+        let deployFiles: Set<File> = (files instanceof Array) 
+            ? new Set<File>(files.map(f => ({
+                name: f.fieldname, 
+                content: Buffer.from(f.path)}))) 
+            : new Set<File>()
+
+        this.service.deployEntity(deployFiles, entityId, ethAddress, signature)
+        .then(t => res.send({
+            creationTimestamp: t
+        }))
     }
     
     getContent(req: express.Request, res: express.Response) {
@@ -153,7 +153,16 @@ export class Controller {
 }
 
 export enum EntityField {
-    CONTENTS, 
-    POINTERS,
-    METADATA,
+    CONTENT = "content", 
+    POINTERS = "pointers",
+    METADATA = "metadata",
+}
+
+export class ControllerEntity {
+    id: EntityId
+    type: EntityType
+    pointers: Pointer[]
+    timestamp: Timestamp
+    content?: [string,FileHash][]
+    metadata?: string    
 }

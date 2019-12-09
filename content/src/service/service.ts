@@ -3,6 +3,8 @@ import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
 
+const ENTITY_FILE_NAME = 'entity.json';
+
 export class Service {
     
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
@@ -128,11 +130,11 @@ export class Service {
 
     private findEntityFile(files: Set<File>): File {
         const filesWithName = Array.from(files.values())
-            .filter(file => file.name === 'entity.json')
+            .filter(file => file.name === ENTITY_FILE_NAME)
         if (filesWithName.length === 0) {
-            throw new Error("Failed to find the entity file. Please make sure that it is named 'entity.json'.")
+            throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
         } else if (filesWithName.length > 1) {
-            throw new Error("Found more than one file called 'entity.json'. Please make sure you upload only one with that name.")
+            throw new Error(`Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
         }
 
         return filesWithName[0];
