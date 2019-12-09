@@ -61,6 +61,7 @@ export type AuditInfo = {
 }
 
 export class Entity {
+    id: EntityId
     type: EntityType
     content: Map<string, FileHash>
     metadata: string

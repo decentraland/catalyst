@@ -2,6 +2,9 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import multer from "multer";
+import { Controller } from "./controller/controller";
+import { Service } from "./service/service";
+import { ServiceFactory } from "./service/ServiceFactory";
 
 const port = process.env.PORT ?? 6969;
 
@@ -12,102 +15,18 @@ app.use(morgan("combined"));
 
 var upload = multer({ dest: 'uploads/' })
 
+var service: Service = ServiceFactory.mock();
+var controller = new Controller(service);
+
 // TODO: Create a version endpoint 
-// TODO: Move the handler functions to the controller directory
 
-const getEntities = (req: express.Request, res: express.Response) => {
-  // Method: GET
-  // Path: /entities/:type
-  // Query String: ?{filter}&fields={fieldList}
-  const type     = req.params.type
-  const pointers = req.query.pointer
-  const ids      = req.query.id
-  const fields   = req.query.fields
-
-  res.send({
-    type: type,
-    pointers: pointers,
-    ids: ids,
-    fields: fields,
-  })
-}
-const createEntity = (req: express.Request, res: express.Response) => {
-  // Method: POST
-  // Path: /entities
-  // Body: JSON with entityId,ethAddress,signature; and a set of files
-  const entityId   = req.body.entityId;
-  const ethAddress = req.body.ethAddress;
-  const signature  = req.body.signature;
-  const files      = req.files
-
-  res.send({
-    entityId: entityId,
-    ethAddress: ethAddress,
-    signature: signature,
-    files: files,
-  })
-}
-const getContent = (req: express.Request, res: express.Response) => {
-  // Method: GET
-  // Path: /contents/:hashId
-  const hashId = req.params.hashId;
-
-  res.send({
-    hashId: hashId,
-  })
-}
-const getAvailableContent = (req: express.Request, res: express.Response) => {
-  // Method: GET
-  // Path: /available-content
-  // Query String: ?cid={hashId1}&cid={hashId2}
-  const cids = req.query.cid
-  
-  res.send({
-    cids: cids,
-  })
-}
-const getPointers = (req: express.Request, res: express.Response) => {
-  // Method: GET
-  // Path: /pointers/:type
-  const type = req.params.type;
-  
-  res.send({
-    type: type,
-  })
-}
-const getAudit = (req: express.Request, res: express.Response) => {
-  // Method: GET
-  // Path: /audit/:type/:entityId
-  const type     = req.params.type;
-  const entityId = req.params.entityId;
-  
-  res.send({
-    type: type,
-    entityId: entityId,
-  })
-}
-const getHistory = (req: express.Request, res: express.Response) => {
-  // Method: GET
-  // Path: /history
-  // Query String: ?from={timestamp}&to={timestamp}&type={type}
-  const from = req.query.from
-  const to   = req.query.to
-  const type = req.query.type
-  
-  res.send({
-    from: from,
-    to: to,
-    type: type,
-  })
-}
-
-app.get("/entities/:type"       , getEntities);
-app.post("/entities"            , upload.any(), createEntity);
-app.get("/contents/:hashId"     , getContent);
-app.get("/available-content"    , getAvailableContent);
-app.get("/pointers/:type"       , getPointers);
-app.get("/audit/:type/:entityId", getAudit);
-app.get("/history"              , getHistory);
+app.get ("/entities/:type"                     , controller.getEntities);
+app.post("/entities"             , upload.any(), controller.createEntity);
+app.get ("/contents/:hashId"                   , controller.getContent);
+app.get ("/available-content"                  , controller.getAvailableContent);
+app.get ("/pointers/:type"                     , controller.getPointers);
+app.get ("/audit/:type/:entityId"              , controller.getAudit);
+app.get ("/history"                            , controller.getHistory);
 
 
 app.listen(port, () => {
@@ -121,7 +40,7 @@ TODO: remove this
 
 Some examples:
 
-http://localhost:6969/entities/scenes?pointer=hola&pointer=chau&id=1&id=2&id=3&fields=contents,pointers
+curl http://localhost:6969/entities/scenes?pointer=hola&pointer=chau&id=1&id=2&id=3&fields=contents,pointers
 {
 	"type": "scenes",
 	"pointers": [
@@ -137,30 +56,33 @@ http://localhost:6969/entities/scenes?pointer=hola&pointer=chau&id=1&id=2&id=3&f
 }
 
 
-curl -F 'entityId=some-entity-id'  -F 'ethAddress=some-eth-address' -F 'signature=the-message-sginature' -F 'fileX=@./test.xml' -F 'fileY=@./test.log' http://localhost:6969/entities
-{
-	"entityId": "some-entity-id",
-	"ethAddress": "some-eth-address",
-	"signature": "the-message-sginature",
-	"files": [{
-		"fieldname": "fileX",
-		"originalname": "test.xml",
-		"encoding": "7bit",
-		"mimetype": "application/xml",
-		"destination": "uploads/",
-		"filename": "51526e2bd674d4502de25cac1fcf4590",
-		"path": "uploads/51526e2bd674d4502de25cac1fcf4590",
-		"size": 914
-	}, {
-		"fieldname": "fileY",
-		"originalname": "test.log",
-		"encoding": "7bit",
-		"mimetype": "application/octet-stream",
-		"destination": "uploads/",
-		"filename": "b18194be37dafe4dcb6255a0c1b55142",
-		"path": "uploads/b18194be37dafe4dcb6255a0c1b55142",
-		"size": 539
-	}]
+curl -F 'entityId=some-entity-id'  -F 'ethAddress=some-eth-address' -F 'signature=the-message-sginature' -F 'file1=@./package.json' -F 'file2=@./tsconfig.json' http://localhost:6969/entities
+{ 
+   "entityId":"some-entity-id",
+   "ethAddress":"some-eth-address",
+   "signature":"the-message-sginature",
+   "files":[ 
+      { 
+         "fieldname":"file1",
+         "originalname":"package.json",
+         "encoding":"7bit",
+         "mimetype":"application/octet-stream",
+         "destination":"uploads/",
+         "filename":"fe06c2504631768b8150ac088c0675e8",
+         "path":"uploads/fe06c2504631768b8150ac088c0675e8",
+         "size":1691
+      },
+      { 
+         "fieldname":"file2",
+         "originalname":"tsconfig.json",
+         "encoding":"7bit",
+         "mimetype":"application/octet-stream",
+         "destination":"uploads/",
+         "filename":"8c6356dc606b716ec518845e85c1d96f",
+         "path":"uploads/8c6356dc606b716ec518845e85c1d96f",
+         "size":904
+      }
+   ]
 }
 
 */
