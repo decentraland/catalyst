@@ -27,7 +27,6 @@ export const util = new (class {
       .toString(36)
       .substr(2);
   }
-
 })();
 
 export const ConnectionSuffixes = {
@@ -41,11 +40,11 @@ export function connectionIdFor(
   peerId: string,
   reliable: boolean
 ) {
-  return `${myId}_${peerId}_${
+  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${
     reliable ? ConnectionSuffixes.reliable : ConnectionSuffixes.unreliable
   }`;
 }
 
 export function isReliable(connectionId: string) {
-  return !connectionId.endsWith(ConnectionSuffixes.unreliable)
+  return !connectionId.endsWith(ConnectionSuffixes.unreliable);
 }
