@@ -39,11 +39,15 @@ app.get("/rooms/:roomId", (req, res, next) => {
 });
 
 // PUT /room/:id { userid, nickname } -> adds a user to a particular room. If the room doesn’t exists, it creates it.
-app.put("/rooms/:roomId", (req, res, next) => {
+app.put("/rooms/:roomId", async (req, res, next) => {
   const { roomId } = req.params;
   let room = rooms[roomId];
   if (!room) {
     rooms[roomId] = room = [];
+    // if relaying peer exists, add to room when it's created
+    if (relay) {
+      await peer?.joinRoom(roomId);
+    }
   }
   if (!room.some($ => $.userId === req.body.id)) {
     room.push(relay ? { ...req.body, peerId: peer.nickname } : req.body);
