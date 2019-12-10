@@ -16,7 +16,7 @@ references:
     .base_env: &base_env
       docker:
       - <<: *image_kernel
-      working_directory: *workspace_kernel
+      working_directory: *workspace_root
 
     .all_branches_and_tags: &all_branches_and_tags
       filters:
