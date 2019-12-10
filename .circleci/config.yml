@@ -1,0 +1,61 @@
+version: 2.0
+
+references:
+    .workspace_root: &workspace_root /tmp/repo
+
+    .attach_root: &attach_root
+      attach_workspace:
+        at: *workspace_root
+
+    .image_client: &image_client
+      image: circleci/node:10-browsers
+
+    .working_directory_root: &working_directory_root
+      working_directory: *workspace_root
+
+    .base_env: &base_env
+      docker:
+      - <<: *image_client
+      working_directory: *workspace_root
+
+    .all_branches_and_tags: &all_branches_and_tags
+      filters:
+        branches:
+          only: /(.*)/
+        tags:
+          only: /^\d+\.\d+\.\d(.*)/ # semver
+
+jobs:
+  build:
+    <<: *base_env
+
+    steps:
+    - checkout
+
+      # Download and cache dependencies
+    # - restore_cache:
+    #     keys:
+    #     - v1-dependencies-{{ checksum "package.json" }}
+    #     # fallback to using the latest cache if no exact match is found
+    #     - v1-dependencies-
+
+    - run: yarn install
+
+    - save_cache:
+        paths:
+        - node_modules
+        key: v1-dependencies-{{ checksum "package.json" }}
+
+    # run tests!
+    - run: npx bazel test $(npx bazel query //...)
+
+workflows:
+  version: 2
+
+  build-deploy:
+
+    jobs:
+    - build:
+        filters:
+          branches:
+            only: chore/pipeline
