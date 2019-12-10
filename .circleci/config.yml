@@ -31,6 +31,7 @@ jobs:
 
     steps:
     - checkout
+    - run: npm install node-pre-gyp
 
       # Download and cache dependencies
     # - restore_cache:
