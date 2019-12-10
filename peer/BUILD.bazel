@@ -13,7 +13,7 @@ ts_library(
         "@npm//@types/simple-peer",
         "@npm//eventemitter3",
         "@npm//fp-future",
-        "@npm//simple-peer"
+        "@npm//simple-peer",
     ],
 )
 
@@ -33,17 +33,52 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":peer",
+        "@npm//@types/fetch-mock",
         "@npm//@types/jasmine",
+        "@npm//@types/sinon",
+        "@npm//fetch-mock",
         "@npm//jasmine",
+        "@npm//sinon",
+        "@npm//ts-mock-imports",
     ],
 )
 
 karma_web_test_suite(
     name = "config_test",
+    data = [
+        ":tests",
+        "@npm//eventemitter3:eventemitter3__umd",
+        "@npm//fetch-mock",
+        "@npm//fp-future:fp-future__umd",
+        "@npm//jasmine",
+        "@npm//simple-peer",
+        "@npm//sinon",
+        "@npm//ts-mock-imports",
+    ],
+    static_files = [
+        "test/config.js",
+        "@npm//fp-future:fp-future.umd.js",
+    ],
     tags = [],
     runtime_deps = [
+        ":tests",
+        "@npm//eventemitter3:eventemitter3__umd",
+        "@npm//fetch-mock",
+        "@npm//fp-future:fp-future__umd",
+        "@npm//jasmine",
+        "@npm//simple-peer",
+        "@npm//sinon",
+        "@npm//ts-mock-imports",
     ],
     deps = [
+        "test/config.js",
         ":tests",
+        "@npm//eventemitter3",
+        "@npm//fetch-mock",
+        "@npm//fp-future",
+        "@npm//jasmine",
+        "@npm//simple-peer",
+        "@npm//sinon",
+        "@npm//ts-mock-imports",
     ],
 )
