@@ -7,7 +7,7 @@ references:
       attach_workspace:
         at: *workspace_root
 
-    .image_kernel: &image_kernel
+    .image_client: &image_client
       image: circleci/node:10-browsers
 
     .working_directory_root: &working_directory_root
@@ -15,7 +15,7 @@ references:
 
     .base_env: &base_env
       docker:
-        - <<: *image_kernel
+      - <<: *image_client
       working_directory: *workspace_root
 
     .all_branches_and_tags: &all_branches_and_tags
@@ -30,24 +30,24 @@ jobs:
     <<: *base_env
 
     steps:
-      - checkout
+    - checkout
 
       # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ checksum "package.json" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
 
-      - run: yarn install
+    - run: yarn install
 
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+    - save_cache:
+        paths:
+        - node_modules
+        key: v1-dependencies-{{ checksum "package.json" }}
 
-      # run tests!
-      - run: npx bazel test $(npx bazel query //...)
+    # run tests!
+    - run: npx bazel test $(npx bazel query //...)
 
 workflows:
   version: 2
@@ -55,5 +55,5 @@ workflows:
   build-deploy:
 
     jobs:
-      - build:
-          <<: *all_branches_and_tags
+    - build:
+        <<: *all_branches_and_tags
