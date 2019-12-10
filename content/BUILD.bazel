@@ -27,7 +27,7 @@ nodejs_binary(
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "src/server.ts",
+    entry_point = "src/run-server.ts",
 )
 
 load("//tools/npm:package.bzl", "dataform_npm_package")
@@ -63,3 +63,14 @@ jasmine_node_test(
     ],
 )
 
+nodejs_binary(
+    name = "mock-server",
+    testonly = 1,
+    data = [
+        ":content",
+        ":tests",
+        "@npm//@bazel/typescript",
+        "@npm//typescript",
+    ],
+    entry_point = "test/mock-server.ts",
+)

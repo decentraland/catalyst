@@ -1,10 +1,12 @@
 import { ContentStorageFactory } from "../../src/storage/ContentStorageFactory";
 import { FileSystemUtils as fsu } from "./FileSystemUtils";
+import { Environment, STORAGE_ROOT_FOLDER } from "../../src/Environment";
 
 describe("ContentStorage", function() {
   let tmpRootDir = fsu.createTempDirectory()
   console.log(`Root Tmp Dir: ${tmpRootDir}`)
-  const storage = ContentStorageFactory.local(tmpRootDir)
+  Environment.getInstance().setConfig(STORAGE_ROOT_FOLDER, tmpRootDir)
+  const storage = ContentStorageFactory.local(Environment.getInstance())
 
   const category = "some-category"
   const id = "some-id"

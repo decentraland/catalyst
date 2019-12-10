@@ -4,34 +4,22 @@ import { Service, Timestamp, File, Signature, EthAddress } from "../service/Serv
 import { FileHash } from "../service/Hashing";
 
 export class Controller {
-    private service: Service;
-
-    constructor(service: Service) { 
-        this.service = service
-        this.getEntities         = this.getEntities.bind(this);
-        this.createEntity        = this.createEntity.bind(this);
-        this.getContent          = this.getContent.bind(this);
-        this.getAvailableContent = this.getAvailableContent.bind(this);
-        this.getPointers         = this.getPointers.bind(this);
-        this.getAudit            = this.getAudit.bind(this);
-        this.getHistory          = this.getHistory.bind(this);
-
-    } 
+    constructor(private service: Service) { } 
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
-        const type     = req.params.type
-        const pointers = req.query.pointer
-        const ids      = req.query.id
-        const fields:string   = req.query.fields
+        const type:string        = req.params.type
+        const pointers:Pointer[] = this.asArray<Pointer>(req.query.pointer)
+        const ids:EntityId[]     = this.asArray<EntityId>(req.query.id)
+        const fields:string      = req.query.fields
 
         // Validate type is correct
         let enumType = EntityType[type]
 
         // Validate pointers or ids are present, but not both
-        if ((ids && pointers) || (!ids && !pointers)) {
+        if ((ids.length>0 && pointers.length>0) || (ids.length==0 && pointers.length==0)) {
             res.status(400).send({ error: 'ids or pointers must be present, but not both' });
             return
         }
@@ -52,6 +40,16 @@ export class Controller {
         entities
         .then(fullEntities => fullEntities.map(fullEntity => this.maskEntity(fullEntity, enumFields)))
         .then(maskedEntities => res.send(maskedEntities))
+    }
+
+    private asArray<T>(elements: T[]|T): T[] {
+        if (!!elements) {
+            return []
+        }
+        if (elements instanceof Array) {
+            return elements
+        }
+        return [elements]
     }
 
     private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): ControllerEntity {
