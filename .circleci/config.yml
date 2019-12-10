@@ -56,4 +56,6 @@ workflows:
 
     jobs:
     - build:
-        <<: *all_branches_and_tags
+        filters:
+            branches:
+            only: chore/pipeline
