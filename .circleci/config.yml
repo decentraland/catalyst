@@ -57,5 +57,5 @@ workflows:
     jobs:
     - build:
         filters:
-            branches:
+          branches:
             only: chore/pipeline
