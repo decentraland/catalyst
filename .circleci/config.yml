@@ -56,4 +56,4 @@ workflows:
 
     jobs:
       - build:
-        <<: *all_branches_and_tags
+          <<: *all_branches_and_tags
