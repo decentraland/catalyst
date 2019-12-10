@@ -33,7 +33,7 @@ export class ServiceImpl implements Service {
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
-        return Promise.resolve([])
+        return Promise.resolve(Array.from(this.referencedEntities.get(type)?.keys() || []))
     }
 
     async deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
@@ -46,11 +46,14 @@ export class ServiceImpl implements Service {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
-            throw new Error("Entity file's hash didn't match the signed entity id.")    
+            throw new Error("Entity file's hash didn't match the signed entity id.")
         }
 
         // Parse entity file into an Entity        
-        const entity: Entity = this.parseEntityFile(entityFile)
+        const entity: Entity = Entity.fromFile(entityFile, entityId)
+
+        // Validate entity
+        Validation.validateEntity(entity)
 
         // Validate ethAddress access
         Validation.validateAccess(entity.pointers, ethAddress, entity.type)
@@ -83,7 +86,7 @@ export class ServiceImpl implements Service {
 
         // TODO: Add to history
 
-        return Promise.resolve(0)
+        return Promise.resolve(Date.now())
     }
 
     private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity): Promise<void> {
@@ -101,7 +104,7 @@ export class ServiceImpl implements Service {
         
         
         // Store reference from pointers to entity
-        const pointerStorageActions: Promise<void>[]= Array.from(entity.pointers)
+        const pointerStorageActions: Promise<void>[]= entity.pointers
             .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)));
         
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
@@ -112,15 +115,15 @@ export class ServiceImpl implements Service {
         let allEntities: Set<EntityId> = new Set()
 
         // Calculate the entities and pointers that the new deployment would overwrite 
-        Array.from(entity.pointers.values())
+        entity.pointers
             .map((pointer: Pointer) => this.referencedEntities.get(entity.type)?.get(pointer))
             .filter((entityId: EntityId | undefined) => !!entityId)
             .forEach((entityId: EntityId) => {
                 allEntities.add(entityId)
 
-                const entitysPointers: Set<Pointer> = this.entities.get(entityId)?.pointers || new Set()
-                Array.from(entitysPointers)
-                    .filter((pointer: Pointer) => !entity.pointers.has(pointer))        
+                const entitysPointers: Pointer[] = this.entities.get(entityId)?.pointers || []
+                entitysPointers
+                    .filter((pointer: Pointer) => !entity.pointers.includes(pointer))        
                     .forEach((pointer: Pointer) => orphanPointers.add(pointer))
             })
 
@@ -135,13 +138,13 @@ export class ServiceImpl implements Service {
         await Promise.all(pointerDeletionActions)
            
         // Delete the entities that will be overwriten from the global map
-        for (const entityId of allEntities.keys()) {
+        for (const entityId of allEntities) {
             this.entities.delete(entityId)            
         }
     }
 
     private findEntityFile(files: Set<File>): File {
-        const filesWithName = Array.from(files.values())
+        const filesWithName = Array.from(files)
             .filter(file => file.name === ENTITY_FILE_NAME)
         if (filesWithName.length === 0) {
             throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
@@ -150,21 +153,6 @@ export class ServiceImpl implements Service {
         }
 
         return filesWithName[0];
-    }
-
-    private parseEntityFile(file: File | undefined): Entity {
-        if (!file) {
-            throw new Error("Couldn't find a file that matched the entityId")
-        }
-
-        let entity: Entity;
-        try {        
-            entity = JSON.parse(file.content.toString())
-        } catch (ex) {
-            throw new Error("Failed to parse the entity file. Please make sure thay it is a valid json.\n" + ex)
-        }
-
-        return entity
     }
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
@@ -184,12 +172,9 @@ export class ServiceImpl implements Service {
         return Promise.resolve(new Map(fileHashes.map(hash => [hash, false])))
     }
 
-    // getContent() // TODO
-    // getContenetURL() //ToAvoid
-
     /** Resolve a category name, based on the storage category and the entity's type */
     private resolveCategory(storageCategory: StorageCategory, type?: EntityType): string {
-        return storageCategory + (storageCategory === StorageCategory.POINTERS && type ? type : "")
+        return storageCategory + (storageCategory === StorageCategory.POINTERS && type ? `-${type}` : "")
     }
 }
 

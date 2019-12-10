@@ -15,8 +15,15 @@ export class Validation {
         // TODO
     }
 
+    // Validate that entity is actually ok
+    static validateEntity(entity: Entity) {
+        // TODO: Validate that there are no repeated pointers
+
+        // TODO: Validate that there are no repeated keys in content
+    }
+
     /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
-    static validateAccess(pointers: Set<Pointer>, ethAddress: EthAddress, entityType: EntityType): void {
+    static validateAccess(pointers: Pointer[], ethAddress: EthAddress, entityType: EntityType): void {
         // TODO
     }
 

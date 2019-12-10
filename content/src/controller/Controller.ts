@@ -58,13 +58,13 @@ export class Controller {
         maskedEntity.type = fullEntity.type
         maskedEntity.timestamp = fullEntity.timestamp
         if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
-            maskedEntity.content = [...fullEntity.content]
+            maskedEntity.content = fullEntity.content
         }
         if (!fields || fields.includes(EntityField.METADATA)) {
             maskedEntity.metadata = fullEntity.metadata
         }
         if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
-            maskedEntity.pointers = [...fullEntity.pointers]
+            maskedEntity.pointers = fullEntity.pointers
         }
         return maskedEntity
     }

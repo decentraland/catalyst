@@ -1,5 +1,6 @@
 import { Service, EthAddress, Signature, Timestamp, File } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
+import { FileHash } from "../../src/service/Hashing"
 
 export class MockedService implements Service {
 
@@ -22,8 +23,8 @@ export class MockedService implements Service {
         console.log(entityId)
         console.log(ethAddress)
         console.log(signature)
-        let contentsMap = new Map<string, string>()
-        files.forEach(f => contentsMap.set(f.name, "lenght: " + f.content.length))
+        let contentsMap: [string, FileHash][] = []
+        files.forEach(f => contentsMap.push([f.name, "lenght: " + f.content.length]))
         this.entities.push(this.scene(
             entityId,
             JSON.stringify({
@@ -50,7 +51,7 @@ export class MockedService implements Service {
         throw new Error("Method not implemented.")
     }
 
-    private scene(id: string, metadata: string, pointers: Set<Pointer>, contents: Map<string,string>): Entity {
+    private scene(id: string, metadata: string, pointers: Pointer[], contents: [string, FileHash][]): Entity {
         return {
             id: id,
             type: EntityType.SCENE,
@@ -61,14 +62,14 @@ export class MockedService implements Service {
         }
     }
     
-    private pointers(...pointers: string[]): Set<string> {
-        return new Set(pointers)
+    private pointers(...pointers: Pointer[]): Pointer[] {
+        return pointers
     }
     
-    private contents(...contents: string[]): Map<string,string> {
-        let contentsMap = new Map<string, string>()
+    private contents(...contents: string[]): [string, FileHash][] {
+        let contentsMap: [string, FileHash][] = []
         for(var i=0; i<contents.length; i+=2) {
-            contentsMap.set(contents[i], contents[i+1])
+            contentsMap.push([contents[i], contents[i+1]])
         }
         return contentsMap
     }
