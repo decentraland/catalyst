@@ -17,6 +17,8 @@ ts_library(
         "@npm//@types/multer",
         "@npm//cids",
         "@npm//multihashing-async",
+        "@npm//node-fetch",
+        "@npm//@types/node-fetch",
     ],
 )
 
@@ -50,6 +52,8 @@ ts_library(
         ":content",
         "@npm//@types/node",
         "@npm//@types/jasmine",
+        "@npm//node-fetch",
+        "@npm//@types/node-fetch",
     ],
 )
 

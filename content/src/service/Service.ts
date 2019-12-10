@@ -53,7 +53,7 @@ export type Timestamp = number
 export type Signature = string
 export type EthAddress = string
 
-export const enum HistoryType {
-    DEPLOYMENT,
-    SNAPSHOT,
+export enum HistoryType {
+    DEPLOYMENT = "deployment",
+    SNAPSHOT   = "snapshot",
 }

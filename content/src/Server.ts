@@ -4,10 +4,12 @@ import morgan from "morgan";
 import multer from "multer";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, SERVER_PORT } from "./Environment";
+import http from "http";
 
 export class Server {
    private port: number;
    private app: express.Express;
+   private httpServer: http.Server;
 
    constructor(env: Environment) {
       this.port = env.getConfig(SERVER_PORT);
@@ -45,8 +47,16 @@ export class Server {
    }
 
    start(): void {
-      this.app.listen(this.port, () => {
+      this.httpServer = this.app.listen(this.port, () => {
          console.info(`==> Content Server listening on port ${this.port}.`);
        });
+   }
+
+   stop(): void {
+      if (this.httpServer) {
+         this.httpServer.close(() => {
+            console.info(`==> Content Server stopped.`);
+         })
+      }
    }
 }
