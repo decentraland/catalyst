@@ -104,11 +104,12 @@ export class Controller {
         // Method: GET
         // Path: /available-content
         // Query String: ?cid={hashId1}&cid={hashId2}
-        const cids = req.query.cid
+        const cids = this.asArray(req.query.cid)
         
-        res.send({
-            cids: cids,
-        })
+        this.service.isContentAvailable(cids)
+        .then(availableContent => res.send({
+            availableContent: [...availableContent],
+        }))
     }
       
     getPointers(req: express.Request, res: express.Response) {
@@ -116,9 +117,11 @@ export class Controller {
         // Path: /pointers/:type
         const type = req.params.type;
         
-        res.send({
-            type: type,
-        })
+        // Validate type is correct
+        let enumType = EntityType[type]
+
+        this.service.getActivePointers(enumType)
+        .then(pointers => res.send(pointers))
     }
     
     getAudit(req: express.Request, res: express.Response) {
@@ -126,11 +129,12 @@ export class Controller {
         // Path: /audit/:type/:entityId
         const type     = req.params.type;
         const entityId = req.params.entityId;
-        
-        res.send({
-            type: type,
-            entityId: entityId,
-        })
+
+        // Validate type is correct
+        let enumType = EntityType[type]
+
+        this.service.getAuditInfo(enumType, entityId)
+        .then(auditInfo => res.send(auditInfo))
     }
       
     getHistory(req: express.Request, res: express.Response) {
@@ -141,11 +145,11 @@ export class Controller {
         const to   = req.query.to
         const type = req.query.type
         
-        res.send({
-            from: from,
-            to: to,
-            type: type,
-        })
+        // Validate type is correct
+        let enumType = EntityType[type]
+
+        this.service.getHistory(from, to, enumType)
+        .then(history => res.send(history))
     }
 
 }
