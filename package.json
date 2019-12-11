@@ -17,6 +17,7 @@
     "@types/react": "^16.9.13",
     "@types/react-dom": "^16.9.4",
     "@types/simple-peer": "^9.6.0",
+    "@types/sinon": "^7.5.1",
     "@types/ws": "^6.0.4",
     "@types/yargs": "^13.0.3",
     "jasmine": "^3.5.0",
@@ -28,6 +29,8 @@
     "karma-sourcemap-loader": "^0.3.7",
     "node": "^13.3.0",
     "requirejs": "^2.3.6",
+    "sinon": "^7.5.0",
+    "ts-mock-imports": "^1.2.6",
     "tslint": "^5.20.1",
     "typescript": "^3.7.2",
     "yargs": "^15.0.2"
