@@ -63,13 +63,13 @@ export class Controller {
         return [elements]
     }
 
-    private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): Entity {
-        let maskedEntity = new Entity()
+    private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): ControllerEntity {
+        let maskedEntity = new ControllerEntity()
         maskedEntity.id = fullEntity.id
         maskedEntity.type = fullEntity.type
         maskedEntity.timestamp = fullEntity.timestamp
         if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
-            maskedEntity.content = fullEntity.content
+            maskedEntity.content = [...fullEntity.content]
         }
         if (!fields || fields.includes(EntityField.METADATA)) {
             maskedEntity.metadata = fullEntity.metadata
@@ -175,6 +175,15 @@ export class Controller {
         return type
     }
 
+}
+
+class ControllerEntity {	
+    id: string
+    type: string
+    pointers: string[]
+    timestamp: number
+    content?: [string, string][]
+    metadata?: any
 }
 
 export enum EntityField {
