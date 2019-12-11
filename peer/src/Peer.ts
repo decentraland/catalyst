@@ -261,7 +261,7 @@ export class Peer implements IPeer {
   private handleSignal(peerId: string, reliable: boolean) {
     const connectionId = connectionIdFor(this.nickname, peerId, reliable);
     return (data: SignalData) => {
-      console.log("Signal from peer " + peerId, data);
+      console.log(`Signal in peer connection ${this.nickname}:${peerId}`, data);
       if (data.type === PeerSignals.offer) {
         this.peerJsConnection.sendOffer(peerId, data, connectionId);
       } else if (data.type === PeerSignals.answer) {
