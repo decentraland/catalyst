@@ -22,7 +22,11 @@ http_archive(
 
 # The yarn_install rule runs yarn anytime the package.json or yarn.lock file changes.
 # It also extracts and installs any Bazel rules distributed in an npm package.
-load("@build_bazel_rules_nodejs//:index.bzl", "yarn_install")
+load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "yarn_install")
+
+node_repositories(
+    node_version = "10.16.0",
+)
 
 yarn_install(
     # Name this npm so that Bazel Label references look like @npm//package
