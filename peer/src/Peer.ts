@@ -16,6 +16,17 @@ export interface IPeer {
   sendMessage(room: string, payload: any, reliable?: boolean): Promise<void>;
 }
 
+interface PacketData {
+  hi: { room: { id: string; users: PeerConnectionData[] } };
+  message: { room: string; src: string; dst: string; payload: any };
+}
+
+type PacketType = keyof PacketData;
+type Packet<T extends PacketType> = {
+  type: T;
+  data: PacketData[T];
+};
+
 type PeerData = {
   id: string;
   reliableConnection: SimplePeer.Instance;
@@ -82,7 +93,7 @@ export class Peer implements IPeer {
   }
 
   async joinRoom(roomId: string): Promise<void> {
-    const room: PeerConnectionData[] = await fetch(
+    const roomUsers: PeerConnectionData[] = await fetch(
       `${this.lighthouseUrl}/rooms/${roomId}`,
       {
         method: "PUT",
@@ -93,17 +104,26 @@ export class Peer implements IPeer {
       }
     ).then(res => res.json());
 
-    this.currentRooms.push({
+    const room = {
       id: roomId,
-      users: new Map(room.map(data => [this.key(data), data]))
-    });
+      users: new Map(roomUsers.map(data => [this.key(data), data]))
+    };
+    this.currentRooms.push(room);
 
-    room
-      .filter(
-        user =>
-          user.userId !== this.nickname && !this.hasConnectionsFor(user.peerId)
-      )
-      .forEach(user => this.getOrCreatePeer(user.peerId, true));
+    roomUsers
+      .filter(user => user.userId !== this.nickname)
+      .forEach(user => {
+        if (
+          !this.hasConnectionsFor(user.peerId) &&
+          user.peerId !== this.nickname
+        ) {
+          this.getOrCreatePeer(user.peerId, true);
+        }
+        this.sendPacket(user, {
+          type: "hi",
+          data: { room: { id: room.id, users: [...room.users.values()] } }
+        });
+      });
   }
 
   private key(data: PeerConnectionData) {
@@ -140,21 +160,46 @@ export class Peer implements IPeer {
     });
 
     connection.on("data", data => {
-      // if (data instanceof Uint8Array)
-      //   data = new TextDecoder("utf-8").decode(data);
       const parsed = JSON.parse(data);
-      if (parsed.dst !== this.nickname && this.config.relay === RelayMode.All) {
-        console.log(`relaying message to ${parsed.dst}`);
-        this.sendMessageTo(
-          { userId: parsed.dst, peerId: parsed.dst },
-          parsed.room,
-          parsed.payload,
-          parsed.src,
-          true // TODO - for the time being
-        );
-      } else {
-        // assume it's for me
-        this.callback(parsed.src, parsed.room, parsed.payload);
+      switch (parsed.type as PacketType) {
+        case "hi": {
+          const data = parsed.data as PacketData["hi"];
+          const room = this.currentRooms.find($ => $.id === data.room.id);
+          if (this.config.relay === RelayMode.All) {
+            room?.users.forEach((user, userId) => {
+              if (user.userId !== peerId && user.userId !== this.nickname) {
+                this.sendPacket(user, parsed);
+              }
+            });
+          } else {
+            if (room) {
+              data.room.users.forEach(user => {
+                room.users.set(this.key(user), user);
+              });
+            }
+          }
+          break;
+        }
+        case "message": {
+          const data = parsed.data as PacketData["message"];
+          if (
+            data.dst !== this.nickname &&
+            this.config.relay === RelayMode.All
+          ) {
+            console.log(`relaying message to ${parsed.dst}`);
+            this.sendMessageTo(
+              { userId: data.dst, peerId: data.dst },
+              data.room,
+              data.payload,
+              data.src,
+              true // TODO - for the time being
+            );
+          } else {
+            // assume it's for me
+            this.callback(data.src, data.room, data.payload);
+          }
+          break;
+        }
       }
     });
   }
@@ -183,23 +228,32 @@ export class Peer implements IPeer {
     src: string = this.nickname,
     reliable: boolean = true
   ) {
+    const data = {
+      room: roomId,
+      src,
+      dst: user.userId,
+      payload
+    };
+    const packet: Packet<"message"> = {
+      type: "message",
+      data
+    };
+    this.sendPacket(user, packet);
+  }
+
+  private sendPacket<T extends PacketType>(
+    user: PeerConnectionData,
+    packet: Packet<T>
+  ) {
     const peer = this.peers[user.peerId];
     if (peer) {
       // const connection = reliable
       //   ? "reliableConnection"
       //   : "unreliableConnection";
-      console.log(`sending message`);
       const connection = "reliableConnection";
       const conn = peer[connection];
       if (conn.writable) {
-        conn?.write(
-          JSON.stringify({
-            room: roomId,
-            src,
-            dst: user.userId,
-            payload
-          })
-        );
+        conn.write(JSON.stringify(packet));
       }
     }
   }
