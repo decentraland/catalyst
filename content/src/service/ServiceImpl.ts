@@ -147,6 +147,11 @@ export class ServiceImpl implements Service {
         return filesWithName[0];
     }
 
+    getContent(fileHash: FileHash): Promise<Buffer> {
+        // TODO: Catch potential exception if content doesn't exist, and return better error message
+        return this.storage.getContent(this.resolveCategory(StorageCategory.CONTENTS), fileHash);
+    }
+
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
         return Promise.resolve({
             deployedTimestamp: 1,
