@@ -1,16 +1,17 @@
 import { Peer, PeerConnectionData } from "../src/Peer";
 import * as PeerConnectionModule from "../src/peerjs-server-connector/peerjsserverconnection";
 import { MockManager, ImportMock } from "ts-mock-imports";
-import fetchMock from "fetch-mock";
 import { ServerMessageType } from "../src/peerjs-server-connector/enums";
+
+const oldFetch = fetch;
 
 describe("Peer Integration Test", function() {
   let connectionMock: MockManager<PeerConnectionModule.PeerJSServerConnection>;
-
   const peerIds: PeerConnectionData[] = [];
 
   beforeEach(() => {
-    fetchMock.put("path:/rooms/room", peerIds);
+    
+    window.fetch = (input, init) => Promise.resolve(new Response(JSON.stringify(peerIds)));
 
     connectionMock = ImportMock.mockClass(
       PeerConnectionModule,
@@ -22,7 +23,7 @@ describe("Peer Integration Test", function() {
 
   afterEach(() => {
     connectionMock.restore();
-    fetchMock.restore();
+    window.fetch = oldFetch
   });
 
   it(`Performs handshake as expected`, () => {
