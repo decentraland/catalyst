@@ -30,7 +30,6 @@
     "node": "^13.3.0",
     "requirejs": "^2.3.6",
     "sinon": "^7.5.0",
-    "ts-mock-imports": "^1.2.6",
     "tslint": "^5.20.1",
     "typescript": "^3.7.2",
     "yargs": "^15.0.2"

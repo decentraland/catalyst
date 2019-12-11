@@ -37,7 +37,6 @@ ts_library(
         "@npm//@types/sinon",
         "@npm//jasmine",
         "@npm//sinon",
-        "@npm//ts-mock-imports",
     ],
 )
 
@@ -57,6 +56,5 @@ karma_web_test_suite(
         "test/config.js",
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
-        "@npm//ts-mock-imports:ts-mock-imports__umd",
     ],
 )
