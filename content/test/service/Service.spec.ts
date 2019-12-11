@@ -1,29 +1,19 @@
-import { ContentStorage } from "../../src/storage/ContentStorage";
 import { Service, ENTITY_FILE_NAME, Timestamp } from "../../src/service/Service";
 import { Hashing } from '../../src/service/Hashing';
-import { assertPromiseRejectionIs, assertPromiseRejectionContains } from "../PromiseAssertions";
-import { EntityType, Entity } from "../../src/service/Entity";
+import { assertPromiseRejectionIs } from "../PromiseAssertions";
+import { EntityType } from "../../src/service/Entity";
 import { ServiceImpl } from "../../src/service/ServiceImpl";
+import { buildEntityAndFile } from "./EntityTestFactory";
+import { ContentStorage } from "../../src/storage/ContentStorage";
+import { MockedStorage } from "../storage/MockedStorage";
+
 
 describe("Service", function() {
-  
-  // TODO: Move to a resources file or similar
-  const entityFileContent: string = `{ 
-    "type": "scene", 
-    "pointers": ["X1,Y1", "X2,Y2"], 
-    "timestamp": 123456, 
-    "metadata": "metadata",
-    "content": [
-        {
-            "file": "1234",
-            "hash": "QmNazQZW3L5n8esjuAXHpY4srPVWbuQtw93FDjLSGgsCqh"
-        }
-    ]
-  }`
 
   beforeAll(async () => {
-    this.entityFile = { name: ENTITY_FILE_NAME, content: Buffer.from(entityFileContent)}  
-    this.entityId = await Hashing.calculateHash(this.entityFile)
+    const [entity, entityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X1,Y1", "X2,Y2"], 123456, new Map([["1234", "QmNazQZW3L5n8esjuAXHpY4srPVWbuQtw93FDjLSGgsCqh"]]), "metadata")
+    this.entityFile = entityFile
+    this.entity = entity
     this.invalidEntityFile = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
     this.invalidEntityFileHash = await Hashing.calculateHash(this.invalidEntityFile)
     this.randomFile = { name: "file", content: Buffer.from("1234") }
@@ -51,58 +41,42 @@ describe("Service", function() {
       `Entity file's hash didn't match the signed entity id.`)
   });
 
-  it(`When the entity file can't be parsed into an entity, then an exception is thrown`, async () => {
-    let service: Service = getServiceWithMockStorage()
-    
-    assertPromiseRejectionContains(async () => await service.deployEntity(new Set([this.invalidEntityFile]), this.invalidEntityFileHash, "ethAddress", "signature"),
-      `Failed to parse the entity file. Please make sure thay it is a valid json.`)
-  });
-
-  it(`When an entity is successfully deployed, then the files and pointers are stored correctly`, async () => {    
-    const storage: ContentStorage = new MockStorage()
+  it(`When an entity is successfully deployed, then the content and pointers are stored correctly`, async () => {    
+    const storage: ContentStorage = new MockedStorage()
     const storageSpy = spyOn(storage, "store")
     let service: Service = new ServiceImpl(storage) 
     
-    const timestamp: Timestamp = await service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entityId, "ethAddress", "signature")
+    const timestamp: Timestamp = await service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
     expect(timestamp).toBeCloseTo(Date.now())
-    expect(storageSpy).toHaveBeenCalledWith("contents", this.entityId, this.entityFile.content)
+    expect(storageSpy).toHaveBeenCalledWith("contents", this.entity.id, this.entityFile.content)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.randomFileHash, this.randomFile.content)
-    expect(storageSpy).toHaveBeenCalledWith("pointers-scene", "X1,Y1", Buffer.from(this.entityId))
-    expect(storageSpy).toHaveBeenCalledWith("pointers-scene", "X2,Y2", Buffer.from(this.entityId))
-
-    const entity: Entity = Entity.fromFile(this.entityFile, this.entityId);
-
-    expect(await service.getEntitiesByIds(EntityType.SCENE, [this.entityId])).toEqual([entity])
-    expect(await service.getEntitiesByPointers(EntityType.SCENE, ["X1,Y1", "X2,Y2"])).toEqual([entity])
-    expect(await service.getActivePointers(EntityType.SCENE)).toEqual(["X1,Y1", "X2,Y2"])
+    this.entity.pointers.forEach(pointer => 
+        expect(storageSpy).toHaveBeenCalledWith("pointers-scene", pointer, Buffer.from(this.entity.id)));
+    expect(await service.getEntitiesByIds(EntityType.SCENE, [this.entity.id])).toEqual([this.entity])
+    expect(await service.getEntitiesByPointers(EntityType.SCENE, this.entity.pointers)).toEqual([this.entity])
+    expect(await service.getActivePointers(EntityType.SCENE)).toEqual(this.entity.pointers)
   });
 
+  it(`When an entity is successfully deployed, then previous entities are deleted`, async () => {    
+    const storage: ContentStorage = new MockedStorage()
+    const storageSpy = spyOn(storage, "delete")
+    let service: Service = new ServiceImpl(storage) 
+    
+    await service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
+
+    const [newEntity, newEntityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X2,Y2", "X3,Y3"], 123457)
+    
+    await service.deployEntity(new Set([newEntityFile]), newEntity.id, "ethAddress", "signature")
+    
+    expect(storageSpy).toHaveBeenCalledWith("pointers-scene", "X1,Y1")
+    expect(await service.getEntitiesByIds(EntityType.SCENE, [this.entityId])).toEqual([])
+    expect(await service.getEntitiesByPointers(EntityType.SCENE, ["X1,Y1", "X2,Y2"])).toEqual([newEntity])
+    expect(await service.getActivePointers(EntityType.SCENE)).toEqual(newEntity.pointers)
+  });
+  
   function getServiceWithMockStorage(): Service {
-    const storage: ContentStorage = new MockStorage()
+    const storage: ContentStorage = new MockedStorage()
     return new ServiceImpl(storage)
   }
 
 })
-
-  /**      
-   * 5. Verificar que se llamó al storage y que los gets funcionan
-   * 6. Verificar que se pisa una entity 
-   */
-
-class MockStorage implements ContentStorage {
-  store(category: string, id: string, content: Buffer, append?: boolean | undefined): Promise<void> {
-    return Promise.resolve()
-  }  
-  delete(category: string, id: string): Promise<void> {
-    return Promise.resolve()
-  }
-  getContent(category: string, id: string): Promise<Buffer> {
-    throw new Error("Method not implemented.");
-  }
-  listIds(category: string): Promise<string[]> {
-    throw new Error("Method not implemented.");
-  }
-  exists(category: string, id: string): Promise<boolean> {
-    throw new Error("Method not implemented.");
-  }
-}

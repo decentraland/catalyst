@@ -23,8 +23,8 @@ export class MockedService implements Service {
         console.log(entityId)
         console.log(ethAddress)
         console.log(signature)
-        let contentsMap: [string, FileHash][] = []
-        files.forEach(f => contentsMap.push([f.name, "lenght: " + f.content.length]))
+        let contentsMap = new Map<string, string>()
+        files.forEach(f => contentsMap.set(f.name, "lenght: " + f.content.length))
         this.entities.push(this.scene(
             entityId,
             JSON.stringify({
@@ -51,7 +51,7 @@ export class MockedService implements Service {
         throw new Error("Method not implemented.")
     }
 
-    private scene(id: string, metadata: string, pointers: Pointer[], contents: [string, FileHash][]): Entity {
+    private scene(id: string, metadata: string, pointers: Pointer[], contents: Map<string, FileHash>): Entity {
         return {
             id: id,
             type: EntityType.SCENE,
@@ -66,10 +66,10 @@ export class MockedService implements Service {
         return pointers
     }
     
-    private contents(...contents: string[]): [string, FileHash][] {
-        let contentsMap: [string, FileHash][] = []
+    private contents(...contents: string[]): Map<string,string> {
+        let contentsMap = new Map<string, string>()
         for(var i=0; i<contents.length; i+=2) {
-            contentsMap.push([contents[i], contents[i+1]])
+            contentsMap.set(contents[i], contents[i+1])
         }
         return contentsMap
     }

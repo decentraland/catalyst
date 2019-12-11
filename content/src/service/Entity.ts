@@ -1,24 +1,22 @@
 import { FileHash } from "./Hashing"
-import { Timestamp, File } from "./Service"
+import { Timestamp } from "./Service"
 
 export class Entity {
     id: EntityId
     type: EntityType
     pointers: Pointer[]
     timestamp: Timestamp
-    content?: [string, FileHash][]
-    metadata?: string
+    content?: Map<string, FileHash>
+    metadata?: any
 
-    static fromFile(file: File, entityId: EntityId): Entity {
-        let entity: Entity;
-        try {
-            const parsedObject = JSON.parse(file.content.toString());
-            parsedObject.id = entityId
-            entity = parsedObject
-        } catch (ex) {
-            throw new Error("Failed to parse the entity file. Please make sure thay it is a valid json.\n" + ex)
-        }
-        return entity
+    constructor(id: EntityId, type: EntityType, pointers: Pointer[], timestamp: Timestamp, 
+        content?: Map<string, FileHash>, metadata?: any) {
+        this.id = id
+        this.type = type
+        this.pointers = pointers
+        this.timestamp = timestamp
+        this.content = content
+        this.metadata = metadata
     }
 }
 

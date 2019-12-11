@@ -3,6 +3,7 @@ import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
 import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, HistoryType, HistoryEvent, File } from "./Service";
+import { EntityFactory } from "./EntityFactory";
 
 export class ServiceImpl implements Service {
     
@@ -12,12 +13,15 @@ export class ServiceImpl implements Service {
 
     constructor(storage: ContentStorage) {
         this.storage = storage
+
+        // Register type on global map. This way, we don't have to check on each deployment
+        Object.values(EntityType)
+            .forEach((entityType: EntityType) => this.referencedEntities.set(entityType, new Map()))
     }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
         const entityIdsWithDuplicates: EntityId[] = pointers.map((pointer: Pointer) => this.referencedEntities.get(type)?.get(pointer))
-            .filter((entityId: EntityId | undefined) => !!entityId)
-            .map((entityId: EntityId) => entityId)
+            .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
 
         return this.getEntitiesByIds(type, entityIdsWithDuplicates)
     }
@@ -26,8 +30,7 @@ export class ServiceImpl implements Service {
         const entities: Entity[] = ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
             .map((entityId: EntityId) => this.entities.get(entityId))
-            .filter((entity: Entity | undefined) => !!entity)
-            .map((entity: Entity) => entity)
+            .filter((entity: Entity | undefined): entity is Entity => !!entity)            
 
         return Promise.resolve(entities)
     }
@@ -50,7 +53,7 @@ export class ServiceImpl implements Service {
         }
 
         // Parse entity file into an Entity        
-        const entity: Entity = Entity.fromFile(entityFile, entityId)
+        const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
 
         // Validate entity
         Validation.validateEntity(entity)
@@ -70,11 +73,6 @@ export class ServiceImpl implements Service {
         Validation.validateHashes(entity, hashes, alreadyStoredHashes)
 
         // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITED
-
-        // Make sure thay type is registered. If not, register it
-        if (!this.referencedEntities.has(entity.type)) {
-            this.referencedEntities.set(entity.type, new Map())
-        }
 
         // Delete entities and pointers that the new deployment would overwrite
         await this.deleteOverwrittenEntities(entity)
@@ -111,24 +109,20 @@ export class ServiceImpl implements Service {
     }
 
     private async deleteOverwrittenEntities(entity: Entity): Promise<void> {
-        let orphanPointers: Set<Pointer> = new Set()
-        let allEntities: Set<EntityId> = new Set()
-
-        // Calculate the entities and pointers that the new deployment would overwrite 
-        entity.pointers
+        // Calculate the entities that the new deployment would overwrite 
+        const overwrittenEntities: EntityId[] = entity.pointers
             .map((pointer: Pointer) => this.referencedEntities.get(entity.type)?.get(pointer))
-            .filter((entityId: EntityId | undefined) => !!entityId)
-            .forEach((entityId: EntityId) => {
-                allEntities.add(entityId)
-
-                const entitysPointers: Pointer[] = this.entities.get(entityId)?.pointers || []
-                entitysPointers
-                    .filter((pointer: Pointer) => !entity.pointers.includes(pointer))        
-                    .forEach((pointer: Pointer) => orphanPointers.add(pointer))
-            })
+            .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
+            .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
+        
+        // Calculate the pointers that would result orphan
+        const orphanPointers: Pointer[] = overwrittenEntities
+            .map((entityId: EntityId) => this.entities.get(entityId)?.pointers || [])
+            .reduce((accum, pointers) => accum.concat(pointers), [])
+            .filter((pointer: Pointer) => !entity.pointers.includes(pointer))
 
         // Delete orphan pointers
-        const pointerDeletionActions: Promise<void>[] = Array.from(orphanPointers)
+        const pointerDeletionActions: Promise<void>[] = orphanPointers
             .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entity.type), orphanPointer))
         
         for (const orphanPointer of orphanPointers) {
@@ -137,10 +131,8 @@ export class ServiceImpl implements Service {
 
         await Promise.all(pointerDeletionActions)
            
-        // Delete the entities that will be overwriten from the global map
-        for (const entityId of allEntities) {
-            this.entities.delete(entityId)            
-        }
+        // Delete the entities from the global map
+        overwrittenEntities.forEach((entityId: EntityId) => this.entities.delete(entityId))
     }
 
     private findEntityFile(files: Set<File>): File {
