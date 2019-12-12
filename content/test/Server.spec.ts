@@ -61,4 +61,11 @@ describe("unit tests in jasmine", function() {
         expect(response.status).toBe(400)
     });
 
+    it(`Download Content`, async () => {
+        const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/contents/some-file-hash`)
+        expect(response.ok).toBe(true)
+        const buffer = await response.buffer()
+        expect(buffer).toEqual(Buffer.from([1,2,3]))
+    });
+
 })

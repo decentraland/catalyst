@@ -69,5 +69,16 @@ describe("Service", function() {
     expect(await this.service.getEntitiesByPointers(EntityType.SCENE, ["X1,Y1", "X2,Y2"])).toEqual([newEntity])
     expect(await this.service.getActivePointers(EntityType.SCENE)).toEqual(newEntity.pointers)
   });
+
+  it(`When a file is already uploaded, then don't try to upload it again`, async () => {
+    // Consider the random file as already uploaded, but not the entity file
+    spyOn(this.storage, "exists").and.callFake((_: string, id: string) => Promise.resolve(id === this.randomFileHash))
+    const storeSpy = spyOn(this.storage, "store")
+
+    await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
+
+    expect(storeSpy).toHaveBeenCalledWith("contents", this.entity.id, this.entityFile.content)
+    expect(storeSpy).not.toHaveBeenCalledWith("contents", this.randomFileHash, this.randomFile.content)
+  });
   
 })

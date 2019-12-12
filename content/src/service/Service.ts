@@ -19,7 +19,8 @@ export interface Service {
 
     isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
 
-    // getContent() // TODO
+    getContent(fileHash: FileHash): Promise<Buffer>;
+
     // getContenetURL() //ToAvoid
 }
 

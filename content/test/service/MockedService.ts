@@ -51,6 +51,11 @@ export class MockedService implements Service {
         throw new Error("Method not implemented.")
     }
 
+    getContent(fileHash: FileHash): Promise<Buffer> {
+        const someContent: Buffer = Buffer.from([1,2,3])
+        return Promise.resolve(someContent)
+    }
+
     private scene(id: string, metadata: string, pointers: Pointer[], contents: Map<string, FileHash>): Entity {
         return {
             id: id,

@@ -105,9 +105,11 @@ export class Controller {
         // Method: GET
         // Path: /contents/:hashId
         const hashId = req.params.hashId;
-      
-        res.send({
-            hashId: hashId,
+
+        this.service.getContent(hashId)
+        .then((data:Buffer) => {
+            res.contentType('application/octet-stream')
+            res.end(data, 'binary')            
         })
     }
     

@@ -147,6 +147,11 @@ export class ServiceImpl implements Service {
         return filesWithName[0];
     }
 
+    getContent(fileHash: FileHash): Promise<Buffer> {
+        // TODO: Catch potential exception if content doesn't exist, and return better error message
+        return this.storage.getContent(this.resolveCategory(StorageCategory.CONTENTS), fileHash);
+    }
+
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
         return Promise.resolve({
             deployedTimestamp: 1,
@@ -159,9 +164,12 @@ export class ServiceImpl implements Service {
         return Promise.resolve([])
     }
 
-    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
-        // TODO. This is always returning false, we have to make it work...
-        return Promise.resolve(new Map(fileHashes.map(hash => [hash, false])))
+    async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
+        const contentsAvailableActions: Promise<[FileHash, Boolean]>[] = fileHashes.map((fileHash: FileHash) =>
+            this.storage.exists(this.resolveCategory(StorageCategory.CONTENTS), fileHash)
+                .then(exists => [fileHash, exists]))
+
+        return new Map(await Promise.all(contentsAvailableActions));
     }
 
     /** Resolve a category name, based on the storage category and the entity's type */
