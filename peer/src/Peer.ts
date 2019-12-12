@@ -117,22 +117,24 @@ export class Peer implements IPeer {
     };
     this.currentRooms.push(room);
 
-    return Promise.all(roomUsers
-      .filter(user => user.userId !== this.nickname)
-      .map(user => {
-        if (
-          !this.hasConnectionsFor(user.peerId) &&
-          user.peerId !== this.nickname
-        ) {
-          this.getOrCreatePeer(user.peerId, true);
-        }
-        this.sendPacket(user, {
-          type: "hi",
-          data: { room: { id: room.id, users: [...room.users.values()] } }
-        });
+    return Promise.all(
+      roomUsers
+        .filter(user => user.userId !== this.nickname)
+        .map(user => {
+          if (
+            !this.hasConnectionsFor(user.peerId) &&
+            user.peerId !== this.nickname
+          ) {
+            this.getOrCreatePeer(user.peerId, true);
+          }
+          this.sendPacket(user, {
+            type: "hi",
+            data: { room: { id: room.id, users: [...room.users.values()] } }
+          });
 
-        return this.beConnectedTo(user.peerId);
-      }));
+          return this.beConnectedTo(user.peerId);
+        })
+    );
   }
 
   public beConnectedTo(peerId: string, timeout: number = 5000): Promise<void> {
@@ -149,7 +151,9 @@ export class Peer implements IPeer {
 
       setTimeout(() => {
         if (!this.isConnectedTo(peerId)) {
-          reject(`Awaiting connection to peer ${peerId} timed out after ${timeout}ms`);
+          reject(
+            `Awaiting connection to peer ${peerId} timed out after ${timeout}ms`
+          );
           this.peerConnectionPromises[peerId] = this.peerConnectionPromises[
             peerId
           ].splice(this.peerConnectionPromises[peerId].indexOf(promisePair), 1);
@@ -199,6 +203,23 @@ export class Peer implements IPeer {
        */
       const data = { userId: peerId, peerId };
       this.currentRooms.forEach(it => it.users.set(this.key(data), data));
+    });
+
+    connection.on("close", () => {
+      console.log(
+        "DISCONNECTED from " +
+          peerId +
+          " through " +
+          connectionIdFor(this.nickname, peerId, reliable)
+      );
+    });
+
+    connection.on("error", err => {
+      console.log(
+        "error in peer connection" +
+          connectionIdFor(this.nickname, peerId, reliable),
+        err
+      );
     });
 
     connection.on("data", data => {
@@ -298,6 +319,7 @@ export class Peer implements IPeer {
         conn.write(JSON.stringify(packet));
       }
     }
+    //TODO: Fail on error? Promise rejection?
   }
 
   private handleSignal(peerId: string, reliable: boolean) {
