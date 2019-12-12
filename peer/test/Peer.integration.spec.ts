@@ -1,5 +1,4 @@
-import { Peer, PeerConnectionData } from "../src/Peer";
-import { delay } from "../src/peerjs-server-connector/util";
+import { Peer, PeerConnectionData, PacketCallback } from "../src/Peer";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 
 const oldFetch = fetch;
@@ -30,11 +29,7 @@ class SocketMock implements SocketType {
   }
 }
 
-const messageHandler: (sender: string, room: string, payload: any) => void = (
-  sender,
-  room,
-  payload
-) => {
+const messageHandler: PacketCallback = (sender, room, payload) => {
   console.log(`Received message from ${sender} in ${room}`, payload);
 };
 
@@ -50,36 +45,41 @@ describe("Peer Integration Test", function() {
     globalScope.fetch = oldFetch;
   });
 
-  it(`Performs handshake as expected`, async () => {
-    const peer1Socket = new SocketMock();
-    const peer2Socket = new SocketMock(peer1Socket);
+  function createPeer(
+    peerId: string,
+    socketDestination?: SocketMock,
+    callback: PacketCallback = messageHandler
+  ) {
+    const socket = new SocketMock(socketDestination);
+    return [
+      socket,
+      new Peer("http://notimportant:8888/", peerId, callback, {
+        socketBuilder: url => socket
+      })
+    ] as [SocketMock, Peer];
+  }
 
-    const peer1 = new Peer(
-      "http://notimportant:8888/",
-      "peer1",
-      messageHandler,
-      {
-        socketBuilder: url => peer1Socket
-      }
-    );
+  it("Timeouts awaiting a non-existing connection", async () => {
+    const [, peer1] = createPeer("peer1");
+    try {
+      await peer1.beConnectedTo("notAPeer", 200);
+      fail("Should timeout")
+    } catch (e) {
+      expect(e).toBe("Awaiting connection to peer notAPeer timed out after 200ms")
+    }
+  });
+
+  it("Performs handshake as expected", async () => {
+    const [peer1Socket, peer1] = createPeer("peer1");
 
     await peer1.joinRoom("room");
 
     peerIds.push({ userId: "peer1", peerId: "peer1" });
 
-    const peer2 = new Peer(
-      "http://notimportant:8888/",
-      "peer2",
-      messageHandler,
-      {
-        socketBuilder: url => peer2Socket
-      }
-    );
+    const [, peer2] = createPeer("peer2", peer1Socket);
 
     await peer2.joinRoom("room");
-
-    //TODO: This delay should be replaced with a kind of promise eventually
-    await delay(600);
+    await peer1.beConnectedTo("peer2");
 
     const peer1Room = peer1.currentRooms[0];
     expect(peer1Room.id).toBe("room");
