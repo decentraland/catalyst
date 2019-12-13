@@ -51,6 +51,9 @@ function createPeer(
 describe("Peer Integration Test", function() {
   let peerIds: Record<string, PeerConnectionData[]>;
 
+  const expectSinglePeerInRoom = (peer: Peer, roomId: string) =>
+    _expectSinglePeerInRoom(peerIds, peer, roomId);
+
   beforeEach(() => {
     peerIds = {};
     globalScope.fetch = (input, init) => {
@@ -119,7 +122,7 @@ describe("Peer Integration Test", function() {
 
     await doJoinRoom(peer, "room");
 
-    expectNoPeerInRoom(peer, "room");
+    expectSinglePeerInRoom(peer, "room");
   });
 
   it("Does not see peers in other rooms", async () => {
@@ -131,8 +134,8 @@ describe("Peer Integration Test", function() {
 
     await doJoinRoom(peer2, "room2");
 
-    expectNoPeerInRoom(peer1, "room1");
-    expectNoPeerInRoom(peer2, "room2");
+    expectSinglePeerInRoom(peer1, "room1");
+    expectSinglePeerInRoom(peer2, "room2");
   });
 });
 
@@ -171,7 +174,13 @@ function assertConnectedTo(peer: Peer, otherPeer: Peer) {
   expect(peerToPeer.reliableConnection.writable).toBeTrue();
 }
 
-function expectNoPeerInRoom(peer: Peer, roomId: string) {
+function _expectSinglePeerInRoom(
+  peerIds: Record<string, PeerConnectionData[]>,
+  peer: Peer,
+  roomId: string
+) {
+  expect(peerIds[roomId]).toBeDefined();
+  expect(peerIds[roomId].length).toBe(1);
   expect(peer.currentRooms.length).toBe(1);
   const peerRoom = peer.currentRooms[0];
   expect(peerRoom.id).toBe(roomId);
