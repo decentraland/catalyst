@@ -1,6 +1,7 @@
 import { Peer, PacketCallback } from "../src/Peer";
 import { PeerConnectionData } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
+import { future } from "fp-future";
 
 const oldFetch = fetch;
 const globalScope: any = typeof window === "undefined" ? global : window;
@@ -137,6 +138,38 @@ describe("Peer Integration Test", function() {
     expectSinglePeerInRoom(peer1, "room1");
     expectSinglePeerInRoom(peer2, "room2");
   });
+
+  it("does not receive message in other room", async () => {
+    const [, peer3] = createPeer("peer3");
+
+    await doJoinRoom(peer3, "room3");
+
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    const message1 = future();
+    peer1.callback = (sender, room, payload) => {
+      message1.resolve({ sender, room, payload });
+    };
+
+    const message3 = future();
+    peer3.callback = (sender, room, payload) => {
+      message3.reject(new Error("peer3 should not receive messages"));
+    };
+    setTimeout(() => message3.resolve(undefined), 200);
+
+    await peer2.sendMessage("room", { hello: "world" });
+
+    const received = await message1;
+
+    expect(received).toEqual({
+      sender: "peer2",
+      room: "room",
+      payload: { hello: "world" }
+    });
+    expectSinglePeerInRoom(peer3, "room3");
+
+    await message3;
+  });
 });
 
 async function doJoinRoom(peer: Peer, room: string) {
@@ -182,10 +215,12 @@ function _expectSinglePeerInRoom(
   expect(peerIds[roomId]).toBeDefined();
   expect(peerIds[roomId].length).toBe(1);
   expect(peer.currentRooms.length).toBe(1);
+
   const peerRoom = peer.currentRooms[0];
   expect(peerRoom.id).toBe(roomId);
   expect(peerRoom.users.size).toBe(1);
   expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
+
   //@ts-ignore
   expect(Object.entries(peer.peers).length).toBe(0);
 }
