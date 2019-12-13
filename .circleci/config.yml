@@ -48,12 +48,12 @@ jobs:
 
       # persist to workspace to use in downstream jobs
       - persist_to_workspace:
-        root: *workspace_root
-        paths:
-          - .git
-          - .circleci
-          - kernel
-          - unity-client
+          root: *workspace_root
+          paths:
+            - .git
+            - .circleci
+            - kernel
+            - unity-client
 
   build-lighthouse:
     <<: *base_env
