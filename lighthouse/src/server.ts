@@ -13,6 +13,10 @@ const rooms: Record<string, PeerConnectionData[]> = {};
 
 let peer: Peer;
 
+// process.on("unhandledRejection", error => {
+//   console.log("unhandledRejection", error);
+// });
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -93,7 +97,8 @@ const server = app.listen(port, () => {
 });
 
 const options = {
-  debug: false
+  debug: true,
+  path: "/"
 };
 
-app.use("/", ExpressPeerServer(server, options));
+app.use("/peerjs", ExpressPeerServer(server, options));
