@@ -50,10 +50,7 @@ jobs:
       - persist_to_workspace:
           root: *workspace_root
           paths:
-            - .git
-            - .circleci
-            - kernel
-            - unity-client
+            - .
 
   build-lighthouse:
     <<: *base_env
@@ -61,7 +58,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test //lighthouse:unit_test
+          command: npx bazel test //lighthouse:unit_test --test_output=all
 
   build-peer:
     <<: *base_env
@@ -69,7 +66,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test //peer:config_test
+          command: npx bazel test //peer:config_test --test_output=all
 
   build-content:
     <<: *base_env
@@ -77,7 +74,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test //content:unit_test
+          command: npx bazel test //content:unit_test --test_output=all
 
 workflows:
   version: 2
