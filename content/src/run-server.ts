@@ -29,12 +29,12 @@ curl http://localhost:6969/entities/scenes?pointer=hola&pointer=chau&id=1&id=2&i
 
 
 curl -F 'entityId=some-entity-id'  -F 'ethAddress=some-eth-address' -F 'signature=the-message-sginature' -F 'file1=@./package.json' -F 'file2=@./tsconfig.json' http://localhost:6969/entities
-{ 
+{
    "entityId":"some-entity-id",
    "ethAddress":"some-eth-address",
    "signature":"the-message-sginature",
-   "files":[ 
-      { 
+   "files":[
+      {
          "fieldname":"file1",
          "originalname":"package.json",
          "encoding":"7bit",
@@ -44,7 +44,7 @@ curl -F 'entityId=some-entity-id'  -F 'ethAddress=some-eth-address' -F 'signatur
          "path":"uploads/fe06c2504631768b8150ac088c0675e8",
          "size":1691
       },
-      { 
+      {
          "fieldname":"file2",
          "originalname":"tsconfig.json",
          "encoding":"7bit",

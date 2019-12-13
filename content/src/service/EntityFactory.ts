@@ -4,9 +4,12 @@ import { FileHash } from "./Hashing";
 
 export class EntityFactory {
     static fromFile(file: File, id: EntityId): Entity {
+        return this.fromBuffer(file.content, id)
+    }
+    static fromBuffer(buffer: Buffer, id: EntityId): Entity {
         let object
         try {
-            object = JSON.parse(file.content.toString())
+            object = JSON.parse(buffer.toString())
         } catch (e) {
             throw new Error(`Failed to parse the entity file. Please make sure thay it is a valid json.`)
         }

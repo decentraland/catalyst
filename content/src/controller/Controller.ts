@@ -1,9 +1,12 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
-import { Service, File, Signature, EthAddress, HistoryType } from "../service/Service";
+import fs from "fs"
+import { Service, File, Signature, EthAddress } from "../service/Service";
+import { HistoryType, HistoryManager } from "../service/history/HistoryManager";
+import { ControllerEntityFactory } from "./ControllerEntityFactory";
 
 export class Controller {
-    constructor(private service: Service) { } 
+    constructor(private service: Service, private historyManager: HistoryManager) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -34,13 +37,13 @@ export class Controller {
 
         // Calculate and maks entities
         let entities: Promise<Entity[]>
-        if (ids) {
+        if (ids.length > 0) {
             entities = this.service.getEntitiesByIds(type, ids)
         } else {
             entities = this.service.getEntitiesByPointers(type, pointers)
         }
         entities
-        .then(fullEntities => fullEntities.map(fullEntity => this.maskEntity(fullEntity, enumFields)))
+        .then(fullEntities => fullEntities.map(fullEntity => ControllerEntityFactory.maskEntity(fullEntity, enumFields)))
         .then(maskedEntities => res.send(maskedEntities))
     }
 
@@ -54,7 +57,7 @@ export class Controller {
     }
 
     private asArray<T>(elements: T[]|T): T[] {
-        if (!!elements) {
+        if (!elements) {
             return []
         }
         if (elements instanceof Array) {
@@ -63,23 +66,6 @@ export class Controller {
         return [elements]
     }
 
-    private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): ControllerEntity {
-        let maskedEntity = new ControllerEntity()
-        maskedEntity.id = fullEntity.id
-        maskedEntity.type = fullEntity.type
-        maskedEntity.timestamp = fullEntity.timestamp
-        if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
-            maskedEntity.content = [...fullEntity.content]
-        }
-        if (!fields || fields.includes(EntityField.METADATA)) {
-            maskedEntity.metadata = fullEntity.metadata
-        }
-        if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
-            maskedEntity.pointers = fullEntity.pointers
-        }
-        return maskedEntity
-    }
-      
     createEntity(req: express.Request, res: express.Response) {
         // Method: POST
         // Path: /entities
@@ -88,19 +74,24 @@ export class Controller {
         const ethAddress:EthAddress = req.body.ethAddress;
         const signature:Signature   = req.body.signature;
         const files                 = req.files
-      
-        let deployFiles: Set<File> = (files instanceof Array) 
-            ? new Set<File>(files.map(f => ({
-                name: f.fieldname, 
-                content: Buffer.from(f.path)}))) 
-            : new Set<File>()
 
-        this.service.deployEntity(deployFiles, entityId, ethAddress, signature)
+        let deployFiles = Promise.resolve(new Set<File>())
+        if (files instanceof Array) {
+            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path))).then(fileArray => new Set<File>(fileArray))
+        }
+        deployFiles
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, ethAddress, signature))
         .then(t => res.send({
             creationTimestamp: t
         }))
     }
-    
+    private async readFile(name: string, path: string): Promise<File> {
+        return {
+            name: name,
+            content: await fs.promises.readFile(path)
+        }
+    }
+
     getContent(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /contents/:hashId
@@ -109,27 +100,27 @@ export class Controller {
         this.service.getContent(hashId)
         .then((data:Buffer) => {
             res.contentType('application/octet-stream')
-            res.end(data, 'binary')            
+            res.end(data, 'binary')
         })
     }
-    
+
     getAvailableContent(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /available-content
         // Query String: ?cid={hashId1}&cid={hashId2}
         const cids = this.asArray(req.query.cid)
-        
+
         this.service.isContentAvailable(cids)
         .then(availableContent => res.send({
             availableContent: [...availableContent],
         }))
     }
-      
+
     getPointers(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /pointers/:type
         const type:EntityType  = this.parseEntityType(req.params.type)
-        
+
         // Validate type is valid
         if (!type) {
             res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
@@ -139,7 +130,7 @@ export class Controller {
         this.service.getActivePointers(type)
         .then(pointers => res.send(pointers))
     }
-    
+
     getAudit(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /audit/:type/:entityId
@@ -155,16 +146,16 @@ export class Controller {
         this.service.getAuditInfo(type, entityId)
         .then(auditInfo => res.send(auditInfo))
     }
-      
+
     getHistory(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /history
         // Query String: ?from={timestamp}&to={timestamp}&type={type}
         const from = req.query.from
         const to   = req.query.to
-        const type = this.parseHistoryType(req.params.type)
-        
-        this.service.getHistory(from, to, type)
+        const type = req.params.type ? this.parseHistoryType(req.params.type) : undefined
+
+        this.historyManager.getHistory(from, to, type)
         .then(history => res.send(history))
     }
 
@@ -179,7 +170,7 @@ export class Controller {
 
 }
 
-class ControllerEntity {	
+export class ControllerEntity {
     id: string
     type: string
     pointers: string[]
@@ -189,7 +180,7 @@ class ControllerEntity {
 }
 
 export enum EntityField {
-    CONTENT = "content", 
+    CONTENT = "content",
     POINTERS = "pointers",
     METADATA = "metadata",
 }

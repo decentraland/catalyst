@@ -14,7 +14,12 @@ export class Hashing {
 
     /** Return the given file's hash */
     static async calculateHash(file: File): Promise<FileHash> {
-        const hash = await multihashing(file.content, "sha2-256")
+        return this.calculateBufferHash(file.content)
+    }
+
+    /** Return the given buffer's hash */
+    static async calculateBufferHash(buffer: Buffer): Promise<FileHash> {
+        const hash = await multihashing(buffer, "sha2-256")
         return new CID(0, 'dag-pb', hash).toBaseEncodedString()
     }
 }

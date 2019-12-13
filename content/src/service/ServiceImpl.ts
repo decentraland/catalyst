@@ -2,17 +2,16 @@ import { ContentStorage } from "../storage/ContentStorage";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, HistoryType, HistoryEvent, File } from "./Service";
+import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File } from "./Service";
 import { EntityFactory } from "./EntityFactory";
+import { HistoryManager } from "./history/HistoryManager";
 
 export class ServiceImpl implements Service {
-    
+
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
-    private storage: ContentStorage;
 
-    constructor(storage: ContentStorage) {
-        this.storage = storage
+    constructor(private storage: ContentStorage, private historyManager: HistoryManager) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -20,19 +19,43 @@ export class ServiceImpl implements Service {
     }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
-        const entityIdsWithDuplicates: EntityId[] = pointers.map((pointer: Pointer) => this.referencedEntities.get(type)?.get(pointer))
-            .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
-
-        return this.getEntitiesByIds(type, entityIdsWithDuplicates)
+        return Promise.all(pointers
+            .map((pointer: Pointer) => this.getEntityIdByPointer(type, pointer)))
+            .then((entityIds:(EntityId|undefined)[]) => entityIds.filter(entity => entity !== undefined))
+            .then(entityIds => this.getEntitiesByIds(type, entityIds as EntityId[]))
     }
 
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
-        const entities: Entity[] = ids
+        return Promise.all(ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
-            .map((entityId: EntityId) => this.entities.get(entityId))
-            .filter((entity: Entity | undefined): entity is Entity => !!entity)            
+            .map((entityId: EntityId) => this.getEntityById(entityId)))
+            .then((entities:(Entity|undefined)[]) => entities.filter(entity => entity !== undefined)) as Promise<Entity[]>
+    }
 
-        return Promise.resolve(entities)
+    private async getEntityById(id: EntityId): Promise<Entity | undefined> {
+        let entity = this.entities.get(id)
+        if (!entity) {
+            // Try to get the entity from the storage
+            try {
+                const buffer = await this.storage.getContent(StorageCategory.CONTENTS, id)
+                entity = EntityFactory.fromBuffer(buffer, id)
+                this.entities.set(id, entity)
+            } catch (error) { }
+        }
+        return entity
+    }
+
+    private async getEntityIdByPointer(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
+        let entityId = this.referencedEntities.get(type)?.get(pointer)
+        if (!entityId) {
+            // Try to get the entity from the storage
+            try {
+                const buffer = await this.storage.getContent(this.resolveCategory(StorageCategory.POINTERS, type), pointer)
+                entityId = buffer?.toString()
+                this.referencedEntities.get(type)?.set(pointer, entityId)
+            } catch (error) { }
+        }
+        return entityId
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
@@ -52,7 +75,7 @@ export class ServiceImpl implements Service {
             throw new Error("Entity file's hash didn't match the signed entity id.")
         }
 
-        // Parse entity file into an Entity        
+        // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
 
         // Validate entity
@@ -78,18 +101,21 @@ export class ServiceImpl implements Service {
         await this.deleteOverwrittenEntities(entity)
 
         // Register the new entity on global variables
-        await this.commitNewEntity(hashes, alreadyStoredHashes, entity)    
-    
+        await this.commitNewEntity(hashes, alreadyStoredHashes, entity)
+
         // TODO: Save audit information
 
         // TODO: Add to history
+
+        // Add the new deployment to history
+        this.historyManager.newEntityDeployment(entity)
 
         return Promise.resolve(Date.now())
     }
 
     private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity): Promise<void> {
         // Register entity
-        this.entities.set(entity.id, entity)    
+        this.entities.set(entity.id, entity)
 
         // Make each pointer point to new entity
         let entitiesInType: Map<Pointer, EntityId> | undefined = this.referencedEntities.get(entity.type)
@@ -99,22 +125,22 @@ export class ServiceImpl implements Service {
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
             .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
             .map(([fileHash, file]) => this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), fileHash, file.content))
-        
-        
+
+
         // Store reference from pointers to entity
-        const pointerStorageActions: Promise<void>[]= entity.pointers
+        const pointerStorageActions: Promise<void>[] = entity.pointers
             .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)));
-        
+
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
     }
 
     private async deleteOverwrittenEntities(entity: Entity): Promise<void> {
-        // Calculate the entities that the new deployment would overwrite 
+        // Calculate the entities that the new deployment would overwrite
         const overwrittenEntities: EntityId[] = entity.pointers
             .map((pointer: Pointer) => this.referencedEntities.get(entity.type)?.get(pointer))
             .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
-        
+
         // Calculate the pointers that would result orphan
         const orphanPointers: Pointer[] = overwrittenEntities
             .map((entityId: EntityId) => this.entities.get(entityId)?.pointers || [])
@@ -124,13 +150,13 @@ export class ServiceImpl implements Service {
         // Delete orphan pointers
         const pointerDeletionActions: Promise<void>[] = orphanPointers
             .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entity.type), orphanPointer))
-        
+
         for (const orphanPointer of orphanPointers) {
             this.referencedEntities.get(entity.type)?.delete(orphanPointer)
         }
 
         await Promise.all(pointerDeletionActions)
-           
+
         // Delete the entities from the global map
         overwrittenEntities.forEach((entityId: EntityId) => this.entities.delete(entityId))
     }
@@ -160,10 +186,6 @@ export class ServiceImpl implements Service {
         })
     }
 
-    getHistory(from?: Timestamp, to?: Timestamp, type?: HistoryType): Promise<HistoryEvent[]> {
-        return Promise.resolve([])
-    }
-
     async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
         const contentsAvailableActions: Promise<[FileHash, Boolean]>[] = fileHashes.map((fileHash: FileHash) =>
             this.storage.exists(this.resolveCategory(StorageCategory.CONTENTS), fileHash)
@@ -179,7 +201,6 @@ export class ServiceImpl implements Service {
 }
 
 const enum StorageCategory {
-    HISTORY = "history",
     CONTENTS = "contents",
     PROOFS = "proofs",
     POINTERS = "pointers",

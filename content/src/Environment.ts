@@ -1,6 +1,7 @@
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
+import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
@@ -36,6 +37,7 @@ export class Environment {
             env.setConfig(SERVER_PORT, process.env.PORT ?? 6969)
 
             env.registerBean(Bean.STORAGE, ContentStorageFactory.local(env))
+            env.registerBean(Bean.HISTORY_MANAGER, HistoryManagerFactory.create(env))
             env.registerBean(Bean.SERVICE, ServiceFactory.create(env))
             env.registerBean(Bean.CONTROLLER, ControllerFactory.create(env))
         }
@@ -46,5 +48,6 @@ export class Environment {
 export const enum Bean {
     STORAGE,
     SERVICE,
-    CONTROLLER
+    CONTROLLER,
+    HISTORY_MANAGER,
 }

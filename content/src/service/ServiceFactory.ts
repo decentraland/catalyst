@@ -4,7 +4,7 @@ import { ServiceImpl } from "./ServiceImpl";
 
 export class ServiceFactory {
     static create(env: Environment): Service {
-        return new ServiceImpl(env.getBean(Bean.STORAGE));
+        return new ServiceImpl(env.getBean(Bean.STORAGE), env.getBean(Bean.HISTORY_MANAGER));
     }
 }
 

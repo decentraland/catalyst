@@ -1,4 +1,5 @@
-import { Peer, PeerConnectionData, PacketCallback } from "../src/Peer";
+import { Peer, PacketCallback } from "../src/Peer";
+import { PeerConnectionData } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 
 const oldFetch = fetch;

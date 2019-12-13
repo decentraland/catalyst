@@ -3,10 +3,7 @@ import { FileSystemUtils as fsu } from "./FileSystemUtils";
 
 describe("unit tests in jasmine", function() {
   let tmpRootDir = fsu.createTempDirectory()
-  console.log(`Root Tmp Dir: ${tmpRootDir}`)
-
   const fss = new FileSystemContentStorage(tmpRootDir)
-
   const category = "some-category"
   const id = "some-id"
   const content = Buffer.from("123")
