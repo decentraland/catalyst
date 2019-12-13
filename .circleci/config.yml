@@ -61,7 +61,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test $(npx bazel query "//lighthouse:*")
+          command: npx bazel test //lighthouse:unit_test
 
   build-peer:
     <<: *base_env
@@ -69,7 +69,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test $(npx bazel query "//peer:*")
+          command: npx bazel test //peer:config_test
 
   build-content:
     <<: *base_env
@@ -77,7 +77,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test $(npx bazel query "//content:*")
+          command: npx bazel test //content:unit_test
 
 workflows:
   version: 2
@@ -91,7 +91,13 @@ workflows:
               only: chore/pipeline
       - build-peer:
           <<: *all_branches_and_tags
+          requires:
+            - checkout
       - build-lighthouse:
           <<: *all_branches_and_tags
+          requires:
+            - checkout
       - build-content:
           <<: *all_branches_and_tags
+          requires:
+            - checkout
