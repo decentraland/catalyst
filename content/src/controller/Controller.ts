@@ -169,7 +169,7 @@ export class Controller {
         // Query String: ?from={timestamp}&to={timestamp}&type={type}
         const from = req.query.from
         const to   = req.query.to
-        const type = this.parseHistoryType(req.params.type)
+        const type = req.params.type ? this.parseHistoryType(req.params.type) : undefined
 
         this.historyManager.getHistory(from, to, type)
         .then(history => res.send(history))

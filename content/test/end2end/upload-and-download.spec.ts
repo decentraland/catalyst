@@ -6,6 +6,7 @@ import { Hashing } from "../../src/service/Hashing"
 import { buildEntityAndFile } from "../service/EntityTestFactory"
 import fs from "fs"
 import FormData from "form-data"
+import { DeploymentEvent, HistoryType } from "../../src/service/history/HistoryManager"
 
 describe("End 2 end deploy test", function() {
     let env: Environment
@@ -17,13 +18,13 @@ describe("End 2 end deploy test", function() {
         server.start()
     })
     afterAll(() => server.stop())
-    
+
     it(`Deploy and retrieve some content`, async () => {
 
         //------------------------------
         // Deploy the content
         //------------------------------
-        const deployData = await createDeployData()
+        const [deployData, entityBeingDeployed] = await createDeployData()
 
         const form = new FormData();
         form.append('entityId'  , deployData.entityId)
@@ -36,7 +37,7 @@ describe("End 2 end deploy test", function() {
         })
 
         const deployResponse = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities`, { method: 'POST', body: form })
- 
+
         expect(deployResponse.ok).toBe(true)
 
         const json = await deployResponse.json()
@@ -57,12 +58,17 @@ describe("End 2 end deploy test", function() {
         expect(responseByPointer.ok).toBe(true)
         const scenesByPointer: Entity[] = await responseByPointer.json();
         validateReceivedData(scenesByPointer, deployData)
+
+        const responseHistory = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/history`)
+        expect(responseHistory.ok).toBe(true)
+        const [deploymentEvent]: DeploymentEvent[] = await responseHistory.json()
+        validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed)
     });
 
 
 })
 
-async function createDeployData(): Promise<DeployData> {
+async function createDeployData(): Promise<[DeployData, Entity]> {
     const fileContent1: Buffer = fs.readFileSync('content/test/end2end/some-binary-file.png');
     const fileContent2: Buffer = fs.readFileSync('content/test/end2end/some-text-file.txt');
 
@@ -74,13 +80,13 @@ async function createDeployData(): Promise<DeployData> {
     content.set("the-file-2", fileHash2)
 
     const [entity, entityFile] = await buildEntityAndFile(
-        'entity.json', 
-        EntityType.SCENE, 
-        ["0,0", "0,1"], 
-        Date.now(), 
-        content, 
+        'entity.json',
+        EntityType.SCENE,
+        ["0,0", "0,1"],
+        Date.now(),
+        content,
         "this is just some metadata")
-    return {
+    const deployData: DeployData = {
         entityId: entity.id,
         ethAddress: "some-eth-address",
         signature: "some-signature",
@@ -90,6 +96,14 @@ async function createDeployData(): Promise<DeployData> {
             [fileHash2, fileContent2],
         ]
     }
+    return [deployData, entity]
+}
+
+function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: Entity) {
+    expect(deploymentEvent.type).toBe(HistoryType.DEPLOYMENT)
+    expect(deploymentEvent.entityId).toBe(deployData.entityId)
+    expect(deploymentEvent.entityType).toBe(entityBeingDeployed.type)
+    expect(deploymentEvent.timestamp).toBe(entityBeingDeployed.timestamp)
 }
 
 function validateReceivedData(receivedScenes: Entity[], deployData: DeployData) {
