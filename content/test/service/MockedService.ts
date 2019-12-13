@@ -18,11 +18,6 @@ export class MockedService implements Service {
     }
 
     deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
-        console.log("MockedService.deployEntity")
-        console.log(files)
-        console.log(entityId)
-        console.log(ethAddress)
-        console.log(signature)
         let contentsMap = new Map<string, string>()
         files.forEach(f => contentsMap.set(f.name, "lenght: " + f.content.length))
         this.entities.push(this.scene(

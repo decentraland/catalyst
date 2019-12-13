@@ -48,8 +48,9 @@ describe("Service", function() {
     const historySpy = spyOn(this.historyManager, "newEntityDeployment")
 
     const timestamp: Timestamp = await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
-
-    expect(timestamp).toBeCloseTo(Date.now())
+    const deltaMilliseconds = Date.now() - timestamp
+    expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
+    expect(deltaMilliseconds).toBeLessThanOrEqual(10)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.entity.id, this.entityFile.content)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.randomFileHash, this.randomFile.content)
     expect(historySpy).toHaveBeenCalledWith(this.entity)

@@ -2,7 +2,8 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import { ExpressPeerServer } from "peerjs-server";
-import { Peer, RelayMode, PeerConnectionData } from "../../peer/src/Peer";
+import { Peer, RelayMode } from "../../peer/src/Peer";
+import { PeerConnectionData } from "../../peer/src/types";
 import * as wrtc from "wrtc";
 import WebSocket from "ws";
 
