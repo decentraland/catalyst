@@ -45,25 +45,22 @@ load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
 
 ts_setup_workspace()
 
-# Set up web tests
-rules_webtesting_vers = "0.3.1"
-
-http_archive(
-    name = "io_bazel_rules_webtesting",
-    sha256 = "d71b9dc5fef03cc0c0974305b1c9a3c36f4df1b52ed3d5898f8fa4c5d9d4edb1",
-    strip_prefix = "rules_webtesting-{v}".format(v = rules_webtesting_vers),
-    urls = [
-        "https://github.com/bazelbuild/rules_webtesting/archive/{v}.tar.gz".format(v = rules_webtesting_vers),
-    ],
-)
-
 # Fetch transitive Bazel dependencies of npm_bazel_karma
 load("@npm_bazel_karma//:package.bzl", "npm_bazel_karma_dependencies")
 
 npm_bazel_karma_dependencies()
 
+# Set up web tests
+http_archive(
+    name = "io_bazel_rules_webtesting",
+    sha256 = "9bb461d5ef08e850025480bab185fd269242d4e533bca75bfb748001ceb343c3",
+    urls = [
+        "https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.3/rules_webtesting.tar.gz",
+    ],
+)
+
 load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
-load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.1.bzl", "browser_repositories")
+load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.2.bzl", "browser_repositories")
 
 web_test_repositories()
 
