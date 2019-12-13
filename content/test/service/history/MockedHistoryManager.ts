@@ -1,4 +1,4 @@
-import { HistoryManager, HistoryType, HistoryEvent } from "../../../src/service/history/HistoryManager";
+import { HistoryManager, DeploymentHistory } from "../../../src/service/history/HistoryManager";
 import { Entity } from "../../../src/service/Entity";
 
 export class MockedHistoryManager implements HistoryManager {
@@ -6,7 +6,11 @@ export class MockedHistoryManager implements HistoryManager {
     newEntityDeployment(entity: Entity): void {
     }
 
-    getHistory(from?: number | undefined, to?: number | undefined, type?: HistoryType): Promise<HistoryEvent[]> {
+    setTimeAsImmutable(immutableTime: number): Promise<void> {
+        return Promise.resolve()
+    }
+
+    getHistory(from?: number, to?: number): Promise<DeploymentHistory> {
         throw new Error("Method not implemented.");
     }
 

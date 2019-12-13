@@ -1,6 +1,7 @@
 import { Peer, PacketCallback } from "../src/Peer";
 import { PeerConnectionData } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
+import { future } from "fp-future";
 
 const oldFetch = fetch;
 const globalScope: any = typeof window === "undefined" ? global : window;
@@ -31,7 +32,7 @@ class SocketMock implements SocketType {
 }
 
 const messageHandler: PacketCallback = (sender, room, payload) => {
-  console.log(`Received message from ${sender} in ${room}`, payload);
+  // console.log(`Received message from ${sender} in ${room}`, payload);
 };
 
 function createPeer(
@@ -42,60 +43,41 @@ function createPeer(
   const socket = new SocketMock(socketDestination);
   return [
     socket,
-    new Peer("http://notimportant:8888/", peerId, callback, {
+    new Peer("http://notimportant:8888", peerId, callback, {
       socketBuilder: url => socket
     })
   ] as [SocketMock, Peer];
 }
 
 describe("Peer Integration Test", function() {
-  let peerIds: PeerConnectionData[];
+  let peerIds: Record<string, PeerConnectionData[]>;
+
+  const expectSinglePeerInRoom = (peer: Peer, roomId: string) =>
+    _expectSinglePeerInRoom(peerIds, peer, roomId);
 
   beforeEach(() => {
-    peerIds = [];
-    globalScope.fetch = (input, init) =>
-      Promise.resolve(new Response(JSON.stringify(peerIds)));
+    peerIds = {};
+    globalScope.fetch = (input, init) => {
+      console.log(`init ${JSON.stringify(init)}`);
+      if (init.method === "PUT") {
+        const segments = (input as string).split("/");
+        const roomId = segments[segments.length - 1];
+
+        if (!peerIds[roomId]) {
+          peerIds[roomId] = [];
+        }
+        peerIds[roomId].push(JSON.parse(init.body));
+
+        return Promise.resolve(new Response(JSON.stringify(peerIds[roomId])));
+      }
+
+      return Promise.reject("not handled");
+    };
   });
 
   afterEach(() => {
     globalScope.fetch = oldFetch;
   });
-
-  async function doJoinRoom(peer: Peer, room: string) {
-    peerIds.push({ userId: peer.nickname, peerId: peer.nickname });
-    await peer.joinRoom(room);
-  }
-
-  async function createConnectedPeers(
-    peerId1: string,
-    peerId2: string,
-    room: string
-  ) {
-    const [peer1Socket, peer1] = createPeer(peerId1);
-
-    await doJoinRoom(peer1, room);
-
-    const [, peer2] = createPeer(peerId2, peer1Socket);
-
-    await doJoinRoom(peer2, room);
-
-    await peer1.beConnectedTo(peerId2);
-
-    return [peer1, peer2];
-  }
-
-  function assertConnectedTo(peer: Peer, otherPeer: Peer) {
-    const peerRoom = peer.currentRooms[0];
-    expect(peerRoom.id).toBe("room");
-    expect(peerRoom.users.size).toBe(2);
-    expect(
-      peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
-    ).toBeTrue();
-    //@ts-ignore
-    const peerToPeer = peer.peers[otherPeer.nickname];
-    expect(peerToPeer.reliableConnection).toBeDefined();
-    expect(peerToPeer.reliableConnection.writable).toBeTrue();
-  }
 
   it("Timeouts awaiting a non-existing connection", async () => {
     const [, peer1] = createPeer("peer1");
@@ -121,7 +103,6 @@ describe("Peer Integration Test", function() {
 
     const peer1MessagePromise = new Promise(resolve => {
       peer1.callback = (sender, room, payload) => {
-        console.log(`Received message from ${sender} in ${room}`, payload);
         resolve({ sender, room, payload });
       };
     });
@@ -142,12 +123,104 @@ describe("Peer Integration Test", function() {
 
     await doJoinRoom(peer, "room");
 
-    const peerRoom = peer.currentRooms[0];
-    expect(peerRoom.id).toBe("room");
-    expect(peerRoom.users.size).toBe(1);
-    expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
+    expectSinglePeerInRoom(peer, "room");
+  });
 
-    //@ts-ignore
-    expect(Object.entries(peer.peers).length).toBe(0);
+  it("Does not see peers in other rooms", async () => {
+    const [, peer1] = createPeer("peer1");
+
+    await doJoinRoom(peer1, "room1");
+
+    const [, peer2] = createPeer("peer2");
+
+    await doJoinRoom(peer2, "room2");
+
+    expectSinglePeerInRoom(peer1, "room1");
+    expectSinglePeerInRoom(peer2, "room2");
+  });
+
+  it("does not receive message in other room", async () => {
+    const [, peer3] = createPeer("peer3");
+
+    await doJoinRoom(peer3, "room3");
+
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    const message1 = future();
+    peer1.callback = (sender, room, payload) => {
+      message1.resolve({ sender, room, payload });
+    };
+
+    const message3 = future();
+    peer3.callback = (sender, room, payload) => {
+      message3.reject(new Error("peer3 should not receive messages"));
+    };
+    setTimeout(() => message3.resolve(undefined), 200);
+
+    await peer2.sendMessage("room", { hello: "world" });
+
+    const received = await message1;
+
+    expect(received).toEqual({
+      sender: "peer2",
+      room: "room",
+      payload: { hello: "world" }
+    });
+    expectSinglePeerInRoom(peer3, "room3");
+
+    await message3;
   });
 });
+
+async function doJoinRoom(peer: Peer, room: string) {
+  await peer.joinRoom(room);
+}
+
+async function createConnectedPeers(
+  peerId1: string,
+  peerId2: string,
+  room: string
+) {
+  const [peer1Socket, peer1] = createPeer(peerId1);
+
+  await doJoinRoom(peer1, room);
+
+  const [, peer2] = createPeer(peerId2, peer1Socket);
+
+  await doJoinRoom(peer2, room);
+
+  await peer1.beConnectedTo(peerId2);
+
+  return [peer1, peer2];
+}
+
+function assertConnectedTo(peer: Peer, otherPeer: Peer) {
+  const peerRoom = peer.currentRooms[0];
+  expect(peerRoom.id).toBe("room");
+  expect(peerRoom.users.size).toBe(2);
+  expect(
+    peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
+  ).toBeTrue();
+  //@ts-ignore
+  const peerToPeer = peer.peers[otherPeer.nickname];
+  expect(peerToPeer.reliableConnection).toBeDefined();
+  expect(peerToPeer.reliableConnection.writable).toBeTrue();
+}
+
+function _expectSinglePeerInRoom(
+  peerIds: Record<string, PeerConnectionData[]>,
+  peer: Peer,
+  roomId: string
+) {
+  expect(peerIds[roomId]).toBeDefined();
+  expect(peerIds[roomId].length).toBe(1);
+  expect(peer.currentRooms.length).toBe(1);
+
+  const peerRoom = peer.currentRooms[0];
+  expect(peerRoom.id).toBe(roomId);
+  expect(peerRoom.users.size).toBe(1);
+  expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
+
+  //@ts-ignore
+  expect(Object.entries(peer.peers).length).toBe(0);
+}

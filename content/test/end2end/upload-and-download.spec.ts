@@ -6,8 +6,9 @@ import { EntityType } from "../../src/service/Entity"
 import { Hashing } from "../../src/service/Hashing"
 import fs from "fs"
 import FormData from "form-data"
-import { DeploymentEvent, HistoryType } from "../../src/service/history/HistoryManager"
+import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
 import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
+import { Timestamp } from "../../src/service/Service"
 
 describe("End 2 end deploy test", function() {
     let env: Environment
@@ -41,8 +42,8 @@ describe("End 2 end deploy test", function() {
 
         expect(deployResponse.ok).toBe(true)
 
-        const json = await deployResponse.json()
-        const deltaTimestamp = Date.now() - json.creationTimestamp
+        const { creationTimestamp } = await deployResponse.json()
+        const deltaTimestamp = Date.now() - creationTimestamp
         expect(deltaTimestamp).toBeLessThanOrEqual(10)
         expect(deltaTimestamp).toBeGreaterThanOrEqual(0)
 
@@ -64,8 +65,8 @@ describe("End 2 end deploy test", function() {
 
         const responseHistory = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/history`)
         expect(responseHistory.ok).toBe(true)
-        const [deploymentEvent]: DeploymentEvent[] = await responseHistory.json()
-        validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed)
+        const [deploymentEvent]: DeploymentHistory = await responseHistory.json()
+        validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
     });
 
 
@@ -102,11 +103,10 @@ async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
     return [deployData, entity]
 }
 
-function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity) {
-    expect(deploymentEvent.type).toBe(HistoryType.DEPLOYMENT)
+function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
     expect(deploymentEvent.entityId).toBe(deployData.entityId)
     expect(deploymentEvent.entityType).toBe(entityBeingDeployed.type)
-    expect(deploymentEvent.timestamp).toBe(entityBeingDeployed.timestamp)
+    expect(deploymentEvent.timestamp).toBe(creationTimestamp)
 }
 
 async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeployData, env: Environment) {

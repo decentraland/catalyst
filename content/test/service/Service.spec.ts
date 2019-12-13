@@ -53,7 +53,7 @@ describe("Service", function() {
     expect(deltaMilliseconds).toBeLessThanOrEqual(10)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.entity.id, this.entityFile.content)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.randomFileHash, this.randomFile.content)
-    expect(historySpy).toHaveBeenCalledWith(this.entity)
+    expect(historySpy).toHaveBeenCalledWith(this.entity, timestamp)
     this.entity.pointers.forEach(pointer =>
         expect(storageSpy).toHaveBeenCalledWith("pointers-scene", pointer, Buffer.from(this.entity.id)));
     expect(await this.service.getEntitiesByIds(EntityType.SCENE, [this.entity.id])).toEqual([this.entity])

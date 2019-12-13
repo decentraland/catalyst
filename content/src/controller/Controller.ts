@@ -2,7 +2,7 @@ import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import fs from "fs"
 import { Service, File, Signature, EthAddress } from "../service/Service";
-import { HistoryType, HistoryManager } from "../service/history/HistoryManager";
+import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 
 export class Controller {
@@ -150,22 +150,12 @@ export class Controller {
     getHistory(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /history
-        // Query String: ?from={timestamp}&to={timestamp}&type={type}
+        // Query String: ?from={timestamp}&to={timestamp}
         const from = req.query.from
         const to   = req.query.to
-        const type = req.params.type ? this.parseHistoryType(req.params.type) : undefined
 
-        this.historyManager.getHistory(from, to, type)
+        this.historyManager.getHistory(from, to)
         .then(history => res.send(history))
-    }
-
-    private parseHistoryType(strType: string): HistoryType {
-        if (strType.endsWith('s')) {
-            strType = strType.slice(0, -1)
-        }
-        strType = strType.toUpperCase().trim()
-        const type = HistoryType[strType]
-        return type
     }
 
 }

@@ -35,6 +35,7 @@ ts_library(
         ":peer",
         "@npm//@types/jasmine",
         "@npm//@types/sinon",
+        "@npm//fp-future",
         "@npm//sinon",
     ],
 )
@@ -56,6 +57,7 @@ karma_web_test_suite(
         "test/config.js",
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
+        "@npm//fp-future:fp-future__umd",
         "@npm//karma-mocha-reporter",
         "@npm//karma-spec-reporter",
     ],

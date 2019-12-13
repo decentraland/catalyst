@@ -1,5 +1,5 @@
 import { ContentStorage } from "../../storage/ContentStorage";
-import { HistoryEvent, HistoryType, DeploymentEvent } from "./HistoryManager";
+import { DeploymentHistory, DeploymentEvent } from "./HistoryManager";
 import { EntityType } from "../Entity";
 
 export class HistoryStorage {
@@ -11,27 +11,27 @@ export class HistoryStorage {
 
     constructor(private storage: ContentStorage) { }
 
-    async setTempHistory(history: HistoryEvent[]): Promise<void> {
+    async setTempHistory(history: DeploymentHistory): Promise<void> {
         await this.writeToHistoryFile(HistoryStorage.TEMP_HISTORY_ID, history)
     }
 
-    async appendToImmutableHistory(history: HistoryEvent[]): Promise<void> {
+    async appendToImmutableHistory(history: DeploymentHistory): Promise<void> {
         await this.writeToHistoryFile(HistoryStorage.IMMUTABLE_HISTORY_ID, history, true)
     }
 
-    getTempHistory(): Promise<HistoryEvent[]> {
+    getTempHistory(): Promise<DeploymentHistory> {
         return this.readHistoryFile(HistoryStorage.TEMP_HISTORY_ID)
     }
 
-    getImmutableHistory(): Promise<HistoryEvent[]> {
+    getImmutableHistory(): Promise<DeploymentHistory> {
         return this.readHistoryFile(HistoryStorage.IMMUTABLE_HISTORY_ID)
     }
 
-    private async writeToHistoryFile(fileId: StorageFileId, history: HistoryEvent[], append?: boolean) {
+    private async writeToHistoryFile(fileId: StorageFileId, history: DeploymentHistory, append?: boolean) {
         await this.storage.store(HistoryStorage.HISTORY_CATEGORY, fileId, EventSerializer.serializeHistory(history), append)
     }
 
-    private async readHistoryFile(fileId: StorageFileId): Promise<HistoryEvent[]> {
+    private async readHistoryFile(fileId: StorageFileId): Promise<DeploymentHistory> {
         const exists: Boolean = this.existingFiles.has(fileId) || await this.storage.exists(HistoryStorage.HISTORY_CATEGORY, fileId)
         if (exists) {
             this.existingFiles.add(fileId)
@@ -51,39 +51,30 @@ class EventSerializer {
     private static EVENT_SEPARATOR: string = '\n'
     private static ATTRIBUTES_SEPARATOR: string = ' '
 
-    static unserializeHistory(historyBuffer: Buffer): HistoryEvent[] {
+    static unserializeHistory(historyBuffer: Buffer): DeploymentHistory {
         return historyBuffer.toString()
             .trimEnd()
             .split(EventSerializer.EVENT_SEPARATOR)
             .map(EventSerializer.unserialize)
     }
 
-    static serializeHistory(history: HistoryEvent[]): Buffer {
+    static serializeHistory(history: DeploymentHistory): Buffer {
         return Buffer.from(history.map(EventSerializer.serialize).join(EventSerializer.EVENT_SEPARATOR) + EventSerializer.EVENT_SEPARATOR)
     }
 
-    private static unserialize(serializedEvent: string): HistoryEvent {
+    private static unserialize(serializedEvent: string): DeploymentEvent {
         const eventPieces: string[] = serializedEvent.split(EventSerializer.ATTRIBUTES_SEPARATOR)
-
-        switch (eventPieces[0]) {
-            case HistoryType.DEPLOYMENT:
-                const[, entityType, entityId, timestamp] = eventPieces
-                return new DeploymentEvent(EntityType[entityType.toUpperCase()], entityId, parseInt(timestamp))
-            default:
-                // TODO: Implement others
-                throw new Error("Not implemented")
+        const[entityType, entityId, timestamp] = eventPieces
+        return {
+            entityType: EntityType[entityType.toUpperCase().trim()],
+            entityId: entityId,
+            timestamp: parseInt(timestamp),
         }
     }
 
-    private static serialize(event: HistoryEvent): string {
-        // TODO: Avoid instance of, and implement more flexible and 'typescripty' solution
-        if (event instanceof DeploymentEvent) {
-            // TODO: It might make sense to try to reduce the text stored
-            return [event.type, event.entityType, event.entityId, event.timestamp].join(EventSerializer.ATTRIBUTES_SEPARATOR)
-        } else {
-            // TODO: Implement
-            throw new Error("Not implemented")
-        }
+    private static serialize(event: DeploymentEvent): string {
+        return [event.entityType, event.entityId, event.timestamp]
+            .join(EventSerializer.ATTRIBUTES_SEPARATOR)
     }
 
 }
