@@ -103,14 +103,15 @@ export class ServiceImpl implements Service {
         // Register the new entity on global variables
         await this.commitNewEntity(hashes, alreadyStoredHashes, entity)
 
+        // Set "now" as the time of deployment
+        const deploymentTimestamp: Timestamp = Date.now()
+
         // TODO: Save audit information
 
-        // TODO: Add to history
-
         // Add the new deployment to history
-        this.historyManager.newEntityDeployment(entity)
+        this.historyManager.newEntityDeployment(entity, deploymentTimestamp)
 
-        return Promise.resolve(Date.now())
+        return Promise.resolve(deploymentTimestamp)
     }
 
     private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity): Promise<void> {
