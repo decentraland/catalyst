@@ -14,6 +14,6 @@ export class MockedStorage implements ContentStorage {
       throw new Error("Method not implemented.");
     }
     exists(category: string, id: string): Promise<boolean> {
-      throw new Error("Method not implemented.");
+      return Promise.resolve(false)
     }
 }

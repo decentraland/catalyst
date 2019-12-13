@@ -35,13 +35,13 @@ ts_library(
         ":peer",
         "@npm//@types/jasmine",
         "@npm//@types/sinon",
-        "@npm//jasmine",
         "@npm//sinon",
     ],
 )
 
 karma_web_test_suite(
     name = "config_test",
+    config_file = ":karma.conf.js",
     data = [
         ":tests",
     ],
@@ -56,5 +56,7 @@ karma_web_test_suite(
         "test/config.js",
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
+        "@npm//karma-mocha-reporter",
+        "@npm//karma-spec-reporter",
     ],
 )

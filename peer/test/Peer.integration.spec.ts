@@ -1,5 +1,4 @@
-import { Peer, PeerConnectionData } from "../src/Peer";
-import { delay } from "../src/peerjs-server-connector/util";
+import { Peer, PeerConnectionData, PacketCallback } from "../src/Peer";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 
 const oldFetch = fetch;
@@ -30,18 +29,29 @@ class SocketMock implements SocketType {
   }
 }
 
-const messageHandler: (sender: string, room: string, payload: any) => void = (
-  sender,
-  room,
-  payload
-) => {
+const messageHandler: PacketCallback = (sender, room, payload) => {
   console.log(`Received message from ${sender} in ${room}`, payload);
 };
 
+function createPeer(
+  peerId: string,
+  socketDestination?: SocketMock,
+  callback: PacketCallback = messageHandler
+) {
+  const socket = new SocketMock(socketDestination);
+  return [
+    socket,
+    new Peer("http://notimportant:8888/", peerId, callback, {
+      socketBuilder: url => socket
+    })
+  ] as [SocketMock, Peer];
+}
+
 describe("Peer Integration Test", function() {
-  const peerIds: PeerConnectionData[] = [];
+  let peerIds: PeerConnectionData[];
 
   beforeEach(() => {
+    peerIds = [];
     globalScope.fetch = (input, init) =>
       Promise.resolve(new Response(JSON.stringify(peerIds)));
   });
@@ -50,44 +60,79 @@ describe("Peer Integration Test", function() {
     globalScope.fetch = oldFetch;
   });
 
-  it(`Performs handshake as expected`, async () => {
-    const peer1Socket = new SocketMock();
-    const peer2Socket = new SocketMock(peer1Socket);
+  async function doJoinRoom(peer: Peer, room: string) {
+    peerIds.push({ userId: peer.nickname, peerId: peer.nickname });
+    await peer.joinRoom(room);
+  }
 
-    const peer1 = new Peer(
-      "http://notimportant:8888/",
-      "peer1",
-      messageHandler,
-      {
-        socketBuilder: url => peer1Socket
-      }
-    );
+  async function createConnectedPeers(
+    peerId1: string,
+    peerId2: string,
+    room: string
+  ) {
+    const [peer1Socket, peer1] = createPeer(peerId1);
 
-    await peer1.joinRoom("room");
+    await doJoinRoom(peer1, room);
 
-    peerIds.push({ userId: "peer1", peerId: "peer1" });
+    const [, peer2] = createPeer(peerId2, peer1Socket);
 
-    const peer2 = new Peer(
-      "http://notimportant:8888/",
-      "peer2",
-      messageHandler,
-      {
-        socketBuilder: url => peer2Socket
-      }
-    );
+    await doJoinRoom(peer2, room);
 
-    await peer2.joinRoom("room");
+    await peer1.beConnectedTo(peerId2);
 
-    //TODO: This delay should be replaced with a kind of promise eventually
-    await delay(600);
+    return [peer1, peer2];
+  }
 
-    const peer1Room = peer1.currentRooms[0];
-    expect(peer1Room.id).toBe("room");
-    expect(peer1Room.users.size).toBe(2);
-    expect(peer1Room.users.has("peer2:peer2")).toBeTrue();
+  function assertConnectedTo(peer: Peer, otherPeer: Peer) {
+    const peerRoom = peer.currentRooms[0];
+    expect(peerRoom.id).toBe("room");
+    expect(peerRoom.users.size).toBe(2);
+    expect(
+      peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
+    ).toBeTrue();
     //@ts-ignore
-    const peer1ToPeer2 = peer1.peers["peer2"];
-    expect(peer1ToPeer2.reliableConnection).toBeDefined();
-    expect(peer1ToPeer2.reliableConnection.writable).toBeTrue();
+    const peerToPeer = peer.peers[otherPeer.nickname];
+    expect(peerToPeer.reliableConnection).toBeDefined();
+    expect(peerToPeer.reliableConnection.writable).toBeTrue();
+  }
+
+  it("Timeouts awaiting a non-existing connection", async () => {
+    const [, peer1] = createPeer("peer1");
+    try {
+      await peer1.beConnectedTo("notAPeer", 200);
+      fail("Should timeout");
+    } catch (e) {
+      expect(e).toBe(
+        "Awaiting connection to peer notAPeer timed out after 200ms"
+      );
+    }
+  });
+
+  it("Performs handshake as expected", async () => {
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    assertConnectedTo(peer1, peer2);
+    assertConnectedTo(peer2, peer1);
+  });
+
+  it("Sends and receives data", async () => {
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    const peer1MessagePromise = new Promise(resolve => {
+      peer1.callback = (sender, room, payload) => {
+        console.log(`Received message from ${sender} in ${room}`, payload);
+        resolve({ sender, room, payload });
+      };
+    });
+
+    await peer2.sendMessage("room", { hello: "world" });
+
+    const received = await peer1MessagePromise;
+
+    expect(received).toEqual({
+      sender: "peer2",
+      room: "room",
+      payload: { hello: "world" }
+    });
   });
 });
