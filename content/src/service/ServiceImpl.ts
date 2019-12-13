@@ -2,17 +2,16 @@ import { ContentStorage } from "../storage/ContentStorage";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, HistoryType, HistoryEvent, File } from "./Service";
+import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File } from "./Service";
 import { EntityFactory } from "./EntityFactory";
+import { HistoryManager } from "./history/HistoryManager";
 
 export class ServiceImpl implements Service {
 
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
-    private storage: ContentStorage;
 
-    constructor(storage: ContentStorage) {
-        this.storage = storage
+    constructor(private storage: ContentStorage, private historyManager: HistoryManager) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -76,7 +75,7 @@ export class ServiceImpl implements Service {
             throw new Error("Entity file's hash didn't match the signed entity id.")
         }
 
-        // Parse entity file into an Entity        
+        // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
 
         // Validate entity
@@ -108,6 +107,9 @@ export class ServiceImpl implements Service {
 
         // TODO: Add to history
 
+        // Add the new deployment to history
+        this.historyManager.newEntityDeployment(entity)
+
         return Promise.resolve(Date.now())
     }
 
@@ -133,7 +135,7 @@ export class ServiceImpl implements Service {
     }
 
     private async deleteOverwrittenEntities(entity: Entity): Promise<void> {
-        // Calculate the entities that the new deployment would overwrite 
+        // Calculate the entities that the new deployment would overwrite
         const overwrittenEntities: EntityId[] = entity.pointers
             .map((pointer: Pointer) => this.referencedEntities.get(entity.type)?.get(pointer))
             .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
@@ -184,10 +186,6 @@ export class ServiceImpl implements Service {
         })
     }
 
-    getHistory(from?: Timestamp, to?: Timestamp, type?: HistoryType): Promise<HistoryEvent[]> {
-        return Promise.resolve([])
-    }
-
     async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
         const contentsAvailableActions: Promise<[FileHash, Boolean]>[] = fileHashes.map((fileHash: FileHash) =>
             this.storage.exists(this.resolveCategory(StorageCategory.CONTENTS), fileHash)
@@ -203,7 +201,6 @@ export class ServiceImpl implements Service {
 }
 
 const enum StorageCategory {
-    HISTORY = "history",
     CONTENTS = "contents",
     PROOFS = "proofs",
     POINTERS = "pointers",
