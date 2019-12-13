@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Field, Button } from "decentraland-ui";
 
-import { IPeer } from "../../peer/src/Peer";
+import { IPeer } from "../../peer/src/types";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return (

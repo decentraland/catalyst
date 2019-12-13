@@ -63,7 +63,7 @@ export function createAnswerMessage(
   const payload = {
     browser: "chrome",
     sdp: answerData,
-    connectionId: connectionId,
+    connectionId,
     type: "data"
   };
 

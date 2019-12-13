@@ -4,17 +4,7 @@ import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { isReliable, connectionIdFor } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-
-export type PeerConnectionData = { userId: string; peerId: string };
-export type Room = { id: string; users: Map<string, PeerConnectionData> };
-
-export interface IPeer {
-  nickname: string;
-  currentRooms: Room[];
-  callback: (sender: string, room: string, payload: any) => void;
-  joinRoom(room: string): Promise<void>;
-  sendMessage(room: string, payload: any, reliable?: boolean): Promise<void>;
-}
+import { PeerConnectionData, IPeer, Room } from "./types";
 
 interface PacketData {
   hi: { room: { id: string; users: PeerConnectionData[] } };
