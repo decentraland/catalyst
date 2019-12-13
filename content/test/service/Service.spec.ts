@@ -16,11 +16,11 @@ describe("Service", function() {
     const [entity, entityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X1,Y1", "X2,Y2"], 123456, new Map([[this.randomFile.name, this.randomFileHash]]), "metadata")
     this.entityFile = entityFile
     this.entity = entity
-    this.storage = new MockedStorage()
     this.historyManager = new MockedHistoryManager()
   })
 
   beforeEach(() => {
+    this.storage = new MockedStorage()
     const env = new Environment()
     env.registerBean(Bean.STORAGE, this.storage)
     env.registerBean(Bean.HISTORY_MANAGER, this.historyManager)
@@ -44,7 +44,7 @@ describe("Service", function() {
   });
 
   it(`When an entity is successfully deployed, then the content and pointers are stored correctly`, async () => {
-    const storageSpy = spyOn(this.storage, "store")
+    const storageSpy = spyOn(this.storage, "store").and.callThrough()
     const historySpy = spyOn(this.historyManager, "newEntityDeployment")
 
     const timestamp: Timestamp = await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
@@ -62,7 +62,7 @@ describe("Service", function() {
   });
 
   it(`When an entity is successfully deployed, then previous overlapping entities are deleted`, async () => {
-    const storageSpy = spyOn(this.storage, "delete")
+    const storageSpy = spyOn(this.storage, "delete").and.callThrough()
 
     await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
 

@@ -1,19 +1,42 @@
 import { ContentStorage } from "../../src/storage/ContentStorage";
 
 export class MockedStorage implements ContentStorage {
-    store(category: string, id: string, content: Buffer, append?: boolean | undefined): Promise<void> {
-      return Promise.resolve()
-    }  
+
+    private storage: Map<string, Buffer> = new Map()
+
+    store(category: string, id: string, content: Buffer, append?: boolean): Promise<void> {
+        const key = this.getKey(category, id)
+        if (append) {
+            const alreadyStoredContent: Buffer | undefined = this.storage.get(key)
+            if (alreadyStoredContent) {
+                this.storage.set(key, Buffer.concat([alreadyStoredContent, content]))
+            } else {
+                this.storage.set(key, content)
+            }
+        } else {
+            this.storage.set(key, content)
+        }
+        return Promise.resolve()
+    }
     delete(category: string, id: string): Promise<void> {
-      return Promise.resolve()
+        this.storage.delete(this.getKey(category, id))
+        return Promise.resolve()
     }
     getContent(category: string, id: string): Promise<Buffer> {
-      throw new Error("Method not implemented.");
+        const content: Buffer | undefined = this.storage.get(this.getKey(category, id))
+        if (!content) {
+            throw new Error("Content not found");
+        }
+        return Promise.resolve(content)
     }
     listIds(category: string): Promise<string[]> {
       throw new Error("Method not implemented.");
     }
     exists(category: string, id: string): Promise<boolean> {
-      return Promise.resolve(false)
+      return Promise.resolve(this.storage.has(this.getKey(category, id)))
+    }
+
+    private getKey(category: string, id: string): string {
+        return `${category}___${id}`
     }
 }

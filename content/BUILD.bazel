@@ -66,6 +66,8 @@ ts_library(
         "@npm//@types/node-fetch",
         "@npm//form-data",
         "@npm//@types/form-data",
+        "@npm//faker",
+        "@npm//@types/faker",
     ],
 )
 

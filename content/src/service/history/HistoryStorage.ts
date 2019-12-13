@@ -15,7 +15,7 @@ export class HistoryStorage {
         await this.writeToHistoryFile(HistoryStorage.TEMP_HISTORY_ID, history)
     }
 
-    async appendToImmutableHistory(...history: HistoryEvent[]): Promise<void> {
+    async appendToImmutableHistory(history: HistoryEvent[]): Promise<void> {
         await this.writeToHistoryFile(HistoryStorage.IMMUTABLE_HISTORY_ID, history, true)
     }
 
@@ -53,12 +53,13 @@ class EventSerializer {
 
     static unserializeHistory(historyBuffer: Buffer): HistoryEvent[] {
         return historyBuffer.toString()
-            .split(this.EVENT_SEPARATOR)
-            .map(this.unserialize)
+            .trimEnd()
+            .split(EventSerializer.EVENT_SEPARATOR)
+            .map(EventSerializer.unserialize)
     }
 
     static serializeHistory(history: HistoryEvent[]): Buffer {
-        return Buffer.from(history.map(this.serialize).join(EventSerializer.EVENT_SEPARATOR) + EventSerializer.EVENT_SEPARATOR)
+        return Buffer.from(history.map(EventSerializer.serialize).join(EventSerializer.EVENT_SEPARATOR) + EventSerializer.EVENT_SEPARATOR)
     }
 
     private static unserialize(serializedEvent: string): HistoryEvent {
@@ -78,7 +79,7 @@ class EventSerializer {
         // TODO: Avoid instance of, and implement more flexible and 'typescripty' solution
         if (event instanceof DeploymentEvent) {
             // TODO: It might make sense to try to reduce the text stored
-            return [event.type, event.entityType, event.entityId, event.timestamp].join(this.ATTRIBUTES_SEPARATOR)
+            return [event.type, event.entityType, event.entityId, event.timestamp].join(EventSerializer.ATTRIBUTES_SEPARATOR)
         } else {
             // TODO: Implement
             throw new Error("Not implemented")
