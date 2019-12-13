@@ -262,6 +262,11 @@
     "@types/express-serve-static-core" "*"
     "@types/serve-static" "*"
 
+"@types/faker@^4.1.8":
+  version "4.1.8"
+  resolved "https://registry.yarnpkg.com/@types/faker/-/faker-4.1.8.tgz#95240361f1379addae0a005ced7c5c77b0b1e1d8"
+  integrity sha512-9ARxZRyXXCMMf8KjYhnD+GHE789HGwIqa1dolCRl/C6ExwvBIUmnIktLeY71TPmFOQiU3DQwrbQEX0pkyqX1tQ==
+
 "@types/form-data@^2.5.0":
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/@types/form-data/-/form-data-2.5.0.tgz#5025f7433016f923348434c40006d9a797c1b0e8"
@@ -1267,6 +1272,11 @@ extend@^3.0.0:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.2.tgz#f8b1136b4071fbd8eb140aff858b1019ec2915fa"
   integrity sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==
+
+faker@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/faker/-/faker-4.1.0.tgz#1e45bbbecc6774b3c195fad2835109c6d748cc3f"
+  integrity sha1-HkW7vsxndLPBlfrSg1EJxtdIzD8=
 
 fill-range@^7.0.1:
   version "7.0.1"
