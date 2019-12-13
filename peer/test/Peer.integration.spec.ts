@@ -136,4 +136,18 @@ describe("Peer Integration Test", function() {
       payload: { hello: "world" }
     });
   });
+
+  it("Joins a lone room", async () => {
+    const [, peer] = createPeer("peer");
+
+    await doJoinRoom(peer, "room");
+
+    const peerRoom = peer.currentRooms[0];
+    expect(peerRoom.id).toBe("room");
+    expect(peerRoom.users.size).toBe(1);
+    expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
+
+    //@ts-ignore
+    expect(Object.entries(peer.peers).length).toBe(0);
+  });
 });
