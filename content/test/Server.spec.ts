@@ -7,16 +7,22 @@ import fetch from "node-fetch"
 import { Entity, EntityType } from "../src/service/Entity"
 
 describe("unit tests in jasmine", function() {
-    const env = new Environment()
+    let env: Environment
+    let server: Server
 
-    env.setConfig(STORAGE_ROOT_FOLDER, "storage")
-    env.setConfig(SERVER_PORT, process.env.PORT ?? 6969)
+    beforeAll(() => {
+        env = new Environment()
 
-    env.registerBean(Bean.STORAGE, ContentStorageFactory.local(env))
-    env.registerBean(Bean.SERVICE, new MockedService())
-    env.registerBean(Bean.CONTROLLER, ControllerFactory.create(env))
-    const server = new Server(env)
-    server.start()
+        env.setConfig(STORAGE_ROOT_FOLDER, "storage")
+        env.setConfig(SERVER_PORT, process.env.PORT ?? 6969)
+    
+        env.registerBean(Bean.STORAGE, ContentStorageFactory.local(env))
+        env.registerBean(Bean.SERVICE, new MockedService())
+        env.registerBean(Bean.CONTROLLER, ControllerFactory.create(env))
+        server = new Server(env)
+        server.start()
+    })
+    afterAll(() => server.stop())
 
     it(`Get all scenes by id`, async () => {
         const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?id=1&id=2`)

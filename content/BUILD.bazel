@@ -43,6 +43,16 @@ dataform_npm_package(
     deps = [],
 )
 
+filegroup(
+    name = "test_resources",
+    srcs = glob(
+        [
+            "test/**/*.txt",
+            "test/**/*.png",
+        ]
+    )
+)
+
 ts_library(
     name = "tests",
     testonly = 1,
@@ -54,6 +64,8 @@ ts_library(
         "@npm//@types/jasmine",
         "@npm//node-fetch",
         "@npm//@types/node-fetch",
+        "@npm//form-data",
+        "@npm//@types/form-data",
     ],
 )
 
@@ -63,6 +75,7 @@ jasmine_node_test(
     name = "unit_test",
     deps = [
         ":tests",
+        ":test_resources",
         "@npm//jasmine",
     ],
 )

@@ -1,6 +1,7 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import { Service, File, Signature, EthAddress, HistoryType } from "../service/Service";
+import fs from "fs"
 
 export class Controller {
     constructor(private service: Service) { } 
@@ -34,7 +35,7 @@ export class Controller {
 
         // Calculate and maks entities
         let entities: Promise<Entity[]>
-        if (ids) {
+        if (ids.length > 0) {
             entities = this.service.getEntitiesByIds(type, ids)
         } else {
             entities = this.service.getEntitiesByPointers(type, pointers)
@@ -54,7 +55,7 @@ export class Controller {
     }
 
     private asArray<T>(elements: T[]|T): T[] {
-        if (!!elements) {
+        if (!elements) {
             return []
         }
         if (elements instanceof Array) {
@@ -89,16 +90,21 @@ export class Controller {
         const signature:Signature   = req.body.signature;
         const files                 = req.files
       
-        let deployFiles: Set<File> = (files instanceof Array) 
-            ? new Set<File>(files.map(f => ({
-                name: f.fieldname, 
-                content: Buffer.from(f.path)}))) 
-            : new Set<File>()
-
-        this.service.deployEntity(deployFiles, entityId, ethAddress, signature)
+        let deployFiles = Promise.resolve(new Set<File>())
+        if (files instanceof Array) {
+            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path))).then(fileArray => new Set<File>(fileArray))
+        }
+        deployFiles
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, ethAddress, signature))
         .then(t => res.send({
             creationTimestamp: t
         }))
+    }
+    private async readFile(name: string, path: string): Promise<File> {
+        return {
+            name: name,
+            content: await fs.promises.readFile(path)
+        }
     }
     
     getContent(req: express.Request, res: express.Response) {
