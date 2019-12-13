@@ -1,7 +1,6 @@
 module.exports = config => {
   config.set({
     logLevel: config.LOG_INFO,
-    port: 9876,
     colors: true,
     reporters: ["spec", "mocha"],
     specReporter: {
@@ -13,11 +12,6 @@ module.exports = config => {
       showSpecTiming: true, // print the time elapsed for each spec
       failFast: true // test would finish with error when a first fail occurs.
     },
-    plugins: [
-      "karma-spec-reporter",
-      "karma-jasmine-diff-reporter",
-      "karma-mocha-reporter",
-      "karma-helpful-reporter"
-    ]
+    plugins: ["karma-spec-reporter", "karma-mocha-reporter"]
   });
 };
