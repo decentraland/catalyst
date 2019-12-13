@@ -63,16 +63,7 @@ app.put("/rooms/:roomId", async (req, res, next) => {
 // DELETE /room/:id/:userId -> deletes a user from a room. If the room remains empty, it deletes the room.
 app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
   const { roomId, userId } = req.params;
-  let room = rooms[roomId];
-  if (room) {
-    const index = room.indexOf(room.find($ => $.userId === userId) as any);
-    if (index !== -1) {
-      room.splice(index, 1);
-    }
-  }
-  if (room.length === 0) {
-    delete rooms[roomId];
-  }
+  removeUserFromRoom(roomId, userId);
   res.end();
 });
 
@@ -97,9 +88,38 @@ const server = app.listen(port, () => {
   }
 });
 
+function removeUserFromRoom(roomId: string, userId: string) {
+  let room = rooms[roomId];
+  if (room) {
+    const index = room.indexOf(room.find($ => $.userId === userId) as any);
+    if (index !== -1) {
+      room.splice(index, 1);
+    }
+  }
+  if (room.length === 0) {
+    delete rooms[roomId];
+  }
+}
+
+function removeUser(userId: string) {
+  Object.keys(rooms).forEach(room => removeUserFromRoom(room, userId));
+  if(peer) {
+     peer.disconnectFrom(userId)
+  }
+}
+
 const options = {
   debug: true,
   path: "/"
 };
 
-app.use("/peerjs", ExpressPeerServer(server, options));
+const peerServer = ExpressPeerServer(server, options);
+
+peerServer.on("disconnect", client => {
+  console.log("User disconnected from server socket. Removing from all rooms: " + client.id)
+  removeUser(client.id);
+});
+
+peerServer.on("error", console.log);
+
+app.use("/peerjs", peerServer);

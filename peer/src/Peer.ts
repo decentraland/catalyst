@@ -152,6 +152,16 @@ export class Peer implements IPeer {
     });
   }
 
+  public disconnectFrom(peerId: string) {
+    if(this.peers[peerId]) {
+      console.log("[PEER] Disconnecting from " + peerId);
+      this.peers[peerId].reliableConnection.destroy();
+      delete this.peers[peerId];
+    } else {
+      console.log("[PEER] Already not connected to peer " + peerId);
+    }
+  }
+
   private key(data: PeerConnectionData) {
     return `${data.userId}:${data.peerId}`;
   }
@@ -242,7 +252,7 @@ export class Peer implements IPeer {
             data.dst !== this.nickname &&
             this.config.relay === RelayMode.All
           ) {
-            console.log(`relaying message to ${parsed.dst}`);
+            console.log(`relaying message to ${data.dst}`);
             this.sendMessageTo(
               { userId: data.dst, peerId: data.dst },
               data.room,
