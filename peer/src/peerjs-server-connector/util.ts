@@ -48,3 +48,7 @@ export function connectionIdFor(
 export function isReliable(connectionId: string) {
   return !connectionId.endsWith(ConnectionSuffixes.unreliable);
 }
+
+export function delay(time: number) {
+  return new Promise(resolve => setTimeout(resolve, time))
+}

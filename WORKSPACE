@@ -57,6 +57,11 @@ http_archive(
     ],
 )
 
+# Fetch transitive Bazel dependencies of npm_bazel_karma
+load("@npm_bazel_karma//:package.bzl", "npm_bazel_karma_dependencies")
+
+npm_bazel_karma_dependencies()
+
 load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
 load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.1.bzl", "browser_repositories")
 

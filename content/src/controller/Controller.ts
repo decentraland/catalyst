@@ -1,37 +1,27 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
-import { Service, Timestamp, File, Signature, EthAddress } from "../service/Service";
-import { FileHash } from "../service/Hashing";
+import { Service, File, Signature, EthAddress, HistoryType } from "../service/Service";
 
 export class Controller {
-    private service: Service;
-
-    constructor(service: Service) { 
-        this.service = service
-        this.getEntities         = this.getEntities.bind(this);
-        this.createEntity        = this.createEntity.bind(this);
-        this.getContent          = this.getContent.bind(this);
-        this.getAvailableContent = this.getAvailableContent.bind(this);
-        this.getPointers         = this.getPointers.bind(this);
-        this.getAudit            = this.getAudit.bind(this);
-        this.getHistory          = this.getHistory.bind(this);
-
-    } 
+    constructor(private service: Service) { } 
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
-        const type     = req.params.type
-        const pointers = req.query.pointer
-        const ids      = req.query.id
-        const fields:string   = req.query.fields
+        const type:EntityType    = this.parseEntityType(req.params.type)
+        const pointers:Pointer[] = this.asArray<Pointer>(req.query.pointer)
+        const ids:EntityId[]     = this.asArray<EntityId>(req.query.id)
+        const fields:string      = req.query.fields
 
-        // Validate type is correct
-        let enumType = EntityType[type]
+        // Validate type is valid
+        if (!type) {
+            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+            return
+        }
 
         // Validate pointers or ids are present, but not both
-        if ((ids && pointers) || (!ids && !pointers)) {
+        if ((ids.length>0 && pointers.length>0) || (ids.length==0 && pointers.length==0)) {
             res.status(400).send({ error: 'ids or pointers must be present, but not both' });
             return
         }
@@ -45,13 +35,32 @@ export class Controller {
         // Calculate and maks entities
         let entities: Promise<Entity[]>
         if (ids) {
-            entities = this.service.getEntitiesByIds(enumType, ids)
+            entities = this.service.getEntitiesByIds(type, ids)
         } else {
-            entities = this.service.getEntitiesByPointers(enumType, pointers)
+            entities = this.service.getEntitiesByPointers(type, pointers)
         }
         entities
         .then(fullEntities => fullEntities.map(fullEntity => this.maskEntity(fullEntity, enumFields)))
         .then(maskedEntities => res.send(maskedEntities))
+    }
+
+    private parseEntityType(strType: string): EntityType {
+        if (strType.endsWith('s')) {
+            strType = strType.slice(0, -1)
+        }
+        strType = strType.toUpperCase().trim()
+        const type = EntityType[strType]
+        return type
+    }
+
+    private asArray<T>(elements: T[]|T): T[] {
+        if (!!elements) {
+            return []
+        }
+        if (elements instanceof Array) {
+            return elements
+        }
+        return [elements]
     }
 
     private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): ControllerEntity {
@@ -66,7 +75,7 @@ export class Controller {
             maskedEntity.metadata = fullEntity.metadata
         }
         if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
-            maskedEntity.pointers = [...fullEntity.pointers]
+            maskedEntity.pointers = fullEntity.pointers
         }
         return maskedEntity
     }
@@ -96,9 +105,11 @@ export class Controller {
         // Method: GET
         // Path: /contents/:hashId
         const hashId = req.params.hashId;
-      
-        res.send({
-            hashId: hashId,
+
+        this.service.getContent(hashId)
+        .then((data:Buffer) => {
+            res.contentType('application/octet-stream')
+            res.end(data, 'binary')            
         })
     }
     
@@ -106,33 +117,43 @@ export class Controller {
         // Method: GET
         // Path: /available-content
         // Query String: ?cid={hashId1}&cid={hashId2}
-        const cids = req.query.cid
+        const cids = this.asArray(req.query.cid)
         
-        res.send({
-            cids: cids,
-        })
+        this.service.isContentAvailable(cids)
+        .then(availableContent => res.send({
+            availableContent: [...availableContent],
+        }))
     }
       
     getPointers(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /pointers/:type
-        const type = req.params.type;
+        const type:EntityType  = this.parseEntityType(req.params.type)
         
-        res.send({
-            type: type,
-        })
+        // Validate type is valid
+        if (!type) {
+            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+            return
+        }
+
+        this.service.getActivePointers(type)
+        .then(pointers => res.send(pointers))
     }
     
     getAudit(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /audit/:type/:entityId
-        const type     = req.params.type;
+        const type     = this.parseEntityType(req.params.type)
         const entityId = req.params.entityId;
-        
-        res.send({
-            type: type,
-            entityId: entityId,
-        })
+
+        // Validate type is valid
+        if (!type) {
+            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+            return
+        }
+
+        this.service.getAuditInfo(type, entityId)
+        .then(auditInfo => res.send(auditInfo))
     }
       
     getHistory(req: express.Request, res: express.Response) {
@@ -141,15 +162,30 @@ export class Controller {
         // Query String: ?from={timestamp}&to={timestamp}&type={type}
         const from = req.query.from
         const to   = req.query.to
-        const type = req.query.type
+        const type = this.parseHistoryType(req.params.type)
         
-        res.send({
-            from: from,
-            to: to,
-            type: type,
-        })
+        this.service.getHistory(from, to, type)
+        .then(history => res.send(history))
     }
 
+    private parseHistoryType(strType: string): HistoryType {
+        if (strType.endsWith('s')) {
+            strType = strType.slice(0, -1)
+        }
+        strType = strType.toUpperCase().trim()
+        const type = HistoryType[strType]
+        return type
+    }
+
+}
+
+class ControllerEntity {	
+    id: string
+    type: string
+    pointers: string[]
+    timestamp: number
+    content?: [string, string][]
+    metadata?: any
 }
 
 export enum EntityField {
@@ -158,11 +194,3 @@ export enum EntityField {
     METADATA = "metadata",
 }
 
-export class ControllerEntity {
-    id: EntityId
-    type: EntityType
-    pointers: Pointer[]
-    timestamp: Timestamp
-    content?: [string,FileHash][]
-    metadata?: string    
-}

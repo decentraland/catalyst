@@ -1,5 +1,5 @@
 import { ContentStorage } from "./ContentStorage";
-import * as fs from 'fs';
+import fs from 'fs';
 
 export class FileSystemContentStorage implements ContentStorage {
     private root:string

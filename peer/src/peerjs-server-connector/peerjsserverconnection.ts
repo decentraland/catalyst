@@ -28,6 +28,75 @@ class PeerOptions {
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
+//There is repeated code between this function and the one below. Maybe it could be extracted
+export function createOfferMessage(
+  myId: string,
+  userId: string,
+  offerData: any,
+  connectionId: string
+) {
+  const payload = {
+    browser: "chrome",
+    sdp: offerData,
+    connectionId: connectionId,
+    label: connectionId,
+    reliable: isReliable(connectionId),
+    serialization: "binary"
+  };
+
+  const offer = {
+    type: ServerMessageType.Offer,
+    src: myId,
+    dst: userId,
+    payload
+  };
+
+  return offer;
+}
+
+export function createAnswerMessage(
+  myId: string,
+  userId: string,
+  answerData: any,
+  connectionId: string
+) {
+  const payload = {
+    browser: "chrome",
+    sdp: answerData,
+    connectionId: connectionId,
+    type: "data"
+  };
+
+  const answer = {
+    type: ServerMessageType.Answer,
+    src: myId,
+    dst: userId,
+    payload
+  };
+
+  return answer;
+}
+
+export function createCandidateMessage(
+  myId: string,
+  userId: string,
+  candidateData: any,
+  connectionId: string
+) {
+  const payload = {
+    ...candidateData,
+    connectionId: connectionId,
+    type: "data"
+  };
+  const candidate = {
+    type: ServerMessageType.Candidate,
+    src: myId,
+    dst: userId,
+    payload
+  };
+  return candidate;
+}
+
 /**
  * Connector to the PeerJS server in order to publish and receive connection offers
  */
@@ -109,7 +178,7 @@ export class PeerJSServerConnection extends EventEmitter {
       }
     }
 
-    // Set a custom log function if present
+    // Set a custom log function if pre sent
     if (this._options.logFunction) {
       logger.setLogFunction(this._options.logFunction);
     }
@@ -298,58 +367,21 @@ export class PeerJSServerConnection extends EventEmitter {
   }
 
   sendOffer(userId: string, offerData: any, connectionId: string) {
-    const payload = {
-      browser: "chrome",
-      sdp: offerData,
-      connectionId: connectionId,
-      label: connectionId,
-      reliable: isReliable(connectionId),
-      serialization: "binary"
-    };
-
-    const offer = {
-      type: ServerMessageType.Offer,
-      src: this.id,
-      dst: userId,
-      payload
-    };
-
-    this.socket.send(offer);
+    this.socket.send(
+      createOfferMessage(this.id!, userId, offerData, connectionId)
+    );
   }
 
   sendAnswer(userId: string, answerData: any, connectionId: string) {
-    const payload = {
-      browser: "chrome",
-      sdp: answerData,
-      connectionId: connectionId,
-      type: "data"
-    };
-
-    const answer = {
-      type: ServerMessageType.Answer,
-      src: this.id,
-      dst: userId,
-      payload
-    };
-
-    this.socket.send(answer);
+    this.socket.send(
+      createAnswerMessage(this.id!, userId, answerData, connectionId)
+    );
   }
 
   sendCandidate(userId: string, candidateData: any, connectionId: string) {
-    const payload = {
-      ...candidateData,
-      connectionId: connectionId,
-      type: "data"
-    };
-
-    const candidate = {
-      type: ServerMessageType.Candidate,
-      src: this.id,
-      dst: userId,
-      payload
-    };
-
-    this.socket.send(candidate);
+    this.socket.send(
+      createCandidateMessage(this.id!, userId, candidateData, connectionId)
+    );
   }
 
   /**

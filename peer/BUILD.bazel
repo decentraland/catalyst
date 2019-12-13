@@ -13,7 +13,7 @@ ts_library(
         "@npm//@types/simple-peer",
         "@npm//eventemitter3",
         "@npm//fp-future",
-        "@npm//simple-peer"
+        "@npm//simple-peer",
     ],
 )
 
@@ -34,16 +34,29 @@ ts_library(
     deps = [
         ":peer",
         "@npm//@types/jasmine",
-        "@npm//jasmine",
+        "@npm//@types/sinon",
+        "@npm//sinon",
     ],
 )
 
 karma_web_test_suite(
     name = "config_test",
+    config_file = ":karma.conf.js",
+    data = [
+        ":tests",
+    ],
+    static_files = [
+        "test/config.js",
+        "@npm//simple-peer:simple-peer__files",
+    ],
     tags = [],
     runtime_deps = [
     ],
     deps = [
+        "test/config.js",
         ":tests",
+        "@npm//eventemitter3:eventemitter3__umd",
+        "@npm//karma-mocha-reporter",
+        "@npm//karma-spec-reporter",
     ],
 )

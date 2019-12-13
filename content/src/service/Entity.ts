@@ -4,10 +4,20 @@ import { Timestamp } from "./Service"
 export class Entity {
     id: EntityId
     type: EntityType
-    pointers: Set<Pointer>
+    pointers: Pointer[]
     timestamp: Timestamp
     content?: Map<string, FileHash>
-    metadata?: string    
+    metadata?: any
+
+    constructor(id: EntityId, type: EntityType, pointers: Pointer[], timestamp: Timestamp, 
+        content?: Map<string, FileHash>, metadata?: any) {
+        this.id = id
+        this.type = type
+        this.pointers = pointers
+        this.timestamp = timestamp
+        this.content = content
+        this.metadata = metadata
+    }
 }
 
 export type Pointer = string
