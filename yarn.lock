@@ -2510,7 +2510,7 @@ path-type@^3.0.0:
   dependencies:
     pify "^3.0.0"
 
-"peerjs-server@https://github.com/peers/peerjs-server.git":
+"peerjs-server@https://github.com/peers/peerjs-server.git#94616d6e35a41de6d411464ceb4d6ac432099d5f":
   version "0.3.0"
   resolved "https://github.com/peers/peerjs-server.git#94616d6e35a41de6d411464ceb4d6ac432099d5f"
   dependencies:
