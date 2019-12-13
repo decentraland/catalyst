@@ -115,7 +115,7 @@ export class Peer implements IPeer {
             !this.hasConnectionsFor(user.peerId) &&
             user.peerId !== this.nickname
           ) {
-            this.getOrCreatePeer(user.peerId, true);
+            this.getOrCreatePeer(user.peerId, true, roomId);
           }
           this.sendPacket(user, {
             type: "hi",
@@ -167,12 +167,17 @@ export class Peer implements IPeer {
     );
   }
 
+  private findRoom(id: string) {
+    return this.currentRooms.find($ => $.id === id);
+  }
+
   private subscribeToConnection(
     peerId: string,
     connection: SimplePeer.Instance,
-    reliable: boolean
+    reliable: boolean,
+    roomId: string
   ) {
-    connection.on("signal", this.handleSignal(peerId, reliable));
+    connection.on("signal", this.handleSignal(peerId, reliable, roomId));
     connection.on("connect", () => {
       console.log(
         "CONNECTED to " +
@@ -183,16 +188,14 @@ export class Peer implements IPeer {
 
       this.peerConnectionPromises[peerId]?.forEach($ => $.resolve());
       delete this.peerConnectionPromises[peerId];
-      /*
-       * TODO: Currently there is no way of knowing for an incomming
-       * connection to which room the othe peer belongs, so we are adding them
-       * to the all the rooms. There are multiple options:
-       * - We refresh all the rooms when a user connects
-       * - We make the peers exchange their rooms as their first messages
-       * - We make the rooms a part of the handshake
-       */
+
       const data = { userId: peerId, peerId };
-      this.currentRooms.forEach(it => it.users.set(this.key(data), data));
+
+      const room = this.findRoom(roomId);
+
+      // if room is not found, we simply don't add the user
+      // TODO - we may need to close the connection if we are no longer interested in the room - moliva - 13/12/2019
+      room?.users.set(this.key(data), data);
     });
 
     connection.on("close", () => {
@@ -217,7 +220,7 @@ export class Peer implements IPeer {
       switch (parsed.type as PacketType) {
         case "hi": {
           const data = parsed.data as PacketData["hi"];
-          const room = this.currentRooms.find($ => $.id === data.room.id);
+          const room = this.findRoom(data.room.id);
           if (this.config.relay === RelayMode.All) {
             room?.users.forEach((user, userId) => {
               if (user.userId !== peerId && user.userId !== this.nickname) {
@@ -317,21 +320,25 @@ export class Peer implements IPeer {
     //TODO: Fail on error? Promise rejection?
   }
 
-  private handleSignal(peerId: string, reliable: boolean) {
+  private handleSignal(peerId: string, reliable: boolean, roomId: string) {
     const connectionId = connectionIdFor(this.nickname, peerId, reliable);
     return (data: SignalData) => {
       console.log(`Signal in peer connection ${this.nickname}:${peerId}`);
       if (data.type === PeerSignals.offer) {
-        this.peerJsConnection.sendOffer(peerId, data, connectionId);
+        this.peerJsConnection.sendOffer(peerId, data, connectionId, roomId);
       } else if (data.type === PeerSignals.answer) {
-        this.peerJsConnection.sendAnswer(peerId, data, connectionId);
+        this.peerJsConnection.sendAnswer(peerId, data, connectionId, roomId);
       } else if (data.candidate) {
-        this.peerJsConnection.sendCandidate(peerId, data, connectionId);
+        this.peerJsConnection.sendCandidate(peerId, data, connectionId, roomId);
       }
     };
   }
 
-  private getOrCreatePeer(peerId: string, initiator: boolean = false) {
+  private getOrCreatePeer(
+    peerId: string,
+    initiator: boolean = false,
+    room: string
+  ) {
     let peer = this.peers[peerId];
     if (!peer) {
       peer = this.peers[peerId] = {
@@ -358,23 +365,24 @@ export class Peer implements IPeer {
         // })
       };
 
-      this.subscribeToConnection(peerId, peer.reliableConnection, true);
+      this.subscribeToConnection(peerId, peer.reliableConnection, true, room);
       // this.subscribeToConnection(peerId, peer.unreliableConnection, false);
     }
     return peer;
   }
 
+  // handles ws messages from this peer's PeerJSServerConnection
   handleMessage(message: ServerMessage): void {
     const { type, payload, src: peerId } = message;
     switch (type) {
       case ServerMessageType.Offer:
       case ServerMessageType.Answer: {
-        const peer = this.getOrCreatePeer(peerId);
+        const peer = this.getOrCreatePeer(peerId, false, payload.label);
         signalMessage(peer, payload.connectionId, payload.sdp);
         break;
       }
       case ServerMessageType.Candidate: {
-        const peer = this.getOrCreatePeer(peerId);
+        const peer = this.getOrCreatePeer(peerId, false, payload.label);
         signalMessage(peer, payload.connectionId, {
           candidate: payload.candidate
         });

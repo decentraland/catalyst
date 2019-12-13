@@ -33,13 +33,14 @@ export function createOfferMessage(
   myId: string,
   userId: string,
   offerData: any,
-  connectionId: string
+  connectionId: string,
+  label: string
 ) {
   const payload = {
     browser: "chrome",
     sdp: offerData,
     connectionId: connectionId,
-    label: connectionId,
+    label,
     reliable: isReliable(connectionId),
     serialization: "binary"
   };
@@ -58,12 +59,14 @@ export function createAnswerMessage(
   myId: string,
   userId: string,
   answerData: any,
-  connectionId: string
+  connectionId: string,
+  label: string
 ) {
   const payload = {
     browser: "chrome",
     sdp: answerData,
     connectionId,
+    label,
     type: "data"
   };
 
@@ -81,11 +84,13 @@ export function createCandidateMessage(
   myId: string,
   userId: string,
   candidateData: any,
-  connectionId: string
+  connectionId: string,
+  label: string
 ) {
   const payload = {
     ...candidateData,
     connectionId: connectionId,
+    label,
     type: "data"
   };
   const candidate = {
@@ -366,21 +371,42 @@ export class PeerJSServerConnection extends EventEmitter {
     }
   }
 
-  sendOffer(userId: string, offerData: any, connectionId: string) {
+  sendOffer(
+    userId: string,
+    offerData: any,
+    connectionId: string,
+    label: string
+  ) {
     this.socket.send(
-      createOfferMessage(this.id!, userId, offerData, connectionId)
+      createOfferMessage(this.id!, userId, offerData, connectionId, label)
     );
   }
 
-  sendAnswer(userId: string, answerData: any, connectionId: string) {
+  sendAnswer(
+    userId: string,
+    answerData: any,
+    connectionId: string,
+    label: string
+  ) {
     this.socket.send(
-      createAnswerMessage(this.id!, userId, answerData, connectionId)
+      createAnswerMessage(this.id!, userId, answerData, connectionId, label)
     );
   }
 
-  sendCandidate(userId: string, candidateData: any, connectionId: string) {
+  sendCandidate(
+    userId: string,
+    candidateData: any,
+    connectionId: string,
+    label: string
+  ) {
     this.socket.send(
-      createCandidateMessage(this.id!, userId, candidateData, connectionId)
+      createCandidateMessage(
+        this.id!,
+        userId,
+        candidateData,
+        connectionId,
+        label
+      )
     );
   }
 
