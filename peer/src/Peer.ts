@@ -318,6 +318,11 @@ export class Peer implements IPeer {
       if (conn.writable) {
         conn.write(JSON.stringify(packet));
       }
+    } else {
+      // TODO - review this case - moliva - 11/12/2019
+      console.log(
+        `peer ${user.peerId} required to talk to user ${user.userId} does not exist`
+      );
     }
     //TODO: Fail on error? Promise rejection?
   }
@@ -325,7 +330,7 @@ export class Peer implements IPeer {
   private handleSignal(peerId: string, reliable: boolean) {
     const connectionId = connectionIdFor(this.nickname, peerId, reliable);
     return (data: SignalData) => {
-      console.log(`Signal in peer connection ${this.nickname}:${peerId}`, data);
+      console.log(`Signal in peer connection ${this.nickname}:${peerId}`);
       if (data.type === PeerSignals.offer) {
         this.peerJsConnection.sendOffer(peerId, data, connectionId);
       } else if (data.type === PeerSignals.answer) {
