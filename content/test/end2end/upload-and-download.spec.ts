@@ -1,12 +1,13 @@
 import { Environment, SERVER_PORT } from "../../src/Environment"
 import { Server } from "../../src/Server"
+import { ControllerEntity } from "../../src/controller/Controller"
 import fetch from "node-fetch"
-import { EntityType, Entity } from "../../src/service/Entity"
+import { EntityType } from "../../src/service/Entity"
 import { Hashing } from "../../src/service/Hashing"
-import { buildEntityAndFile } from "../service/EntityTestFactory"
 import fs from "fs"
 import FormData from "form-data"
 import { DeploymentEvent, HistoryType } from "../../src/service/history/HistoryManager"
+import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
 
 describe("End 2 end deploy test", function() {
     let env: Environment
@@ -41,23 +42,25 @@ describe("End 2 end deploy test", function() {
         expect(deployResponse.ok).toBe(true)
 
         const json = await deployResponse.json()
-        console.log(json);
+        const deltaTimestamp = Date.now() - json.creationTimestamp
+        expect(deltaTimestamp).toBeLessThanOrEqual(10)
+        expect(deltaTimestamp).toBeGreaterThanOrEqual(0)
 
         //------------------------------
         // Retrieve the entity by id
         //------------------------------
         const responseById = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
         expect(responseById.ok).toBe(true)
-        const scenesById: Entity[] = await responseById.json();
-        validateReceivedData(scenesById, deployData)
+        const scenesById: ControllerEntity[] = await responseById.json();
+        await validateReceivedData(scenesById, deployData, env)
 
         //------------------------------
         // Retrieve the entity by pointer
         //------------------------------
         const responseByPointer = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?pointer=0,0`)
         expect(responseByPointer.ok).toBe(true)
-        const scenesByPointer: Entity[] = await responseByPointer.json();
-        validateReceivedData(scenesByPointer, deployData)
+        const scenesByPointer: ControllerEntity[] = await responseByPointer.json();
+        await validateReceivedData(scenesByPointer, deployData, env)
 
         const responseHistory = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/history`)
         expect(responseHistory.ok).toBe(true)
@@ -68,7 +71,7 @@ describe("End 2 end deploy test", function() {
 
 })
 
-async function createDeployData(): Promise<[DeployData, Entity]> {
+async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
     const fileContent1: Buffer = fs.readFileSync('content/test/end2end/some-binary-file.png');
     const fileContent2: Buffer = fs.readFileSync('content/test/end2end/some-text-file.txt');
 
@@ -79,7 +82,7 @@ async function createDeployData(): Promise<[DeployData, Entity]> {
     content.set("the-file-1", fileHash1)
     content.set("the-file-2", fileHash2)
 
-    const [entity, entityFile] = await buildEntityAndFile(
+    const [entity, entityFile] = await buildControllerEntityAndFile(
         'entity.json',
         EntityType.SCENE,
         ["0,0", "0,1"],
@@ -99,19 +102,40 @@ async function createDeployData(): Promise<[DeployData, Entity]> {
     return [deployData, entity]
 }
 
-function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: Entity) {
+function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity) {
     expect(deploymentEvent.type).toBe(HistoryType.DEPLOYMENT)
     expect(deploymentEvent.entityId).toBe(deployData.entityId)
     expect(deploymentEvent.entityType).toBe(entityBeingDeployed.type)
     expect(deploymentEvent.timestamp).toBe(entityBeingDeployed.timestamp)
 }
 
-function validateReceivedData(receivedScenes: Entity[], deployData: DeployData) {
+async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeployData, env: Environment) {
     expect(receivedScenes.length).toBe(1)
-    expect(receivedScenes[0].id).toBe(deployData.entityId)
-    expect(receivedScenes[0].metadata).toBe("this is just some metadata")
-    // TODO: validate the rest of the data
-    console.log(receivedScenes)
+    const scene: ControllerEntity = receivedScenes[0]
+    expect(scene.id).toBe(deployData.entityId)
+    expect(scene.metadata).toBe("this is just some metadata")
+
+    expect(scene.pointers.length).toBe(2)
+    expect(scene.pointers[0]).toBe("0,0")
+    expect(scene.pointers[1]).toBe("0,1")
+
+    expect(scene.content?.length).toBe(2)
+    expect(findInArray(scene.content, "the-file-1")).toBeDefined()
+    expect(findInArray(scene.content, "the-file-2")).toBeDefined()
+
+    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-1")??"")).toBeDefined()
+    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")??"")).toBeDefined()
+
+    scene.content?.forEach(async ([name,hash]) => {
+        const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/contents/${hash}`)
+        expect(response.ok).toBe(true)
+        const downloadedContent = await response.buffer()
+        expect(downloadedContent).toEqual(findInArray(deployData.files, hash) ?? Buffer.from([]))
+    })
+}
+
+function findInArray<T>(arrayOfPairs:[string,T][]|undefined, key: string): T|undefined {
+    return arrayOfPairs?.find(e => e[0]===key)?.[1];
 }
 
 type DeployData = {

@@ -3,6 +3,7 @@ import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import fs from "fs"
 import { Service, File, Signature, EthAddress } from "../service/Service";
 import { HistoryType, HistoryManager } from "../service/history/HistoryManager";
+import { ControllerEntityFactory } from "./ControllerEntityFactory";
 
 export class Controller {
     constructor(private service: Service, private historyManager: HistoryManager) { }
@@ -42,7 +43,7 @@ export class Controller {
             entities = this.service.getEntitiesByPointers(type, pointers)
         }
         entities
-        .then(fullEntities => fullEntities.map(fullEntity => this.maskEntity(fullEntity, enumFields)))
+        .then(fullEntities => fullEntities.map(fullEntity => ControllerEntityFactory.maskEntity(fullEntity, enumFields)))
         .then(maskedEntities => res.send(maskedEntities))
     }
 
@@ -63,23 +64,6 @@ export class Controller {
             return elements
         }
         return [elements]
-    }
-
-    private maskEntity(fullEntity: Entity, fields: EntityField[]|undefined): ControllerEntity {
-        let maskedEntity = new ControllerEntity()
-        maskedEntity.id = fullEntity.id
-        maskedEntity.type = fullEntity.type
-        maskedEntity.timestamp = fullEntity.timestamp
-        if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
-            maskedEntity.content = [...fullEntity.content]
-        }
-        if (!fields || fields.includes(EntityField.METADATA)) {
-            maskedEntity.metadata = fullEntity.metadata
-        }
-        if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
-            maskedEntity.pointers = fullEntity.pointers
-        }
-        return maskedEntity
     }
 
     createEntity(req: express.Request, res: express.Response) {
@@ -186,7 +170,7 @@ export class Controller {
 
 }
 
-class ControllerEntity {
+export class ControllerEntity {
     id: string
     type: string
     pointers: string[]
