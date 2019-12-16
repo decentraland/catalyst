@@ -2,7 +2,7 @@ import { Timestamp } from "../Service"
 import { EntityType, EntityId, Entity } from "../Entity"
 
 export interface HistoryManager {
-    newEntityDeployment(entity: Entity, deploymentTimestamp: Timestamp): void;
+    newEntityDeployment(entity: Entity, deploymentTimestamp: Timestamp): Promise<void>;
     setTimeAsImmutable(immutableTime: Timestamp): Promise<void>;
     getHistory(from?: Timestamp, to?: Timestamp): Promise<DeploymentHistory>;
 }

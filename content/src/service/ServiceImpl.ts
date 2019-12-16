@@ -114,7 +114,7 @@ export class ServiceImpl implements Service {
         // TODO: Save audit information
 
         // Add the new deployment to history
-        this.historyManager.newEntityDeployment(entity, deploymentTimestamp)
+        await this.historyManager.newEntityDeployment(entity, deploymentTimestamp)
 
         return Promise.resolve(deploymentTimestamp)
     }

@@ -47,6 +47,7 @@ describe("HistoryStorage", function() {
         expect(await this.storage.getImmutableHistory()).toEqual(history1.concat(history2))
     });
 
+    /** Returns a DeploymentHistory, sorted from oldest to newest */
     function getRandomEvents(amount: number): DeploymentHistory {
         return new Array(amount)
             .fill("")

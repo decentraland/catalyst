@@ -3,7 +3,8 @@ import { Entity } from "../../../src/service/Entity";
 
 export class MockedHistoryManager implements HistoryManager {
 
-    newEntityDeployment(entity: Entity): void {
+    newEntityDeployment(entity: Entity): Promise<void> {
+        return Promise.resolve()
     }
 
     setTimeAsImmutable(immutableTime: number): Promise<void> {
