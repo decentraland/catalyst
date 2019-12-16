@@ -77,7 +77,19 @@ describe("Peer Integration Test", function() {
     peerIds[roomId].push(peerPair);
   }
 
+  let relayPeer;
+  let relaySocket;
+  let relay = false;
+
+  function setUpRelay() {
+    relay = true;
+    [relaySocket, relayPeer] = createPeer("server");
+  }
+
   beforeEach(() => {
+    relay = false;
+    relayPeer = undefined;
+    relaySocket = undefined;
     peerIds = {};
     globalScope.fetch = (input, init) => {
       switch (init.method) {
@@ -88,8 +100,22 @@ describe("Peer Integration Test", function() {
             userId: string;
             peerId: string;
           };
-          joinRoom(peerPair, roomId);
-          return Promise.resolve(new Response(JSON.stringify(peerIds[roomId])));
+          joinRoom(
+            relay ? { ...peerPair, peerId: "server" } : peerPair,
+            roomId
+          );
+          return Promise.resolve(
+            new Response(
+              JSON.stringify(
+                relay
+                  ? peerIds[roomId].concat({
+                      userId: "server",
+                      peerId: "server"
+                    })
+                  : peerIds[roomId]
+              )
+            )
+          );
         }
         case "DELETE": {
           const segments = (input as string).split("/");
@@ -287,6 +313,64 @@ describe("Peer Integration Test", function() {
     expectPeerToBeInRoomWith(peer, "other", mock2);
     expectPeerToHaveConnectionsWith(peer, mock2);
   });
+
+  it("does not disconnect from peer, when relaying others (when relay in room)", async () => {
+    setUpRelay();
+
+    const [, mock1] = createPeer("mock1", [relaySocket]);
+    await mock1.joinRoom("room");
+
+    const [, mock2] = createPeer("mock2", [relaySocket]);
+    await mock2.joinRoom("room");
+    await mock2.joinRoom("other");
+
+    const [, peer] = createPeer("peer", [relaySocket]);
+    await peer.joinRoom("room");
+    await peer.joinRoom("other");
+
+    expectPeerToBeInRoomWith(peer, "room", mock1, mock2, relayPeer);
+    expectPeerToBeInRoomWith(peer, "other", mock2, relayPeer);
+    expectPeerToHaveConnectionsWith(peer, relayPeer);
+
+    await peer.leaveRoom("room");
+
+    expect(peer.currentRooms.length).toBe(1);
+    expectPeerToBeInRoomWith(peer, "other", mock2, relayPeer);
+    expectPeerToHaveConnectionsWith(peer, relayPeer);
+  });
+
+  function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
+    expectPeerToBeInRoomWith(peer, roomId, otherPeer);
+    expectPeerToBeConnectedTo(peer, otherPeer);
+  }
+
+  function expectPeerToBeConnectedTo(peer: Peer, otherPeer: Peer) {
+    //@ts-ignore
+    const peerToPeer = peer.peers[otherPeer.nickname];
+    expect(peerToPeer.reliableConnection).toBeDefined();
+    expect(peerToPeer.reliableConnection.writable).toBeTrue();
+  }
+
+  function expectPeerToBeInRoomWith(
+    peer: Peer,
+    roomId: string,
+    ...otherPeers: Peer[]
+  ) {
+    const peerRoom = peer.currentRooms.find(room => room.id === roomId)!;
+    expect(peerRoom).toBeDefined();
+    expect(peerRoom.id).toBe(roomId);
+    expect(peerRoom.users.size).toBe(otherPeers.length + 1);
+
+    for (const otherPeer of otherPeers) {
+      expect(
+        peerRoom.users.has(
+          `${otherPeer.nickname}:${
+            relay ? relayPeer.nickname : otherPeer.nickname
+          }`
+        )
+      ).toBeTrue();
+    }
+  }
 });
 
 function expectPeerToHaveNoConnections(peer: Peer) {
@@ -321,33 +405,4 @@ async function createConnectedPeers(
   await peer1.beConnectedTo(peerId2);
 
   return [peer1, peer2];
-}
-
-function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
-  expectPeerToBeInRoomWith(peer, roomId, otherPeer);
-  expectPeerToBeConnectedTo(peer, otherPeer);
-}
-
-function expectPeerToBeConnectedTo(peer: Peer, otherPeer: Peer) {
-  //@ts-ignore
-  const peerToPeer = peer.peers[otherPeer.nickname];
-  expect(peerToPeer.reliableConnection).toBeDefined();
-  expect(peerToPeer.reliableConnection.writable).toBeTrue();
-}
-
-function expectPeerToBeInRoomWith(
-  peer: Peer,
-  roomId: string,
-  ...otherPeers: Peer[]
-) {
-  const peerRoom = peer.currentRooms.find(room => room.id === roomId)!;
-  expect(peerRoom).toBeDefined();
-  expect(peerRoom.id).toBe(roomId);
-  expect(peerRoom.users.size).toBe(otherPeers.length + 1);
-
-  for (const otherPeer of otherPeers) {
-    expect(
-      peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
-    ).toBeTrue();
-  }
 }
