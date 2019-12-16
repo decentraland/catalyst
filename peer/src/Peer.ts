@@ -145,13 +145,19 @@ export class Peer implements IPeer {
     roomUsers.forEach(user => {
       const peer = this.peers[user.peerId];
 
-      if (peer) {
+      if (peer && !this.sharesRoomWith(peer.id)) {
         peer.reliableConnection.once("close", () => {
           delete this.peers[user.peerId];
         });
         peer.reliableConnection.destroy();
       }
     });
+  }
+
+  private sharesRoomWith(peerId: string) {
+    return this.currentRooms.some(room =>
+      [...room.users.values()].some(user => user.peerId === peerId)
+    );
   }
 
   public beConnectedTo(peerId: string, timeout: number = 5000): Promise<void> {
@@ -215,6 +221,26 @@ export class Peer implements IPeer {
     roomId: string
   ) {
     connection.on("signal", this.handleSignal(peerId, reliable, roomId));
+    connection.on("close", () => {
+      console.log(
+        "DISCONNECTED from " +
+          peerId +
+          " through " +
+          connectionIdFor(this.nickname, peerId, reliable)
+      );
+      // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
+      if (this.peers[peerId]) {
+        delete this.peers[peerId];
+      }
+      // removing all users connected via this peer of each room
+      this.currentRooms.forEach(room => {
+        [...room.users.values()].forEach(user => {
+          if (user.peerId === peerId) {
+            room.users.delete(this.key(user));
+          }
+        });
+      });
+    });
     connection.on("connect", () => {
       console.log(
         "CONNECTED to " +
@@ -233,15 +259,6 @@ export class Peer implements IPeer {
       // if room is not found, we simply don't add the user
       // TODO - we may need to close the connection if we are no longer interested in the room - moliva - 13/12/2019
       room?.users.set(this.key(data), data);
-    });
-
-    connection.on("close", () => {
-      console.log(
-        "DISCONNECTED from " +
-          peerId +
-          " through " +
-          connectionIdFor(this.nickname, peerId, reliable)
-      );
     });
 
     connection.on("error", err => {
@@ -410,19 +427,22 @@ export class Peer implements IPeer {
 
   // handles ws messages from this peer's PeerJSServerConnection
   handleMessage(message: ServerMessage): void {
-    const { type, payload, src: peerId } = message;
-    switch (type) {
-      case ServerMessageType.Offer:
-      case ServerMessageType.Answer: {
-        const peer = this.getOrCreatePeer(peerId, false, payload.label);
-        signalMessage(peer, payload.connectionId, payload.sdp);
-        break;
-      }
-      case ServerMessageType.Candidate: {
-        const peer = this.getOrCreatePeer(peerId, false, payload.label);
-        signalMessage(peer, payload.connectionId, {
-          candidate: payload.candidate
-        });
+    const { type, payload, src: peerId, dst } = message;
+
+    if (dst === this.nickname) {
+      switch (type) {
+        case ServerMessageType.Offer:
+        case ServerMessageType.Answer: {
+          const peer = this.getOrCreatePeer(peerId, false, payload.label);
+          signalMessage(peer, payload.connectionId, payload.sdp);
+          break;
+        }
+        case ServerMessageType.Candidate: {
+          const peer = this.getOrCreatePeer(peerId, false, payload.label);
+          signalMessage(peer, payload.connectionId, {
+            candidate: payload.candidate
+          });
+        }
       }
     }
   }

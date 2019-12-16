@@ -16,9 +16,9 @@ class SocketMock implements SocketType {
 
   readyState: number = 1;
 
-  constructor(private destination?: SocketMock) {
-    if (destination) {
-      destination.destination = this;
+  constructor(private destinations: SocketMock[]) {
+    for (const destination of destinations) {
+      destination.destinations.push(this);
     }
   }
 
@@ -27,7 +27,7 @@ class SocketMock implements SocketType {
   send(
     data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView
   ): void {
-    this.destination?.onmessage({ data });
+    this.destinations.forEach($ => $.onmessage({ data }));
   }
 }
 
@@ -37,7 +37,7 @@ const messageHandler: PacketCallback = (sender, room, payload) => {
 
 function createPeer(
   peerId: string,
-  socketDestination?: SocketMock,
+  socketDestination: SocketMock[] = [],
   callback: PacketCallback = messageHandler
 ): [SocketMock, Peer] {
   const socket = new SocketMock(socketDestination);
@@ -166,7 +166,7 @@ describe("Peer Integration Test", function() {
   it("Joins a lone room", async () => {
     const [, peer] = createPeer("peer");
 
-    await doJoinRoom(peer, "room");
+    await peer.joinRoom("room");
 
     expectSinglePeerInRoom(peer, "room");
   });
@@ -174,11 +174,11 @@ describe("Peer Integration Test", function() {
   it("Does not see peers in other rooms", async () => {
     const [, peer1] = createPeer("peer1");
 
-    await doJoinRoom(peer1, "room1");
+    await peer1.joinRoom("room1");
 
     const [, peer2] = createPeer("peer2");
 
-    await doJoinRoom(peer2, "room2");
+    await peer2.joinRoom("room2");
 
     expectSinglePeerInRoom(peer1, "room1");
     expectSinglePeerInRoom(peer2, "room2");
@@ -187,7 +187,7 @@ describe("Peer Integration Test", function() {
   it("does not receive message in other room", async () => {
     const [, peer3] = createPeer("peer3");
 
-    await doJoinRoom(peer3, "room3");
+    await peer3.joinRoom("room3");
 
     const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
 
@@ -220,9 +220,9 @@ describe("Peer Integration Test", function() {
     const [socket, mock] = createPeer("mock");
     await mock.joinRoom("room");
 
-    const [, peer] = createPeer("peer", socket);
+    const [, peer] = createPeer("peer", [socket]);
 
-    await doJoinRoom(peer, "room");
+    await peer.joinRoom("room");
 
     expectPeerToBeInRoomWith(peer, "room", mock);
 
@@ -237,7 +237,7 @@ describe("Peer Integration Test", function() {
   it("leaves a room idempotently", async () => {
     const [, peer] = createPeer("peer");
 
-    await doJoinRoom(peer, "room");
+    await peer.joinRoom("room");
 
     expectSinglePeerInRoom(peer, "room");
 
@@ -264,6 +264,29 @@ describe("Peer Integration Test", function() {
     expect(peerIds["room"]).toBeUndefined();
     expectSinglePeerInRoom(peer, "roomin");
   });
+
+  it("does not disconnect from other, when a room is still shared", async () => {
+    const [socket1, mock1] = createPeer("mock1");
+    await mock1.joinRoom("room");
+
+    const [socket2, mock2] = createPeer("mock2", [socket1]);
+    await mock2.joinRoom("room");
+    await mock2.joinRoom("other");
+
+    const [, peer] = createPeer("peer", [socket1, socket2]);
+    await peer.joinRoom("room");
+    await peer.joinRoom("other");
+
+    expectPeerToBeInRoomWith(peer, "room", mock1, mock2);
+    expectPeerToBeInRoomWith(peer, "other", mock2);
+    expectPeerToHaveConnectionsWith(peer, mock1, mock2);
+
+    await peer.leaveRoom("room");
+
+    expect(peer.currentRooms.length).toBe(1);
+    expectPeerToBeInRoomWith(peer, "other", mock2);
+    expectPeerToHaveConnectionsWith(peer, mock2);
+  });
 });
 
 function expectPeerToHaveNoConnections(peer: Peer) {
@@ -271,8 +294,15 @@ function expectPeerToHaveNoConnections(peer: Peer) {
   expect(Object.entries(peer.peers).length).toBe(0);
 }
 
-async function doJoinRoom(peer: Peer, room: string) {
-  await peer.joinRoom(room);
+function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
+  //@ts-ignore
+  const peers = Object.values(peer.peers);
+
+  expect(peers.length).toBe(others.length);
+
+  for (const other of others) {
+    expect(peers.some(($: any) => $.id === other.nickname)).toBeTrue();
+  }
 }
 
 async function createConnectedPeers(
@@ -282,11 +312,11 @@ async function createConnectedPeers(
 ) {
   const [peer1Socket, peer1] = createPeer(peerId1);
 
-  await doJoinRoom(peer1, room);
+  await peer1.joinRoom(room);
 
-  const [, peer2] = createPeer(peerId2, peer1Socket);
+  const [, peer2] = createPeer(peerId2, [peer1Socket]);
 
-  await doJoinRoom(peer2, room);
+  await peer2.joinRoom(room);
 
   await peer1.beConnectedTo(peerId2);
 
@@ -310,7 +340,8 @@ function expectPeerToBeInRoomWith(
   roomId: string,
   ...otherPeers: Peer[]
 ) {
-  const peerRoom = peer.currentRooms[0];
+  const peerRoom = peer.currentRooms.find(room => room.id === roomId)!;
+  expect(peerRoom).toBeDefined();
   expect(peerRoom.id).toBe(roomId);
   expect(peerRoom.users.size).toBe(otherPeers.length + 1);
 
