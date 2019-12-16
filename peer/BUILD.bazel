@@ -40,6 +40,7 @@ ts_library(
     ],
 )
 
+
 karma_web_test_suite(
     name = "config_test",
     config_file = ":karma.conf.js",

@@ -83,9 +83,6 @@ workflows:
     jobs:
       - checkout:
           <<: *all_branches_and_tags
-          filters:
-            branches:
-              only: chore/pipeline
       - build-peer:
           <<: *all_branches_and_tags
           requires:
