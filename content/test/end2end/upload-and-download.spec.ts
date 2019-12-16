@@ -1,10 +1,11 @@
-import { Environment, SERVER_PORT } from "../../src/Environment"
+import { Environment, SERVER_PORT, STORAGE_ROOT_FOLDER } from "../../src/Environment"
 import { Server } from "../../src/Server"
 import { ControllerEntity } from "../../src/controller/Controller"
 import fetch from "node-fetch"
 import { EntityType } from "../../src/service/Entity"
 import { Hashing } from "../../src/service/Hashing"
 import fs from "fs"
+import path from "path"
 import FormData from "form-data"
 import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
 import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
@@ -19,7 +20,10 @@ describe("End 2 end deploy test", function() {
         server = new Server(env)
         server.start()
     })
-    afterAll(() => server.stop())
+    afterAll(() => {
+        server.stop()
+        deleteFolderRecursive(env.getConfig(STORAGE_ROOT_FOLDER))
+    })
 
     it(`Deploy and retrieve some content`, async () => {
 
@@ -137,6 +141,20 @@ async function validateReceivedData(receivedScenes: ControllerEntity[], deployDa
 function findInArray<T>(arrayOfPairs:[string,T][]|undefined, key: string): T|undefined {
     return arrayOfPairs?.find(e => e[0]===key)?.[1];
 }
+
+function deleteFolderRecursive(pathToDelete) {
+    if (fs.existsSync(pathToDelete)) {
+        fs.readdirSync(pathToDelete).forEach((file, index) => {
+            const curPath = path.join(pathToDelete, file);
+            if (fs.lstatSync(curPath).isDirectory()) { // recurse
+            deleteFolderRecursive(curPath);
+            } else { // delete file
+            fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(pathToDelete);
+    }
+  };
 
 type DeployData = {
     entityId: string,

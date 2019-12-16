@@ -3,9 +3,9 @@ import { FileSystemUtils as fsu } from "./FileSystemUtils";
 import { Environment, STORAGE_ROOT_FOLDER } from "../../src/Environment";
 
 describe("ContentStorage", function() {
-  let tmpRootDir = fsu.createTempDirectory()
-  Environment.getInstance().setConfig(STORAGE_ROOT_FOLDER, tmpRootDir)
-  const storage = ContentStorageFactory.local(Environment.getInstance())
+  const env = new Environment()
+  env.setConfig(STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
+  const storage = ContentStorageFactory.local(env)
 
   const category = "some-category"
   const id = "some-id"
