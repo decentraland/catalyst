@@ -220,6 +220,24 @@ describe("Peer Integration Test", function() {
     expect(peer.currentRooms.length).toBe(0);
   });
 
+  it("leaves a room idempotently", async () => {
+    const [, peer] = createPeer("peer");
+
+    await doJoinRoom(peer, "room");
+
+    expectSinglePeerInRoom(peer, "room");
+
+    await peer.leaveRoom("room");
+
+    expect(peerIds["room"].length).toBe(0);
+    expect(peer.currentRooms.length).toBe(0);
+
+    await peer.leaveRoom("room");
+
+    expect(peerIds["room"].length).toBe(0);
+    expect(peer.currentRooms.length).toBe(0);
+  });
+
   it("leaves a room it is in without leaving the rest", async () => {
     const [, peer] = createPeer("peer");
 
