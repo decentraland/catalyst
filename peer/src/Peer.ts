@@ -127,6 +127,17 @@ export class Peer implements IPeer {
     );
   }
 
+  async leaveRoom(roomId: string) {
+    // @ts-ignore
+    const roomUsers: PeerConnectionData[] = await fetch(
+      `${this.lighthouseUrl}/rooms/${roomId}/users/${this.nickname}`,
+      { method: "DELETE" }
+    ).then(res => res.json());
+
+    const index = this.currentRooms.findIndex(room => room.id === roomId);
+    this.currentRooms.splice(index, 1);
+  }
+
   public beConnectedTo(peerId: string, timeout: number = 5000): Promise<void> {
     return new Promise((resolve, reject) => {
       const promisePair = { resolve, reject };
@@ -153,7 +164,7 @@ export class Peer implements IPeer {
   }
 
   public disconnectFrom(peerId: string) {
-    if(this.peers[peerId]) {
+    if (this.peers[peerId]) {
       console.log("[PEER] Disconnecting from " + peerId);
       this.peers[peerId].reliableConnection.destroy();
       delete this.peers[peerId];
