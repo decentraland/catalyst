@@ -4,4 +4,5 @@ export class ServerMessage {
   type: ServerMessageType;
   payload: any;
   src: string;
+  dst: string;
 }
