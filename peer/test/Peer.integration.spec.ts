@@ -169,6 +169,20 @@ describe("Peer Integration Test", function() {
     expectConnectionInRoom(peer2, peer1, "room");
   });
 
+  it("joining room twice should be idempotent", async () => {
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    expectConnectionInRoom(peer1, peer2, "room");
+    expectConnectionInRoom(peer2, peer1, "room");
+
+    await peer1.joinRoom("room");
+
+    expectConnectionInRoom(peer1, peer2, "room");
+    expectConnectionInRoom(peer2, peer1, "room");
+
+    expectPeerToHaveNConnections(1, peer1);
+  });
+
   it("Sends and receives data", async () => {
     const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
 
@@ -374,8 +388,12 @@ describe("Peer Integration Test", function() {
 });
 
 function expectPeerToHaveNoConnections(peer: Peer) {
+  expectPeerToHaveNConnections(0, peer);
+}
+
+function expectPeerToHaveNConnections(n: number, peer: Peer) {
   //@ts-ignore
-  expect(Object.entries(peer.peers).length).toBe(0);
+  expect(Object.entries(peer.peers).length).toBe(n);
 }
 
 function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
