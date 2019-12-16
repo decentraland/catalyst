@@ -258,10 +258,10 @@ async function createConnectedPeers(
 
 function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
   expectPeerToBeInRoomWith(peer, roomId, otherPeer);
-  expectPeerToBeConnecetedTo(peer, otherPeer);
+  expectPeerToBeConnectedTo(peer, otherPeer);
 }
 
-function expectPeerToBeConnecetedTo(peer: Peer, otherPeer: Peer) {
+function expectPeerToBeConnectedTo(peer: Peer, otherPeer: Peer) {
   //@ts-ignore
   const peerToPeer = peer.peers[otherPeer.nickname];
   expect(peerToPeer.reliableConnection).toBeDefined();
