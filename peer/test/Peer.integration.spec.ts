@@ -39,14 +39,15 @@ function createPeer(
   peerId: string,
   socketDestination?: SocketMock,
   callback: PacketCallback = messageHandler
-) {
+): [SocketMock, Peer] {
   const socket = new SocketMock(socketDestination);
+
   return [
     socket,
     new Peer("http://notimportant:8888", peerId, callback, {
-      socketBuilder: url => socket
+      socketBuilder: () => socket
     })
-  ] as [SocketMock, Peer];
+  ];
 }
 
 describe("Peer Integration Test", function() {
@@ -207,6 +208,7 @@ describe("Peer Integration Test", function() {
 
     await message3;
   });
+
   it("leaves a room it is in", async () => {
     const [, peer] = createPeer("peer");
 
