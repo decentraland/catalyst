@@ -63,37 +63,42 @@ export class ServiceImpl implements Service {
     }
 
     async deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
-        // Validate signature
-        Validation.validateSignature(entityId, ethAddress, signature)
-
-        // Validate request size
-        Validation.validateRequestSize(files)
-
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
             throw new Error("Entity file's hash didn't match the signed entity id.")
         }
 
+        const validation = new Validation()
+        // Validate signature
+        validation.validateSignature(entityId, ethAddress, signature)
+
+        // Validate request size
+        validation.validateRequestSize(files)
+
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
 
         // Validate entity
-        Validation.validateEntity(entity)
+        validation.validateEntity(entity)
 
         // Validate ethAddress access
-        Validation.validateAccess(entity.pointers, ethAddress, entity.type)
+        validation.validateAccess(entity.pointers, ethAddress, entity.type)
 
         // Validate that the entity is "fresh"
-        Validation.validateFreshDeployment(entity)
+        await validation.validateFreshDeployment(entity, (type,pointers) => this.getEntitiesByPointers(type, pointers))
 
         // Type validation
-        Validation.validateType(entity)
+        validation.validateType(entity)
 
         // Hash all files, and validate them
         const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
         const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(hashes.keys()));
-        Validation.validateHashes(entity, hashes, alreadyStoredHashes)
+        validation.validateHashes(entity, hashes, alreadyStoredHashes)
+
+        if (validation.getErrors().length > 0) {
+            throw new Error(validation.getErrors().join('\n'))
+        }
 
         // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITED
 

@@ -13,7 +13,7 @@ describe("Service", function() {
   beforeAll(async () => {
     this.randomFile = { name: "file", content: Buffer.from("1234") }
     this.randomFileHash = await Hashing.calculateHash(this.randomFile)
-    const [entity, entityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X1,Y1", "X2,Y2"], 123456, new Map([[this.randomFile.name, this.randomFileHash]]), "metadata")
+    const [entity, entityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X1,Y1", "X2,Y2"], Date.now(), new Map([[this.randomFile.name, this.randomFileHash]]), "metadata")
     this.entityFile = entityFile
     this.entity = entity
     this.historyManager = new MockedHistoryManager()
@@ -66,7 +66,7 @@ describe("Service", function() {
 
     await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
 
-    const [newEntity, newEntityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X2,Y2", "X3,Y3"], 123457)
+    const [newEntity, newEntityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X2,Y2", "X3,Y3"], Date.now())
 
     await this.service.deployEntity(new Set([newEntityFile]), newEntity.id, "ethAddress", "signature")
 

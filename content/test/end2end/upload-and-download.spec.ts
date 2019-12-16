@@ -48,7 +48,7 @@ describe("End 2 end deploy test", function() {
 
         const { creationTimestamp } = await deployResponse.json()
         const deltaTimestamp = Date.now() - creationTimestamp
-        expect(deltaTimestamp).toBeLessThanOrEqual(10)
+        expect(deltaTimestamp).toBeLessThanOrEqual(50)
         expect(deltaTimestamp).toBeGreaterThanOrEqual(0)
 
         //------------------------------
