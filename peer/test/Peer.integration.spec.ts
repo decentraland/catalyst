@@ -52,8 +52,20 @@ function createPeer(
 describe("Peer Integration Test", function() {
   let peerIds: Record<string, PeerConnectionData[]>;
 
-  const expectSinglePeerInRoom = (peer: Peer, roomId: string) =>
-    _expectSinglePeerInRoom(peerIds, peer, roomId);
+  function expectSinglePeerInRoom(peer: Peer, roomId: string) {
+    expect(peerIds[roomId]).toBeDefined();
+    expect(peerIds[roomId].length).toBe(1);
+
+    const peerRoom = peer.currentRooms.find(room => room.id === roomId)!;
+    expect(peerRoom).toBeDefined();
+
+    expect(peerRoom.id).toBe(roomId);
+    expect(peerRoom.users.size).toBe(1);
+    expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
+
+    //@ts-ignore
+    expect(Object.entries(peer.peers).length).toBe(0);
+  }
 
   beforeEach(() => {
     peerIds = {};
@@ -195,8 +207,7 @@ describe("Peer Integration Test", function() {
 
     await message3;
   });
-
-  it("leaves the room", async () => {
+  it("leaves a room it is in", async () => {
     const [, peer] = createPeer("peer");
 
     await doJoinRoom(peer, "room");
@@ -207,6 +218,19 @@ describe("Peer Integration Test", function() {
 
     expect(peerIds["room"].length).toBe(0);
     expect(peer.currentRooms.length).toBe(0);
+  });
+
+  it("leaves a room it is in without leaving the rest", async () => {
+    const [, peer] = createPeer("peer");
+
+    await peer.joinRoom("roomin");
+
+    expectSinglePeerInRoom(peer, "roomin");
+
+    await peer.leaveRoom("room");
+
+    expect(peerIds["room"]).toBeUndefined();
+    expectSinglePeerInRoom(peer, "roomin");
   });
 });
 
@@ -258,22 +282,4 @@ function expectPeerToBeInRoomWith(
       peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
     ).toBeTrue();
   }
-}
-
-function _expectSinglePeerInRoom(
-  peerIds: Record<string, PeerConnectionData[]>,
-  peer: Peer,
-  roomId: string
-) {
-  expect(peerIds[roomId]).toBeDefined();
-  expect(peerIds[roomId].length).toBe(1);
-  expect(peer.currentRooms.length).toBe(1);
-
-  const peerRoom = peer.currentRooms[0];
-  expect(peerRoom.id).toBe(roomId);
-  expect(peerRoom.users.size).toBe(1);
-  expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
-
-  //@ts-ignore
-  expect(Object.entries(peer.peers).length).toBe(0);
 }

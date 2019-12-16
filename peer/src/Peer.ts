@@ -135,6 +135,12 @@ export class Peer implements IPeer {
     ).then(res => res.json());
 
     const index = this.currentRooms.findIndex(room => room.id === roomId);
+
+    if (index === -1) {
+      // not in room -> do nothing
+      return Promise.resolve();
+    }
+
     this.currentRooms.splice(index, 1);
   }
 
