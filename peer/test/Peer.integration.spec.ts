@@ -194,17 +194,32 @@ async function createConnectedPeers(
   return [peer1, peer2];
 }
 
-function assertConnectedTo(peer: Peer, otherPeer: Peer) {
-  const peerRoom = peer.currentRooms[0];
-  expect(peerRoom.id).toBe("room");
-  expect(peerRoom.users.size).toBe(2);
-  expect(
-    peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
-  ).toBeTrue();
+function assertConnectedTo(
+  peer: Peer,
+  otherPeer: Peer,
+  roomId: string = "room"
+) {
+  expectPeerToBeInRoomWith(peer, roomId, otherPeer);
   //@ts-ignore
   const peerToPeer = peer.peers[otherPeer.nickname];
   expect(peerToPeer.reliableConnection).toBeDefined();
   expect(peerToPeer.reliableConnection.writable).toBeTrue();
+}
+
+function expectPeerToBeInRoomWith(
+  peer: Peer,
+  roomId: string,
+  ...otherPeers: Peer[]
+) {
+  const peerRoom = peer.currentRooms[0];
+  expect(peerRoom.id).toBe(roomId);
+  expect(peerRoom.users.size).toBe(otherPeers.length + 1);
+
+  for (const otherPeer of otherPeers) {
+    expect(
+      peerRoom.users.has(`${otherPeer.nickname}:${otherPeer.nickname}`)
+    ).toBeTrue();
+  }
 }
 
 function _expectSinglePeerInRoom(
