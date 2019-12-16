@@ -64,24 +64,31 @@ describe("Peer Integration Test", function() {
     expect(peerRoom.users.size).toBe(1);
     expect(peerRoom.users.has(`${peer.nickname}:${peer.nickname}`)).toBeTrue();
 
-    //@ts-ignore
-    expect(Object.entries(peer.peers).length).toBe(0);
+    expectPeerToHaveNoConnections(peer);
+  }
+
+  function joinRoom(
+    peerPair: { userId: string; peerId: string },
+    roomId: string
+  ) {
+    if (!peerIds[roomId]) {
+      peerIds[roomId] = [];
+    }
+    peerIds[roomId].push(peerPair);
   }
 
   beforeEach(() => {
     peerIds = {};
     globalScope.fetch = (input, init) => {
-      console.log(`init ${JSON.stringify(init)}`);
       switch (init.method) {
         case "PUT": {
           const segments = (input as string).split("/");
           const roomId = segments[segments.length - 1];
-
-          if (!peerIds[roomId]) {
-            peerIds[roomId] = [];
-          }
-          peerIds[roomId].push(JSON.parse(init.body));
-
+          const peerPair = JSON.parse(init.body) as {
+            userId: string;
+            peerId: string;
+          };
+          joinRoom(peerPair, roomId);
           return Promise.resolve(new Response(JSON.stringify(peerIds[roomId])));
         }
         case "DELETE": {
@@ -210,16 +217,21 @@ describe("Peer Integration Test", function() {
   });
 
   it("leaves a room it is in", async () => {
-    const [, peer] = createPeer("peer");
+    const [socket, mock] = createPeer("mock");
+    await mock.joinRoom("room");
+
+    const [, peer] = createPeer("peer", socket);
 
     await doJoinRoom(peer, "room");
 
-    expectSinglePeerInRoom(peer, "room");
+    expectPeerToBeInRoomWith(peer, "room", mock);
 
     await peer.leaveRoom("room");
 
-    expect(peerIds["room"].length).toBe(0);
+    expect(peerIds["room"].length).toBe(1);
     expect(peer.currentRooms.length).toBe(0);
+
+    expectPeerToHaveNoConnections(peer);
   });
 
   it("leaves a room idempotently", async () => {
@@ -253,6 +265,11 @@ describe("Peer Integration Test", function() {
     expectSinglePeerInRoom(peer, "roomin");
   });
 });
+
+function expectPeerToHaveNoConnections(peer: Peer) {
+  //@ts-ignore
+  expect(Object.entries(peer.peers).length).toBe(0);
+}
 
 async function doJoinRoom(peer: Peer, room: string) {
   await peer.joinRoom(room);

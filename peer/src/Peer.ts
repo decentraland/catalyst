@@ -128,7 +128,6 @@ export class Peer implements IPeer {
   }
 
   async leaveRoom(roomId: string) {
-    // @ts-ignore
     const roomUsers: PeerConnectionData[] = await fetch(
       `${this.lighthouseUrl}/rooms/${roomId}/users/${this.nickname}`,
       { method: "DELETE" }
@@ -142,6 +141,17 @@ export class Peer implements IPeer {
     }
 
     this.currentRooms.splice(index, 1);
+
+    roomUsers.forEach(user => {
+      const peer = this.peers[user.peerId];
+
+      if (peer) {
+        peer.reliableConnection.once("close", () => {
+          delete this.peers[user.peerId];
+        });
+        peer.reliableConnection.destroy();
+      }
+    });
   }
 
   public beConnectedTo(peerId: string, timeout: number = 5000): Promise<void> {
