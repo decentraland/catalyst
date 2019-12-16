@@ -59,19 +59,44 @@ describe("Peer Integration Test", function() {
     peerIds = {};
     globalScope.fetch = (input, init) => {
       console.log(`init ${JSON.stringify(init)}`);
-      if (init.method === "PUT") {
-        const segments = (input as string).split("/");
-        const roomId = segments[segments.length - 1];
+      switch (init.method) {
+        case "PUT": {
+          const segments = (input as string).split("/");
+          const roomId = segments[segments.length - 1];
 
-        if (!peerIds[roomId]) {
-          peerIds[roomId] = [];
+          if (!peerIds[roomId]) {
+            peerIds[roomId] = [];
+          }
+          peerIds[roomId].push(JSON.parse(init.body));
+
+          return Promise.resolve(new Response(JSON.stringify(peerIds[roomId])));
         }
-        peerIds[roomId].push(JSON.parse(init.body));
+        case "DELETE": {
+          const segments = (input as string).split("/");
 
-        return Promise.resolve(new Response(JSON.stringify(peerIds[roomId])));
+          const roomId = segments[segments.length - 3];
+          const userId = segments[segments.length - 1];
+
+          const room = peerIds[roomId];
+          if (!room) {
+            return Promise.resolve(new Response(JSON.stringify([])));
+          }
+
+          const index = room.findIndex(u => u.userId === userId);
+          if (index === -1) {
+            return Promise.resolve(new Response(JSON.stringify(room)));
+          }
+
+          peerIds[roomId].splice(index, 1);
+
+          return Promise.resolve(new Response(JSON.stringify(peerIds[roomId])));
+        }
       }
-
-      return Promise.reject("not handled");
+      return Promise.reject(
+        `mock fetch not able to handle ${JSON.stringify(
+          input
+        )} ${JSON.stringify(init)}`
+      );
     };
   });
 
@@ -94,8 +119,8 @@ describe("Peer Integration Test", function() {
   it("Performs handshake as expected", async () => {
     const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
 
-    assertConnectedTo(peer1, peer2);
-    assertConnectedTo(peer2, peer1);
+    expectConnectionInRoom(peer1, peer2, "room");
+    expectConnectionInRoom(peer2, peer1, "room");
   });
 
   it("Sends and receives data", async () => {
@@ -170,6 +195,19 @@ describe("Peer Integration Test", function() {
 
     await message3;
   });
+
+  it("leaves the room", async () => {
+    const [, peer] = createPeer("peer");
+
+    await doJoinRoom(peer, "room");
+
+    expectSinglePeerInRoom(peer, "room");
+
+    await peer.leaveRoom("room");
+
+    expect(peerIds["room"].length).toBe(0);
+    expect(peer.currentRooms.length).toBe(0);
+  });
 });
 
 async function doJoinRoom(peer: Peer, room: string) {
@@ -194,12 +232,12 @@ async function createConnectedPeers(
   return [peer1, peer2];
 }
 
-function assertConnectedTo(
-  peer: Peer,
-  otherPeer: Peer,
-  roomId: string = "room"
-) {
+function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
   expectPeerToBeInRoomWith(peer, roomId, otherPeer);
+  expectPeerToBeConnecetedTo(peer, otherPeer);
+}
+
+function expectPeerToBeConnecetedTo(peer: Peer, otherPeer: Peer) {
   //@ts-ignore
   const peerToPeer = peer.peers[otherPeer.nickname];
   expect(peerToPeer.reliableConnection).toBeDefined();
