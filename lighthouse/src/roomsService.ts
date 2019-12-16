@@ -1,14 +1,14 @@
 import { PeerConnectionData } from "../../peer/src/types";
 import { Peer } from "../../peer/src/Peer";
 
-type RoomsFilter = {
+type RoomsFilter = Partial<{
   userId: string;
-};
+}>;
 
-type RoomsServiceConfig = {
-  relay?: boolean;
-  serverPeerProvider?: () => Peer;
-};
+type RoomsServiceConfig = Partial<{
+  relay: boolean;
+  serverPeerProvider: () => Peer;
+}>;
 
 export class RoomsService {
   private rooms: Record<string, PeerConnectionData[]> = {};
@@ -60,7 +60,7 @@ export class RoomsService {
   removeUserFromRoom(roomId: string, userId: string) {
     let room = this.rooms[roomId];
     if (room) {
-      const index = room.indexOf(room.find($ => $.userId === userId) as any);
+      const index = room.findIndex($ => $.userId === userId);
       if (index !== -1) {
         room.splice(index, 1);
       }
