@@ -14,7 +14,7 @@ function fieldFor(label: string, value: string, setter: (s: string) => any) {
 }
 
 export function ConnectForm(props: {
-  onConnected: (peer: IPeer, room: string) => any;
+  onConnected: (peer: IPeer, room: string, url: string) => any;
   peerClass: {
     new (url: string, nickname: string, callback: any, config: any): IPeer;
   };
@@ -47,7 +47,7 @@ export function ConnectForm(props: {
       });
       await peer.joinRoom(room);
       setLoading(false);
-      props.onConnected(peer, room);
+      props.onConnected(peer, room, url);
     } catch (e) {
       setError(e.toString());
       setLoading(false);

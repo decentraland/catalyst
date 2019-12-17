@@ -5,6 +5,22 @@ body {
 .chat {
   width: 800px;
   padding: 10px;
+
+  display: grid;
+  grid-template-columns: 20% 80%;
+}
+
+.welcome-message {
+  grid-column: 1 / span 2;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  cursor: pointer;
 }
 
 .room-title {
@@ -15,74 +31,103 @@ body {
 }
 
 .messages-container {
-    height: 300px;
-    border-bottom: 1px solid;
-    padding-top: 10px;
-    padding-bottom 10px;
-    overflow: auto;
+  height: 300px;
+  border-bottom: 1px solid;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  overflow: auto;
 }
 
 .message-container {
-    position: relative;
-    padding-top: 10px;
+  position: relative;
+  padding-top: 10px;
 }
 
 .message-container textarea {
-    position: relative;
-    width: 70%;
-    min-height: 100px;
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    background-color: #fafafa;
+  position: relative;
+  width: 70%;
+  min-height: 100px;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  background-color: #fafafa;
 }
 
 .message-container textarea:focus {
-    outline: none;
-    border-bottom: 2px solid red;
+  outline: none;
+  border-bottom: 2px solid red;
 }
 
 .message-container .send {
-    position: absolute;
-    right: 50px;
-    top: 50%;
-    width: 150px;
-    height: 80px;
-    margin-top: -40px;
+  position: absolute;
+  right: 50px;
+  top: 50%;
+  width: 150px;
+  height: 80px;
+  margin-top: -40px;
 }
 
 .message-bubble {
-    padding: 10px 20px;
-    background: var(--secondary);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    width: 70%;
-    font-size: 1.1em;
+  padding: 10px 20px;
+  background: var(--secondary);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  width: 70%;
+  font-size: 1.1em;
 }
 
 .message-bubble .sender {
-    color: gray;
-    display: block;
+  color: gray;
+  display: block;
 }
 
 .message-bubble .content {
-    color: black;
-    font-size: 1.4em;
-    margin-top: 5px;
-    overflow-wrap: break-word;
+  color: black;
+  font-size: 1.4em;
+  margin-top: 5px;
+  overflow-wrap: break-word;
 }
 
 .message-bubble.own {
-    margin-left: 30%;
-    background-color: #f0f0ff;
+  margin-left: 30%;
+  background-color: #f0f0ff;
 }
 
 .other-cursor {
-    width: 10px;
-    height: 10px;
-    margin-top: -5px;
-    margin-left: -5px;
-    position: fixed;
-    transition: all ease-in-out 100ms;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  margin-left: -5px;
+  position: fixed;
+  transition: all ease-in-out 100ms;
 }
 
+.rooms-details {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  height: 200px;
+  max-height: 200px;
+  align-items: stretch;
+  justify-content: space-evenly;
+}
+
+.rooms-joined {
+  margin: 0;
+}
+
+.room-users {
+  margin: 0;
+}
+
+.room-user-relay {
+  color: gray;
+  font-style: italic;
+}
+
+.active-room {
+  font-weight: 700;
+}
+
+.action-leave-room{
+  margin-right: 5px;
+}
