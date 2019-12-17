@@ -1,7 +1,7 @@
 import { Server } from "./Server";
 import { Environment } from "./Environment";
 
-new Server(Environment.getInstance()).start()
+Environment.getInstance().then(env => new Server(env).start())
 
 
 /*

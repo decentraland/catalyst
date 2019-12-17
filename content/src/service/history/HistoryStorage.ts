@@ -64,8 +64,9 @@ class EventSerializer {
 
     private static unserialize(serializedEvent: string): DeploymentEvent {
         const eventPieces: string[] = serializedEvent.split(EventSerializer.ATTRIBUTES_SEPARATOR)
-        const[entityType, entityId, timestamp] = eventPieces
+        const [serverName, entityType, entityId, timestamp] = eventPieces
         return {
+            serverName,
             entityType: EntityType[entityType.toUpperCase().trim()],
             entityId: entityId,
             timestamp: parseInt(timestamp),
@@ -73,7 +74,7 @@ class EventSerializer {
     }
 
     private static serialize(event: DeploymentEvent): string {
-        return [event.entityType, event.entityId, event.timestamp]
+        return [event.serverName, event.entityType, event.entityId, event.timestamp]
             .join(EventSerializer.ATTRIBUTES_SEPARATOR)
     }
 

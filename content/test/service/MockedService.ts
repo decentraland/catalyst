@@ -33,6 +33,10 @@ export class MockedService implements Service {
         return Promise.resolve(Date.now())
     }
 
+    deployEntityWithServerAndTimestamp(files: Set<File>, entityId: string, ethAddress: string, signature: string, serverName: string, timestampCalculator: () => number): Promise<number> {
+        throw new Error("Method not implemented.")
+    }
+
     getActivePointers(type: EntityType): Promise<string[]> {
         throw new Error("Method not implemented.")
     }
@@ -49,14 +53,12 @@ export class MockedService implements Service {
     }
 
     private scene(id: string, metadata: string, pointers: Pointer[], contents: Map<string, FileHash>): Entity {
-        return {
-            id: id,
-            type: EntityType.SCENE,
-            timestamp: Date.now(),
-            metadata: metadata,
-            pointers: pointers,
-            content: contents,
-        }
+        return new Entity(id,
+            EntityType.SCENE,
+            pointers,
+            Date.now(),
+            contents,
+            metadata)
     }
 
     private pointers(...pointers: Pointer[]): Pointer[] {

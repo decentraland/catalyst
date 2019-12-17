@@ -10,6 +10,8 @@ import { MockedHistoryManager } from "./history/MockedHistoryManager";
 
 describe("Service", function() {
 
+  const serverName = "A server Name"
+
   beforeAll(async () => {
     this.randomFile = { name: "file", content: Buffer.from("1234") }
     this.randomFileHash = await Hashing.calculateHash(this.randomFile)
@@ -24,6 +26,7 @@ describe("Service", function() {
     const env = new Environment()
     env.registerBean(Bean.STORAGE, this.storage)
     env.registerBean(Bean.HISTORY_MANAGER, this.historyManager)
+    env.registerBean(Bean.NAMING, { getServerName: () => serverName })
     this.service = ServiceFactory.create(env)
   })
 
@@ -53,7 +56,7 @@ describe("Service", function() {
     expect(deltaMilliseconds).toBeLessThanOrEqual(10)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.entity.id, this.entityFile.content)
     expect(storageSpy).toHaveBeenCalledWith("contents", this.randomFileHash, this.randomFile.content)
-    expect(historySpy).toHaveBeenCalledWith(this.entity, timestamp)
+    expect(historySpy).toHaveBeenCalledWith(serverName, this.entity, timestamp)
     this.entity.pointers.forEach(pointer =>
         expect(storageSpy).toHaveBeenCalledWith("pointers-scene", pointer, Buffer.from(this.entity.id)));
     expect(await this.service.getEntitiesByIds(EntityType.SCENE, [this.entity.id])).toEqual([this.entity])

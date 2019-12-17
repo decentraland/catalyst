@@ -8,9 +8,9 @@ import { HistoryManagerImpl } from "../../../src/service/history/HistoryManagerI
 
 describe("HistoryManager", function() {
 
-    beforeEach(function() {
+    beforeEach(async function() {
         this.storage = new HistoryStorage(new MockedStorage())
-        this.manager = new HistoryManagerImpl(this.storage)
+        this.manager = await HistoryManagerImpl.build(this.storage)
     })
 
     it(`When a deployment is reported, then it is stored on the temporary history`, async function() {
@@ -18,10 +18,10 @@ describe("HistoryManager", function() {
             { entity: entity2, timestamp: timestamp2, event: event2 }] = buildDeployments(2)
         const spy = spyOn(this.storage, "setTempHistory")
 
-        await this.manager.newEntityDeployment(entity1, timestamp1)
+        await this.manager.newEntityDeployment(event1.serverName, entity1, timestamp1)
         expect(spy).toHaveBeenCalledWith([event1])
 
-        await this.manager.newEntityDeployment(entity2, timestamp2)
+        await this.manager.newEntityDeployment(event2.serverName, entity2, timestamp2)
         expect(spy).toHaveBeenCalledWith([event2, event1])
 
         const history = await this.manager.getHistory();
@@ -33,9 +33,9 @@ describe("HistoryManager", function() {
             { entity: entity2, timestamp: timestamp2, event: event2 },
             { entity: entity3, timestamp: timestamp3, event: event3 }] = buildDeployments(3)
 
-        await this.manager.newEntityDeployment(entity1, timestamp1)
-        await this.manager.newEntityDeployment(entity2, timestamp2)
-        await this.manager.newEntityDeployment(entity3, timestamp3)
+        await this.manager.newEntityDeployment(event1.serverName, entity1, timestamp1)
+        await this.manager.newEntityDeployment(event2.serverName, entity2, timestamp2)
+        await this.manager.newEntityDeployment(event3.serverName, entity3, timestamp3)
 
         const tempSpy = spyOn(this.storage, "setTempHistory")
         const immutableSpy = spyOn(this.storage, "appendToImmutableHistory").and.callThrough()
@@ -69,10 +69,12 @@ describe("HistoryManager", function() {
     function buildRandomDeployment(): Deployment {
         const entity = getEntity()
         const timestamp = random.number()
+        const serverName = random.alphaNumeric(20)
         const event =  {
             entityType: entity.type,
             entityId: entity.id,
-            timestamp
+            timestamp,
+            serverName
         }
         return { entity, timestamp, event}
     }

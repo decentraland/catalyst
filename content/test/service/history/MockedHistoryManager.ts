@@ -1,9 +1,11 @@
 import { HistoryManager, DeploymentHistory } from "../../../src/service/history/HistoryManager";
 import { Entity } from "../../../src/service/Entity";
+import { ServerName } from "../../../src/service/naming/Naming";
+import { Timestamp } from "../../../src/service/Service";
 
 export class MockedHistoryManager implements HistoryManager {
 
-    newEntityDeployment(entity: Entity): Promise<void> {
+    newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void> {
         return Promise.resolve()
     }
 

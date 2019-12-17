@@ -12,21 +12,20 @@ import { buildControllerEntityAndFile } from "../controller/ControllerEntityTest
 import { Timestamp } from "../../src/service/Service"
 
 describe("End 2 end deploy test", function() {
-    let env: Environment
-    let server: Server
 
-    beforeAll(() => {
-        env = Environment.getInstance()
-        server = new Server(env)
-        server.start()
-    })
-    afterAll(() => {
-        server.stop()
-        deleteFolderRecursive(env.getConfig(STORAGE_ROOT_FOLDER))
+    beforeAll(async function() {
+        this.env = await Environment.getInstance()
+        this.server = new Server(this.env)
+        this.server.start()
     })
 
-    it(`Deploy and retrieve some content`, async () => {
+    afterAll(function() {
+        this.server.stop()
+        deleteFolderRecursive(this.env.getConfig(STORAGE_ROOT_FOLDER))
+    })
 
+
+    it(`Deploy and retrieve some content`, async function() {
         //------------------------------
         // Deploy the content
         //------------------------------
@@ -42,7 +41,7 @@ describe("End 2 end deploy test", function() {
             });
         })
 
-        const deployResponse = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities`, { method: 'POST', body: form })
+        const deployResponse = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/entities`, { method: 'POST', body: form })
 
         expect(deployResponse.ok).toBe(true)
 
@@ -54,20 +53,20 @@ describe("End 2 end deploy test", function() {
         //------------------------------
         // Retrieve the entity by id
         //------------------------------
-        const responseById = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
+        const responseById = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
         expect(responseById.ok).toBe(true)
         const scenesById: ControllerEntity[] = await responseById.json();
-        await validateReceivedData(scenesById, deployData, env)
+        await validateReceivedData(scenesById, deployData, this.env)
 
         //------------------------------
         // Retrieve the entity by pointer
         //------------------------------
-        const responseByPointer = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?pointer=0,0`)
+        const responseByPointer = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/entities/scenes?pointer=0,0`)
         expect(responseByPointer.ok).toBe(true)
         const scenesByPointer: ControllerEntity[] = await responseByPointer.json();
-        await validateReceivedData(scenesByPointer, deployData, env)
+        await validateReceivedData(scenesByPointer, deployData, this.env)
 
-        const responseHistory = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/history`)
+        const responseHistory = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/history`)
         expect(responseHistory.ok).toBe(true)
         const [deploymentEvent]: DeploymentHistory = await responseHistory.json()
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)

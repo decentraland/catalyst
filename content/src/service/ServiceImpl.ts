@@ -5,13 +5,14 @@ import { Validation } from "./Validation";
 import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
+import { Naming, ServerName } from "./naming/Naming";
 
 export class ServiceImpl implements Service {
 
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
 
-    constructor(private storage: ContentStorage, private historyManager: HistoryManager) {
+    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private naming: Naming) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -63,6 +64,11 @@ export class ServiceImpl implements Service {
     }
 
     async deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.naming.getServerName(), Date.now)
+    }
+
+    // TODO: Maybe move this somewhere else?
+    async deployEntityWithServerAndTimestamp(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
@@ -86,6 +92,7 @@ export class ServiceImpl implements Service {
         validation.validateAccess(entity.pointers, ethAddress, entity.type)
 
         // Validate that the entity is "fresh"
+        // TODO: We shouldn't do this when we get this update from a new node
         await validation.validateFreshDeployment(entity, (type,pointers) => this.getEntitiesByPointers(type, pointers))
 
         // Type validation
@@ -108,13 +115,13 @@ export class ServiceImpl implements Service {
         // Register the new entity on global variables
         await this.commitNewEntity(hashes, alreadyStoredHashes, entity)
 
-        // Set "now" as the time of deployment
-        const deploymentTimestamp: Timestamp = Date.now()
+        // Calculate timestamp
+        const deploymentTimestamp: Timestamp = timestampCalculator()
 
         // TODO: Save audit information
 
         // Add the new deployment to history
-        await this.historyManager.newEntityDeployment(entity, deploymentTimestamp)
+        await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
 
         return Promise.resolve(deploymentTimestamp)
     }
@@ -125,13 +132,17 @@ export class ServiceImpl implements Service {
 
         // Make each pointer point to new entity
         let entitiesInType: Map<Pointer, EntityId> | undefined = this.referencedEntities.get(entity.type)
-        entity.pointers.forEach(pointer => entitiesInType?.set(pointer, entity.id))
+        entity.pointers.forEach(pointer => {
+            // If the pointer already has an entity stored, then it is a "newer" entity
+            if (!entitiesInType?.has(pointer)) {
+                entitiesInType?.set(pointer, entity.id)
+            }
+        })
 
         // Store content that isn't already stored
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
             .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
             .map(([fileHash, file]) => this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), fileHash, file.content))
-
 
         // Store reference from pointers to entity
         const pointerStorageActions: Promise<void>[] = entity.pointers
@@ -140,31 +151,35 @@ export class ServiceImpl implements Service {
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
     }
 
-    private async deleteOverwrittenEntities(entity: Entity): Promise<void> {
+    private async deleteOverwrittenEntities(entityBeingDeployed: Entity): Promise<void> {
         // Calculate the entities that the new deployment would overwrite
-        const overwrittenEntities: EntityId[] = entity.pointers
-            .map((pointer: Pointer) => this.referencedEntities.get(entity.type)?.get(pointer))
+        const overwrittenEntities: Entity[] = entityBeingDeployed.pointers
+            .map((pointer: Pointer) => this.referencedEntities.get(entityBeingDeployed.type)?.get(pointer))
             .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
+            .map(entityId => this.entities.get(entityId))
+            .filter((entity: Entity | undefined): entity is Entity => !!entity)
+            .filter(currentEntity => currentEntity.wasDeployedBefore(entityBeingDeployed))
 
-        // Calculate the pointers that would result orphan
-        const orphanPointers: Pointer[] = overwrittenEntities
-            .map((entityId: EntityId) => this.entities.get(entityId)?.pointers || [])
+        // Calculate the pointers that would be overwritten
+        const overwrittenPointers: Pointer[] = overwrittenEntities
+            .map((entity: Entity) => entity.pointers)
             .reduce((accum, pointers) => accum.concat(pointers), [])
-            .filter((pointer: Pointer) => !entity.pointers.includes(pointer))
 
-        // Delete orphan pointers
-        const pointerDeletionActions: Promise<void>[] = orphanPointers
-            .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entity.type), orphanPointer))
-
-        for (const orphanPointer of orphanPointers) {
-            this.referencedEntities.get(entity.type)?.delete(orphanPointer)
+        // Delete the pointers that will be overwritten
+        for (const overwrittenPointer of overwrittenPointers) {
+            this.referencedEntities.get(entityBeingDeployed.type)?.delete(overwrittenPointer)
         }
 
-        await Promise.all(pointerDeletionActions)
+        // Delete from disk the pointers that would result orphan
+        const pointerDeletionActions: Promise<void>[] = overwrittenPointers
+            .filter((pointer: Pointer) => !entityBeingDeployed.pointers.includes(pointer))
+            .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entityBeingDeployed.type), orphanPointer))
 
         // Delete the entities from the global map
-        overwrittenEntities.forEach((entityId: EntityId) => this.entities.delete(entityId))
+        overwrittenEntities.forEach((entity: Entity) => this.entities.delete(entity.id))
+
+        await Promise.all(pointerDeletionActions)
     }
 
     private findEntityFile(files: Set<File>): File {
