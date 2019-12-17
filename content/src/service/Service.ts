@@ -22,7 +22,9 @@ export interface Service {
 
     getContent(fileHash: FileHash): Promise<Buffer>;
 
-    // getContenetURL() //ToAvoid
+    // getContenetURL() // TODO: This endpoint can be used to perform a redirect when the entity is not stored locally
+
+    getStatus(): Promise<ServerStatus>;
 }
 
 export type AuditInfo = {
@@ -39,5 +41,13 @@ export type File = {
 export type Timestamp = number
 export type Signature = string
 export type EthAddress = string
+
+export type ServerVersion = string
+
+export type ServerStatus = {
+    name: ServerName
+    version: ServerVersion
+    currentTime: Timestamp
+}
 
 

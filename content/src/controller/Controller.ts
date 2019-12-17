@@ -150,12 +150,21 @@ export class Controller {
     getHistory(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /history
-        // Query String: ?from={timestamp}&to={timestamp}
-        const from = req.query.from
-        const to   = req.query.to
+        // Query String: ?from={timestamp}&to={timestamp}&serverName={string}
+        const from       = req.query.from
+        const to         = req.query.to
+        const serverName = req.query.serverName
 
-        this.historyManager.getHistory(from, to)
+        this.historyManager.getHistory(from, to, serverName)
         .then(history => res.send(history))
+    }
+
+    getStatus(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /status
+
+        this.service.getStatus()
+        .then(status => res.send(status))
     }
 
 }

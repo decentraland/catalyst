@@ -19,6 +19,9 @@ ts_library(
         "@npm//multihashing-async",
         "@npm//node-fetch",
         "@npm//@types/node-fetch",
+        "@npm//uuid",
+        "@npm//@types/uuid",
+        "@npm//ip",
     ],
 )
 

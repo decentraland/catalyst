@@ -1,4 +1,4 @@
-import { Service, EthAddress, Signature, Timestamp, File } from "../../src/service/Service"
+import { Service, EthAddress, Signature, Timestamp, File, ServerStatus } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
 
@@ -50,6 +50,14 @@ export class MockedService implements Service {
     getContent(fileHash: FileHash): Promise<Buffer> {
         const someContent: Buffer = Buffer.from([1,2,3])
         return Promise.resolve(someContent)
+    }
+
+    getStatus(): Promise<ServerStatus> {
+        return Promise.resolve({
+            name: "Mocked-Server",
+            version: "1.0",
+            currentTime: Date.now()
+        })
     }
 
     private scene(id: string, metadata: string, pointers: Pointer[], contents: Map<string, FileHash>): Entity {

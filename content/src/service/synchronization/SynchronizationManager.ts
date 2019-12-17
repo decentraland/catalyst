@@ -1,9 +1,13 @@
 import { setInterval, clearInterval, setImmediate } from "timers"
 import { Service, Timestamp, File } from "../Service";
-import { EntityId, EntityType, Entity } from "../Entity";
+import { EntityId, Entity } from "../Entity";
 import { DeploymentHistory, DeploymentEvent, HistoryManager } from "../history/HistoryManager";
 import { FileHash } from "../Hashing";
-import { ServerName } from "../naming/Naming";
+import { ServerName, Naming } from "../naming/Naming";
+import { ContentServer } from "./ContentServer";
+import { DAOClient } from "./DAOClient";
+import { Environment, Bean, SERVER_PORT } from "../../Environment";
+
 
 export class SynchronizationManager {
 
@@ -11,11 +15,11 @@ export class SynchronizationManager {
     private static SYNC_WITH_SERVERS_INTERVAL: number = 20 * 1000 // 20 secs
 
     private intervals: NodeJS.Timeout[];
-    private contentServers: Map<ServerName, ContentServer>
+    private contentServers: Map<ServerName, ContentServer> = new Map()
 
     constructor(private dao: DAOClient, private historyManager: HistoryManager, private service: Service) {
         // Load node
-        setImmediate(this.boot)
+        setImmediate(() => this.boot())
     }
 
     stop() {
@@ -23,6 +27,8 @@ export class SynchronizationManager {
     }
 
     private async boot() {
+        await this.registerServer()
+
         // Get servers from the DAO
         await this.updateServersList()
 
@@ -101,6 +107,15 @@ export class SynchronizationManager {
         return [entity, new Set(await Promise.all(filePromises))]
     }
 
+    /** Register this server in the DAO id required */
+    private async registerServer() {
+        const env: Environment = await Environment.getInstance()
+        const naming: Naming = env.getBean(Bean.NAMING)
+        const serverIP = require('ip').address()
+        const port: number = env.getConfig(SERVER_PORT)
+
+        await this.dao.registerServerInDAO(naming.getServerName(), `${serverIP}:${port}`)
+    }
 
     /** Update our data with the DAO's servers list */
     private async updateServersList() {
@@ -127,67 +142,6 @@ export class SynchronizationManager {
         Array.from(this.contentServers.keys())
             .filter(serverName => !serverNamesInDAO.has(serverName))
             .forEach(serverName => this.contentServers.delete(serverName))
-    }
-
-}
-
-class ContentServer {
-
-    private static readonly ONE_MINUTE = 60 * 1000 // One minute in milliseconds
-    lastKnownTimestamp: Timestamp
-
-    constructor(public name: ServerName) {
-        this.lastKnownTimestamp = 0
-    }
-
-    async getNewDeployments(): Promise<DeploymentHistory> {
-        // Get new deployments
-        const newDeployments: DeploymentHistory = await this.getDeploymentHistory()
-        if (newDeployments.length == 0) {
-            // If there are no new deployments, then update the timestamp with a new call
-            const newTimestamp: Timestamp = await this.getCurrentTimestamp() - ContentServer.ONE_MINUTE // Substract 1 min, as to avoid potential race conditions with a new deployment
-
-            // Keep the latest timestamp, since we don't want to go back in time
-            this.lastKnownTimestamp = Math.max(newTimestamp, this.lastKnownTimestamp)
-        } else {
-            // Update the new timestamp with the latest deployment
-            this.lastKnownTimestamp = Math.max(...newDeployments.map(deployment => deployment.timestamp))
-        }
-        return newDeployments
-    }
-
-    getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
-        // /entity/{entityType}?id={entityId}
-
-        throw new Error("To implement")
-    }
-
-    getContentFile(fileHash: FileHash): Promise<File> {
-        // /contents/{fileHash}
-
-        throw new Error("To implement")
-    }
-
-    private getDeploymentHistory(): Promise<DeploymentHistory> {
-        // /history?from={this.lastKnownTimestamp}&serverName={this.name}
-        return Promise.resolve([])
-    }
-
-    private getCurrentTimestamp(): Promise<Timestamp> {
-        // /status
-        return Promise.resolve(0)
-    }
-
-}
-
-class DAOClient {
-
-    getAllServers(): Promise<ContentServer[]> {
-        // We need to:
-        // 1. Ask the DAO for the servers
-        // 2. Ask each server for their name
-        // DON'T UPDATE THE LATEST TIMESTAMP, we will do it after
-        return Promise.resolve([])
     }
 
 }

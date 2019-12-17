@@ -1,6 +1,5 @@
 import { NamingStorage } from "./NamingStorage";
-import uuidv4 from "uuid/v4"
-
+import { v4 as uuid } from 'uuid';
 
 export class Naming {
 
@@ -18,7 +17,7 @@ export class Naming {
     private static async getOrCreateServerName(storage: NamingStorage): Promise<ServerName> {
         const storedName: ServerName | undefined = await storage.getName()
         if (!storedName) {
-            const newName = uuidv4();
+            const newName = uuid();
             await storage.setName(newName)
             return newName
         } else {

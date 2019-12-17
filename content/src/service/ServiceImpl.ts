@@ -2,7 +2,7 @@ import { ContentStorage } from "../storage/ContentStorage";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File } from "./Service";
+import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File, ServerStatus } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { Naming, ServerName } from "./naming/Naming";
@@ -219,6 +219,15 @@ export class ServiceImpl implements Service {
     private resolveCategory(storageCategory: StorageCategory, type?: EntityType): string {
         return storageCategory + (storageCategory === StorageCategory.POINTERS && type ? `-${type}` : "")
     }
+
+    getStatus(): Promise<ServerStatus> {
+        return Promise.resolve({
+            name: this.naming.getServerName(),
+            version: "1.0",
+            currentTime: Date.now()
+        })
+    }
+
 }
 
 const enum StorageCategory {
