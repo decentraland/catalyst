@@ -221,45 +221,10 @@ export class Peer implements IPeer {
     roomId: string
   ) {
     connection.on("signal", this.handleSignal(peerId, reliable, roomId));
-    connection.on("close", () => {
-      console.log(
-        "DISCONNECTED from " +
-          peerId +
-          " through " +
-          connectionIdFor(this.nickname, peerId, reliable)
-      );
-      // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
-      if (this.peers[peerId]) {
-        delete this.peers[peerId];
-      }
-      // removing all users connected via this peer of each room
-      this.currentRooms.forEach(room => {
-        [...room.users.values()].forEach(user => {
-          if (user.peerId === peerId) {
-            room.users.delete(this.key(user));
-          }
-        });
-      });
-    });
-    connection.on("connect", () => {
-      console.log(
-        "CONNECTED to " +
-          peerId +
-          " through " +
-          connectionIdFor(this.nickname, peerId, reliable)
-      );
-
-      this.peerConnectionPromises[peerId]?.forEach($ => $.resolve());
-      delete this.peerConnectionPromises[peerId];
-
-      const data = { userId: peerId, peerId };
-
-      const room = this.findRoom(roomId);
-
-      // if room is not found, we simply don't add the user
-      // TODO - we may need to close the connection if we are no longer interested in the room - moliva - 13/12/2019
-      room?.users.set(this.key(data), data);
-    });
+    connection.on("close", () => this.handleDisconnection(peerId, reliable));
+    connection.on("connect", () =>
+      this.handleConnection(peerId, roomId, reliable)
+    );
 
     connection.on("error", err => {
       console.log(
@@ -269,49 +234,89 @@ export class Peer implements IPeer {
       );
     });
 
-    connection.on("data", data => {
-      const parsed = JSON.parse(data);
-      switch (parsed.type as PacketType) {
-        case "hi": {
-          const data = parsed.data as PacketData["hi"];
-          const room = this.findRoom(data.room.id);
-          if (this.config.relay === RelayMode.All) {
-            room?.users.forEach((user, userId) => {
-              if (user.userId !== peerId && user.userId !== this.nickname) {
-                this.sendPacket(user, parsed);
-              }
-            });
-          } else {
-            if (room) {
-              data.room.users.forEach(user => {
-                room.users.set(this.key(user), user);
-              });
+    connection.on("data", data => this.handlePeerPacket(data, peerId));
+  }
+
+  private handlePeerPacket(data: string, peerId: string) {
+    const parsed = JSON.parse(data);
+    switch (parsed.type as PacketType) {
+      case "hi": {
+        const data = parsed.data as PacketData["hi"];
+        const room = this.findRoom(data.room.id);
+        if (this.config.relay === RelayMode.All) {
+          room?.users.forEach((user, userId) => {
+            if (user.userId !== peerId && user.userId !== this.nickname) {
+              this.sendPacket(user, parsed);
             }
+          });
+        } else {
+          if (room) {
+            data.room.users.forEach(user => {
+              room.users.set(this.key(user), user);
+            });
           }
-          break;
         }
-        case "message": {
-          const data = parsed.data as PacketData["message"];
-          if (
-            data.dst !== this.nickname &&
-            this.config.relay === RelayMode.All
-          ) {
-            console.log(`relaying message to ${data.dst}`);
-            this.sendMessageTo(
-              { userId: data.dst, peerId: data.dst },
-              data.room,
-              data.payload,
-              data.src,
-              true // TODO - for the time being
-            );
-          } else {
-            // assume it's for me
-            this.callback(data.src, data.room, data.payload);
-          }
-          break;
-        }
+        break;
       }
+      case "message": {
+        const data = parsed.data as PacketData["message"];
+        if (data.dst !== this.nickname && this.config.relay === RelayMode.All) {
+          console.log(`relaying message to ${data.dst}`);
+          this.sendMessageTo(
+            { userId: data.dst, peerId: data.dst },
+            data.room,
+            data.payload,
+            data.src,
+            true // TODO - for the time being
+          );
+        } else {
+          // assume it's for me
+          this.callback(data.src, data.room, data.payload);
+        }
+        break;
+      }
+    }
+  }
+
+  private handleDisconnection(peerId: string, reliable: boolean) {
+    console.log(
+      "DISCONNECTED from " +
+        peerId +
+        " through " +
+        connectionIdFor(this.nickname, peerId, reliable)
+    );
+    // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
+    if (this.peers[peerId]) {
+      delete this.peers[peerId];
+    }
+    // removing all users connected via this peer of each room
+    this.currentRooms.forEach(room => {
+      [...room.users.values()].forEach(user => {
+        if (user.peerId === peerId) {
+          room.users.delete(this.key(user));
+        }
+      });
     });
+  }
+
+  private handleConnection(peerId: string, roomId: string, reliable: boolean) {
+    console.log(
+      "CONNECTED to " +
+        peerId +
+        " through " +
+        connectionIdFor(this.nickname, peerId, reliable)
+    );
+
+    this.peerConnectionPromises[peerId]?.forEach($ => $.resolve());
+    delete this.peerConnectionPromises[peerId];
+
+    const data = { userId: peerId, peerId };
+
+    const room = this.findRoom(roomId);
+
+    // if room is not found, we simply don't add the user
+    // TODO - we may need to close the connection if we are no longer interested in the room - moliva - 13/12/2019
+    room?.users.set(this.key(data), data);
   }
 
   sendMessage(roomId: string, payload: any, reliable: boolean = true) {
@@ -444,8 +449,8 @@ export class Peer implements IPeer {
           });
         }
         case ServerMessageType.PeerLeftRoom: {
-          const {roomId, userId, peerId } = payload
-          this.findRoom(roomId)?.users.delete(this.key({userId, peerId}))
+          const { roomId, userId, peerId } = payload;
+          this.findRoom(roomId)?.users.delete(this.key({ userId, peerId }));
         }
       }
     }
