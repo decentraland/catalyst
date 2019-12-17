@@ -1,4 +1,4 @@
-import { Service, EthAddress, Signature, Timestamp, File } from "../../src/service/Service"
+import { Service, EthAddress, Signature, Timestamp, File, ServerStatus } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
 
@@ -33,6 +33,10 @@ export class MockedService implements Service {
         return Promise.resolve(Date.now())
     }
 
+    deployEntityWithServerAndTimestamp(files: Set<File>, entityId: string, ethAddress: string, signature: string, serverName: string, timestampCalculator: () => number): Promise<number> {
+        throw new Error("Method not implemented.")
+    }
+
     getActivePointers(type: EntityType): Promise<string[]> {
         throw new Error("Method not implemented.")
     }
@@ -48,15 +52,21 @@ export class MockedService implements Service {
         return Promise.resolve(someContent)
     }
 
+    getStatus(): Promise<ServerStatus> {
+        return Promise.resolve({
+            name: "Mocked-Server",
+            version: "1.0",
+            currentTime: Date.now()
+        })
+    }
+
     private scene(id: string, metadata: string, pointers: Pointer[], contents: Map<string, FileHash>): Entity {
-        return {
-            id: id,
-            type: EntityType.SCENE,
-            timestamp: Date.now(),
-            metadata: metadata,
-            pointers: pointers,
-            content: contents,
-        }
+        return new Entity(id,
+            EntityType.SCENE,
+            pointers,
+            Date.now(),
+            contents,
+            metadata)
     }
 
     private pointers(...pointers: Pointer[]): Pointer[] {

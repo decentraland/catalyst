@@ -21,7 +21,7 @@ export class Server {
       this.app.use(cors());
       this.app.use(express.json());
       this.app.use(morgan("combined"));
-      
+
       this.registerRoute("/entities/:type"       , controller, controller.getEntities)
       this.registerRoute("/entities"             , controller, controller.createEntity, true, upload.any())
       this.registerRoute("/contents/:hashId"     , controller, controller.getContent);
@@ -29,9 +29,7 @@ export class Server {
       this.registerRoute("/pointers/:type"       , controller, controller.getPointers);
       this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
       this.registerRoute("/history"              , controller, controller.getHistory);
-
-      // TODO: Create a version endpoint 
-
+      this.registerRoute("/status"               , controller, controller.getStatus);
    }
 
    private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response)=>void, isPost?:boolean, extraHandler?: RequestHandler) {

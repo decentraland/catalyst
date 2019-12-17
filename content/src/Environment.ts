@@ -2,6 +2,7 @@ import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
+import { NamingFactory } from "./service/naming/NamingFactory";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
@@ -27,7 +28,7 @@ export class Environment {
     }
 
     private static instance: Environment;
-    static getInstance(): Environment {
+    static async getInstance(): Promise<Environment> {
         if(!Environment.instance) {
             // Create default instance
             const env = new Environment()
@@ -37,7 +38,8 @@ export class Environment {
             env.setConfig(SERVER_PORT, process.env.PORT ?? 6969)
 
             env.registerBean(Bean.STORAGE, ContentStorageFactory.local(env))
-            env.registerBean(Bean.HISTORY_MANAGER, HistoryManagerFactory.create(env))
+            env.registerBean(Bean.NAMING, await NamingFactory.create(env))
+            env.registerBean(Bean.HISTORY_MANAGER, await HistoryManagerFactory.create(env))
             env.registerBean(Bean.SERVICE, ServiceFactory.create(env))
             env.registerBean(Bean.CONTROLLER, ControllerFactory.create(env))
         }
@@ -50,4 +52,5 @@ export const enum Bean {
     SERVICE,
     CONTROLLER,
     HISTORY_MANAGER,
+    NAMING,
 }

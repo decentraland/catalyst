@@ -5,8 +5,8 @@ import { HistoryManagerImpl } from "./HistoryManagerImpl"
 
 export class HistoryManagerFactory {
 
-    static create(env: Environment): HistoryManager {
+    static create(env: Environment): Promise<HistoryManager> {
         const storage: HistoryStorage = new HistoryStorage(env.getBean(Bean.STORAGE))
-        return new HistoryManagerImpl(storage)
+        return HistoryManagerImpl.build(storage)
     }
 }

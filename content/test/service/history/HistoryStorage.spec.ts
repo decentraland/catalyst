@@ -60,6 +60,7 @@ describe("HistoryStorage", function() {
             entityType: EntityType.SCENE,
             entityId: random.alphaNumeric(10),
             timestamp: getRandomTimestamp(),
+            serverName: random.alphaNumeric(20),
         }
     }
 
