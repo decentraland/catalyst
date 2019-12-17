@@ -443,6 +443,10 @@ export class Peer implements IPeer {
             candidate: payload.candidate
           });
         }
+        case ServerMessageType.PeerLeftRoom: {
+          const {roomId, userId, peerId } = payload
+          this.findRoom(roomId)?.users.delete(this.key({userId, peerId}))
+        }
       }
     }
   }

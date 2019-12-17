@@ -2,7 +2,7 @@ import cors from "cors";
 import express from "express";
 import { Response } from "express";
 import morgan from "morgan";
-import { ExpressPeerServer } from "peerjs-server";
+import { ExpressPeerServer, IRealm } from "peerjs-server";
 import { Peer, RelayMode } from "../../peer/src/Peer";
 import * as wrtc from "wrtc";
 import WebSocket from "ws";
@@ -41,7 +41,8 @@ function requireParameters(
 //Services
 const roomsService = new RoomsService({
   relay,
-  serverPeerProvider: () => peer
+  serverPeerProvider: () => peer,
+  realmProvider: getPeerJsRealm
 });
 
 app.use(cors());
@@ -115,7 +116,7 @@ const options = {
 
 const peerServer = ExpressPeerServer(server, options);
 
-peerServer.on("disconnect", client => {
+peerServer.on("disconnect", (client: any) => {
   console.log(
     "User disconnected from server socket. Removing from all rooms: " +
       client.id
@@ -124,5 +125,9 @@ peerServer.on("disconnect", client => {
 });
 
 peerServer.on("error", console.log);
+
+function getPeerJsRealm(): IRealm {
+  return peerServer.get("peerjs-realm");
+}
 
 app.use("/peerjs", peerServer);

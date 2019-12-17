@@ -1,5 +1,6 @@
 import { PeerConnectionData } from "../../peer/src/types";
 import { Peer } from "../../peer/src/Peer";
+import { IRealm } from "peerjs-server";
 
 type RoomsFilter = Partial<{
   userId: string;
@@ -8,6 +9,7 @@ type RoomsFilter = Partial<{
 type RoomsServiceConfig = Partial<{
   relay: boolean;
   serverPeerProvider: () => Peer;
+  realmProvider: () => IRealm;
 }>;
 
 export class RoomsService {
@@ -19,6 +21,10 @@ export class RoomsService {
     return this.config.serverPeerProvider
       ? this.config.serverPeerProvider()
       : undefined;
+  }
+
+  private get peerRealm() {
+    return this.config.realmProvider ? this.config.realmProvider() : undefined;
   }
 
   getRoomIds(filter: RoomsFilter): string[] {
@@ -62,7 +68,26 @@ export class RoomsService {
     if (room) {
       const index = room.findIndex($ => $.userId === userId);
       if (index !== -1) {
-        room.splice(index, 1);
+        const [peerData] = room.splice(index, 1);
+
+        if (this.peerRealm) {
+          //This particular logic may need to be extracted to another service of some kind
+          room.forEach($ => {
+            const client = this.peerRealm!.getClientById($.userId);
+            if (client) {
+              client.send({
+                type: "PEER_LEFT_ROOM",
+                src: "__lighthouse__",
+                dst: $.userId,
+                payload: {
+                  userId: peerData.userId,
+                  peerId: peerData.peerId,
+                  roomId
+                }
+              });
+            }
+          });
+        }
       }
     }
     if (room.length === 0) {
