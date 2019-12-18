@@ -59,7 +59,7 @@ function randomColor() {
 let intervalId: number | undefined = undefined;
 
 export function Chat(props: { peer: IPeer; room: string; url: string }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
   const [cursors, setCursors] = useState<Record<string, Cursor>>({});
   const [updatingCursors, setUpdatingCursors] = useState(false);
@@ -70,12 +70,12 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   const messagesEndRef: any = useRef();
 
   props.peer.callback = (sender, room, payload) => {
-    if (room !== currentRoom) {
+    if (!joinedRooms.some(joined => joined.id === room)) {
       return;
     }
     switch (payload.type) {
       case "chat":
-        appendMessage(sender, payload.message);
+        appendMessage(room, sender, payload.message);
         break;
       case "cursorPosition":
         setCursorPosition(sender, payload.position);
@@ -108,13 +108,16 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   }
 
   function sendMessage() {
-    appendMessage(props.peer.nickname, message);
+    appendMessage(currentRoom, props.peer.nickname, message);
     props.peer.sendMessage(currentRoom, { type: "chat", message });
     setMessage("");
   }
 
-  function appendMessage(sender, content) {
-    setMessages([...messages, { sender, content }]);
+  function appendMessage(room: string, sender: string, content: string) {
+    setMessages({
+      ...messages,
+      [room]: [...(messages[room] ?? []), { sender, content }]
+    });
   }
 
   useEffect(() => {
@@ -218,7 +221,6 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
                     onClick={() => {
                       const newRoom = room.id;
                       if (newRoom !== currentRoom) {
-                        setMessages([]);
                         setCurrentRoom(newRoom);
                       }
                     }}
@@ -232,9 +234,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
               <input
                 className="create-room-input"
                 value={newRoomName}
-                onChange={event => {
-                  setNewRoomName(event.currentTarget.value);
-                }}
+                onChange={event => setNewRoomName(event.currentTarget.value)}
                 placeholder="roomName"
               ></input>
               <button
@@ -282,7 +282,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
             />
           </div>
           <div className="messages-container">
-            {messages.map((it, i) => (
+            {messages[currentRoom]?.map((it, i) => (
               <MessageBubble
                 message={it}
                 key={i}
