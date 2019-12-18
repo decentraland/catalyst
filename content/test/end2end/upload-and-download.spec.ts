@@ -36,8 +36,8 @@ describe("End 2 end deploy test", function() {
         form.append('ethAddress', deployData.ethAddress)
         form.append('signature' , deployData.signature)
         deployData.files.forEach(f => {
-            form.append(f[0], f[1], {
-                filename: f[0],
+            form.append(f.file, f.content, {
+                filename: f.file,
             });
         })
 
@@ -98,9 +98,9 @@ async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
         ethAddress: "some-eth-address",
         signature: "some-signature",
         files: [
-            [entityFile.name, entityFile.content],
-            [fileHash1, fileContent1],
-            [fileHash2, fileContent2],
+            {file: entityFile.name, content: entityFile.content},
+            {file: fileHash1, content: fileContent1},
+            {file: fileHash2, content: fileContent2},
         ]
     }
     return [deployData, entity]
@@ -126,19 +126,19 @@ async function validateReceivedData(receivedScenes: ControllerEntity[], deployDa
     expect(findInArray(scene.content, "the-file-1")).toBeDefined()
     expect(findInArray(scene.content, "the-file-2")).toBeDefined()
 
-    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-1")??"")).toBeDefined()
-    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")??"")).toBeDefined()
+    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-1")?.hash??"")).toBeDefined()
+    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")?.hash??"")).toBeDefined()
 
-    scene.content?.forEach(async ([name,hash]) => {
-        const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/contents/${hash}`)
+    scene.content?.forEach(async contentElement => {
+        const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/contents/${contentElement.hash}`)
         expect(response.ok).toBe(true)
         const downloadedContent = await response.buffer()
-        expect(downloadedContent).toEqual(findInArray(deployData.files, hash) ?? Buffer.from([]))
+        expect(downloadedContent).toEqual(findInArray(deployData.files, contentElement.hash)?.content ?? Buffer.from([]))
     })
 }
 
-function findInArray<T>(arrayOfPairs:[string,T][]|undefined, key: string): T|undefined {
-    return arrayOfPairs?.find(e => e[0]===key)?.[1];
+function findInArray<T extends {file: string}>(elements:T[]|undefined, key: string): T|undefined {
+    return elements?.find(e => e.file===key);
 }
 
 function deleteFolderRecursive(pathToDelete) {
@@ -159,5 +159,5 @@ type DeployData = {
     entityId: string,
     ethAddress: string,
     signature: string,
-    files: [string, Buffer][]
+    files: {file: string, content: Buffer}[]
 }

@@ -33,7 +33,7 @@ export class MockedService implements Service {
         return Promise.resolve(Date.now())
     }
 
-    deployEntityWithServerAndTimestamp(files: Set<File>, entityId: string, ethAddress: string, signature: string, serverName: string, timestampCalculator: () => number): Promise<number> {
+    deployEntityFromAnotherContentServer(files: Set<File>, entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
         throw new Error("Method not implemented.")
     }
 
