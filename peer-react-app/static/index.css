@@ -60,11 +60,12 @@ ul {
 
 .message-container .send {
   position: absolute;
-  right: 50px;
   top: 50%;
   width: 150px;
   height: 80px;
   margin-top: -40px;
+  margin-left: 20px;
+  float:right;
 }
 
 .message-bubble {
@@ -128,6 +129,19 @@ ul {
   font-weight: 700;
 }
 
-.action-leave-room{
+.action-leave-room {
   margin-right: 5px;
+}
+
+.create-room {
+  float: right;
+  margin: 5px;
+}
+
+.action-create-room {
+  margin-left: 1px;
+}
+
+.create-room-input {
+  border-radius: 5px;
 }

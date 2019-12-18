@@ -66,6 +66,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   const [currentRoom, setCurrentRoom] = useState(props.room);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms);
+  const [newRoomName, setNewRoomName] = useState("");
   const messagesEndRef: any = useRef();
 
   props.peer.callback = (sender, room, payload) => {
@@ -151,6 +152,16 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
     ...(joinedRooms.find(r => r.id === currentRoom)?.users?.values() ?? [])
   ];
 
+  async function joinRoom(room: string) {
+    try {
+      await props.peer.joinRoom(room);
+      setAvailableRooms(availableRooms.filter(r => r !== room));
+      setJoinedRooms(props.peer.currentRooms);
+    } catch (e) {
+      console.log(`error while joining room ${room}`, e);
+    }
+  }
+
   return (
     <div className="chat">
       <h2 className="welcome-message">
@@ -163,15 +174,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
             <li
               className="available-room clickable"
               key={`available-room-${i}`}
-              onDoubleClick={async () => {
-                try {
-                  await props.peer.joinRoom(room);
-                  setAvailableRooms(availableRooms.filter(r => r !== room));
-                  setJoinedRooms(props.peer.currentRooms);
-                } catch (e) {
-                  console.log(`error while joining room ${room}`, e);
-                }
-              }}
+              onDoubleClick={() => joinRoom(room)}
             >
               {room}
             </li>
@@ -225,6 +228,26 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
                 </li>
               ))}
             </ul>
+            <div className="create-room">
+              <input
+                className="create-room-input"
+                value={newRoomName}
+                onChange={event => {
+                  setNewRoomName(event.currentTarget.value);
+                }}
+                placeholder="roomName"
+              ></input>
+              <button
+                className="action-create-room"
+                disabled={!newRoomName}
+                onClick={async () => {
+                  await joinRoom(newRoomName);
+                  setNewRoomName("");
+                }}
+              >
+                +
+              </button>
+            </div>
           </div>
           <div className="room-users">
             <h3>Users in room</h3>
