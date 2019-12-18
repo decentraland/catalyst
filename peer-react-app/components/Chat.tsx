@@ -161,11 +161,17 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
         <ul className="available-rooms">
           {availableRooms.map((room, i) => (
             <li
-              className="available-room"
+              className="available-room clickable"
               key={`available-room-${i}`}
-              onDoubleClick={e =>
-                props.peer.joinRoom((e.target as any).firstChild.data)
-              }
+              onDoubleClick={async () => {
+                try {
+                  await props.peer.joinRoom(room);
+                  setAvailableRooms(availableRooms.filter(r => r !== room));
+                  setJoinedRooms(props.peer.currentRooms);
+                } catch (e) {
+                  console.log(`error while joining room ${room}`, e);
+                }
+              }}
             >
               {room}
             </li>
@@ -205,6 +211,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
                     x
                   </button>
                   <span
+                    className={room.id === currentRoom ? "" : "clickable"}
                     onClick={() => {
                       const newRoom = room.id;
                       if (newRoom !== currentRoom) {

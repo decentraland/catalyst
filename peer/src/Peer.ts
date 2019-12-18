@@ -90,16 +90,15 @@ export class Peer implements IPeer {
   }
 
   async joinRoom(roomId: string): Promise<any> {
-    const roomUsers: PeerConnectionData[] = await fetch(
-      `${this.lighthouseUrl}/rooms/${roomId}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ userId: this.nickname, peerId: this.nickname })
-      }
-    ).then(res => res.json());
+    const response = await fetch(`${this.lighthouseUrl}/rooms/${roomId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ userId: this.nickname, peerId: this.nickname })
+    });
+
+    const roomUsers: PeerConnectionData[] = await response.json();
 
     const room = {
       id: roomId,
@@ -128,10 +127,12 @@ export class Peer implements IPeer {
   }
 
   async leaveRoom(roomId: string) {
-    const roomUsers: PeerConnectionData[] = await fetch(
+    const response = await fetch(
       `${this.lighthouseUrl}/rooms/${roomId}/users/${this.nickname}`,
       { method: "DELETE" }
-    ).then(res => res.json());
+    );
+
+    const roomUsers: PeerConnectionData[] = await response.json();
 
     const index = this.currentRooms.findIndex(room => room.id === roomId);
 
