@@ -34,8 +34,8 @@ export class Environment {
             const env = new Environment()
             Environment.instance = env
 
-            env.setConfig(STORAGE_ROOT_FOLDER, "storage")
-            env.setConfig(SERVER_PORT, process.env.PORT ?? 6969)
+            env.setConfig(STORAGE_ROOT_FOLDER, process.env.STORAGE_ROOT_FOLDER ?? "storage")
+            env.setConfig(SERVER_PORT, process.env.SERVER_PORT ?? 6969)
 
             env.registerBean(Bean.STORAGE, ContentStorageFactory.local(env))
             env.registerBean(Bean.NAMING, await NamingFactory.create(env))
