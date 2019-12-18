@@ -93,6 +93,7 @@ export class RoomsService {
     if (room.length === 0) {
       delete this.rooms[roomId];
     }
+    return room;
   }
 
   removeUser(userId: string) {

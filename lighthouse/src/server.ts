@@ -84,8 +84,8 @@ app.put("/rooms/:roomId", async (req, res, next) => {
 // DELETE /room/:id/:userId -> deletes a user from a room. If the room remains empty, it deletes the room.
 app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
   const { roomId, userId } = req.params;
-  roomsService.removeUserFromRoom(roomId, userId);
-  res.end();
+  const room = roomsService.removeUserFromRoom(roomId, userId);
+  res.send(room);
 });
 
 require("isomorphic-fetch");
