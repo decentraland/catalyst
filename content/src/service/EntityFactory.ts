@@ -4,15 +4,29 @@ import { FileHash } from "./Hashing";
 
 export class EntityFactory {
     static fromFile(file: File, id: EntityId): Entity {
-        return this.fromBuffer(file.content, id)
+        return this.fromBufferWithId(file.content, id)
     }
-    static fromBuffer(buffer: Buffer, id: EntityId): Entity {
-        let object
+    static fromBufferWithId(buffer: Buffer, id: EntityId): Entity {
+        const object = EntityFactory.parseJsonIntoObject(buffer)
+        return EntityFactory.fromObject(object, id)
+    }
+
+    static fromJsonObject(object: any): Entity {
+        if (!object.id) {
+            throw new Error(`Expected to find a defined id`)
+        }
+        return EntityFactory.fromObject(object, object.id)
+    }
+
+    private static parseJsonIntoObject(buffer: Buffer): any {
         try {
-            object = JSON.parse(buffer.toString())
+            return JSON.parse(buffer.toString())
         } catch (e) {
             throw new Error(`Failed to parse the entity file. Please make sure thay it is a valid json.`)
         }
+    }
+
+    private static fromObject(object: any, id: EntityId): Entity {
         if (!object.type || !Object.values(EntityType).includes(object.type)) {
             throw new Error(`Please set a valid type. It must be one of ${Object.values(EntityType)}. We got '${object.type}'`)
         }
@@ -40,7 +54,7 @@ export class EntityFactory {
             if (!content.file || !content.hash) {
                 throw new Error("Content must contain a file name and a file hash");
             }
-            
+
             if (!this.isString(content.file) || !this.isString(content.hash)) {
                 throw new Error("Please make sure that all file names and a file hashes are valid strings");
             }

@@ -7,6 +7,7 @@ Environment.getInstance().then(env => {
     new Server(env).start()
     new SynchronizationManager(
         new DAOClient(),
+        env.getBean(Bean.NAMING),
         env.getBean(Bean.HISTORY_MANAGER),
         env.getBean(Bean.SERVICE)
     )

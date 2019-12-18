@@ -169,13 +169,18 @@ export class Controller {
 
 }
 
-export class ControllerEntity {
+export interface ControllerEntity {
     id: string
     type: string
     pointers: string[]
     timestamp: number
-    content?: [string, string][]
+    content?: ControllerEntityContent[]
     metadata?: any
+}
+
+export type ControllerEntityContent = {
+    file: string,
+    hash: string,
 }
 
 export enum EntityField {

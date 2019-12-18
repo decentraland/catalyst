@@ -1,22 +1,23 @@
 import { Entity } from "../service/Entity"
-import { EntityField, ControllerEntity } from "./Controller"
+import { EntityField, ControllerEntity, ControllerEntityContent } from "./Controller"
 
 export class ControllerEntityFactory {
     static maskEntity(fullEntity: Entity, fields?: EntityField[]): ControllerEntity {
-        let maskedEntity = new ControllerEntity()
-        maskedEntity.id = fullEntity.id
-        maskedEntity.type = fullEntity.type
-        maskedEntity.timestamp = fullEntity.timestamp
+        const { id, type, timestamp } = fullEntity
+        let content: ControllerEntityContent[] = []
+        let metadata: any
+        let pointers: string[] = []
         if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
-            maskedEntity.content = [...fullEntity.content]
+            content = Array.from(fullEntity.content.entries())
+                .map(([file, hash]) => ({ file, hash }))
         }
         if (!fields || fields.includes(EntityField.METADATA)) {
-            maskedEntity.metadata = fullEntity.metadata
+            metadata = fullEntity.metadata
         }
         if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
-            maskedEntity.pointers = fullEntity.pointers
+            pointers = fullEntity.pointers
         }
-        return maskedEntity
+        return { id, type, timestamp, pointers, content, metadata }
     }
 
 }

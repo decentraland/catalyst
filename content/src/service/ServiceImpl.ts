@@ -39,7 +39,7 @@ export class ServiceImpl implements Service {
             // Try to get the entity from the storage
             try {
                 const buffer = await this.storage.getContent(StorageCategory.CONTENTS, id)
-                entity = EntityFactory.fromBuffer(buffer, id)
+                entity = EntityFactory.fromBufferWithId(buffer, id)
                 this.entities.set(id, entity)
             } catch (error) { }
         }
@@ -64,11 +64,15 @@ export class ServiceImpl implements Service {
     }
 
     async deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
-        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.naming.getServerName(), Date.now)
+        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.naming.getServerName(), Date.now, true)
+    }
+
+    async deployEntityFromAnotherContentServer(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
+        await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, false)
     }
 
     // TODO: Maybe move this somewhere else?
-    async deployEntityWithServerAndTimestamp(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
@@ -91,9 +95,10 @@ export class ServiceImpl implements Service {
         // Validate ethAddress access
         validation.validateAccess(entity.pointers, ethAddress, entity.type)
 
-        // Validate that the entity is "fresh"
-        // TODO: We shouldn't do this when we get this update from a new node
-        await validation.validateFreshDeployment(entity, (type,pointers) => this.getEntitiesByPointers(type, pointers))
+        if (checkFreshness) {
+            // Validate that the entity is "fresh"
+            await validation.validateFreshDeployment(entity, (type,pointers) => this.getEntitiesByPointers(type, pointers))
+        }
 
         // Type validation
         validation.validateType(entity)

@@ -1,5 +1,5 @@
 import { setInterval, clearInterval, setImmediate } from "timers"
-import { Service, Timestamp, File } from "../Service";
+import { Service, Timestamp, File, ENTITY_FILE_NAME } from "../Service";
 import { EntityId, Entity } from "../Entity";
 import { DeploymentHistory, DeploymentEvent, HistoryManager } from "../history/HistoryManager";
 import { FileHash } from "../Hashing";
@@ -11,13 +11,15 @@ import { Environment, Bean, SERVER_PORT } from "../../Environment";
 
 export class SynchronizationManager {
 
-    private static UPDATE_FROM_DAO_INTERVAL: number = 5 * 60 * 1000 // 5 min
+    // private static UPDATE_FROM_DAO_INTERVAL: number = 5 * 60 * 1000 // 5 min
+    private static UPDATE_FROM_DAO_INTERVAL: number = 30 * 1000 // 30 secs
     private static SYNC_WITH_SERVERS_INTERVAL: number = 20 * 1000 // 20 secs
 
     private intervals: NodeJS.Timeout[];
+    private lastImmutableTime = 0
     private contentServers: Map<ServerName, ContentServer> = new Map()
 
-    constructor(private dao: DAOClient, private historyManager: HistoryManager, private service: Service) {
+    constructor(private dao: DAOClient, private naming: Naming, private historyManager: HistoryManager, private service: Service) {
         // Load node
         setImmediate(() => this.boot())
     }
@@ -36,8 +38,8 @@ export class SynchronizationManager {
         await this.syncWithServers()
 
         // Set intervals to update server list and keep in sync with other servers
-        const interval1 = setInterval(this.updateServersList, SynchronizationManager.UPDATE_FROM_DAO_INTERVAL)
-        const interval2 = setInterval(this.syncWithServers, SynchronizationManager.SYNC_WITH_SERVERS_INTERVAL)
+        const interval1 = setInterval(() => this.updateServersList(), SynchronizationManager.UPDATE_FROM_DAO_INTERVAL)
+        const interval2 = setInterval(() => this.syncWithServers(), SynchronizationManager.SYNC_WITH_SERVERS_INTERVAL)
         this.intervals = [interval1, interval2]
     }
 
@@ -46,14 +48,18 @@ export class SynchronizationManager {
         const contentServers: ContentServer[] = Array.from(this.contentServers.values())
 
         // Get new entities and process new deployments
-        const updateActions: Promise<void>[] = contentServers.map(this.getNewEntitiesDeployedInContentServer)
+        const updateActions: Promise<void>[] = contentServers.map(server => this.getNewEntitiesDeployedInContentServer(server))
         await Promise.all(updateActions)
 
         // Find the minimum timestamp between all servers
         const minTimestamp: Timestamp = Math.min(...contentServers.map(contentServer => contentServer.lastKnownTimestamp))
 
-        // Set this new minimum timestamp as the latest immutable time
-        await this.historyManager.setTimeAsImmutable(minTimestamp)
+        // TODO: Before updating the lastImmutableTime, we need to make sure that we reached everybody
+        if (minTimestamp > this.lastImmutableTime) {
+            // Set this new minimum timestamp as the latest immutable time
+            this.lastImmutableTime = minTimestamp
+            await this.historyManager.setTimeAsImmutable(minTimestamp)
+        }
     }
 
     /** Get all updates from one specific content server */
@@ -66,9 +72,10 @@ export class SynchronizationManager {
 
         // Calculate the deployments we are not already aware of
         const unawareDeployments: DeploymentHistory = newDeployments.filter(deployment => !alreadyDeployedIds.get(deployment.entityId))
+        console.log(`Detected ${unawareDeployments.length} from server ${contentServer.name}.`)
 
         // Process the deployments
-        await Promise.all(unawareDeployments.map(this.processNewDeployment))
+        await Promise.all(unawareDeployments.map(unawareDeployment => this.processNewDeployment(unawareDeployment)))
     }
 
     /** Process a specific deployment */
@@ -80,8 +87,7 @@ export class SynchronizationManager {
             const [, files]: [Entity, Set<File>] = await this.getFilesFromDeployment(contentServer, deployment)
 
             // Deploy the new entity
-            // TODO: We will need to avoid certain validations that are currently on the service, so it might make sense to have a different method
-            await this.service.deployEntityWithServerAndTimestamp(files, deployment.entityId, "ETH ADDRESS", "SIGNATURE", contentServer.name, () => deployment.timestamp)
+            await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, "ETH ADDRESS", "SIGNATURE", contentServer.name, deployment.timestamp)
         } else {
             throw new Error(`Failed to find a whitelisted server with the name ${deployment.serverName}`)
         }
@@ -92,19 +98,27 @@ export class SynchronizationManager {
         // Retrieve the entity from the server
         const entity: Entity = await contentServer.getEntity(event.entityType, event.entityId)
 
-        // Read the entity, and combine all file hashes
-        const allFileHashes: FileHash[] = Array.from(entity.content?.values() ?? []).concat(entity.id)
+        // Read the entity, and get all content file hashes
+        const allFileHashes: FileHash[] = Array.from(entity.content?.values() ?? [])
 
         // Check if we already have any of the files
         const avaliableContent: Map<FileHash, Boolean> = await this.service.isContentAvailable(allFileHashes)
 
-        // Download all files that we don't currently have
+        // Download all content files that we don't currently have
         const filePromises: Promise<File>[] = Array.from(avaliableContent.entries())
             .filter(([_, isAlreadyAvailable]) => !isAlreadyAvailable)
             .map(([fileHash, _]) => contentServer.getContentFile(fileHash))
 
+        // Download the entity file and rename it
+        let entityFile: File = await contentServer.getContentFile(entity.id)
+        entityFile.name = ENTITY_FILE_NAME
+
+        // Combine all files
+        const contentFiles = await Promise.all(filePromises)
+        contentFiles.push(entityFile)
+
         // Return all the downloaded files
-        return [entity, new Set(await Promise.all(filePromises))]
+        return [entity, new Set(contentFiles)]
     }
 
     /** Register this server in the DAO id required */
@@ -120,13 +134,15 @@ export class SynchronizationManager {
     /** Update our data with the DAO's servers list */
     private async updateServersList() {
         // Get all servers from the DAO
-        const serversInDAO: ContentServer[] = await this.dao.getAllServers()
+        const serversInDAO: ContentServer[] = (await this.dao.getAllServers())
+            .filter(contentServer => contentServer.name != this.naming.getServerName()) // Remove myself from the list
 
         // Store new servers
         const newServers = serversInDAO.filter(server => !this.contentServers.has(server.name));
         for (const server of newServers) {
             // Store the new server
             this.contentServers.set(server.name, server)
+            console.log(`Connected to new server ${server.name} on ${server.address}`)
 
             // Check if we already knew something about the server
             const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, server.name);

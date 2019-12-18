@@ -4,6 +4,7 @@ import { DeploymentHistory } from "../history/HistoryManager";
 import { FileHash } from "../Hashing";
 import { ServerName } from "../naming/Naming";
 import fetch from "node-fetch";
+import { EntityFactory } from "../EntityFactory";
 
 export class ContentServer {
     private static readonly ONE_MINUTE = 60 * 1000; // One minute in milliseconds
@@ -22,14 +23,15 @@ export class ContentServer {
         }
         else {
             // Update the new timestamp with the latest deployment
-            this.lastKnownTimestamp = Math.max(...newDeployments.map(deployment => deployment.timestamp));
+            this.lastKnownTimestamp = Math.max(this.lastKnownTimestamp, ...newDeployments.map(deployment => deployment.timestamp));
         }
         return newDeployments;
     }
     getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
         return fetch(`http://${this.address}/entities/${entityType}?id=${entityId}`)
             .then(response => response.json())
-            .then((entities: Entity[]) => entities[0]);
+            .then(response => response[0])
+            .then(entityJson => EntityFactory.fromJsonObject(entityJson))
     }
     getContentFile(fileHash: FileHash): Promise<File> {
         return fetch(`http://${this.address}/contents/${fileHash}`)

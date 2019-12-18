@@ -52,14 +52,21 @@ class EventSerializer {
     private static ATTRIBUTES_SEPARATOR: string = ' '
 
     static unserializeHistory(historyBuffer: Buffer): DeploymentHistory {
-        return historyBuffer.toString()
-            .trimEnd()
-            .split(EventSerializer.EVENT_SEPARATOR)
-            .map(EventSerializer.unserialize)
+        const serializedHistory: string = historyBuffer.toString().trimEnd()
+        if (serializedHistory.includes(EventSerializer.ATTRIBUTES_SEPARATOR)) {
+            return serializedHistory.split(EventSerializer.EVENT_SEPARATOR)
+                .map(EventSerializer.unserialize)
+        } else {
+            return []
+        }
     }
 
     static serializeHistory(history: DeploymentHistory): Buffer {
-        return Buffer.from(history.map(EventSerializer.serialize).join(EventSerializer.EVENT_SEPARATOR) + EventSerializer.EVENT_SEPARATOR)
+        let serializedHistory: string = history.map(EventSerializer.serialize).join(EventSerializer.EVENT_SEPARATOR)
+        if (history.length > 0) {
+            serializedHistory += EventSerializer.EVENT_SEPARATOR
+        }
+        return Buffer.from(serializedHistory)
     }
 
     private static unserialize(serializedEvent: string): DeploymentEvent {

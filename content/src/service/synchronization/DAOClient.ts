@@ -15,11 +15,21 @@ export class DAOClient {
         console.log("Server registered in DAO.");
     }
 
-    getAllServers(): Promise<ContentServer[]> {
-        // We need to:
-        // 1. Ask the DAO for the servers
-        // 2. Ask each server for their name
-        // DON'T UPDATE THE LATEST TIMESTAMP, we will do it after
-        return Promise.resolve([]);
+    async getAllServers(): Promise<ContentServer[]> {
+        const response = await fetch(`http://${DAOClient.DAO_ADDRESS}/all-servers`)
+        const serverAddresses: any[] = await response.json()
+        const servers = serverAddresses.map(async ({ address }) => {
+            // TODO: Handle posibility that we can't connect
+            const serverName = await this.getServerName(address);
+            return new ContentServer(serverName, address);
+        });
+
+        return Promise.all(servers)
+    }
+
+    private async getServerName(address: ServerAddress): Promise<ServerName> {
+        const response = await fetch(`http://${address}/status`)
+        const { name } = await response.json()
+        return name
     }
 }
