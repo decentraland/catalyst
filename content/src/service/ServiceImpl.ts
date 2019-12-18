@@ -118,7 +118,7 @@ export class ServiceImpl implements Service {
         await this.deleteOverwrittenEntities(entity)
 
         // Register the new entity on global variables
-        await this.commitNewEntity(hashes, alreadyStoredHashes, entity)
+        await this.commitNewEntity(hashes, alreadyStoredHashes, entity, ethAddress, signature)
 
         // Calculate timestamp
         const deploymentTimestamp: Timestamp = timestampCalculator()
@@ -131,7 +131,7 @@ export class ServiceImpl implements Service {
         return Promise.resolve(deploymentTimestamp)
     }
 
-    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity): Promise<void> {
+    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity, ethAddress: EthAddress, signature: Signature): Promise<void> {
         // Register entity
         this.entities.set(entity.id, entity)
 
@@ -152,6 +152,14 @@ export class ServiceImpl implements Service {
         // Store reference from pointers to entity
         const pointerStorageActions: Promise<void>[] = entity.pointers
             .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)));
+
+        // Store deployment proof data
+        const proofData = {
+            id: entity.id,
+            address: ethAddress,
+            signature: signature,
+        }
+        await this.storage.store(this.resolveCategory(StorageCategory.PROOFS, entity.type), entity.id, Buffer.from(JSON.stringify(proofData)))
 
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
     }
@@ -205,11 +213,9 @@ export class ServiceImpl implements Service {
     }
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        return Promise.resolve({
-            deployedTimestamp: 1,
-            ethAddress: "",
-            signature: ""
-        })
+        // TODO: Catch potential exception if content doesn't exist, and return better error message
+        return this.storage.getContent(this.resolveCategory(StorageCategory.PROOFS, type), id)
+        .then(buffer => JSON.parse(buffer.toString()))
     }
 
     async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
