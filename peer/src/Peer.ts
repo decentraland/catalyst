@@ -80,7 +80,7 @@ export class Peer implements IPeer {
     private config: PeerConfig = { relay: RelayMode.None }
   ) {
     const url = new URL(lighthouseUrl);
-    
+
     this.config.token = this.config.token ?? util.randomToken();
 
     this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
@@ -103,7 +103,7 @@ export class Peer implements IPeer {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "X-Peer-Token": this.config.token!,
+        "X-Peer-Token": this.config.token!
       },
       body: JSON.stringify({ userId: this.nickname, peerId: this.nickname })
     });
@@ -253,12 +253,16 @@ export class Peer implements IPeer {
     switch (parsed.type as PacketType) {
       case "hi": {
         const parsedData = parsed.data as PacketData["hi"];
+
+        // process hi message and reconcile with state
         const room = this.findRoom(parsedData.room.id);
         if (room) {
           parsedData.room.users.forEach(user => {
             room.users.set(this.key(user), user);
           });
         }
+
+        // relay hi to other peers
         if (this.config.relay === RelayMode.All) {
           room?.users.forEach(user => {
             if (user.userId !== peerId && user.userId !== this.nickname) {

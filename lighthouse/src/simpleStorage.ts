@@ -35,7 +35,7 @@ export class SimpleStorage {
       const ignored = this.flush(currentItems);
     }
 
-    return currentItems[key];
+    return currentItems[key] as string;
   }
 
   async setString(key: string, value: string) {
