@@ -1,7 +1,5 @@
-import { Environment, STORAGE_ROOT_FOLDER, SERVER_PORT, Bean } from "../src/Environment"
-import { ContentStorageFactory } from "../src/storage/ContentStorageFactory"
+import { Environment, SERVER_PORT, EnvironmentBuilder } from "../src/Environment"
 import { MockedService } from "./service/MockedService"
-import { ControllerFactory } from "../src/controller/ControllerFactory"
 import { Server } from "../src/Server"
 import fetch from "node-fetch"
 import { Entity, EntityType } from "../src/service/Entity"
@@ -10,15 +8,8 @@ describe("unit tests in jasmine", function() {
     let env: Environment
     let server: Server
 
-    beforeAll(() => {
-        env = new Environment()
-
-        env.setConfig(STORAGE_ROOT_FOLDER, "storage")
-        env.setConfig(SERVER_PORT, process.env.PORT ?? 6969)
-    
-        env.registerBean(Bean.STORAGE, ContentStorageFactory.local(env))
-        env.registerBean(Bean.SERVICE, new MockedService())
-        env.registerBean(Bean.CONTROLLER, ControllerFactory.create(env))
+    beforeAll(async () => {
+        env = await new EnvironmentBuilder().withService(new MockedService()).build()
         server = new Server(env)
         server.start()
     })

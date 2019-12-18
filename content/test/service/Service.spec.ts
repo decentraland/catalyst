@@ -4,9 +4,10 @@ import { assertPromiseRejectionIs } from "../PromiseAssertions";
 import { EntityType } from "../../src/service/Entity";
 import { buildEntityAndFile } from "./EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";
-import { Environment, Bean } from "../../src/Environment";
+import { EnvironmentBuilder } from "../../src/Environment";
 import { ServiceFactory } from "../../src/service/ServiceFactory";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
+import { Naming } from "../../src/service/naming/Naming";
 
 describe("Service", function() {
 
@@ -21,12 +22,15 @@ describe("Service", function() {
     this.historyManager = new MockedHistoryManager()
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     this.storage = new MockedStorage()
-    const env = new Environment()
-    env.registerBean(Bean.STORAGE, this.storage)
-    env.registerBean(Bean.HISTORY_MANAGER, this.historyManager)
-    env.registerBean(Bean.NAMING, { getServerName: () => serverName })
+
+    const env = await new EnvironmentBuilder()
+        .withStorage(this.storage)
+        .withHistoryManager(this.historyManager)
+        .withNaming({ getServerName: () => serverName } as Naming)
+        .build()
+
     this.service = ServiceFactory.create(env)
   })
 
