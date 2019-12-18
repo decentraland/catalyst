@@ -1,7 +1,7 @@
 import { Server } from "./Server";
 import { Environment, Bean } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
-import { DAOClient } from "./service/synchronization/DAOClient";
+import { DAOClient } from "./service/synchronization/clients/DAOClient";
 
 Environment.getInstance().then(env => {
     new Server(env).start()
