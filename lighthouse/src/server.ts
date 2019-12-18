@@ -7,7 +7,9 @@ import { Peer, RelayMode } from "../../peer/src/Peer";
 import * as wrtc from "wrtc";
 import WebSocket from "ws";
 import { RoomsService } from "./roomsService";
-
+import { serverStorage } from "./simpleStorage";
+import { util } from "../../peer/src/peerjs-server-connector/util";
+import { StorageKeys } from "./storageKeys";
 const relay = true;
 const port = process.env.PORT ?? 9000;
 
@@ -88,11 +90,19 @@ app.delete("/rooms/:roomId/users/:userId", (req, res, next) => {
   res.send(room);
 });
 
+async function getPeerToken() {
+  return await serverStorage.getOrSetString(
+    StorageKeys.PEER_TOKEN,
+    util.generateToken(64)
+  );
+}
+
 require("isomorphic-fetch");
 
-const server = app.listen(port, () => {
+const server = app.listen(port, async () => {
   console.info(`==> Lighthouse listening on port ${port}.`);
   if (relay) {
+    const peerToken = await getPeerToken();
     peer = new Peer(
       `http://localhost:${port}`,
       "lighthouse",
@@ -103,7 +113,8 @@ const server = app.listen(port, () => {
       {
         wrtc,
         socketBuilder: url => new WebSocket(url),
-        relay: RelayMode.All
+        relay: RelayMode.All,
+        token: peerToken
       }
     );
   }

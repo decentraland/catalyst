@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Field, Button } from "decentraland-ui";
 
 import { IPeer } from "../../peer/src/types";
+import { PeerToken } from "./PeerToken";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return (
@@ -30,6 +31,7 @@ export function ConnectForm(props: {
     setLoading(true);
     try {
       const peer = new props.peerClass(url, nickname, () => {}, {
+        token: PeerToken.getToken(nickname),
         iceServers: [
           {
             urls: "stun:stun.l.google.com:19302"
@@ -49,7 +51,7 @@ export function ConnectForm(props: {
       setLoading(false);
       props.onConnected(peer, room, url);
     } catch (e) {
-      setError(e.toString());
+      setError(e.message ?? e.toString());
       setLoading(false);
     }
   }
@@ -59,7 +61,7 @@ export function ConnectForm(props: {
       {fieldFor("URL", url, setUrl)}
       {fieldFor("Nickname", nickname, setNickname)}
       {fieldFor("Room", room, setRoom)}
-      {error && <p style={{ color: "red" }}>error</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       <Button
         primary
         disabled={[url, nickname, room].some(it => it === "") || isLoading}

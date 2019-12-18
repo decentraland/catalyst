@@ -2,7 +2,11 @@ import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverco
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import { isReliable, connectionIdFor } from "./peerjs-server-connector/util";
+import {
+  isReliable,
+  connectionIdFor,
+  util
+} from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { PeerConnectionData, IPeer, Room } from "./types";
 
@@ -46,6 +50,7 @@ type PeerConfig = {
   connectionConfig?: any;
   wrtc?: any;
   socketBuilder?: SocketBuilder;
+  token?: string;
   relay?: RelayMode;
 };
 
@@ -75,10 +80,14 @@ export class Peer implements IPeer {
     private config: PeerConfig = { relay: RelayMode.None }
   ) {
     const url = new URL(lighthouseUrl);
+    
+    this.config.token = this.config.token ?? util.randomToken();
+
     this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
       host: url.hostname,
       port: url.port ? parseInt(url.port) : 80,
       path: url.pathname,
+      token: this.config.token,
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 
@@ -93,7 +102,8 @@ export class Peer implements IPeer {
     const response = await fetch(`${this.lighthouseUrl}/rooms/${roomId}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Peer-Token": this.config.token!,
       },
       body: JSON.stringify({ userId: this.nickname, peerId: this.nickname })
     });

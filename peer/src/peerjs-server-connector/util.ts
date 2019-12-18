@@ -27,6 +27,16 @@ export const util = new (class {
       .toString(36)
       .substr(2);
   }
+
+  generateToken(n: number) {
+    var chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    var token = "";
+    for (var i = 0; i < n; i++) {
+      token += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return token;
+  }
 })();
 
 export const ConnectionSuffixes = {
@@ -34,7 +44,6 @@ export const ConnectionSuffixes = {
   unreliable: "unreliable"
 };
 
-//TODO: Currently the connection id is mirrored, from peer to peer. We may want to make them the same.
 export function connectionIdFor(
   myId: string,
   peerId: string,
@@ -50,5 +59,5 @@ export function isReliable(connectionId: string) {
 }
 
 export function delay(time: number) {
-  return new Promise(resolve => setTimeout(resolve, time))
+  return new Promise(resolve => setTimeout(resolve, time));
 }
