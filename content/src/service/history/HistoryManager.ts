@@ -1,6 +1,6 @@
 import { Timestamp } from "../Service"
 import { EntityType, EntityId, Entity } from "../Entity"
-import { ServerName } from "../naming/Naming"
+import { ServerName } from "../naming/NameKeeper"
 
 export interface HistoryManager {
     newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void>;

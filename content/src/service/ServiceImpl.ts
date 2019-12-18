@@ -5,14 +5,14 @@ import { Validation } from "./Validation";
 import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File, ServerStatus } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
-import { Naming, ServerName } from "./naming/Naming";
+import { NameKeeper, ServerName } from "./naming/NameKeeper";
 
 export class ServiceImpl implements Service {
 
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
 
-    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private naming: Naming) {
+    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private naming: NameKeeper) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)

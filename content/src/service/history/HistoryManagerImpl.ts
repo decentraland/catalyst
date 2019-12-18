@@ -2,7 +2,7 @@ import { Timestamp } from "../Service"
 import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManager, DeploymentEvent, DeploymentHistory } from "./HistoryManager"
 import { Entity } from "../Entity"
-import { ServerName } from "../naming/Naming"
+import { ServerName } from "../naming/NameKeeper"
 
 export class HistoryManagerImpl implements HistoryManager {
 

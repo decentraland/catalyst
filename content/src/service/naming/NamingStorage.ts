@@ -1,5 +1,5 @@
 import { ContentStorage } from "../../storage/ContentStorage";
-import { ServerName } from "./Naming";
+import { ServerName } from "./NameKeeper";
 
 export class NamingStorage {
 

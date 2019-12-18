@@ -1,6 +1,6 @@
 import { FileHash } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
-import { ServerName } from "./naming/Naming";
+import { ServerName } from "./naming/NameKeeper";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 

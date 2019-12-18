@@ -7,7 +7,7 @@ import { MockedStorage } from "../storage/MockedStorage";
 import { EnvironmentBuilder } from "../../src/Environment";
 import { ServiceFactory } from "../../src/service/ServiceFactory";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
-import { Naming } from "../../src/service/naming/Naming";
+import { NameKeeper } from "../../src/service/naming/NameKeeper";
 
 describe("Service", function() {
 
@@ -28,7 +28,7 @@ describe("Service", function() {
     const env = await new EnvironmentBuilder()
         .withStorage(this.storage)
         .withHistoryManager(this.historyManager)
-        .withNaming({ getServerName: () => serverName } as Naming)
+        .withNameKeeper({ getServerName: () => serverName } as NameKeeper)
         .build()
 
     this.service = ServiceFactory.create(env)

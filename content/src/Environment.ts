@@ -2,11 +2,11 @@ import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
-import { NamingFactory } from "./service/naming/NamingFactory";
+import { NameKeeperFactory } from "./service/naming/NameKeeperFactory";
 import { ContentStorage } from "./storage/ContentStorage";
 import { Service } from "./service/Service";
 import { HistoryManager } from "./service/history/HistoryManager";
-import { Naming } from "./service/naming/Naming";
+import { NameKeeper } from "./service/naming/NameKeeper";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
@@ -75,8 +75,8 @@ export class EnvironmentBuilder {
         return this
     }
 
-    withNaming(naming: Naming): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.NAMING, naming)
+    withNameKeeper(nameKeeper: NameKeeper): EnvironmentBuilder {
+        this.baseEnv.registerBean(Bean.NAMING, nameKeeper)
         return this
     }
 
@@ -87,7 +87,7 @@ export class EnvironmentBuilder {
         this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
 
         this.registerBean(env, Bean.STORAGE        , () => ContentStorageFactory.local(env))
-        const naming = await NamingFactory.create(env)
+        const naming = await NameKeeperFactory.create(env)
         this.registerBean(env, Bean.NAMING         , () => naming)
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBean(env, Bean.HISTORY_MANAGER, () => historyManager)

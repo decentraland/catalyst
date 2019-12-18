@@ -3,7 +3,7 @@ import { Service, Timestamp, File, ENTITY_FILE_NAME } from "../Service";
 import { EntityId, Entity } from "../Entity";
 import { DeploymentHistory, DeploymentEvent, HistoryManager } from "../history/HistoryManager";
 import { FileHash } from "../Hashing";
-import { ServerName, Naming } from "../naming/Naming";
+import { ServerName, NameKeeper } from "../naming/NameKeeper";
 import { ServerAddress, getServerName, getClient, getUnreachableClient, ContentServerClient, UNREACHABLE } from "./clients/ContentServerClient";
 import { DAOClient } from "./clients/DAOClient";
 import { Environment, SERVER_PORT } from "../../Environment";
@@ -19,7 +19,7 @@ export class SynchronizationManager {
     private lastImmutableTime = 0
     private contentServers: Map<ServerName, ContentServerClient> = new Map()
 
-    constructor(private dao: DAOClient, private naming: Naming, private historyManager: HistoryManager, private service: Service) {
+    constructor(private dao: DAOClient, private naming: NameKeeper, private historyManager: HistoryManager, private service: Service) {
         // Load node
         setImmediate(() => this.boot())
     }
@@ -124,7 +124,7 @@ export class SynchronizationManager {
         // Return all the downloaded files
         return [entity, new Set(contentFiles)]
     }
-
+NameKeeper
     /** Register this server in the DAO id required */
     private async registerServer() {
         const env: Environment = await Environment.getInstance()

@@ -3,7 +3,7 @@ import { Timestamp, File } from "../../Service";
 import { EntityId, EntityType, Entity } from "../../Entity";
 import { DeploymentHistory } from "../../history/HistoryManager";
 import { FileHash } from "../../Hashing";
-import { ServerName } from "../../naming/Naming";
+import { ServerName } from "../../naming/NameKeeper";
 import { EntityFactory } from "../../EntityFactory";
 
 export const UNREACHABLE: string = "UNREACHABLE"

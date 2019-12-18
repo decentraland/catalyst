@@ -1,11 +1,11 @@
 import { Environment, Bean } from "../../Environment"
 import { NamingStorage } from "./NamingStorage"
-import { Naming } from "./Naming"
+import { NameKeeper } from "./NameKeeper"
 
-export class NamingFactory {
+export class NameKeeperFactory {
 
-    static create(env: Environment): Promise<Naming> {
+    static create(env: Environment): Promise<NameKeeper> {
         const storage: NamingStorage = new NamingStorage(env.getBean(Bean.STORAGE))
-        return Naming.build(storage)
+        return NameKeeper.build(storage)
     }
 }
