@@ -1,4 +1,4 @@
-import { setInterval, clearInterval, setImmediate } from "timers"
+import { setInterval, clearInterval } from "timers"
 import { Service, Timestamp, File, ENTITY_FILE_NAME } from "../Service";
 import { EntityId, Entity } from "../Entity";
 import { DeploymentHistory, DeploymentEvent, HistoryManager } from "../history/HistoryManager";
@@ -8,8 +8,12 @@ import { ServerAddress, getServerName, getClient, getUnreachableClient, ContentS
 import { DAOClient } from "./clients/DAOClient";
 import { Environment, SERVER_PORT } from "../../Environment";
 
+export interface SynchronizationManager {
+    start(): Promise<void>;
+    stop(): Promise<void>;
+}
 
-export class SynchronizationManager {
+export class ClusterSynchronizationManager implements SynchronizationManager {
 
     // private static UPDATE_FROM_DAO_INTERVAL: number = 5 * 60 * 1000 // 5 min
     private static UPDATE_FROM_DAO_INTERVAL: number = 30 * 1000 // 30 secs
@@ -19,29 +23,27 @@ export class SynchronizationManager {
     private lastImmutableTime = 0
     private contentServers: Map<ServerName, ContentServerClient> = new Map()
 
-    constructor(private dao: DAOClient, private nameKeeper: NameKeeper, private historyManager: HistoryManager, private service: Service) {
-        // Load node
-        setImmediate(() => this.boot())
+    constructor(private dao: DAOClient, private nameKeeper: NameKeeper, private historyManager: HistoryManager, private service: Service) { }
+
+    async start(): Promise<void> {
+         // TODO: Remove this on final version
+         await this.registerServer()
+
+         // Get servers from the DAO
+         await this.updateServersList()
+
+         // Sync with the servers
+         await this.syncWithServers()
+
+         // Set intervals to update server list and stay in sync with other servers
+         const interval1 = setInterval(() => this.updateServersList(), ClusterSynchronizationManager.UPDATE_FROM_DAO_INTERVAL)
+         const interval2 = setInterval(() => this.syncWithServers(), ClusterSynchronizationManager.SYNC_WITH_SERVERS_INTERVAL)
+         this.intervals = [interval1, interval2]
     }
 
-    stop() {
+    stop(): Promise<void> {
         this.intervals.forEach(clearInterval)
-    }
-
-    private async boot() {
-        // TODO: Remove this on final version
-        await this.registerServer()
-
-        // Get servers from the DAO
-        await this.updateServersList()
-
-        // Sync with the servers
-        await this.syncWithServers()
-
-        // Set intervals to update server list and stay in sync with other servers
-        const interval1 = setInterval(() => this.updateServersList(), SynchronizationManager.UPDATE_FROM_DAO_INTERVAL)
-        const interval2 = setInterval(() => this.syncWithServers(), SynchronizationManager.SYNC_WITH_SERVERS_INTERVAL)
-        this.intervals = [interval1, interval2]
+        return Promise.resolve()
     }
 
     private async syncWithServers(): Promise<void> {

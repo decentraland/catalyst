@@ -3,15 +3,19 @@ import { MockedService } from "./service/MockedService"
 import { Server } from "../src/Server"
 import fetch from "node-fetch"
 import { Entity, EntityType } from "../src/service/Entity"
+import { MockedSynchronizationManager } from "./service/synchronization/MockedSynchronizationManager"
 
 describe("unit tests in jasmine", function() {
     let env: Environment
     let server: Server
 
     beforeAll(async () => {
-        env = await new EnvironmentBuilder().withService(new MockedService()).build()
+        env = await new EnvironmentBuilder()
+            .withService(new MockedService())
+            .withSynchronizationManager(new MockedSynchronizationManager())
+            .build()
         server = new Server(env)
-        server.start()
+        await server.start()
     })
     afterAll(() => server.stop())
 

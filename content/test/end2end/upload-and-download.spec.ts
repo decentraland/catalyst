@@ -11,11 +11,15 @@ import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/Hi
 import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
 import { Timestamp } from "../../src/service/Service"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
+import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
 
 describe("End 2 end deploy test", function() {
 
     beforeAll(async function() {
-        this.env = await new EnvironmentBuilder().withAnalytics(new MockedContentAnalytics()).build()
+        this.env = await new EnvironmentBuilder()
+            .withAnalytics(new MockedContentAnalytics())
+            .withSynchronizationManager(new MockedSynchronizationManager())
+            .build()
         this.server = new Server(this.env)
         this.server.start()
     })
