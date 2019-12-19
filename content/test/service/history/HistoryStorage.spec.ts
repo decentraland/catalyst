@@ -5,46 +5,48 @@ import { DeploymentEvent, DeploymentHistory } from "../../../src/service/history
 import { EntityType } from "../../../src/service/Entity";
 import { MockedStorage } from "../../../test/storage/MockedStorage";
 
-describe("HistoryStorage", function() {
+describe("HistoryStorage", () => {
 
-    beforeEach(function() {
-        this.storage = new HistoryStorage(new MockedStorage())
+    let storage: HistoryStorage
+
+    beforeEach(() => {
+        storage = new HistoryStorage(new MockedStorage())
     })
 
-    it(`When temp history is stored, it can be retrieved`, async function() {
+    it(`When temp history is stored, it can be retrieved`, async () => {
         const history = getRandomEvents(5)
 
-        this.storage.setTempHistory(history)
+        await storage.setTempHistory(history)
 
-        expect(await this.storage.getTempHistory()).toEqual(history)
+        expect(await storage.getTempHistory()).toEqual(history)
     });
 
-    it(`When temp history is stored twice, it is overwriten`, async function() {
+    it(`When temp history is stored twice, it is overwriten`, async () => {
         const history1 = getRandomEvents(5)
         const history2 = getRandomEvents(6)
 
-        this.storage.setTempHistory(history1)
-        this.storage.setTempHistory(history2)
+        await storage.setTempHistory(history1)
+        await storage.setTempHistory(history2)
 
-        expect(await this.storage.getTempHistory()).toEqual(history2)
+        expect(await storage.getTempHistory()).toEqual(history2)
     });
 
-    it(`When immutable history is stored, it can be retrieved`, async function() {
+    it(`When immutable history is stored, it can be retrieved`, async () => {
         const history = getRandomEvents(5)
 
-        this.storage.appendToImmutableHistory(history)
+        await storage.appendToImmutableHistory(history)
 
-        expect(await this.storage.getImmutableHistory()).toEqual(history)
+        expect(await storage.getImmutableHistory()).toEqual(history)
     });
 
-    it(`When immutable history is stored twice, it is appended`, async function() {
+    it(`When immutable history is stored twice, it is appended`, async () => {
         const history1 = getRandomEvents(5)
         const history2 = getRandomEvents(6)
 
-        this.storage.appendToImmutableHistory(history1)
-        this.storage.appendToImmutableHistory(history2)
+        await storage.appendToImmutableHistory(history1)
+        await storage.appendToImmutableHistory(history2)
 
-        expect(await this.storage.getImmutableHistory()).toEqual(history1.concat(history2))
+        expect(await storage.getImmutableHistory()).toEqual(history1.concat(history2))
     });
 
     /** Returns a DeploymentHistory, sorted from oldest to newest */

@@ -13,40 +13,43 @@ import { Timestamp } from "../../src/service/Service"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
 
-describe("End 2 end deploy test", function() {
+describe("End 2 end deploy test", () => {
 
-    beforeAll(async function() {
-        this.env = await new EnvironmentBuilder()
+    let env: Environment
+    let server: Server
+
+    beforeAll(async () => {
+        env = await new EnvironmentBuilder()
             .withAnalytics(new MockedContentAnalytics())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .build()
-        this.server = new Server(this.env)
-        this.server.start()
+        server = new Server(env)
+        await server.start()
     })
 
-    afterAll(function() {
-        this.server.stop()
-        deleteFolderRecursive(this.env.getConfig(STORAGE_ROOT_FOLDER))
+    afterAll(() => {
+        server.stop()
+        deleteFolderRecursive(env.getConfig(STORAGE_ROOT_FOLDER))
     })
 
 
-    it(`Deploy and retrieve some content`, async function() {
+    it(`Deploy and retrieve some content`, async () => {
         //------------------------------
         // Deploy the content
         //------------------------------
         const [deployData, entityBeingDeployed] = await createDeployData()
 
         const form = new FormData();
-        form.append('entityId'  , deployData.entityId)
+        form.append('entityId', deployData.entityId)
         form.append('ethAddress', deployData.ethAddress)
-        form.append('signature' , deployData.signature)
+        form.append('signature', deployData.signature)
         deployData.files.forEach(f => {
             form.append(f.file, f.content, {
                 filename: f.file,
             });
         })
 
-        const deployResponse = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/entities`, { method: 'POST', body: form })
+        const deployResponse = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities`, { method: 'POST', body: form })
 
         expect(deployResponse.ok).toBe(true)
 
@@ -58,20 +61,20 @@ describe("End 2 end deploy test", function() {
         //------------------------------
         // Retrieve the entity by id
         //------------------------------
-        const responseById = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
+        const responseById = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
         expect(responseById.ok).toBe(true)
         const scenesById: ControllerEntity[] = await responseById.json();
-        await validateReceivedData(scenesById, deployData, this.env)
+        await validateReceivedData(scenesById, deployData, env)
 
         //------------------------------
         // Retrieve the entity by pointer
         //------------------------------
-        const responseByPointer = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/entities/scenes?pointer=0,0`)
+        const responseByPointer = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?pointer=0,0`)
         expect(responseByPointer.ok).toBe(true)
         const scenesByPointer: ControllerEntity[] = await responseByPointer.json();
-        await validateReceivedData(scenesByPointer, deployData, this.env)
+        await validateReceivedData(scenesByPointer, deployData, env)
 
-        const responseHistory = await fetch(`http://localhost:${this.env.getConfig(SERVER_PORT)}/history`)
+        const responseHistory = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/history`)
         expect(responseHistory.ok).toBe(true)
         const [deploymentEvent]: DeploymentHistory = await responseHistory.json()
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
@@ -103,9 +106,9 @@ async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
         ethAddress: "some-eth-address",
         signature: "some-signature",
         files: [
-            {file: entityFile.name, content: entityFile.content},
-            {file: fileHash1, content: fileContent1},
-            {file: fileHash2, content: fileContent2},
+            { file: entityFile.name, content: entityFile.content },
+            { file: fileHash1, content: fileContent1 },
+            { file: fileHash2, content: fileContent2 },
         ]
     }
     return [deployData, entity]
@@ -131,8 +134,8 @@ async function validateReceivedData(receivedScenes: ControllerEntity[], deployDa
     expect(findInArray(scene.content, "the-file-1")).toBeDefined()
     expect(findInArray(scene.content, "the-file-2")).toBeDefined()
 
-    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-1")?.hash??"")).toBeDefined()
-    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")?.hash??"")).toBeDefined()
+    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-1")?.hash ?? "")).toBeDefined()
+    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")?.hash ?? "")).toBeDefined()
 
     scene.content?.forEach(async contentElement => {
         const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/contents/${contentElement.hash}`)
@@ -142,8 +145,8 @@ async function validateReceivedData(receivedScenes: ControllerEntity[], deployDa
     })
 }
 
-function findInArray<T extends {file: string}>(elements:T[]|undefined, key: string): T|undefined {
-    return elements?.find(e => e.file===key);
+function findInArray<T extends { file: string }>(elements: T[] | undefined, key: string): T | undefined {
+    return elements?.find(e => e.file === key);
 }
 
 function deleteFolderRecursive(pathToDelete) {
@@ -151,18 +154,18 @@ function deleteFolderRecursive(pathToDelete) {
         fs.readdirSync(pathToDelete).forEach((file, index) => {
             const curPath = path.join(pathToDelete, file);
             if (fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath);
+                deleteFolderRecursive(curPath);
             } else { // delete file
-            fs.unlinkSync(curPath);
+                fs.unlinkSync(curPath);
             }
         });
         fs.rmdirSync(pathToDelete);
     }
-  };
+};
 
 type DeployData = {
     entityId: string,
     ethAddress: string,
     signature: string,
-    files: {file: string, content: Buffer}[]
+    files: { file: string, content: Buffer }[]
 }
