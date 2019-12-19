@@ -83,6 +83,7 @@ class ReachableContentServerClient implements ContentServerClient {
     }
 
     private async getDeploymentHistory(): Promise<DeploymentHistory> {
+        console.log(`Checking history of node '${this.name}' with timestamp '${this.lastKnownTimestamp}'`)
         const response = await fetch(`http://${this.address}/history?from=${this.lastKnownTimestamp}&serverName=${this.name}`);
         return await response.json();
     }
