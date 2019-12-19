@@ -9,6 +9,8 @@ import { HistoryManager } from "./service/history/HistoryManager";
 import { NameKeeper } from "./service/naming/NameKeeper";
 import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFactory";
 import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
+import { SynchronizationManager } from "../../content/src/service/synchronization/SynchronizationManager";
+import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
@@ -58,6 +60,7 @@ export const enum Bean {
     HISTORY_MANAGER,
     NAME_KEEPER,
     ANALYTICS,
+    SYNCHRONIZATION_MANAGER,
 }
 
 export class EnvironmentBuilder {
@@ -91,6 +94,11 @@ export class EnvironmentBuilder {
         return this
     }
 
+    withSynchronizationManager(synchronizationManager: SynchronizationManager): EnvironmentBuilder {
+        this.baseEnv.registerBean(Bean.SYNCHRONIZATION_MANAGER, synchronizationManager)
+        return this
+    }
+
     async build(): Promise<Environment> {
         const env = new Environment()
 
@@ -105,15 +113,16 @@ export class EnvironmentBuilder {
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
-        this.registerBean(env, Bean.ANALYTICS      , () => ContentAnalyticsFactory.create(env))
+        this.registerBean(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
-        this.registerBean(env, Bean.STORAGE        , () => localStorage)
+        this.registerBean(env, Bean.STORAGE                     , () => localStorage)
         const nameKeeper = await NameKeeperFactory.create(env)
-        this.registerBean(env, Bean.NAME_KEEPER    , () => nameKeeper)
+        this.registerBean(env, Bean.NAME_KEEPER                 , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)
-        this.registerBean(env, Bean.HISTORY_MANAGER, () => historyManager)
-        this.registerBean(env, Bean.SERVICE        , () => ServiceFactory.create(env))
-        this.registerBean(env, Bean.CONTROLLER     , () => ControllerFactory.create(env))
+        this.registerBean(env, Bean.HISTORY_MANAGER             , () => historyManager)
+        this.registerBean(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        this.registerBean(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))
+        this.registerBean(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
 
         return env
     }

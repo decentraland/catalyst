@@ -5,11 +5,13 @@ import multer from "multer";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, SERVER_PORT, LOG_REQUESTS as LOG_REQUESTS } from "./Environment";
 import http from "http";
+import { SynchronizationManager } from "../src/service/synchronization/SynchronizationManager";
 
 export class Server {
    private port: number;
    private app: express.Express;
    private httpServer: http.Server;
+   private synchronizationManager: SynchronizationManager;
 
    constructor(env: Environment) {
       this.port = env.getConfig(SERVER_PORT);
@@ -17,6 +19,7 @@ export class Server {
       this.app = express();
       const upload = multer({ dest: 'uploads/' })
       const controller: Controller = env.getBean(Bean.CONTROLLER)
+      this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
       this.app.use(cors());
       this.app.use(express.json());
@@ -46,17 +49,19 @@ export class Server {
       }
    }
 
-   start(): void {
-      this.httpServer = this.app.listen(this.port, () => {
-         console.info(`==> Content Server listening on port ${this.port}.`);
-       });
+   async start(): Promise<void> {
+        this.httpServer = this.app.listen(this.port, () => {
+            console.info(`==> Content Server listening on port ${this.port}.`);
+        });
+        await this.synchronizationManager.start()
    }
 
-   stop(): void {
-      if (this.httpServer) {
-         this.httpServer.close(() => {
-            console.info(`==> Content Server stopped.`);
-         })
-      }
+   async stop(): Promise<void> {
+        if (this.httpServer) {
+            this.httpServer.close(() => {
+                console.info(`==> Content Server stopped.`);
+            })
+        }
+        await this.synchronizationManager.stop()
    }
 }
