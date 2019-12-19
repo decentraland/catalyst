@@ -106,7 +106,8 @@ export class EnvironmentBuilder {
         // Some beans depend on other beans, so the required beans should be registered before
 
         this.registerBean(env, Bean.ANALYTICS      , () => ContentAnalyticsFactory.create(env))
-        this.registerBean(env, Bean.STORAGE        , () => ContentStorageFactory.local(env))
+        const localStorage = await ContentStorageFactory.local(env)
+        this.registerBean(env, Bean.STORAGE        , () => localStorage)
         const nameKeeper = await NameKeeperFactory.create(env)
         this.registerBean(env, Bean.NAME_KEEPER    , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)

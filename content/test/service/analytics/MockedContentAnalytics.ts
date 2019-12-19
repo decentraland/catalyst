@@ -5,7 +5,7 @@ import { ContentAnalyticsWithSegment } from "../../../src/service/analytics/Cont
 export class MockedContentAnalytics implements ContentAnalytics {
 
     recordDeployment(serverName: string, entity: Entity, ethAddress: string): void {
-        console.log("MockContentAnalytics: ", ContentAnalyticsWithSegment.createRecordEvent(entity, ethAddress, serverName))
+        console.log("MockContentAnalytics: ", ContentAnalyticsWithSegment.createRecordEvent(serverName, entity, ethAddress))
     }
 
 }
