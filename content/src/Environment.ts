@@ -10,6 +10,8 @@ import { NameKeeper } from "./service/naming/NameKeeper";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
+export const LOG_REQUESTS = "LOG_REQUESTS"
+export const DEBUG_NAME = "DEBUG_NAME"
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -85,6 +87,9 @@ export class EnvironmentBuilder {
 
         this.setConfig(env, STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
         this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
+        this.setConfig(env, LOG_REQUESTS        , () => process.env.LOG_REQUESTS !== 'false')
+        // TODO: Remove this before releasing, we don't want clients to choose their own name
+        this.setConfig(env, DEBUG_NAME        , () => process.env.NAME)
 
         this.registerBean(env, Bean.STORAGE        , () => ContentStorageFactory.local(env))
         const nameKeeper = await NameKeeperFactory.create(env)

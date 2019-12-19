@@ -53,10 +53,12 @@ export class SynchronizationManager {
         await Promise.all(updateActions)
 
         // Find the minimum timestamp between all servers
-        const minTimestamp: Timestamp = Math.min(...contentServers.map(contentServer => contentServer.getLastKnownTimestamp()))
+        const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getLastKnownTimestamp())
+            .reduce((min, current) => min == -1 ? current : Math.min(min, current), -1)
 
         if (minTimestamp > this.lastImmutableTime) {
             // Set this new minimum timestamp as the latest immutable time
+            console.log(`Setting immutable time to ${minTimestamp}`)
             this.lastImmutableTime = minTimestamp
             await this.historyManager.setTimeAsImmutable(minTimestamp)
         }
@@ -125,7 +127,7 @@ export class SynchronizationManager {
         // Return all the downloaded files
         return [entity, contentFiles]
     }
-NameKeeper
+
     /** Register this server in the DAO id required */
     private async registerServer() {
         const env: Environment = await Environment.getInstance()
@@ -183,7 +185,6 @@ NameKeeper
             // If name is "UNREACHABLE", then it means we get the actual name
             return getUnreachableClient()
         }
-
     }
 
 }
