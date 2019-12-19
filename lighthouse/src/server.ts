@@ -1,6 +1,5 @@
 import cors from "cors";
 import express from "express";
-import { Response } from "express";
 import morgan from "morgan";
 import { ExpressPeerServer, IRealm } from "peerjs-server";
 import { Peer, RelayMode } from "../../peer/src/Peer";
@@ -10,7 +9,7 @@ import { RoomsService } from "./roomsService";
 import { serverStorage } from "./simpleStorage";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { StorageKeys } from "./storageKeys";
-import { PeerHeaders } from "../../peer/src/peerjs-server-connector/enums";
+import { requireParameters, validatePeerToken } from "./handlers";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -27,25 +26,6 @@ let peer: Peer;
 // });
 
 const app = express();
-
-//Validations
-async function requireParameters(
-  paramNames: string[],
-  obj: object,
-  response: Response,
-  then: () => any
-) {
-  const missing = paramNames.filter(param => typeof obj[param] === "undefined");
-
-  if (missing.length > 0) {
-    response.status(400).send({
-      status: "bad-request",
-      message: `Missing required parameters: ${missing.join(",")}`
-    });
-  } else {
-    await then();
-  }
-}
 
 //Services
 const roomsService = new RoomsService({
@@ -80,40 +60,31 @@ app.get("/rooms/:roomId", (req, res, next) => {
 });
 
 // PUT /room/:id { userid, nickname } -> adds a user to a particular room. If the room doesn’t exists, it creates it.
-app.put("/rooms/:roomId", async (req, res, next) => {
-  const { roomId } = req.params;
-  await requireParameters(["userId", "peerId"], req.body, res, async () => {
+app.put(
+  "/rooms/:roomId",
+  requireParameters(["userId", "peerId"], (req, res) => req.body),
+  validatePeerToken(getPeerJsRealm),
+  async (req, res, next) => {
+    const { roomId } = req.params;
     try {
-      await validatePeerToken(req, res, async () => {
-        const room = await roomsService.addUserToRoom(roomId, req.body);
-        res.send(room);
-      });
+      const room = await roomsService.addUserToRoom(roomId, req.body);
+      res.send(room);
     } catch (err) {
       next(err);
     }
-  });
-});
+  }
+);
 
 // DELETE /room/:id/:userId -> deletes a user from a room. If the room remains empty, it deletes the room.
-app.delete("/rooms/:roomId/users/:userId", async (req, res, next) => {
-  const { roomId, userId } = req.params;
-  await validatePeerToken(req, res, () => {
+app.delete(
+  "/rooms/:roomId/users/:userId",
+  validatePeerToken(getPeerJsRealm),
+  async (req, res, next) => {
+    const { roomId, userId } = req.params;
     const room = roomsService.removeUserFromRoom(roomId, userId);
     res.send(room);
-  });
-});
-
-async function validatePeerToken(req, res, then: () => any) {
-  const existingClient = getPeerJsRealm().getClientById(req.body.userId);
-  if (
-    existingClient &&
-    existingClient.getToken() != req.header(PeerHeaders.PeerToken)
-  ) {
-    res.status(401).send({ status: "invalid-token" });
-  } else {
-    await then();
   }
-}
+);
 
 async function getPeerToken() {
   return await serverStorage.getOrSetString(
