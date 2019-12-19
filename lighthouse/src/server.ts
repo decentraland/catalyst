@@ -11,8 +11,14 @@ import { serverStorage } from "./simpleStorage";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { StorageKeys } from "./storageKeys";
 import { PeerHeaders } from "../../peer/src/peerjs-server-connector/enums";
-const relay = true;
-const port = process.env.PORT ?? 9000;
+
+const relay = parseBoolean(process.env.RELAY ?? "false");
+const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
+const port = parseInt(process.env.PORT ?? "9000");
+
+function parseBoolean(string: string) {
+  return string.toLowerCase() === "true";
+}
 
 let peer: Peer;
 
@@ -50,7 +56,9 @@ const roomsService = new RoomsService({
 
 app.use(cors());
 app.use(express.json());
-app.use(morgan("combined"));
+if (accessLogs) {
+  app.use(morgan("combined"));
+}
 
 app.get("/hello", (req, res, next) => {
   res.send("Hello world!!!");

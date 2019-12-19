@@ -19,7 +19,7 @@ export class Validation {
     /** Validate that the full request size is within limits */
     // TODO: decide if we want to externalize this as a configuration
     private static MAX_UPLOAD_SIZE = 10 * 1024 * 1024  // 10 MB
-    validateRequestSize(files: Set<File>): void {
+    validateRequestSize(files: File[]): void {
         var totalSize = 0
         files.forEach(file => totalSize += file.content.length)
         if (totalSize > Validation.MAX_UPLOAD_SIZE) {

@@ -6,7 +6,7 @@ import multihashing from 'multihashing-async';
 export class Hashing {
 
     /** Given a set of files, return a map with their hash */
-    static async calculateHashes(files: Set<File>): Promise<Map<FileHash, File>> {
+    static async calculateHashes(files: File[]): Promise<Map<FileHash, File>> {
         const entries: Promise<[FileHash, File]>[] = Array.from(files)
             .map(file => this.calculateHash(file).then(hash => [hash, file]))
         return new Map(await Promise.all(entries));

@@ -3,7 +3,7 @@ import express, { RequestHandler } from "express";
 import morgan from "morgan";
 import multer from "multer";
 import { Controller } from "./controller/Controller";
-import { Environment, Bean, SERVER_PORT } from "./Environment";
+import { Environment, Bean, SERVER_PORT, LOG_REQUESTS as LOG_REQUESTS } from "./Environment";
 import http from "http";
 
 export class Server {
@@ -20,7 +20,9 @@ export class Server {
 
       this.app.use(cors());
       this.app.use(express.json());
-      this.app.use(morgan("combined"));
+      if (env.getConfig(LOG_REQUESTS)) {
+        this.app.use(morgan("combined"));
+      }
 
       this.registerRoute("/entities/:type"       , controller, controller.getEntities)
       this.registerRoute("/entities"             , controller, controller.createEntity, true, upload.any())

@@ -3,10 +3,10 @@ import { Service, Timestamp, File, ENTITY_FILE_NAME } from "../Service";
 import { EntityId, Entity } from "../Entity";
 import { DeploymentHistory, DeploymentEvent, HistoryManager } from "../history/HistoryManager";
 import { FileHash } from "../Hashing";
-import { ServerName, Naming } from "../naming/Naming";
-import { ContentServer } from "./ContentServer";
-import { DAOClient } from "./DAOClient";
-import { Environment, Bean, SERVER_PORT } from "../../Environment";
+import { ServerName, NameKeeper } from "../naming/NameKeeper";
+import { ServerAddress, getServerName, getClient, getUnreachableClient, ContentServerClient, UNREACHABLE } from "./clients/ContentServerClient";
+import { DAOClient } from "./clients/DAOClient";
+import { Environment, SERVER_PORT } from "../../Environment";
 
 
 export class SynchronizationManager {
@@ -17,9 +17,9 @@ export class SynchronizationManager {
 
     private intervals: NodeJS.Timeout[];
     private lastImmutableTime = 0
-    private contentServers: Map<ServerName, ContentServer> = new Map()
+    private contentServers: Map<ServerName, ContentServerClient> = new Map()
 
-    constructor(private dao: DAOClient, private naming: Naming, private historyManager: HistoryManager, private service: Service) {
+    constructor(private dao: DAOClient, private nameKeeper: NameKeeper, private historyManager: HistoryManager, private service: Service) {
         // Load node
         setImmediate(() => this.boot())
     }
@@ -29,6 +29,7 @@ export class SynchronizationManager {
     }
 
     private async boot() {
+        // TODO: Remove this on final version
         await this.registerServer()
 
         // Get servers from the DAO
@@ -37,7 +38,7 @@ export class SynchronizationManager {
         // Sync with the servers
         await this.syncWithServers()
 
-        // Set intervals to update server list and keep in sync with other servers
+        // Set intervals to update server list and stay in sync with other servers
         const interval1 = setInterval(() => this.updateServersList(), SynchronizationManager.UPDATE_FROM_DAO_INTERVAL)
         const interval2 = setInterval(() => this.syncWithServers(), SynchronizationManager.SYNC_WITH_SERVERS_INTERVAL)
         this.intervals = [interval1, interval2]
@@ -45,56 +46,62 @@ export class SynchronizationManager {
 
     private async syncWithServers(): Promise<void> {
         // Gather all servers
-        const contentServers: ContentServer[] = Array.from(this.contentServers.values())
+        const contentServers: ContentServerClient[] = Array.from(this.contentServers.values())
 
         // Get new entities and process new deployments
         const updateActions: Promise<void>[] = contentServers.map(server => this.getNewEntitiesDeployedInContentServer(server))
         await Promise.all(updateActions)
 
         // Find the minimum timestamp between all servers
-        const minTimestamp: Timestamp = Math.min(...contentServers.map(contentServer => contentServer.lastKnownTimestamp))
+        const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getLastKnownTimestamp())
+            .reduce((min, current) => min == -1 ? current : Math.min(min, current), -1)
 
-        // TODO: Before updating the lastImmutableTime, we need to make sure that we reached everybody
         if (minTimestamp > this.lastImmutableTime) {
             // Set this new minimum timestamp as the latest immutable time
+            console.log(`Setting immutable time to ${minTimestamp}`)
             this.lastImmutableTime = minTimestamp
             await this.historyManager.setTimeAsImmutable(minTimestamp)
         }
     }
 
     /** Get all updates from one specific content server */
-    private async getNewEntitiesDeployedInContentServer(contentServer: ContentServer): Promise<void> {
-        // Get new deployments on a specific content server
-        const newDeployments: DeploymentHistory = await contentServer.getNewDeployments()
+    private async getNewEntitiesDeployedInContentServer(contentServer: ContentServerClient): Promise<void> {
+        try {
+            // Get new deployments on a specific content server, but make sure they happened after the last immutable time
+            const newDeployments: DeploymentHistory = (await contentServer.getNewDeployments())
+                .filter(deployment => deployment.timestamp >= this.lastImmutableTime)
 
-        // Get whether these entities have already been deployed or not
-        const alreadyDeployedIds: Map<EntityId, Boolean> = await this.service.isContentAvailable(newDeployments.map(deployment => deployment.entityId))
+            // Get whether these entities have already been deployed or not
+            const alreadyDeployedIds: Map<EntityId, Boolean> = await this.service.isContentAvailable(newDeployments.map(deployment => deployment.entityId))
 
-        // Calculate the deployments we are not already aware of
-        const unawareDeployments: DeploymentHistory = newDeployments.filter(deployment => !alreadyDeployedIds.get(deployment.entityId))
-        console.log(`Detected ${unawareDeployments.length} from server ${contentServer.name}.`)
+            // Calculate the deployments we are not already aware of
+            const unawareDeployments: DeploymentHistory = newDeployments.filter(deployment => !alreadyDeployedIds.get(deployment.entityId))
+            console.log(`Detected ${unawareDeployments.length} from server ${contentServer.getName()}.`)
 
-        // Process the deployments
-        await Promise.all(unawareDeployments.map(unawareDeployment => this.processNewDeployment(unawareDeployment)))
+            // Process the deployments
+            await Promise.all(unawareDeployments.map(unawareDeployment => this.processNewDeployment(unawareDeployment)))
+        } catch(error) {
+            console.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
+        }
     }
 
     /** Process a specific deployment */
     private async processNewDeployment(deployment: DeploymentEvent): Promise<void> {
         // Find a server with the given name
-        const contentServer: ContentServer | undefined = this.contentServers.get(deployment.serverName)
+        const contentServer: ContentServerClient | undefined = this.contentServers.get(deployment.serverName)
         if (contentServer) {
             // Download all entity's files
-            const [, files]: [Entity, Set<File>] = await this.getFilesFromDeployment(contentServer, deployment)
+            const [, files]: [Entity, File[]] = await this.getFilesFromDeployment(contentServer, deployment)
 
             // Deploy the new entity
-            await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, "ETH ADDRESS", "SIGNATURE", contentServer.name, deployment.timestamp)
+            await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, "ETH ADDRESS", "SIGNATURE", contentServer.getName(), deployment.timestamp)
         } else {
             throw new Error(`Failed to find a whitelisted server with the name ${deployment.serverName}`)
         }
     }
 
     /** Get all the files needed to deploy the new entity */
-    private async getFilesFromDeployment(contentServer: ContentServer, event: DeploymentEvent): Promise<[Entity, Set<File>]> {
+    private async getFilesFromDeployment(contentServer: ContentServerClient, event: DeploymentEvent): Promise<[Entity, File[]]> {
         // Retrieve the entity from the server
         const entity: Entity = await contentServer.getEntity(event.entityType, event.entityId)
 
@@ -118,46 +125,66 @@ export class SynchronizationManager {
         contentFiles.push(entityFile)
 
         // Return all the downloaded files
-        return [entity, new Set(contentFiles)]
+        return [entity, contentFiles]
     }
 
     /** Register this server in the DAO id required */
     private async registerServer() {
         const env: Environment = await Environment.getInstance()
-        const naming: Naming = env.getBean(Bean.NAMING)
         const serverIP = require('ip').address()
         const port: number = env.getConfig(SERVER_PORT)
 
-        await this.dao.registerServerInDAO(naming.getServerName(), `${serverIP}:${port}`)
+        await this.dao.registerServerInDAO(`${serverIP}:${port}`)
     }
 
     /** Update our data with the DAO's servers list */
     private async updateServersList() {
-        // Get all servers from the DAO
-        const serversInDAO: ContentServer[] = (await this.dao.getAllServers())
-            .filter(contentServer => contentServer.name != this.naming.getServerName()) // Remove myself from the list
+        try {
+            // Ask the DAO for all the addresses, and ask each server for their name
+            const allServerActions = (await this.dao.getAllServers())
+                .map(address => getServerName(address).then(name => ({ address, name })))
 
-        // Store new servers
-        const newServers = serversInDAO.filter(server => !this.contentServers.has(server.name));
-        for (const server of newServers) {
-            // Store the new server
-            this.contentServers.set(server.name, server)
-            console.log(`Connected to new server ${server.name} on ${server.address}`)
+            // Filter myself out of the list
+            const allServersInDAO = (await Promise.all(allServerActions))
+                .filter(({ name }) => name != this.nameKeeper.getServerName())
 
-            // Check if we already knew something about the server
-            const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, server.name);
+            // Build server clients for new servers
+            const newServersActions: Promise<ContentServerClient>[] = allServersInDAO
+                .filter(({ name }) => !this.contentServers.has(name))
+                .map(({ address, name }) => this.buildNewServerClient(address, name))
 
-            if (knownServerHistory.length > 0) {
-                // If we did, then set the last known timestamp to the one we know about
-                server.lastKnownTimestamp = knownServerHistory[0].timestamp
+            // Store the clients
+            for (const newServer of (await Promise.all(newServersActions))) {
+                this.contentServers.set(newServer.getName(), newServer)
+                console.log(`Connected to new server ${newServer.getName()}`)
             }
-        }
 
-        // Delete servers that were removed from the DAO
-        const serverNamesInDAO: Set<ServerName> = new Set(serversInDAO.map(server => server.name))
-        Array.from(this.contentServers.keys())
-            .filter(serverName => !serverNamesInDAO.has(serverName))
-            .forEach(serverName => this.contentServers.delete(serverName))
+            // Delete servers that were removed from the DAO
+            const serverNamesInDAO: Set<ServerName> = new Set(allServersInDAO.map(({ name }) => name))
+            Array.from(this.contentServers.keys())
+                .filter(serverName => !serverNamesInDAO.has(serverName))
+                .forEach(serverName => this.contentServers.delete(serverName))
+        } catch (error) {
+            console.error(`Failed to sync with the DAO \n${error}`)
+        }
+    }
+
+    private async buildNewServerClient(serverAddress: ServerAddress, serverName: ServerName): Promise<ContentServerClient> {
+        if (serverName != UNREACHABLE) {
+            // Check if we already knew something about the server
+            const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, serverName)
+            let lastKnownTimestamp: Timestamp = this.lastImmutableTime
+
+            if (knownServerHistory.length > 0 && knownServerHistory[0].timestamp > this.lastImmutableTime) {
+                // If we already know a deployment after the last immutable time, then set the last known timestamp
+                lastKnownTimestamp = knownServerHistory[0].timestamp
+            }
+
+            return getClient(serverName, serverAddress, lastKnownTimestamp)
+        } else {
+            // If name is "UNREACHABLE", then it means we get the actual name
+            return getUnreachableClient()
+        }
     }
 
 }

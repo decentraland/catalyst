@@ -2,7 +2,7 @@ import { Timestamp } from "../Service"
 import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManager, DeploymentEvent, DeploymentHistory } from "./HistoryManager"
 import { Entity } from "../Entity"
-import { ServerName } from "../naming/Naming"
+import { ServerName } from "../naming/NameKeeper"
 
 export class HistoryManagerImpl implements HistoryManager {
 
@@ -20,10 +20,10 @@ export class HistoryManagerImpl implements HistoryManager {
 
     newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void> {
         const event: DeploymentEvent = {
+            serverName,
             entityType: entity.type,
             entityId: entity.id,
             timestamp,
-            serverName,
         }
         this.addEventToTempHistory(event)
         // TODO: Add mutex and avoid race conditions

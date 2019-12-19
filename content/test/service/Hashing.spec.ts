@@ -2,7 +2,7 @@ import { Hashing, FileHash } from "../../src/service/Hashing";
 import { File } from "../../src/service/Service";
 
 describe("Hashing", function() {
-  
+
   const content: string = "1234"
   const hash: string = "QmNazQZW3L5n8esjuAXHpY4srPVWbuQtw93FDjLSGgsCqh"
 
@@ -17,7 +17,7 @@ describe("Hashing", function() {
   it(`When files are hashed, the map is built correctly`, async () => {
     const file: File = {name: "name", content: Buffer.from(content)}
 
-    const hashes: Map<FileHash, File> = await Hashing.calculateHashes(new Set([file]))
+    const hashes: Map<FileHash, File> = await Hashing.calculateHashes([file])
 
     expect(hashes.size).toEqual(1)
     expect(hashes.get(hash)).toEqual(file)

@@ -1,6 +1,6 @@
 import { HistoryManager, DeploymentHistory } from "../../../src/service/history/HistoryManager";
 import { Entity } from "../../../src/service/Entity";
-import { ServerName } from "../../../src/service/naming/Naming";
+import { ServerName } from "../../../src/service/naming/NameKeeper";
 import { Timestamp } from "../../../src/service/Service";
 
 export class MockedHistoryManager implements HistoryManager {

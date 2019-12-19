@@ -5,14 +5,19 @@ import { Validation } from "./Validation";
 import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File, ServerStatus } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
-import { Naming, ServerName } from "./naming/Naming";
+import { NameKeeper, ServerName } from "./naming/NameKeeper";
+import { ContentAnalytics } from "./analytics/ContentAnalytics";
 
 export class ServiceImpl implements Service {
 
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
 
-    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private naming: Naming) {
+    constructor(
+        private storage: ContentStorage,
+        private historyManager: HistoryManager,
+        private nameKeeper: NameKeeper,
+        private analytics: ContentAnalytics) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -63,16 +68,16 @@ export class ServiceImpl implements Service {
         return Promise.resolve(Array.from(this.referencedEntities.get(type)?.keys() || []))
     }
 
-    async deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
-        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.naming.getServerName(), Date.now, true)
+    async deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.nameKeeper.getServerName(), Date.now, true)
     }
 
-    async deployEntityFromAnotherContentServer(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
+    async deployEntityFromAnotherContentServer(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
         await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, false)
     }
 
     // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
@@ -118,20 +123,29 @@ export class ServiceImpl implements Service {
         await this.deleteOverwrittenEntities(entity)
 
         // Register the new entity on global variables
-        await this.commitNewEntity(hashes, alreadyStoredHashes, entity)
+        await this.commitNewEntity(hashes, alreadyStoredHashes, entity, ethAddress, signature)
 
         // Calculate timestamp
         const deploymentTimestamp: Timestamp = timestampCalculator()
 
-        // TODO: Save audit information
+        // Save audit information
+        const auditInfo: AuditInfo = {
+            deployedTimestamp: deploymentTimestamp,
+            ethAddress: ethAddress,
+            signature: signature,
+        }
+        await this.storage.store(this.resolveCategory(StorageCategory.PROOFS, entity.type), entity.id, Buffer.from(JSON.stringify(auditInfo)))
 
         // Add the new deployment to history
         await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
 
+        // Record deployment for analytics
+        this.analytics.recordDeployment(entity, ethAddress)
+
         return Promise.resolve(deploymentTimestamp)
     }
 
-    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity): Promise<void> {
+    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity, ethAddress: EthAddress, signature: Signature): Promise<void> {
         // Register entity
         this.entities.set(entity.id, entity)
 
@@ -187,9 +201,8 @@ export class ServiceImpl implements Service {
         await Promise.all(pointerDeletionActions)
     }
 
-    private findEntityFile(files: Set<File>): File {
-        const filesWithName = Array.from(files)
-            .filter(file => file.name === ENTITY_FILE_NAME)
+    private findEntityFile(files: File[]): File {
+        const filesWithName = files.filter(file => file.name === ENTITY_FILE_NAME)
         if (filesWithName.length === 0) {
             throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
         } else if (filesWithName.length > 1) {
@@ -205,11 +218,9 @@ export class ServiceImpl implements Service {
     }
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        return Promise.resolve({
-            deployedTimestamp: 1,
-            ethAddress: "",
-            signature: ""
-        })
+        // TODO: Catch potential exception if content doesn't exist, and return better error message
+        return this.storage.getContent(this.resolveCategory(StorageCategory.PROOFS, type), id)
+        .then(buffer => JSON.parse(buffer.toString()))
     }
 
     async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
@@ -227,7 +238,7 @@ export class ServiceImpl implements Service {
 
     getStatus(): Promise<ServerStatus> {
         return Promise.resolve({
-            name: this.naming.getServerName(),
+            name: this.nameKeeper.getServerName(),
             version: "1.0",
             currentTime: Date.now()
         })

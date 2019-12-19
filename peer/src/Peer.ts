@@ -249,7 +249,7 @@ export class Peer implements IPeer {
 
     connection.on("error", err => {
       console.log(
-        "error in peer connection" +
+        "error in peer connection " +
           connectionIdFor(
             this.nickname,
             peerData.id,
@@ -267,20 +267,23 @@ export class Peer implements IPeer {
     const parsed = JSON.parse(data);
     switch (parsed.type as PacketType) {
       case "hi": {
-        const data = parsed.data as PacketData["hi"];
-        const room = this.findRoom(data.room.id);
+        const parsedData = parsed.data as PacketData["hi"];
+
+        // process hi message and reconcile with state
+        const room = this.findRoom(parsedData.room.id);
+        if (room) {
+          parsedData.room.users.forEach(user => {
+            room.users.set(this.key(user), user);
+          });
+        }
+
+        // relay hi to other peers
         if (this.config.relay === RelayMode.All) {
-          room?.users.forEach((user, userId) => {
+          room?.users.forEach(user => {
             if (user.userId !== peerId && user.userId !== this.nickname) {
               this.sendPacket(user, parsed);
             }
           });
-        } else {
-          if (room) {
-            data.room.users.forEach(user => {
-              room.users.set(this.key(user), user);
-            });
-          }
         }
         break;
       }
@@ -386,7 +389,10 @@ export class Peer implements IPeer {
     user: PeerConnectionData,
     packet: Packet<T>
   ) {
-    const peer = this.peers[user.peerId];
+    const peer =
+      this.config.relay === RelayMode.All && user.peerId === this.nickname
+        ? this.peers[user.userId]
+        : this.peers[user.peerId];
     if (peer) {
       // const connection = reliable
       //   ? "reliableConnection"

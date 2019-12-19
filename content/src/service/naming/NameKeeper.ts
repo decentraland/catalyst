@@ -1,13 +1,13 @@
 import { NamingStorage } from "./NamingStorage";
 import { v4 as uuid } from 'uuid';
 
-export class Naming {
+export class NameKeeper {
 
-    private constructor(private serverName: ServerName) { }
+    // TODO: Make this private in release
+    constructor(private serverName: ServerName) { }
 
-    static async build(storage: NamingStorage): Promise<Naming>{
-        return new Naming(await Naming.getOrCreateServerName(storage))
-
+    static async build(storage: NamingStorage): Promise<NameKeeper>{
+        return new NameKeeper(await NameKeeper.getOrCreateServerName(storage))
     }
 
     getServerName(): ServerName {
