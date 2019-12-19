@@ -3,6 +3,6 @@ import { EthAddress } from "../Service";
 
 export interface ContentAnalytics {
 
-    recordDeployment(entity: Entity, ethAddress: EthAddress): void
+    recordDeployment(serverName: string, entity: Entity, ethAddress: EthAddress): void
 
 }

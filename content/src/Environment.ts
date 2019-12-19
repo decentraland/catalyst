@@ -94,6 +94,7 @@ export class EnvironmentBuilder {
 
         this.setConfig(env, STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
         this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
+        this.setConfig(env, SEGMENT_WRITE_KEY  , () => process.env.SEGMENT_WRITE_KEY)
 
         // Please put special attention on the bean registration order.
         // Somo beans depend on other beans, so the required beans should be registered before

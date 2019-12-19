@@ -140,7 +140,7 @@ export class ServiceImpl implements Service {
         await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
 
         // Record deployment for analytics
-        this.analytics.recordDeployment(entity, ethAddress)
+        this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ethAddress)
 
         return Promise.resolve(deploymentTimestamp)
     }
