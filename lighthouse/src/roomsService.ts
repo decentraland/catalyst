@@ -27,8 +27,8 @@ export class RoomsService {
     return this.config.realmProvider ? this.config.realmProvider() : undefined;
   }
 
-  getRoomIds(filter: RoomsFilter): string[] {
-    const { userId } = filter;
+  getRoomIds(filter?: RoomsFilter): string[] {
+    const userId = filter?.userId;
 
     return userId
       ? Object.entries(this.rooms)
