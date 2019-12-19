@@ -12,9 +12,9 @@ export interface Service {
 
     getActivePointers(type: EntityType): Promise<Pointer[]>;
 
-    deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
+    deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
 
-    deployEntityFromAnotherContentServer(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+    deployEntityFromAnotherContentServer(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo>;
 

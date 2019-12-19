@@ -17,7 +17,7 @@ export class MockedService implements Service {
         return Promise.resolve(this.entities)
     }
 
-    deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+    deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
         let contentsMap = new Map<string, string>()
         files.forEach(f => contentsMap.set(f.name, "lenght: " + f.content.length))
         this.entities.push(this.scene(
@@ -33,7 +33,7 @@ export class MockedService implements Service {
         return Promise.resolve(Date.now())
     }
 
-    deployEntityFromAnotherContentServer(files: Set<File>, entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
+    deployEntityFromAnotherContentServer(files: File[], entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
         throw new Error("Method not implemented.")
     }
 

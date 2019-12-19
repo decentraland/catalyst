@@ -75,9 +75,9 @@ export class Controller {
         const signature:Signature   = req.body.signature;
         const files                 = req.files
 
-        let deployFiles = Promise.resolve(new Set<File>())
+        let deployFiles: Promise<File[]> = Promise.resolve([])
         if (files instanceof Array) {
-            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path))).then(fileArray => new Set<File>(fileArray))
+            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
         deployFiles
         .then(fileSet => this.service.deployEntity(fileSet, entityId, ethAddress, signature))

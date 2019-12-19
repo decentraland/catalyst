@@ -51,7 +51,7 @@ export const enum Bean {
     SERVICE,
     CONTROLLER,
     HISTORY_MANAGER,
-    NAMING,
+    NAME_KEEPER,
 }
 
 export class EnvironmentBuilder {
@@ -76,7 +76,7 @@ export class EnvironmentBuilder {
     }
 
     withNameKeeper(nameKeeper: NameKeeper): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.NAMING, nameKeeper)
+        this.baseEnv.registerBean(Bean.NAME_KEEPER, nameKeeper)
         return this
     }
 
@@ -87,8 +87,8 @@ export class EnvironmentBuilder {
         this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
 
         this.registerBean(env, Bean.STORAGE        , () => ContentStorageFactory.local(env))
-        const naming = await NameKeeperFactory.create(env)
-        this.registerBean(env, Bean.NAMING         , () => naming)
+        const nameKeeper = await NameKeeperFactory.create(env)
+        this.registerBean(env, Bean.NAME_KEEPER         , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBean(env, Bean.HISTORY_MANAGER, () => historyManager)
         this.registerBean(env, Bean.SERVICE        , () => ServiceFactory.create(env))

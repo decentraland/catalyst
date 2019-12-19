@@ -12,7 +12,7 @@ export class ServiceImpl implements Service {
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
 
-    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private naming: NameKeeper) {
+    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private nameKeeper: NameKeeper) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -63,16 +63,16 @@ export class ServiceImpl implements Service {
         return Promise.resolve(Array.from(this.referencedEntities.get(type)?.keys() || []))
     }
 
-    async deployEntity(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
-        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.naming.getServerName(), Date.now, true)
+    async deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.nameKeeper.getServerName(), Date.now, true)
     }
 
-    async deployEntityFromAnotherContentServer(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
+    async deployEntityFromAnotherContentServer(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
         await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, false)
     }
 
     // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: Set<File>, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
@@ -195,9 +195,8 @@ export class ServiceImpl implements Service {
         await Promise.all(pointerDeletionActions)
     }
 
-    private findEntityFile(files: Set<File>): File {
-        const filesWithName = Array.from(files)
-            .filter(file => file.name === ENTITY_FILE_NAME)
+    private findEntityFile(files: File[]): File {
+        const filesWithName = files.filter(file => file.name === ENTITY_FILE_NAME)
         if (filesWithName.length === 0) {
             throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
         } else if (filesWithName.length > 1) {
@@ -233,7 +232,7 @@ export class ServiceImpl implements Service {
 
     getStatus(): Promise<ServerStatus> {
         return Promise.resolve({
-            name: this.naming.getServerName(),
+            name: this.nameKeeper.getServerName(),
             version: "1.0",
             currentTime: Date.now()
         })

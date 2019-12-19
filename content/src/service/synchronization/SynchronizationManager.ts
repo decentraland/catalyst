@@ -19,7 +19,7 @@ export class SynchronizationManager {
     private lastImmutableTime = 0
     private contentServers: Map<ServerName, ContentServerClient> = new Map()
 
-    constructor(private dao: DAOClient, private naming: NameKeeper, private historyManager: HistoryManager, private service: Service) {
+    constructor(private dao: DAOClient, private nameKeeper: NameKeeper, private historyManager: HistoryManager, private service: Service) {
         // Load node
         setImmediate(() => this.boot())
     }
@@ -65,8 +65,9 @@ export class SynchronizationManager {
     /** Get all updates from one specific content server */
     private async getNewEntitiesDeployedInContentServer(contentServer: ContentServerClient): Promise<void> {
         try {
-            // Get new deployments on a specific content server
-            const newDeployments: DeploymentHistory = await contentServer.getNewDeployments()
+            // Get new deployments on a specific content server, but make sure they happened after the last immutable time
+            const newDeployments: DeploymentHistory = (await contentServer.getNewDeployments())
+                .filter(deployment => deployment.timestamp >= this.lastImmutableTime)
 
             // Get whether these entities have already been deployed or not
             const alreadyDeployedIds: Map<EntityId, Boolean> = await this.service.isContentAvailable(newDeployments.map(deployment => deployment.entityId))
@@ -88,7 +89,7 @@ export class SynchronizationManager {
         const contentServer: ContentServerClient | undefined = this.contentServers.get(deployment.serverName)
         if (contentServer) {
             // Download all entity's files
-            const [, files]: [Entity, Set<File>] = await this.getFilesFromDeployment(contentServer, deployment)
+            const [, files]: [Entity, File[]] = await this.getFilesFromDeployment(contentServer, deployment)
 
             // Deploy the new entity
             await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, "ETH ADDRESS", "SIGNATURE", contentServer.getName(), deployment.timestamp)
@@ -98,7 +99,7 @@ export class SynchronizationManager {
     }
 
     /** Get all the files needed to deploy the new entity */
-    private async getFilesFromDeployment(contentServer: ContentServerClient, event: DeploymentEvent): Promise<[Entity, Set<File>]> {
+    private async getFilesFromDeployment(contentServer: ContentServerClient, event: DeploymentEvent): Promise<[Entity, File[]]> {
         // Retrieve the entity from the server
         const entity: Entity = await contentServer.getEntity(event.entityType, event.entityId)
 
@@ -122,7 +123,7 @@ export class SynchronizationManager {
         contentFiles.push(entityFile)
 
         // Return all the downloaded files
-        return [entity, new Set(contentFiles)]
+        return [entity, contentFiles]
     }
 NameKeeper
     /** Register this server in the DAO id required */
@@ -143,7 +144,7 @@ NameKeeper
 
             // Filter myself out of the list
             const allServersInDAO = (await Promise.all(allServerActions))
-                .filter(({ name }) => name != this.naming.getServerName())
+                .filter(({ name }) => name != this.nameKeeper.getServerName())
 
             // Build server clients for new servers
             const newServersActions: Promise<ContentServerClient>[] = allServersInDAO
@@ -170,10 +171,10 @@ NameKeeper
         if (serverName != UNREACHABLE) {
             // Check if we already knew something about the server
             const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, serverName)
-            let lastKnownTimestamp: Timestamp = 0
+            let lastKnownTimestamp: Timestamp = this.lastImmutableTime
 
-            if (knownServerHistory.length > 0) {
-                // If we did, then set the last known timestamp to the one we know about
+            if (knownServerHistory.length > 0 && knownServerHistory[0].timestamp > this.lastImmutableTime) {
+                // If we already know a deployment after the last immutable time, then set the last known timestamp
                 lastKnownTimestamp = knownServerHistory[0].timestamp
             }
 

@@ -35,18 +35,18 @@ describe("Service", function() {
   })
 
   it(`When no file called '${ENTITY_FILE_NAME}' is uploaded, then an exception is thrown`, async () => {
-    assertPromiseRejectionIs(async () => await this.service.deployEntity(new Set([this.randomFile]), this.randomFileHash, "ethAddress", "signature"),
+    assertPromiseRejectionIs(async () => await this.service.deployEntity([this.randomFile], this.randomFileHash, "ethAddress", "signature"),
       `Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
   });
 
   it(`When two or more files called '${ENTITY_FILE_NAME}' are uploaded, then an exception is thrown`, async () => {
     const invalidEntityFile: File = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
-    assertPromiseRejectionIs(async () => await this.service.deployEntity(new Set([this.entityFile, invalidEntityFile]), "some-id", "ethAddress", "signature"),
+    assertPromiseRejectionIs(async () => await this.service.deployEntity([this.entityFile, invalidEntityFile], "some-id", "ethAddress", "signature"),
       `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
   });
 
   it(`When the entity file's hash doesn't match with the entity id, then and exception is thrown`, async () => {
-    assertPromiseRejectionIs(async () => await this.service.deployEntity(new Set([this.entityFile]), this.randomFileHash, "ethAddress", "signature"),
+    assertPromiseRejectionIs(async () => await this.service.deployEntity([this.entityFile], this.randomFileHash, "ethAddress", "signature"),
       `Entity file's hash didn't match the signed entity id.`)
   });
 
@@ -54,7 +54,7 @@ describe("Service", function() {
     const storageSpy = spyOn(this.storage, "store").and.callThrough()
     const historySpy = spyOn(this.historyManager, "newEntityDeployment")
 
-    const timestamp: Timestamp = await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
+    const timestamp: Timestamp = await this.service.deployEntity([this.entityFile, this.randomFile], this.entity.id, "ethAddress", "signature")
     const deltaMilliseconds = Date.now() - timestamp
     expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
     expect(deltaMilliseconds).toBeLessThanOrEqual(10)
@@ -71,11 +71,11 @@ describe("Service", function() {
   it(`When an entity is successfully deployed, then previous overlapping entities are deleted`, async () => {
     const storageSpy = spyOn(this.storage, "delete").and.callThrough()
 
-    await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
+    await this.service.deployEntity([this.entityFile, this.randomFile], this.entity.id, "ethAddress", "signature")
 
     const [newEntity, newEntityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X2,Y2", "X3,Y3"], Date.now())
 
-    await this.service.deployEntity(new Set([newEntityFile]), newEntity.id, "ethAddress", "signature")
+    await this.service.deployEntity([newEntityFile], newEntity.id, "ethAddress", "signature")
 
     expect(storageSpy).toHaveBeenCalledWith("pointers-scene", "X1,Y1")
     expect(await this.service.getEntitiesByIds(EntityType.SCENE, [this.entityId])).toEqual([])
@@ -88,7 +88,7 @@ describe("Service", function() {
     spyOn(this.storage, "exists").and.callFake((_: string, id: string) => Promise.resolve(id === this.randomFileHash))
     const storeSpy = spyOn(this.storage, "store")
 
-    await this.service.deployEntity(new Set([this.entityFile, this.randomFile]), this.entity.id, "ethAddress", "signature")
+    await this.service.deployEntity([this.entityFile, this.randomFile], this.entity.id, "ethAddress", "signature")
 
     expect(storeSpy).toHaveBeenCalledWith("contents", this.entity.id, this.entityFile.content)
     expect(storeSpy).not.toHaveBeenCalledWith("contents", this.randomFileHash, this.randomFile.content)

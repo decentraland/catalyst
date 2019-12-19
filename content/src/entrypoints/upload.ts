@@ -2,11 +2,11 @@ import fs from "fs"
 import path from "path"
 import FormData from "form-data"
 import fetch from "node-fetch"
-import { EntityType, Pointer, Entity } from "./service/Entity"
-import { Hashing, FileHash } from "./service/Hashing"
-import { Timestamp, File } from "./service/Service"
-import { ControllerEntityFactory } from "./controller/ControllerEntityFactory"
-import { ControllerEntity } from "./controller/Controller"
+import { EntityType, Pointer, Entity } from "../service/Entity"
+import { Hashing, FileHash } from "../service/Hashing"
+import { Timestamp, File } from "../service/Service"
+import { ControllerEntityFactory } from "../controller/ControllerEntityFactory"
+import { ControllerEntity } from "../controller/Controller"
 
 async function run(argv: string[]) {
     if (argv.length < 5 || argv.length > 6) {
@@ -20,7 +20,7 @@ async function run(argv: string[]) {
         const timestamp: Timestamp = (argv[3].toLowerCase() == "now") ? Date.now() : parseInt(argv[3])
         const metadata = argv[4]
         let content: Map<string, FileHash> = new Map()
-        let filesToUpload: Set<File> = new Set()
+        let filesToUpload: File[] = []
         const uploadDir = argv[5]
 
         if (uploadDir) {
@@ -30,15 +30,15 @@ async function run(argv: string[]) {
                 const content = fs.readFileSync(filePath)
                 return { name: fileName, content }
             })
-            const hashes: Map<FileHash, File> = await Hashing.calculateHashes(new Set(files))
+            const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
             for (const [hash, file] of hashes.entries()) {
                 content.set(file.name, hash)
-                filesToUpload.add(file)
+                filesToUpload.push(file)
             }
         }
 
         const [entity, entityFile] = await buildControllerEntityAndFile('entity.json', type, pointers, timestamp, content, metadata)
-        filesToUpload.add(entityFile)
+        filesToUpload.push(entityFile)
 
         const form = new FormData();
         form.append('entityId'  , entity.id)
