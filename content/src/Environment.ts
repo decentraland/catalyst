@@ -96,12 +96,13 @@ export class EnvironmentBuilder {
 
         this.setConfig(env, STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
         this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
-        this.setConfig(env, LOG_REQUESTS        , () => process.env.LOG_REQUESTS !== 'false')
+        this.setConfig(env, LOG_REQUESTS       , () => process.env.LOG_REQUESTS !== 'false')
+
         // TODO: Remove this before releasing, we don't want clients to choose their own name
-        this.setConfig(env, DEBUG_NAME        , () => process.env.NAME)
+        this.setConfig(env, DEBUG_NAME         , () => process.env.NAME)
 
         // Please put special attention on the bean registration order.
-        // Somo beans depend on other beans, so the required beans should be registered before
+        // Some beans depend on other beans, so the required beans should be registered before
 
         this.registerBean(env, Bean.ANALYTICS      , () => ContentAnalyticsFactory.create(env))
         this.registerBean(env, Bean.STORAGE        , () => ContentStorageFactory.local(env))

@@ -77,8 +77,8 @@ describe("End 2 end deploy test", function() {
 })
 
 async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
-    const fileContent1: Buffer = fs.readFileSync('content/test/end2end/some-binary-file.png');
-    const fileContent2: Buffer = fs.readFileSync('content/test/end2end/some-text-file.txt');
+    const fileContent1: Buffer = fs.readFileSync('content/test/end2end/resources/some-binary-file.png');
+    const fileContent2: Buffer = fs.readFileSync('content/test/end2end/resources/some-text-file.txt');
 
     const fileHash1: string = await Hashing.calculateBufferHash(fileContent1)
     const fileHash2: string = await Hashing.calculateBufferHash(fileContent2)
