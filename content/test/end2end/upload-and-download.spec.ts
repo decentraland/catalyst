@@ -1,4 +1,4 @@
-import { Environment, SERVER_PORT, STORAGE_ROOT_FOLDER } from "../../src/Environment"
+import { Environment, SERVER_PORT, STORAGE_ROOT_FOLDER, EnvironmentBuilder } from "../../src/Environment"
 import { Server } from "../../src/Server"
 import { ControllerEntity } from "../../src/controller/Controller"
 import fetch from "node-fetch"
@@ -10,11 +10,12 @@ import FormData from "form-data"
 import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
 import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
 import { Timestamp } from "../../src/service/Service"
+import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 
 describe("End 2 end deploy test", function() {
 
     beforeAll(async function() {
-        this.env = await Environment.getInstance()
+        this.env = await new EnvironmentBuilder().withAnalytics(new MockedContentAnalytics()).build()
         this.server = new Server(this.env)
         this.server.start()
     })
