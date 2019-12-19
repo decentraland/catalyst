@@ -7,9 +7,12 @@ import { ContentStorage } from "./storage/ContentStorage";
 import { Service } from "./service/Service";
 import { HistoryManager } from "./service/history/HistoryManager";
 import { NameKeeper } from "./service/naming/NameKeeper";
+import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFactory";
+import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
+export const SEGMENT_WRITE_KEY = "SEGMENT_WRITE_KEY"
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -52,6 +55,7 @@ export const enum Bean {
     CONTROLLER,
     HISTORY_MANAGER,
     NAME_KEEPER,
+    ANALYTICS,
 }
 
 export class EnvironmentBuilder {
@@ -80,15 +84,24 @@ export class EnvironmentBuilder {
         return this
     }
 
+    withAnalytics(contentAnalytics: ContentAnalytics): EnvironmentBuilder {
+        this.baseEnv.registerBean(Bean.ANALYTICS, contentAnalytics)
+        return this
+    }
+
     async build(): Promise<Environment> {
         const env = new Environment()
 
         this.setConfig(env, STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
         this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
 
+        // Please put special attention on the bean registration order.
+        // Somo beans depend on other beans, so the required beans should be registered before
+
+        this.registerBean(env, Bean.ANALYTICS      , () => ContentAnalyticsFactory.create(env))
         this.registerBean(env, Bean.STORAGE        , () => ContentStorageFactory.local(env))
         const nameKeeper = await NameKeeperFactory.create(env)
-        this.registerBean(env, Bean.NAME_KEEPER         , () => nameKeeper)
+        this.registerBean(env, Bean.NAME_KEEPER    , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBean(env, Bean.HISTORY_MANAGER, () => historyManager)
         this.registerBean(env, Bean.SERVICE        , () => ServiceFactory.create(env))

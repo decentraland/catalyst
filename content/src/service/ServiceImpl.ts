@@ -6,13 +6,18 @@ import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo,
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
+import { ContentAnalytics } from "./analytics/ContentAnalytics";
 
 export class ServiceImpl implements Service {
 
     private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
     private entities: Map<EntityId, Entity> = new Map();
 
-    constructor(private storage: ContentStorage, private historyManager: HistoryManager, private nameKeeper: NameKeeper) {
+    constructor(
+        private storage: ContentStorage,
+        private historyManager: HistoryManager,
+        private nameKeeper: NameKeeper,
+        private analytics: ContentAnalytics) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -123,10 +128,19 @@ export class ServiceImpl implements Service {
         // Calculate timestamp
         const deploymentTimestamp: Timestamp = timestampCalculator()
 
-        // TODO: Save audit information
+        // Save audit information
+        const auditInfo: AuditInfo = {
+            deployedTimestamp: deploymentTimestamp,
+            ethAddress: ethAddress,
+            signature: signature,
+        }
+        await this.storage.store(this.resolveCategory(StorageCategory.PROOFS, entity.type), entity.id, Buffer.from(JSON.stringify(auditInfo)))
 
         // Add the new deployment to history
         await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
+
+        // Record deployment for analytics
+        this.analytics.recordDeployment(entity, ethAddress)
 
         return Promise.resolve(deploymentTimestamp)
     }
@@ -152,14 +166,6 @@ export class ServiceImpl implements Service {
         // Store reference from pointers to entity
         const pointerStorageActions: Promise<void>[] = entity.pointers
             .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)));
-
-        // Store deployment proof data
-        const proofData = {
-            id: entity.id,
-            address: ethAddress,
-            signature: signature,
-        }
-        await this.storage.store(this.resolveCategory(StorageCategory.PROOFS, entity.type), entity.id, Buffer.from(JSON.stringify(proofData)))
 
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
     }
