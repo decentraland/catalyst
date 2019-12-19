@@ -1,6 +1,9 @@
 import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
-import { ServerMessageType } from "./peerjs-server-connector/enums";
+import {
+  ServerMessageType,
+  PeerHeaders
+} from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import {
   isReliable,
@@ -21,8 +24,9 @@ type Packet<T extends PacketType> = {
   data: PacketData[T];
 };
 
-type PeerData = {
+export type PeerData = {
   id: string;
+  sessionId: string;
   reliableConnection: SimplePeer.Instance;
   // unreliableConnection: SimplePeer.Instance;
 };
@@ -51,6 +55,7 @@ type PeerConfig = {
   wrtc?: any;
   socketBuilder?: SocketBuilder;
   token?: string;
+  sessionId?: string;
   relay?: RelayMode;
 };
 
@@ -80,7 +85,7 @@ export class Peer implements IPeer {
     private config: PeerConfig = { relay: RelayMode.None }
   ) {
     const url = new URL(lighthouseUrl);
-    
+
     this.config.token = this.config.token ?? util.randomToken();
 
     this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
@@ -103,10 +108,15 @@ export class Peer implements IPeer {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "X-Peer-Token": this.config.token!,
+        [PeerHeaders.PeerToken]: this.config.token!
       },
       body: JSON.stringify({ userId: this.nickname, peerId: this.nickname })
     });
+
+    if (response.status > 400) {
+      const responseJson = await response.json();
+      throw new Error("Error joining room. Status: " + responseJson?.status);
+    }
 
     const roomUsers: PeerConnectionData[] = await response.json();
 
@@ -226,26 +236,31 @@ export class Peer implements IPeer {
   }
 
   private subscribeToConnection(
-    peerId: string,
+    peerData: PeerData,
     connection: SimplePeer.Instance,
     reliable: boolean,
     roomId: string
   ) {
-    connection.on("signal", this.handleSignal(peerId, reliable, roomId));
-    connection.on("close", () => this.handleDisconnection(peerId, reliable));
+    connection.on("signal", this.handleSignal(peerData, reliable, roomId));
+    connection.on("close", () => this.handleDisconnection(peerData, reliable));
     connection.on("connect", () =>
-      this.handleConnection(peerId, roomId, reliable)
+      this.handleConnection(peerData, roomId, reliable)
     );
 
     connection.on("error", err => {
       console.log(
         "error in peer connection" +
-          connectionIdFor(this.nickname, peerId, reliable),
+          connectionIdFor(
+            this.nickname,
+            peerData.id,
+            peerData.sessionId,
+            reliable
+          ),
         err
       );
     });
 
-    connection.on("data", data => this.handlePeerPacket(data, peerId));
+    connection.on("data", data => this.handlePeerPacket(data, peerData.id));
   }
 
   private handlePeerPacket(data: string, peerId: string) {
@@ -289,39 +304,39 @@ export class Peer implements IPeer {
     }
   }
 
-  private handleDisconnection(peerId: string, reliable: boolean) {
+  private handleDisconnection(peerData: PeerData, reliable: boolean) {
     console.log(
       "DISCONNECTED from " +
-        peerId +
+        peerData.id +
         " through " +
-        connectionIdFor(this.nickname, peerId, reliable)
+        connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable)
     );
     // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
-    if (this.peers[peerId]) {
-      delete this.peers[peerId];
+    if (this.peers[peerData.id]) {
+      delete this.peers[peerData.id];
     }
     // removing all users connected via this peer of each room
     this.currentRooms.forEach(room => {
       [...room.users.values()].forEach(user => {
-        if (user.peerId === peerId) {
+        if (user.peerId === peerData.id) {
           room.users.delete(this.key(user));
         }
       });
     });
   }
 
-  private handleConnection(peerId: string, roomId: string, reliable: boolean) {
+  private handleConnection(peerData: PeerData, roomId: string, reliable: boolean) {
     console.log(
       "CONNECTED to " +
-        peerId +
+        peerData.id +
         " through " +
-        connectionIdFor(this.nickname, peerId, reliable)
+        connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable)
     );
 
-    this.peerConnectionPromises[peerId]?.forEach($ => $.resolve());
-    delete this.peerConnectionPromises[peerId];
+    this.peerConnectionPromises[peerData.id]?.forEach($ => $.resolve());
+    delete this.peerConnectionPromises[peerData.id];
 
-    const data = { userId: peerId, peerId };
+    const data = { userId: peerData.id, peerId: peerData.id };
 
     const room = this.findRoom(roomId);
 
@@ -390,16 +405,26 @@ export class Peer implements IPeer {
     //TODO: Fail on error? Promise rejection?
   }
 
-  private handleSignal(peerId: string, reliable: boolean, roomId: string) {
-    const connectionId = connectionIdFor(this.nickname, peerId, reliable);
+  private handleSignal(peerData: PeerData, reliable: boolean, roomId: string) {
+    const connectionId = connectionIdFor(
+      this.nickname,
+      peerData.id,
+      peerData.sessionId,
+      reliable
+    );
     return (data: SignalData) => {
-      console.log(`Signal in peer connection ${this.nickname}:${peerId}`);
+      console.log(`Signal in peer connection ${connectionId}`);
       if (data.type === PeerSignals.offer) {
-        this.peerJsConnection.sendOffer(peerId, data, connectionId, roomId);
+        this.peerJsConnection.sendOffer(peerData, data, connectionId, roomId);
       } else if (data.type === PeerSignals.answer) {
-        this.peerJsConnection.sendAnswer(peerId, data, connectionId, roomId);
+        this.peerJsConnection.sendAnswer(peerData, data, connectionId, roomId);
       } else if (data.candidate) {
-        this.peerJsConnection.sendCandidate(peerId, data, connectionId, roomId);
+        this.peerJsConnection.sendCandidate(
+          peerData,
+          data,
+          connectionId,
+          roomId
+        );
       }
     };
   }
@@ -407,37 +432,58 @@ export class Peer implements IPeer {
   private getOrCreatePeer(
     peerId: string,
     initiator: boolean = false,
-    room: string
+    room: string,
+    sessionId?: string
   ) {
     let peer = this.peers[peerId];
     if (!peer) {
-      peer = this.peers[peerId] = {
-        id: peerId,
-        reliableConnection: new SimplePeer({
-          initiator,
-          config: this.connectionConfig,
-          channelConfig: {
-            label: connectionIdFor(this.nickname, peerId, true)
-          },
-          wrtc: this.wrtc,
-          objectMode: true
-        })
-        // unreliableConnection: new SimplePeer({
-        //   initiator,
-        //   config: this.connectionConfig,
-        //   channelConfig: {
-        //     label: connectionIdFor(this.nickname, peerId, false),
-        //     ordered: false,
-        //     maxPacketLifetime: 1000 //This value should be aligned with frame refreshes. Maybe configurable?
-        //   },
-        //   wrtc: this.wrtc,
-        //   objectMode: true
-        // })
-      };
-
-      this.subscribeToConnection(peerId, peer.reliableConnection, true, room);
-      // this.subscribeToConnection(peerId, peer.unreliableConnection, false);
+      sessionId = sessionId ?? util.generateToken(16);
+      peer = this.createPeer(peerId, sessionId!, initiator, room);
+    } else if(sessionId) {
+      if (peer.sessionId !== sessionId) {
+        console.log(
+          `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`
+        );
+        peer.reliableConnection.removeAllListeners();
+        peer.reliableConnection.destroy();
+        peer = this.createPeer(peerId, sessionId, initiator, room);
+      }
     }
+    return peer;
+  }
+  private createPeer(
+    peerId: string,
+    sessionId: string,
+    initiator: boolean,
+    room: string
+  ): PeerData {
+    const peer = (this.peers[peerId] = {
+      id: peerId,
+      sessionId,
+      reliableConnection: new SimplePeer({
+        initiator,
+        config: this.connectionConfig,
+        channelConfig: {
+          label: connectionIdFor(this.nickname, peerId, sessionId, true)
+        },
+        wrtc: this.wrtc,
+        objectMode: true
+      })
+      // unreliableConnection: new SimplePeer({
+      //   initiator,
+      //   config: this.connectionConfig,
+      //   channelConfig: {
+      //     label: connectionIdFor(this.nickname, peerId, false),
+      //     ordered: false,
+      //     maxPacketLifetime: 1000 //This value should be aligned with frame refreshes. Maybe configurable?
+      //   },
+      //   wrtc: this.wrtc,
+      //   objectMode: true
+      // })
+    });
+
+    this.subscribeToConnection(peer, peer.reliableConnection, true, room);
+    // this.subscribeToConnection(peerId, peer.unreliableConnection, false);
     return peer;
   }
 
@@ -449,12 +495,22 @@ export class Peer implements IPeer {
       switch (type) {
         case ServerMessageType.Offer:
         case ServerMessageType.Answer: {
-          const peer = this.getOrCreatePeer(peerId, false, payload.label);
+          const peer = this.getOrCreatePeer(
+            peerId,
+            false,
+            payload.label,
+            payload.sessionId
+          );
           signalMessage(peer, payload.connectionId, payload.sdp);
           break;
         }
         case ServerMessageType.Candidate: {
-          const peer = this.getOrCreatePeer(peerId, false, payload.label);
+          const peer = this.getOrCreatePeer(
+            peerId,
+            false,
+            payload.label,
+            payload.sessionId
+          );
           signalMessage(peer, payload.connectionId, {
             candidate: payload.candidate
           });

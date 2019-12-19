@@ -10,6 +10,7 @@ import {
 } from "./enums";
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
+import { PeerData } from "../Peer";
 
 export type MessageHandler = {
   handleMessage(messsage: ServerMessage): void;
@@ -31,7 +32,7 @@ class PeerOptions {
 //There is repeated code between this function and the one below. Maybe it could be extracted
 export function createOfferMessage(
   myId: string,
-  userId: string,
+  peerData: PeerData,
   offerData: any,
   connectionId: string,
   label: string
@@ -40,6 +41,7 @@ export function createOfferMessage(
     browser: "chrome",
     sdp: offerData,
     connectionId: connectionId,
+    sessionId: peerData.sessionId,
     label,
     reliable: isReliable(connectionId),
     serialization: "binary"
@@ -48,7 +50,7 @@ export function createOfferMessage(
   const offer = {
     type: ServerMessageType.Offer,
     src: myId,
-    dst: userId,
+    dst: peerData.id,
     payload
   };
 
@@ -57,7 +59,7 @@ export function createOfferMessage(
 
 export function createAnswerMessage(
   myId: string,
-  userId: string,
+  peerData: PeerData,
   answerData: any,
   connectionId: string,
   label: string
@@ -66,6 +68,7 @@ export function createAnswerMessage(
     browser: "chrome",
     sdp: answerData,
     connectionId,
+    sessionId: peerData.sessionId,
     label,
     type: "data"
   };
@@ -73,7 +76,7 @@ export function createAnswerMessage(
   const answer = {
     type: ServerMessageType.Answer,
     src: myId,
-    dst: userId,
+    dst: peerData.id,
     payload
   };
 
@@ -82,7 +85,7 @@ export function createAnswerMessage(
 
 export function createCandidateMessage(
   myId: string,
-  userId: string,
+  peerData: PeerData,
   candidateData: any,
   connectionId: string,
   label: string
@@ -90,13 +93,14 @@ export function createCandidateMessage(
   const payload = {
     ...candidateData,
     connectionId: connectionId,
+    sessionId: peerData.sessionId,
     label,
     type: "data"
   };
   const candidate = {
     type: ServerMessageType.Candidate,
     src: myId,
-    dst: userId,
+    dst: peerData.id,
     payload
   };
   return candidate;
@@ -372,29 +376,29 @@ export class PeerJSServerConnection extends EventEmitter {
   }
 
   sendOffer(
-    userId: string,
+    peerData: PeerData,
     offerData: any,
     connectionId: string,
     label: string
   ) {
     this.socket.send(
-      createOfferMessage(this.id!, userId, offerData, connectionId, label)
+      createOfferMessage(this.id!, peerData, offerData, connectionId, label)
     );
   }
 
   sendAnswer(
-    userId: string,
+    peerData: PeerData,
     answerData: any,
     connectionId: string,
     label: string
   ) {
     this.socket.send(
-      createAnswerMessage(this.id!, userId, answerData, connectionId, label)
+      createAnswerMessage(this.id!, peerData, answerData, connectionId, label)
     );
   }
 
   sendCandidate(
-    userId: string,
+    peerData: PeerData,
     candidateData: any,
     connectionId: string,
     label: string
@@ -402,7 +406,7 @@ export class PeerJSServerConnection extends EventEmitter {
     this.socket.send(
       createCandidateMessage(
         this.id!,
-        userId,
+        peerData,
         candidateData,
         connectionId,
         label

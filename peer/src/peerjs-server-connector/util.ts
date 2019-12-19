@@ -47,9 +47,10 @@ export const ConnectionSuffixes = {
 export function connectionIdFor(
   myId: string,
   peerId: string,
+  sessionId: string,
   reliable: boolean
 ) {
-  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${
+  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${sessionId}_${
     reliable ? ConnectionSuffixes.reliable : ConnectionSuffixes.unreliable
   }`;
 }
