@@ -62,3 +62,7 @@ export enum ServerMessageType {
   Expire = "EXPIRE", // The offer sent to a peer has expired without response.
   PeerLeftRoom = "PEER_LEFT_ROOM" // Another peer left a particular room.
 }
+
+export enum PeerHeaders {
+  PeerToken = "X-Peer-Token"
+}
