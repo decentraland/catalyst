@@ -11,6 +11,7 @@ import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFac
 import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
 import { SynchronizationManager } from "../../content/src/service/synchronization/SynchronizationManager";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
+import { DAOClient } from "./service/synchronization/clients/DAOClient";
 
 export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
 export const SERVER_PORT = "SERVER_PORT"
@@ -61,6 +62,7 @@ export const enum Bean {
     NAME_KEEPER,
     ANALYTICS,
     SYNCHRONIZATION_MANAGER,
+    DAO_CLIENT,
 }
 
 export const enum EnvironmentConfig {
@@ -69,6 +71,8 @@ export const enum EnvironmentConfig {
     LOG_REQUESTS,
     NAME_PREFIX,
     SEGMENT_WRITE_KEY,
+    UPDATE_FROM_DAO_INTERVAL,
+    SYNC_WITH_SERVERS_INTERVAL,
 }
 
 export class EnvironmentBuilder {
@@ -107,22 +111,31 @@ export class EnvironmentBuilder {
         return this
     }
 
-    withConfig(config: EnvironmentConfig, value: any) {
+    withBean(bean: Bean, value: any): EnvironmentBuilder {
+        this.baseEnv.registerBean(bean, value)
+        return this
+    }
+
+    withConfig(config: EnvironmentConfig, value: any): EnvironmentBuilder {
         this.baseEnv.setConfig(config, value)
+        return this
     }
 
     async build(): Promise<Environment> {
         const env = new Environment()
 
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY  , () => process.env.SEGMENT_WRITE_KEY)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS       , () => process.env.LOG_REQUESTS !== 'false')
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX        , () => process.env.NAME_PREFIX)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER       , () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT               , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY         , () => process.env.SEGMENT_WRITE_KEY)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS !== 'false')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? 5 * 60 * 1000) // 5 min
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? 20 * 1000) // 20 secs
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
+        this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => new DAOClient())
         this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)

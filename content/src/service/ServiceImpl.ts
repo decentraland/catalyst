@@ -149,23 +149,24 @@ export class ServiceImpl implements Service {
         // Register entity
         this.entities.set(entity.id, entity)
 
-        // Make each pointer point to new entity
-        let entitiesInType: Map<Pointer, EntityId> | undefined = this.referencedEntities.get(entity.type)
-        entity.pointers.forEach(pointer => {
-            // If the pointer already has an entity stored, then it is a "newer" entity
-            if (!entitiesInType?.has(pointer)) {
-                entitiesInType?.set(pointer, entity.id)
-            }
-        })
+        // Verify that all entity's pointers are not referencing an entity. If they aren't, then we can commit the new entity
+        const entitiesInType: Map<Pointer, EntityId> = this.referencedEntities.get(entity.type) ?? new Map()
+        const shouldCommit: boolean = entity.pointers.map(pointer => !entitiesInType.has(pointer))
+            .reduce((accum, currentValue) => accum && currentValue)
+
+        // Commit (if I have to)
+        let pointerStorageActions: Promise<void>[] = []
+        if (shouldCommit) {
+            entity.pointers.forEach(pointer => entitiesInType?.set(pointer, entity.id))
+            // Store reference from pointers to entity
+            pointerStorageActions = entity.pointers
+                .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)))
+        }
 
         // Store content that isn't already stored
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
             .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
             .map(([fileHash, file]) => this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), fileHash, file.content))
-
-        // Store reference from pointers to entity
-        const pointerStorageActions: Promise<void>[] = entity.pointers
-            .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)));
 
         await Promise.all([...contentStorageActions, ...pointerStorageActions])
     }
@@ -185,15 +186,14 @@ export class ServiceImpl implements Service {
             .map((entity: Entity) => entity.pointers)
             .reduce((accum, pointers) => accum.concat(pointers), [])
 
+        // Delete the disk pointers that will be overwritten
+        const pointerDeletionActions: Promise<void>[] = overwrittenPointers
+            .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entityBeingDeployed.type), orphanPointer))
+
         // Delete the pointers that will be overwritten
         for (const overwrittenPointer of overwrittenPointers) {
             this.referencedEntities.get(entityBeingDeployed.type)?.delete(overwrittenPointer)
         }
-
-        // Delete from disk the pointers that would result orphan
-        const pointerDeletionActions: Promise<void>[] = overwrittenPointers
-            .filter((pointer: Pointer) => !entityBeingDeployed.pointers.includes(pointer))
-            .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entityBeingDeployed.type), orphanPointer))
 
         // Delete the entities from the global map
         overwrittenEntities.forEach((entity: Entity) => this.entities.delete(entity.id))
