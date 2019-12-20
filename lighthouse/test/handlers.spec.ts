@@ -62,19 +62,20 @@ describe("require parameters", () => {
 });
 
 describe("Validate token", () => {
-  let request: any = {
-    header(header: string) {
-      return this._token;
-    },
-    body: { userId: "userId" }
-  };
+  let request: any;
   let response: any;
   let realm: any;
-  let next = jasmine.createSpy();
+  let next: any;
 
   const validToken = "valid-token";
 
   beforeEach(() => {
+    request = {
+      header(header: string) {
+        return this._token;
+      },
+      body: { userId: "userId" }
+    };
     response = createResponse();
     realm = {
       getClientById(id) {
@@ -83,6 +84,7 @@ describe("Validate token", () => {
         };
       }
     };
+    next = jasmine.createSpy();
   });
 
   it("should reject when no token is provided", () => {
