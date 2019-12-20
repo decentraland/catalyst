@@ -1,4 +1,4 @@
-import { requireParameters } from "../src/handlers";
+import { requireParameters, validatePeerToken } from "../src/handlers";
 
 describe("require parameters", () => {
   let request: any;
@@ -10,16 +10,7 @@ describe("require parameters", () => {
       body: {}
     };
 
-    response = {
-      status(code: number) {
-        this.statusCode = code;
-        return this;
-      },
-      send(obj: any) {
-        this.sent = obj;
-        return this;
-      }
-    };
+    response = createResponse();
 
     next = jasmine.createSpy();
   });
@@ -54,14 +45,90 @@ describe("require parameters", () => {
 
     expect(next).toHaveBeenCalled();
   });
+
+  function expectMissingParameters(
+    response: any,
+    parameters: string,
+    next: any
+  ) {
+    expect(response.statusCode).toBe(400);
+    expect(response.sent).toEqual({
+      status: "bad-request",
+      message: `Missing required parameters: ${parameters}`
+    });
+
+    expect(next).not.toHaveBeenCalled();
+  }
 });
 
-function expectMissingParameters(response: any, parameters: string, next: any) {
-  expect(response.statusCode).toBe(400);
-  expect(response.sent).toEqual({
-    status: "bad-request",
-    message: `Missing required parameters: ${parameters}`
+describe("Validate token", () => {
+  let request: any = {
+    header(header: string) {
+      return this._token;
+    },
+    body: { userId: "userId" }
+  };
+  let response: any;
+  let realm: any;
+  let next = jasmine.createSpy();
+
+  const validToken = "valid-token";
+
+  beforeEach(() => {
+    response = createResponse();
+    realm = {
+      getClientById(id) {
+        return {
+          getToken: () => validToken
+        };
+      }
+    };
   });
 
-  expect(next).not.toHaveBeenCalled();
+  it("should reject when no token is provided", () => {
+    const handler = validatePeerToken(() => realm);
+
+    handler(request, response, next);
+
+    expectInvalidToken(response);
+  });
+
+  it("should reject when the token is not the one in the realm", () => {
+    const handler = validatePeerToken(() => realm);
+
+    request._token = "not-valid-token";
+
+    handler(request, response, next);
+
+    expectInvalidToken(response);
+  });
+
+  it("should allow when the token is the one in the realm", () => {
+    const handler = validatePeerToken(() => realm);
+
+    request._token = validToken;
+
+    handler(request, response, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  function expectInvalidToken(response: any) {
+    expect(response.statusCode).toBe(401);
+    expect(response.sent).toEqual({ status: "invalid-token" });
+    expect(next).not.toHaveBeenCalled();
+  }
+});
+
+function createResponse(): any {
+  return {
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    send(obj: any) {
+      this.sent = obj;
+      return this;
+    }
+  };
 }
