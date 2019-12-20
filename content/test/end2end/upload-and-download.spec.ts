@@ -1,4 +1,4 @@
-import { Environment, SERVER_PORT, STORAGE_ROOT_FOLDER, EnvironmentBuilder } from "../../src/Environment"
+import { Environment, EnvironmentConfig, EnvironmentBuilder } from "../../src/Environment"
 import { Server } from "../../src/Server"
 import { ControllerEntity } from "../../src/controller/Controller"
 import fetch from "node-fetch"
@@ -29,7 +29,7 @@ describe("End 2 end deploy test", () => {
 
     afterAll(() => {
         server.stop()
-        deleteFolderRecursive(env.getConfig(STORAGE_ROOT_FOLDER))
+        deleteFolderRecursive(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER))
     })
 
 
@@ -49,7 +49,7 @@ describe("End 2 end deploy test", () => {
             });
         })
 
-        const deployResponse = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities`, { method: 'POST', body: form })
+        const deployResponse = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities`, { method: 'POST', body: form })
 
         expect(deployResponse.ok).toBe(true)
 
@@ -61,7 +61,7 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Retrieve the entity by id
         //------------------------------
-        const responseById = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
+        const responseById = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
         expect(responseById.ok).toBe(true)
         const scenesById: ControllerEntity[] = await responseById.json();
         await validateReceivedData(scenesById, deployData, env)
@@ -69,12 +69,12 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Retrieve the entity by pointer
         //------------------------------
-        const responseByPointer = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/entities/scenes?pointer=0,0`)
+        const responseByPointer = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/scenes?pointer=0,0`)
         expect(responseByPointer.ok).toBe(true)
         const scenesByPointer: ControllerEntity[] = await responseByPointer.json();
         await validateReceivedData(scenesByPointer, deployData, env)
 
-        const responseHistory = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/history`)
+        const responseHistory = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/history`)
         expect(responseHistory.ok).toBe(true)
         const [deploymentEvent]: DeploymentHistory = await responseHistory.json()
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
@@ -138,7 +138,7 @@ async function validateReceivedData(receivedScenes: ControllerEntity[], deployDa
     expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")?.hash ?? "")).toBeDefined()
 
     scene.content?.forEach(async contentElement => {
-        const response = await fetch(`http://localhost:${env.getConfig(SERVER_PORT)}/contents/${contentElement.hash}`)
+        const response = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/contents/${contentElement.hash}`)
         expect(response.ok).toBe(true)
         const downloadedContent = await response.buffer()
         expect(downloadedContent).toEqual(findInArray(deployData.files, contentElement.hash)?.content ?? Buffer.from([]))

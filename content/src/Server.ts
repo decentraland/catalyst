@@ -3,7 +3,7 @@ import express, { RequestHandler } from "express";
 import morgan from "morgan";
 import multer from "multer";
 import { Controller } from "./controller/Controller";
-import { Environment, Bean, SERVER_PORT, LOG_REQUESTS as LOG_REQUESTS } from "./Environment";
+import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
 import { SynchronizationManager } from "../src/service/synchronization/SynchronizationManager";
 
@@ -14,7 +14,7 @@ export class Server {
    private synchronizationManager: SynchronizationManager;
 
    constructor(env: Environment) {
-      this.port = env.getConfig(SERVER_PORT);
+      this.port = env.getConfig(EnvironmentConfig.SERVER_PORT);
 
       this.app = express();
       const upload = multer({ dest: 'uploads/' })
@@ -23,7 +23,7 @@ export class Server {
 
       this.app.use(cors());
       this.app.use(express.json());
-      if (env.getConfig(LOG_REQUESTS)) {
+      if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
         this.app.use(morgan("combined"));
       }
 

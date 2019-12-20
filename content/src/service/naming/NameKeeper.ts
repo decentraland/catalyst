@@ -3,21 +3,20 @@ import { v4 as uuid } from 'uuid';
 
 export class NameKeeper {
 
-    // TODO: Make this private in release
-    constructor(private serverName: ServerName) { }
+    private constructor(private serverName: ServerName) { }
 
-    static async build(storage: NamingStorage): Promise<NameKeeper>{
-        return new NameKeeper(await NameKeeper.getOrCreateServerName(storage))
+    static async build(storage: NamingStorage, prefix: string): Promise<NameKeeper>{
+        return new NameKeeper(await NameKeeper.getOrCreateServerName(storage, prefix))
     }
 
     getServerName(): ServerName {
         return this.serverName
     }
 
-    private static async getOrCreateServerName(storage: NamingStorage): Promise<ServerName> {
+    private static async getOrCreateServerName(storage: NamingStorage, prefix: string): Promise<ServerName> {
         const storedName: ServerName | undefined = await storage.getName()
         if (!storedName) {
-            const newName = uuid();
+            const newName = (prefix ?? '') + uuid();
             await storage.setName(newName)
             return newName
         } else {

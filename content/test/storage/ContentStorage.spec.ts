@@ -1,6 +1,6 @@
 import { ContentStorageFactory } from "../../src/storage/ContentStorageFactory";
 import { FileSystemUtils as fsu } from "./FileSystemUtils";
-import { Environment, STORAGE_ROOT_FOLDER } from "../../src/Environment";
+import { Environment, EnvironmentConfig } from "../../src/Environment";
 import { ContentStorage } from "../../src/storage/ContentStorage";
 
 describe("ContentStorage", () => {
@@ -13,7 +13,7 @@ describe("ContentStorage", () => {
 
     beforeAll(async () => {
         env = new Environment()
-        env.setConfig(STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
+        env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
         storage = await ContentStorageFactory.local(env)
 
         category = "some-category"

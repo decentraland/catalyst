@@ -6,7 +6,7 @@ import { FileHash } from "../Hashing";
 import { ServerName, NameKeeper } from "../naming/NameKeeper";
 import { ServerAddress, getServerName, getClient, getUnreachableClient, ContentServerClient, UNREACHABLE } from "./clients/ContentServerClient";
 import { DAOClient } from "./clients/DAOClient";
-import { Environment, SERVER_PORT } from "../../Environment";
+import { Environment, EnvironmentConfig } from "../../Environment";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -134,7 +134,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private async registerServer() {
         const env: Environment = await Environment.getInstance()
         const serverIP = require('ip').address()
-        const port: number = env.getConfig(SERVER_PORT)
+        const port: number = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
         await this.dao.registerServerInDAO(`${serverIP}:${port}`)
     }

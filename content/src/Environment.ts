@@ -22,14 +22,14 @@ const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 
 export class Environment {
-    private configs: Map<string,any> = new Map();
+    private configs: Map<EnvironmentConfig, any> = new Map();
     private beans: Map<Bean,any> = new Map();
 
-    getConfig<T>(key:string): T {
+    getConfig<T>(key: EnvironmentConfig): T {
         return this.configs.get(key);
     }
 
-    setConfig<T>(key: string, value: T): Environment {
+    setConfig<T>(key: EnvironmentConfig, value: T): Environment {
         this.configs.set(key, value);
         return this
     }
@@ -61,6 +61,14 @@ export const enum Bean {
     NAME_KEEPER,
     ANALYTICS,
     SYNCHRONIZATION_MANAGER,
+}
+
+export const enum EnvironmentConfig {
+    STORAGE_ROOT_FOLDER,
+    SERVER_PORT,
+    LOG_REQUESTS,
+    NAME_PREFIX,
+    SEGMENT_WRITE_KEY,
 }
 
 export class EnvironmentBuilder {
@@ -99,39 +107,41 @@ export class EnvironmentBuilder {
         return this
     }
 
+    withConfig(config: EnvironmentConfig, value: any) {
+        this.baseEnv.setConfig(config, value)
+    }
+
     async build(): Promise<Environment> {
         const env = new Environment()
 
-        this.setConfig(env, STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
-        this.setConfig(env, SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
-        this.setConfig(env, SEGMENT_WRITE_KEY  , () => process.env.SEGMENT_WRITE_KEY)
-        this.setConfig(env, LOG_REQUESTS       , () => process.env.LOG_REQUESTS !== 'false')
-
-        // TODO: Remove this before releasing, we don't want clients to choose their own name
-        this.setConfig(env, DEBUG_NAME         , () => process.env.NAME)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER, () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT        , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY  , () => process.env.SEGMENT_WRITE_KEY)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS       , () => process.env.LOG_REQUESTS !== 'false')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX        , () => process.env.NAME_PREFIX)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
-        this.registerBean(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
-        this.registerBean(env, Bean.STORAGE                     , () => localStorage)
+        this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
         const nameKeeper = await NameKeeperFactory.create(env)
-        this.registerBean(env, Bean.NAME_KEEPER                 , () => nameKeeper)
+        this.registerBeanIfNotAlreadySet(env, Bean.NAME_KEEPER                 , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)
-        this.registerBean(env, Bean.HISTORY_MANAGER             , () => historyManager)
-        this.registerBean(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
-        this.registerBean(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))
-        this.registerBean(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
+        this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
 
         return env
     }
 
-    private setConfig(env: Environment, key: string, valueProvider: () => any): void {
+    private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {
         env.setConfig(key, this.baseEnv.getConfig(key) ?? valueProvider())
     }
 
-    private registerBean(env: Environment, key: Bean, valueProvider: ()=>any): void {
+    private registerBeanIfNotAlreadySet(env: Environment, key: Bean, valueProvider: ()=>any): void {
         env.registerBean(key, this.baseEnv.getBean(key) ?? valueProvider())
     }
 }
