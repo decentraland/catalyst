@@ -20,7 +20,7 @@ export function requireParameters(
     if (missing.length > 0) {
       res.status(400).send({
         status: "bad-request",
-        message: `Missing required parameters: ${missing.join(",")}`
+        message: `Missing required parameters: ${missing.join(", ")}`
       });
     } else {
       next();
