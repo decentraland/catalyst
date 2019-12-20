@@ -30,6 +30,8 @@ export class Validation {
     // Validate that entity is actually ok
     validateEntity(entity: Entity) {
         this.validateNoRepeatedPointers(entity)
+
+        // TODO: Validate that entity has at least one pointer?
     }
 
     private validateNoRepeatedPointers(entity: Entity) {

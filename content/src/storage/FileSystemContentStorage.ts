@@ -6,9 +6,9 @@ export class FileSystemContentStorage implements ContentStorage {
     private constructor(private root: string) { }
 
     static async build(root: string): Promise<FileSystemContentStorage> {
-       while (root.endsWith('/')) {
-           root = root.slice(0,-1)
-       }
+        while (root.endsWith('/')) {
+            root = root.slice(0,-1)
+        }
         await this.ensureDirectoryExists(root)
         return new FileSystemContentStorage(root)
     }
@@ -19,7 +19,7 @@ export class FileSystemContentStorage implements ContentStorage {
         if (append) {
             return await fs.promises.appendFile(this.getFilePath(category, id), content);
         }
-        return await fs.promises.writeFile(this.getFilePath(category, id), content);
+        return fs.promises.writeFile(this.getFilePath(category, id), content)
     }
 
     async delete(category: string, id: string): Promise<void> {

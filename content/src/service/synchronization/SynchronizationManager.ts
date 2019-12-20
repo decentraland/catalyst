@@ -15,15 +15,16 @@ export interface SynchronizationManager {
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
 
-    // private static UPDATE_FROM_DAO_INTERVAL: number = 5 * 60 * 1000 // 5 min
-    private static UPDATE_FROM_DAO_INTERVAL: number = 30 * 1000 // 30 secs
-    private static SYNC_WITH_SERVERS_INTERVAL: number = 20 * 1000 // 20 secs
-
     private intervals: NodeJS.Timeout[];
     private lastImmutableTime = 0
     private contentServers: Map<ServerName, ContentServerClient> = new Map()
 
-    constructor(private dao: DAOClient, private nameKeeper: NameKeeper, private historyManager: HistoryManager, private service: Service) { }
+    constructor(private dao: DAOClient,
+        private nameKeeper: NameKeeper,
+        private historyManager: HistoryManager,
+        private service: Service,
+        private updateFromDAOInterval: number,
+        private syncWithServersInterval: number) { }
 
     async start(): Promise<void> {
          // TODO: Remove this on final version
@@ -36,8 +37,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
          await this.syncWithServers()
 
          // Set intervals to update server list and stay in sync with other servers
-         const interval1 = setInterval(() => this.updateServersList(), ClusterSynchronizationManager.UPDATE_FROM_DAO_INTERVAL)
-         const interval2 = setInterval(() => this.syncWithServers(), ClusterSynchronizationManager.SYNC_WITH_SERVERS_INTERVAL)
+         const interval1 = setInterval(() => this.updateServersList(), this.updateFromDAOInterval)
+         const interval2 = setInterval(() => this.syncWithServers(), this.syncWithServersInterval)
          this.intervals = [interval1, interval2]
     }
 
