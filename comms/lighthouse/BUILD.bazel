@@ -10,15 +10,15 @@ ts_library(
     srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/lighthouse",
     deps = [
-        "//peer",
+        "//comms/peer",
         "@npm//@types",
         "@npm//cors",
         "@npm//express",
+        "@npm//isomorphic-fetch",
         "@npm//morgan",
         "@npm//peerjs-server",
         "@npm//wrtc",
         "@npm//ws",
-        "@npm//isomorphic-fetch"
     ],
 )
 
