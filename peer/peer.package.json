@@ -1,5 +1,5 @@
 {
-  "name": "decentraland-katalyst-peer",
+  "name": "decentraland-lighthouse-peer",
   "description": "Lighthouse peer library",
   "main": "bundle.js",
   "types": "src/index.d.ts",
