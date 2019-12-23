@@ -3,6 +3,8 @@ import { PeerConnectionData } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
 
+declare var global: any;
+
 const oldFetch = fetch;
 const globalScope: any = typeof window === "undefined" ? global : window;
 
