@@ -1,5 +1,5 @@
 import { EntityId, Pointer, EntityType, Entity } from "./Entity";
-import { EthAddress, Signature } from "./Service";
+import { EthAddress, Signature, ENTITY_FILE_NAME } from "./Service";
 import { File } from './Service';
 import { FileHash } from "./Hashing";
 
@@ -75,9 +75,21 @@ export class Validation {
 
     /** Validate that uploaded and reported hashes are corrects */
     validateHashes(entity: Entity, hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>) {
-        // TODO: Validate that all hashes in entity were uploaded, or were already stored on the service
+        if (entity.content) {
+            let entityHashes: string[] = Array.from(entity.content.values())
 
-        // TODO: Validate that all hashes that belong to uploaded files are actually reported on the entity
+            // Validate that all hashes in entity were uploaded, or were already stored on the service
+            entityHashes
+            .filter(hash => !(hashes.has(hash) || alreadyStoredHashes.get(hash)))
+            .forEach(notAvailableHash => this.errors.push(`This hash is referenced in the entity but was not uploaded or previously available: ${notAvailableHash}`))
+
+            // Validate that all hashes that belong to uploaded files are actually reported on the entity
+            Array.from(hashes.entries())
+            .filter(entry => entry[1].name !== ENTITY_FILE_NAME)
+            .map(entity => entity[0])
+            .filter(hash => entityHashes.indexOf(hash)<0)
+            .forEach(unreferencedHash => this.errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`))
+        }
     }
 
 }

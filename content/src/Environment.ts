@@ -13,12 +13,6 @@ import { SynchronizationManager } from "../../content/src/service/synchronizatio
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { DAOClient } from "./service/synchronization/clients/DAOClient";
 
-export const STORAGE_ROOT_FOLDER = "STORAGE_ROOT_FOLDER";
-export const SERVER_PORT = "SERVER_PORT"
-export const LOG_REQUESTS = "LOG_REQUESTS"
-export const DEBUG_NAME = "DEBUG_NAME"
-export const SEGMENT_WRITE_KEY = "SEGMENT_WRITE_KEY"
-
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 
@@ -73,6 +67,7 @@ export const enum EnvironmentConfig {
     SEGMENT_WRITE_KEY,
     UPDATE_FROM_DAO_INTERVAL,
     SYNC_WITH_SERVERS_INTERVAL,
+    IGNORE_VALIDATION_ERRORS,
 }
 
 export class EnvironmentBuilder {
@@ -131,6 +126,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? 5 * 60 * 1000) // 5 min
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? 20 * 1000) // 20 secs
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

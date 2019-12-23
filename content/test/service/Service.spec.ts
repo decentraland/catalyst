@@ -4,7 +4,7 @@ import { assertPromiseRejectionIs } from "../PromiseAssertions";
 import { EntityType, Entity } from "../../src/service/Entity";
 import { buildEntityAndFile } from "./EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";
-import { EnvironmentBuilder } from "../../src/Environment";
+import { EnvironmentBuilder, EnvironmentConfig } from "../../src/Environment";
 import { ServiceFactory } from "../../src/service/ServiceFactory";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { NameKeeper } from "../../src/service/naming/NameKeeper";
@@ -38,6 +38,7 @@ describe("Service", function () {
             .withStorage(storage)
             .withHistoryManager(historyManager)
             .withNameKeeper({ getServerName: () => serverName } as NameKeeper)
+            .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
             .build()
 
         service = ServiceFactory.create(env)

@@ -17,7 +17,8 @@ export class ServiceImpl implements Service {
         private storage: ContentStorage,
         private historyManager: HistoryManager,
         private nameKeeper: NameKeeper,
-        private analytics: ContentAnalytics) {
+        private analytics: ContentAnalytics,
+        private ignoreValidationErrors: boolean = false) {
 
         // Register type on global map. This way, we don't have to check on each deployment
         Object.values(EntityType)
@@ -113,7 +114,7 @@ export class ServiceImpl implements Service {
         const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(hashes.keys()));
         validation.validateHashes(entity, hashes, alreadyStoredHashes)
 
-        if (validation.getErrors().length > 0) {
+        if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
             throw new Error(validation.getErrors().join('\n'))
         }
 
