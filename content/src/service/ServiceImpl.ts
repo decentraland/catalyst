@@ -87,7 +87,7 @@ export class ServiceImpl implements Service {
 
         const validation = new Validation()
         // Validate signature
-        validation.validateSignature(entityId, ethAddress, signature)
+        await validation.validateSignature(entityId, ethAddress, signature)
 
         // Validate request size
         validation.validateRequestSize(files)

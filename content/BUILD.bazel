@@ -26,6 +26,7 @@ ts_library(
         "@npm//@types/form-data",
         "@npm//analytics-node",
         "@npm//@types/analytics-node",
+        "@npm//eth-crypto",
     ],
 )
 
@@ -85,6 +86,7 @@ ts_library(
         "@npm//@types/form-data",
         "@npm//faker",
         "@npm//@types/faker",
+        "@npm//eth-crypto",
     ],
 )
 

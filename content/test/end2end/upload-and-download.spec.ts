@@ -12,6 +12,8 @@ import { buildControllerEntityAndFile } from "../controller/ControllerEntityTest
 import { Timestamp } from "../../src/service/Service"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
+import * as EthCrypto from "eth-crypto"
+import { Validation } from "../../src/service/Validation"
 
 describe("End 2 end deploy test", () => {
 
@@ -101,10 +103,14 @@ async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
         Date.now(),
         content,
         "this is just some metadata")
+
+    const identity = EthCrypto.createIdentity();
+    const messageHash = Validation.createEthereumMessageHash(entity.id)
+
     const deployData: DeployData = {
         entityId: entity.id,
-        ethAddress: "some-eth-address",
-        signature: "some-signature",
+        ethAddress: identity.address,
+        signature: EthCrypto.sign(identity.privateKey, messageHash),
         files: [
             { file: entityFile.name, content: entityFile.content },
             { file: fileHash1, content: fileContent1 },
