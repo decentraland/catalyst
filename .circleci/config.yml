@@ -89,7 +89,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Set up NPM access tokens
-          command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc: *attach_root
+          command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
       - run:
           name: Publish peer
           command: npx bazel run //peer:package.publish
