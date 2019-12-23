@@ -20,7 +20,7 @@ ts_library(
                     ]),
     tsconfig = "//:tsconfig.json",
     deps = [
-        "//peer",
+        "//comms/peer",
         "@npm//@types/react",
         "@npm//@types/react-dom",
         "@npm//decentraland-ui",
