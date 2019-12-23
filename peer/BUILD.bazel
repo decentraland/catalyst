@@ -7,10 +7,9 @@ package(default_visibility = ["//visibility:public"])
 ts_library(
     name = "peer",
     srcs = glob(["src/**/*.ts"]),
-    module_name = "katalyst/peer",
+    module_name = "decentraland-katalyst-peer",
     tsconfig = "//:tsconfig.json",
     deps = [
-        "@npm//@types/simple-peer",
         "@npm//eventemitter3",
         "@npm//fp-future",
         "@npm//simple-peer",
@@ -18,12 +17,38 @@ ts_library(
 )
 
 dataform_npm_package(
-    name = "package",
+    name = "dpackage",
     package_layers = [
         "//:common.package.json",
         "peer.package.json",
     ],
     deps = [":peer"],
+)
+
+load("@npm_bazel_rollup//:index.bzl", "rollup_bundle")
+
+rollup_bundle(
+    name = "bundle",
+    config_file = ":rollup.config.js",
+    entry_point = "src/index.ts",
+    format = "esm",
+    output_dir = False,
+    deps = [
+        ":peer",
+        "@npm//@wessberg/rollup-plugin-ts",
+        "@npm//rollup-plugin-json",
+    ],
+)
+
+load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package")
+
+npm_package(
+    name = "package",
+    deps = [
+        ":bundle.js",
+        ":dpackage_gen_package_json",
+        ":peer",
+    ],
 )
 
 ts_library(
@@ -39,7 +64,6 @@ ts_library(
         "@npm//sinon",
     ],
 )
-
 
 karma_web_test_suite(
     name = "config_test",
