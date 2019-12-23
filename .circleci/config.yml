@@ -25,6 +25,13 @@ references:
       tags:
         only: /^\d+\.\d+\.\d(.*)/ # semver
 
+  .master_and_tags: &master_and_tags
+    filters:
+      branches:
+        only: master
+      tags:
+        only: /^\d+\.\d+\.\d(.*)/ # semver
+
 jobs:
   checkout:
     <<: *base_env
@@ -76,6 +83,14 @@ jobs:
           name: Run tests
           command: npx bazel test //content:unit_test --test_output=all
 
+  publish-peer:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Publish peer
+          command: npx bazel run //peer:package.publish
+
 workflows:
   version: 2
 
@@ -95,3 +110,13 @@ workflows:
           <<: *all_branches_and_tags
           requires:
             - checkout
+
+      - accept-publish-peer:
+          <<: *master_and_tags
+          type: approval
+          requires:
+            - build-peer
+      - publish-peer:
+          <<: *master_and_tags
+          requires:
+            - accept-publish-peer
