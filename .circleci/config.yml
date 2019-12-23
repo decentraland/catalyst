@@ -65,7 +65,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test //lighthouse:unit_test --test_output=all
+          command: npx bazel test //comms/lighthouse:unit_test --test_output=all
 
   build-peer:
     <<: *base_env
@@ -73,7 +73,7 @@ jobs:
       - <<: *attach_root
       - run:
           name: Run tests
-          command: npx bazel test //peer:config_test --test_output=all
+          command: npx bazel test //comms/peer:config_test --test_output=all
 
   build-content:
     <<: *base_env
@@ -92,15 +92,18 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
       - run:
           name: Publish peer
-          command: npx bazel run //peer:package.publish
+          command: npx bazel run //comms/peer:package.publish
 
 workflows:
   version: 2
 
   build-deploy:
     jobs:
+      # checkout code
       - checkout:
           <<: *all_branches_and_tags
+
+      # build packages
       - build-peer:
           <<: *all_branches_and_tags
           requires:
@@ -114,6 +117,7 @@ workflows:
           requires:
             - checkout
 
+      # publish peer library
       - accept-publish-peer:
           <<: *master_and_tags
           type: approval
