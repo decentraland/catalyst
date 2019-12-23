@@ -19,34 +19,6 @@ class App extends React.Component<
   }
 
   currentScreen(): React.ReactElement {
-    // const peer = {
-    //   nickname: "miguel",
-    //   currentRooms: [
-    //     {
-    //       id: "coolkids",
-    //       users: new Map([
-    //         ["0", { userId: "miguel", peerId: "miguel" }],
-    //         ["1", { userId: "boris", peerId: "miguel" }]
-    //       ])
-    //     },
-    //     {
-    //       id: "family",
-    //       users: new Map([
-    //         ["0", { userId: "pablitar", peerId: "pablitar" }],
-    //         ["1", { userId: "marcosnc", peerId: "remote" }],
-    //         ["2", { userId: "nchamo", peerId: "remote" }]
-    //       ])
-    //     }
-    //   ],
-    //   callback: () => {},
-    //   joinRoom: (room: string) => Promise.resolve(),
-    //   leaveRoom: (roomId: string) => Promise.resolve(),
-    //   sendMessage: (room: string, payload: any, reliable?: boolean) =>
-    //     Promise.resolve()
-    // };
-    // const room = "coolkids";
-    // const url = "http://localhost:9000"
-    // return <Chat peer={peer} room={room} url={url} />;
     switch (this.state.screen) {
       case "connect":
         return this.connectForm();
