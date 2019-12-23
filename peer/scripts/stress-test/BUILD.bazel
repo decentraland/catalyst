@@ -1,0 +1,31 @@
+load("@npm_bazel_typescript//:index.bzl", "ts_devserver", "ts_library")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "peer-stress-test",
+    srcs = glob(include =
+                    [
+                        "**/*.tsx",
+                        "**/*.ts",
+                    ]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        "//peer",
+    ],
+)
+
+ts_devserver(
+    name = "devserver",
+    entry_module = "katalyst/peer/scripts/stress-test/index",
+    port = 7654,
+    # This is the path we'll request from the browser, see index.html
+    serving_path = "/bundle.js",
+    # The devserver can serve our static files too
+    static_files = [
+        "index.html",
+    ],
+    deps = [
+        ":peer-stress-test",
+    ],
+)
