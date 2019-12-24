@@ -1,37 +1,29 @@
-import { Environment, EnvironmentConfig, EnvironmentBuilder } from "../../src/Environment"
-import { Server } from "../../src/Server"
+import { EnvironmentBuilder } from "../../src/Environment"
 import { ControllerEntity } from "../../src/controller/Controller"
-import fetch from "node-fetch"
 import { EntityType } from "../../src/service/Entity"
-import { Hashing } from "../../src/service/Hashing"
-import fs from "fs"
-import path from "path"
-import FormData from "form-data"
 import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
-import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
-import { Timestamp } from "../../src/service/Service"
+import { Timestamp, File } from "../../src/service/Service"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
-import * as EthCrypto from "eth-crypto"
-import { Validation } from "../../src/service/Validation"
+import { buildDeployData, deleteFolderRecursive, DeployData } from "./TestUtils"
+import { TestServer } from "./TestServer"
 
 describe("End 2 end deploy test", () => {
 
-    let env: Environment
-    let server: Server
+    let server: TestServer
 
     beforeAll(async () => {
-        env = await new EnvironmentBuilder()
+        const env = await new EnvironmentBuilder()
             .withAnalytics(new MockedContentAnalytics())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .build()
-        server = new Server(env)
+        server = new TestServer(env)
         await server.start()
     })
 
     afterAll(() => {
         server.stop()
-        deleteFolderRecursive(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER))
+        deleteFolderRecursive(server.storageFolder)
     })
 
 
@@ -39,23 +31,9 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Deploy the content
         //------------------------------
-        const [deployData, entityBeingDeployed] = await createDeployData()
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], "this is just some metadata", 'content/test/end2end/resources/some-binary-file.png', 'content/test/end2end/resources/some-text-file.txt')
 
-        const form = new FormData();
-        form.append('entityId', deployData.entityId)
-        form.append('ethAddress', deployData.ethAddress)
-        form.append('signature', deployData.signature)
-        deployData.files.forEach(f => {
-            form.append(f.file, f.content, {
-                filename: f.file,
-            });
-        })
-
-        const deployResponse = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities`, { method: 'POST', body: form })
-
-        expect(deployResponse.ok).toBe(true)
-
-        const { creationTimestamp } = await deployResponse.json()
+        const creationTimestamp = await server.deploy(deployData)
         const deltaTimestamp = Date.now() - creationTimestamp
         expect(deltaTimestamp).toBeLessThanOrEqual(50)
         expect(deltaTimestamp).toBeGreaterThanOrEqual(0)
@@ -63,62 +41,40 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Retrieve the entity by id
         //------------------------------
-        const responseById = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/scenes?id=${deployData.entityId}`)
-        expect(responseById.ok).toBe(true)
-        const scenesById: ControllerEntity[] = await responseById.json();
-        await validateReceivedData(scenesById, deployData, env)
+        const scenesById: ControllerEntity[] = await server.getEntitiesByIds(EntityType.SCENE, deployData.entityId)
+        await validateReceivedData(scenesById, deployData)
 
         //------------------------------
         // Retrieve the entity by pointer
         //------------------------------
-        const responseByPointer = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/scenes?pointer=0,0`)
-        expect(responseByPointer.ok).toBe(true)
-        const scenesByPointer: ControllerEntity[] = await responseByPointer.json();
-        await validateReceivedData(scenesByPointer, deployData, env)
+        const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, ["0,0"])
+        await validateReceivedData(scenesByPointer, deployData)
 
-        const responseHistory = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/history`)
-        expect(responseHistory.ok).toBe(true)
-        const [deploymentEvent]: DeploymentHistory = await responseHistory.json()
+        const [deploymentEvent]: DeploymentHistory = await server.getHistory()
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
     });
 
+    async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeployData) {
+        expect(receivedScenes.length).toBe(1)
+        const scene: ControllerEntity = receivedScenes[0]
+        expect(scene.id).toBe(deployData.entityId)
+        expect(scene.metadata).toBe("this is just some metadata")
+
+        expect(scene.pointers.length).toBe(2)
+        expect(scene.pointers[0]).toBe("0,0")
+        expect(scene.pointers[1]).toBe("0,1")
+
+        expect(scene.content?.length).toBe(2)
+        expect(findInArray(scene.content, deployData.files[1].name)).toBeDefined()
+        expect(findInArray(scene.content, deployData.files[2].name)).toBeDefined()
+
+        scene.content?.forEach(async contentElement => {
+            const downloadedContent = await server.downloadContent(contentElement.hash)
+            expect(downloadedContent).toEqual(findInFileArray(deployData.files, contentElement.file)?.content ?? Buffer.from([]))
+        })
+    }
 
 })
-
-async function createDeployData(): Promise<[DeployData, ControllerEntity]> {
-    const fileContent1: Buffer = fs.readFileSync('content/test/end2end/resources/some-binary-file.png');
-    const fileContent2: Buffer = fs.readFileSync('content/test/end2end/resources/some-text-file.txt');
-
-    const fileHash1: string = await Hashing.calculateBufferHash(fileContent1)
-    const fileHash2: string = await Hashing.calculateBufferHash(fileContent2)
-
-    const content = new Map<string, string>()
-    content.set("the-file-1", fileHash1)
-    content.set("the-file-2", fileHash2)
-
-    const [entity, entityFile] = await buildControllerEntityAndFile(
-        'entity.json',
-        EntityType.SCENE,
-        ["0,0", "0,1"],
-        Date.now(),
-        content,
-        "this is just some metadata")
-
-    const identity = EthCrypto.createIdentity();
-    const messageHash = Validation.createEthereumMessageHash(entity.id)
-
-    const deployData: DeployData = {
-        entityId: entity.id,
-        ethAddress: identity.address,
-        signature: EthCrypto.sign(identity.privateKey, messageHash),
-        files: [
-            { file: entityFile.name, content: entityFile.content },
-            { file: fileHash1, content: fileContent1 },
-            { file: fileHash2, content: fileContent2 },
-        ]
-    }
-    return [deployData, entity]
-}
 
 function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
     expect(deploymentEvent.entityId).toBe(deployData.entityId)
@@ -126,52 +82,10 @@ function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: Depl
     expect(deploymentEvent.timestamp).toBe(creationTimestamp)
 }
 
-async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeployData, env: Environment) {
-    expect(receivedScenes.length).toBe(1)
-    const scene: ControllerEntity = receivedScenes[0]
-    expect(scene.id).toBe(deployData.entityId)
-    expect(scene.metadata).toBe("this is just some metadata")
-
-    expect(scene.pointers.length).toBe(2)
-    expect(scene.pointers[0]).toBe("0,0")
-    expect(scene.pointers[1]).toBe("0,1")
-
-    expect(scene.content?.length).toBe(2)
-    expect(findInArray(scene.content, "the-file-1")).toBeDefined()
-    expect(findInArray(scene.content, "the-file-2")).toBeDefined()
-
-    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-1")?.hash ?? "")).toBeDefined()
-    expect(findInArray(deployData.files, findInArray(scene.content, "the-file-2")?.hash ?? "")).toBeDefined()
-
-    scene.content?.forEach(async contentElement => {
-        const response = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/contents/${contentElement.hash}`)
-        expect(response.ok).toBe(true)
-        const downloadedContent = await response.buffer()
-        expect(downloadedContent).toEqual(findInArray(deployData.files, contentElement.hash)?.content ?? Buffer.from([]))
-    })
-}
-
 function findInArray<T extends { file: string }>(elements: T[] | undefined, key: string): T | undefined {
     return elements?.find(e => e.file === key);
 }
 
-function deleteFolderRecursive(pathToDelete) {
-    if (fs.existsSync(pathToDelete)) {
-        fs.readdirSync(pathToDelete).forEach((file, index) => {
-            const curPath = path.join(pathToDelete, file);
-            if (fs.lstatSync(curPath).isDirectory()) { // recurse
-                deleteFolderRecursive(curPath);
-            } else { // delete file
-                fs.unlinkSync(curPath);
-            }
-        });
-        fs.rmdirSync(pathToDelete);
-    }
-};
-
-type DeployData = {
-    entityId: string,
-    ethAddress: string,
-    signature: string,
-    files: { file: string, content: Buffer }[]
+function findInFileArray(elements: File[] | undefined, key: string): File | undefined {
+    return elements?.find(e => e.name === key);
 }

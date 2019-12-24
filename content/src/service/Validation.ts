@@ -1,3 +1,4 @@
+import ms from "ms"
 import { EntityId, Pointer, EntityType, Entity } from "./Entity";
 import { EthAddress, Signature, ENTITY_FILE_NAME } from "./Service";
 import { File } from './Service';
@@ -80,10 +81,10 @@ export class Validation {
     }
 
     // TODO: decide if we want to externalize this as a configuration
-    private static REQUEST_TTL_SECONDS = 10
+    private static REQUEST_TTL = ms('10s')
     private requestIsRecent(entityToBeDeployed: Entity): void {
-        const deltaSeconds = (Date.now() - entityToBeDeployed.timestamp) / 1000
-        if (deltaSeconds > Validation.REQUEST_TTL_SECONDS || deltaSeconds < -1) {
+        const delta = Date.now() - entityToBeDeployed.timestamp
+        if (delta > Validation.REQUEST_TTL || delta < -ms('1s')) {
             this.errors.push("The request is not recent, please submit it again with a new timestamp.")
         }
     }

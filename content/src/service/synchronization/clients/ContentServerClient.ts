@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import ms from "ms";
 import { Timestamp, File, AuditInfo } from "../../Service";
 import { EntityId, EntityType, Entity } from "../../Entity";
 import { DeploymentHistory } from "../../history/HistoryManager";
@@ -36,7 +37,7 @@ export function getUnreachableClient(): ContentServerClient {
 }
 
 class ReachableContentServerClient implements ContentServerClient {
-    private static readonly ONE_MINUTE = 60 * 1000; // One minute in milliseconds
+    private static readonly ONE_MINUTE = ms('1m'); // One minute in milliseconds
 
     constructor(private readonly name: ServerName,
         private readonly address: ServerAddress,
