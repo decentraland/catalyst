@@ -1,0 +1,14 @@
+version: '3'
+services:
+  comms-server:
+    image: katalyst:latest
+    working_dir: /app
+    command: comms
+    ports:
+      - "9000:9000"
+  content-server:
+    image: katalyst:latest
+    working_dir: /app
+    command: content
+    ports:
+      - "6969:6969"

@@ -1,8 +1,15 @@
-FROM node:lts
+FROM node:lts-slim
+
 WORKDIR /app
+
 COPY . .
+
 RUN apt-get update && \
-    apt-get -yq install yarn git && \
+    apt-get upgrade -yq && \
+    apt-get install -yq yarn git && \
     yarn install
+
 EXPOSE 9000
-ENTRYPOINT [ "yarn", "bazel", "run", "//comms/lighthouse:server" ]
+EXPOSE 6969
+
+ENTRYPOINT [ "./entrypoint.sh" ]
