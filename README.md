@@ -18,6 +18,30 @@ yarn bazel run peer-react-app:devserver # sets up the client server on localhost
 open localhost:3001
 ```
 
+## Running it with docker
+
+* Build the image
+```
+docker build -t katalyst:latest
+```
+
+* Run it locally:
+```
+docker run -ti --rm --name comms -p 9000:9000 katalyst:latest comms
+docker run -ti --rm --name content -p 6969:6969 katalyst:latest content
+```
+
+* Run it with compose:
+```
+docker-compose up
+```
+
+* Give it a try:
+```
+curl http://localhost:9000/rooms
+curl http://localhost:6969/status
+```
+
 ## Lighthouse endpoints
 
 Try the following endpoints for a minimal monitoring of the rooms state.
