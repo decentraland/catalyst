@@ -71,7 +71,7 @@ export class Validation {
         const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
         currentPointedEntities.forEach(currentEntity => {
             if (entityToBeDeployed.timestamp < currentEntity.timestamp) {
-                this.errors.push("There exist a newer entity pointed by one or more of the pointers you provided.")
+                this.errors.push("There is a newer entity pointed by one or more of the pointers you provided.")
             }
         })
 

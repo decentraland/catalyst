@@ -1560,6 +1560,11 @@ bytes@3.1.0:
   resolved "https://registry.yarnpkg.com/bytes/-/bytes-3.1.0.tgz#f6cf7933a360e0588fa9fde85651cdc7f805d1f6"
   integrity sha512-zauLjrfCG+xvoyaqLoV8bLVXXNGC4JqlxFCutSDWA6fJrTo2ZuvLYTqZ7aHBLZSMOopbzwv8f+wZcVzfVTI2Dg==
 
+caching-map@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/caching-map/-/caching-map-1.0.2.tgz#8fab616b5ffdf11d958a20b5bfcaf7de7ddab6e8"
+  integrity sha1-j6tha1/98R2ViiC1v8r33n3atug=
+
 callsite@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/callsite/-/callsite-1.0.0.tgz#280398e5d664bd74038b6f0905153e6e8af1bc20"

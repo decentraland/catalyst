@@ -22,11 +22,13 @@ ts_library(
         "@npm//uuid",
         "@npm//@types/uuid",
         "@npm//ip",
-        "@npm//form-data",
-        "@npm//@types/form-data",
         "@npm//analytics-node",
         "@npm//@types/analytics-node",
         "@npm//eth-crypto",
+        "@npm//caching-map",
+
+        "@npm//form-data",
+        "@npm//@types/form-data",
     ],
 )
 

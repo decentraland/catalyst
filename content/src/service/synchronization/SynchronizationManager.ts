@@ -43,7 +43,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
 
     stop(): Promise<void> {
-        this.intervals.forEach(clearInterval)
+        this.intervals?.forEach(clearInterval)
         return Promise.resolve()
     }
 
@@ -96,8 +96,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             // Download all entity's files
             const [, files]: [Entity, File[]] = await this.getFilesFromDeployment(contentServer, deployment)
 
+            // Get the audit info
+            const auditInfo = await contentServer.getAuditInfo(deployment.entityType, deployment.entityId);
+
             // Deploy the new entity
-            await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, "ETH ADDRESS", "SIGNATURE", contentServer.getName(), deployment.timestamp)
+            await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, contentServer.getName(), deployment.timestamp)
         } else {
             throw new Error(`Failed to find a whitelisted server with the name ${deployment.serverName}`)
         }
