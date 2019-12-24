@@ -1,8 +1,8 @@
-import { Service, EthAddress, Signature, Timestamp, File, ServerStatus } from "../../src/service/Service"
+import { MetaverseContentService, EthAddress, Signature, Timestamp, File, ServerStatus } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
 
-export class MockedService implements Service {
+export class MockedService implements MetaverseContentService {
 
     private entities: Entity[] = [
         this.scene("1", "some-metadata-1", this.pointers("A", "B"), this.contents("A1", "1", "A2", "2")),
@@ -56,7 +56,8 @@ export class MockedService implements Service {
         return Promise.resolve({
             name: "Mocked-Server",
             version: "1.0",
-            currentTime: Date.now()
+            currentTime: Date.now(),
+            lastImmutableTime: Date.now(),
         })
     }
 

@@ -4,7 +4,11 @@ import { ServerName } from "./naming/NameKeeper";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
-export interface Service {
+/**
+ * This version of the service can tell clients about the state of the Metaverse. It assumed that all deployments
+ * were done directly to it, and it is not aware that the service lives inside a cluster.
+ */
+export interface MetaverseContentService {
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>;
 
@@ -14,17 +18,28 @@ export interface Service {
 
     deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
 
-    deployEntityFromAnotherContentServer(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
-
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo>;
 
     isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
 
     getContent(fileHash: FileHash): Promise<Buffer>;
 
-    // getContenetURL() // TODO: This endpoint can be used to perform a redirect when the entity is not stored locally
-
     getStatus(): Promise<ServerStatus>;
+}
+
+/**
+ * This version of the service is aware of the fact that the content service lives inside a cluster,
+ * and that deployments can also happen on other servers.
+ */
+export interface ClusterAwareService {
+
+    deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+
+    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
+
+    setImmutableTime(immutableTime: Timestamp): Promise<void>;
+
+    getLastKnownTimeForServer(serverName: ServerName): Promise<Timestamp | undefined>;
 }
 
 export type AuditInfo = {
@@ -48,6 +63,7 @@ export type ServerStatus = {
     name: ServerName
     version: ServerVersion
     currentTime: Timestamp
+    lastImmutableTime: Timestamp
 }
 
 
