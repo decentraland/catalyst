@@ -24,8 +24,12 @@ ts_devserver(
     # The devserver can serve our static files too
     static_files = [
         "index.html",
+        "@npm//simple-peer:simple-peer__files",
+        "config.js",
     ],
     deps = [
+        "config.js",
         ":peer-stress-test",
+        "@npm//eventemitter3:eventemitter3__umd",
     ],
 )

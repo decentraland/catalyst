@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Decentraland Distributed Comms Peer Stress Test</title>
+  </head>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Decentraland Distributed Comms Peer Prototype</title>
-    <link rel="stylesheet" type="text/css" href="/npm/node_modules/decentraland-ui/lib/styles.css">
-    <link rel="stylesheet" type="text/css" href="/npm/node_modules/decentraland-ui/lib/light-theme.css">
-    <link rel="stylesheet" href="/static/index.css">
-</head>
-
-<body>
-    <div id="root"></div>
+  <body>
+    <div id="root">
+      <ul>
+        <li><strong>Peers: </strong><span id="peers"></span></li>
+        <li><strong>Peers Still Sending: </strong><span id="peerssending"></span></li>
+        <li><strong>Messages Sent: </strong><span id="sent"></span></li>
+        <li><strong>Messages Received: </strong><span id="received"></span></li>
+        <li><strong>Average Latency: </strong><span id="latency"></span></li>
+        <li><strong>Sent per second: </strong><span id="sentpersecond"></span></li>
+        <li><strong>Received per second: </strong><span id="receivedpersecond"></span></li>
+      </ul>
+    </div>
     <script src="/bundle.js"></script>
-</body>
-
+  </body>
 </html>
