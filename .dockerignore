@@ -1,0 +1,7 @@
+**/node_modules
+dist
+bazel-out
+.git
+.gitignore
+*.log
+
