@@ -2,27 +2,10 @@ import { FileHash } from "./Hashing"
 import { Timestamp } from "./Service"
 
 export class Entity {
-    id: EntityId
-    type: EntityType
-    pointers: Pointer[]
-    timestamp: Timestamp
-    content?: Map<string, FileHash>
-    metadata?: any
 
-    constructor(id: EntityId, type: EntityType, pointers: Pointer[], timestamp: Timestamp,
-        content?: Map<string, FileHash>, metadata?: any) {
-        this.id = id
-        this.type = type
-        this.pointers = pointers
-        this.timestamp = timestamp
-        this.content = content
-        this.metadata = metadata
-    }
+    constructor(public id: EntityId, public readonly type: EntityType, public readonly pointers: Pointer[], public readonly timestamp: Timestamp,
+        public readonly content?: Map<string, FileHash>, public readonly metadata?: any) { }
 
-    wasDeployedBefore(otherEntity: Entity): Boolean {
-        return this.timestamp < otherEntity.timestamp ||
-            (this.timestamp == otherEntity.timestamp && this.id < otherEntity.id)
-    }
 }
 
 export type Pointer = string

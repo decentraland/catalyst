@@ -1,7 +1,10 @@
+import ms from "ms"
 import { EntityId, Pointer, EntityType, Entity } from "./Entity";
 import { EthAddress, Signature, ENTITY_FILE_NAME } from "./Service";
 import { File } from './Service';
 import { FileHash } from "./Hashing";
+import * as EthCrypto from "eth-crypto"
+
 
 export class Validation {
 
@@ -12,8 +15,26 @@ export class Validation {
     }
 
     /** Validate that the signature belongs to the Ethereum address */
-    validateSignature(entityId: EntityId, ethAddress: EthAddress, signature: Signature): void {
-        // TODO
+    async validateSignature(entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<void> {
+        if(! await this.isSignatureValid(entityId, ethAddress, signature)) {
+            this.errors.push("The signature is invalid.")
+        }
+    }
+
+    private async isSignatureValid(msg: string, ethAddress: string, signature: string): Promise<boolean> {
+        try {
+            const signerAddress = EthCrypto.recover(signature, Validation.createEthereumMessageHash(msg));
+            return ethAddress == signerAddress
+        } catch (e) {
+            // console.error(e)
+        }
+        return false
+    }
+
+    static createEthereumMessageHash(msg: string) {
+        let msgWithPrefix: string = `\x19Ethereum Signed Message:\n${msg.length}${msg}`
+        const msgHash = EthCrypto.hash.keccak256(msgWithPrefix);
+        return msgHash
     }
 
     /** Validate that the full request size is within limits */
@@ -51,7 +72,7 @@ export class Validation {
         const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
         currentPointedEntities.forEach(currentEntity => {
             if (entityToBeDeployed.timestamp < currentEntity.timestamp) {
-                this.errors.push("There exist a newer entity pointed by one or more of the pointers you provided.")
+                this.errors.push("There is a newer entity pointed by one or more of the pointers you provided.")
             }
         })
 
@@ -60,10 +81,10 @@ export class Validation {
     }
 
     // TODO: decide if we want to externalize this as a configuration
-    private static REQUEST_TTL_SECONDS = 10
+    private static REQUEST_TTL = ms('10s')
     private requestIsRecent(entityToBeDeployed: Entity): void {
-        const deltaSeconds = (Date.now() - entityToBeDeployed.timestamp) / 1000
-        if (deltaSeconds > Validation.REQUEST_TTL_SECONDS || deltaSeconds < -1) {
+        const delta = Date.now() - entityToBeDeployed.timestamp
+        if (delta > Validation.REQUEST_TTL || delta < -ms('1s')) {
             this.errors.push("The request is not recent, please submit it again with a new timestamp.")
         }
     }

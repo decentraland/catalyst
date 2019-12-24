@@ -60,7 +60,7 @@ describe("Service", function () {
             `Entity file's hash didn't match the signed entity id.`)
     });
 
-    it(`When an entity is successfully deployed, then the content and pointers are stored correctly`, async () => {
+    it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
         const storageSpy = spyOn(storage, "store").and.callThrough()
         const historySpy = spyOn(historyManager, "newEntityDeployment")
 
@@ -71,23 +71,18 @@ describe("Service", function () {
         expect(storageSpy).toHaveBeenCalledWith("contents", entity.id, entityFile.content)
         expect(storageSpy).toHaveBeenCalledWith("contents", randomFileHash, randomFile.content)
         expect(historySpy).toHaveBeenCalledWith(serverName, entity, timestamp)
-        entity.pointers.forEach(pointer =>
-            expect(storageSpy).toHaveBeenCalledWith("pointers-scene", pointer, Buffer.from(entity.id)));
         expect(await service.getEntitiesByIds(EntityType.SCENE, [entity.id])).toEqual([entity])
         expect(await service.getEntitiesByPointers(EntityType.SCENE, entity.pointers)).toEqual([entity])
         expect(await service.getActivePointers(EntityType.SCENE)).toEqual(entity.pointers)
     });
 
     it(`When an entity is successfully deployed, then previous overlapping entities are deleted`, async () => {
-        const storageSpy = spyOn(storage, "delete").and.callThrough()
-
         await service.deployEntity([entityFile, randomFile], entity.id, "ethAddress", "signature")
 
         const [newEntity, newEntityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X2,Y2", "X3,Y3"], Date.now())
 
         await service.deployEntity([newEntityFile], newEntity.id, "ethAddress", "signature")
 
-        expect(storageSpy).toHaveBeenCalledWith("pointers-scene", "X1,Y1")
         expect(await service.getEntitiesByIds(EntityType.SCENE, [entity.id])).toEqual([entity])
         expect(await service.getEntitiesByPointers(EntityType.SCENE, ["X1,Y1", "X2,Y2"])).toEqual([newEntity])
         expect(await service.getActivePointers(EntityType.SCENE)).toEqual(newEntity.pointers)

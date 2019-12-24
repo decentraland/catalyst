@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
-import { Timestamp, File } from "../../Service";
+import ms from "ms";
+import { Timestamp, File, AuditInfo } from "../../Service";
 import { EntityId, EntityType, Entity } from "../../Entity";
 import { DeploymentHistory } from "../../history/HistoryManager";
 import { FileHash } from "../../Hashing";
@@ -15,6 +16,7 @@ export interface ContentServerClient {
     getContentFile(fileHash: FileHash): Promise<File>;
     getLastKnownTimestamp(): Timestamp;
     getName(): ServerName;
+    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo>;
 
 }
 
@@ -35,7 +37,7 @@ export function getUnreachableClient(): ContentServerClient {
 }
 
 class ReachableContentServerClient implements ContentServerClient {
-    private static readonly ONE_MINUTE = 60 * 1000; // One minute in milliseconds
+    private static readonly ONE_MINUTE = ms('1m'); // One minute in milliseconds
 
     constructor(private readonly name: ServerName,
         private readonly address: ServerAddress,
@@ -53,7 +55,7 @@ class ReachableContentServerClient implements ContentServerClient {
         }
         else {
             // Update the new timestamp with the latest deployment
-            this.lastKnownTimestamp = Math.max(this.lastKnownTimestamp, ...newDeployments.map(deployment => deployment.timestamp));
+            this.lastKnownTimestamp = Math.max(this.lastKnownTimestamp, ...newDeployments.map(deployment => deployment.timestamp + 1))
         }
         return newDeployments;
     }
@@ -63,6 +65,11 @@ class ReachableContentServerClient implements ContentServerClient {
         const json = await response.json();
         const entity = json[0];
         return EntityFactory.fromJsonObject(entity);
+    }
+
+    async getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
+        const response = await fetch(`http://${this.address}/audit/${entityType}/${entityId}`)
+        return response.json();
     }
 
     async getContentFile(fileHash: FileHash): Promise<File> {
@@ -96,6 +103,10 @@ class ReachableContentServerClient implements ContentServerClient {
 }
 
 class UnreachableContentServerClient implements ContentServerClient {
+
+    getAuditInfo(entityId: string): Promise<AuditInfo> {
+        throw new Error("Content server is unreachable.");
+    }
 
     getNewDeployments(): Promise<DeploymentHistory> {
         return Promise.resolve([])

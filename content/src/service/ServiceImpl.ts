@@ -1,3 +1,4 @@
+import Cache from "caching-map"
 import { ContentStorage } from "../storage/ContentStorage";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
@@ -7,27 +8,25 @@ import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
+import { PointerManager, CommitResult } from "./pointers/PointerManager";
 
 export class ServiceImpl implements Service {
 
-    private referencedEntities: Map<EntityType, Map<Pointer, EntityId>> = new Map();
-    private entities: Map<EntityId, Entity> = new Map();
+    private entities: Cache = new Cache(1000)
 
     constructor(
         private storage: ContentStorage,
         private historyManager: HistoryManager,
+        private pointerManager: PointerManager,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
         private ignoreValidationErrors: boolean = false) {
-
-        // Register type on global map. This way, we don't have to check on each deployment
-        Object.values(EntityType)
-            .forEach((entityType: EntityType) => this.referencedEntities.set(entityType, new Map()))
+            this.entities.materialize = (entityId: EntityId) => this.getEntityById(entityId)
     }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
         return Promise.all(pointers
-            .map((pointer: Pointer) => this.getEntityIdByPointer(type, pointer)))
+            .map((pointer: Pointer) => this.pointerManager.getEntityInPointer(type, pointer)))
             .then((entityIds:(EntityId|undefined)[]) => entityIds.filter(entity => entity !== undefined))
             .then(entityIds => this.getEntitiesByIds(type, entityIds as EntityId[]))
     }
@@ -35,38 +34,21 @@ export class ServiceImpl implements Service {
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
         return Promise.all(ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
-            .map((entityId: EntityId) => this.getEntityById(entityId)))
+            .map((entityId: EntityId) => this.entities.get(entityId)))
             .then((entities:(Entity|undefined)[]) => entities.filter(entity => entity !== undefined)) as Promise<Entity[]>
     }
 
     private async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        let entity = this.entities.get(id)
-        if (!entity) {
-            // Try to get the entity from the storage
-            try {
-                const buffer = await this.storage.getContent(StorageCategory.CONTENTS, id)
-                entity = EntityFactory.fromBufferWithId(buffer, id)
-                this.entities.set(id, entity)
-            } catch (error) { }
+        try {
+            const buffer = await this.storage.getContent(StorageCategory.CONTENTS, id)
+            return EntityFactory.fromBufferWithId(buffer, id)
+        } catch (error) {
+            return undefined
         }
-        return entity
-    }
-
-    private async getEntityIdByPointer(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
-        let entityId = this.referencedEntities.get(type)?.get(pointer)
-        if (!entityId) {
-            // Try to get the entity from the storage
-            try {
-                const buffer = await this.storage.getContent(this.resolveCategory(StorageCategory.POINTERS, type), pointer)
-                entityId = buffer?.toString()
-                this.referencedEntities.get(type)?.set(pointer, entityId)
-            } catch (error) { }
-        }
-        return entityId
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
-        return Promise.resolve(Array.from(this.referencedEntities.get(type)?.keys() || []))
+        return this.pointerManager.getActivePointers(type)
     }
 
     async deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
@@ -87,7 +69,7 @@ export class ServiceImpl implements Service {
 
         const validation = new Validation()
         // Validate signature
-        validation.validateSignature(entityId, ethAddress, signature)
+        await validation.validateSignature(entityId, ethAddress, signature)
 
         // Validate request size
         validation.validateRequestSize(files)
@@ -120,22 +102,19 @@ export class ServiceImpl implements Service {
 
         // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITED
 
-        // Delete entities and pointers that the new deployment would overwrite
-        await this.deleteOverwrittenEntities(entity)
+        const commitResult: CommitResult = await this.pointerManager.tryToCommitPointers(entity);
 
-        // Register the new entity on global variables
-        await this.commitNewEntity(hashes, alreadyStoredHashes, entity, ethAddress, signature)
+        // Delete entities that the new deployment would overwrite
+        commitResult.entitiesDeleted.forEach((entityId: EntityId) => this.entities.delete(entityId))
+
+        // Store the entity's content
+        await this.storeEntityContent(hashes, alreadyStoredHashes, entityId, commitResult.couldCommit)
 
         // Calculate timestamp
         const deploymentTimestamp: Timestamp = timestampCalculator()
 
         // Save audit information
-        const auditInfo: AuditInfo = {
-            deployedTimestamp: deploymentTimestamp,
-            ethAddress: ethAddress,
-            signature: signature,
-        }
-        await this.storage.store(this.resolveCategory(StorageCategory.PROOFS, entity.type), entity.id, Buffer.from(JSON.stringify(auditInfo)))
+        await this.storeAuditInfo(entityId, ethAddress, signature, deploymentTimestamp)
 
         // Add the new deployment to history
         await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
@@ -146,60 +125,32 @@ export class ServiceImpl implements Service {
         return Promise.resolve(deploymentTimestamp)
     }
 
-    private async commitNewEntity(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entity: Entity, ethAddress: EthAddress, signature: Signature): Promise<void> {
-        // Register entity
-        this.entities.set(entity.id, entity)
-
-        // Verify that all entity's pointers are not referencing an entity. If they aren't, then we can commit the new entity
-        const entitiesInType: Map<Pointer, EntityId> = this.referencedEntities.get(entity.type) ?? new Map()
-        const shouldCommit: boolean = entity.pointers.map(pointer => !entitiesInType.has(pointer))
-            .reduce((accum, currentValue) => accum && currentValue)
-
-        // Commit (if I have to)
-        let pointerStorageActions: Promise<void>[] = []
-        if (shouldCommit) {
-            entity.pointers.forEach(pointer => entitiesInType?.set(pointer, entity.id))
-            // Store reference from pointers to entity
-            pointerStorageActions = entity.pointers
-                .map((pointer: Pointer) => this.storage.store(this.resolveCategory(StorageCategory.POINTERS, entity.type), pointer, Buffer.from(entity.id)))
+    private storeAuditInfo(entityId: EntityId, ethAddress: EthAddress, signature: Signature, deployedTimestamp: Timestamp): Promise<void> {
+         const auditInfo: AuditInfo = {
+            deployedTimestamp,
+            ethAddress,
+            signature,
         }
-
-        // Store content that isn't already stored
-        const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
-            .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
-            .map(([fileHash, file]) => this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), fileHash, file.content))
-
-        await Promise.all([...contentStorageActions, ...pointerStorageActions])
+        return this.storage.store(this.resolveCategory(StorageCategory.PROOFS), entityId, Buffer.from(JSON.stringify(auditInfo)))
     }
 
-    private async deleteOverwrittenEntities(entityBeingDeployed: Entity): Promise<void> {
-        // Calculate the entities that the new deployment would overwrite
-        const overwrittenEntities: Entity[] = entityBeingDeployed.pointers
-            .map((pointer: Pointer) => this.referencedEntities.get(entityBeingDeployed.type)?.get(pointer))
-            .filter((entityId: EntityId | undefined): entityId is EntityId => !!entityId)
-            .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
-            .map(entityId => this.entities.get(entityId))
-            .filter((entity: Entity | undefined): entity is Entity => !!entity)
-            .filter(currentEntity => currentEntity.wasDeployedBefore(entityBeingDeployed))
+    private storeEntityContent(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entityId: EntityId, couldCommit: boolean): Promise<any> {
+        if (couldCommit) {
+            // If entity was commited, then store all it's content (that isn't already stored)
+            const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
+                .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
+                .map(([fileHash, file]) => this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), fileHash, file.content))
 
-        // Calculate the pointers that would be overwritten
-        const overwrittenPointers: Pointer[] = overwrittenEntities
-            .map((entity: Entity) => entity.pointers)
-            .reduce((accum, pointers) => accum.concat(pointers), [])
-
-        // Delete the disk pointers that will be overwritten
-        const pointerDeletionActions: Promise<void>[] = overwrittenPointers
-            .map((orphanPointer: Pointer) => this.storage.delete(this.resolveCategory(StorageCategory.POINTERS, entityBeingDeployed.type), orphanPointer))
-
-        // Delete the pointers that will be overwritten
-        for (const overwrittenPointer of overwrittenPointers) {
-            this.referencedEntities.get(entityBeingDeployed.type)?.delete(overwrittenPointer)
+            return Promise.all(contentStorageActions)
+        } else {
+            // If entity wasn't commited, then only store the entity file
+            if (!alreadyStoredHashes.get(entityId)) {
+                const entityFile: File = hashes.get(entityId) as File
+                return this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), entityId, entityFile.content)
+            } else {
+                return Promise.resolve()
+            }
         }
-
-        // Delete the entities from the global map
-        overwrittenEntities.forEach((entity: Entity) => this.entities.delete(entity.id))
-
-        await Promise.all(pointerDeletionActions)
     }
 
     private findEntityFile(files: File[]): File {
@@ -220,7 +171,7 @@ export class ServiceImpl implements Service {
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
         // TODO: Catch potential exception if content doesn't exist, and return better error message
-        return this.storage.getContent(this.resolveCategory(StorageCategory.PROOFS, type), id)
+        return this.storage.getContent(this.resolveCategory(StorageCategory.PROOFS), id)
         .then(buffer => JSON.parse(buffer.toString()))
     }
 
