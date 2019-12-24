@@ -14,6 +14,8 @@ import { SynchronizationManager } from "../../content/src/service/synchronizatio
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { DAOClient } from "./service/synchronization/clients/DAOClient";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
+import { AccessChecker } from "./service/AccessChecker";
+import { AccessCheckerImpl } from "./service/AccessCheckerImpl";
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -60,6 +62,7 @@ export const enum Bean {
     ANALYTICS,
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
+    ACCESS_CHECKER,
 }
 
 export const enum EnvironmentConfig {
@@ -109,6 +112,11 @@ export class EnvironmentBuilder {
         return this
     }
 
+    withAccessChecker(accessChecker: AccessChecker): EnvironmentBuilder {
+        this.baseEnv.registerBean(Bean.ACCESS_CHECKER, accessChecker)
+        return this
+    }
+
     withBean(bean: Bean, value: any): EnvironmentBuilder {
         this.baseEnv.registerBean(bean, value)
         return this
@@ -143,6 +151,7 @@ export class EnvironmentBuilder {
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => new AccessCheckerImpl())
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))

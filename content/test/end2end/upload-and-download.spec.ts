@@ -7,6 +7,7 @@ import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalyt
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, deleteFolderRecursive, DeployData } from "./TestUtils"
 import { TestServer } from "./TestServer"
+import { MockedAccessChecker } from "../service/MockedAccessChecker"
 
 describe("End 2 end deploy test", () => {
 
@@ -16,6 +17,7 @@ describe("End 2 end deploy test", () => {
         const env = await new EnvironmentBuilder()
             .withAnalytics(new MockedContentAnalytics())
             .withSynchronizationManager(new MockedSynchronizationManager())
+            .withAccessChecker(new MockedAccessChecker())
             .build()
         server = new TestServer(env)
         await server.start()

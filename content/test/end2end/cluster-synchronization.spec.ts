@@ -9,6 +9,7 @@ import { TestServer } from "./TestServer"
 import { buildDeployData, deleteFolderRecursive, buildDeployDataAfterEntity, sleep } from "./TestUtils"
 import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../src/Environment"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
+import { MockedAccessChecker } from "../service/MockedAccessChecker"
 
 describe("End 2 end synchronization tests", function() {
 
@@ -144,6 +145,7 @@ describe("End 2 end synchronization tests", function() {
             .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
             .withBean(Bean.DAO_CLIENT, daoClient)
             .withAnalytics(new MockedContentAnalytics())
+            .withAccessChecker(new MockedAccessChecker())
             .build()
         return new TestServer(env)
     }

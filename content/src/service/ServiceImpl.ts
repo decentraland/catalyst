@@ -9,6 +9,7 @@ import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager, CommitResult } from "./pointers/PointerManager";
+import { AccessChecker } from "./AccessChecker";
 
 export class ServiceImpl implements Service {
 
@@ -20,6 +21,7 @@ export class ServiceImpl implements Service {
         private pointerManager: PointerManager,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
+        private accessChecker: AccessChecker,
         private ignoreValidationErrors: boolean = false) {
             this.entities.materialize = (entityId: EntityId) => this.getEntityById(entityId)
     }
@@ -67,7 +69,7 @@ export class ServiceImpl implements Service {
             throw new Error("Entity file's hash didn't match the signed entity id.")
         }
 
-        const validation = new Validation()
+        const validation = new Validation(this.accessChecker)
         // Validate signature
         await validation.validateSignature(entityId, ethAddress, signature)
 
@@ -81,7 +83,7 @@ export class ServiceImpl implements Service {
         validation.validateEntity(entity)
 
         // Validate ethAddress access
-        validation.validateAccess(entity.pointers, ethAddress, entity.type)
+        await validation.validateAccess(entity.pointers, ethAddress, entity.type)
 
         if (checkFreshness) {
             // Validate that the entity is "fresh"
