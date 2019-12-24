@@ -1,5 +1,6 @@
 import { Validation } from "../../src/service/Validation"
 import { Entity, EntityType } from "../../src/service/Entity"
+import * as EthCrypto from "eth-crypto"
 
 describe("Validation", function () {
 
@@ -53,6 +54,48 @@ describe("Validation", function () {
         ]), new Map([
             ["hash-2", true]
         ]))
+
+        expect(validation.getErrors().length).toBe(0)
+    })
+
+    it(`signature test`, async () => {
+        const identity = EthCrypto.createIdentity();
+
+        const message = 'foobar';
+        const messageHash = EthCrypto.hash.keccak256(message);
+        const signature = EthCrypto.sign(
+            identity.privateKey,
+            messageHash
+        );
+
+        const signer = EthCrypto.recover(
+            signature,
+            messageHash
+        );
+
+        expect(signer).toBe(identity.address)
+    })
+
+    it(`when signature is invalid, it's reported`, async () => {
+        const validation = new Validation()
+        await validation.validateSignature("some-entity-id", "some-address", "some-signature")
+
+        expect(validation.getErrors().length).toBe(1)
+        expect(validation.getErrors()[0]).toBe("The signature is invalid.")
+    })
+
+    it(`when signature is valid, it's recognized`, async () => {
+        const identity = EthCrypto.createIdentity();
+        const entityId = "some-entity-id"
+        const validation = new Validation()
+        await validation.validateSignature(
+            entityId,
+            identity.address,
+            EthCrypto.sign(
+                identity.privateKey,
+                Validation.createEthereumMessageHash(entityId)
+            )
+        )
 
         expect(validation.getErrors().length).toBe(0)
     })

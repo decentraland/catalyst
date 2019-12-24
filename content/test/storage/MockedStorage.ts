@@ -30,7 +30,11 @@ export class MockedStorage implements ContentStorage {
         return Promise.resolve(content)
     }
     listIds(category: string): Promise<string[]> {
-      throw new Error("Method not implemented.");
+        const ids = Array.from(this.storage.keys())
+            .map((key) => key.split("___"))
+            .filter(([cat, ]) => cat == category)
+            .map(([, id]) => id)
+        return Promise.resolve(ids)
     }
     exists(category: string, id: string): Promise<boolean> {
       return Promise.resolve(this.storage.has(this.getKey(category, id)))

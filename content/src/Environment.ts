@@ -12,6 +12,7 @@ import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
 import { SynchronizationManager } from "../../content/src/service/synchronization/SynchronizationManager";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { DAOClient } from "./service/synchronization/clients/DAOClient";
+import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -53,6 +54,7 @@ export const enum Bean {
     SERVICE,
     CONTROLLER,
     HISTORY_MANAGER,
+    POINTER_MANAGER,
     NAME_KEEPER,
     ANALYTICS,
     SYNCHRONIZATION_MANAGER,
@@ -139,6 +141,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.NAME_KEEPER                 , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
+        this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
