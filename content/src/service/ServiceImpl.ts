@@ -1,29 +1,30 @@
 import Cache from "caching-map"
-import { ContentStorage } from "../storage/ContentStorage";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { Service, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File, ServerStatus } from "./Service";
+import { MetaverseContentService, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File, ServerStatus, ClusterAwareService } from "./Service";
 import { EntityFactory } from "./EntityFactory";
-import { HistoryManager } from "./history/HistoryManager";
+import { HistoryManager, DeploymentHistory } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager, CommitResult } from "./pointers/PointerManager";
 import { AccessChecker } from "./AccessChecker";
+import { ServiceStorage } from "./ServiceStorage";
 
-export class ServiceImpl implements Service {
+export class ServiceImpl implements MetaverseContentService, ClusterAwareService {
 
     private entities: Cache = new Cache(1000)
+    private lastImmutableTime: Timestamp = 0
 
     constructor(
-        private storage: ContentStorage,
+        private storage: ServiceStorage,
         private historyManager: HistoryManager,
         private pointerManager: PointerManager,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
         private ignoreValidationErrors: boolean = false) {
-            this.entities.materialize = (entityId: EntityId) => this.getEntityById(entityId)
+        this.entities.materialize = (entityId: EntityId) => this.getEntityById(entityId)
     }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -37,16 +38,7 @@ export class ServiceImpl implements Service {
         return Promise.all(ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
             .map((entityId: EntityId) => this.entities.get(entityId)))
-            .then((entities:(Entity|undefined)[]) => entities.filter(entity => entity !== undefined)) as Promise<Entity[]>
-    }
-
-    private async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        try {
-            const buffer = await this.storage.getContent(StorageCategory.CONTENTS, id)
-            return EntityFactory.fromBufferWithId(buffer, id)
-        } catch (error) {
-            return undefined
-        }
+            .then((entities:(Entity | undefined)[]) => entities.filter(entity => entity !== undefined)) as Promise<Entity[]>
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
@@ -57,12 +49,8 @@ export class ServiceImpl implements Service {
         return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.nameKeeper.getServerName(), Date.now, true)
     }
 
-    async deployEntityFromAnotherContentServer(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, false)
-    }
-
     // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampCalculator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampGenerator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
@@ -113,7 +101,7 @@ export class ServiceImpl implements Service {
         await this.storeEntityContent(hashes, alreadyStoredHashes, entityId, commitResult.couldCommit)
 
         // Calculate timestamp
-        const deploymentTimestamp: Timestamp = timestampCalculator()
+        const deploymentTimestamp: Timestamp = timestampGenerator()
 
         // Save audit information
         await this.storeAuditInfo(entityId, ethAddress, signature, deploymentTimestamp)
@@ -133,7 +121,12 @@ export class ServiceImpl implements Service {
             ethAddress,
             signature,
         }
-        return this.storage.store(this.resolveCategory(StorageCategory.PROOFS), entityId, Buffer.from(JSON.stringify(auditInfo)))
+        return this.storage.storeAuditInfo(entityId, auditInfo)
+    }
+
+    private async getEntityById(id: EntityId): Promise<Entity | undefined> {
+        const buffer = await this.storage.getContent(id)
+        return buffer ? EntityFactory.fromBufferWithId(buffer, id) : undefined
     }
 
     private storeEntityContent(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entityId: EntityId, couldCommit: boolean): Promise<any> {
@@ -141,14 +134,14 @@ export class ServiceImpl implements Service {
             // If entity was commited, then store all it's content (that isn't already stored)
             const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
                 .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
-                .map(([fileHash, file]) => this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), fileHash, file.content))
+                .map(([fileHash, file]) => this.storage.storeContent(fileHash, file.content))
 
             return Promise.all(contentStorageActions)
         } else {
             // If entity wasn't commited, then only store the entity file
             if (!alreadyStoredHashes.get(entityId)) {
                 const entityFile: File = hashes.get(entityId) as File
-                return this.storage.store(this.resolveCategory(StorageCategory.CONTENTS), entityId, entityFile.content)
+                return this.storage.storeContent(entityId, entityFile.content)
             } else {
                 return Promise.resolve()
             }
@@ -166,42 +159,48 @@ export class ServiceImpl implements Service {
         return filesWithName[0];
     }
 
-    getContent(fileHash: FileHash): Promise<Buffer> {
-        // TODO: Catch potential exception if content doesn't exist, and return better error message
-        return this.storage.getContent(this.resolveCategory(StorageCategory.CONTENTS), fileHash);
+    async getContent(fileHash: FileHash): Promise<Buffer> {
+        const content: Buffer | undefined = await this.storage.getContent(fileHash);
+        return this.assertDefined(content, `Failed to find content with the hash ${fileHash}.`)
     }
 
-    getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        // TODO: Catch potential exception if content doesn't exist, and return better error message
-        return this.storage.getContent(this.resolveCategory(StorageCategory.PROOFS), id)
-        .then(buffer => JSON.parse(buffer.toString()))
+    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
+        const auditInfo: AuditInfo | undefined = await this.storage.getAuditInfo(id);
+        return this.assertDefined(auditInfo, `Failed to find the audit information for the entity with type ${type} and id ${id}.`)
     }
 
     async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
-        const contentsAvailableActions: Promise<[FileHash, Boolean]>[] = fileHashes.map((fileHash: FileHash) =>
-            this.storage.exists(this.resolveCategory(StorageCategory.CONTENTS), fileHash)
-                .then(exists => [fileHash, exists]))
-
-        return new Map(await Promise.all(contentsAvailableActions));
+        return this.storage.isContentAvailable(fileHashes)
     }
 
-    /** Resolve a category name, based on the storage category and the entity's type */
-    private resolveCategory(storageCategory: StorageCategory, type?: EntityType): string {
-        return storageCategory + (storageCategory === StorageCategory.POINTERS && type ? `-${type}` : "")
+    private assertDefined<T>(value: T | undefined, errorMessage: string): T {
+        if (!value) {
+            throw new Error(errorMessage)
+        }
+        return value
     }
 
     getStatus(): Promise<ServerStatus> {
         return Promise.resolve({
             name: this.nameKeeper.getServerName(),
             version: "1.0",
-            currentTime: Date.now()
+            currentTime: Date.now(),
+            lastImmutableTime: this.lastImmutableTime
         })
     }
 
-}
+    async deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
+        await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, false)
+    }
 
-const enum StorageCategory {
-    CONTENTS = "contents",
-    PROOFS = "proofs",
-    POINTERS = "pointers",
+    setImmutableTime(immutableTime: number): Promise<void> {
+        this.lastImmutableTime = immutableTime
+        return this.historyManager.setTimeAsImmutable(immutableTime)
+    }
+
+    async getLastKnownTimeForServer(serverName: string): Promise<Timestamp | undefined> {
+        const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, serverName)
+        return knownServerHistory[0]?.timestamp
+    }
+
 }

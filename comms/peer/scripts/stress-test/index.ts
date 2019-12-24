@@ -19,6 +19,8 @@ const sessionId = util.randomToken();
     messagesReceived: 0,
     totalLatency: 0,
     averageLatency: 0,
+    sentPerSecond: 0,
+    receivedPerSecond: 0,
     testStarted: new Date().getTime()
   };
 
@@ -105,6 +107,7 @@ const sessionId = util.randomToken();
     document.getElementById(id)!.innerText = text.toString();
   }
 
+  let lastLoggedStats = "";
   function updateStats() {
     const currentTime = new Date().getTime();
     const remainingPeers = peers.length - finishedPeers.length;
@@ -115,11 +118,19 @@ const sessionId = util.randomToken();
     setText("latency", globalStats.averageLatency);
     if (remainingPeers > 0) {
       const runtime = currentTime - globalStats.testStarted;
-      setText("sentpersecond", (globalStats.messagesSent * 1000) / runtime);
-      setText(
-        "receivedpersecond",
-        (globalStats.messagesReceived * 1000) / runtime
-      );
+      globalStats.sentPerSecond = (globalStats.messagesSent * 1000) / runtime;
+      globalStats.receivedPerSecond =
+        (globalStats.messagesReceived * 1000) / runtime;
+
+      setText("sentpersecond", globalStats.sentPerSecond);
+      setText("receivedpersecond", globalStats.receivedPerSecond);
+    }
+
+    const statsToLog = JSON.stringify(globalStats, null, 2);
+
+    if (lastLoggedStats !== statsToLog) {
+      console.log("Stats: ", statsToLog);
+      lastLoggedStats = statsToLog;
     }
 
     setTimeout(updateStats, 500);

@@ -1,7 +1,7 @@
 import { setInterval, clearInterval } from "timers"
-import { Service, Timestamp, File, ENTITY_FILE_NAME } from "../Service";
+import { Timestamp, File, ENTITY_FILE_NAME, ClusterAwareService } from "../Service";
 import { EntityId, Entity } from "../Entity";
-import { DeploymentHistory, DeploymentEvent, HistoryManager } from "../history/HistoryManager";
+import { DeploymentHistory, DeploymentEvent } from "../history/HistoryManager";
 import { FileHash } from "../Hashing";
 import { ServerName, NameKeeper } from "../naming/NameKeeper";
 import { ServerAddress, getServerName, getClient, getUnreachableClient, ContentServerClient, UNREACHABLE } from "./clients/ContentServerClient";
@@ -21,8 +21,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     constructor(private dao: DAOClient,
         private nameKeeper: NameKeeper,
-        private historyManager: HistoryManager,
-        private service: Service,
+        private service: ClusterAwareService,
         private updateFromDAOInterval: number,
         private syncWithServersInterval: number) { }
 
@@ -63,7 +62,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             // Set this new minimum timestamp as the latest immutable time
             console.log(`Setting immutable time to ${minTimestamp}`)
             this.lastImmutableTime = minTimestamp
-            await this.historyManager.setTimeAsImmutable(minTimestamp)
+            await this.service.setImmutableTime(this.lastImmutableTime)
         }
     }
 
@@ -100,7 +99,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             const auditInfo = await contentServer.getAuditInfo(deployment.entityType, deployment.entityId);
 
             // Deploy the new entity
-            await this.service.deployEntityFromAnotherContentServer(files, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, contentServer.getName(), deployment.timestamp)
+            await this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, contentServer.getName(), deployment.timestamp)
         } else {
             throw new Error(`Failed to find a whitelisted server with the name ${deployment.serverName}`)
         }
@@ -178,15 +177,13 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private async buildNewServerClient(serverAddress: ServerAddress, serverName: ServerName): Promise<ContentServerClient> {
         if (serverName != UNREACHABLE) {
             // Check if we already knew something about the server
-            const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, serverName)
-            let lastKnownTimestamp: Timestamp = this.lastImmutableTime
+            let lastKnownTimestamp: Timestamp | undefined = await this.service.getLastKnownTimeForServer(serverName)
 
-            if (knownServerHistory.length > 0 && knownServerHistory[0].timestamp > this.lastImmutableTime) {
-                // If we already know a deployment after the last immutable time, then set the last known timestamp
-                lastKnownTimestamp = knownServerHistory[0].timestamp
+            if (lastKnownTimestamp && lastKnownTimestamp > this.lastImmutableTime) {
+                return getClient(serverName, serverAddress, lastKnownTimestamp)
+            } else {
+                return getClient(serverName, serverAddress, this.lastImmutableTime)
             }
-
-            return getClient(serverName, serverAddress, lastKnownTimestamp)
         } else {
             // If name is "UNREACHABLE", then it means we get the actual name
             return getUnreachableClient()

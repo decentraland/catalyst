@@ -5,7 +5,7 @@ import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
 import { NameKeeperFactory } from "./service/naming/NameKeeperFactory";
 import { ContentStorage } from "./storage/ContentStorage";
-import { Service } from "./service/Service";
+import { MetaverseContentService, ClusterAwareService } from "./service/Service";
 import { HistoryManager } from "./service/history/HistoryManager";
 import { NameKeeper } from "./service/naming/NameKeeper";
 import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFactory";
@@ -87,7 +87,7 @@ export class EnvironmentBuilder {
         return this
     }
 
-    withService(service: Service): EnvironmentBuilder {
+    withService(service: MetaverseContentService & ClusterAwareService): EnvironmentBuilder {
         this.baseEnv.registerBean(Bean.SERVICE, service)
         return this
     }

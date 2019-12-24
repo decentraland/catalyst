@@ -1,8 +1,8 @@
-import { Service, EthAddress, Signature, Timestamp, File, ServerStatus } from "../../src/service/Service"
+import { MetaverseContentService, EthAddress, Signature, Timestamp, File, ServerStatus, ClusterAwareService } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
 
-export class MockedService implements Service {
+export class MockedService implements MetaverseContentService, ClusterAwareService {
 
     private entities: Entity[] = [
         this.scene("1", "some-metadata-1", this.pointers("A", "B"), this.contents("A1", "1", "A2", "2")),
@@ -47,6 +47,16 @@ export class MockedService implements Service {
         throw new Error("Method not implemented.")
     }
 
+    deployEntityFromCluster(files: File[], entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
+        throw new Error("Method not implemented.")
+    }
+    setImmutableTime(immutableTime: number): Promise<void> {
+        throw new Error("Method not implemented.")
+    }
+    getLastKnownTimeForServer(serverName: string): Promise<number | undefined> {
+        throw new Error("Method not implemented.")
+    }
+
     getContent(fileHash: FileHash): Promise<Buffer> {
         const someContent: Buffer = Buffer.from([1,2,3])
         return Promise.resolve(someContent)
@@ -56,7 +66,8 @@ export class MockedService implements Service {
         return Promise.resolve({
             name: "Mocked-Server",
             version: "1.0",
-            currentTime: Date.now()
+            currentTime: Date.now(),
+            lastImmutableTime: Date.now(),
         })
     }
 
