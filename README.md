@@ -22,7 +22,7 @@ open localhost:3001
 
 * Build the image
 ```
-docker build -t katalyst:latest
+docker build . -t katalyst:latest
 ```
 
 * Run it locally:
