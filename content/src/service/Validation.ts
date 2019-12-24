@@ -4,11 +4,13 @@ import { EthAddress, Signature, ENTITY_FILE_NAME } from "./Service";
 import { File } from './Service';
 import { FileHash } from "./Hashing";
 import * as EthCrypto from "eth-crypto"
-
+import { AccessChecker } from "./AccessChecker";
 
 export class Validation {
 
     private errors: string[] = []
+
+    constructor(private accessChecker: AccessChecker) {}
 
     getErrors(): string[] {
         return this.errors
@@ -52,7 +54,10 @@ export class Validation {
     validateEntity(entity: Entity) {
         this.validateNoRepeatedPointers(entity)
 
-        // TODO: Validate that entity has at least one pointer?
+        // Validate that entity has at least one pointer?
+        if (!entity.pointers || entity.pointers.length <= 0) {
+            this.errors.push("The entity needs to be pointed by one or more pointers.")
+        }
     }
 
     private validateNoRepeatedPointers(entity: Entity) {
@@ -62,8 +67,28 @@ export class Validation {
     }
 
     /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
-    validateAccess(pointers: Pointer[], ethAddress: EthAddress, entityType: EntityType): void {
-        // TODO
+    async validateAccess(pointers: Pointer[], ethAddress: EthAddress, entityType: EntityType): Promise<void> {
+        if (entityType===EntityType.SCENE) {
+            await Promise.all(
+                pointers.map(async pointer => {
+                    try {
+                        const pointerParts: string[] = pointer.split(',')
+                        if (pointerParts.length===2) {
+                            const x: number = parseInt(pointerParts[0], 10)
+                            const y: number = parseInt(pointerParts[1], 10)
+                            const hasAccess = await this.accessChecker.hasParcellAccess(x,y,ethAddress)
+                            if (!hasAccess) {
+                                this.errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+                            }
+                        } else {
+                            this.errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
+                        }
+                    } catch(e) {
+                        this.errors.push(`There was an error processing this pointer: ${pointer}`)
+                    }
+                })
+            )
+        }
     }
 
     /** Validate that the deployment is valid in terms of timing */

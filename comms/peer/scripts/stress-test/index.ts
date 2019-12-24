@@ -12,7 +12,12 @@ function sleep(time: number) {
   const timeBetweenMessages = 50; 
   const globalStats = {
     messagesSent: 0,
-    messagesReceived: 0
+    messagesReceived: 0,
+    totalLatency: 0,
+    averageLatency: 0,
+    sentPerSecond: 0,
+    receivedPerSecond: 0,
+    testStarted: new Date().getTime()
   };
 
   console.log("Creating " + numberOfPeers + " peers");
@@ -65,4 +70,39 @@ function sleep(time: number) {
       startSendingMessages(it);
     });
   }, 2000);
+
+  function setText(id: string, text: any) {
+    document.getElementById(id)!.innerText = text.toString();
+  }
+
+  let lastLoggedStats = "";
+  function updateStats() {
+    const currentTime = new Date().getTime();
+    const remainingPeers = peers.length - finishedPeers.length;
+    setText("peers", peers.length);
+    setText("peerssending", remainingPeers);
+    setText("sent", globalStats.messagesSent);
+    setText("received", globalStats.messagesReceived);
+    setText("latency", globalStats.averageLatency);
+    if (remainingPeers > 0) {
+      const runtime = currentTime - globalStats.testStarted;
+      globalStats.sentPerSecond = (globalStats.messagesSent * 1000) / runtime;
+      globalStats.receivedPerSecond =
+        (globalStats.messagesReceived * 1000) / runtime;
+
+      setText("sentpersecond", globalStats.sentPerSecond);
+      setText("receivedpersecond", globalStats.receivedPerSecond);
+    }
+
+    const statsToLog = JSON.stringify(globalStats, null, 2);
+
+    if (lastLoggedStats !== statsToLog) {
+      console.log("Stats: ", statsToLog);
+      lastLoggedStats = statsToLog;
+    }
+
+    setTimeout(updateStats, 500);
+  }
+
+  updateStats();
 })();

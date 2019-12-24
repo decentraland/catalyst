@@ -9,7 +9,7 @@ import { ServiceFactory } from "../../src/service/ServiceFactory";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { NameKeeper } from "../../src/service/naming/NameKeeper";
 import { ContentStorage } from "../../src/storage/ContentStorage";
-import { Service } from "../../src/service/Service";
+import { MetaverseContentService } from "../../src/service/Service";
 import { HistoryManager } from "../../src/service/history/HistoryManager";
 
 describe("Service", function () {
@@ -22,7 +22,7 @@ describe("Service", function () {
     let entityFile: File
     let historyManager: HistoryManager
     let storage: ContentStorage
-    let service: Service
+    let service: MetaverseContentService
 
     beforeAll(async () => {
         randomFile = { name: "file", content: Buffer.from("1234") }

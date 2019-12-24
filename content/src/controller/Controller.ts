@@ -1,12 +1,12 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import fs from "fs"
-import { Service, File, Signature, EthAddress } from "../service/Service";
+import { MetaverseContentService, File, Signature, EthAddress } from "../service/Service";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 
 export class Controller {
-    constructor(private service: Service, private historyManager: HistoryManager) { }
+    constructor(private service: MetaverseContentService, private historyManager: HistoryManager) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
