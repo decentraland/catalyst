@@ -1,24 +1,15 @@
-import { exec, ChildProcess } from "child_process";
-import puppeteer from "puppeteer";
+import { spawn, ChildProcess } from "child_process";
+import puppeteer, { Browser } from "puppeteer";
+import treekill from "tree-kill";
 
-// console.log("env:\n", process.env);
-
-function bazelExec(command: string, label: string) {
-  const child = exec(
-    `yarn bazel run ${command}`,
-    {
-      cwd: process.env.BUILD_WORKSPACE_DIRECTORY,
-      env: { PATH: process.env.PATH }
-    },
-    (error, stdout, stderr) => {
-      console.log("error:\n", error);
-      console.log("\nstdout:\n", stdout);
-      console.log("\nstderr:\n", stderr);
-    }
-  );
+function bazelExec(command: string, label: string, env: object = {}) {
+  const child = spawn(`yarn`, ["bazel", "run", command], {
+    cwd: process.env.BUILD_WORKSPACE_DIRECTORY,
+    env: { PATH: process.env.PATH, ...env }
+  });
 
   child.stdout?.on("data", data =>
-    console.log(`\n[${label}]\n`, data, `[/${label}]\n`)
+    console.log(`\n[${label}]\n`, data.toString(), `[/${label}]\n`)
   );
 
   return child;
@@ -40,7 +31,7 @@ function awaitOutput(process: ChildProcess, output: string) {
   });
 }
 
-const browserCount = 5;
+const browserCount = process.env.BROWSERS_COUNT ?? 1;
 
 (async () => {
   await Promise.all([
@@ -50,11 +41,68 @@ const browserCount = 5;
 
   console.log("Child process are listening");
 
-  for (let i = 0; i < browserCount; i++) {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto("http://localhost:7654");
+  const promises: Promise<void>[] = [];
+  const browsers: Browser[] = [];
 
-    page.on("console", msg => console.log(`\n[PEER-${i}]`, msg.text(), `[/PEER-${i}]\n`));
+  for (let i = 0; i < browserCount; i++) {
+    promises.push(
+      new Promise(async (resolve, reject) => {
+        try {
+          const browser = await puppeteer.launch();
+          browsers.push(browser);
+          const page = await browser.newPage();
+          await page.goto("http://localhost:7654");
+
+          page.on("console", msg =>
+            console.log(`\n[BROWSER-${i}]`, msg.text(), `[/BROWSER-${i}]\n`)
+          );
+
+          page.on("console", msg => {
+            if (msg.text() === "All peers finished") {
+              resolve();
+            }
+
+            if (msg.type() === "error") {
+              reject(msg.args);
+            }
+          });
+        } catch (e) {
+          console.error("Error running browser " + i, e);
+          reject(e);
+        }
+      })
+    );
+  }
+
+  async function killProcesses(...pids: number[]) {
+    return Promise.all(
+      pids.map(
+        pid =>
+          new Promise((resolve, reject) => {
+            treekill(pid, err => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(err);
+              }
+            });
+          })
+      )
+    );
+  }
+
+  const killAllChildren = async () => {
+    console.log("Test finished. Killing all processes");
+    await Promise.all(browsers.map(it => it.close()));
+    await killProcesses(devServer.pid, lighthouse.pid);
+  };
+
+  try {
+    await Promise.all(promises);
+    await killAllChildren();
+    process.exit(0);
+  } catch (e) {
+    await killAllChildren();
+    process.exit(1);
   }
 })();

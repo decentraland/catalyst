@@ -19,6 +19,7 @@ ts_library(
     deps = [
         "@npm//@types",
         "@npm//puppeteer",
+        "@npm//tree-kill",
     ],
 )
 

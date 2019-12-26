@@ -181,7 +181,7 @@ export class Peer implements IPeer {
     );
   }
 
-  public beConnectedTo(peerId: string, timeout: number = 5000): Promise<void> {
+  public beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
       const promisePair = { resolve, reject };
       if (this.isConnectedTo(peerId)) {
@@ -258,6 +258,9 @@ export class Peer implements IPeer {
           ),
         err
       );
+      connection.removeAllListeners();
+      connection.destroy();
+      this.handleDisconnection(peerData, reliable);
     });
 
     connection.on("data", data => this.handlePeerPacket(data, peerData.id));
