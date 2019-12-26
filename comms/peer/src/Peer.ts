@@ -89,10 +89,13 @@ export class Peer implements IPeer {
 
     this.config.token = this.config.token ?? util.randomToken();
 
+    const secure = url.protocol === "https:";
+
     this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
       host: url.hostname,
-      port: url.port ? parseInt(url.port) : 80,
+      port: url.port ? parseInt(url.port) : secure ? 443 : 80,
       path: url.pathname,
+      secure,
       token: this.config.token,
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
