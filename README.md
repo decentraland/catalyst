@@ -11,9 +11,9 @@
 ```
 yarn install
 # lighthouse
-yarn bazel run lighthouse:server # sets up a lighthouse instance on localhost:9000 by default
+yarn bazel run comms/lighthouse:server # sets up a lighthouse instance on localhost:9000 by default
 # example client
-yarn bazel run peer-react-app:devserver # sets up the client server on localhost:3001 by default
+yarn bazel run comms/peer-react-app:devserver # sets up the client server on localhost:3001 by default
 # open client
 open localhost:3001
 ```
