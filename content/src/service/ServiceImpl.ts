@@ -1,4 +1,4 @@
-import Cache from "caching-map"
+import ms from "ms";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
@@ -10,10 +10,11 @@ import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager, CommitResult } from "./pointers/PointerManager";
 import { AccessChecker } from "./AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
+import { Cache } from "./caching/Cache"
 
 export class ServiceImpl implements MetaverseContentService, ClusterAwareService {
 
-    private entities: Cache = new Cache(1000)
+    private entities: Cache<EntityId, Entity | undefined>
     private lastImmutableTime: Timestamp = 0
 
     constructor(
@@ -24,7 +25,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
         private ignoreValidationErrors: boolean = false) {
-        this.entities.materialize = (entityId: EntityId) => this.getEntityById(entityId)
+        this.entities = Cache.withCalculation((entityId: EntityId) => this.getEntityById(entityId), 1000, ms('10h'))
     }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
