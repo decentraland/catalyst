@@ -10,20 +10,18 @@ import { serverStorage } from "./simpleStorage";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { StorageKeys } from "./storageKeys";
 import { requireParameters, validatePeerToken } from "./handlers";
+import * as path from "path";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
 const port = parseInt(process.env.PORT ?? "9000");
+const secure = parseBoolean(process.env.SECURE ?? "false");
 
 function parseBoolean(string: string) {
   return string.toLowerCase() === "true";
 }
 
 let peer: Peer;
-
-// process.on("unhandledRejection", error => {
-//   console.log("unhandledRejection", error);
-// });
 
 const app = express();
 
@@ -100,7 +98,7 @@ const server = app.listen(port, async () => {
   if (relay) {
     const peerToken = await getPeerToken();
     peer = new Peer(
-      `http://localhost:${port}`,
+      `${secure ? "https" : "http"} ://localhost:${port}`,
       "lighthouse",
       (sender, room, payload) => {
         const message = JSON.stringify(payload, null, 3);

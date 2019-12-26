@@ -11,9 +11,9 @@
 ```
 yarn install
 # lighthouse
-yarn bazel run lighthouse:server # sets up a lighthouse instance on localhost:9000 by default
+yarn bazel run comms/lighthouse:server # sets up a lighthouse instance on localhost:9000 by default
 # example client
-yarn bazel run peer-react-app:devserver # sets up the client server on localhost:3001 by default
+yarn bazel run comms/peer-react-app:devserver # sets up the client server on localhost:3001 by default
 # open client
 open localhost:3001
 ```
@@ -27,8 +27,9 @@ docker build . -t katalyst:latest
 
 * Run it locally:
 ```
-docker run -ti --rm --name comms -p 9000:9000 katalyst:latest comms
+docker run -ti --rm --name comms   -p 9000:9000 katalyst:latest comms
 docker run -ti --rm --name content -p 6969:6969 katalyst:latest content
+docker run -ti --rm --name lambdas -p 7070:7070 katalyst:latest lambdas
 ```
 
 * Run it with compose:

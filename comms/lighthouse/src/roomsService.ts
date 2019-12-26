@@ -8,7 +8,7 @@ type RoomsFilter = Partial<{
 
 type RoomsServiceConfig = Partial<{
   relay: boolean;
-  serverPeerProvider: () => Peer;
+  serverPeerProvider: () => Peer | undefined;
   realmProvider: () => IRealm;
 }>;
 
