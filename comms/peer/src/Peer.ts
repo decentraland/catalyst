@@ -88,10 +88,13 @@ export class Peer implements IPeer {
 
     this.config.token = this.config.token ?? util.randomToken();
 
+    const secure = url.protocol === "https:";
+
     this.peerJsConnection = new PeerJSServerConnection(this, nickname, {
       host: url.hostname,
-      port: url.port ? parseInt(url.port) : 80,
+      port: url.port ? parseInt(url.port) : secure ? 443 : 80,
       path: url.pathname,
+      secure,
       token: this.config.token,
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
@@ -315,7 +318,12 @@ export class Peer implements IPeer {
       "DISCONNECTED from " +
         peerData.id +
         " through " +
-        connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable)
+        connectionIdFor(
+          this.nickname,
+          peerData.id,
+          peerData.sessionId,
+          reliable
+        )
     );
     // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
     if (this.peers[peerData.id]) {
@@ -331,12 +339,21 @@ export class Peer implements IPeer {
     });
   }
 
-  private handleConnection(peerData: PeerData, roomId: string, reliable: boolean) {
+  private handleConnection(
+    peerData: PeerData,
+    roomId: string,
+    reliable: boolean
+  ) {
     console.log(
       "CONNECTED to " +
         peerData.id +
         " through " +
-        connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable)
+        connectionIdFor(
+          this.nickname,
+          peerData.id,
+          peerData.sessionId,
+          reliable
+        )
     );
 
     this.peerConnectionPromises[peerData.id]?.forEach($ => $.resolve());
@@ -448,7 +465,7 @@ export class Peer implements IPeer {
     if (!peer) {
       sessionId = sessionId ?? util.generateToken(16);
       peer = this.createPeer(peerId, sessionId!, initiator, room);
-    } else if(sessionId) {
+    } else if (sessionId) {
       if (peer.sessionId !== sessionId) {
         console.log(
           `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`
