@@ -1,0 +1,67 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
+
+ts_library(
+    name = "lambdas",
+    srcs = glob(["src/**/*.ts"]),
+    module_name = "@katalyst/lambdas",
+    deps = [
+        "@npm//@types",
+        "@npm//@types/node",
+        "@npm//cors",
+        "@npm//express",
+        "@npm//morgan",
+        "@npm//multer",
+        "@npm//@types/multer",
+        "@npm//node-fetch",
+        "@npm//@types/node-fetch",
+    ],
+)
+
+nodejs_binary(
+    name = "server",
+    data = [
+        ":lambdas",
+        "@npm//@bazel/typescript",
+        "@npm//typescript",
+    ],
+    entry_point = "src/entrypoints/run-server.ts",
+)
+
+load("//tools/npm:package.bzl", "dataform_npm_package")
+
+dataform_npm_package(
+    name = "package",
+    package_layers = [
+        "//:common.package.json",
+        "lambdas.package.json",
+    ],
+    deps = [],
+)
+
+ts_library(
+    name = "tests",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":lambdas",
+        "@npm//@types/node",
+        "@npm//@types/jasmine",
+        "@npm//node-fetch",
+        "@npm//@types/node-fetch",
+    ],
+)
+
+load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+
+jasmine_node_test(
+    name = "unit_test",
+    deps = [
+        ":tests",
+        "@npm//jasmine",
+    ],
+)
+

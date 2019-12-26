@@ -12,3 +12,9 @@ services:
     command: content
     ports:
       - "6969:6969"
+  content-server:
+    image: katalyst:latest
+    working_dir: /app
+    command: lambdas
+    ports:
+      - "7070:7070"

@@ -27,8 +27,9 @@ docker build . -t katalyst:latest
 
 * Run it locally:
 ```
-docker run -ti --rm --name comms -p 9000:9000 katalyst:latest comms
+docker run -ti --rm --name comms   -p 9000:9000 katalyst:latest comms
 docker run -ti --rm --name content -p 6969:6969 katalyst:latest content
+docker run -ti --rm --name lambdas -p 7070:7070 katalyst:latest lambdas
 ```
 
 * Run it with compose:
