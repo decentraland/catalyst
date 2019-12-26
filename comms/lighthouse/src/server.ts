@@ -10,7 +10,6 @@ import { serverStorage } from "./simpleStorage";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { StorageKeys } from "./storageKeys";
 import { requireParameters, validatePeerToken } from "./handlers";
-import * as path from "path";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -136,3 +135,17 @@ function getPeerJsRealm(): IRealm {
 }
 
 app.use("/peerjs", peerServer);
+
+const monitorServer = MonitorServer();
+
+app.use("/static", express.static(path.join(__dirname, "../../monitor")));
+
+app.use("/monitor", monitorServer);
+
+function MonitorServer() {
+  return (req, res, next) => {
+    res.send(
+      '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Decentraland Lighthouse</title></head><body><div id="root"></div><script src="/static/bundle.js"></script></body></html>'
+    );
+  };
+}
