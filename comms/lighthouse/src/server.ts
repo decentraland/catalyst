@@ -107,7 +107,23 @@ const server = app.listen(port, async () => {
         wrtc,
         socketBuilder: url => new WebSocket(url),
         relay: RelayMode.All,
-        token: peerToken
+        token: peerToken,
+        connectionConfig: {
+          iceServers: [
+            {
+              urls: "stun:stun.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun2.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun3.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun4.l.google.com:19302"
+            }
+          ]
+        }
       }
     );
   }
