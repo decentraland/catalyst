@@ -51,11 +51,19 @@ const browserCount = process.env.BROWSERS_COUNT ?? 1;
           const browser = await puppeteer.launch();
           browsers.push(browser);
           const page = await browser.newPage();
-          await page.goto("http://localhost:7654");
+          await page.goto(`http://localhost:7654?sessionId=${i}`);
 
-          page.on("console", msg =>
-            console.log(`\n[BROWSER-${i}]`, msg.text(), `[/BROWSER-${i}]\n`)
-          );
+          page.on("console", async msg => {
+            if (msg.type() === "error") {
+              console.log(
+                `\n[BROWSER-${i}]`,
+                ...msg.args(),
+                `[/BROWSER-${i}]\n`
+              );
+            } else {
+              console.log(`\n[BROWSER-${i}]`, msg.text(), `[/BROWSER-${i}]\n`);
+            }
+          });
 
           page.on("console", msg => {
             if (msg.text() === "All peers finished") {

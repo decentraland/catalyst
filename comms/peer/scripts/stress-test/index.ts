@@ -14,7 +14,7 @@ const messageCount = parseInt(urlParams.get("messagesCount") ?? '200');
 const timeBetweenMessages = parseInt(urlParams.get("timeBetweenMessages") ?? '50');
 const lighthouseUrl = urlParams.get("lighthouseUrl") ?? "http://localhost:9000";
 
-const sessionId = util.randomToken();
+const sessionId = urlParams.get("sessionId") ?? util.randomToken();
 
 (async () => {
   const globalStats = {

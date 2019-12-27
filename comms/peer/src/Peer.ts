@@ -204,7 +204,9 @@ export class Peer implements IPeer {
       setTimeout(() => {
         if (!this.isConnectedTo(peerId)) {
           reject(
-            new Error(`[${this.nickname}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`)
+            new Error(
+              `[${this.nickname}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`
+            )
           );
           this.peerConnectionPromises[peerId] = this.peerConnectionPromises[
             peerId
@@ -533,16 +535,7 @@ export class Peer implements IPeer {
       this.log(`Received message from ${peerId}: ${type}`);
       switch (type) {
         case ServerMessageType.Offer:
-          //We ensure that the handshake is made only from one side.
-          //The offer of the peer for which its id lexicographically comes later is discarded
-          if (
-            this.hasInitiatedConnectionFor(peerId) &&
-            this.nickname < peerId
-          ) {
-            this.log(
-              "Received offer for already existing peer but it was discarded: " +
-                peerId
-            );
+          if (this.checkForCrossOffers(peerId)) {
             break;
           }
         case ServerMessageType.Answer: {
@@ -556,6 +549,9 @@ export class Peer implements IPeer {
           break;
         }
         case ServerMessageType.Candidate: {
+          if (this.checkForCrossOffers(peerId)) {
+            break;
+          }
           const peer = this.getOrCreatePeer(
             peerId,
             false,
@@ -565,12 +561,27 @@ export class Peer implements IPeer {
           signalMessage(peer, payload.connectionId, {
             candidate: payload.candidate
           });
+          break;
         }
         case ServerMessageType.PeerLeftRoom: {
           const { roomId, userId, peerId } = payload;
           this.findRoom(roomId)?.users.delete(this.key({ userId, peerId }));
+          break;
         }
       }
     }
+  }
+
+  private checkForCrossOffers(peerId: string) {
+    const isCrossOfferToBeDiscarded =
+      this.hasInitiatedConnectionFor(peerId) && this.nickname < peerId;
+    if (isCrossOfferToBeDiscarded) {
+      this.log(
+        "Received offer/candidate for already existing peer but it was discarded: " +
+          peerId
+      );
+    }
+
+    return isCrossOfferToBeDiscarded;
   }
 }
