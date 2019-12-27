@@ -204,7 +204,7 @@ export class Peer implements IPeer {
       setTimeout(() => {
         if (!this.isConnectedTo(peerId)) {
           reject(
-            `[${this.nickname}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`
+            new Error(`[${this.nickname}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`)
           );
           this.peerConnectionPromises[peerId] = this.peerConnectionPromises[
             peerId
@@ -381,7 +381,7 @@ export class Peer implements IPeer {
     const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
       return Promise.reject(
-        `cannot send a message in a room not joined (${roomId})`
+        new Error(`cannot send a message in a room not joined (${roomId})`)
       );
     }
 
