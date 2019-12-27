@@ -38,7 +38,14 @@ if (accessLogs) {
 }
 
 app.get("/hello", (req, res, next) => {
-  res.send("Hello world!!!");
+  const status = {
+    currenTime: Date.now(),
+    env: {
+      relay,
+      secure
+    }
+  };
+  res.send(status);
 });
 
 // GET /rooms[?userId=] -> returns list of rooms. If a userId is specified, it returns the rooms which that user has joined.
