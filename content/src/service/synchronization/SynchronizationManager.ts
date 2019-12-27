@@ -69,40 +69,42 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     /** Get all updates from one specific content server */
     private async getNewEntitiesDeployedInContentServer(contentServer: ContentServerClient): Promise<void> {
         try {
-            // Get new deployments on a specific content server, but make sure they happened after the last immutable time
+            // Get new deployments on a specific content server
             const newDeployments: DeploymentHistory = (await contentServer.getNewDeployments())
-                .filter(deployment => deployment.timestamp >= this.lastImmutableTime)
 
-            // Get whether these entities have already been deployed or not
-            const alreadyDeployedIds: Map<EntityId, Boolean> = await this.service.isContentAvailable(newDeployments.map(deployment => deployment.entityId))
-
-            // Calculate the deployments we are not already aware of
-            const unawareDeployments: DeploymentHistory = newDeployments.filter(deployment => !alreadyDeployedIds.get(deployment.entityId))
-            console.log(`Detected ${unawareDeployments.length} from server ${contentServer.getName()}.`)
-
-            // Process the deployments
-            await Promise.all(unawareDeployments.map(unawareDeployment => this.processNewDeployment(unawareDeployment)))
+            // Process them
+            await this.processNewDeploymentsIfNotAlreadyKnown(newDeployments, contentServer)
         } catch(error) {
             console.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
         }
     }
 
-    /** Process a specific deployment */
-    private async processNewDeployment(deployment: DeploymentEvent): Promise<void> {
-        // Find a server with the given name
-        const contentServer: ContentServerClient | undefined = this.contentServers.get(deployment.serverName)
-        if (contentServer) {
-            // Download all entity's files
-            const [, files]: [Entity, File[]] = await this.getFilesFromDeployment(contentServer, deployment)
+    private async processNewDeploymentsIfNotAlreadyKnown(updates: DeploymentHistory, source: ContentServerClient): Promise<void> {
+        // Make sure the updates happened after the last immutable time
+        const newDeployments: DeploymentHistory = updates
+            .filter(deployment => deployment.timestamp >= this.lastImmutableTime)
 
-            // Get the audit info
-            const auditInfo = await contentServer.getAuditInfo(deployment.entityType, deployment.entityId);
+        // Get whether these entities have already been deployed or not
+        const alreadyDeployedIds: Map<EntityId, Boolean> = await this.service.isContentAvailable(newDeployments.map(deployment => deployment.entityId))
 
-            // Deploy the new entity
-            await this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, contentServer.getName(), deployment.timestamp)
-        } else {
-            throw new Error(`Failed to find a whitelisted server with the name ${deployment.serverName}`)
-        }
+        // Calculate the deployments we are not already aware of
+        const unawareDeployments: DeploymentHistory = newDeployments.filter(deployment => !alreadyDeployedIds.get(deployment.entityId))
+        console.log(`Detected ${unawareDeployments.length} from server ${source.getName()}.`)
+
+        // Process the deployments
+        await Promise.all(unawareDeployments.map(unawareDeployment => this.processNewDeployment(unawareDeployment, source)))
+    }
+
+    /** Process a specific deployment, by asking a specific server for all the necessary information */
+    private async processNewDeployment(deployment: DeploymentEvent, source: ContentServerClient): Promise<void> {
+        // Download all entity's files
+        const [, files]: [Entity, File[]] = await this.getFilesFromDeployment(source, deployment)
+
+        // Get the audit info
+        const auditInfo = await source.getAuditInfo(deployment.entityType, deployment.entityId);
+
+        // Deploy the new entity
+        await this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
     }
 
     /** Get all the files needed to deploy the new entity */
@@ -133,6 +135,24 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         return [entity, contentFiles]
     }
 
+    /**
+     * When a node is removed from the DAO, we want to ask all other servers on the DAO if they new something else about it
+     */
+    private async handleServerRemoval(removedServer: ServerName) {
+        const lastKnownTimestamp: Timestamp | undefined = this.contentServers.get(removedServer)?.getLastKnownTimestamp()
+        if (lastKnownTimestamp) {
+            console.log(`Handing removal of ${removedServer}. It's last known timestamp if ${lastKnownTimestamp}`)
+            // Get the removed server's history from each other server on the DAO
+            const historiesRetrieval: Promise<[ContentServerClient, DeploymentHistory]>[] = Array.from(this.contentServers.values())
+                .filter(server => server.getName() != removedServer)
+                .map(server => server.getOtherServersDeployments(removedServer, lastKnownTimestamp as Timestamp).then(history => [server, history]));
+            const allHistories: Map<ContentServerClient, DeploymentHistory> = new Map(await Promise.all(historiesRetrieval))
+
+            // Process the deployments
+            allHistories.forEach((deploymentHistory, server) => this.processNewDeploymentsIfNotAlreadyKnown(deploymentHistory, server))
+        }
+    }
+
     /** Register this server in the DAO id required */
     private async registerServer() {
         const env: Environment = await Environment.getInstance()
@@ -153,6 +173,19 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             const allServersInDAO = (await Promise.all(allServerActions))
                 .filter(({ name }) => name != this.nameKeeper.getServerName())
 
+            // Calculate if any servers where removed from the DAO
+            const serverNamesInDAO: Set<ServerName> = new Set(allServersInDAO.map(({ name }) => name))
+            const serversRemovedFromDAO: ServerName[] = Array.from(this.contentServers.keys())
+                .filter(serverName => !serverNamesInDAO.has(serverName))
+
+            // Get updates from other nodes
+            const lastUpdateSeek = serversRemovedFromDAO.map(removedServer => this.handleServerRemoval(removedServer));
+            await Promise.all(lastUpdateSeek)
+
+            // Delete servers that were removed from the DAO
+            serversRemovedFromDAO
+                .forEach(serverName => this.contentServers.delete(serverName))
+
             // Build server clients for new servers
             const newServersActions: Promise<ContentServerClient>[] = allServersInDAO
                 .filter(({ name }) => !this.contentServers.has(name))
@@ -163,12 +196,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
                 this.contentServers.set(newServer.getName(), newServer)
                 console.log(`Connected to new server ${newServer.getName()}`)
             }
-
-            // Delete servers that were removed from the DAO
-            const serverNamesInDAO: Set<ServerName> = new Set(allServersInDAO.map(({ name }) => name))
-            Array.from(this.contentServers.keys())
-                .filter(serverName => !serverNamesInDAO.has(serverName))
-                .forEach(serverName => this.contentServers.delete(serverName))
         } catch (error) {
             console.error(`Failed to sync with the DAO \n${error}`)
         }
@@ -185,7 +212,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
                 return getClient(serverName, serverAddress, this.lastImmutableTime)
             }
         } else {
-            // If name is "UNREACHABLE", then it means we get the actual name
             return getUnreachableClient()
         }
     }

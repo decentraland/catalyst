@@ -1,22 +1,17 @@
 import ms from "ms"
-import { EntityType, Pointer, EntityId } from "../../src/service/Entity"
-import { Hashing } from "../../src/service/Hashing"
-import { ControllerEntity } from "../../src/controller/Controller"
-import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
-import { Timestamp } from "../../src/service/Service"
-import { DAOClient } from "../../src/service/synchronization/clients/DAOClient"
-import { TestServer } from "./TestServer"
-import { buildDeployData, deleteFolderRecursive, buildDeployDataAfterEntity, sleep } from "./TestUtils"
-import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../src/Environment"
-import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
-import { MockedAccessChecker } from "../service/MockedAccessChecker"
-import { AuditInfo } from "../../src/service/audit/Audit"
+import { Timestamp } from "../../../src/service/Service"
+import { DAOClient } from "../../../src/service/synchronization/clients/DAOClient"
+import { TestServer } from "../TestServer"
+import { buildDeployData, deleteFolderRecursive, buildDeployDataAfterEntity, sleep } from "../TestUtils"
+import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../../src/Environment"
+import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
+import { MockedAccessChecker } from "../../service/MockedAccessChecker"
+import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 
 describe("End 2 end synchronization tests", function() {
 
     let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("2s")
-    const ENTITY_TYPE: EntityType = EntityType.SCENE
     let server1: TestServer, server2: TestServer, server3: TestServer
 
     beforeAll(() => {
@@ -52,7 +47,7 @@ describe("End 2 end synchronization tests", function() {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 
-        // PrgetIdsOfEntitiesReferencedByPointers to be deployed
+        // Prepara data to be deployed
         const [deployData, entityBeingDeployed] = await buildDeployData(["X1,Y1"], "metadata")
 
         // Make sure there are no deployments on server 1
@@ -63,7 +58,7 @@ describe("End 2 end synchronization tests", function() {
 
         // Deploy the entity to server 1
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-        const deploymentEvent = deployEvent(entityBeingDeployed, server1, deploymentTimestamp)
+        const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Assert that the entity was deployed on server 1
         await assertHistoryOnServerHasEvents(server1, deploymentEvent)
@@ -99,17 +94,17 @@ describe("End 2 end synchronization tests", function() {
 
         // Deploy the entities 1 and 2
         const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
-        const deploymentEvent1 = deployEvent(entity1, server1, deploymentTimestamp1)
+        const deploymentEvent1 = buildEvent(entity1, server1, deploymentTimestamp1)
 
         const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
-        const deploymentEvent2 = deployEvent(entity2, server2, deploymentTimestamp2)
+        const deploymentEvent2 = buildEvent(entity2, server2, deploymentTimestamp2)
 
         // Stop server 2
         await server2.stop()
 
         // Deploy entity 3
         const deploymentTimestamp3: Timestamp = await server3.deploy(deployData3)
-        const deploymentEvent3 = deployEvent(entity3, server3, deploymentTimestamp3)
+        const deploymentEvent3 = buildEvent(entity3, server3, deploymentTimestamp3)
 
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
@@ -163,63 +158,6 @@ describe("End 2 end synchronization tests", function() {
             .withAccessChecker(new MockedAccessChecker())
             .build()
         return new TestServer(env)
-    }
-
-    async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
-        for (const entity of entities) {
-            const entities: ControllerEntity[] = await server.getEntitiesByPointers(ENTITY_TYPE, entity.pointers)
-            expect(entities).not.toContain(entity, `Failed on server with prefix ${server.namePrefix}, when checking for pointers ${entity.pointers}`)
-            await assertEntityIsOnServer(server, entity.id)
-        }
-    }
-
-    async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
-        const activePointers: Pointer[] = await server.getActivePointers(ENTITY_TYPE)
-        for (const entity of entities) {
-            entity.pointers.forEach(pointer => expect(activePointers).toContain(pointer, `Failed on server ${server.namePrefix}`))
-            expect(await server.getEntitiesByPointers(ENTITY_TYPE, entity.pointers)).toEqual([entity])
-            await assertEntityIsOnServer(server, entity.id)
-        }
-    }
-
-    function deployEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): DeploymentEvent {
-        return {
-            serverName: server.namePrefix,
-            entityId: entity.id,
-            entityType: EntityType[entity.type.toUpperCase().trim()],
-            timestamp,
-        }
-    }
-
-    /** Please set the expected events from older to newer */
-    async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: DeploymentEvent[]) {
-        const deploymentHistory: DeploymentHistory = await server.getHistory()
-        expect(deploymentHistory.length).toEqual(expectedEvents.length)
-        for (let i = 0; i < expectedEvents.length; i++) {
-            const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
-            const actualEvent: DeploymentEvent = deploymentHistory[i]
-            expect(actualEvent.entityId).toBe(expectedEvent.entityId)
-            expect(actualEvent.entityType).toBe(expectedEvent.entityType)
-            expect(actualEvent.timestamp).toBe(expectedEvent.timestamp)
-            expect(actualEvent.serverName.startsWith(expectedEvent.serverName)).toBeTruthy()
-        }
-    }
-
-    async function assertEntityIsOnServer(server: TestServer, entityId: EntityId) {
-        const entity: ControllerEntity = await server.getEntityById(ENTITY_TYPE, entityId)
-        const content = await server.downloadContent(entity.id)
-        const downloadedContentHash = await Hashing.calculateBufferHash(content)
-        expect(downloadedContentHash).toEqual(entityId)
-    }
-
-    async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
-        const auditInfo: AuditInfo = await server.getAuditInfo(ENTITY_TYPE, entity.id)
-        expect(auditInfo.overwrittenBy).toEqual(overwrittenBy.id)
-    }
-
-    async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
-        const auditInfo: AuditInfo = await server.getAuditInfo(ENTITY_TYPE, entity.id)
-        expect(auditInfo.overwrittenBy).toBeUndefined()
     }
 
 })
