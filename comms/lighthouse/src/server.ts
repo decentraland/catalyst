@@ -97,7 +97,7 @@ const server = app.listen(port, async () => {
   if (relay) {
     const peerToken = await getPeerToken();
     peer = new Peer(
-      `${secure ? "https" : "http"} ://localhost:${port}`,
+      `${secure ? "https" : "http"}://localhost:${port}`,
       "lighthouse",
       (sender, room, payload) => {
         const message = JSON.stringify(payload, null, 3);
