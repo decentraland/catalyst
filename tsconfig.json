@@ -1,16 +1,23 @@
 {
   "bazelOpts": {
     "es5Mode": true,
-    "devmodeTargetOverride": "es2017"
+    "devmodeTargetOverride": "commonjs"
   },
   "compilerOptions": {
-    "module": "esnext",
-    "target": "es2017",
+    "target": "es2015",
+    "module": "commonjs",
+    "strict": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+
+
+    // "module": "esnext",
+    // "target": "es2017",
     "diagnostics": false,
     "inlineSourceMap": false,
     "inlineSources": false,
     "sourceMap": true,
-    "moduleResolution": "node",
+    // "moduleResolution": "node",
     "stripInternal": true,
     "strictNullChecks": true,
     "pretty": true,
@@ -29,7 +36,7 @@
       }
     ],
     "baseUrl": ".",
-    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"]
+    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
 }

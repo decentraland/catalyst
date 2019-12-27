@@ -17,13 +17,23 @@ ts_library(
         "@npm//@types/multer",
         "@npm//node-fetch",
         "@npm//@types/node-fetch",
+        "@npm//decentraland-commons",
+        "@npm//web3",
+        "@npm//@types/web3",
+        "@npm//aws-sdk",
     ],
+)
+
+filegroup(
+    name = "api_resources",
+    srcs = glob(["src/**/*.ts"])
 )
 
 nodejs_binary(
     name = "server",
     data = [
         ":lambdas",
+        ":api_resources",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
