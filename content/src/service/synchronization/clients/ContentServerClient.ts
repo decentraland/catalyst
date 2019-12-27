@@ -1,11 +1,12 @@
 import fetch from "node-fetch";
 import ms from "ms";
-import { Timestamp, File, AuditInfo } from "../../Service";
+import { Timestamp, File } from "../../Service";
 import { EntityId, EntityType, Entity } from "../../Entity";
 import { DeploymentHistory } from "../../history/HistoryManager";
 import { FileHash } from "../../Hashing";
 import { ServerName } from "../../naming/NameKeeper";
 import { EntityFactory } from "../../EntityFactory";
+import { AuditInfo } from "../../audit/Audit";
 
 export const UNREACHABLE: string = "UNREACHABLE"
 

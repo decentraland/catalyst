@@ -1,16 +1,16 @@
-import ms from "ms";
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { MetaverseContentService, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, AuditInfo, File, ServerStatus, ClusterAwareService } from "./Service";
+import { MetaverseContentService, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, File, ServerStatus, ClusterAwareService } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager, DeploymentHistory } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
-import { PointerManager, CommitResult } from "./pointers/PointerManager";
+import { PointerManager } from "./pointers/PointerManager";
 import { AccessChecker } from "./AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
+import { AuditManager, AuditInfo } from "./audit/Audit";
 
 export class ServiceImpl implements MetaverseContentService, ClusterAwareService {
 
@@ -20,12 +20,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
     constructor(
         private storage: ServiceStorage,
         private historyManager: HistoryManager,
+        private auditManager: AuditManager,
         private pointerManager: PointerManager,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
         private ignoreValidationErrors: boolean = false) {
-        this.entities = Cache.withCalculation((entityId: EntityId) => this.getEntityById(entityId), 1000, ms('10h'))
+        this.entities = Cache.withCalculation((entityId: EntityId) => this.getEntityById(entityId), 1000)
     }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -93,19 +94,17 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
 
         // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITED
 
-        const commitResult: CommitResult = await this.pointerManager.tryToCommitPointers(entity);
-
-        // Delete entities that the new deployment would overwrite
-        commitResult.entitiesDeleted.forEach((entityId: EntityId) => this.entities.delete(entityId))
-
         // Store the entity's content
-        await this.storeEntityContent(hashes, alreadyStoredHashes, entityId, commitResult.couldCommit)
+        await this.storeEntityContent(hashes, alreadyStoredHashes)
 
         // Calculate timestamp
         const deploymentTimestamp: Timestamp = timestampGenerator()
 
         // Save audit information
         await this.storeAuditInfo(entityId, ethAddress, signature, deploymentTimestamp)
+
+        // Commit to pointers
+        await this.pointerManager.commitEntity(entity, deploymentTimestamp, entityId => this.getEntityById(entityId));
 
         // Add the new deployment to history
         await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
@@ -122,7 +121,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
             ethAddress,
             signature,
         }
-        return this.storage.storeAuditInfo(entityId, auditInfo)
+        return this.auditManager.setAuditInfo(entityId, auditInfo)
     }
 
     private async getEntityById(id: EntityId): Promise<Entity | undefined> {
@@ -130,23 +129,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
         return buffer ? EntityFactory.fromBufferWithId(buffer, id) : undefined
     }
 
-    private storeEntityContent(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>, entityId: EntityId, couldCommit: boolean): Promise<any> {
-        if (couldCommit) {
-            // If entity was commited, then store all it's content (that isn't already stored)
-            const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
-                .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
-                .map(([fileHash, file]) => this.storage.storeContent(fileHash, file.content))
+    private storeEntityContent(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>): Promise<any> {
+        // If entity was commited, then store all it's content (that isn't already stored)
+        const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
+            .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
+            .map(([fileHash, file]) => this.storage.storeContent(fileHash, file.content))
 
-            return Promise.all(contentStorageActions)
-        } else {
-            // If entity wasn't commited, then only store the entity file
-            if (!alreadyStoredHashes.get(entityId)) {
-                const entityFile: File = hashes.get(entityId) as File
-                return this.storage.storeContent(entityId, entityFile.content)
-            } else {
-                return Promise.resolve()
-            }
-        }
+        return Promise.all(contentStorageActions)
     }
 
     private findEntityFile(files: File[]): File {
@@ -166,7 +155,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
     }
 
     async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        const auditInfo: AuditInfo | undefined = await this.storage.getAuditInfo(id);
+        const auditInfo: AuditInfo | undefined = await this.auditManager.getAuditInfo(id);
         return this.assertDefined(auditInfo, `Failed to find the audit information for the entity with type ${type} and id ${id}.`)
     }
 

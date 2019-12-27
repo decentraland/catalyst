@@ -9,6 +9,7 @@ import { DeploymentHistory } from "../../src/service/history/HistoryManager"
 import { FileHash } from "../../src/service/Hashing"
 import { DeployData } from "./TestUtils"
 import { Timestamp, File } from "../../src/service/Service"
+import { AuditInfo } from "../../src/service/audit/Audit"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -85,6 +86,10 @@ export class TestServer extends Server {
         const response = await fetch(`http://${this.getAddress()}/contents/${fileHash}`)
         expect(response.ok).toBe(true)
         return response.buffer()
+    }
+
+    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
+        return this.makeRequest(`http://${this.getAddress()}/audit/${type}/${id}`)
     }
 
     private async makeRequest(url: string): Promise<any> {

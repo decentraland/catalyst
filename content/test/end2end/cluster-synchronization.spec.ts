@@ -10,6 +10,7 @@ import { buildDeployData, deleteFolderRecursive, buildDeployDataAfterEntity, sle
 import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../src/Environment"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 import { MockedAccessChecker } from "../service/MockedAccessChecker"
+import { AuditInfo } from "../../src/service/audit/Audit"
 
 describe("End 2 end synchronization tests", function() {
 
@@ -125,15 +126,29 @@ describe("End 2 end synchronization tests", function() {
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
+        // Make assertions on Server 1
         await assertEntitiesAreActiveOnServer(server1, entity3)
-        await assertEntitiesAreActiveOnServer(server2, entity3)
-        await assertEntitiesAreActiveOnServer(server3, entity3)
         await assertEntitiesAreDeployedButNotActive(server1, entity1, entity2)
-        await assertEntitiesAreDeployedButNotActive(server2, entity1, entity2)
-        await assertEntitiesAreDeployedButNotActive(server3, entity1, entity2)
         await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2, deploymentEvent3)
+        await assertEntityIsOverwrittenBy(server1, entity1, entity2)
+        await assertEntityIsOverwrittenBy(server1, entity2, entity3)
+        await assertEntityIsNotOverwritten(server1, entity3)
+
+        // Make assertions on Server 2
+        await assertEntitiesAreActiveOnServer(server2, entity3)
+        await assertEntitiesAreDeployedButNotActive(server2, entity1, entity2)
         await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2, deploymentEvent3)
+        await assertEntityIsOverwrittenBy(server2, entity1, entity2)
+        await assertEntityIsOverwrittenBy(server2, entity2, entity3)
+        await assertEntityIsNotOverwritten(server2, entity3)
+
+        // Make assertions on Server 3
+        await assertEntitiesAreActiveOnServer(server3, entity3)
+        await assertEntitiesAreDeployedButNotActive(server3, entity1, entity2)
         await assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2, deploymentEvent3)
+        await assertEntityIsOverwrittenBy(server3, entity1, entity2)
+        await assertEntityIsOverwrittenBy(server3, entity2, entity3)
+        await assertEntityIsNotOverwritten(server3, entity3)
     })
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
@@ -195,6 +210,16 @@ describe("End 2 end synchronization tests", function() {
         const content = await server.downloadContent(entity.id)
         const downloadedContentHash = await Hashing.calculateBufferHash(content)
         expect(downloadedContentHash).toEqual(entityId)
+    }
+
+    async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
+        const auditInfo: AuditInfo = await server.getAuditInfo(ENTITY_TYPE, entity.id)
+        expect(auditInfo.overwrittenBy).toEqual(overwrittenBy.id)
+    }
+
+    async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
+        const auditInfo: AuditInfo = await server.getAuditInfo(ENTITY_TYPE, entity.id)
+        expect(auditInfo.overwrittenBy).toBeUndefined()
     }
 
 })

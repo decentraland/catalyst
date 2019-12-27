@@ -31,7 +31,7 @@ export class HistoryManagerImpl implements HistoryManager {
     }
 
     async setTimeAsImmutable(immutableTime: number): Promise<void> {
-        const index = this.tempHistory.findIndex(savedEvent => savedEvent.timestamp <= immutableTime)
+        const index = this.tempHistory.findIndex(savedEvent => savedEvent.timestamp < immutableTime)
         if (index >= 0) {
             const nowImmutable: DeploymentHistory = this.tempHistory.splice(index, this.tempHistory.length - index)
                 .sort((a, b) => a.timestamp - b.timestamp) // Sorting from oldest to newest
@@ -64,7 +64,7 @@ export class HistoryManagerImpl implements HistoryManager {
     }
 
     private addEventToTempHistory(newEvent: DeploymentEvent): void {
-        const index = this.tempHistory.findIndex(savedEvent => savedEvent.timestamp < newEvent.timestamp)
+        const index = this.tempHistory.findIndex(savedEvent => savedEvent.timestamp < newEvent.timestamp || (savedEvent.timestamp == newEvent.timestamp && savedEvent.entityId < newEvent.entityId))
         if (index >= 0) {
             this.tempHistory.splice(index, 0, newEvent)
         } else {

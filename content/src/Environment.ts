@@ -16,6 +16,7 @@ import { DAOClient } from "./service/synchronization/clients/DAOClient";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { AccessChecker } from "./service/AccessChecker";
 import { AccessCheckerImpl } from "./service/AccessCheckerImpl";
+import { AuditFactory } from "./service/audit/AuditFactory";
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -63,6 +64,7 @@ export const enum Bean {
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
     ACCESS_CHECKER,
+    AUDIT
 }
 
 export const enum EnvironmentConfig {
@@ -150,6 +152,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.NAME_KEEPER                 , () => nameKeeper)
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
+        this.registerBeanIfNotAlreadySet(env, Bean.AUDIT                       , () => AuditFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => new AccessCheckerImpl())
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))

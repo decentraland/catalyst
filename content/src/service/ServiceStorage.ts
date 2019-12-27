@@ -1,28 +1,13 @@
 import { EntityId, Entity } from "./Entity"
 import { ContentStorage } from "../storage/ContentStorage"
 import { EntityFactory } from "./EntityFactory"
-import { AuditInfo } from "./Service"
 import { FileHash } from "./Hashing"
 
 export class ServiceStorage {
 
-    private static PROOF_CATEGORY = "proofs"
     private static CONTENT_CATEGORY = "contents"
 
     constructor(private storage: ContentStorage) { }
-
-    storeAuditInfo(entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
-       return this.storage.store(ServiceStorage.PROOF_CATEGORY, entityId, Buffer.from(JSON.stringify(auditInfo)))
-    }
-
-    getAuditInfo(id: EntityId): Promise<AuditInfo | undefined> {
-        try {
-            return this.storage.getContent(ServiceStorage.PROOF_CATEGORY, id)
-                .then(buffer => JSON.parse(buffer.toString()))
-        } catch (error) {
-            return Promise.resolve(undefined)
-        }
-    }
 
     storeContent(fileHash: FileHash, content: Buffer): Promise<void> {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
