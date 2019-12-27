@@ -44,11 +44,11 @@ describe("HistoryManager", () => {
         const tempSpy = spyOn(storage, "setTempHistory")
         const immutableSpy = spyOn(storage, "appendToImmutableHistory").and.callThrough()
 
-        await manager.setTimeAsImmutable(timestamp1)
+        await manager.setTimeAsImmutable(timestamp1 + 1)
         expect(tempSpy).toHaveBeenCalledWith([event3, event2])
         expect(immutableSpy).toHaveBeenCalledWith([event1])
 
-        await manager.setTimeAsImmutable(timestamp2)
+        await manager.setTimeAsImmutable(timestamp2 + 1)
         expect(tempSpy).toHaveBeenCalledWith([event3])
         expect(immutableSpy).toHaveBeenCalledWith([event2])
 

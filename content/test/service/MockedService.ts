@@ -1,6 +1,7 @@
 import { MetaverseContentService, EthAddress, Signature, Timestamp, File, ServerStatus, ClusterAwareService } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
+import { AuditInfo } from "../../src/service/audit/Audit"
 
 export class MockedService implements MetaverseContentService, ClusterAwareService {
 
@@ -40,7 +41,7 @@ export class MockedService implements MetaverseContentService, ClusterAwareServi
     getActivePointers(type: EntityType): Promise<string[]> {
         throw new Error("Method not implemented.")
     }
-    getAuditInfo(type: EntityType, id: string): Promise<import("../../src/service/Service").AuditInfo> {
+    getAuditInfo(type: EntityType, id: string): Promise<AuditInfo> {
         throw new Error("Method not implemented.")
     }
     isContentAvailable(fileHashes: string[]): Promise<Map<string, Boolean>> {

@@ -9,6 +9,7 @@ export class ServiceFactory {
         return new ServiceImpl(
             serviceStorage,
             env.getBean(Bean.HISTORY_MANAGER),
+            env.getBean(Bean.AUDIT),
             env.getBean(Bean.POINTER_MANAGER),
             env.getBean(Bean.NAME_KEEPER),
             env.getBean(Bean.ANALYTICS),

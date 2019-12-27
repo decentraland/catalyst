@@ -1,6 +1,7 @@
 import { FileHash } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { ServerName } from "./naming/NameKeeper";
+import { AuditInfo } from "./audit/Audit";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -40,12 +41,6 @@ export interface ClusterAwareService {
     setImmutableTime(immutableTime: Timestamp): Promise<void>;
 
     getLastKnownTimeForServer(serverName: ServerName): Promise<Timestamp | undefined>;
-}
-
-export type AuditInfo = {
-    deployedTimestamp: Timestamp
-    ethAddress: EthAddress
-    signature: Signature
 }
 
 export type File = {
