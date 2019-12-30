@@ -29,7 +29,7 @@
       }
     ],
     "baseUrl": ".",
-    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"]
+    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
 }
