@@ -1,17 +1,19 @@
 import fetch from "node-fetch";
 import ms from "ms";
-import { Timestamp, File, AuditInfo } from "../../Service";
+import { Timestamp, File } from "../../Service";
 import { EntityId, EntityType, Entity } from "../../Entity";
 import { DeploymentHistory } from "../../history/HistoryManager";
 import { FileHash } from "../../Hashing";
 import { ServerName } from "../../naming/NameKeeper";
 import { EntityFactory } from "../../EntityFactory";
+import { AuditInfo } from "../../audit/Audit";
 
 export const UNREACHABLE: string = "UNREACHABLE"
 
 export interface ContentServerClient {
 
     getNewDeployments(): Promise<DeploymentHistory>;
+    getOtherServersDeployments(otherServersName: ServerName, lastKnownTimestamp: Timestamp): Promise<DeploymentHistory>;
     getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity>;
     getContentFile(fileHash: FileHash): Promise<File>;
     getLastKnownTimestamp(): Timestamp;
@@ -45,7 +47,7 @@ class ReachableContentServerClient implements ContentServerClient {
 
     async getNewDeployments(): Promise<DeploymentHistory> {
         // Get new deployments
-        const newDeployments: DeploymentHistory = await this.getDeploymentHistory();
+        const newDeployments: DeploymentHistory = await this.findDeployments(this.name, this.lastKnownTimestamp)
         if (newDeployments.length == 0) {
             // If there are no new deployments, then update the timestamp with a new call
             const newTimestamp: Timestamp = await this.getCurrentTimestamp() - ReachableContentServerClient.ONE_MINUTE; // Substract 1 min, as to avoid potential race conditions with a new deployment
@@ -58,6 +60,10 @@ class ReachableContentServerClient implements ContentServerClient {
             this.lastKnownTimestamp = Math.max(this.lastKnownTimestamp, ...newDeployments.map(deployment => deployment.timestamp + 1))
         }
         return newDeployments;
+    }
+
+    getOtherServersDeployments(otherServersName: ServerName, lastKnownTimestamp: Timestamp): Promise<DeploymentHistory> {
+        return this.findDeployments(otherServersName, lastKnownTimestamp);
     }
 
     async getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
@@ -89,9 +95,9 @@ class ReachableContentServerClient implements ContentServerClient {
         return this.name
     }
 
-    private async getDeploymentHistory(): Promise<DeploymentHistory> {
-        console.log(`Checking history of node '${this.name}' with timestamp '${this.lastKnownTimestamp}'`)
-        const response = await fetch(`http://${this.address}/history?from=${this.lastKnownTimestamp}&serverName=${this.name}`);
+    private async findDeployments(serverName: ServerName, from: Timestamp): Promise<DeploymentHistory> {
+        console.log(`Checking history of node '${serverName}' with timestamp '${from}'`)
+        const response = await fetch(`http://${this.address}/history?from=${from}&serverName=${serverName}`);
         return await response.json();
     }
 
@@ -104,12 +110,16 @@ class ReachableContentServerClient implements ContentServerClient {
 
 class UnreachableContentServerClient implements ContentServerClient {
 
-    getAuditInfo(entityId: string): Promise<AuditInfo> {
-        throw new Error("Content server is unreachable.");
+    getOtherServersDeployments(otherServersName: string, lastKnownTimestamp: number): Promise<DeploymentHistory> {
+        return Promise.resolve([])
     }
 
     getNewDeployments(): Promise<DeploymentHistory> {
         return Promise.resolve([])
+    }
+
+    getAuditInfo(entityId: string): Promise<AuditInfo> {
+        throw new Error("Content server is unreachable.");
     }
 
     getEntity(entityType: EntityType, entityId: string): Promise<Entity> {

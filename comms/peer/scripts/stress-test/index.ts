@@ -7,13 +7,16 @@ function sleep(time: number) {
   });
 }
 
-const sessionId = util.randomToken();
+const urlParams = new URLSearchParams(location.search);
+
+const numberOfPeers = parseInt(urlParams.get("numberOfPeers") ?? '5');
+const messageCount = parseInt(urlParams.get("messagesCount") ?? '200');
+const timeBetweenMessages = parseInt(urlParams.get("timeBetweenMessages") ?? '50');
+const lighthouseUrl = urlParams.get("lighthouseUrl") ?? "http://localhost:9000";
+
+const sessionId = urlParams.get("sessionId") ?? util.randomToken();
 
 (async () => {
-  const numberOfPeers = 5;
-  const messageCount = 200;
-  const timeBetweenMessages = 50;
-
   const globalStats = {
     messagesSent: 0,
     messagesReceived: 0,
@@ -52,7 +55,7 @@ const sessionId = util.randomToken();
     };
 
     const peer = new Peer(
-      "http://localhost:9000",
+      lighthouseUrl,
       `peer_${sessionId}_${i}`,
       (sender, room, payload) => {
         peerContainer.countReceived();
@@ -68,6 +71,8 @@ const sessionId = util.randomToken();
 
     peers.push(peerContainer);
   }
+
+  await peers[0].peer?.joinRoom("room");
 
   await Promise.all(peers.map(pc => pc.peer!.joinRoom("room")));
 
@@ -89,6 +94,10 @@ const sessionId = util.randomToken();
       } else {
         console.log("Peer finished: " + peerContainer.peer!.nickname);
         finishedPeers.push(peerContainer);
+
+        if (finishedPeers.length === peers.length) {
+          console.log("All peers finished");
+        }
       }
     };
 
@@ -137,4 +146,6 @@ const sessionId = util.randomToken();
   }
 
   updateStats();
-})();
+})().catch(e => {
+  console.error("Error while running tests", e);
+});

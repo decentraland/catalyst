@@ -14,16 +14,13 @@ import { requireParameters, validatePeerToken } from "./handlers";
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
 const port = parseInt(process.env.PORT ?? "9000");
+const secure = parseBoolean(process.env.SECURE ?? "false");
 
 function parseBoolean(string: string) {
   return string.toLowerCase() === "true";
 }
 
 let peer: Peer;
-
-// process.on("unhandledRejection", error => {
-//   console.log("unhandledRejection", error);
-// });
 
 const app = express();
 
@@ -41,7 +38,14 @@ if (accessLogs) {
 }
 
 app.get("/hello", (req, res, next) => {
-  res.send("Hello world!!!");
+  const status = {
+    currenTime: Date.now(),
+    env: {
+      relay,
+      secure
+    }
+  };
+  res.send(status);
 });
 
 // GET /rooms[?userId=] -> returns list of rooms. If a userId is specified, it returns the rooms which that user has joined.
@@ -100,7 +104,7 @@ const server = app.listen(port, async () => {
   if (relay) {
     const peerToken = await getPeerToken();
     peer = new Peer(
-      `http://localhost:${port}`,
+      `${secure ? "https" : "http"}://localhost:${port}`,
       "lighthouse",
       (sender, room, payload) => {
         const message = JSON.stringify(payload, null, 3);
@@ -110,7 +114,23 @@ const server = app.listen(port, async () => {
         wrtc,
         socketBuilder: url => new WebSocket(url),
         relay: RelayMode.All,
-        token: peerToken
+        token: peerToken,
+        connectionConfig: {
+          iceServers: [
+            {
+              urls: "stun:stun.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun2.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun3.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun4.l.google.com:19302"
+            }
+          ]
+        }
       }
     );
   }

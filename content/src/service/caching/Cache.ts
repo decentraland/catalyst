@@ -4,30 +4,21 @@ export class Cache<Key, Value> {
 
     private internalCache: CachingMap
 
-    private constructor(calculation: (key: Key) => Promise<Value>, size: number, ttl: number | undefined) {
+    private constructor(calculation: (key: Key) => Promise<Value>, size: number) {
         this.internalCache = new CachingMap(size)
-
-        if (ttl) {
-            this.internalCache.materialize = (key: Key) => {
-                let valuePromise = calculation(key)
-                valuePromise.then(_ => this.internalCache.set(key, valuePromise, { ttl }))
-                return valuePromise
-            }
-        } else {
-            this.internalCache.materialize = (key: Key) => calculation(key)
-        }
+        this.internalCache.materialize = (key: Key) => calculation(key)
     }
 
     get(key: Key): Promise<Value> {
         return this.internalCache.get(key)
     }
 
-    delete(key: Key) {
+    invalidate(key: Key) {
         this.internalCache.delete(key)
     }
 
-    static withCalculation<K, V>(calculation: (key: K) => Promise<V>, size: number, ttl?: number): Cache<K, V> {
-        return new Cache(calculation, size, ttl)
+    static withCalculation<K, V>(calculation: (key: K) => Promise<V>, size: number): Cache<K, V> {
+        return new Cache(calculation, size)
     }
 
 }

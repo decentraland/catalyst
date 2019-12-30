@@ -1,8 +1,8 @@
 import { random } from "faker"
-import { EntityType, Entity, Pointer } from "../../../src/service/Entity";
+import { EntityType, Entity, Pointer, EntityId } from "../../../src/service/Entity";
 import { MockedStorage } from "../../storage/MockedStorage";
 import { PointerStorage } from "../../../src/service/pointers/PointerStorage";
-import { PointerManager, CommitResult } from "../../../src/service/pointers/PointerManager";
+import { PointerManager } from "../../../src/service/pointers/PointerManager";
 
 describe("PointerManager", () => {
 
@@ -21,79 +21,76 @@ describe("PointerManager", () => {
 
     beforeEach(async () => {
         storage = new PointerStorage(new MockedStorage())
-        manager = new PointerManager(storage)
+        manager = new PointerManager(storage, {setEntityAsOverwritten: () => Promise.resolve()})
     })
 
-    it(`When a pointer manager is queried, the cache uses the storage correctly`, async () => {
-        storage = new PointerStorage(new MockedStorage())
-        const manager1 = new PointerManager(storage)
+    // it(`When a pointer manager is queried, the cache uses the storage correctly`, async () => {
+    //     storage = new PointerStorage(new MockedStorage())
+    //     const manager1 = new PointerManager(storage)
 
-        await manager1.tryToCommitPointers(entity1)
+    //     await manager1.tryToCommitPointers(entity1)
 
-        const manager2 = new PointerManager(storage)
+    //     const manager2 = new PointerManager(storage)
 
-        expect(await manager2.getEntityInPointer(type, P1)).toEqual(entity1.id)
-        expect(await manager2.getEntityInPointer(type, P2)).toEqual(entity1.id)
-    });
+    //     expect(await manager2.getEntityInPointer(type, P1)).toEqual(entity1.id)
+    //     expect(await manager2.getEntityInPointer(type, P2)).toEqual(entity1.id)
+    // });
 
     it(`When an entity is commited and there are no pointers assigned, it can be commited, `, async () => {
-        await assertCommitResult(entity1, true)
+        await commit(entity1)
 
         await assertEntityIsReferencedByPointers(entity1, P1, P2)
     });
 
     it(`When deployment events are e1,e2 then the results are the expected`, async () => {
-        await manager.tryToCommitPointers(entity1)
-
-        await assertCommitResult(entity2, true, entity1)
+        await commit(entity1)
+        await commit(entity2)
 
         await assertPointersAreInactive(P1)
         await assertEntityIsReferencedByPointers(entity2, P2, P3)
     });
 
     it(`When deployment events are e1,e3,e2 then the results are the expected`, async () => {
-        await manager.tryToCommitPointers(entity1);
-
-        await assertCommitResult(entity3, true)
-        await assertCommitResult(entity2, false, entity1)
+        await commit(entity1);
+        await commit(entity3)
+        await commit(entity2)
 
         await assertPointersAreInactive(P1, P2)
         await assertEntityIsReferencedByPointers(entity3, P3, P4)
     });
 
     it(`When deployment events are e2,e3,e1 then the results are the expected`, async () => {
-        await manager.tryToCommitPointers(entity2);
-
-        await assertCommitResult(entity3, true, entity2)
-        await assertCommitResult(entity1, false)
+        await commit(entity2);
+        await commit(entity3);
+        await commit(entity1);
 
         await  assertPointersAreInactive(P1, P2)
         await  assertEntityIsReferencedByPointers(entity3, P3, P4)
     });
 
     it(`When deployment events are e3,e2,e1 then the results are the expected`, async () => {
-        await manager.tryToCommitPointers(entity3)
-
-        await assertCommitResult(entity2, false)
-        await assertCommitResult(entity1, false)
+        await commit(entity3);
+        await commit(entity2);
+        await commit(entity1);
 
         await assertPointersAreInactive(P1, P2)
         await assertEntityIsReferencedByPointers(entity3, P3, P4)
     });
 
     it(`When deployment events are e3,e1,e2 then the results are the expected`, async () => {
-        await manager.tryToCommitPointers(entity3)
-
-        await assertCommitResult(entity1, true)
-        await assertCommitResult(entity2, false, entity1)
+        await commit(entity3);
+        await commit(entity1);
+        await commit(entity2);
 
         await assertPointersAreInactive(P1, P2)
         await assertEntityIsReferencedByPointers(entity3, P3, P4)
     });
 
     async function assertPointersAreInactive(...pointers: Pointer[]) {
+        const activePointers = await manager.getActivePointers(type)
         for (const pointer of pointers) {
             expect(await manager.getEntityInPointer(type, pointer)).toEqual(undefined)
+            expect(activePointers).not.toContain(pointer)
         }
     }
 
@@ -101,12 +98,6 @@ describe("PointerManager", () => {
         for (const pointer of pointers) {
             expect(await manager.getEntityInPointer(type, pointer)).toEqual(entity.id)
         }
-    }
-
-    async function assertCommitResult(entity: Entity, expectedCouldCommit: boolean, ...expectedEntitiesToDelete: Entity[]) {
-        const commitResult: CommitResult = await manager.tryToCommitPointers(entity);
-        expect(commitResult.couldCommit).toEqual(expectedCouldCommit)
-        expect(commitResult.entitiesDeleted).toEqual(expectedEntitiesToDelete.map(entity => entity.id))
     }
 
     function buildEntity(...pointers: Pointer[]): Entity {
@@ -117,4 +108,12 @@ describe("PointerManager", () => {
         return new Entity(random.alphaNumeric(10), type, pointers, entity.timestamp + 1)
     }
 
+    async function commit(entity: Entity) {
+        const fetcher = (entityId: EntityId) => {
+            return Promise.resolve([entity1, entity2, entity3].find(entity => entity.id == entityId))
+        }
+        await manager.commitEntity(entity, Math.random(), fetcher);
+    }
+
 })
+

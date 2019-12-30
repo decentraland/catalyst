@@ -149,6 +149,7 @@ export class Socket extends EventEmitter {
     }
 
     if (!this._wsOpen()) {
+      this._messagesQueue.push(data);
       return;
     }
 

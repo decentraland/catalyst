@@ -158,8 +158,8 @@ describe("Peer Integration Test", function() {
       await peer1.beConnectedTo("notAPeer", 200);
       fail("Should timeout");
     } catch (e) {
-      expect(e).toBe(
-        "Awaiting connection to peer notAPeer timed out after 200ms"
+      expect(e.message).toBe(
+        "[peer1] Awaiting connection to peer notAPeer timed out after 200ms"
       );
     }
   });
