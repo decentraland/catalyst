@@ -5,6 +5,7 @@ import { Controller } from "./controller/Controller";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
 import { initializeWearablesRoutes } from "./apis/wearables/routes";
+import { initializeContentV2Routes } from "./apis/content-v2/routes";
 
 export class Server {
    private port: number;
@@ -27,6 +28,7 @@ export class Server {
       this.registerRoute("/status"               , controller, controller.getStatus);
 
       // Backwards compatibility for older Content API
+      this.app.use("/contentv2", initializeContentV2Routes(express.Router()))
 
       // Profile API implementation
 
