@@ -13,9 +13,9 @@ export class ServiceStorage {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
     }
 
-    getContent(fileHash: FileHash): Promise<Buffer | undefined> {
+    async getContent(fileHash: FileHash): Promise<Buffer | undefined> {
         try {
-            return this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
+            return await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
         } catch (error) {
             return Promise.resolve(undefined)
         }
