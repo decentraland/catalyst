@@ -1,23 +1,16 @@
 {
   "bazelOpts": {
     "es5Mode": true,
-    "devmodeTargetOverride": "commonjs"
+    "devmodeTargetOverride": "es2017"
   },
   "compilerOptions": {
-    "target": "es2015",
-    "module": "commonjs",
-    "strict": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-
-
-    // "module": "esnext",
-    // "target": "es2017",
+    "module": "esnext",
+    "target": "es2017",
     "diagnostics": false,
     "inlineSourceMap": false,
     "inlineSources": false,
     "sourceMap": true,
-    // "moduleResolution": "node",
+    "moduleResolution": "node",
     "stripInternal": true,
     "strictNullChecks": true,
     "pretty": true,

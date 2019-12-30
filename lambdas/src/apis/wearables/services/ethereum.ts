@@ -1,5 +1,5 @@
 import { env } from 'decentraland-commons'
-import Web3 = require('web3')
+import web3 from 'web3'
 import { Token } from './types'
 const ERC721 = require('../contracts/ERC721Full.json')
 
@@ -21,7 +21,7 @@ type ERC721Contract = {
 }
 
 const web3Accessor = {
-  web3: new Web3(INFURA_URL),
+  web3: new web3(INFURA_URL),
   NFTContracts: {} as Record<string, any>
 }
 
@@ -90,7 +90,7 @@ function decorateAccess(fn: Function, retries = 2) {
         return fn(...args)
       } catch (e) {
         web3Accessor.NFTContracts = {}
-        web3Accessor.web3 = new Web3(INFURA_URL)
+        web3Accessor.web3 = new web3(INFURA_URL)
 
         if (retries === 0) {
           throw e

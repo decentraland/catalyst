@@ -1,4 +1,5 @@
-import rarities from '../data/rarities.json'
+const rarities = require('../data/rarities.json')
+
 import { RarityId } from './types'
 
 /**

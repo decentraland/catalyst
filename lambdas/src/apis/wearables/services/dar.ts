@@ -1,4 +1,4 @@
-import darList from '../data/dar.json'
+const darList = require('../data/dar.json')
 import { getTokensForAddress, getTokenURI } from './ethereum'
 import { Dar, Collection } from './types'
 import {
