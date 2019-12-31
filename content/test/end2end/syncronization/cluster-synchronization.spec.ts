@@ -2,18 +2,16 @@ import ms from "ms"
 import { Timestamp } from "../../../src/service/Service"
 import { DAOClient } from "../../../src/service/synchronization/clients/DAOClient"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteFolderRecursive, buildDeployDataAfterEntity, sleep } from "../TestUtils"
-import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../../src/Environment"
-import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
-import { MockedAccessChecker } from "../../service/access/MockedAccessChecker"
+import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, sleep, buildBaseEnv } from "../TestUtils"
+import { Environment } from "../../../src/Environment"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
-import { mockDAOWith } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "./clients/MockedDAOClient"
 
 describe("End 2 end synchronization tests", function() {
 
-    const DAO = mockDAOWith('localhost:6060', 'localhost:7070', 'localhost:8080')
+    const DAO = MockedDAOClient.with('localhost:6060', 'localhost:7070', 'localhost:8080')
     let jasmine_default_timeout
-    const SYNC_INTERVAL: number = ms("2s")
+    const SYNC_INTERVAL: number = ms("1s")
     let server1: TestServer, server2: TestServer, server3: TestServer
 
     beforeAll(() => {
@@ -35,9 +33,7 @@ describe("End 2 end synchronization tests", function() {
         server1.stop()
         server2.stop()
         server3.stop()
-        deleteFolderRecursive(server1.storageFolder)
-        deleteFolderRecursive(server2.storageFolder)
-        deleteFolderRecursive(server3.storageFolder)
+        deleteServerStorage(server1, server2, server3)
     })
 
     it(`When a server gets some content uploaded, then the other servers download it`, async () => {
@@ -144,22 +140,8 @@ describe("End 2 end synchronization tests", function() {
     })
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
-        const env: Environment = await new EnvironmentBuilder()
-            .withConfig(EnvironmentConfig.NAME_PREFIX, namePrefix)
-            .withConfig(EnvironmentConfig.SERVER_PORT, port)
-            .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, "storage_" + namePrefix)
-            .withConfig(EnvironmentConfig.LOG_REQUESTS, false)
-            .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
-            .withBean(Bean.DAO_CLIENT, daoClient)
-            .withAnalytics(new MockedContentAnalytics())
-            .withAccessChecker(new MockedAccessChecker())
-            .build()
+        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient).build()
         return new TestServer(env)
     }
 
 })
-
-
-
-
-

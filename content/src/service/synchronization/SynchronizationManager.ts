@@ -43,7 +43,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     stop(): Promise<void> {
         clearInterval(this.syncWithNodesInterval)
-        this.daoRemovalEventSubscription.dispose()
+        this.daoRemovalEventSubscription?.dispose()
         this.cluster.disconnect()
         return Promise.resolve()
     }

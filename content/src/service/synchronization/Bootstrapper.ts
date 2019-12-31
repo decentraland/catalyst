@@ -35,10 +35,10 @@ export class Bootstrapper {
             const auditInfo: AuditInfo = await server.getAuditInfo(event.entityType, event.entityId);
             if (auditInfo.overwrittenBy) {
                 // Since it was already overwritten, we will only download the entity file
-                return deployer.deployOverwrittenEvent(event, auditInfo, server)
+                await deployer.deployOverwrittenEvent(event, auditInfo, server)
             } else {
                 // Process the whole deployment
-                return deployer.deployEvent(event, server)
+                await deployer.deployEvent(event, server)
             }
         }
     }

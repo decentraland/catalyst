@@ -5,7 +5,7 @@ import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/Hi
 import { Timestamp, File } from "../../src/service/Service"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
-import { buildDeployData, deleteFolderRecursive, DeployData } from "./TestUtils"
+import { buildDeployData, deleteServerStorage, DeployData } from "./TestUtils"
 import { TestServer } from "./TestServer"
 import { MockedAccessChecker } from "../service/access/MockedAccessChecker"
 
@@ -25,7 +25,7 @@ describe("End 2 end deploy test", () => {
 
     afterAll(() => {
         server.stop()
-        deleteFolderRecursive(server.storageFolder)
+        deleteServerStorage(server)
     })
 
 

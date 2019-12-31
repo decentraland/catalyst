@@ -98,7 +98,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
         // Hash all files, and validate them
         const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
-        const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(hashes.keys()));
+        const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
 
         if (validationType == Validations.ALL || validationType == Validations.NO_FRESHNESS) {
             validation.validateContent(entity, hashes, alreadyStoredHashes)

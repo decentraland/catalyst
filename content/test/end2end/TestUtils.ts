@@ -7,6 +7,11 @@ import { Pointer, EntityType } from "../../src/service/Entity"
 import { ControllerEntity } from "../../src/controller/Controller"
 import { FileHash, Hashing } from "../../src/service/Hashing"
 import { ENTITY_FILE_NAME, File } from "../../src/service/Service"
+import { DAOClient } from "../../src/service/synchronization/clients/DAOClient"
+import { EnvironmentConfig, Bean, EnvironmentBuilder } from "../../src/Environment"
+import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
+import { MockedAccessChecker } from "../service/access/MockedAccessChecker"
+import { TestServer } from "./TestServer"
 
 export function buildDeployData(pointers: Pointer[], metadata: any, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataAfterEntity(pointers, metadata, undefined, ...contentPaths)
@@ -40,18 +45,36 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
     return [deployData, entity]
 }
 
-export function deleteFolderRecursive(pathToDelete: string) {
+export function deleteServerStorage(...servers: TestServer[]) {
+    servers.map(server => server.storageFolder)
+        .forEach(storageFolder => deleteFolderRecursive(storageFolder))
+}
+
+function deleteFolderRecursive(pathToDelete: string) {
     if (fs.existsSync(pathToDelete)) {
         fs.readdirSync(pathToDelete).forEach((file, index) => {
             const curPath = path.join(pathToDelete, file);
             if (fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath);
+                deleteFolderRecursive(curPath);
             } else { // delete file
-            fs.unlinkSync(curPath);
+                fs.unlinkSync(curPath);
             }
         });
         fs.rmdirSync(pathToDelete);
     }
+}
+
+export function buildBaseEnv(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient): EnvironmentBuilder {
+    return new EnvironmentBuilder()
+        .withConfig(EnvironmentConfig.NAME_PREFIX, namePrefix)
+        .withConfig(EnvironmentConfig.SERVER_PORT, port)
+        .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, "storage_" + namePrefix)
+        .withConfig(EnvironmentConfig.LOG_REQUESTS, false)
+        .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
+        .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, syncInterval)
+        .withBean(Bean.DAO_CLIENT, daoClient)
+        .withAnalytics(new MockedContentAnalytics())
+        .withAccessChecker(new MockedAccessChecker())
 }
 
 export function sleep(ms: number): Promise<void> {

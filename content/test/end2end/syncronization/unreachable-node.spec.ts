@@ -2,12 +2,10 @@ import ms from "ms"
 import { Timestamp } from "../../../src/service/Service"
 import { DAOClient } from "../../../src/service/synchronization/clients/DAOClient"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteFolderRecursive, sleep } from "../TestUtils"
-import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../../src/Environment"
-import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
-import { MockedAccessChecker } from "../../service/access/MockedAccessChecker"
+import { buildDeployData, sleep, buildBaseEnv, deleteServerStorage } from "../TestUtils"
+import { Environment, EnvironmentConfig } from "../../../src/Environment"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
-import { mockDAOWith } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "./clients/MockedDAOClient"
 
 /**
  * We will be testing how servers handle an unreachable node
@@ -18,7 +16,7 @@ describe("End 2 end - Unreachable node", function() {
     const SMALL_SYNC_INTERVAL: number = ms("1s")
     const LONG_SYNC_INTERVAL: number = ms('5s')
     let server1: TestServer, server2: TestServer, server3: TestServer
-    const DAO = mockDAOWith('localhost:6060', 'localhost:7070', 'localhost:8080')
+    const DAO = MockedDAOClient.with('localhost:6060', 'localhost:7070', 'localhost:8080')
 
     beforeAll(() => {
         jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
@@ -39,9 +37,7 @@ describe("End 2 end - Unreachable node", function() {
         server1.stop()
         server2.stop()
         server3.stop()
-        deleteFolderRecursive(server1.storageFolder)
-        deleteFolderRecursive(server2.storageFolder)
-        deleteFolderRecursive(server3.storageFolder)
+        deleteServerStorage(server1, server2, server3)
     })
 
     it('When a node is unreachable, remaining nodes ask each others for the unreachable node\'s updates', async () => {
@@ -73,23 +69,10 @@ describe("End 2 end - Unreachable node", function() {
     })
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoInterval: number, daoClient: DAOClient) {
-        const env: Environment = await new EnvironmentBuilder()
-            .withConfig(EnvironmentConfig.NAME_PREFIX, namePrefix)
-            .withConfig(EnvironmentConfig.SERVER_PORT, port)
-            .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, "storage_" + namePrefix)
-            .withConfig(EnvironmentConfig.LOG_REQUESTS, false)
-            .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
+        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
             .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, daoInterval)
-            .withBean(Bean.DAO_CLIENT, daoClient)
-            .withAnalytics(new MockedContentAnalytics())
-            .withAccessChecker(new MockedAccessChecker())
             .build()
         return new TestServer(env)
     }
 
 })
-
-
-
-
-

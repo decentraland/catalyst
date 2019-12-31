@@ -22,6 +22,7 @@ export class ServiceStorage {
     }
 
     async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
+        // TODO: Consider listing everything in dir
         const contentsAvailableActions: Promise<[FileHash, Boolean]>[] = fileHashes.map((fileHash: FileHash) =>
             this.storage.exists(ServiceStorage.CONTENT_CATEGORY, fileHash).then(exists => [fileHash, exists]))
 

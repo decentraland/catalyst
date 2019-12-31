@@ -3,8 +3,9 @@ import { ControllerEntity } from "../../src/controller/Controller"
 import { Pointer, EntityId, EntityType } from "../../src/service/Entity"
 import { Timestamp } from "../../src/service/Service"
 import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
-import { Hashing } from "../../src/service/Hashing"
+import { Hashing, FileHash } from "../../src/service/Hashing"
 import { AuditInfo } from "../../src/service/audit/Audit"
+import { assertPromiseIsRejected } from "../PromiseAssertions"
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
     for (const entity of entities) {
@@ -28,7 +29,7 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
 /** Please set the expected events from older to newer */
 export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: DeploymentEvent[]) {
     const deploymentHistory: DeploymentHistory = await server.getHistory()
-    expect(deploymentHistory.length).toEqual(expectedEvents.length)
+    expect(deploymentHistory.length).toEqual(expectedEvents.length, `Expected ${server.namePrefix} to have ${expectedEvents.length} deployments in history`)
     for (let i = 0; i < expectedEvents.length; i++) {
         const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
         const actualEvent: DeploymentEvent = deploymentHistory[i]
@@ -41,9 +42,17 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
 
 export async function assertEntityIsOnServer(server: TestServer, entityType: EntityType, entityId: EntityId) {
     const entity: ControllerEntity = await server.getEntityById(entityType, entityId)
-    const content = await server.downloadContent(entity.id)
+    return assertFileIsOnServer(server, entity.id)
+}
+
+export async function assertFileIsOnServer(server: TestServer, hash: FileHash) {
+    const content = await server.downloadContent(hash)
     const downloadedContentHash = await Hashing.calculateBufferHash(content)
-    expect(downloadedContentHash).toEqual(entityId)
+    expect(downloadedContentHash).toEqual(hash)
+}
+
+export async function assertFileIsNotOnServer(server: TestServer, hash: FileHash) {
+    assertPromiseIsRejected(() => server.downloadContent(hash))
 }
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {

@@ -13,7 +13,7 @@ import { Listener, Disposable } from "./events/ClusterEvent";
 export class ContentCluster {
 
     // My own address
-    private myAddress: ServerAddress
+    private myAddress: ServerAddress | undefined
     // Interval set to sync with DAO
     private syncInterval: NodeJS.Timeout;
     // Servers that were reached at least once
@@ -145,7 +145,7 @@ export class ContentCluster {
     }
 
     /** Detect my own address */
-    private async detectMyAddress(): Promise<ServerAddress> {
+    private async detectMyAddress(): Promise<ServerAddress | undefined> {
         try {
             // Ask the DAO for all the addresses
             const allAddresses: Set<ServerAddress> = await this.dao.getAllServers()
@@ -157,11 +157,10 @@ export class ContentCluster {
             // Filter out other servers
             const serversWithMyName = serverNames.filter(({ name }) => name == this.nameKeeper.getServerName())
 
-            if (serversWithMyName.length == 1) {
-                const { address } = serversWithMyName[0]
-                return address
-            } else {
+            if (serversWithMyName.length > 1) {
                 throw new Error(`Expected to find only one server with my name '${this.nameKeeper.getServerName()}', but found ${serversWithMyName.length}`)
+            } else {
+                return serversWithMyName[0]?.address
             }
         } catch (error) {
             throw new Error(`Failed to connect with the DAO \n${error}`)
@@ -177,6 +176,5 @@ export class ContentCluster {
         return Array.from(allAddresses)
             .filter(address => address != this.myAddress)
     }
-
 
 }

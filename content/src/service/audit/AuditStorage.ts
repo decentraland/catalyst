@@ -12,9 +12,9 @@ export class AuditStorage {
        return this.storage.store(AuditStorage.PROOF_CATEGORY, entityId, Buffer.from(JSON.stringify(auditInfo)))
     }
 
-    getAuditInfo(id: EntityId): Promise<AuditInfo | undefined> {
+    async getAuditInfo(id: EntityId): Promise<AuditInfo | undefined> {
         try {
-            return this.storage.getContent(AuditStorage.PROOF_CATEGORY, id)
+            return await this.storage.getContent(AuditStorage.PROOF_CATEGORY, id)
                 .then(buffer => JSON.parse(buffer.toString()))
         } catch (error) {
             return Promise.resolve(undefined)

@@ -122,7 +122,7 @@ export class Validation {
     /** Validate that uploaded and reported hashes are corrects */
     validateContent(entity: Entity, hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>) {
         if (entity.content) {
-            let entityHashes: string[] = Array.from(entity.content.values())
+            let entityHashes: string[] = Array.from(entity.content?.values() ?? [])
 
             // Validate that all hashes in entity were uploaded, or were already stored on the service
             entityHashes
