@@ -6,25 +6,17 @@ import { AuditInfo } from "./audit/Audit";
 export const ENTITY_FILE_NAME = 'entity.json';
 
 /**
- * This version of the service can tell clients about the state of the Metaverse. It assumed that all deployments
+ * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
  * were done directly to it, and it is not aware that the service lives inside a cluster.
  */
 export interface MetaverseContentService {
-
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>;
-
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
-
     getActivePointers(type: EntityType): Promise<Pointer[]>;
-
     deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
-
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo>;
-
     isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
-
     getContent(fileHash: FileHash): Promise<Buffer>;
-
     getStatus(): Promise<ServerStatus>;
 }
 
@@ -32,15 +24,16 @@ export interface MetaverseContentService {
  * This version of the service is aware of the fact that the content service lives inside a cluster,
  * and that deployments can also happen on other servers.
  */
-export interface ClusterAwareService {
-
+export interface ClusterDeploymentsService {
     deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
-
+    deployOverwrittenEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
     isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
+}
 
+/** This version of the service can keep track of the immutable time */
+export interface TimeKeepingService {
     setImmutableTime(immutableTime: Timestamp): Promise<void>;
-
-    getLastKnownTimeForServer(serverName: ServerName): Promise<Timestamp | undefined>;
+    getLastImmutableTime(): Timestamp;
 }
 
 export type File = {

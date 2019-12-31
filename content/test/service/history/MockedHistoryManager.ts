@@ -5,6 +5,10 @@ import { Timestamp } from "../../../src/service/Service";
 
 export class MockedHistoryManager implements HistoryManager {
 
+    getLastImmutableTime(): Promise<number | undefined> {
+        return Promise.resolve(undefined)
+    }
+
     newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void> {
         return Promise.resolve()
     }

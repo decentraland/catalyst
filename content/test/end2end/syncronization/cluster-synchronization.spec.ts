@@ -7,9 +7,11 @@ import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../
 import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
 import { MockedAccessChecker } from "../../service/MockedAccessChecker"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
+import { mockDAOWith } from "./clients/MockedDAOClient"
 
 describe("End 2 end synchronization tests", function() {
 
+    const DAO = mockDAOWith('localhost:6060', 'localhost:7070', 'localhost:8080')
     let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("2s")
     let server1: TestServer, server2: TestServer, server3: TestServer
@@ -24,13 +26,9 @@ describe("End 2 end synchronization tests", function() {
     })
 
     beforeEach(async () => {
-        const client: DAOClient = {
-            registerServerInDAO: () => Promise.resolve(),
-            getAllServers: () => Promise.resolve(['localhost:6060', 'localhost:7070', 'localhost:8080']),
-        }
-        server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, client)
-        server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, client)
-        server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, client)
+        server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
+        server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, DAO)
+        server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, DAO)
 
     })
 

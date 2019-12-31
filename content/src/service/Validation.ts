@@ -120,7 +120,7 @@ export class Validation {
     }
 
     /** Validate that uploaded and reported hashes are corrects */
-    validateHashes(entity: Entity, hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>) {
+    validateContent(entity: Entity, hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>) {
         if (entity.content) {
             let entityHashes: string[] = Array.from(entity.content.values())
 

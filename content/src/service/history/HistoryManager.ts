@@ -5,6 +5,7 @@ import { ServerName } from "../naming/NameKeeper"
 export interface HistoryManager {
     newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void>;
     setTimeAsImmutable(immutableTime: Timestamp): Promise<void>;
+    getLastImmutableTime(): Promise<Timestamp | undefined>;
     getHistory(from?: Timestamp, to?: Timestamp, contentServerName?: ServerName): Promise<DeploymentHistory>;
 }
 

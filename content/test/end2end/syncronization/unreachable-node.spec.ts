@@ -7,6 +7,7 @@ import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../
 import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
 import { MockedAccessChecker } from "../../service/MockedAccessChecker"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
+import { mockDAOWith } from "./clients/MockedDAOClient"
 
 /**
  * We will be testing how servers handle an unreachable node
@@ -17,15 +18,11 @@ describe("End 2 end - Unreachable node", function() {
     const SMALL_SYNC_INTERVAL: number = ms("1s")
     const LONG_SYNC_INTERVAL: number = ms('5s')
     let server1: TestServer, server2: TestServer, server3: TestServer
-    let dao: DAOClient
+    const DAO = mockDAOWith('localhost:6060', 'localhost:7070', 'localhost:8080')
 
     beforeAll(() => {
         jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
         jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-        dao = {
-            registerServerInDAO: () => Promise.resolve(),
-            getAllServers: () => Promise.resolve(['localhost:6060', 'localhost:7070', 'localhost:8080']),
-        }
     })
 
     afterAll(() => {
@@ -33,9 +30,9 @@ describe("End 2 end - Unreachable node", function() {
     })
 
     beforeEach(async () => {
-        server1 = await buildServer("Server1_", 6060, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, dao)
-        server2 = await buildServer("Server2_", 7070, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, dao)
-        server3 = await buildServer("Server3_", 8080, LONG_SYNC_INTERVAL, LONG_SYNC_INTERVAL, dao)
+        server1 = await buildServer("Server1_", 6060, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
+        server2 = await buildServer("Server2_", 7070, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
+        server3 = await buildServer("Server3_", 8080, LONG_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
     })
 
     afterEach(function() {

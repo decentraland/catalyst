@@ -1,9 +1,9 @@
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { MetaverseContentService, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, File, ServerStatus, ClusterAwareService } from "./Service";
+import { MetaverseContentService, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
 import { EntityFactory } from "./EntityFactory";
-import { HistoryManager, DeploymentHistory } from "./history/HistoryManager";
+import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager } from "./pointers/PointerManager";
@@ -12,12 +12,11 @@ import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
 import { AuditManager, AuditInfo } from "./audit/Audit";
 
-export class ServiceImpl implements MetaverseContentService, ClusterAwareService {
+export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
     private entities: Cache<EntityId, Entity | undefined>
-    private lastImmutableTime: Timestamp = 0
 
-    constructor(
+    private constructor(
         private storage: ServiceStorage,
         private historyManager: HistoryManager,
         private auditManager: AuditManager,
@@ -25,9 +24,23 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
-        private ignoreValidationErrors: boolean = false) {
+        private lastImmutableTime: Timestamp,
+        private ignoreValidationErrors: boolean) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.getEntityById(entityId), 1000)
     }
+
+    static async build(storage: ServiceStorage,
+        historyManager: HistoryManager,
+        auditManager: AuditManager,
+        pointerManager: PointerManager,
+        nameKeeper: NameKeeper,
+        analytics: ContentAnalytics,
+        accessChecker: AccessChecker,
+        ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
+            const lastImmutableTime: Timestamp = await historyManager.getLastImmutableTime() ?? 0
+            return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
+                analytics, accessChecker, lastImmutableTime, ignoreValidationErrors)
+        }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
         return Promise.all(pointers
@@ -48,11 +61,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
     }
 
     async deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
-        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.nameKeeper.getServerName(), Date.now, true)
+        return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.nameKeeper.getServerName(), Date.now, Validations.ALL)
     }
 
     // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampGenerator: () => Timestamp, checkFreshness: Boolean): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampGenerator: () => Timestamp, validationType: Validations): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
         const entityFile: File = this.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
@@ -75,7 +88,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
         // Validate ethAddress access
         await validation.validateAccess(entity.pointers, ethAddress, entity.type)
 
-        if (checkFreshness) {
+        if (validationType == Validations.ALL) {
             // Validate that the entity is "fresh"
             await validation.validateFreshDeployment(entity, (type,pointers) => this.getEntitiesByPointers(type, pointers))
         }
@@ -86,13 +99,16 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
         // Hash all files, and validate them
         const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
         const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(hashes.keys()));
-        validation.validateHashes(entity, hashes, alreadyStoredHashes)
+
+        if (validationType == Validations.ALL || validationType == Validations.NO_FRESHNESS) {
+            validation.validateContent(entity, hashes, alreadyStoredHashes)
+        }
 
         if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
             throw new Error(validation.getErrors().join('\n'))
         }
 
-        // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITED
+        // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
 
         // Store the entity's content
         await this.storeEntityContent(hashes, alreadyStoredHashes)
@@ -130,7 +146,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
     }
 
     private storeEntityContent(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>): Promise<any> {
-        // If entity was commited, then store all it's content (that isn't already stored)
+        // If entity was committed, then store all it's content (that isn't already stored)
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
             .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
             .map(([fileHash, file]) => this.storage.storeContent(fileHash, file.content))
@@ -175,12 +191,16 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
             name: this.nameKeeper.getServerName(),
             version: "1.0",
             currentTime: Date.now(),
-            lastImmutableTime: this.lastImmutableTime
+            lastImmutableTime: this.getLastImmutableTime()
         })
     }
 
     async deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, false)
+        await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, Validations.NO_FRESHNESS)
+    }
+
+    async deployOverwrittenEntityFromCluster(files: File[], entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
+        await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, Validations.NO_FRESHNESS_NO_CONTENT)
     }
 
     setImmutableTime(immutableTime: number): Promise<void> {
@@ -188,9 +208,14 @@ export class ServiceImpl implements MetaverseContentService, ClusterAwareService
         return this.historyManager.setTimeAsImmutable(immutableTime)
     }
 
-    async getLastKnownTimeForServer(serverName: string): Promise<Timestamp | undefined> {
-        const knownServerHistory: DeploymentHistory = await this.historyManager.getHistory(undefined, undefined, serverName)
-        return knownServerHistory[0]?.timestamp
+    getLastImmutableTime(): Timestamp {
+        return this.lastImmutableTime
     }
 
+}
+
+enum Validations {
+    ALL,
+    NO_FRESHNESS,
+    NO_FRESHNESS_NO_CONTENT,
 }

@@ -41,7 +41,7 @@ describe("Service", function () {
             .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
             .build()
 
-        service = ServiceFactory.create(env)
+        service = await ServiceFactory.create(env)
     })
 
     it(`When no file called '${ENTITY_FILE_NAME}' is uploaded, then an exception is thrown`, async () => {

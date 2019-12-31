@@ -40,6 +40,12 @@ export class HistoryManagerImpl implements HistoryManager {
         }
     }
 
+    async getLastImmutableTime(): Promise<Timestamp | undefined> {
+        // TODO: Avoid loading the whole file just for the last entry
+        const immutableHistory: DeploymentHistory = await this.storage.getImmutableHistory()
+        return immutableHistory[0]?.timestamp
+    }
+
     /** Returns the history sorted from newest to oldest */
     async getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName): Promise<DeploymentHistory> {
         // TODO: We will need to find a better way to do this and avoid loading the entire file to then filter

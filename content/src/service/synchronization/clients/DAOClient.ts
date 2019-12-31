@@ -1,4 +1,4 @@
-import { ServerAddress } from "./ContentServerClient";
+import { ServerAddress } from "./contentserver/ContentServerClient";
 import fetch from "node-fetch";
 
 export class DAOClient {
@@ -16,10 +16,10 @@ export class DAOClient {
         console.log("Server registered in DAO.");
     }
 
-    async getAllServers(): Promise<ServerAddress[]> {
+    async getAllServers(): Promise<Set<ServerAddress>> {
         const response = await fetch(`http://${DAOClient.DAO_ADDRESS}/all-servers`)
         const serverAddresses: any[] = await response.json()
-        return serverAddresses.map(({ address }) => address)
+        return new Set(serverAddresses.map(({ address }) => address))
     }
 
 }

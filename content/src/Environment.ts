@@ -5,18 +5,20 @@ import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
 import { NameKeeperFactory } from "./service/naming/NameKeeperFactory";
 import { ContentStorage } from "./storage/ContentStorage";
-import { MetaverseContentService, ClusterAwareService } from "./service/Service";
+import { MetaverseContentService, TimeKeepingService, ClusterDeploymentsService } from "./service/Service";
 import { HistoryManager } from "./service/history/HistoryManager";
 import { NameKeeper } from "./service/naming/NameKeeper";
 import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFactory";
 import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
 import { SynchronizationManager } from "../../content/src/service/synchronization/SynchronizationManager";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
-import { DAOClient } from "./service/synchronization/clients/DAOClient";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { AccessChecker } from "./service/AccessChecker";
 import { AccessCheckerImpl } from "./service/AccessCheckerImpl";
 import { AuditFactory } from "./service/audit/AuditFactory";
+import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
+import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
+import { DAOClient } from "./service/synchronization/clients/DAOClient";
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -64,7 +66,9 @@ export const enum Bean {
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
     ACCESS_CHECKER,
-    AUDIT
+    AUDIT,
+    CONTENT_CLUSTER,
+    EVENT_DEPLOYER,
 }
 
 export const enum EnvironmentConfig {
@@ -89,7 +93,7 @@ export class EnvironmentBuilder {
         return this
     }
 
-    withService(service: MetaverseContentService & ClusterAwareService): EnvironmentBuilder {
+    withService(service: MetaverseContentService & TimeKeepingService & ClusterDeploymentsService): EnvironmentBuilder {
         this.baseEnv.registerBean(Bean.SERVICE, service)
         return this
     }
@@ -150,12 +154,15 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
         const nameKeeper = await NameKeeperFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.NAME_KEEPER                 , () => nameKeeper)
+        this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER             , () => ContentClusterFactory.create(env))
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
         this.registerBeanIfNotAlreadySet(env, Bean.AUDIT                       , () => AuditFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => new AccessCheckerImpl())
-        this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        const service = await ServiceFactory.create(env);
+        this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
+        this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
 

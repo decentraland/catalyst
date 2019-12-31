@@ -1,9 +1,9 @@
-import { MetaverseContentService, EthAddress, Signature, Timestamp, File, ServerStatus, ClusterAwareService } from "../../src/service/Service"
+import { MetaverseContentService, EthAddress, Signature, Timestamp, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
 import { AuditInfo } from "../../src/service/audit/Audit"
 
-export class MockedService implements MetaverseContentService, ClusterAwareService {
+export class MockedService implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
     private entities: Entity[] = [
         this.scene("1", "some-metadata-1", this.pointers("A", "B"), this.contents("A1", "1", "A2", "2")),
@@ -20,7 +20,7 @@ export class MockedService implements MetaverseContentService, ClusterAwareServi
 
     deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
         let contentsMap = new Map<string, string>()
-        files.forEach(f => contentsMap.set(f.name, "lenght: " + f.content.length))
+        files.forEach(f => contentsMap.set(f.name, "length: " + f.content.length))
         this.entities.push(this.scene(
             entityId,
             JSON.stringify({
@@ -54,13 +54,18 @@ export class MockedService implements MetaverseContentService, ClusterAwareServi
     setImmutableTime(immutableTime: number): Promise<void> {
         throw new Error("Method not implemented.")
     }
-    getLastKnownTimeForServer(serverName: string): Promise<number | undefined> {
-        throw new Error("Method not implemented.")
-    }
 
     getContent(fileHash: FileHash): Promise<Buffer> {
         const someContent: Buffer = Buffer.from([1,2,3])
         return Promise.resolve(someContent)
+    }
+
+    getLastImmutableTime(): number {
+        throw new Error("Method not implemented.")
+    }
+
+    deployOverwrittenEntityFromCluster(files: File[], entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
+        throw new Error("Method not implemented.")
     }
 
     getStatus(): Promise<ServerStatus> {
