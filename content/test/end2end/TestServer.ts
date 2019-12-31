@@ -8,7 +8,7 @@ import { ControllerEntity } from "../../src/controller/Controller"
 import { DeploymentHistory } from "../../src/service/history/HistoryManager"
 import { FileHash } from "../../src/service/Hashing"
 import { DeployData } from "./TestUtils"
-import { Timestamp, File } from "../../src/service/Service"
+import { Timestamp, File, ServerStatus } from "../../src/service/Service"
 import { AuditInfo } from "../../src/service/audit/Audit"
 
 /** A wrapper around a server that helps make tests more easily */
@@ -68,6 +68,10 @@ export class TestServer extends Server {
 
     getHistory(): Promise<DeploymentHistory> {
         return this.makeRequest(`http://${this.getAddress()}/history`)
+    }
+
+    getStatus(): Promise<ServerStatus> {
+        return this.makeRequest(`http://${this.getAddress()}/status`)
     }
 
     getEntitiesByIds(type: EntityType, ...ids: EntityId[]): Promise<ControllerEntity[]> {
