@@ -5,7 +5,7 @@ import { TestServer } from "../TestServer"
 import { buildDeployData, deleteFolderRecursive, buildDeployDataAfterEntity, sleep } from "../TestUtils"
 import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../../src/Environment"
 import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
-import { MockedAccessChecker } from "../../service/MockedAccessChecker"
+import { MockedAccessChecker } from "../../service/access/MockedAccessChecker"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 import { mockDAOWith } from "./clients/MockedDAOClient"
 
@@ -29,7 +29,6 @@ describe("End 2 end synchronization tests", function() {
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
         server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, DAO)
         server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, DAO)
-
     })
 
     afterEach(function() {
@@ -45,7 +44,7 @@ describe("End 2 end synchronization tests", function() {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 
-        // Prepara data to be deployed
+        // Prepare data to be deployed
         const [deployData, entityBeingDeployed] = await buildDeployData(["X1,Y1"], "metadata")
 
         // Make sure there are no deployments on server 1
@@ -76,7 +75,7 @@ describe("End 2 end synchronization tests", function() {
      *    quickly goes down, before the others can see the update
      * C. A new entity E3 is deployed on one of the servers that is up, with pointers P3, P4.
      *
-     * Now, until S cames up again, all other servers in the cluster should see E1 and E3. But when S starts, then
+     * Now, until S comes up again, all other servers in the cluster should see E1 and E3. But when S starts, then
      * only E3 should be present on all servers.
      *
      */

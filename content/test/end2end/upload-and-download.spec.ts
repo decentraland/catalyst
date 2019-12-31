@@ -7,7 +7,7 @@ import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalyt
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, deleteFolderRecursive, DeployData } from "./TestUtils"
 import { TestServer } from "./TestServer"
-import { MockedAccessChecker } from "../service/MockedAccessChecker"
+import { MockedAccessChecker } from "../service/access/MockedAccessChecker"
 
 describe("End 2 end deploy test", () => {
 

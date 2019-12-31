@@ -6,6 +6,7 @@ import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
+import { Disposable } from "./events/ClusterEvent";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -15,6 +16,7 @@ export interface SynchronizationManager {
 export class ClusterSynchronizationManager implements SynchronizationManager {
 
     private syncWithNodesInterval: NodeJS.Timeout;
+    private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
 
     constructor(private readonly cluster: ContentCluster,
@@ -30,7 +32,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         await this.cluster.connect(this.lastImmutableTime)
 
         // Register to listen to when a server is removed from the DAO
-        this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal))
+        this.daoRemovalEventSubscription =  this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
 
         // Onboard into cluster
         await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime)
@@ -41,6 +43,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     stop(): Promise<void> {
         clearInterval(this.syncWithNodesInterval)
+        this.daoRemovalEventSubscription.dispose()
+        this.cluster.disconnect()
         return Promise.resolve()
     }
 
@@ -53,7 +57,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
         // Find the minimum timestamp between all servers
         const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getLastKnownTimestamp())
-            .reduce((min, current) => min == -1 ? current : Math.min(min, current), -1)
+            .reduce((min, current) => min == -999 ? current : Math.min(min, current), -999)
 
         if (minTimestamp > this.lastImmutableTime) {
             // Set this new minimum timestamp as the latest immutable time

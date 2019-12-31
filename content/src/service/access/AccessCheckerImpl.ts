@@ -1,10 +1,10 @@
 import { AccessChecker } from "./AccessChecker";
-import { EthAddress } from "./Service";
+import { EthAddress } from "../Service";
 import fetch from "node-fetch"
 
 export class AccessCheckerImpl implements AccessChecker {
 
-    async hasParcellAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean> {
+    async hasParcelAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean> {
         const dclApiBaseUrl = "https://api.decentraland.org/v1"
         const accessURL = `${dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
         try {

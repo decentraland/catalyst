@@ -5,7 +5,7 @@ import { TestServer } from "../TestServer"
 import { buildDeployData, deleteFolderRecursive, sleep } from "../TestUtils"
 import { Environment, EnvironmentBuilder, EnvironmentConfig, Bean } from "../../../src/Environment"
 import { MockedContentAnalytics } from "../../service/analytics/MockedContentAnalytics"
-import { MockedAccessChecker } from "../../service/MockedAccessChecker"
+import { MockedAccessChecker } from "../../service/access/MockedAccessChecker"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
 import { mockDAOWith } from "./clients/MockedDAOClient"
 

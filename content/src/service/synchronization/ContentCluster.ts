@@ -8,7 +8,7 @@ import { getRedirectClient } from "./clients/contentserver/RedirectContentServer
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
-import { Listener } from "./events/ClusterEvent";
+import { Listener, Disposable } from "./events/ClusterEvent";
 
 export class ContentCluster {
 
@@ -64,8 +64,8 @@ export class ContentCluster {
         this.lastImmutableTime = immutableTime
     }
 
-    listenToRemoval(listener: Listener<DAORemoval>) {
-        this.removalEvent.on(listener)
+    listenToRemoval(listener: Listener<DAORemoval>): Disposable {
+        return this.removalEvent.on(listener)
     }
 
     /** Register this server in the DAO id required */

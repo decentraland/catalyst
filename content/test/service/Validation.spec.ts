@@ -1,7 +1,7 @@
 import { Validation } from "../../src/service/Validation"
 import { Entity, EntityType } from "../../src/service/Entity"
 import * as EthCrypto from "eth-crypto"
-import { MockedAccessChecker } from "./MockedAccessChecker"
+import { MockedAccessChecker } from "./access/MockedAccessChecker"
 
 describe("Validation", function () {
 

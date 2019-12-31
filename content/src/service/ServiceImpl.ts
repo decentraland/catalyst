@@ -7,7 +7,7 @@ import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager } from "./pointers/PointerManager";
-import { AccessChecker } from "./AccessChecker";
+import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
 import { AuditManager, AuditInfo } from "./audit/Audit";
