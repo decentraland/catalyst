@@ -69,22 +69,22 @@ describe("End 2 end synchronization tests", function() {
         await Promise.all([server1.start(), server2.start(), server3.start()])
 
         // Store their immutable time
-        const immutTimeServer1 = await getImmutableTime(server1)
-        const immutTimeServer2 = await getImmutableTime(server2)
-        const immutTimeServer3 = await getImmutableTime(server3)
+        const immutableTimeServer1 = await getImmutableTime(server1)
+        const immutableTimeServer2 = await getImmutableTime(server2)
+        const immutableTimeServer3 = await getImmutableTime(server3)
 
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
         // Get new immutable time
-        const newImmutTimeServer1 = await getImmutableTime(server1)
-        const newImmutTimeServer2 = await getImmutableTime(server2)
-        const newImmutTimeServer3 = await getImmutableTime(server3)
+        const newImmutableTimeServer1 = await getImmutableTime(server1)
+        const newImmutableTimeServer2 = await getImmutableTime(server2)
+        const newImmutableTimeServer3 = await getImmutableTime(server3)
 
         // Assert immutable times advanced
-        expect(newImmutTimeServer1).toBeGreaterThan(immutTimeServer1)
-        expect(newImmutTimeServer2).toBeGreaterThan(immutTimeServer2)
-        expect(newImmutTimeServer3).toBeGreaterThan(immutTimeServer3)
+        expect(newImmutableTimeServer1).toBeGreaterThan(immutableTimeServer1)
+        expect(newImmutableTimeServer2).toBeGreaterThan(immutableTimeServer2)
+        expect(newImmutableTimeServer3).toBeGreaterThan(immutableTimeServer3)
     })
 
     it(`When a server registered on the DAO never was reachable, then immutable time can't advance`, async () => {
@@ -122,19 +122,19 @@ describe("End 2 end synchronization tests", function() {
         await sleep(SYNC_INTERVAL * 2)
 
         // Store their immutable time
-        const immutTimeServer1 = await getImmutableTime(server1)
-        const immutTimeServer2 = await getImmutableTime(server2)
+        const immutableTimeServer1 = await getImmutableTime(server1)
+        const immutableTimeServer2 = await getImmutableTime(server2)
 
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
         // Get new immutable time
-        const newImmutTimeServer1 = await getImmutableTime(server1)
-        const newImmutTimeServer2 = await getImmutableTime(server2)
+        const newImmutableTimeServer1 = await getImmutableTime(server1)
+        const newImmutableTimeServer2 = await getImmutableTime(server2)
 
        // Assert immutable time didn't advanced
-       expect(newImmutTimeServer1).toBe(immutTimeServer1)
-       expect(newImmutTimeServer2).toBe(immutTimeServer2)
+       expect(newImmutableTimeServer1).toBe(immutableTimeServer1)
+       expect(newImmutableTimeServer2).toBe(immutableTimeServer2)
     })
 
      /**

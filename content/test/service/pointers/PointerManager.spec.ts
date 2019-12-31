@@ -21,22 +21,22 @@ describe("PointerManager", () => {
 
     beforeEach(async () => {
         storage = new PointerStorage(new MockedStorage())
-        manager = new PointerManager(storage, {setEntityAsOverwritten: () => Promise.resolve()})
+        manager = await PointerManager.build(storage, {setEntityAsOverwritten: () => Promise.resolve()})
     })
 
-    // it(`When a pointer manager is queried, the cache uses the storage correctly`, async () => {
-    //     storage = new PointerStorage(new MockedStorage())
-    //     const manager1 = new PointerManager(storage)
+    it(`When a pointer manager is queried, the cache uses the storage correctly`, async () => {
+        storage = new PointerStorage(new MockedStorage())
+        const manager1: PointerManager = await PointerManager.build(storage, {setEntityAsOverwritten: () => Promise.resolve()})
 
-    //     await manager1.tryToCommitPointers(entity1)
+        await commitToManager(manager1, entity1)
 
-    //     const manager2 = new PointerManager(storage)
+        const manager2: PointerManager = await PointerManager.build(storage, {setEntityAsOverwritten: () => Promise.resolve()})
 
-    //     expect(await manager2.getEntityInPointer(type, P1)).toEqual(entity1.id)
-    //     expect(await manager2.getEntityInPointer(type, P2)).toEqual(entity1.id)
-    // });
+        expect(await manager2.getEntityInPointer(type, P1)).toEqual(entity1.id)
+        expect(await manager2.getEntityInPointer(type, P2)).toEqual(entity1.id)
+    });
 
-    it(`When an entity is commited and there are no pointers assigned, it can be commited, `, async () => {
+    it(`When an entity is committed and there are no pointers assigned, it can be committed, `, async () => {
         await commit(entity1)
 
         await assertEntityIsReferencedByPointers(entity1, P1, P2)
@@ -109,10 +109,14 @@ describe("PointerManager", () => {
     }
 
     async function commit(entity: Entity) {
+        return commitToManager(manager, entity)
+    }
+
+    async function commitToManager(pointerManager: PointerManager, entity: Entity) {
         const fetcher = (entityId: EntityId) => {
             return Promise.resolve([entity1, entity2, entity3].find(entity => entity.id == entityId))
         }
-        await manager.commitEntity(entity, Math.random(), fetcher);
+        await pointerManager.commitEntity(entity, Math.random(), fetcher);
     }
 
 })

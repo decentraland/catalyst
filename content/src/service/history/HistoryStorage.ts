@@ -7,7 +7,6 @@ export class HistoryStorage {
     private static HISTORY_CATEGORY: string = "history"
     private static TEMP_HISTORY_ID: StorageFileId = "tempHistory.log"
     private static IMMUTABLE_HISTORY_ID: StorageFileId = "immutableHistory.log"
-    private existingFiles: Set<StorageFileId> = new Set() // Storing files that we know to exist, to avoid some future fs calls
 
     constructor(private storage: ContentStorage) { }
 
@@ -32,12 +31,10 @@ export class HistoryStorage {
     }
 
     private async readHistoryFile(fileId: StorageFileId): Promise<DeploymentHistory> {
-        const exists: Boolean = this.existingFiles.has(fileId) || await this.storage.exists(HistoryStorage.HISTORY_CATEGORY, fileId)
-        if (exists) {
-            this.existingFiles.add(fileId)
-            return this.storage.getContent(HistoryStorage.HISTORY_CATEGORY, fileId)
+        try {
+            return await this.storage.getContent(HistoryStorage.HISTORY_CATEGORY, fileId)
                 .then(EventSerializer.unserializeHistory)
-        } else {
+        } catch (error) {
             return Promise.resolve([])
         }
     }

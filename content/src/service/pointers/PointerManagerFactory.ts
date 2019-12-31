@@ -4,8 +4,8 @@ import { PointerStorage } from "./PointerStorage"
 
 export class PointerManagerFactory {
 
-    static create(env: Environment): PointerManager {
+    static create(env: Environment): Promise<PointerManager> {
         const storage: PointerStorage = new PointerStorage(env.getBean(Bean.STORAGE))
-        return new PointerManager(storage, env.getBean(Bean.AUDIT))
+        return PointerManager.build(storage, env.getBean(Bean.AUDIT))
     }
 }

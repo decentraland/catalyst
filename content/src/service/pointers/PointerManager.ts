@@ -12,17 +12,21 @@ import { AuditOverwrite } from "../audit/Audit";
  */
 export class PointerManager {
 
-    /** Sorted from newest to oldest */
-    private tempDeploymentInfo: EntityDeployment[] = []
     private pointers: Map<EntityType, Cache<Pointer, EntityId | undefined>> = new Map()
-    constructor(private storage: PointerStorage,
-        private auditOverwrite: AuditOverwrite) {
+    private constructor(private storage: PointerStorage,
+        private auditOverwrite: AuditOverwrite,
+        private tempDeploymentInfo: EntityDeployment[]) { // tempDeploymentInfo is sorted from newest to oldest
         // Register type on global map. This way, we don't have to check on each reference
         Object.values(EntityType)
             .forEach((entityType: EntityType) => {
                 const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(pointer, entityType), 1000)
                 this.pointers.set(entityType, cache)
             })
+    }
+
+    static async build(storage: PointerStorage, auditOverwrite: AuditOverwrite): Promise<PointerManager> {
+        const tempDeployments = await storage.readTempDeployments();
+        return new PointerManager(storage, auditOverwrite, tempDeployments)
     }
 
     /** Return all active pointers */
@@ -65,7 +69,7 @@ export class PointerManager {
         await this.getOverwrittenOrCommit(newDeployment)
 
         // Save
-        this.saveNewDeployment(newDeployment)
+        await this.saveNewDeployment(newDeployment)
     }
 
     /** Check if there is another entity that would overwrite this one. If not, then commit the new deployment */
@@ -78,7 +82,7 @@ export class PointerManager {
             // Set audit info (as overwritten)
             await this.auditOverwrite.setEntityAsOverwritten(newDeployment.entityId, entityDeployment.entityId)
         } else {
-            console.log(`Commiting ${newDeployment.entityId} to pointers ${newDeployment.pointers}`)
+            console.log(`Committing ${newDeployment.entityId} to pointers ${newDeployment.pointers}`)
             // If not found, then no entity would overwrite the entity being deployed, so we make the pointers reference the entity
             const storageActions = newDeployment.pointers.map(pointer => this.storage.setPointerReference(newDeployment.entityType, pointer, newDeployment.entityId))
             newDeployment.pointers.forEach(pointer => this.getPointerMap(newDeployment.entityType).invalidate(pointer))
@@ -187,7 +191,7 @@ export class PointerManager {
         return undefined
     }
 
-    private saveNewDeployment(newDeployment: EntityDeployment) {
+    private saveNewDeployment(newDeployment: EntityDeployment): Promise<void> {
         const index = this.tempDeploymentInfo.findIndex(deployment => !this.isDeploymentNewerThan(deployment, newDeployment))
         if (index >= 0) {
             this.tempDeploymentInfo.splice(index, 0, newDeployment)
@@ -195,7 +199,7 @@ export class PointerManager {
             this.tempDeploymentInfo.push(newDeployment)
         }
 
-        // TODO: Send to storage
+        return this.storage.storeTempDeployments(this.tempDeploymentInfo)
     }
 
     private intersects(pointers1: Pointer[], pointers2: Pointer[]): boolean {
@@ -223,7 +227,7 @@ export class PointerManager {
 
 }
 
-type EntityDeployment = {
+export type EntityDeployment = {
     entityId: EntityId,
     entityType: EntityType,
     pointers: Pointer[],

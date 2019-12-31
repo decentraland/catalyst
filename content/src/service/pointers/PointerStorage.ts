@@ -1,9 +1,11 @@
 import { ContentStorage } from "../../storage/ContentStorage";
 import { EntityType, Pointer, EntityId } from "../Entity";
+import { EntityDeployment } from "./PointerManager";
 
 export class PointerStorage {
 
     private static POINTER_CATEGORY: string = "pointers"
+    private static TEMP_DEPLOYMENTS_ID: string = "temp_deploys"
 
     constructor(private storage: ContentStorage) { }
 
@@ -26,6 +28,20 @@ export class PointerStorage {
 
     deletePointerReference(entityType: EntityType, pointer: Pointer): Promise<void> {
         return this.storage.delete(this.resolveCategory(entityType), pointer)
+    }
+
+    storeTempDeployments(tempDeployments: EntityDeployment[]): Promise<void> {
+        const string = JSON.stringify(tempDeployments)
+        return this.storage.store(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID, Buffer.from(string))
+    }
+
+    async readTempDeployments(): Promise<EntityDeployment[]> {
+        try {
+            const buffer = await this.storage.getContent(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID)
+            return JSON.parse(buffer.toString());
+        } catch (e) {
+            return Promise.resolve([])
+        }
     }
 
     private resolveCategory(type: EntityType): string {
