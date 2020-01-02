@@ -1,4 +1,4 @@
-import { EthAddress } from "../Service";
+import { EthAddress } from "../auth/Authenticator";
 
 export interface AccessChecker {
 

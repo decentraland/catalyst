@@ -1,7 +1,7 @@
 import { Entity } from "../Entity";
-import { EthAddress } from "../Service";
 import { ContentAnalytics } from "./ContentAnalytics";
 import { ContentAnalyticsWithSegment } from "./ContentAnalyticsWithSegment";
+import { EthAddress } from "../auth/Authenticator";
 
 export class DummyContentAnalytics implements ContentAnalytics {
 

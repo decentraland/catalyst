@@ -1,6 +1,7 @@
-import { Timestamp, EthAddress, Signature } from "../Service";
+import { Timestamp } from "../Service";
 import { EntityId } from "../Entity";
 import { AuditStorage } from "./AuditStorage";
+import { EthAddress, Signature } from "../auth/Authenticator";
 
 export interface AuditOverwrite {
     setEntityAsOverwritten(id: EntityId, overwrittenBy: EntityId): Promise<void>

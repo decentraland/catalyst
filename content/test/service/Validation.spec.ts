@@ -2,6 +2,7 @@ import { Validation } from "../../src/service/Validation"
 import { Entity, EntityType } from "../../src/service/Entity"
 import * as EthCrypto from "eth-crypto"
 import { MockedAccessChecker } from "./access/MockedAccessChecker"
+import { Authenticator } from "../../src/service/auth/Authenticator"
 
 describe("Validation", function () {
 
@@ -94,7 +95,7 @@ describe("Validation", function () {
             identity.address,
             EthCrypto.sign(
                 identity.privateKey,
-                Validation.createEthereumMessageHash(entityId)
+                Authenticator.createEthereumMessageHash(entityId)
             )
         )
 

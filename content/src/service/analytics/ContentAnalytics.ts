@@ -1,5 +1,5 @@
 import { Entity } from "../Entity";
-import { EthAddress } from "../Service";
+import { EthAddress } from "../auth/Authenticator";
 
 export interface ContentAnalytics {
 

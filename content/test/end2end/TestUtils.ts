@@ -2,7 +2,7 @@ import fs from "fs"
 import path from "path"
 import * as EthCrypto from "eth-crypto"
 import { buildControllerEntityAndFile } from "../controller/ControllerEntityTestFactory"
-import { Validation } from "../../src/service/Validation"
+import { Authenticator } from "../../src/service/auth/Authenticator"
 import { Pointer, EntityType } from "../../src/service/Entity"
 import { ControllerEntity } from "../../src/controller/Controller"
 import { FileHash, Hashing } from "../../src/service/Hashing"
@@ -33,7 +33,7 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
         metadata)
 
     const identity = EthCrypto.createIdentity();
-    const messageHash = Validation.createEthereumMessageHash(entity.id)
+    const messageHash = Authenticator.createEthereumMessageHash(entity.id)
 
     const deployData: DeployData = {
         entityId: entity.id,

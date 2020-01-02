@@ -1,10 +1,10 @@
 import ms from "ms"
 import { EntityId, Pointer, EntityType, Entity } from "./Entity";
-import { EthAddress, Signature, ENTITY_FILE_NAME } from "./Service";
+import { ENTITY_FILE_NAME } from "./Service";
 import { File } from './Service';
 import { FileHash } from "./Hashing";
-import * as EthCrypto from "eth-crypto"
 import { AccessChecker } from "./access/AccessChecker";
+import { Authenticator, EthAddress, Signature } from "./auth/Authenticator";
 
 export class Validation {
 
@@ -18,25 +18,9 @@ export class Validation {
 
     /** Validate that the signature belongs to the Ethereum address */
     async validateSignature(entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<void> {
-        if(! await this.isSignatureValid(entityId, ethAddress, signature)) {
+        if(!await Authenticator.validateSignature(entityId, ethAddress, signature)) {
             this.errors.push("The signature is invalid.")
         }
-    }
-
-    private async isSignatureValid(msg: string, ethAddress: string, signature: string): Promise<boolean> {
-        try {
-            const signerAddress = EthCrypto.recover(signature, Validation.createEthereumMessageHash(msg));
-            return ethAddress == signerAddress
-        } catch (e) {
-            // console.error(e)
-        }
-        return false
-    }
-
-    static createEthereumMessageHash(msg: string) {
-        let msgWithPrefix: string = `\x19Ethereum Signed Message:\n${msg.length}${msg}`
-        const msgHash = EthCrypto.hash.keccak256(msgWithPrefix);
-        return msgHash
     }
 
     /** Validate that the full request size is within limits */

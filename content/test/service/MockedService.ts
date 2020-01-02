@@ -1,7 +1,8 @@
-import { MetaverseContentService, EthAddress, Signature, Timestamp, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "../../src/service/Service"
+import { MetaverseContentService, Timestamp, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
 import { FileHash } from "../../src/service/Hashing"
 import { AuditInfo } from "../../src/service/audit/Audit"
+import { EthAddress, Signature } from "../../src/service/auth/Authenticator"
 
 export class MockedService implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 

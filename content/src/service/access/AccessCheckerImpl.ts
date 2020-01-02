@@ -1,6 +1,6 @@
 import { AccessChecker } from "./AccessChecker";
-import { EthAddress } from "../Service";
 import fetch from "node-fetch"
+import { EthAddress } from "../auth/Authenticator";
 
 export class AccessCheckerImpl implements AccessChecker {
 

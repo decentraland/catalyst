@@ -1,7 +1,7 @@
 import { FileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { MetaverseContentService, EthAddress, Signature, Timestamp, ENTITY_FILE_NAME, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
+import { MetaverseContentService, Timestamp, ENTITY_FILE_NAME, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
@@ -11,6 +11,7 @@ import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
 import { AuditManager, AuditInfo } from "./audit/Audit";
+import { EthAddress, Signature } from "./auth/Authenticator";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 

@@ -1,9 +1,10 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import fs from "fs"
-import { MetaverseContentService, File, Signature, EthAddress } from "../service/Service";
+import { MetaverseContentService, File } from "../service/Service";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
+import { EthAddress, Signature } from "../service/auth/Authenticator";
 
 export class Controller {
     constructor(private service: MetaverseContentService, private historyManager: HistoryManager) { }

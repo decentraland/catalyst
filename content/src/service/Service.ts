@@ -2,6 +2,7 @@ import { FileHash } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { ServerName } from "./naming/NameKeeper";
 import { AuditInfo } from "./audit/Audit";
+import { EthAddress, Signature } from "./auth/Authenticator";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -42,8 +43,6 @@ export type File = {
 }
 
 export type Timestamp = number
-export type Signature = string
-export type EthAddress = string
 
 export type ServerVersion = string
 

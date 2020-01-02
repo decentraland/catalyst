@@ -1,6 +1,6 @@
 import Analytics from "analytics-node"
 import { Entity } from "../Entity";
-import { EthAddress } from "../Service";
+import { EthAddress } from "../auth/Authenticator";
 import { ContentAnalytics } from "./ContentAnalytics";
 
 export class ContentAnalyticsWithSegment implements ContentAnalytics {
