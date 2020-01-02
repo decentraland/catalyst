@@ -15,11 +15,11 @@ export class PointerManager {
     private pointers: Map<EntityType, Cache<Pointer, EntityId | undefined>> = new Map()
     private constructor(private storage: PointerStorage,
         private auditOverwrite: AuditOverwrite,
-        private tempDeploymentInfo: EntityDeployment[]) { // tempDeploymentInfo is sorted from newest to oldest
+        private tempDeploymentInfo: EntityDeployment[]) { // tempDeploymentInfo is sorted from newest to oldest, by entity id
         // Register type on global map. This way, we don't have to check on each reference
         Object.values(EntityType)
             .forEach((entityType: EntityType) => {
-                const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(pointer, entityType), 1000)
+                const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(entityType, pointer), 1000)
                 this.pointers.set(entityType, cache)
             })
     }
@@ -40,11 +40,14 @@ export class PointerManager {
     }
 
     /** When we have a new immutable time, we can get rid of all the deployments that happened before */
-    setImmutableTime(immutableDeploymentTimestamp: Timestamp) {
-        const index: number | undefined = this.tempDeploymentInfo.findIndex(deployment => deployment.deploymentTimestamp < immutableDeploymentTimestamp)
-        if (index) {
-            this.tempDeploymentInfo.splice(index, this.tempDeploymentInfo.length - index)
+    setTimeAsImmutable(immutableDeploymentTimestamp: Timestamp): Promise<void> {
+        for (let i = this.tempDeploymentInfo.length - 1; i >= 0; i--) {
+            const deployment = this.tempDeploymentInfo[i];
+            if (deployment.deploymentTimestamp < immutableDeploymentTimestamp) {
+                this.tempDeploymentInfo.splice(i, 1)
+            }
         }
+        return this.saveToStorage()
     }
 
     /**
@@ -68,8 +71,11 @@ export class PointerManager {
         // Mark this entity as overwritten or commit it
         await this.getOverwrittenOrCommit(newDeployment)
 
-        // Save
-        await this.saveNewDeployment(newDeployment)
+        // Add deployment to temp info
+        this.saveNewDeployment(newDeployment)
+
+        // Save to storage
+        await this.saveToStorage()
     }
 
     /** Check if there is another entity that would overwrite this one. If not, then commit the new deployment */
@@ -191,17 +197,20 @@ export class PointerManager {
         return undefined
     }
 
-    private saveNewDeployment(newDeployment: EntityDeployment): Promise<void> {
+    private saveNewDeployment(newDeployment: EntityDeployment): void {
         const index = this.tempDeploymentInfo.findIndex(deployment => !this.isDeploymentNewerThan(deployment, newDeployment))
         if (index >= 0) {
             this.tempDeploymentInfo.splice(index, 0, newDeployment)
         } else {
             this.tempDeploymentInfo.push(newDeployment)
         }
-
-        return this.storage.storeTempDeployments(this.tempDeploymentInfo)
     }
 
+    private saveToStorage(): Promise<void> {
+        return this.storage.storeTempDeployments(this.tempDeploymentInfo);
+    }
+
+    /** Given two lists of pointers, returns whether they intersect or not */
     private intersects(pointers1: Pointer[], pointers2: Pointer[]): boolean {
         for (const pointer of pointers1) {
             if (pointers2.includes(pointer)) {
@@ -211,7 +220,7 @@ export class PointerManager {
         return false
     }
 
-    private getPointerFromDisk(pointer: Pointer, type: EntityType): Promise<EntityId | undefined> {
+    private getPointerFromDisk(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
         try {
             return this.storage.getPointerReference(type, pointer)
         } catch (e) {

@@ -203,9 +203,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, Validations.NO_FRESHNESS_NO_CONTENT)
     }
 
-    setImmutableTime(immutableTime: number): Promise<void> {
+    async setImmutableTime(immutableTime: number): Promise<void> {
         this.lastImmutableTime = immutableTime
-        return this.historyManager.setTimeAsImmutable(immutableTime)
+        await Promise.all([this.historyManager.setTimeAsImmutable(immutableTime), this.pointerManager.setTimeAsImmutable(immutableTime)])
     }
 
     getLastImmutableTime(): Timestamp {
