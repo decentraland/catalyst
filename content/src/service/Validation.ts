@@ -77,7 +77,7 @@ export class Validation {
 
     /** Validate that the deployment is valid in terms of timing */
     async validateFreshDeployment(entityToBeDeployed: Entity, entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>): Promise<void> {
-        // Validate that pointers aren't refering to an entity with a higher timestamp
+        // Validate that pointers aren't referring to an entity with a higher timestamp
         const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
         currentPointedEntities.forEach(currentEntity => {
             if (entityToBeDeployed.timestamp < currentEntity.timestamp) {
@@ -85,7 +85,7 @@ export class Validation {
             }
         })
 
-        // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchonization mechanism
+        // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
         this.requestIsRecent(entityToBeDeployed)
     }
 

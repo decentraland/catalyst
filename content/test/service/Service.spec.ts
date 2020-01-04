@@ -27,7 +27,7 @@ describe("Service", function () {
     beforeAll(async () => {
         randomFile = { name: "file", content: Buffer.from("1234") }
         randomFileHash = await Hashing.calculateHash(randomFile);
-        [entity, entityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X1,Y1", "X2,Y2"], Date.now(), new Map([[randomFile.name, randomFileHash]]), "metadata")
+        [entity, entityFile] = await buildEntityAndFile(EntityType.SCENE, ["X1,Y1", "X2,Y2"], Date.now(), new Map([[randomFile.name, randomFileHash]]), "metadata")
         historyManager = new MockedHistoryManager()
     })
 
@@ -79,7 +79,7 @@ describe("Service", function () {
     it(`When an entity is successfully deployed, then previous overlapping entities are deleted`, async () => {
         await service.deployEntity([entityFile, randomFile], entity.id, "ethAddress", "signature")
 
-        const [newEntity, newEntityFile] = await buildEntityAndFile(ENTITY_FILE_NAME, EntityType.SCENE, ["X2,Y2", "X3,Y3"], Date.now())
+        const [newEntity, newEntityFile] = await buildEntityAndFile(EntityType.SCENE, ["X2,Y2", "X3,Y3"], Date.now())
 
         await service.deployEntity([newEntityFile], newEntity.id, "ethAddress", "signature")
 

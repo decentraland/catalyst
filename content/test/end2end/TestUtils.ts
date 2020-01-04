@@ -6,7 +6,7 @@ import { Authenticator } from "../../src/service/auth/Authenticator"
 import { Pointer, EntityType } from "../../src/service/Entity"
 import { ControllerEntity } from "../../src/controller/Controller"
 import { FileHash, Hashing } from "../../src/service/Hashing"
-import { ENTITY_FILE_NAME, File } from "../../src/service/Service"
+import { File } from "../../src/service/Service"
 import { DAOClient } from "../../src/service/synchronization/clients/DAOClient"
 import { EnvironmentConfig, Bean, EnvironmentBuilder } from "../../src/Environment"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
@@ -25,7 +25,6 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
         .map(([hash, file]) => [file.name, hash]))
 
     const [entity, entityFile] = await buildControllerEntityAndFile(
-        ENTITY_FILE_NAME,
         EntityType.SCENE,
         pointers,
         (afterEntity?.timestamp ?? Date.now()) + 1,

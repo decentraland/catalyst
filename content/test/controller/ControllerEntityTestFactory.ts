@@ -6,8 +6,8 @@ import { buildEntityAndFile } from "../service/EntityTestFactory";
 import { ControllerEntityFactory } from "../../src/controller/ControllerEntityFactory";
 
 /** Builds an entity with the given params, and also the file what represents it */
-export async function buildControllerEntityAndFile(fileName: string, type: EntityType, pointers: Pointer[], timestamp: Timestamp,
+export async function buildControllerEntityAndFile(type: EntityType, pointers: Pointer[], timestamp: Timestamp,
     content?: Map<string, FileHash>, metadata?: any): Promise<[ControllerEntity, File]> {
-    const [entity, file]: [Entity, File] = await buildEntityAndFile(fileName, type, pointers, timestamp, content, metadata)
+    const [entity, file]: [Entity, File] = await buildEntityAndFile(type, pointers, timestamp, content, metadata)
     return [ControllerEntityFactory.maskEntity(entity), file]
 }

@@ -68,7 +68,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     // TODO: Maybe move this somewhere else?
     private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampGenerator: () => Timestamp, validationType: Validations): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
-        const entityFile: File = this.findEntityFile(files)
+        const entityFile: File = ServiceImpl.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
             throw new Error("Entity file's hash didn't match the signed entity id.")
         }
@@ -101,7 +101,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
         const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
 
-        if (validationType == Validations.ALL || validationType == Validations.NO_FRESHNESS) {
+        if (validationType != Validations.NO_FRESHNESS_NO_CONTENT) {
             validation.validateContent(entity, hashes, alreadyStoredHashes)
         }
 
@@ -155,7 +155,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return Promise.all(contentStorageActions)
     }
 
-    private findEntityFile(files: File[]): File {
+    static findEntityFile(files: File[]): File {
         const filesWithName = files.filter(file => file.name === ENTITY_FILE_NAME)
         if (filesWithName.length === 0) {
             throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
@@ -176,7 +176,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.assertDefined(auditInfo, `Failed to find the audit information for the entity with type ${type} and id ${id}.`)
     }
 
-    async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>> {
+    async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>> {
         return this.storage.isContentAvailable(fileHashes)
     }
 

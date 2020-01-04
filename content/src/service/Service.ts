@@ -16,7 +16,7 @@ export interface MetaverseContentService {
     getActivePointers(type: EntityType): Promise<Pointer[]>;
     deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo>;
-    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
+    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>>;
     getContent(fileHash: FileHash): Promise<Buffer>;
     getStatus(): Promise<ServerStatus>;
 }
@@ -28,7 +28,7 @@ export interface MetaverseContentService {
 export interface ClusterDeploymentsService {
     deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
     deployOverwrittenEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
-    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, Boolean>>;
+    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>>;
 }
 
 /** This version of the service can keep track of the immutable time */

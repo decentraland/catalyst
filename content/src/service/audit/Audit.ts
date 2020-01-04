@@ -2,6 +2,7 @@ import { Timestamp } from "../Service";
 import { EntityId } from "../Entity";
 import { AuditStorage } from "./AuditStorage";
 import { EthAddress, Signature } from "../auth/Authenticator";
+import { FileHash } from "../Hashing";
 
 export interface AuditOverwrite {
     setEntityAsOverwritten(id: EntityId, overwrittenBy: EntityId): Promise<void>
@@ -39,5 +40,7 @@ export type AuditInfo = {
     deployedTimestamp: Timestamp
     ethAddress: EthAddress
     signature: Signature,
-    overwrittenBy?: EntityId
+    overwrittenBy?: EntityId,
+    isBlacklisted?: boolean,
+    blacklistedContent?: FileHash[]
 }

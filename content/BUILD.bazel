@@ -93,6 +93,7 @@ ts_library(
         "@npm//eth-crypto",
         "@npm//ms",
         "@npm//@types/ms",
+        "@npm//ts-mockito"
     ],
 )
 
@@ -105,16 +106,4 @@ jasmine_node_test(
         ":test_resources",
         "@npm//jasmine",
     ],
-)
-
-nodejs_binary(
-    name = "mock-server",
-    testonly = 1,
-    data = [
-        ":content",
-        ":tests",
-        "@npm//@bazel/typescript",
-        "@npm//typescript",
-    ],
-    entry_point = "test/mock-server.ts",
 )

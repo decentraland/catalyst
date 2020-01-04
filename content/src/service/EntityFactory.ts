@@ -22,7 +22,7 @@ export class EntityFactory {
         try {
             return JSON.parse(buffer.toString())
         } catch (e) {
-            throw new Error(`Failed to parse the entity file. Please make sure thay it is a valid json.`)
+            throw new Error(`Failed to parse the entity file. Please make sure that it is a valid json.`)
         }
     }
 

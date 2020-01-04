@@ -9,7 +9,7 @@ describe("Service", () => {
     let entityFile: File
 
     beforeAll(async () => {
-        [entity, entityFile] = await buildEntityAndFile("fileName", EntityType.SCENE, ["X1,Y1"], 123456, new Map([["name", "hash"]]), "metadata")
+        [entity, entityFile] = await buildEntityAndFile(EntityType.SCENE, ["X1,Y1"], 123456, new Map([["name", "hash"]]), "metadata")
     })
 
     it(`When a valid entity file is used, then it is parsed correctly`, () => {
@@ -19,7 +19,7 @@ describe("Service", () => {
     it(`When the entity file can't be parsed into an entity, then an exception is thrown`, () => {
         const invalidFile: File = { name: `invalid-file`, content: Buffer.from("Hello") }
 
-        assertInvalidFile(invalidFile, `id`, `Failed to parse the entity file. Please make sure thay it is a valid json.`)
+        assertInvalidFile(invalidFile, `id`, `Failed to parse the entity file. Please make sure that it is a valid json.`)
     });
 
     it(`When type is not valid, then an exceptions is thrown`, () => {
