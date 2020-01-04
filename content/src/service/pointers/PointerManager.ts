@@ -3,29 +3,30 @@ import { EntityType, Pointer, EntityId, Entity } from "../Entity";
 import { Timestamp } from "../Service";
 import { PointerStorage } from "./PointerStorage";
 import { AuditOverwrite } from "../audit/Audit";
+import { PointerDeploymentsRecord } from "./PointerDeploymentsRecord";
 
 /**
- * When syncing with other nodes, we might not get all deployments in order. In order to make sure that
- * our content remains consistent, regardless of when we found out about deployments, we need to preserve some history
- * about pointers. This means that when an entity is overwritten, we will still preserve the entity's data, until we are sure that
- * no older entities can be deployed.
+ * Manage all pointer data
  */
 export class PointerManager {
 
-    private pointers: Map<EntityType, Cache<Pointer, EntityId | undefined>> = new Map()
+    private readonly tempDeployments: PointerDeploymentsRecord
+    private readonly pointers: Map<EntityType, Cache<Pointer, EntityId | undefined>> = new Map()
     private constructor(private storage: PointerStorage,
         private auditOverwrite: AuditOverwrite,
-        private tempDeploymentInfo: EntityDeployment[]) { // tempDeploymentInfo is sorted from newest to oldest, by entity id
+        tempDeploymentInfo: Buffer | undefined) {
         // Register type on global map. This way, we don't have to check on each reference
         Object.values(EntityType)
             .forEach((entityType: EntityType) => {
                 const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(entityType, pointer), 1000)
                 this.pointers.set(entityType, cache)
             })
+
+        this.tempDeployments = new PointerDeploymentsRecord((type, pointer) => this.getEntityInPointer(type, pointer), tempDeploymentInfo)
     }
 
     static async build(storage: PointerStorage, auditOverwrite: AuditOverwrite): Promise<PointerManager> {
-        const tempDeployments = await storage.readTempDeployments();
+        const tempDeployments = await storage.readStoredTempDeployments();
         return new PointerManager(storage, auditOverwrite, tempDeployments)
     }
 
@@ -39,14 +40,8 @@ export class PointerManager {
         return this.getPointerMap(type).get(pointer)
     }
 
-    /** When we have a new immutable time, we can get rid of all the deployments that happened before */
     setTimeAsImmutable(immutableDeploymentTimestamp: Timestamp): Promise<void> {
-        for (let i = this.tempDeploymentInfo.length - 1; i >= 0; i--) {
-            const deployment = this.tempDeploymentInfo[i];
-            if (deployment.deploymentTimestamp < immutableDeploymentTimestamp) {
-                this.tempDeploymentInfo.splice(i, 1)
-            }
-        }
+        this.tempDeployments.setTimeAsImmutable(immutableDeploymentTimestamp)
         return this.saveToStorage()
     }
 
@@ -55,169 +50,41 @@ export class PointerManager {
      */
     async commitEntity(entityBeingDeployed: Entity, deploymentTimestamp: Timestamp, entityFetcher: (entityId: EntityId) => Promise<Entity | undefined>): Promise<void> {
 
-        // Set up the new deployment
-        let newDeployment: EntityDeployment = {
-            entityId: entityBeingDeployed.id,
-            entityType: entityBeingDeployed.type,
-            pointers: entityBeingDeployed.pointers,
-            entityTimestamp: entityBeingDeployed.timestamp,
-            overwrittenEntities: new Map(),
-            deploymentTimestamp: deploymentTimestamp,
+        const { overwrites ,
+            deletedPointers,
+            committed } = await this.tempDeployments.exerciseCommit(entityBeingDeployed, deploymentTimestamp, entityFetcher)
+
+        // Update overwrites on audit info
+        const overwriteUpdates: Promise<void>[] = Array.from(overwrites.entries())
+            .map(([overwritten, overwrittenBy]) => this.auditOverwrite.setEntityAsOverwritten(overwritten, overwrittenBy))
+
+        // Delete pointers that need to be deleted
+        const deletionUpdates: Promise<void>[] = Array.from(deletedPointers.values())
+            .map(pointer => this.storage.deletePointerReference(entityBeingDeployed.type, pointer))
+
+        Array.from(deletedPointers.values()).forEach(pointer => this.invalidate(entityBeingDeployed.type, pointer))
+
+        // Commit the entity (if necessary)
+        let commitUpdates: Promise<void>[] = []
+        if (committed) {
+            commitUpdates = entityBeingDeployed.pointers.map(pointer => this.storage.setPointerReference(entityBeingDeployed.type, pointer, entityBeingDeployed.id))
+            entityBeingDeployed.pointers.forEach(pointer => this.invalidate(entityBeingDeployed.type, pointer))
         }
 
-        // Mark all older entities that conflict as overwritten
-        await this.overwriteOlderDeployments(newDeployment, entityFetcher)
-
-        // Mark this entity as overwritten or commit it
-        await this.getOverwrittenOrCommit(newDeployment)
-
-        // Add deployment to temp info
-        this.saveNewDeployment(newDeployment)
-
-        // Save to storage
-        await this.saveToStorage()
+        // Wait for everything
+        await Promise.all([...overwriteUpdates, ...deletionUpdates, ...commitUpdates, this.saveToStorage()])
     }
 
-    /** Check if there is another entity that would overwrite this one. If not, then commit the new deployment */
-    private async getOverwrittenOrCommit(newDeployment: EntityDeployment) {
-        let entityDeployment: EntityDeployment | undefined = this.findClosestNewerEntityThatContainsPointers(newDeployment);
-        if (entityDeployment) {
-            // If found, then this entity deployment would overwrite the entity being deployed, so mark it
-            entityDeployment.overwrittenEntities.set(newDeployment.entityId, entityDeployment)
-
-            // Set audit info (as overwritten)
-            await this.auditOverwrite.setEntityAsOverwritten(newDeployment.entityId, entityDeployment.entityId)
-        } else {
-            console.log(`Committing ${newDeployment.entityId} to pointers ${newDeployment.pointers}`)
-            // If not found, then no entity would overwrite the entity being deployed, so we make the pointers reference the entity
-            const storageActions = newDeployment.pointers.map(pointer => this.storage.setPointerReference(newDeployment.entityType, pointer, newDeployment.entityId))
-            newDeployment.pointers.forEach(pointer => this.getPointerMap(newDeployment.entityType).invalidate(pointer))
-            await Promise.all(storageActions)
-        }
+    private saveToStorage(): Promise<void> {
+        return this.storage.storeTempDeployments(this.tempDeployments.getInformationToStore());
     }
 
-    /**
-     * This method takes the new deployment and marks all the necessary entities as overwritten
-     */
-    private overwriteOlderDeployments(newDeployment: EntityDeployment, entityFetcher: (entityId: EntityId) => Promise<Entity | undefined>) {
-        for (const pointer of newDeployment.pointers) {
-            let overwrite: [EntityDeployment, EntityId] | undefined = this.findClosestNewerEntityThatOverwritesPointer(newDeployment, pointer);
-            if (overwrite) {
-                // If there is already an overwrite, then we must set the new deployment in the middle
-                return this.setNewDeploymentAsOverwrite(overwrite, newDeployment);
-            }
-            else {
-                // If the is no current overwrite, then we check if there is already an entity on the pointer
-                return this.overwriteCurrentEntity(newDeployment, pointer, entityFetcher);
-            }
-        }
-    }
-
-    private async overwriteCurrentEntity(newDeployment: EntityDeployment, pointer: string, entityFetcher: (entityId: EntityId) => Promise<Entity | undefined>) {
-        const currentEntityId: EntityId | undefined = await this.getEntityInPointer(newDeployment.entityType, pointer);
-        if (currentEntityId) {
-            // Get the entity's data
-            const currentEntity: Entity | undefined = await entityFetcher(currentEntityId)
-            if (currentEntity) {
-                const currentEntityReference = {
-                    entityId: currentEntity.id,
-                    pointers: currentEntity.pointers,
-                    entityTimestamp: currentEntity.timestamp
-                };
-                if (this.isDeploymentNewerThan(newDeployment, currentEntityReference)) {
-                    // Mark current entity as overwritten by new deployment
-                    newDeployment.overwrittenEntities.set(currentEntityId, currentEntityReference)
-
-                    console.log(`Removing ${currentEntityReference.entityId} from ${currentEntityReference.pointers}`)
-                    // Delete pointer reference
-                    const deleteActions = currentEntityReference.pointers.map(pointer => this.storage.deletePointerReference(newDeployment.entityType, pointer))
-                    currentEntityReference.pointers.forEach(pointer => this.getPointerMap(newDeployment.entityType).invalidate(pointer))
-                    await Promise.all(deleteActions)
-
-                    // Change audit info
-                    await this.auditOverwrite.setEntityAsOverwritten(currentEntityId, newDeployment.entityId)
-                }
-            }
-        }
-    }
-
-    /**
-     * This method find the closest (but newer) entity deployment in respect to the given timestamp that:
-     * 1. Overwrote an entity that is older than the given timestamp
-     * 2. The overwritten entity has the given pointer
-     *
-     * The method returns undefined if no such deployment exists
-     */
-    private findClosestNewerEntityThatOverwritesPointer(newDeployment: EntityDeployment, pointer: Pointer): [EntityDeployment, EntityId] | undefined {
-        for (let i = this.tempDeploymentInfo.length - 1; i >= 0; i--) {
-            const deploymentInfo = this.tempDeploymentInfo[i]
-
-            if (this.isDeploymentNewerThan(deploymentInfo, newDeployment)) {
-                for (const [entityId, entityReference] of deploymentInfo.overwrittenEntities.entries()) {
-                    if (!this.isDeploymentNewerThan(newDeployment, entityReference) && entityReference.pointers.includes(pointer)) {
-                        return [deploymentInfo, entityId]
-                    }
-                }
-            }
-        }
-        return undefined
-    }
-
-    private setNewDeploymentAsOverwrite(overwrite: [EntityDeployment, string], newDeployment: EntityDeployment) {
-        const [deployment, overwrittenEntity] = overwrite;
-        // Mark entity as overwritten by new deployment
-        const entityReference = deployment.overwrittenEntities.get(overwrittenEntity) as EntityReferenceData;
-        newDeployment.overwrittenEntities.set(overwrittenEntity, entityReference);
-
-        // Delete overwrite from the newer deployment
-        deployment.overwrittenEntities.delete(overwrittenEntity);
-
-        // Change audit info
-        return this.auditOverwrite.setEntityAsOverwritten(overwrittenEntity, newDeployment.entityId);
+    private invalidate(type: EntityType, pointer: string): void {
+        return this.getPointerMap(type).invalidate(pointer);
     }
 
     private getPointerMap(entityType: EntityType): Cache<Pointer, EntityId> {
         return this.pointers.get(entityType) as Cache<Pointer, EntityId>
-    }
-
-    /** Return the deployment that:
-     * 1. Is newer than the new deployment (in terms of entity's timestamp)
-     * 2. Contains any of the new deployment's pointers
-     * 3. Is the closest in time to the current deployment
-     */
-    private findClosestNewerEntityThatContainsPointers(newDeployment: EntityDeployment): EntityDeployment | undefined {
-        for (let i = this.tempDeploymentInfo.length - 1; i >= 0; i--) {
-            const deploymentInfo = this.tempDeploymentInfo[i]
-
-            if (this.isDeploymentNewerThan(deploymentInfo, newDeployment) &&
-                this.intersects(deploymentInfo.pointers, newDeployment.pointers)) {
-                return deploymentInfo
-            }
-        }
-        return undefined
-    }
-
-    private saveNewDeployment(newDeployment: EntityDeployment): void {
-        const index = this.tempDeploymentInfo.findIndex(deployment => !this.isDeploymentNewerThan(deployment, newDeployment))
-        if (index >= 0) {
-            this.tempDeploymentInfo.splice(index, 0, newDeployment)
-        } else {
-            this.tempDeploymentInfo.push(newDeployment)
-        }
-    }
-
-    private saveToStorage(): Promise<void> {
-        return this.storage.storeTempDeployments(this.tempDeploymentInfo);
-    }
-
-    /** Given two lists of pointers, returns whether they intersect or not */
-    private intersects(pointers1: Pointer[], pointers2: Pointer[]): boolean {
-        for (const pointer of pointers1) {
-            if (pointers2.includes(pointer)) {
-                return true
-            }
-        }
-        return false
     }
 
     private getPointerFromDisk(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
@@ -228,25 +95,4 @@ export class PointerManager {
         }
     }
 
-    /** Returns true iff deployment1 is newer than deployment2 */
-    private isDeploymentNewerThan<T extends {entityId: EntityId, entityTimestamp: Timestamp}>(deployment1: T, deployment2: T) {
-        return deployment1.entityTimestamp > deployment2.entityTimestamp ||
-            (deployment1.entityTimestamp == deployment2.entityTimestamp && deployment1.entityId > deployment2.entityId)
-    }
-
-}
-
-export type EntityDeployment = {
-    entityId: EntityId,
-    entityType: EntityType,
-    pointers: Pointer[],
-    entityTimestamp: Timestamp,
-    overwrittenEntities: Map<EntityId, EntityReferenceData>,
-    deploymentTimestamp: Timestamp,
-}
-
-type EntityReferenceData = {
-    pointers: Pointer[],
-    entityTimestamp: Timestamp,
-    entityId: EntityId,
 }
