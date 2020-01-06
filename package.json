@@ -42,10 +42,12 @@
     "typescript": "^3.7.2",
     "yargs": "^15.0.2"
   },
+  "prettier": {
+    "printWidth": 180
+  },
   "scripts": {
     "startClient": "ibazel run comms/peer-react-app:devserver",
     "startServer": "yarn ibazel run comms/lighthouse:server",
-    "start": "ibazel run peer-react-app:devserver & yarn ibazel run lighthouse:server",
     "startContentServer": "yarn ibazel run content:server",
     "startLambdasServer": "yarn ibazel run lambdas:server"
   },

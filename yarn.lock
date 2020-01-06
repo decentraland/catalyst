@@ -6814,9 +6814,9 @@ wrappy@1:
   integrity sha1-tSQ9jz7BqjXxNkYFvA0QNuMKtp8=
 
 wrtc@^0.4.2:
-  version "0.4.2"
-  resolved "https://registry.yarnpkg.com/wrtc/-/wrtc-0.4.2.tgz#feeb829709dac17139b49f7a18f57f4e98300a6f"
-  integrity sha512-IaXogllhkd3dHKrZxzQKXmKjqsR35X9XIjp1ElimieZuaPgDCPEbIg/DOwzGTT4bdKqmB8FjPgau2RNMFTGvHQ==
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/wrtc/-/wrtc-0.4.3.tgz#95a9182f734114226be0ef9c377143d67bf85c04"
+  integrity sha512-HPPocFTrfCDdhVAsUlcToF3HVE/LDVP+ctHa3sHJzyUDH49tig5boKGPd3KRUjDHRStYxepu7XjNUbrxrhScRA==
   dependencies:
     node-pre-gyp "^0.13.0"
   optionalDependencies:
