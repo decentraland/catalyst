@@ -1,5 +1,5 @@
 import { Pointer, EntityType, EntityId } from "../service/Entity";
-import { FileHash } from "../service/Hashing";
+import { ContentFileHash } from "../service/Hashing";
 import { EthAddress } from "../service/auth/Authenticator";
 
 export class BlacklistTarget {
@@ -46,7 +46,7 @@ export function buildAddressTarget(ethAddress: EthAddress) {
     return new BlacklistTarget(BlacklistTargetType.ADDRESS, ethAddress)
 }
 
-export function buildContentTarget(fileHash: FileHash) {
+export function buildContentTarget(fileHash: ContentFileHash) {
     return new BlacklistTarget(BlacklistTargetType.CONTENT, fileHash)
 }
 

@@ -1,7 +1,7 @@
 import { EntityId, Entity } from "./Entity"
 import { ContentStorage } from "../storage/ContentStorage"
 import { EntityFactory } from "./EntityFactory"
-import { FileHash } from "./Hashing"
+import { ContentFileHash } from "./Hashing"
 
 export class ServiceStorage {
 
@@ -9,11 +9,11 @@ export class ServiceStorage {
 
     constructor(private storage: ContentStorage) { }
 
-    storeContent(fileHash: FileHash, content: Buffer): Promise<void> {
+    storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
     }
 
-    async getContent(fileHash: FileHash): Promise<Buffer | undefined> {
+    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
         try {
             return await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
         } catch (error) {
@@ -21,9 +21,9 @@ export class ServiceStorage {
         }
     }
 
-    async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>> {
+    async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         // TODO: Consider listing everything in dir
-        const contentsAvailableActions: Promise<[FileHash, boolean]>[] = fileHashes.map((fileHash: FileHash) =>
+        const contentsAvailableActions: Promise<[ContentFileHash, boolean]>[] = fileHashes.map((fileHash: ContentFileHash) =>
             this.storage.exists(ServiceStorage.CONTENT_CATEGORY, fileHash).then(exists => [fileHash, exists]))
 
         return new Map(await Promise.all(contentsAvailableActions));

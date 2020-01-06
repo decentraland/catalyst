@@ -1,8 +1,8 @@
 import ms from "ms"
 import { EntityId, Pointer, EntityType, Entity } from "./Entity";
 import { ENTITY_FILE_NAME } from "./Service";
-import { File } from './Service';
-import { FileHash } from "./Hashing";
+import { ContentFile } from './Service';
+import { ContentFileHash } from "./Hashing";
 import { AccessChecker } from "./access/AccessChecker";
 import { Authenticator, EthAddress, Signature } from "./auth/Authenticator";
 
@@ -26,7 +26,7 @@ export class Validation {
     /** Validate that the full request size is within limits */
     // TODO: decide if we want to externalize this as a configuration
     private static MAX_UPLOAD_SIZE = 10 * 1024 * 1024  // 10 MB
-    validateRequestSize(files: File[]): void {
+    validateRequestSize(files: ContentFile[]): void {
         var totalSize = 0
         files.forEach(file => totalSize += file.content.length)
         if (totalSize > Validation.MAX_UPLOAD_SIZE) {
@@ -104,7 +104,7 @@ export class Validation {
     }
 
     /** Validate that uploaded and reported hashes are corrects */
-    validateContent(entity: Entity, hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>) {
+    validateContent(entity: Entity, hashes: Map<ContentFileHash, ContentFile>, alreadyStoredHashes: Map<ContentFileHash, Boolean>) {
         if (entity.content) {
             let entityHashes: string[] = Array.from(entity.content?.values() ?? [])
 

@@ -6,9 +6,9 @@ import { ServerAddress, ContentServerClient } from "../../src/service/synchroniz
 import { EntityType, Pointer, EntityId } from "../../src/service/Entity"
 import { ControllerEntity } from "../../src/controller/Controller"
 import { DeploymentHistory } from "../../src/service/history/HistoryManager"
-import { FileHash } from "../../src/service/Hashing"
+import { ContentFileHash } from "../../src/service/Hashing"
 import { DeployData, hashAndSignMessage } from "./TestUtils"
-import { Timestamp, File, ServerStatus } from "../../src/service/Service"
+import { Timestamp, ContentFile, ServerStatus } from "../../src/service/Service"
 import { AuditInfo } from "../../src/service/audit/Audit"
 import { getClient } from "../../src/service/synchronization/clients/contentserver/ActiveContentServerClient"
 import { buildEntityTarget, BlacklistTarget, buildContentTarget } from "../../src/blacklist/BlacklistTarget"
@@ -53,7 +53,7 @@ export class TestServer extends Server {
         form.append('entityId'  , deployData.entityId)
         form.append('ethAddress', deployData.ethAddress)
         form.append('signature' , deployData.signature)
-        deployData.files.forEach((f: File) => form.append(f.name, f.content, { filename: f.name }))
+        deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
 
         const deployResponse = await fetch(`http://${this.getAddress()}/entities`, { method: 'POST', body: form })
         expect(deployResponse.ok).toBe(true)
@@ -91,7 +91,7 @@ export class TestServer extends Server {
         return entities[0]
     }
 
-    async downloadContent(fileHash: FileHash): Promise<Buffer> {
+    async downloadContent(fileHash: ContentFileHash): Promise<Buffer> {
         return this.client.getContentFile(fileHash)
             .then(file => file.content)
     }
@@ -105,7 +105,7 @@ export class TestServer extends Server {
         return this.blacklistTarget(entityTarget)
     }
 
-    async blacklistContent(fileHash: FileHash): Promise<void> {
+    async blacklistContent(fileHash: ContentFileHash): Promise<void> {
         const contentTarget = buildContentTarget(fileHash)
         return this.blacklistTarget(contentTarget)
     }

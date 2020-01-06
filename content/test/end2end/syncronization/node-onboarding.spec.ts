@@ -7,7 +7,7 @@ import { Environment } from "../../../src/Environment"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { ControllerEntityContent } from "../../../src/controller/Controller"
-import { FileHash } from "../../../src/service/Hashing"
+import { ContentFileHash } from "../../../src/service/Hashing"
 
 describe("End 2 end - Node onboarding", function() {
 
@@ -45,7 +45,7 @@ describe("End 2 end - Node onboarding", function() {
 
         // Prepare data to be deployed
         const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/end2end/resources/some-binary-file.png')
-        const entity1ContentHash: FileHash  = (entity1.content as ControllerEntityContent[])[0].hash
+        const entity1ContentHash: ContentFileHash  = (entity1.content as ControllerEntityContent[])[0].hash
         const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata2", entity1)
 
         // Deploy entity1 on server 1
@@ -86,7 +86,7 @@ describe("End 2 end - Node onboarding", function() {
 
         // Prepare data to be deployed
         const [deployData, entity] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/end2end/resources/some-binary-file.png')
-        const entityContentHash: FileHash  = (entity.content as ControllerEntityContent[])[0].hash
+        const entityContentHash: ContentFileHash  = (entity.content as ControllerEntityContent[])[0].hash
 
         // Deploy entity on server 1
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)

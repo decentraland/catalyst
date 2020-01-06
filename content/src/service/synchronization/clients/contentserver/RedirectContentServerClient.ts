@@ -1,4 +1,4 @@
-import { Timestamp, File, ServerStatus } from "../../../Service";
+import { Timestamp, ContentFile, ServerStatus } from "../../../Service";
 import { EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
 import { ServerName } from "../../../naming/NameKeeper";
@@ -43,7 +43,7 @@ class RedirectContentServerClient extends ContentServerClient {
         return this.redirectCall(server => server.getEntity(entityType, entityId))
     }
 
-    getContentFile(fileHash: string): Promise<File> {
+    getContentFile(fileHash: string): Promise<ContentFile> {
         return this.redirectCall(server => server.getContentFile(fileHash))
     }
 

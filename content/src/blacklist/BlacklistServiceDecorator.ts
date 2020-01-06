@@ -1,6 +1,6 @@
-import { MetaverseContentService, File, ServerStatus } from "../service/Service";
+import { MetaverseContentService, ContentFile, ServerStatus } from "../service/Service";
 import { Entity, EntityType, EntityId, Pointer } from "../service/Entity";
-import { FileHash } from "../service/Hashing";
+import { ContentFileHash } from "../service/Hashing";
 import { Blacklist } from "./Blacklist";
 import { buildPointerTarget, buildEntityTarget, BlacklistTarget, buildContentTarget, buildAddressTarget } from "./BlacklistTarget";
 import { EthAddress, Signature } from "../service/auth/Authenticator";
@@ -34,7 +34,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return this.filterBlacklisted(activePointers, pointer => buildPointerTarget(type, pointer))
     }
 
-    async getContent(fileHash: FileHash): Promise<Buffer | undefined> {
+    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
         const isBlacklisted = await this.isFileHashBlacklisted(fileHash);
         if (isBlacklisted) {
             return undefined
@@ -44,10 +44,10 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
     }
 
     /** Is content is blacklisted, then we will return that it is not available */
-    async isContentAvailable(fileHashes: FileHash[]): Promise<Map<string, boolean>> {
-        const availability: Map<FileHash, boolean> = await this.service.isContentAvailable(fileHashes)
-        const blacklistedEntries: Promise<[FileHash, boolean]>[] = fileHashes.map(fileHash => this.isFileHashBlacklisted(fileHash).then(isBlacklisted => [fileHash, isBlacklisted]))
-        const blacklisted: Map<FileHash, boolean> = new Map(await Promise.all(blacklistedEntries))
+    async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
+        const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes)
+        const blacklistedEntries: Promise<[ContentFileHash, boolean]>[] = fileHashes.map(fileHash => this.isFileHashBlacklisted(fileHash).then(isBlacklisted => [fileHash, isBlacklisted]))
+        const blacklisted: Map<ContentFileHash, boolean> = new Map(await Promise.all(blacklistedEntries))
 
         for (const [fileHash, isBlacklisted] of blacklisted) {
             if (isBlacklisted) {
@@ -65,7 +65,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
         // Build respective targets
         const entityTarget = buildEntityTarget(type, id);
-        const contentTargets: Map<FileHash, BlacklistTarget> = new Map(Array.from(entity.content?.values() ?? [])
+        const contentTargets: Map<ContentFileHash, BlacklistTarget> = new Map(Array.from(entity.content?.values() ?? [])
             .map(fileHash => [fileHash, buildContentTarget(fileHash)]))
         const allTargets = [entityTarget, ...contentTargets.values()]
 
@@ -83,7 +83,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         }
 
         // If any of the content is blacklisted, then add them to the audit info
-        const blacklistedContent: FileHash[] = Array.from(contentTargets.entries())
+        const blacklistedContent: ContentFileHash[] = Array.from(contentTargets.entries())
             .filter(([, target]) => blacklisted.get(target))
             .map(([fileHash, ]) => fileHash)
 
@@ -98,14 +98,14 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return this.service.getStatus()
     }
 
-    async deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<number> {
+    async deployEntity(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<number> {
         // No deployments from blacklisted eth addresses are allowed
         if (await this.areBlacklisted(buildAddressTarget(ethAddress))) {
             throw new Error(`Can't allow a deployment from address '${ethAddress}' since it was blacklisted.`);
         }
 
         // Find the entity file
-        const entityFile: File = ServiceImpl.findEntityFile(files)
+        const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
 
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)

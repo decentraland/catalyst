@@ -1,8 +1,8 @@
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Entity, EntityId } from "../Entity";
-import { FileHash } from "../Hashing";
-import { ENTITY_FILE_NAME, File, ClusterDeploymentsService } from "../Service";
+import { ContentFileHash } from "../Hashing";
+import { ENTITY_FILE_NAME, ContentFile, ClusterDeploymentsService } from "../Service";
 import { ContentCluster } from "./ContentCluster";
 import { AuditInfo } from "../audit/Audit";
 
@@ -38,7 +38,7 @@ export class EventDeployer {
 
     async deployOverwrittenEvent(deployment: DeploymentEvent, auditInfo: AuditInfo, source: ContentServerClient): Promise<void> {
         // Download the entity file
-        const entityFile: File = await this.getEntityFile(source, deployment);
+        const entityFile: ContentFile = await this.getEntityFile(source, deployment);
 
         // Deploy the entity
         await this.service.deployOverwrittenEntityFromCluster([entityFile], deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
@@ -50,7 +50,7 @@ export class EventDeployer {
         source = source ?? this.cluster.getAllActiveServersInCluster()[0]
 
         // Download all entity's files
-        const files: File[] = await this.getFilesFromDeployment(source, deployment)
+        const files: ContentFile[] = await this.getFilesFromDeployment(source, deployment)
 
         // Get the audit info
         const auditInfo = await source.getAuditInfo(deployment.entityType, deployment.entityId);
@@ -60,19 +60,19 @@ export class EventDeployer {
     }
 
     /** Get all the files needed to deploy the new entity */
-    private async getFilesFromDeployment(contentServer: ContentServerClient, event: DeploymentEvent): Promise<File[]> {
+    private async getFilesFromDeployment(contentServer: ContentServerClient, event: DeploymentEvent): Promise<ContentFile[]> {
         // Retrieve the entity from the server
         const entity: Entity = await contentServer.getEntity(event.entityType, event.entityId)
 
         // Read the entity, and get all content file hashes
-        const allFileHashes: FileHash[] = Array.from(entity.content?.values() ?? [])
+        const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
         // Download all content files that we don't currently have
-        const filePromises: Promise<File>[] = (await this.filterOutKnownFiles(allFileHashes))
+        const filePromises: Promise<ContentFile>[] = (await this.filterOutKnownFiles(allFileHashes))
             .map(fileHash => contentServer.getContentFile(fileHash))
 
         // Download the entity file
-        const entityFile: File = await this.getEntityFile(contentServer, event);
+        const entityFile: ContentFile = await this.getEntityFile(contentServer, event);
 
         // Combine all files
         const contentFiles = await Promise.all(filePromises)
@@ -84,14 +84,14 @@ export class EventDeployer {
 
     private async getEntityFile(source: ContentServerClient, deployment: DeploymentEvent) {
         // Download the entity file and rename it
-        let entityFile: File = await source.getContentFile(deployment.entityId);
+        let entityFile: ContentFile = await source.getContentFile(deployment.entityId);
         entityFile.name = ENTITY_FILE_NAME;
         return entityFile;
     }
 
-    private async filterOutKnownFiles(hashes: FileHash[]): Promise<FileHash[]> {
+    private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {
         // Check if we already have any of the files
-        const availableContent: Map<FileHash, Boolean> = await this.service.isContentAvailable(hashes)
+        const availableContent: Map<ContentFileHash, Boolean> = await this.service.isContentAvailable(hashes)
 
         // Filter out files that we already have
         return Array.from(availableContent.entries())

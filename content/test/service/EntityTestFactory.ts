@@ -1,21 +1,21 @@
 import { random } from "faker"
 import { EntityType, Pointer, Entity } from "../../src/service/Entity";
-import { Timestamp, File, ENTITY_FILE_NAME } from "../../src/service/Service";
-import { FileHash, Hashing } from "../../src/service/Hashing";
+import { Timestamp, ContentFile, ENTITY_FILE_NAME } from "../../src/service/Service";
+import { ContentFileHash, Hashing } from "../../src/service/Hashing";
 
 /** Builds an entity with the given params, and also the file what represents it */
 export async function buildEntityAndFile(type: EntityType, pointers: Pointer[], timestamp: Timestamp,
-    content?: Map<string, FileHash>, metadata?: any): Promise<[Entity, File]> {
+    content?: Map<string, ContentFileHash>, metadata?: any): Promise<[Entity, ContentFile]> {
 
     const entity: Entity = new Entity("temp-id", type, pointers, timestamp, content, metadata)
-    const file: File = entityToFile(entity, ENTITY_FILE_NAME)
-    const fileHash: FileHash = await Hashing.calculateHash(file)
+    const file: ContentFile = entityToFile(entity, ENTITY_FILE_NAME)
+    const fileHash: ContentFileHash = await Hashing.calculateHash(file)
     entity.id = fileHash
     return [entity, file]
 }
 
 /** Build a file with the given entity as the content */
-export function entityToFile(entity: Entity, fileName?: string): File {
+export function entityToFile(entity: Entity, fileName?: string): ContentFile {
     let copy: any = Object.assign({}, entity)
     copy.content = !copy.content || !(copy.content instanceof Map) ? copy.content :
         Array.from(copy.content.entries()).map(([key, value]) => ({ file: key, hash: value }))

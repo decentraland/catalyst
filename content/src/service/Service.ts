@@ -1,4 +1,4 @@
-import { FileHash } from "./Hashing";
+import { ContentFileHash } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { ServerName } from "./naming/NameKeeper";
 import { AuditInfo } from "./audit/Audit";
@@ -14,10 +14,10 @@ export interface MetaverseContentService {
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>;
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
     getActivePointers(type: EntityType): Promise<Pointer[]>;
-    deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
+    deployEntity(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo>;
-    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>>;
-    getContent(fileHash: FileHash): Promise<Buffer | undefined>;
+    isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
+    getContent(fileHash: ContentFileHash): Promise<Buffer | undefined>;
     getStatus(): Promise<ServerStatus>;
 }
 
@@ -26,9 +26,9 @@ export interface MetaverseContentService {
  * and that deployments can also happen on other servers.
  */
 export interface ClusterDeploymentsService {
-    deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
-    deployOverwrittenEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
-    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>>;
+    deployEntityFromCluster(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+    deployOverwrittenEntityFromCluster(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+    isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
 }
 
 /** This version of the service can keep track of the immutable time */
@@ -37,7 +37,7 @@ export interface TimeKeepingService {
     getLastImmutableTime(): Timestamp;
 }
 
-export type File = {
+export type ContentFile = {
     name: string
     content: Buffer
 }

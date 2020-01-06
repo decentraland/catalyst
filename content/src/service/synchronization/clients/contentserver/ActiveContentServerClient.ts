@@ -1,9 +1,9 @@
 import fetch from "node-fetch";
 import ms from "ms";
-import { Timestamp, File, ServerStatus } from "../../../Service";
+import { Timestamp, ContentFile, ServerStatus } from "../../../Service";
 import { EntityId, EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
-import { FileHash } from "../../../Hashing";
+import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
 import { AuditInfo } from "../../../audit/Audit";
@@ -49,7 +49,7 @@ class ActiveContentServerClient extends ContentServerClient {
         return response.json();
     }
 
-    async getContentFile(fileHash: FileHash): Promise<File> {
+    async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
         const response = await fetch(`http://${this.address}/contents/${fileHash}`);
         const content = await response.buffer();
         return {
