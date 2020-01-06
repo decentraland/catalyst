@@ -9,7 +9,11 @@ export class PointerStorage {
     constructor(private storage: ContentStorage) { }
 
     async getActivePointers(entityType: EntityType): Promise<Pointer[]> {
-        return this.storage.listIds(this.resolveCategory(entityType))
+        try {
+            return await this.storage.listIds(this.resolveCategory(entityType))
+        } catch (error) {
+            return []
+        }
     }
 
     async getPointerReference(entityType: EntityType, pointer: Pointer): Promise<EntityId | undefined> {

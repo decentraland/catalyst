@@ -19,6 +19,7 @@ import { AuditFactory } from "./service/audit/AuditFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
 import { DAOClient } from "./service/synchronization/clients/DAOClient";
+import { BlacklistFactory } from "./blacklist/BlacklistFactory";
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -69,6 +70,7 @@ export const enum Bean {
     AUDIT,
     CONTENT_CLUSTER,
     EVENT_DEPLOYER,
+    BLACKLIST,
 }
 
 export const enum EnvironmentConfig {
@@ -158,6 +160,7 @@ export class EnvironmentBuilder {
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
         this.registerBeanIfNotAlreadySet(env, Bean.AUDIT                       , () => AuditFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.BLACKLIST                   , () => BlacklistFactory.create(env))
         const pointerManager = await PointerManagerFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => pointerManager)
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => new AccessCheckerImpl())

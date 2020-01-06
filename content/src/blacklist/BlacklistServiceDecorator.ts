@@ -34,10 +34,10 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return this.filterBlacklisted(activePointers, pointer => buildPointerTarget(type, pointer))
     }
 
-    async getContent(fileHash: FileHash): Promise<Buffer> {
-        if (await this.isFileHashBlacklisted(fileHash)) {
-            // TODO: Maybe handle this better. Should end up being a 404
-            throw new Error("Content not found")
+    async getContent(fileHash: FileHash): Promise<Buffer | undefined> {
+        const isBlacklisted = await this.isFileHashBlacklisted(fileHash);
+        if (isBlacklisted) {
+            return undefined
         } else {
             return this.service.getContent(fileHash)
         }
@@ -157,8 +157,12 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
     /** Return true if any of the given targets is blacklisted */
     private async areBlacklisted(...targets: BlacklistTarget[]): Promise<boolean> {
-        const result = await this.blacklist.areTargetsBlacklisted(targets)
-        return Array.from(result.values()).reduce((accum, currentValue) => accum || currentValue)
+        if (targets.length == 0) {
+            return false
+        } else {
+            const result = await this.blacklist.areTargetsBlacklisted(targets)
+            return Array.from(result.values()).reduce((accum, currentValue) => accum || currentValue)
+        }
     }
 
     /** Filter out blacklisted targets */

@@ -31,13 +31,12 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
         content,
         metadata)
 
-    const identity = EthCrypto.createIdentity();
-    const messageHash = Authenticator.createEthereumMessageHash(entity.id)
+    const [address, signature] = hashAndSignMessage(entity.id)
 
     const deployData: DeployData = {
         entityId: entity.id,
-        ethAddress: identity.address,
-        signature: EthCrypto.sign(identity.privateKey, messageHash),
+        ethAddress: address,
+        signature: signature,
         files: [ entityFile, ...files]
     }
 
@@ -47,6 +46,13 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
 export function deleteServerStorage(...servers: TestServer[]) {
     servers.map(server => server.storageFolder)
         .forEach(storageFolder => deleteFolderRecursive(storageFolder))
+}
+
+export function hashAndSignMessage(message: string) {
+    const identity = EthCrypto.createIdentity();
+    const messageHash = Authenticator.createEthereumMessageHash(message)
+    const signature = EthCrypto.sign(identity.privateKey, messageHash)
+    return [identity.address, signature]
 }
 
 function deleteFolderRecursive(pathToDelete: string) {

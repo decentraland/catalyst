@@ -2,14 +2,16 @@ import fetch from "node-fetch"
 import FormData from "form-data"
 import { Server } from "../../src/Server"
 import { Environment, EnvironmentConfig } from "../../src/Environment"
-import { ServerAddress } from "../../src/service/synchronization/clients/contentserver/ContentServerClient"
+import { ServerAddress, ContentServerClient } from "../../src/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "../../src/service/Entity"
 import { ControllerEntity } from "../../src/controller/Controller"
 import { DeploymentHistory } from "../../src/service/history/HistoryManager"
 import { FileHash } from "../../src/service/Hashing"
-import { DeployData } from "./TestUtils"
+import { DeployData, hashAndSignMessage } from "./TestUtils"
 import { Timestamp, File, ServerStatus } from "../../src/service/Service"
 import { AuditInfo } from "../../src/service/audit/Audit"
+import { getClient } from "../../src/service/synchronization/clients/contentserver/ActiveContentServerClient"
+import { buildEntityTarget, BlacklistTarget, buildContentTarget } from "../../src/blacklist/BlacklistTarget"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -19,11 +21,14 @@ export class TestServer extends Server {
     public readonly namePrefix: string
     public readonly storageFolder: string
 
+    private readonly client: ContentServerClient
+
     constructor(env: Environment) {
         super(env)
         this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
         this.namePrefix = env.getConfig(EnvironmentConfig.NAME_PREFIX)
         this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
+        this.client = getClient(this.getAddress(), this.namePrefix, 0)
     }
 
     getAddress(): ServerAddress {
@@ -71,7 +76,7 @@ export class TestServer extends Server {
     }
 
     getStatus(): Promise<ServerStatus> {
-        return this.makeRequest(`http://${this.getAddress()}/status`)
+        return this.client.getStatus()
     }
 
     getEntitiesByIds(type: EntityType, ...ids: EntityId[]): Promise<ControllerEntity[]> {
@@ -87,13 +92,36 @@ export class TestServer extends Server {
     }
 
     async downloadContent(fileHash: FileHash): Promise<Buffer> {
-        const response = await fetch(`http://${this.getAddress()}/contents/${fileHash}`)
-        expect(response.ok).toBe(true)
-        return response.buffer()
+        return this.client.getContentFile(fileHash)
+            .then(file => file.content)
     }
 
     async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        return this.makeRequest(`http://${this.getAddress()}/audit/${type}/${id}`)
+        return this.client.getAuditInfo(type, id)
+    }
+
+    blacklistEntity(entity: ControllerEntity): Promise<void> {
+        const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
+        return this.blacklistTarget(entityTarget)
+    }
+
+    async blacklistContent(fileHash: FileHash): Promise<void> {
+        const contentTarget = buildContentTarget(fileHash)
+        return this.blacklistTarget(contentTarget)
+    }
+
+    private async blacklistTarget(target: BlacklistTarget) {
+        const timestamp = Date.now()
+        const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`)
+
+        const body = {
+            "timestamp": timestamp,
+            "blocker": address,
+            "signature": signature
+        }
+
+        const deployResponse = await fetch(`http://${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
+        expect(deployResponse.ok).toBe(true)
     }
 
     private async makeRequest(url: string): Promise<any> {

@@ -14,21 +14,17 @@ export class BlacklistStorage {
     }
 
     async areTargetsBlacklisted(targets: BlacklistTarget[]): Promise<Map<BlacklistTarget, boolean>> {
-        const allTargetsAsId: string[] = await this.storage.listIds(BlacklistStorage.BLACKLIST_CATEGORY)
+        const allTargetsAsId: string[] = await this.readAllBlacklists()
         return new Map(targets.map(target => [target, allTargetsAsId.includes(target.asString())]))
     }
 
-    async removeBlacklist(target: BlacklistTarget) {
-        try {
-            await this.storage.delete(BlacklistStorage.BLACKLIST_CATEGORY, target.asString())
-        } catch (error) {
-            console.log(`Failed to delete blacklist`, target)
-        }
+    removeBlacklist(target: BlacklistTarget): Promise<void> {
+        return this.storage.delete(BlacklistStorage.BLACKLIST_CATEGORY, target.asString())
     }
 
     async getAllBlacklists(): Promise<Map<BlacklistTarget, BlacklistMetadata>> {
         // List all targets
-        const allTargetsAsId = await this.storage.listIds(BlacklistStorage.BLACKLIST_CATEGORY)
+        const allTargetsAsId: string[] = await this.readAllBlacklists()
 
         // Read each blacklist metadata
         const blacklists: Promise<[string, BlacklistMetadata | undefined]>[] = allTargetsAsId.map(targetAsId => this.retrieveMetadata(targetAsId).then(metadata => [targetAsId, metadata]))
@@ -66,6 +62,14 @@ export class BlacklistStorage {
             BlacklistStorage.HISTORY_FILE_ID,
             Buffer.from(JSON.stringify(event)),
             true)
+    }
+
+    private async readAllBlacklists(): Promise<string[]> {
+        try {
+            return await this.storage.listIds(BlacklistStorage.BLACKLIST_CATEGORY);
+        } catch (error) {
+            return []
+        }
     }
 
     private buildEvent(target: BlacklistTarget, metadata: BlacklistMetadata, action: BlacklistAction): BlacklistEvent {

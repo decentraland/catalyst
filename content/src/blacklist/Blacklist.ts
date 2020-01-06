@@ -11,7 +11,7 @@ export class Blacklist {
         // TODO: Validate that blocker can blacklist
 
         // Validate that signature belongs to the blocker
-        await this.validateBlocker(metadata);
+        await this.validateBlocker(target, metadata);
 
         // Add blacklist
         await this.storage.addBlacklist(target, metadata)
@@ -24,7 +24,7 @@ export class Blacklist {
         // TODO: Validate that blocker can remove from blacklist
 
         // Validate that signature belongs to the blocker
-        await this.validateBlocker(metadata);
+        await this.validateBlocker(target, metadata);
 
         // Remove blacklist
         await this.storage.removeBlacklist(target)
@@ -46,14 +46,14 @@ export class Blacklist {
         return this.storage.areTargetsBlacklisted(targets)
     }
 
-    private async validateBlocker(metadata: BlacklistMetadata) {
-        if (!await Authenticator.validateSignature(this.buildMessageToSign(metadata), metadata.blocker, metadata.signature)) {
-            throw new Error(`Failed to authenticate the blocker. Please sign your address and timestamp`);
+    private async validateBlocker(target: BlacklistTarget, metadata: BlacklistMetadata) {
+        if (!await Authenticator.validateSignature(this.buildMessageToSign(target, metadata), metadata.blocker, metadata.signature)) {
+            throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }
     }
 
-    private buildMessageToSign(metadata: BlacklistMetadata) {
-        return `${metadata.blocker}${metadata.timestamp}`
+    private buildMessageToSign(target: BlacklistTarget, metadata: BlacklistMetadata) {
+        return `${target.asString()}${metadata.timestamp}`
     }
 
 }

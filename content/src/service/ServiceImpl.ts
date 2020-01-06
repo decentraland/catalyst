@@ -166,9 +166,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return filesWithName[0];
     }
 
-    async getContent(fileHash: FileHash): Promise<Buffer> {
-        const content: Buffer | undefined = await this.storage.getContent(fileHash);
-        return this.assertDefined(content, `Failed to find content with the hash ${fileHash}.`)
+    async getContent(fileHash: FileHash): Promise<Buffer | undefined> {
+        return this.storage.getContent(fileHash);
     }
 
     async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {

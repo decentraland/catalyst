@@ -4,7 +4,7 @@ import { EntityField, ControllerEntity, ControllerEntityContent } from "./Contro
 export class ControllerEntityFactory {
     static maskEntity(fullEntity: Entity, fields?: EntityField[]): ControllerEntity {
         const { id, type, timestamp } = fullEntity
-        let content: ControllerEntityContent[] = []
+        let content: ControllerEntityContent[] | undefined = undefined
         let metadata: any
         let pointers: string[] = []
         if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
