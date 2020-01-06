@@ -85,10 +85,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
     }
   };
 
-  function setCursorPosition(
-    sender: string,
-    position: { x: number; y: number }
-  ) {
+  function setCursorPosition(sender: string, position: { x: number; y: number }) {
     if (updatingCursors) {
       const cursorColor = cursors[sender]?.color ?? randomColor();
 
@@ -100,11 +97,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   }
 
   function sendCursorMessage() {
-    props.peer.sendMessage(
-      currentRoom,
-      { type: "cursorPosition", position: { ...mouse } },
-      false
-    );
+    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, false);
   }
 
   function sendMessage() {
@@ -144,16 +137,12 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
       try {
         const response = await fetch(`${props.url}/rooms`);
         const rooms = await response.json();
-        setAvailableRooms(
-          rooms.filter(room => !joinedRooms.some(joined => joined.id === room))
-        );
+        setAvailableRooms(rooms.filter(room => !joinedRooms.some(joined => joined.id === room)));
       } catch (e) {}
     }, 1000);
   }, []);
 
-  const users = [
-    ...(joinedRooms.find(r => r.id === currentRoom)?.users?.values() ?? [])
-  ];
+  const users = [...(joinedRooms.find(r => r.id === currentRoom)?.users?.values() ?? [])];
 
   async function joinRoom(room: string) {
     try {
@@ -167,18 +156,12 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
 
   return (
     <div className="chat">
-      <h2 className="welcome-message">
-        Welcome to the Chat {props.peer.nickname}
-      </h2>
+      <h2 className="welcome-message">Welcome to the Chat {props.peer.nickname}</h2>
       <div className="side">
         <h3>Available rooms</h3>
         <ul className="available-rooms">
           {availableRooms.map((room, i) => (
-            <li
-              className="available-room clickable"
-              key={`available-room-${i}`}
-              onDoubleClick={() => joinRoom(room)}
-            >
+            <li className="available-room clickable" key={`available-room-${i}`} onDoubleClick={() => joinRoom(room)}>
               {room}
             </li>
           ))}
@@ -190,27 +173,16 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
             <h3>Rooms joined</h3>
             <ul>
               {joinedRooms.map((room, i) => (
-                <li
-                  className={
-                    "room-joined" +
-                    (currentRoom === room.id ? " active-room" : "")
-                  }
-                  key={`room-joined-${i}`}
-                >
+                <li className={"room-joined" + (currentRoom === room.id ? " active-room" : "")} key={`room-joined-${i}`}>
                   <button
                     disabled={room.id === currentRoom}
                     className="action-leave-room"
                     onClick={async () => {
                       try {
                         await props.peer.leaveRoom(room.id);
-                        setJoinedRooms(
-                          joinedRooms.filter(joined => room.id !== joined.id)
-                        );
+                        setJoinedRooms(joinedRooms.filter(joined => room.id !== joined.id));
                       } catch (e) {
-                        console.log(
-                          `error while trying to leave room ${room.id}`,
-                          e
-                        );
+                        console.log(`error while trying to leave room ${room.id}`, e);
                       }
                     }}
                   >
@@ -231,12 +203,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
               ))}
             </ul>
             <div className="create-room">
-              <input
-                className="create-room-input"
-                value={newRoomName}
-                onChange={event => setNewRoomName(event.currentTarget.value)}
-                placeholder="roomName"
-              ></input>
+              <input className="create-room-input" value={newRoomName} onChange={event => setNewRoomName(event.currentTarget.value)} placeholder="roomName"></input>
               <button
                 className="action-create-room"
                 disabled={!newRoomName}
@@ -274,25 +241,13 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
             <h3>
               Now in <i>{currentRoom}</i>
             </h3>
-            <Radio
-              toggle
-              label="Sync cursors"
-              checked={updatingCursors}
-              onChange={(ev, data) => setUpdatingCursors(!!data.checked)}
-            />
+            <Radio toggle label="Sync cursors" checked={updatingCursors} onChange={(ev, data) => setUpdatingCursors(!!data.checked)} />
           </div>
           <div className="messages-container">
             {messages[currentRoom]?.map((it, i) => (
-              <MessageBubble
-                message={it}
-                key={i}
-                own={it.sender === props.peer.nickname}
-              />
+              <MessageBubble message={it} key={i} own={it.sender === props.peer.nickname} />
             ))}
-            <div
-              style={{ float: "left", clear: "both" }}
-              ref={messagesEndRef}
-            ></div>
+            <div style={{ float: "left", clear: "both" }} ref={messagesEndRef}></div>
           </div>
           <div className="message-container">
             <textarea
@@ -302,19 +257,13 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
                 if (message && ev.keyCode === 13 && ev.ctrlKey) sendMessage();
               }}
             />
-            <Button
-              className="send"
-              primary
-              disabled={!message}
-              onClick={sendMessage}
-            >
+            <Button className="send" primary disabled={!message} onClick={sendMessage}>
               Send
             </Button>
           </div>
         </div>
       </div>
-      {updatingCursors &&
-        Object.values(cursors).map(it => <CursorComponent cursor={it} />)}
+      {updatingCursors && Object.values(cursors).map(it => <CursorComponent cursor={it} />)}
     </div>
   );
 }
