@@ -1,17 +1,17 @@
-import { Validation } from "../../src/service/Validation"
-import { Entity, EntityType } from "../../src/service/Entity"
+import { Validator } from "../../../src/service/validations/Validator"
+import { Entity, EntityType } from "../../../src/service/Entity"
 import * as EthCrypto from "eth-crypto"
-import { MockedAccessChecker } from "./access/MockedAccessChecker"
-import { Authenticator } from "../../src/service/auth/Authenticator"
+import { MockedAccessChecker } from "../access/MockedAccessChecker"
+import { Authenticator } from "../../../src/service/auth/Authenticator"
 
-describe("Validation", function () {
+describe("Validator", function () {
 
     it(`When a non uploaded hash is referenced, it is reported`, () => {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
             ["name-2", "hash-2"],
         ]))
-        let validation = new Validation(new MockedAccessChecker())
+        let validation = new Validator(new MockedAccessChecker())
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}]
         ]), new Map([]))
@@ -25,7 +25,7 @@ describe("Validation", function () {
             ["name-1", "hash-1"],
             ["name-2", "hash-2"],
         ]))
-        let validation = new Validation(new MockedAccessChecker())
+        let validation = new Validator(new MockedAccessChecker())
         validation.validateContent(entity, new Map([]), new Map([["hash-2", true]]))
 
         expect(validation.getErrors().length).toBe(1)
@@ -36,7 +36,7 @@ describe("Validation", function () {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
         ]))
-        let validation = new Validation(new MockedAccessChecker())
+        let validation = new Validator(new MockedAccessChecker())
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}],
             ["hash-2", {name:"name-2", content: Buffer.from([])}]
@@ -50,7 +50,7 @@ describe("Validation", function () {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
         ]))
-        let validation = new Validation(new MockedAccessChecker())
+        let validation = new Validator(new MockedAccessChecker())
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}],
         ]), new Map([
@@ -79,7 +79,7 @@ describe("Validation", function () {
     })
 
     it(`when signature is invalid, it's reported`, async () => {
-        let validation = new Validation(new MockedAccessChecker())
+        let validation = new Validator(new MockedAccessChecker())
         await validation.validateSignature("some-entity-id", "some-address", "some-signature")
 
         expect(validation.getErrors().length).toBe(1)
@@ -89,7 +89,7 @@ describe("Validation", function () {
     it(`when signature is valid, it's recognized`, async () => {
         const identity = EthCrypto.createIdentity();
         const entityId = "some-entity-id"
-        let validation = new Validation(new MockedAccessChecker())
+        let validation = new Validator(new MockedAccessChecker())
         await validation.validateSignature(
             entityId,
             identity.address,

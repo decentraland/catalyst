@@ -33,32 +33,33 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
-        const response = await fetch(`http://${this.address}/entities/${entityType}?id=${entityId}`);
-        const json = await response.json();
+        const json = await this.fetchJson(`http://${this.address}/entities/${entityType}?id=${entityId}`)
         const entity = json[0];
         return EntityFactory.fromJsonObject(entity);
     }
 
-    async getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
-        const response = await fetch(`http://${this.address}/audit/${entityType}/${entityId}`)
-        return response.json();
+    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
+        return this.fetchJson(`http://${this.address}/audit/${entityType}/${entityId}`)
     }
 
-    async getStatus(): Promise<ServerStatus> {
-        const response = await fetch(`http://${this.address}/status`)
-        return response.json();
+    getStatus(): Promise<ServerStatus> {
+        return this.fetchJson(`http://${this.address}/status`)
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
         const response = await fetch(`http://${this.address}/contents/${fileHash}`);
-        const content = await response.buffer();
-        return {
-            name: fileHash,
-            content: content
-        };
+        if (response.ok) {
+            const content = await response.buffer();
+            return {
+                name: fileHash,
+                content: content
+            };
+        } else {
+            throw new Error(`Failed to fetch file with hash ${fileHash}`)
+        }
     }
 
-    async getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
+    getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
         let url = `http://${this.address}/history?from=${from}`
         if (to) {
             url += `&to=${to}`
@@ -66,8 +67,7 @@ class ActiveContentServerClient extends ContentServerClient {
         if (serverName) {
             url += `&serverName=${serverName}`
         }
-        const response = await fetch(url)
-        return response.json();
+        return this.fetchJson(url)
     }
 
     isActive(): boolean {
@@ -75,8 +75,16 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     private async getCurrentTimestamp(): Promise<Timestamp> {
-        const response = await fetch(`http://${this.address}/status`);
-        const { currentTime } = await response.json();
+        const { currentTime } = await this.fetchJson(`http://${this.address}/status`)
         return currentTime;
+    }
+
+    private async fetchJson(url: string): Promise<any> {
+        const response = await fetch(url);
+        if (response.ok) {
+            return response.json()
+        } else {
+            throw new Error(`Failed to fetch ${url}. Got status ${response.status}, ${response.statusText}`)
+        }
     }
 }

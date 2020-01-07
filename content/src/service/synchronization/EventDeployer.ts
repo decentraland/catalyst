@@ -5,8 +5,12 @@ import { ContentFileHash } from "../Hashing";
 import { ENTITY_FILE_NAME, ContentFile, ClusterDeploymentsService } from "../Service";
 import { ContentCluster } from "./ContentCluster";
 import { AuditInfo } from "../audit/Audit";
+import { tryOnCluster } from "./ClusterUtils";
+import { EntityFactory } from "../EntityFactory";
 
 export class EventDeployer {
+
+    static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: ClusterDeploymentsService) { }
@@ -36,57 +40,119 @@ export class EventDeployer {
         await Promise.all(deployments)
     }
 
-    async deployOverwrittenEvent(deployment: DeploymentEvent, auditInfo: AuditInfo, source: ContentServerClient): Promise<void> {
-        // Download the entity file
-        const entityFile: ContentFile = await this.getEntityFile(source, deployment);
-
-        // Deploy the entity
-        await this.service.deployOverwrittenEntityFromCluster([entityFile], deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
-    }
-
     /** Process a specific deployment */
     async deployEvent(deployment: DeploymentEvent, source?: ContentServerClient): Promise<void> {
-        // If not set, then choose a server to query
-        source = source ?? this.cluster.getAllActiveServersInCluster()[0]
-
-        // Download all entity's files
-        const files: ContentFile[] = await this.getFilesFromDeployment(source, deployment)
+        // Download the entity file
+        const entityFile: ContentFile | undefined = await this.getEntityFile(deployment, source);
 
         // Get the audit info
-        const auditInfo = await source.getAuditInfo(deployment.entityType, deployment.entityId);
+        const auditInfo = await this.getAuditInfo(deployment, source)
 
-        // Deploy the new entity
-        await this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+        console.log(entityFile?.content.toString())
+
+        if (entityFile) {
+            // If entity file was retrieved, we know that the entity wasn't blacklisted
+            if (auditInfo.overwrittenBy) {
+                // Deploy the entity as overwritten
+                return this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+            } else {
+                // Download all entity's files
+                const files: (ContentFile | undefined)[] = await this.getContentFiles(deployment, entityFile, source)
+
+                // Add the entity file to the list of files
+                files.unshift(entityFile)
+
+                // Keep only defined files
+                const definedFiles: ContentFile[] = files.filter((file): file is ContentFile => !!file)
+
+                if (definedFiles.length == files.length) {
+                    // Since there was no blacklisted files, deploy the new entity normally
+                    return this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+                } else {
+                    // It looks like there was a blacklisted content
+                    return this.service.deployEntityWithBlacklistedContent(definedFiles, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+                }
+            }
+        } else {
+            // It looks like the entity was blacklisted
+            const entity: Entity = await this.getEntity(deployment, source);
+            const newEntity = new Entity(entity.id, entity.type, entity.pointers, entity.timestamp,
+                undefined, EventDeployer.BLACKLISTED_ON_CLUSTER_METADATA)
+
+            // Build a new entity file, based on the sanitized entity
+            const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(newEntity)) }
+
+            // Deploy the entity file
+            return this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+        }
     }
 
-    /** Get all the files needed to deploy the new entity */
-    private async getFilesFromDeployment(contentServer: ContentServerClient, event: DeploymentEvent): Promise<ContentFile[]> {
+    /**
+     * Get all the files needed to deploy the new entity
+     */
+    private async getContentFiles(deployment: DeploymentEvent, entityFile: ContentFile, source?: ContentServerClient): Promise<(ContentFile | undefined)[]> {
         // Retrieve the entity from the server
-        const entity: Entity = await contentServer.getEntity(event.entityType, event.entityId)
+        const entity: Entity = EntityFactory.fromBufferWithId(entityFile.content, deployment.entityId)
 
         // Read the entity, and get all content file hashes
         const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
         // Download all content files that we don't currently have
-        const filePromises: Promise<ContentFile>[] = (await this.filterOutKnownFiles(allFileHashes))
-            .map(fileHash => contentServer.getContentFile(fileHash))
-
-        // Download the entity file
-        const entityFile: ContentFile = await this.getEntityFile(contentServer, event);
-
-        // Combine all files
-        const contentFiles = await Promise.all(filePromises)
-        contentFiles.push(entityFile)
+        const filePromises: Promise<ContentFile | undefined>[] = (await this.filterOutKnownFiles(allFileHashes))
+            .map(fileHash => this.getContentFile(deployment, fileHash, source))
 
         // Return all the downloaded files
-        return contentFiles
+        return Promise.all(filePromises)
     }
 
-    private async getEntityFile(source: ContentServerClient, deployment: DeploymentEvent) {
-        // Download the entity file and rename it
-        let entityFile: ContentFile = await source.getContentFile(deployment.entityId);
-        entityFile.name = ENTITY_FILE_NAME;
-        return entityFile;
+    private async getEntityFile(deployment: DeploymentEvent, source?: ContentServerClient): Promise<ContentFile | undefined> {
+        const file: ContentFile | undefined = await this.getFileOrUndefinedIfBlacklisted(deployment,
+            deployment.entityId,
+            auditInfo => !!auditInfo.isBlacklisted,
+            source)
+
+        // If we could download the entity file, rename it
+        if (file) {
+            file.name = ENTITY_FILE_NAME
+        }
+        return file
+    }
+
+    private getContentFile(deployment: DeploymentEvent, fileHash: ContentFileHash, source?: ContentServerClient): Promise<ContentFile | undefined> {
+        return this.getFileOrUndefinedIfBlacklisted(deployment,
+            fileHash,
+            auditInfo => !!auditInfo.blacklistedContent && auditInfo.blacklistedContent.includes(fileHash),
+            source)
+    }
+
+    /**
+     * This method tries to get a file from the other servers on the DAO. If all the request fail, then it checks if the file is blacklisted.
+     * If it is, then it returns 'undefined'. If it isn;t, then it throws an exception.
+     */
+    private async getFileOrUndefinedIfBlacklisted(deployment: DeploymentEvent, fileHash: ContentFileHash, checkIfBlacklisted: (auditInfo: AuditInfo) => boolean, source?: ContentServerClient): Promise<ContentFile | undefined> {
+        try {
+            return await tryOnCluster(server => server.getContentFile(fileHash), this.cluster, source)
+        } catch (error) {
+            // If we reach this point, then no other server on the DAO could give us the file we are looking for. Maybe it's been blacklisted?
+            const auditInfo: AuditInfo = await this.getAuditInfo(deployment, source)
+
+            // Check if the content is blacklisted
+            const isBlacklisted: boolean = checkIfBlacklisted(auditInfo)
+
+            if (!isBlacklisted) {
+                throw new Error(`Couldn't get file ${fileHash} from any other server on the DAO, but is isn't blacklisted`)
+            } else {
+                return undefined
+            }
+        }
+    }
+
+    private getEntity(deployment: DeploymentEvent, source: ContentServerClient | undefined): Promise<Entity> {
+        return tryOnCluster(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, source);
+    }
+
+    private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo> {
+        return tryOnCluster(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, source)
     }
 
     private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {

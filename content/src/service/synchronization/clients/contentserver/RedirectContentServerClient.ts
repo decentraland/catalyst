@@ -5,6 +5,7 @@ import { ServerName } from "../../../naming/NameKeeper";
 import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient } from "./ContentServerClient";
 import { ContentCluster } from "../../ContentCluster";
+import { tryOnCluster } from "../../ClusterUtils";
 
 export function getRedirectClient(cluster: ContentCluster, name: ServerName, lastKnownTimestamp: Timestamp): RedirectContentServerClient {
     return new RedirectContentServerClient(cluster, name, lastKnownTimestamp)
@@ -57,12 +58,7 @@ class RedirectContentServerClient extends ContentServerClient {
     }
 
     /** Redirect the call to one of the other servers. Will return the first result */
-    private redirectCall<T>(call: (server: ContentServerClient) => T) {
-        for (const server of this.cluster.getAllActiveServersInCluster()) {
-            try {
-                return call(server)
-            } catch (error) {}
-        }
-        throw new Error(`Failed to distribute call among reachable servers`);
+    private redirectCall<T>(call: (server: ContentServerClient) => Promise<T>) {
+        return tryOnCluster(call, this.cluster)
     }
 }

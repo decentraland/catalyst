@@ -79,12 +79,12 @@ export class TestServer extends Server {
         return this.client.getStatus()
     }
 
-    getEntitiesByIds(type: EntityType, ...ids: EntityId[]): Promise<ControllerEntity[]> {
+    getEntitiesByIds(type: string, ...ids: EntityId[]): Promise<ControllerEntity[]> {
         const filterParam = ids.map(id => `id=${id}`).join("&")
         return this.makeRequest(`http://${this.getAddress()}/entities/${type}?${filterParam}`)
     }
 
-    async getEntityById(type: EntityType, id: EntityId): Promise<ControllerEntity> {
+    async getEntityById(type: string, id: EntityId): Promise<ControllerEntity> {
         const entities: ControllerEntity[] = await this.getEntitiesByIds(type, id)
         expect(entities.length).toEqual(1)
         expect(entities[0].id).toEqual(id)

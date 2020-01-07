@@ -40,7 +40,7 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
     }
 }
 
-export async function assertEntityIsOnServer(server: TestServer, entityType: EntityType, entityId: EntityId) {
+export async function assertEntityIsOnServer(server: TestServer, entityType: string, entityId: EntityId) {
     const entity: ControllerEntity = await server.getEntityById(entityType, entityId)
     return assertFileIsOnServer(server, entity.id)
 }
@@ -76,7 +76,7 @@ export async function assertEntityIsBlacklisted(server: TestServer, entity: Cont
     expect(auditInfo.isBlacklisted).toBeTruthy()
 }
 
-export async function assertNoContentIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+export async function assertContentNotIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
     const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
     expect(auditInfo.blacklistedContent).not.toContain(contentHash)
 }
@@ -93,6 +93,21 @@ export function buildEvent(entity: ControllerEntity, server: TestServer, timesta
         entityType: EntityType[entity.type.toUpperCase().trim()],
         timestamp,
     }
+}
+
+export function assertRequiredFieldsOnEntitiesAreEqual(entity1: ControllerEntity, entity2: ControllerEntity) {
+    expect(entity1.id).toEqual(entity2.id)
+    expect(entity1.type).toEqual(entity2.type)
+    expect(entity1.pointers).toEqual(entity2.pointers)
+    expect(entity1.timestamp).toEqual(entity2.timestamp)
+}
+
+export function assertFieldsOnEntitiesExceptIdsAreEqual(entity1: ControllerEntity, entity2: ControllerEntity) {
+    expect(entity1.type).toEqual(entity2.type)
+    expect(entity1.pointers).toEqual(entity2.pointers)
+    expect(entity1.timestamp).toEqual(entity2.timestamp)
+    expect(entity1.content).toEqual(entity2.content)
+    expect(entity1.metadata).toEqual(entity2.metadata)
 }
 
 function parseEntityType(entity: ControllerEntity) {

@@ -6,7 +6,7 @@ import { BlacklistServiceDecorator } from "../../src/blacklist/BlacklistServiceD
 import { MockedAccessChecker } from "../service/access/MockedAccessChecker"
 import { buildDeployData, deleteServerStorage } from "./TestUtils"
 import { TestServer } from "./TestServer"
-import { assertFileIsOnServer, assertEntityIsNotBlacklisted, assertEntityIsBlacklisted, assertFileIsNotOnServer, assertNoContentIsBlacklisted, assertContentIsBlacklisted } from "./E2EAssertions"
+import { assertFileIsOnServer, assertEntityIsNotBlacklisted, assertEntityIsBlacklisted, assertFileIsNotOnServer, assertContentNotIsBlacklisted, assertContentIsBlacklisted, assertRequiredFieldsOnEntitiesAreEqual } from "./E2EAssertions"
 import { ControllerEntityContent } from "../../src/controller/Controller"
 
 describe("End 2 end - Blacklist", () => {
@@ -14,7 +14,7 @@ describe("End 2 end - Blacklist", () => {
     const metadata: string = "Some metadata"
     let server: TestServer
 
-    beforeAll(async () => {
+    beforeEach(async () => {
         const env = await new EnvironmentBuilder()
             .withAnalytics(new MockedContentAnalytics())
             .withSynchronizationManager(new MockedSynchronizationManager())
@@ -24,7 +24,7 @@ describe("End 2 end - Blacklist", () => {
         await server.start()
     })
 
-    afterAll(() => {
+    afterEach(() => {
         server.stop()
         deleteServerStorage(server)
     })
@@ -51,7 +51,7 @@ describe("End 2 end - Blacklist", () => {
 
         // Assert that entity has been sanitized
         const blacklistedEntity = await server.getEntityById(EntityType[entityBeingDeployed.type.toUpperCase()], entityBeingDeployed.id)
-        expect(blacklistedEntity.id).toEqual(entityBeingDeployed.id)
+        assertRequiredFieldsOnEntitiesAreEqual(blacklistedEntity, entityBeingDeployed)
         expect(blacklistedEntity.metadata).toBe(BlacklistServiceDecorator.BLACKLISTED_METADATA)
         expect(blacklistedEntity.content).toBeUndefined()
 
@@ -74,7 +74,7 @@ describe("End 2 end - Blacklist", () => {
         await assertFileIsOnServer(server, contentHash)
 
         // Assert that the audit info doesn't mark content as blacklisted
-        await assertNoContentIsBlacklisted(server, entityBeingDeployed, contentHash)
+        await assertContentNotIsBlacklisted(server, entityBeingDeployed, contentHash)
 
         // Blacklist the content
         await server.blacklistContent(contentHash)

@@ -1,12 +1,12 @@
 import ms from "ms"
-import { EntityId, Pointer, EntityType, Entity } from "./Entity";
-import { ENTITY_FILE_NAME } from "./Service";
-import { ContentFile } from './Service';
-import { ContentFileHash } from "./Hashing";
-import { AccessChecker } from "./access/AccessChecker";
-import { Authenticator, EthAddress, Signature } from "./auth/Authenticator";
+import { EntityId, Pointer, EntityType, Entity } from "../Entity";
+import { ENTITY_FILE_NAME } from "../Service";
+import { ContentFile } from '../Service';
+import { ContentFileHash } from "../Hashing";
+import { AccessChecker } from "../access/AccessChecker";
+import { Authenticator, EthAddress, Signature } from "../auth/Authenticator";
 
-export class Validation {
+export class Validator {
 
     private errors: string[] = []
 
@@ -29,7 +29,7 @@ export class Validation {
     validateRequestSize(files: ContentFile[]): void {
         var totalSize = 0
         files.forEach(file => totalSize += file.content.length)
-        if (totalSize > Validation.MAX_UPLOAD_SIZE) {
+        if (totalSize > Validator.MAX_UPLOAD_SIZE) {
             this.errors.push("The sum of all entity's file exceeds the total allowed size (10 MB).")
         }
     }
@@ -93,7 +93,7 @@ export class Validation {
     private static REQUEST_TTL = ms('10s')
     private requestIsRecent(entityToBeDeployed: Entity): void {
         const delta = Date.now() - entityToBeDeployed.timestamp
-        if (delta > Validation.REQUEST_TTL || delta < -ms('1s')) {
+        if (delta > Validator.REQUEST_TTL || delta < -ms('1s')) {
             this.errors.push("The request is not recent, please submit it again with a new timestamp.")
         }
     }
@@ -115,9 +115,9 @@ export class Validation {
 
             // Validate that all hashes that belong to uploaded files are actually reported on the entity
             Array.from(hashes.entries())
-            .filter(entry => entry[1].name !== ENTITY_FILE_NAME)
-            .map(entity => entity[0])
-            .filter(hash => entityHashes.indexOf(hash)<0)
+            .filter(([, file]) => file.name !== ENTITY_FILE_NAME)
+            .map(([hash, ]) => hash)
+            .filter(hash => !entityHashes.includes(hash))
             .forEach(unreferencedHash => this.errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`))
         }
     }

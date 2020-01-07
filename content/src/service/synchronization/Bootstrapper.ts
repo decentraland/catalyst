@@ -1,10 +1,10 @@
 import { Timestamp, } from "../Service";
 import { DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
-import { AuditInfo } from "../audit/Audit";
 import { EventDeployer } from "./EventDeployer";
 import { ContentCluster } from "./ContentCluster";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
+import { tryOnCluster } from "./ClusterUtils";
 
 export class Bootstrapper {
 
@@ -16,7 +16,7 @@ export class Bootstrapper {
 
         if (servers.length > 0) {
             // Process all history, checking if the entities are already overwritten or not
-            const immutableTime = await Bootstrapper.onboardIntoClusterWithServer(myLastImmutableTime, servers, deployer)
+            const immutableTime = await Bootstrapper.onboardIntoClusterWithServer(myLastImmutableTime, cluster, deployer)
 
             // Create a request for all servers to get everything from the last immutable time
             const request = new MultiServerHistoryRequest(servers, deployer, immutableTime)
@@ -26,27 +26,20 @@ export class Bootstrapper {
         }
     }
 
-    private static async onboardIntoClusterWithServer(myLastImmutableTime: Timestamp, servers: ContentServerClient[], deployer: EventDeployer): Promise<Timestamp> {
-        for (const server of servers) {
-            try {
-                // Get immutable history from server
-                const [immutableTime, history] = await Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server)
+    private static async onboardIntoClusterWithServer(myLastImmutableTime: Timestamp, cluster: ContentCluster, deployer: EventDeployer): Promise<Timestamp> {
+        // Get one (any) server's last immutable time and history
+        const [immutableTime, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
-                // Get server's last immutable time
-                for (const event of history) {
-                    const auditInfo: AuditInfo = await server.getAuditInfo(event.entityType, event.entityId);
-                    if (auditInfo.overwrittenBy) {
-                        // Since it was already overwritten, we will only download the entity file
-                        await deployer.deployOverwrittenEvent(event, auditInfo, server)
-                    } else {
-                        // Process the whole deployment
-                        await deployer.deployEvent(event, server)
-                    }
-                }
-                return immutableTime
-            } catch (error) { }
+        for (const event of history) {
+            // TODO: Sort from oldest to newest
+            try {
+               await deployer.deployEvent(event)
+            } catch (error) {
+                console.log(`Failed to deploy entity ${event.entityId} during bootstrap. This will probably cause synchronization issues. Error was:\n${error}`)
+            }
         }
-        throw new Error(`Couldn't bootstrap, since I couldn't connect sync with any other server`);
+
+        return immutableTime
     }
 
     private static async getImmutableHistoryOnServerFrom(from: Timestamp, server: ContentServerClient): Promise<[Timestamp, DeploymentHistory]> {

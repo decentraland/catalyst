@@ -27,7 +27,9 @@ export interface MetaverseContentService {
  */
 export interface ClusterDeploymentsService {
     deployEntityFromCluster(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
-    deployOverwrittenEntityFromCluster(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+    deployEntityWithBlacklistedContent(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+    deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
+    deployEntityWithBlacklistedEntity(entityFile: ContentFile, entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
 }
 
