@@ -549,7 +549,7 @@ export class Peer implements IPeer {
           break;
         }
         case ServerMessageType.Candidate: {
-          if (this.checkForCrossOffers(peerId)) {
+          if (this.checkForCrossOffers(peerId, payload.sessionId)) {
             break;
           }
           const peer = this.getOrCreatePeer(
@@ -572,9 +572,11 @@ export class Peer implements IPeer {
     }
   }
 
-  private checkForCrossOffers(peerId: string) {
+  private checkForCrossOffers(peerId: string, sessionId?: string) {
     const isCrossOfferToBeDiscarded =
-      this.hasInitiatedConnectionFor(peerId) && this.nickname < peerId;
+      this.hasInitiatedConnectionFor(peerId) &&
+      (!sessionId || this.peers[peerId].sessionId != sessionId) &&
+      this.nickname < peerId;
     if (isCrossOfferToBeDiscarded) {
       this.log(
         "Received offer/candidate for already existing peer but it was discarded: " +
