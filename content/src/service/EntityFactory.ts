@@ -1,9 +1,9 @@
 import { Entity, EntityId, EntityType } from "./Entity";
-import { File } from "./Service";
-import { FileHash } from "./Hashing";
+import { ContentFile } from "./Service";
+import { ContentFileHash } from "./Hashing";
 
 export class EntityFactory {
-    static fromFile(file: File, id: EntityId): Entity {
+    static fromFile(file: ContentFile, id: EntityId): Entity {
         return this.fromBufferWithId(file.content, id)
     }
     static fromBufferWithId(buffer: Buffer, id: EntityId): Entity {
@@ -37,7 +37,7 @@ export class EntityFactory {
             throw new Error(`Please set a valid timestamp`)
         }
 
-        let content: Map<string, FileHash> | undefined = undefined
+        let content: Map<string, ContentFileHash> | undefined = undefined
         if (object.content) {
             if (!Array.isArray(object.content)) {
                 throw new Error(`Expected an array as content`)
@@ -49,8 +49,8 @@ export class EntityFactory {
         return new Entity(id, type, object.pointers, object.timestamp, content, object.metadata)
     }
 
-    private static parseContent(contents: any[]): Map<string, FileHash> {
-        const entries: [string, FileHash][] = contents.map(content => {
+    private static parseContent(contents: any[]): Map<string, ContentFileHash> {
+        const entries: [string, ContentFileHash][] = contents.map(content => {
             if (!content.file || !content.hash) {
                 throw new Error("Content must contain a file name and a file hash");
             }

@@ -5,8 +5,8 @@ import { buildControllerEntityAndFile } from "../controller/ControllerEntityTest
 import { Authenticator } from "../../src/service/auth/Authenticator"
 import { Pointer, EntityType } from "../../src/service/Entity"
 import { ControllerEntity } from "../../src/controller/Controller"
-import { FileHash, Hashing } from "../../src/service/Hashing"
-import { File } from "../../src/service/Service"
+import { ContentFileHash, Hashing } from "../../src/service/Hashing"
+import { ContentFile } from "../../src/service/Service"
 import { DAOClient } from "../../src/service/synchronization/clients/DAOClient"
 import { EnvironmentConfig, Bean, EnvironmentBuilder } from "../../src/Environment"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
@@ -18,9 +18,9 @@ export function buildDeployData(pointers: Pointer[], metadata: any, ...contentPa
 }
 
 export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: any, afterEntity?: ControllerEntity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
-    const files: File[] = contentPaths.map(filePath => ({ name: path.basename(filePath), content: fs.readFileSync(filePath) }))
+    const files: ContentFile[] = contentPaths.map(filePath => ({ name: path.basename(filePath), content: fs.readFileSync(filePath) }))
 
-    const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
+    const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
     const content: Map<string, string> = new Map(Array.from(hashes.entries())
         .map(([hash, file]) => [file.name, hash]))
 
@@ -31,13 +31,12 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
         content,
         metadata)
 
-    const identity = EthCrypto.createIdentity();
-    const messageHash = Authenticator.createEthereumMessageHash(entity.id)
+    const [address, signature] = hashAndSignMessage(entity.id)
 
     const deployData: DeployData = {
         entityId: entity.id,
-        ethAddress: identity.address,
-        signature: EthCrypto.sign(identity.privateKey, messageHash),
+        ethAddress: address,
+        signature: signature,
         files: [ entityFile, ...files]
     }
 
@@ -47,6 +46,13 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
 export function deleteServerStorage(...servers: TestServer[]) {
     servers.map(server => server.storageFolder)
         .forEach(storageFolder => deleteFolderRecursive(storageFolder))
+}
+
+export function hashAndSignMessage(message: string) {
+    const identity = EthCrypto.createIdentity();
+    const messageHash = Authenticator.createEthereumMessageHash(message)
+    const signature = EthCrypto.sign(identity.privateKey, messageHash)
+    return [identity.address, signature]
 }
 
 function deleteFolderRecursive(pathToDelete: string) {
@@ -84,5 +90,5 @@ export type DeployData = {
     entityId: string,
     ethAddress: string,
     signature: string,
-    files: File[]
+    files: ContentFile[]
 }

@@ -1,7 +1,7 @@
-import { FileHash, Hashing } from "./Hashing";
+import { ContentFileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { Validation } from "./Validation";
-import { MetaverseContentService, Timestamp, ENTITY_FILE_NAME, File, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
+import { MetaverseContentService, Timestamp, ENTITY_FILE_NAME, ContentFile, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
@@ -61,14 +61,14 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.pointerManager.getActivePointers(type)
     }
 
-    async deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+    async deployEntity(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
         return this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, this.nameKeeper.getServerName(), Date.now, Validations.ALL)
     }
 
     // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampGenerator: () => Timestamp, validationType: Validations): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, timestampGenerator: () => Timestamp, validationType: Validations): Promise<Timestamp> {
         // Find entity file and make sure its hash is the expected
-        const entityFile: File = ServiceImpl.findEntityFile(files)
+        const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
         if (entityId !== await Hashing.calculateHash(entityFile)) {
             throw new Error("Entity file's hash didn't match the signed entity id.")
         }
@@ -98,8 +98,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         validation.validateType(entity)
 
         // Hash all files, and validate them
-        const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
-        const alreadyStoredHashes: Map<FileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
+        const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
+        const alreadyStoredHashes: Map<ContentFileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
 
         if (validationType != Validations.NO_FRESHNESS_NO_CONTENT) {
             validation.validateContent(entity, hashes, alreadyStoredHashes)
@@ -146,7 +146,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return buffer ? EntityFactory.fromBufferWithId(buffer, id) : undefined
     }
 
-    private storeEntityContent(hashes: Map<FileHash, File>, alreadyStoredHashes: Map<FileHash, Boolean>): Promise<any> {
+    private storeEntityContent(hashes: Map<ContentFileHash, ContentFile>, alreadyStoredHashes: Map<ContentFileHash, Boolean>): Promise<any> {
         // If entity was committed, then store all it's content (that isn't already stored)
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
             .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
@@ -155,7 +155,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return Promise.all(contentStorageActions)
     }
 
-    static findEntityFile(files: File[]): File {
+    static findEntityFile(files: ContentFile[]): ContentFile {
         const filesWithName = files.filter(file => file.name === ENTITY_FILE_NAME)
         if (filesWithName.length === 0) {
             throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
@@ -166,9 +166,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return filesWithName[0];
     }
 
-    async getContent(fileHash: FileHash): Promise<Buffer> {
-        const content: Buffer | undefined = await this.storage.getContent(fileHash);
-        return this.assertDefined(content, `Failed to find content with the hash ${fileHash}.`)
+    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
+        return this.storage.getContent(fileHash);
     }
 
     async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
@@ -176,7 +175,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.assertDefined(auditInfo, `Failed to find the audit information for the entity with type ${type} and id ${id}.`)
     }
 
-    async isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>> {
+    async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         return this.storage.isContentAvailable(fileHashes)
     }
 
@@ -196,11 +195,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         })
     }
 
-    async deployEntityFromCluster(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
+    async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature, serverName: ServerName, deploymentTimestamp: Timestamp): Promise<void> {
         await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, Validations.NO_FRESHNESS)
     }
 
-    async deployOverwrittenEntityFromCluster(files: File[], entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
+    async deployOverwrittenEntityFromCluster(files: ContentFile[], entityId: string, ethAddress: string, signature: string, serverName: string, deploymentTimestamp: number): Promise<void> {
         await this.deployEntityWithServerAndTimestamp(files, entityId, ethAddress, signature, serverName, () => deploymentTimestamp, Validations.NO_FRESHNESS_NO_CONTENT)
     }
 

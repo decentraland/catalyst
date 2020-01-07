@@ -1,12 +1,12 @@
 import { EntityFactory } from "../../src/service/EntityFactory";
 import { Entity, EntityType, EntityId } from "../../src/service/Entity";
-import { File } from "../../src/service/Service";
+import { ContentFile } from "../../src/service/Service";
 import { buildEntityAndFile, entityToFile } from "./EntityTestFactory";
 
 describe("Service", () => {
 
     let entity: Entity
-    let entityFile: File
+    let entityFile: ContentFile
 
     beforeAll(async () => {
         [entity, entityFile] = await buildEntityAndFile(EntityType.SCENE, ["X1,Y1"], 123456, new Map([["name", "hash"]]), "metadata")
@@ -17,7 +17,7 @@ describe("Service", () => {
     });
 
     it(`When the entity file can't be parsed into an entity, then an exception is thrown`, () => {
-        const invalidFile: File = { name: `invalid-file`, content: Buffer.from("Hello") }
+        const invalidFile: ContentFile = { name: `invalid-file`, content: Buffer.from("Hello") }
 
         assertInvalidFile(invalidFile, `id`, `Failed to parse the entity file. Please make sure that it is a valid json.`)
     });
@@ -100,7 +100,7 @@ describe("Service", () => {
         assertInvalidFile(entityToFile(invalidEntity), invalidEntity.id, errorMessage)
     }
 
-    function assertInvalidFile(file: File, entityId: EntityId, errorMessage: string) {
+    function assertInvalidFile(file: ContentFile, entityId: EntityId, errorMessage: string) {
         expect(() => { EntityFactory.fromFile(file, entityId) } )
             .toThrowError(errorMessage)
     }

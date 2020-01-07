@@ -80,21 +80,14 @@ app.put(
 );
 
 // DELETE /room/:id/:userId -> deletes a user from a room. If the room remains empty, it deletes the room.
-app.delete(
-  "/rooms/:roomId/users/:userId",
-  validatePeerToken(getPeerJsRealm),
-  async (req, res, next) => {
-    const { roomId, userId } = req.params;
-    const room = roomsService.removeUserFromRoom(roomId, userId);
-    res.send(room);
-  }
-);
+app.delete("/rooms/:roomId/users/:userId", validatePeerToken(getPeerJsRealm), async (req, res, next) => {
+  const { roomId, userId } = req.params;
+  const room = roomsService.removeUserFromRoom(roomId, userId);
+  res.send(room);
+});
 
 async function getPeerToken() {
-  return await serverStorage.getOrSetString(
-    StorageKeys.PEER_TOKEN,
-    util.generateToken(64)
-  );
+  return await serverStorage.getOrSetString(StorageKeys.PEER_TOKEN, util.generateToken(64));
 }
 
 require("isomorphic-fetch");
@@ -144,10 +137,7 @@ const options = {
 const peerServer = ExpressPeerServer(server, options);
 
 peerServer.on("disconnect", (client: any) => {
-  console.log(
-    "User disconnected from server socket. Removing from all rooms: " +
-      client.id
-  );
+  console.log("User disconnected from server socket. Removing from all rooms: " + client.id);
   roomsService.removeUser(client.id);
 });
 

@@ -1,7 +1,7 @@
 import { random } from "faker"
-import { MetaverseContentService, Timestamp, File, ServerStatus } from "../../src/service/Service"
+import { MetaverseContentService, Timestamp, ContentFile, ServerStatus } from "../../src/service/Service"
 import { EntityType, Pointer, EntityId, Entity } from "../../src/service/Entity"
-import { FileHash } from "../../src/service/Hashing"
+import { ContentFileHash } from "../../src/service/Hashing"
 import { AuditInfo } from "../../src/service/audit/Audit"
 import { EthAddress, Signature } from "../../src/service/auth/Authenticator"
 import { buildEntityAndFile } from "./EntityTestFactory"
@@ -22,7 +22,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     }
 
     private readonly entities: Entity[]
-    private readonly content: Map<FileHash, Buffer>
+    private readonly content: Map<ContentFileHash, Buffer>
 
     constructor(builder: MockedMetaverseContentServiceBuilder) {
         this.entities = builder.entities
@@ -44,12 +44,12 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(pointers)
     }
 
-    deployEntity(files: File[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+    deployEntity(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
         return Promise.resolve(Date.now())
     }
 
-    isContentAvailable(fileHashes: FileHash[]): Promise<Map<FileHash, boolean>> {
-        const entries: [FileHash, boolean][] = fileHashes.map(fileHash => [fileHash, this.content.has(fileHash) || this.isThereAnEntityWithId(fileHash)])
+    isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
+        const entries: [ContentFileHash, boolean][] = fileHashes.map(fileHash => [fileHash, this.content.has(fileHash) || this.isThereAnEntityWithId(fileHash)])
         return Promise.resolve(new Map(entries))
     }
 
@@ -93,14 +93,14 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 export class MockedMetaverseContentServiceBuilder {
 
     readonly entities: Entity[] = []
-    readonly content: Map<FileHash, Buffer> = new Map()
+    readonly content: Map<ContentFileHash, Buffer> = new Map()
 
     withEntity(newEntity: Entity): MockedMetaverseContentServiceBuilder {
         this.entities.push(newEntity)
         return this
     }
 
-    withContent(...content: { hash: FileHash, buffer: Buffer }[]): MockedMetaverseContentServiceBuilder {
+    withContent(...content: { hash: ContentFileHash, buffer: Buffer }[]): MockedMetaverseContentServiceBuilder {
         content.forEach(({hash, buffer}) => this.content.set(hash, buffer))
         return this
     }
@@ -111,12 +111,12 @@ export class MockedMetaverseContentServiceBuilder {
 
 }
 
-export function buildEntity(pointers: Pointer[], ...content: { hash: FileHash, buffer: Buffer }[]): Promise<[Entity, File]>  {
-    const entityContent: Map<string, FileHash> = new Map(content.map(aContent => [random.alphaNumeric(10), aContent.hash]))
+export function buildEntity(pointers: Pointer[], ...content: { hash: ContentFileHash, buffer: Buffer }[]): Promise<[Entity, ContentFile]>  {
+    const entityContent: Map<string, ContentFileHash> = new Map(content.map(aContent => [random.alphaNumeric(10), aContent.hash]))
     return buildEntityAndFile(EntityType.PROFILE, pointers, random.number(10), entityContent, random.alphaNumeric(10))
 }
 
-export function buildContent(): { hash: FileHash, buffer: Buffer } {
+export function buildContent(): { hash: ContentFileHash, buffer: Buffer } {
     return {
         hash: random.alphaNumeric(10),
         buffer: Buffer.from(random.alphaNumeric(10))

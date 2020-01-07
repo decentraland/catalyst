@@ -28,24 +28,40 @@ export class Server {
       }
 
       this.registerRoute("/entities/:type"       , controller, controller.getEntities)
-      this.registerRoute("/entities"             , controller, controller.createEntity, true, upload.any())
+      this.registerRoute("/entities"             , controller, controller.createEntity, HttpMethod.POST, upload.any())
       this.registerRoute("/contents/:hashId"     , controller, controller.getContent);
       this.registerRoute("/available-content"    , controller, controller.getAvailableContent);
       this.registerRoute("/pointers/:type"       , controller, controller.getPointers);
       this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
       this.registerRoute("/history"              , controller, controller.getHistory);
       this.registerRoute("/status"               , controller, controller.getStatus);
+      this.registerRoute("/blacklist"            , controller, controller.getAllBlacklistTargets);
+      this.registerRoute("/blacklist/:type/:id"  , controller, controller.addToBlacklist, HttpMethod.PUT);
+      this.registerRoute("/blacklist/:type/:id"  , controller, controller.removeFromBlacklist, HttpMethod.DELETE);
+      this.registerRoute("/blacklist/:type/:id"  , controller, controller.isTargetBlacklisted, HttpMethod.HEAD);
    }
 
-   private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response)=>void, isPost?:boolean, extraHandler?: RequestHandler) {
+   private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response)=>void, method: HttpMethod = HttpMethod.GET, extraHandler?: RequestHandler) {
       const handlers: RequestHandler[] = [(req: express.Request, res: express.Response) => action.call(controller, req,res)]
       if (extraHandler) {
          handlers.unshift(extraHandler)
       }
-      if (!isPost) {
-         this.app.get(route, handlers);
-      } else {
-         this.app.post(route, handlers);
+      switch(method) {
+        case HttpMethod.GET:
+            this.app.get(route, handlers);
+            break;
+        case HttpMethod.POST:
+            this.app.post(route, handlers);
+            break;
+        case HttpMethod.PUT:
+            this.app.put(route, handlers);
+            break;
+        case HttpMethod.DELETE:
+            this.app.delete(route, handlers);
+            break;
+        case HttpMethod.HEAD:
+            this.app.head(route, handlers);
+            break;
       }
    }
 
@@ -64,4 +80,12 @@ export class Server {
         }
         await this.synchronizationManager.stop()
    }
+}
+
+enum HttpMethod {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    HEAD,
 }

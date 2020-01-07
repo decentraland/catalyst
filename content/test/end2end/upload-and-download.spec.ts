@@ -2,7 +2,7 @@ import { EnvironmentBuilder } from "../../src/Environment"
 import { ControllerEntity } from "../../src/controller/Controller"
 import { EntityType } from "../../src/service/Entity"
 import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
-import { Timestamp, File } from "../../src/service/Service"
+import { Timestamp, ContentFile } from "../../src/service/Service"
 import { MockedContentAnalytics } from "../service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, deleteServerStorage, DeployData } from "./TestUtils"
@@ -88,6 +88,6 @@ function findInArray<T extends { file: string }>(elements: T[] | undefined, key:
     return elements?.find(e => e.file === key);
 }
 
-function findInFileArray(elements: File[] | undefined, key: string): File | undefined {
+function findInFileArray(elements: ContentFile[] | undefined, key: string): ContentFile | undefined {
     return elements?.find(e => e.name === key);
 }

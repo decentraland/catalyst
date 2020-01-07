@@ -3,7 +3,7 @@ import { ControllerEntity } from "../../src/controller/Controller"
 import { Pointer, EntityId, EntityType } from "../../src/service/Entity"
 import { Timestamp } from "../../src/service/Service"
 import { DeploymentEvent, DeploymentHistory } from "../../src/service/history/HistoryManager"
-import { Hashing, FileHash } from "../../src/service/Hashing"
+import { Hashing, ContentFileHash } from "../../src/service/Hashing"
 import { AuditInfo } from "../../src/service/audit/Audit"
 import { assertPromiseIsRejected } from "../PromiseAssertions"
 
@@ -45,13 +45,13 @@ export async function assertEntityIsOnServer(server: TestServer, entityType: Ent
     return assertFileIsOnServer(server, entity.id)
 }
 
-export async function assertFileIsOnServer(server: TestServer, hash: FileHash) {
+export async function assertFileIsOnServer(server: TestServer, hash: ContentFileHash) {
     const content = await server.downloadContent(hash)
     const downloadedContentHash = await Hashing.calculateBufferHash(content)
     expect(downloadedContentHash).toEqual(hash)
 }
 
-export async function assertFileIsNotOnServer(server: TestServer, hash: FileHash) {
+export async function assertFileIsNotOnServer(server: TestServer, hash: ContentFileHash) {
     assertPromiseIsRejected(() => server.downloadContent(hash))
 }
 
@@ -63,6 +63,27 @@ export async function assertEntityIsOverwrittenBy(server: TestServer, entity: Co
 export async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
     const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
     expect(auditInfo.overwrittenBy).toBeUndefined()
+}
+
+
+export async function assertEntityIsNotBlacklisted(server: TestServer, entity: ControllerEntity) {
+    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    expect(auditInfo.isBlacklisted).toBeUndefined()
+}
+
+export async function assertEntityIsBlacklisted(server: TestServer, entity: ControllerEntity) {
+    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    expect(auditInfo.isBlacklisted).toBeTruthy()
+}
+
+export async function assertNoContentIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    expect(auditInfo.blacklistedContent).not.toContain(contentHash)
+}
+
+export async function assertContentIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    expect(auditInfo.blacklistedContent).toContain(contentHash)
 }
 
 export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): DeploymentEvent {

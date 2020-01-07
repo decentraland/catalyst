@@ -1,8 +1,8 @@
 import fetch from "node-fetch";
-import { Timestamp, File, ServerStatus } from "../../../Service";
+import { Timestamp, ContentFile, ServerStatus } from "../../../Service";
 import { EntityId, EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
-import { FileHash } from "../../../Hashing";
+import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { AuditInfo } from "../../../audit/Audit";
 
@@ -30,7 +30,7 @@ export abstract class ContentServerClient {
     /** Return whether the server is actually active. It its not active, then we might use a redirect client for example */
     abstract isActive(): boolean
     abstract getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity>;
-    abstract getContentFile(fileHash: FileHash): Promise<File>;
+    abstract getContentFile(fileHash: ContentFileHash): Promise<ContentFile>;
     abstract getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo>;
     abstract getStatus(): Promise<ServerStatus>;
     abstract getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory>;

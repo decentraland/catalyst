@@ -1,5 +1,5 @@
 import { Pointer, EntityType, EntityId } from "../service/Entity";
-import { FileHash } from "../service/Hashing";
+import { ContentFileHash } from "../service/Hashing";
 import { EthAddress } from "../service/auth/Authenticator";
 
 export class BlacklistTarget {
@@ -7,6 +7,21 @@ export class BlacklistTarget {
 
     asString(): string {
         return `${this.type}-${this.id}`
+    }
+
+    asObject(): { type: string, id: string } {
+        return {
+            type: this.type,
+            id: this.id,
+        }
+    }
+
+    getType() {
+        return this.type
+    }
+
+    getId() {
+        return this.id
     }
 }
 
@@ -18,7 +33,7 @@ export function parseBlacklistTargetString(string: string) {
 
 }
 
-function parseBlacklistTypeAndId(type: string, id: string) {
+export function parseBlacklistTypeAndId(type: string, id: string) {
     for (const targetType of Object.values(BlacklistTargetType)) {
         if (type === targetType) {
             return new BlacklistTarget(BlacklistTargetType[targetType.toUpperCase()], id)
@@ -31,7 +46,7 @@ export function buildAddressTarget(ethAddress: EthAddress) {
     return new BlacklistTarget(BlacklistTargetType.ADDRESS, ethAddress)
 }
 
-export function buildContentTarget(fileHash: FileHash) {
+export function buildContentTarget(fileHash: ContentFileHash) {
     return new BlacklistTarget(BlacklistTargetType.CONTENT, fileHash)
 }
 

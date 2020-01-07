@@ -1,15 +1,8 @@
 import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
-import {
-  ServerMessageType,
-  PeerHeaders
-} from "./peerjs-server-connector/enums";
+import { ServerMessageType, PeerHeaders } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import {
-  isReliable,
-  connectionIdFor,
-  util
-} from "./peerjs-server-connector/util";
+import { isReliable, connectionIdFor, util } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { PeerConnectionData, IPeer, Room } from "./types";
 
@@ -34,11 +27,7 @@ export type PeerData = {
 
 const PeerSignals = { offer: "offer", answer: "answer" };
 
-function signalMessage(
-  peer: PeerData,
-  connectionId: string,
-  signal: SignalData
-) {
+function signalMessage(peer: PeerData, connectionId: string, signal: SignalData) {
   if (isReliable(connectionId)) {
     peer.reliableConnection.signal(signal);
     // } else {
@@ -60,31 +49,19 @@ type PeerConfig = {
   relay?: RelayMode;
 };
 
-export type PacketCallback = (
-  sender: string,
-  room: string,
-  payload: any
-) => void;
+export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private peers: Record<string, PeerData> = {};
 
-  private peerConnectionPromises: Record<
-    string,
-    { resolve: () => void; reject: () => void }[]
-  > = {};
+  private peerConnectionPromises: Record<string, { resolve: () => void; reject: () => void }[]> = {};
 
   public readonly currentRooms: Room[] = [];
   private connectionConfig: any;
   private wrtc: any;
 
-  constructor(
-    private lighthouseUrl: string,
-    public nickname: string,
-    public callback: PacketCallback = () => {},
-    private config: PeerConfig = { relay: RelayMode.None }
-  ) {
+  constructor(private lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { relay: RelayMode.None }) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
@@ -138,10 +115,7 @@ export class Peer implements IPeer {
       roomUsers
         .filter(user => user.userId !== this.nickname)
         .map(user => {
-          if (
-            !this.hasConnectionsFor(user.peerId) &&
-            user.peerId !== this.nickname
-          ) {
+          if (!this.hasConnectionsFor(user.peerId) && user.peerId !== this.nickname) {
             this.getOrCreatePeer(user.peerId, true, roomId);
           }
           this.sendPacket(user, {
@@ -155,10 +129,7 @@ export class Peer implements IPeer {
   }
 
   async leaveRoom(roomId: string) {
-    const response = await fetch(
-      `${this.lighthouseUrl}/rooms/${roomId}/users/${this.nickname}`,
-      { method: "DELETE" }
-    );
+    const response = await fetch(`${this.lighthouseUrl}/rooms/${roomId}/users/${this.nickname}`, { method: "DELETE" });
 
     const roomUsers: PeerConnectionData[] = await response.json();
 
@@ -184,9 +155,7 @@ export class Peer implements IPeer {
   }
 
   private sharesRoomWith(peerId: string) {
-    return this.currentRooms.some(room =>
-      [...room.users.values()].some(user => user.peerId === peerId)
-    );
+    return this.currentRooms.some(room => [...room.users.values()].some(user => user.peerId === peerId));
   }
 
   public beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
@@ -195,22 +164,13 @@ export class Peer implements IPeer {
       if (this.isConnectedTo(peerId)) {
         resolve();
       } else {
-        this.peerConnectionPromises[peerId] = [
-          ...(this.peerConnectionPromises[peerId] || []),
-          promisePair
-        ];
+        this.peerConnectionPromises[peerId] = [...(this.peerConnectionPromises[peerId] || []), promisePair];
       }
 
       setTimeout(() => {
         if (!this.isConnectedTo(peerId)) {
-          reject(
-            new Error(
-              `[${this.nickname}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`
-            )
-          );
-          this.peerConnectionPromises[peerId] = this.peerConnectionPromises[
-            peerId
-          ].splice(this.peerConnectionPromises[peerId].indexOf(promisePair), 1);
+          reject(new Error(`[${this.nickname}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`));
+          this.peerConnectionPromises[peerId] = this.peerConnectionPromises[peerId].splice(this.peerConnectionPromises[peerId].indexOf(promisePair), 1);
         }
       }, timeout);
     });
@@ -249,29 +209,13 @@ export class Peer implements IPeer {
     return this.currentRooms.find($ => $.id === id);
   }
 
-  private subscribeToConnection(
-    peerData: PeerData,
-    connection: SimplePeer.Instance,
-    reliable: boolean,
-    roomId: string
-  ) {
+  private subscribeToConnection(peerData: PeerData, connection: SimplePeer.Instance, reliable: boolean, roomId: string) {
     connection.on("signal", this.handleSignal(peerData, reliable, roomId));
     connection.on("close", () => this.handleDisconnection(peerData, reliable));
-    connection.on("connect", () =>
-      this.handleConnection(peerData, roomId, reliable)
-    );
+    connection.on("connect", () => this.handleConnection(peerData, roomId, reliable));
 
     connection.on("error", err => {
-      this.log(
-        "error in peer connection " +
-          connectionIdFor(
-            this.nickname,
-            peerData.id,
-            peerData.sessionId,
-            reliable
-          ),
-        err
-      );
+      this.log("error in peer connection " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable), err);
       connection.removeAllListeners();
       connection.destroy();
       this.handleDisconnection(peerData, reliable);
@@ -325,17 +269,7 @@ export class Peer implements IPeer {
   }
 
   private handleDisconnection(peerData: PeerData, reliable: boolean) {
-    this.log(
-      "DISCONNECTED from " +
-        peerData.id +
-        " through " +
-        connectionIdFor(
-          this.nickname,
-          peerData.id,
-          peerData.sessionId,
-          reliable
-        )
-    );
+    this.log("DISCONNECTED from " + peerData.id + " through " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable));
     // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
     if (this.peers[peerData.id]) {
       delete this.peers[peerData.id];
@@ -350,22 +284,8 @@ export class Peer implements IPeer {
     });
   }
 
-  private handleConnection(
-    peerData: PeerData,
-    roomId: string,
-    reliable: boolean
-  ) {
-    this.log(
-      "CONNECTED to " +
-        peerData.id +
-        " through " +
-        connectionIdFor(
-          this.nickname,
-          peerData.id,
-          peerData.sessionId,
-          reliable
-        )
-    );
+  private handleConnection(peerData: PeerData, roomId: string, reliable: boolean) {
+    this.log("CONNECTED to " + peerData.id + " through " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable));
 
     this.peerConnectionPromises[peerData.id]?.forEach($ => $.resolve());
     delete this.peerConnectionPromises[peerData.id];
@@ -382,27 +302,15 @@ export class Peer implements IPeer {
   sendMessage(roomId: string, payload: any, reliable: boolean = true) {
     const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
-      return Promise.reject(
-        new Error(`cannot send a message in a room not joined (${roomId})`)
-      );
+      return Promise.reject(new Error(`cannot send a message in a room not joined (${roomId})`));
     }
 
-    [...room.users.values()]
-      .filter(user => user.userId !== this.nickname)
-      .forEach(user =>
-        this.sendMessageTo(user, roomId, payload, this.nickname, reliable)
-      );
+    [...room.users.values()].filter(user => user.userId !== this.nickname).forEach(user => this.sendMessageTo(user, roomId, payload, this.nickname, reliable));
 
     return Promise.resolve();
   }
 
-  private sendMessageTo(
-    user: PeerConnectionData,
-    roomId: string,
-    payload: any,
-    src: string = this.nickname,
-    reliable: boolean = true
-  ) {
+  private sendMessageTo(user: PeerConnectionData, roomId: string, payload: any, src: string = this.nickname, reliable: boolean = true) {
     const data = {
       room: roomId,
       src,
@@ -416,14 +324,8 @@ export class Peer implements IPeer {
     this.sendPacket(user, packet);
   }
 
-  private sendPacket<T extends PacketType>(
-    user: PeerConnectionData,
-    packet: Packet<T>
-  ) {
-    const peer =
-      this.config.relay === RelayMode.All && user.peerId === this.nickname
-        ? this.peers[user.userId]
-        : this.peers[user.peerId];
+  private sendPacket<T extends PacketType>(user: PeerConnectionData, packet: Packet<T>) {
+    const peer = this.config.relay === RelayMode.All && user.peerId === this.nickname ? this.peers[user.userId] : this.peers[user.peerId];
     if (peer) {
       // const connection = reliable
       //   ? "reliableConnection"
@@ -435,54 +337,33 @@ export class Peer implements IPeer {
       }
     } else {
       // TODO - review this case - moliva - 11/12/2019
-      this.log(
-        `peer ${user.peerId} required to talk to user ${user.userId} does not exist`
-      );
+      this.log(`peer ${user.peerId} required to talk to user ${user.userId} does not exist`);
     }
     //TODO: Fail on error? Promise rejection?
   }
 
   private handleSignal(peerData: PeerData, reliable: boolean, roomId: string) {
-    const connectionId = connectionIdFor(
-      this.nickname,
-      peerData.id,
-      peerData.sessionId,
-      reliable
-    );
+    const connectionId = connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable);
     return (data: SignalData) => {
-      this.log(
-        `Signal in peer connection ${connectionId}: ${data.type ?? "candidate"}`
-      );
+      this.log(`Signal in peer connection ${connectionId}: ${data.type ?? "candidate"}`);
       if (data.type === PeerSignals.offer) {
         this.peerJsConnection.sendOffer(peerData, data, connectionId, roomId);
       } else if (data.type === PeerSignals.answer) {
         this.peerJsConnection.sendAnswer(peerData, data, connectionId, roomId);
       } else if (data.candidate) {
-        this.peerJsConnection.sendCandidate(
-          peerData,
-          data,
-          connectionId,
-          roomId
-        );
+        this.peerJsConnection.sendCandidate(peerData, data, connectionId, roomId);
       }
     };
   }
 
-  private getOrCreatePeer(
-    peerId: string,
-    initiator: boolean = false,
-    room: string,
-    sessionId?: string
-  ) {
+  private getOrCreatePeer(peerId: string, initiator: boolean = false, room: string, sessionId?: string) {
     let peer = this.peers[peerId];
     if (!peer) {
       sessionId = sessionId ?? util.generateToken(16);
       peer = this.createPeer(peerId, sessionId!, initiator, room);
     } else if (sessionId) {
       if (peer.sessionId !== sessionId) {
-        this.log(
-          `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`
-        );
+        this.log(`Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`);
         peer.reliableConnection.removeAllListeners();
         peer.reliableConnection.destroy();
         peer = this.createPeer(peerId, sessionId, initiator, room);
@@ -490,12 +371,8 @@ export class Peer implements IPeer {
     }
     return peer;
   }
-  private createPeer(
-    peerId: string,
-    sessionId: string,
-    initiator: boolean,
-    room: string
-  ): PeerData {
+
+  private createPeer(peerId: string, sessionId: string, initiator: boolean, room: string): PeerData {
     const peer = (this.peers[peerId] = {
       id: peerId,
       sessionId,
@@ -539,12 +416,7 @@ export class Peer implements IPeer {
             break;
           }
         case ServerMessageType.Answer: {
-          const peer = this.getOrCreatePeer(
-            peerId,
-            false,
-            payload.label,
-            payload.sessionId
-          );
+          const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
           signalMessage(peer, payload.connectionId, payload.sdp);
           break;
         }
@@ -552,12 +424,7 @@ export class Peer implements IPeer {
           if (this.checkForCrossOffers(peerId, payload.sessionId)) {
             break;
           }
-          const peer = this.getOrCreatePeer(
-            peerId,
-            false,
-            payload.label,
-            payload.sessionId
-          );
+          const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
           signalMessage(peer, payload.connectionId, {
             candidate: payload.candidate
           });
@@ -573,15 +440,9 @@ export class Peer implements IPeer {
   }
 
   private checkForCrossOffers(peerId: string, sessionId?: string) {
-    const isCrossOfferToBeDiscarded =
-      this.hasInitiatedConnectionFor(peerId) &&
-      (!sessionId || this.peers[peerId].sessionId != sessionId) &&
-      this.nickname < peerId;
+    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) && (!sessionId || this.peers[peerId].sessionId != sessionId) && this.nickname < peerId;
     if (isCrossOfferToBeDiscarded) {
-      this.log(
-        "Received offer/candidate for already existing peer but it was discarded: " +
-          peerId
-      );
+      this.log("Received offer/candidate for already existing peer but it was discarded: " + peerId);
     }
 
     return isCrossOfferToBeDiscarded;

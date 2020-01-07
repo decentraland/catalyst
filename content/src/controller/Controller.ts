@@ -1,13 +1,18 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import fs from "fs"
-import { MetaverseContentService, File } from "../service/Service";
+import { MetaverseContentService, ContentFile, Timestamp } from "../service/Service";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { EthAddress, Signature } from "../service/auth/Authenticator";
+import { Blacklist } from "../blacklist/Blacklist";
+import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
 
 export class Controller {
-    constructor(private service: MetaverseContentService, private historyManager: HistoryManager) { }
+
+    constructor(private readonly service: MetaverseContentService,
+        private readonly historyManager: HistoryManager,
+        private readonly blacklist: Blacklist) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -36,7 +41,7 @@ export class Controller {
             enumFields = fields.split(',').map(f => (<any>EntityField)[f.toUpperCase().trim()])
         }
 
-        // Calculate and maks entities
+        // Calculate and mask entities
         let entities: Promise<Entity[]>
         if (ids.length > 0) {
             entities = this.service.getEntitiesByIds(type, ids)
@@ -76,7 +81,7 @@ export class Controller {
         const signature:Signature   = req.body.signature;
         const files                 = req.files
 
-        let deployFiles: Promise<File[]> = Promise.resolve([])
+        let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
         if (files instanceof Array) {
             deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
@@ -86,23 +91,25 @@ export class Controller {
             creationTimestamp: t
         }))
     }
-    private async readFile(name: string, path: string): Promise<File> {
+    private async readFile(name: string, path: string): Promise<ContentFile> {
         return {
             name: name,
             content: await fs.promises.readFile(path)
         }
     }
 
-    getContent(req: express.Request, res: express.Response) {
+    async getContent(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /contents/:hashId
         const hashId = req.params.hashId;
 
-        this.service.getContent(hashId)
-        .then((data:Buffer) => {
+        const data: Buffer | undefined = await this.service.getContent(hashId);
+        if (data) {
             res.contentType('application/octet-stream')
             res.end(data, 'binary')
-        })
+        } else {
+            res.status(404).send()
+        }
     }
 
     getAvailableContent(req: express.Request, res: express.Response) {
@@ -168,6 +175,64 @@ export class Controller {
         .then(status => res.send(status))
     }
 
+    addToBlacklist(req: express.Request, res: express.Response) {
+        // Method: PUT
+        // Path: /blacklist/{type}/{id}
+        // Body: JSON with ethAddress, signature and timestamp
+
+        const blocker: EthAddress = req.body.blocker;
+        const timestamp: Timestamp = req.body.timestamp;
+        const signature: Signature = req.body.signature;
+
+        const type = req.params.type
+        const id = req.params.id;
+
+        const target = parseBlacklistTypeAndId(type, id)
+        this.blacklist.addTarget(target, { blocker, timestamp ,signature })
+            .then(() => res.status(201).send())
+    }
+
+    removeFromBlacklist(req: express.Request, res: express.Response) {
+        // Method: DELETE
+        // Path: /blacklist/{type}/{id}
+        // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
+
+        const blocker: EthAddress = req.query.blocker;
+        const timestamp: Timestamp = req.query.timestamp;
+        const signature: Signature = req.query.signature;
+
+        const type = req.params.type
+        const id = req.params.id;
+
+        const target = parseBlacklistTypeAndId(type, id)
+
+        // TODO: Based on the error, return 400 or 404
+        this.blacklist.removeTarget(target, { blocker, timestamp ,signature })
+            .then(() => res.status(200).send())
+    }
+
+    async getAllBlacklistTargets(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /blacklist
+
+        const blacklistTargets = await this.blacklist.getAllBlacklistedTargets();
+        const controllerTargets: ControllerBlacklistData[] = Array.from(blacklistTargets.entries())
+            .map(([target, metadata]) => ({ target: target.asObject(), metadata: metadata }))
+        res.send(controllerTargets)
+    }
+
+    isTargetBlacklisted(req: express.Request, res: express.Response) {
+        // Method: HEAD
+        // Path: /blacklist/{type}/{id}
+
+        const type = req.params.type
+        const id = req.params.id;
+
+        const target = parseBlacklistTypeAndId(type, id)
+        this.blacklist.isTargetBlacklisted(target)
+            .then(isBlacklisted => isBlacklisted ? res.status(200).send() : res.status(404).send())
+    }
+
 }
 
 export interface ControllerEntity {
@@ -188,5 +253,17 @@ export enum EntityField {
     CONTENT = "content",
     POINTERS = "pointers",
     METADATA = "metadata",
+}
+
+type ControllerBlacklistData = {
+    target: {
+        type: string,
+        id: string,
+    },
+    metadata: {
+        blocker: EthAddress,
+        timestamp: Timestamp,
+        signature: Signature,
+    }
 }
 

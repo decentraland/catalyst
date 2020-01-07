@@ -1,7 +1,7 @@
-import { Timestamp, File, ServerStatus } from "../../../Service";
+import { Timestamp, ContentFile, ServerStatus } from "../../../Service";
 import { EntityId, EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
-import { FileHash } from "../../../Hashing";
+import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, UNREACHABLE } from "./ContentServerClient";
@@ -33,7 +33,7 @@ class UnreachableContentServerClient extends ContentServerClient {
         throw new Error(`Server is unreachable`)
     }
 
-    getContentFile(fileHash: FileHash): Promise<File> {
+    getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
         throw new Error(`Server is unreachable`)
     }
 

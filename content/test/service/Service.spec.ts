@@ -1,5 +1,5 @@
-import { ENTITY_FILE_NAME, Timestamp, File } from "../../src/service/Service";
-import { Hashing, FileHash } from '../../src/service/Hashing';
+import { ENTITY_FILE_NAME, Timestamp, ContentFile } from "../../src/service/Service";
+import { Hashing, ContentFileHash } from '../../src/service/Hashing';
 import { assertPromiseRejectionIs } from "../PromiseAssertions";
 import { EntityType, Entity } from "../../src/service/Entity";
 import { buildEntityAndFile } from "./EntityTestFactory";
@@ -17,9 +17,9 @@ describe("Service", function () {
     const serverName = "A server Name"
 
     let randomFile: { name: string, content: Buffer }
-    let randomFileHash: FileHash
+    let randomFileHash: ContentFileHash
     let entity: Entity
-    let entityFile: File
+    let entityFile: ContentFile
     let historyManager: HistoryManager
     let storage: ContentStorage
     let service: MetaverseContentService
@@ -50,7 +50,7 @@ describe("Service", function () {
     });
 
     it(`When two or more files called '${ENTITY_FILE_NAME}' are uploaded, then an exception is thrown`, async () => {
-        const invalidEntityFile: File = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
+        const invalidEntityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
         assertPromiseRejectionIs(async () => await service.deployEntity([entityFile, invalidEntityFile], "some-id", "ethAddress", "signature"),
             `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
     });

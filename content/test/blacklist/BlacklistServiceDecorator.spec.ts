@@ -4,7 +4,7 @@ import { mock, instance, when, anything } from "ts-mockito"
 import { BlacklistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget } from "../../src/blacklist/BlacklistTarget";
 import { Blacklist } from "../../src/blacklist/Blacklist";
 import { BlacklistServiceDecorator } from "../../src/blacklist/BlacklistServiceDecorator";
-import { File } from "../../src/service/Service";
+import { ContentFile } from "../../src/service/Service";
 import { Pointer, Entity } from "../../src/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "../service/MockedMetaverseContentService";
 import { assertPromiseIsRejected, assertPromiseRejectionIs } from "../PromiseAssertions";
@@ -20,7 +20,7 @@ describe("BlacklistServiceDecorator", () => {
 
     let entity1: Entity;
     let entity2: Entity;
-    let entityFile1: File;
+    let entityFile1: ContentFile;
 
     let P1Target: BlacklistTarget;
     let content1Target: BlacklistTarget;

@@ -3,8 +3,8 @@ import path from "path"
 import FormData from "form-data"
 import fetch from "node-fetch"
 import { EntityType, Pointer, Entity } from "../service/Entity"
-import { Hashing, FileHash } from "../service/Hashing"
-import { Timestamp, File } from "../service/Service"
+import { Hashing, ContentFileHash } from "../service/Hashing"
+import { Timestamp, ContentFile } from "../service/Service"
 import { ControllerEntityFactory } from "../controller/ControllerEntityFactory"
 import { ControllerEntity } from "../controller/Controller"
 
@@ -19,8 +19,8 @@ async function run(argv: string[]) {
         const pointers: Pointer[] = argv[2].split(";")
         const timestamp: Timestamp = (argv[3].toLowerCase() == "now") ? Date.now() : parseInt(argv[3])
         const metadata = argv[4]
-        let content: Map<string, FileHash> = new Map()
-        let filesToUpload: File[] = []
+        let content: Map<string, ContentFileHash> = new Map()
+        let filesToUpload: ContentFile[] = []
         const uploadDir = argv[5]
 
         if (uploadDir) {
@@ -30,7 +30,7 @@ async function run(argv: string[]) {
                 const content = fs.readFileSync(filePath)
                 return { name: fileName, content }
             })
-            const hashes: Map<FileHash, File> = await Hashing.calculateHashes(files)
+            const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
             for (const [hash, file] of hashes.entries()) {
                 content.set(file.name, hash)
                 filesToUpload.push(file)
@@ -58,23 +58,23 @@ async function run(argv: string[]) {
 }
 
 async function buildControllerEntityAndFile(fileName: string, type: EntityType, pointers: Pointer[], timestamp: Timestamp,
-    content?: Map<string, FileHash>, metadata?: any): Promise<[ControllerEntity, File]> {
-    const [entity, file]: [Entity, File] = await buildEntityAndFile(fileName, type, pointers, timestamp, content, metadata)
+    content?: Map<string, ContentFileHash>, metadata?: any): Promise<[ControllerEntity, ContentFile]> {
+    const [entity, file]: [Entity, ContentFile] = await buildEntityAndFile(fileName, type, pointers, timestamp, content, metadata)
     return [ControllerEntityFactory.maskEntity(entity), file]
 }
 
 async function buildEntityAndFile(fileName: string, type: EntityType, pointers: Pointer[], timestamp: Timestamp,
-    content?: Map<string, FileHash>, metadata?: any): Promise<[Entity, File]> {
+    content?: Map<string, ContentFileHash>, metadata?: any): Promise<[Entity, ContentFile]> {
 
     const entity: Entity = new Entity("temp-id", type, pointers, timestamp, content, metadata)
-    const file: File = entityToFile(entity, fileName)
-    const fileHash: FileHash = await Hashing.calculateHash(file)
+    const file: ContentFile = entityToFile(entity, fileName)
+    const fileHash: ContentFileHash = await Hashing.calculateHash(file)
     entity.id = fileHash
     return [entity, file]
 }
 
 /** Build a file with the given entity as the content */
-function entityToFile(entity: Entity, fileName?: string): File {
+function entityToFile(entity: Entity, fileName?: string): ContentFile {
     let copy: any = Object.assign({}, entity)
     copy.content = !copy.content || !(copy.content instanceof Map) ? copy.content :
         Array.from(copy.content.entries()).map(([key, value]) => ({ file: key, hash: value }))
