@@ -18,8 +18,8 @@ import { AccessCheckerImpl } from "./service/access/AccessCheckerImpl";
 import { AuditFactory } from "./service/audit/AuditFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
-import { DAOClient } from "./service/synchronization/clients/DAOClient";
 import { BlacklistFactory } from "./blacklist/BlacklistFactory";
+import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
 
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
@@ -82,6 +82,7 @@ export const enum EnvironmentConfig {
     UPDATE_FROM_DAO_INTERVAL,
     SYNC_WITH_SERVERS_INTERVAL,
     IGNORE_VALIDATION_ERRORS,
+    DAO_ADDRESS,
 }
 
 export class EnvironmentBuilder {
@@ -146,11 +147,12 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('20s'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DAO_ADDRESS               , () => process.env.DAO_ADDRESS ?? 'localhost:3000')
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
-        this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => new DAOClient())
+        this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)

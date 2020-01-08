@@ -3,12 +3,11 @@ import fetch from "node-fetch";
 
 export class DAOClient {
 
-    // TODO: Make this configurable
-    private static DAO_ADDRESS = "localhost:3000"
+    constructor(private readonly daoAddress: string) { }
 
     // TODO: Remove this on final version
     async registerServerInDAO(address: ServerAddress): Promise<void> {
-        await fetch(`http://${DAOClient.DAO_ADDRESS}/register`, {
+        await fetch(`http://${this.daoAddress}/register`, {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ server: address })
@@ -17,7 +16,7 @@ export class DAOClient {
     }
 
     async getAllServers(): Promise<Set<ServerAddress>> {
-        const response = await fetch(`http://${DAOClient.DAO_ADDRESS}/all-servers`)
+        const response = await fetch(`http://${this.daoAddress}/all-servers`)
         const serverAddresses: any[] = await response.json()
         return new Set(serverAddresses.map(({ address }) => address))
     }
