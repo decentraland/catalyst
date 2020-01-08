@@ -4,7 +4,7 @@ import { DAOClient } from "./clients/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
 
-import { Timestamp } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";

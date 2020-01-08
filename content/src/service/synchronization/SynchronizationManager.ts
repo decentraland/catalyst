@@ -1,5 +1,6 @@
 import { setInterval, clearInterval } from "timers"
-import { Timestamp, TimeKeepingService } from "../Service";
+import { TimeKeepingService } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";

@@ -1,7 +1,7 @@
 import { TestServer } from "./TestServer"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { Pointer, EntityId, EntityType } from "@katalyst/content/service/Entity"
-import { Timestamp } from "@katalyst/content/service/Service"
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"

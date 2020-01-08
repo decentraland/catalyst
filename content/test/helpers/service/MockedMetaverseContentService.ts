@@ -1,5 +1,6 @@
 import { random } from "faker"
-import { MetaverseContentService, Timestamp, ContentFile, ServerStatus } from "@katalyst/content/service/Service"
+import { MetaverseContentService, ContentFile, ServerStatus } from "@katalyst/content/service/Service"
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"

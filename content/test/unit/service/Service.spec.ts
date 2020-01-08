@@ -1,4 +1,5 @@
-import { ENTITY_FILE_NAME, Timestamp, ContentFile } from "@katalyst/content/service/Service";
+import { ENTITY_FILE_NAME, ContentFile } from "@katalyst/content/service/Service";
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { EntityType, Entity } from "@katalyst/content/service/Entity";
 import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";

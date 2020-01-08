@@ -1,4 +1,4 @@
-import { Timestamp } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 import { EntityId } from "../Entity";
 import { AuditStorage } from "./AuditStorage";
 import { EthAddress, Signature } from "../auth/Authenticator";

@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/Service"
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"

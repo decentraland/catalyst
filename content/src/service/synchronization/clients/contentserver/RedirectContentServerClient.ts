@@ -1,4 +1,5 @@
-import { Timestamp, ContentFile, ServerStatus } from "../../../Service";
+import { ContentFile, ServerStatus } from "../../../Service";
+import { Timestamp } from "../../../time/TimeSorting";
 import { EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
 import { ServerName } from "../../../naming/NameKeeper";

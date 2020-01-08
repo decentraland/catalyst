@@ -1,6 +1,6 @@
 import { Cache } from "../caching/Cache"
 import { EntityType, Pointer, EntityId, Entity } from "../Entity";
-import { Timestamp } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 import { PointerStorage } from "./PointerStorage";
 import { AuditOverwrite } from "../audit/Audit";
 import { PointerDeploymentsRecord } from "./PointerDeploymentsRecord";

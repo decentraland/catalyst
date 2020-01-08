@@ -1,10 +1,11 @@
-import { Timestamp, } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { EventDeployer } from "./EventDeployer";
 import { ContentCluster } from "./ContentCluster";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { tryOnCluster } from "./ClusterUtils";
+import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class Bootstrapper {
 
@@ -30,8 +31,7 @@ export class Bootstrapper {
         // Get one (any) server's last immutable time and history
         const [immutableTime, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
-        for (const event of history) {
-            // TODO: Sort from oldest to newest
+        for (const event of sortFromOldestToNewest(history)) {
             try {
                await deployer.deployEvent(event)
             } catch (error) {

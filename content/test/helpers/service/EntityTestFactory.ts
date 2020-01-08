@@ -1,6 +1,7 @@
 import { random } from "faker"
 import { EntityType, Pointer, Entity } from "@katalyst/content/service/Entity";
-import { Timestamp, ContentFile, ENTITY_FILE_NAME } from "@katalyst/content/service/Service";
+import { ContentFile, ENTITY_FILE_NAME } from "@katalyst/content/service/Service";
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing";
 
 /** Builds an entity with the given params, and also the file what represents it */

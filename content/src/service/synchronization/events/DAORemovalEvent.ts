@@ -1,5 +1,5 @@
 import { ClusterEvent } from "./ClusterEvent";
-import { Timestamp } from "../../Service";
+import { Timestamp } from "../../time/TimeSorting";
 import { ContentServerClient } from "../clients/contentserver/ContentServerClient";
 import { ServerName } from "../../naming/NameKeeper";
 

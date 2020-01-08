@@ -1,9 +1,10 @@
 import { random } from "faker"
 import { HistoryStorage } from "@katalyst/content/service/history/HistoryStorage";
-import { Timestamp } from "@katalyst/content/service/Service";
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
 import { EntityType } from "@katalyst/content/service/Entity";
 import { MockedStorage } from "../../storage/MockedStorage";
+import { sortFromOldestToNewest } from "@katalyst/content/service/time/TimeSorting";
 
 describe("HistoryStorage", () => {
 
@@ -51,10 +52,9 @@ describe("HistoryStorage", () => {
 
     /** Returns a DeploymentHistory, sorted from oldest to newest */
     function getRandomEvents(amount: number): DeploymentHistory {
-        return new Array(amount)
+        return sortFromOldestToNewest(new Array(amount)
             .fill("")
-            .map(createRandomEvent)
-            .sort((a, b) => a.timestamp - b.timestamp)
+            .map(createRandomEvent))
     }
 
     function createRandomEvent(): DeploymentEvent {

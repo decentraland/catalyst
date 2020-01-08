@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/Service"
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"

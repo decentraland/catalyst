@@ -1,4 +1,4 @@
-import { Timestamp } from "../Service"
+import { Timestamp } from "../time/TimeSorting"
 import { EntityType, EntityId, Entity } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
 

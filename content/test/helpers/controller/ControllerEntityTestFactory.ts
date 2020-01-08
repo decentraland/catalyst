@@ -1,5 +1,6 @@
 import { EntityType, Pointer, Entity } from "@katalyst/content/service/Entity";
-import { Timestamp, ContentFile } from "@katalyst/content/service/Service";
+import { ContentFile } from "@katalyst/content/service/Service";
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { ContentFileHash } from "@katalyst/content/service/Hashing";
 import { ControllerEntity } from "@katalyst/content/controller/Controller";
 import { ControllerEntityFactory } from "@katalyst/content/controller/ControllerEntityFactory";
