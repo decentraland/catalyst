@@ -4,7 +4,7 @@ import { DAOClient } from "../../../../src/service/synchronization/clients/DAOCl
 export class MockedDAOClient extends DAOClient {
 
     private constructor(private addresses: Set<ServerAddress>) {
-        super()
+        super("Will not be using this")
     }
 
     registerServerInDAO(address: ServerAddress): Promise<void> {
