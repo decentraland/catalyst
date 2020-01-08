@@ -1,4 +1,4 @@
-import { ContentStorage } from "../../../src/storage/ContentStorage";
+import { ContentStorage } from "../../storage/ContentStorage";
 import { EntityId } from "../Entity";
 import { AuditInfo } from "./Audit";
 

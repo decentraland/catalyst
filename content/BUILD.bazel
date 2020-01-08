@@ -7,6 +7,7 @@ ts_library(
     name = "content",
     srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/content",
+    module_root = "src",
     deps = [
         "@npm//@types",
         "@npm//@types/node",
@@ -76,12 +77,14 @@ nodejs_binary(
 )
 
 ts_library(
-    name = "tests",
+    name = "tests_unit",
     testonly = 1,
-    srcs = glob(["test/**/*.ts"]),
+    srcs = glob(["test/unit/**/*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
         ":content",
+        ":tests_helpers",
+
         "@npm//@types/node",
         "@npm//@types/jasmine",
         "@npm//node-fetch",
@@ -97,12 +100,32 @@ ts_library(
     ],
 )
 
+ts_library(
+    name = "tests_helpers",
+    module_name = "@katalyst/test-helpers",
+    module_root = "test/helpers",
+    srcs = glob(["test/helpers/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":content",
+        "@npm//faker",
+        "@npm//@types/faker"
+    ],
+)
+
 load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
 
 jasmine_node_test(
     name = "unit_test",
     deps = [
-        ":tests",
+        ":tests_unit",
+        "@npm//jasmine",
+    ],
+)
+
+jasmine_node_test(
+    name = "integration_test",
+    deps = [
         ":test_resources",
         "@npm//jasmine",
     ],

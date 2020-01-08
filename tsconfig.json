@@ -30,6 +30,10 @@
     ],
     "baseUrl": ".",
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
+    "paths": {
+        "@katalyst/content/*": ["content/src/*"],
+        "@katalyst/test-helpers/*": ["content/test/helpers/*"]
+    },
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
 }

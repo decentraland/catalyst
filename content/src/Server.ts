@@ -2,10 +2,10 @@ import cors from "cors";
 import express, { RequestHandler } from "express";
 import morgan from "morgan";
 import multer from "multer";
+import http from "http";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
-import http from "http";
-import { SynchronizationManager } from "../src/service/synchronization/SynchronizationManager";
+import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 
 export class Server {
    private port: number;

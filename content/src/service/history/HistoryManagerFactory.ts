@@ -1,7 +1,8 @@
+import { Environment, Bean } from "../../Environment"
 import { HistoryManager } from "./HistoryManager"
-import { Environment, Bean } from "../../../src/Environment"
 import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManagerImpl } from "./HistoryManagerImpl"
+
 
 export class HistoryManagerFactory {
 

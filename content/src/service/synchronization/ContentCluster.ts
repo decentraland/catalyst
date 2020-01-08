@@ -1,8 +1,9 @@
 import { setInterval, clearInterval } from "timers"
+import { Environment, EnvironmentConfig } from "../../Environment";
 import { DAOClient } from "./clients/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
-import { Environment, EnvironmentConfig } from "../../../src/Environment";
+
 import { Timestamp } from "../Service";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
