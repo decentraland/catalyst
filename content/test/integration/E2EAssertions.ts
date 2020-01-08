@@ -1,10 +1,10 @@
 import { TestServer } from "./TestServer"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { Pointer, EntityId, EntityType } from "@katalyst/content/service/Entity"
-import { Timestamp } from "@katalyst/content/service/Service"
-import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
-import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
+import { ControllerEntity } from "@katalyst/content/src/controller/Controller"
+import { Pointer, EntityId, EntityType } from "@katalyst/content/src/service/Entity"
+import { Timestamp } from "@katalyst/content/src/service/Service"
+import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/src/service/history/HistoryManager"
+import { Hashing, ContentFileHash } from "@katalyst/content/src/service/Hashing"
+import { AuditInfo } from "@katalyst/content/src/service/audit/Audit"
 import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {

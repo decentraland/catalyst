@@ -1,10 +1,10 @@
-import { EnvironmentBuilder } from "@katalyst/content/Environment"
-import { EntityType } from "@katalyst/content/service/Entity"
-import { BlacklistServiceDecorator } from "@katalyst/content/blacklist/BlacklistServiceDecorator"
+import { EnvironmentBuilder } from "@katalyst/content/src/Environment"
+import { EntityType } from "@katalyst/content/src/service/Entity"
+import { BlacklistServiceDecorator } from "@katalyst/content/src/blacklist/BlacklistServiceDecorator"
 import { buildDeployData, deleteServerStorage } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { assertFileIsOnServer, assertEntityIsNotBlacklisted, assertEntityIsBlacklisted, assertFileIsNotOnServer, assertContentNotIsBlacklisted, assertContentIsBlacklisted, assertRequiredFieldsOnEntitiesAreEqual } from "./E2EAssertions"
-import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
+import { ControllerEntityContent } from "@katalyst/content/src/controller/Controller"
 import { MockedContentAnalytics } from "../helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
@@ -31,7 +31,7 @@ describe("End 2 end - Blacklist", () => {
 
     it(`When an entity is blacklisted, then the metadata and content are hidden`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -64,7 +64,7 @@ describe("End 2 end - Blacklist", () => {
 
     it(`When content is blacklisted, then the entity that contains it says so`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
         const contentHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
 
         // Deploy the entity

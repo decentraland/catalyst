@@ -1,4 +1,4 @@
-import { FileSystemContentStorage } from "@katalyst/content/storage/FileSystemContentStorage";
+import { FileSystemContentStorage } from "@katalyst/content/src/storage/FileSystemContentStorage";
 import { FileSystemUtils as fsu } from "./FileSystemUtils";
 
 describe("unit tests in jasmine", () => {

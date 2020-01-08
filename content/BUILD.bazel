@@ -7,7 +7,6 @@ ts_library(
     name = "content",
     srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/content",
-    module_root = "src",
     deps = [
         "@npm//@types",
         "@npm//@types/node",
@@ -60,8 +59,8 @@ filegroup(
     name = "test_resources",
     srcs = glob(
         [
-            "test/**/*.txt",
-            "test/**/*.png",
+            "test/integration/**/*.txt",
+            "test/integration/**/*.png",
         ]
     )
 )
@@ -83,7 +82,25 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":content",
-        ":tests_helpers",
+        ":test_helpers",
+
+        "@npm//@types/node",
+        "@npm//@types/jasmine",
+        "@npm//faker",
+        "@npm//@types/faker",
+        "@npm//eth-crypto",
+        "@npm//ts-mockito"
+    ],
+)
+
+ts_library(
+    name = "tests_integration",
+    testonly = 1,
+    srcs = glob(["test/integration/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":content",
+        ":test_helpers",
 
         "@npm//@types/node",
         "@npm//@types/jasmine",
@@ -101,9 +118,8 @@ ts_library(
 )
 
 ts_library(
-    name = "tests_helpers",
+    name = "test_helpers",
     module_name = "@katalyst/test-helpers",
-    module_root = "test/helpers",
     srcs = glob(["test/helpers/**/*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
@@ -127,6 +143,7 @@ jasmine_node_test(
     name = "integration_test",
     deps = [
         ":test_resources",
+        ":tests_integration",
         "@npm//jasmine",
     ],
 )

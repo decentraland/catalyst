@@ -1,12 +1,12 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { BlacklistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget } from "@katalyst/content/blacklist/BlacklistTarget";
-import { Blacklist } from "@katalyst/content/blacklist/Blacklist";
-import { BlacklistServiceDecorator } from "@katalyst/content/blacklist/BlacklistServiceDecorator";
-import { ContentFile } from "@katalyst/content/service/Service";
-import { Pointer, Entity } from "@katalyst/content/service/Entity";
-import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
-import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
+import { BlacklistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget } from "@katalyst/content/src/blacklist/BlacklistTarget";
+import { Blacklist } from "@katalyst/content/src/blacklist/Blacklist";
+import { BlacklistServiceDecorator } from "@katalyst/content/src/blacklist/BlacklistServiceDecorator";
+import { ContentFile } from "@katalyst/content/src/service/Service";
+import { Pointer, Entity } from "@katalyst/content/src/service/Entity";
+import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/test/helpers/service/MockedMetaverseContentService";
+import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/test/helpers/PromiseAssertions";
 
 describe("BlacklistServiceDecorator", () => {
 

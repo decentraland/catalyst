@@ -1,12 +1,12 @@
 import ms from "ms"
 import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotBlacklisted, assertRequiredFieldsOnEntitiesAreEqual, assertContentNotIsBlacklisted, assertFileIsNotOnServer, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer } from "../E2EAssertions"
-import { Environment } from "@katalyst/content/Environment"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
-import { Timestamp } from "@katalyst/content/service/Service"
-import { EventDeployer } from "@katalyst/content/service/synchronization/EventDeployer"
-import { EntityFactory } from "@katalyst/content/service/EntityFactory"
-import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
+import { Environment } from "@katalyst/content/src/Environment"
+import { DAOClient } from "@katalyst/content/src/service/synchronization/clients/DAOClient"
+import { Timestamp } from "@katalyst/content/src/service/Service"
+import { EventDeployer } from "@katalyst/content/src/service/synchronization/EventDeployer"
+import { EntityFactory } from "@katalyst/content/src/service/EntityFactory"
+import { ControllerEntityContent } from "@katalyst/content/src/controller/Controller"
+import { ContentFileHash } from "@katalyst/content/src/service/Hashing"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
 import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage } from "../E2ETestUtils"
@@ -46,7 +46,7 @@ describe("End 2 end - Blacklist handling", () => {
         await server1.start()
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
 
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
@@ -83,7 +83,7 @@ describe("End 2 end - Blacklist handling", () => {
         await server1.start()
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
         const contentHash: ContentFileHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
 
         // Deploy the entity
@@ -118,7 +118,7 @@ describe("End 2 end - Blacklist handling", () => {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
 
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
@@ -156,7 +156,7 @@ describe("End 2 end - Blacklist handling", () => {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
         const contentHash: ContentFileHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
 
         // Deploy the entity

@@ -1,9 +1,9 @@
 import { random } from "faker"
-import { MetaverseContentService, Timestamp, ContentFile, ServerStatus } from "@katalyst/content/service/Service"
-import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
-import { EthAddress, Signature } from "@katalyst/content/service/auth/Authenticator"
+import { MetaverseContentService, Timestamp, ContentFile, ServerStatus } from "@katalyst/content/src/service/Service"
+import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/src/service/Entity"
+import { ContentFileHash } from "@katalyst/content/src/service/Hashing"
+import { AuditInfo } from "@katalyst/content/src/service/audit/Audit"
+import { EthAddress, Signature } from "@katalyst/content/src/service/auth/Authenticator"
 import { buildEntityAndFile } from "./EntityTestFactory"
 
 export class MockedMetaverseContentService implements MetaverseContentService {

@@ -1,7 +1,7 @@
-import { HistoryManager, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
-import { Entity } from "@katalyst/content/service/Entity";
-import { ServerName } from "@katalyst/content/service/naming/NameKeeper";
-import { Timestamp } from "@katalyst/content/service/Service";
+import { HistoryManager, DeploymentHistory } from "@katalyst/content/src/service/history/HistoryManager";
+import { Entity } from "@katalyst/content/src/service/Entity";
+import { ServerName } from "@katalyst/content/src/service/naming/NameKeeper";
+import { Timestamp } from "@katalyst/content/src/service/Service";
 
 export class MockedHistoryManager implements HistoryManager {
 

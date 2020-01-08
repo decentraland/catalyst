@@ -1,7 +1,7 @@
-import { EntityFactory } from "@katalyst/content/service/EntityFactory";
-import { Entity, EntityType, EntityId } from "@katalyst/content/service/Entity";
-import { ContentFile } from "@katalyst/content/service/Service";
-import { buildEntityAndFile, entityToFile } from "@katalyst/test-helpers/service/EntityTestFactory";
+import { EntityFactory } from "@katalyst/content/src/service/EntityFactory";
+import { Entity, EntityType, EntityId } from "@katalyst/content/src/service/Entity";
+import { ContentFile } from "@katalyst/content/src/service/Service";
+import { buildEntityAndFile, entityToFile } from "@katalyst/test-helpers/test/helpers/service/EntityTestFactory";
 
 describe("Service", () => {
 

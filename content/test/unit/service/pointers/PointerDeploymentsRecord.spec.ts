@@ -1,6 +1,6 @@
 import { random } from "faker"
-import { EntityType, Entity, Pointer, EntityId } from "@katalyst/content/service/Entity";
-import { PointerDeploymentsRecord, CommitResult } from "@katalyst/content/service/pointers/PointerDeploymentsRecord";
+import { EntityType, Entity, Pointer, EntityId } from "@katalyst/content/src/service/Entity";
+import { PointerDeploymentsRecord, CommitResult } from "@katalyst/content/src/service/pointers/PointerDeploymentsRecord";
 
 describe("PointerDeploymentsRecord", () => {
 

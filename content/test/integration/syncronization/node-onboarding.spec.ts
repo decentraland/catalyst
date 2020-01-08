@@ -1,9 +1,9 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/Service"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
-import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { Environment } from "@katalyst/content/Environment"
+import { Timestamp } from "@katalyst/content/src/service/Service"
+import { DAOClient } from "@katalyst/content/src/service/synchronization/clients/DAOClient"
+import { ControllerEntityContent } from "@katalyst/content/src/controller/Controller"
+import { ContentFileHash } from "@katalyst/content/src/service/Hashing"
+import { Environment } from "@katalyst/content/src/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, sleep, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
@@ -45,7 +45,7 @@ describe("End 2 end - Node onboarding", function() {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare data to be deployed
-        const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/integration/resources/some-binary-file.png')
         const entity1ContentHash: ContentFileHash  = (entity1.content as ControllerEntityContent[])[0].hash
         const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata2", entity1)
 
@@ -86,7 +86,7 @@ describe("End 2 end - Node onboarding", function() {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare data to be deployed
-        const [deployData, entity] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/end2end/resources/some-binary-file.png')
+        const [deployData, entity] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/integration/resources/some-binary-file.png')
         const entityContentHash: ContentFileHash  = (entity.content as ControllerEntityContent[])[0].hash
 
         // Deploy entity on server 1

@@ -1,11 +1,11 @@
-import { EnvironmentBuilder } from "@katalyst/content/Environment"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { EntityType } from "@katalyst/content/service/Entity"
-import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
-import { Timestamp, ContentFile } from "@katalyst/content/service/Service"
-import { MockedContentAnalytics } from "content/test/helpers/service/analytics/MockedContentAnalytics"
-import { MockedSynchronizationManager } from "content/test/helpers/service/synchronization/MockedSynchronizationManager"
-import { MockedAccessChecker } from "content/test/helpers/service/access/MockedAccessChecker"
+import { EnvironmentBuilder } from "@katalyst/content/src/Environment"
+import { ControllerEntity } from "@katalyst/content/src/controller/Controller"
+import { EntityType } from "@katalyst/content/src/service/Entity"
+import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/src/service/history/HistoryManager"
+import { Timestamp, ContentFile } from "@katalyst/content/src/service/Service"
+import { MockedContentAnalytics } from "@katalyst/test-helpers/test/helpers/service/analytics/MockedContentAnalytics"
+import { MockedSynchronizationManager } from "@katalyst/test-helpers/test/helpers/service/synchronization/MockedSynchronizationManager"
+import { MockedAccessChecker } from "@katalyst/test-helpers/test/helpers/service/access/MockedAccessChecker"
 import { buildDeployData, deleteServerStorage, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 
@@ -33,7 +33,7 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Deploy the content
         //------------------------------
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], "this is just some metadata", 'content/test/end2end/resources/some-binary-file.png', 'content/test/end2end/resources/some-text-file.txt')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], "this is just some metadata", 'content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt')
 
         const creationTimestamp = await server.deploy(deployData)
         const deltaTimestamp = Date.now() - creationTimestamp
