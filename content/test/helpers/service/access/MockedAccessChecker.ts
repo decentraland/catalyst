@@ -1,4 +1,4 @@
-import { AccessChecker } from "@katalyst/content/src/service/access/AccessChecker";
+import { AccessChecker } from "@katalyst/content/service/access/AccessChecker";
 
 export class MockedAccessChecker implements AccessChecker {
 

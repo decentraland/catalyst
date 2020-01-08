@@ -1,8 +1,8 @@
 import { random } from "faker"
 import { MockedStorage } from "../storage/MockedStorage";
-import { BlacklistStorage } from "@katalyst/content/src/blacklist/BlacklistStorage";
-import { buildContentTarget } from "@katalyst/content/src/blacklist/BlacklistTarget";
-import { BlacklistMetadata } from "@katalyst/content/src/blacklist/Blacklist";
+import { BlacklistStorage } from "@katalyst/content/blacklist/BlacklistStorage";
+import { buildContentTarget } from "@katalyst/content/blacklist/BlacklistTarget";
+import { BlacklistMetadata } from "@katalyst/content/blacklist/Blacklist";
 
 describe("BlacklistStorage", () => {
 

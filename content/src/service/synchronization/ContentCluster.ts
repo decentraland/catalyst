@@ -31,6 +31,9 @@ export class ContentCluster {
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
+        // TODO: Remove before releasing
+        await this.registerServer()
+
         // Set the immutable time
         this.setImmutableTime(lastImmutableTime)
 
@@ -42,9 +45,6 @@ export class ContentCluster {
 
         // Set up continuous sync interval
         this.syncInterval = setInterval(() => this.syncWithDAO(), this.updateFromDAOInterval)
-
-        // TODO: Remove before releasing
-        await this.registerServer()
     }
 
     /** Stop syncing with DAO */

@@ -1,11 +1,11 @@
 import fetch from "node-fetch"
-import { Environment, EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/src/Environment"
-import { Server } from "@katalyst/content/src/Server"
-import { Entity, EntityType } from "@katalyst/content/src/service/Entity"
-import { ControllerEntity } from "@katalyst/content/src/controller/Controller"
-import { MockedMetaverseContentServiceBuilder, buildContent } from "@katalyst/test-helpers/test/helpers/service/MockedMetaverseContentService"
-import { MockedSynchronizationManager } from "@katalyst/test-helpers/test/helpers/service/synchronization/MockedSynchronizationManager"
-import { randomEntity } from "@katalyst/test-helpers/test/helpers/service/EntityTestFactory"
+import { Environment, EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
+import { Server } from "@katalyst/content/Server"
+import { Entity, EntityType } from "@katalyst/content/service/Entity"
+import { ControllerEntity } from "@katalyst/content/controller/Controller"
+import { MockedMetaverseContentServiceBuilder, buildContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService"
+import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
+import { randomEntity } from "@katalyst/test-helpers/service/EntityTestFactory"
 
 describe("unit tests in jasmine", function() {
     let env: Environment

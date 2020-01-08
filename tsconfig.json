@@ -31,8 +31,8 @@
     "baseUrl": ".",
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
     "paths": {
-        "@katalyst/content/src/*": ["content/src/*"],
-        "@katalyst/test-helpers/test/helpers/*": ["content/test/helpers/*"]
+        "@katalyst/content/*": ["content/src/*"],
+        "@katalyst/test-helpers/*": ["content/test/helpers/*"]
     },
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]

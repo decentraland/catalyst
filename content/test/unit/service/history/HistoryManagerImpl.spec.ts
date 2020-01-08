@@ -1,11 +1,11 @@
 import { random } from "faker"
-import { HistoryStorage } from "@katalyst/content/src/service/history/HistoryStorage";
-import { Timestamp } from "@katalyst/content/src/service/Service";
-import { DeploymentEvent } from "@katalyst/content/src/service/history/HistoryManager";
-import { EntityType, Entity } from "@katalyst/content/src/service/Entity";
+import { HistoryStorage } from "@katalyst/content/service/history/HistoryStorage";
+import { Timestamp } from "@katalyst/content/service/Service";
+import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager";
+import { EntityType, Entity } from "@katalyst/content/service/Entity";
 import { MockedStorage } from "../../storage/MockedStorage";
-import { HistoryManager } from "@katalyst/content/src/service/history/HistoryManager";
-import { HistoryManagerImpl } from "@katalyst/content/src/service/history/HistoryManagerImpl";
+import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
+import { HistoryManagerImpl } from "@katalyst/content/service/history/HistoryManagerImpl";
 
 describe("HistoryManager", () => {
 

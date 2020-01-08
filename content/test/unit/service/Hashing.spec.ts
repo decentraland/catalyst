@@ -1,5 +1,5 @@
-import { Hashing, ContentFileHash } from "@katalyst/content/src/service/Hashing";
-import { ContentFile } from "@katalyst/content/src/service/Service";
+import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing";
+import { ContentFile } from "@katalyst/content/service/Service";
 
 describe("Hashing", function () {
 

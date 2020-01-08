@@ -1,4 +1,4 @@
-import { ContentStorage } from "@katalyst/content/src/storage/ContentStorage";
+import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
 
 export class MockedStorage implements ContentStorage {
 

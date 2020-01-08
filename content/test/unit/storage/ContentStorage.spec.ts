@@ -1,7 +1,7 @@
-import { ContentStorageFactory } from "@katalyst/content/src/storage/ContentStorageFactory";
+import { ContentStorageFactory } from "@katalyst/content/storage/ContentStorageFactory";
 import { FileSystemUtils as fsu } from "./FileSystemUtils";
-import { Environment, EnvironmentConfig } from "@katalyst/content/src/Environment";
-import { ContentStorage } from "@katalyst/content/src/storage/ContentStorage";
+import { Environment, EnvironmentConfig } from "@katalyst/content/Environment";
+import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
 
 describe("ContentStorage", () => {
 

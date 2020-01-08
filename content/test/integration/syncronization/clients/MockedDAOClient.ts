@@ -1,5 +1,5 @@
-import { ServerAddress } from "@katalyst/content/src/service/synchronization/clients/contentserver/ContentServerClient";
-import { DAOClient } from "@katalyst/content/src/service/synchronization/clients/DAOClient";
+import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
+import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient";
 
 export class MockedDAOClient extends DAOClient {
 

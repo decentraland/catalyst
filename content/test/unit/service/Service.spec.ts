@@ -1,14 +1,14 @@
-import { ENTITY_FILE_NAME, Timestamp, ContentFile } from "@katalyst/content/src/service/Service";
-import { EntityType, Entity } from "@katalyst/content/src/service/Entity";
-import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/src/Environment";
-import { ServiceFactory } from "@katalyst/content/src/service/ServiceFactory";
-import { NameKeeper } from "@katalyst/content/src/service/naming/NameKeeper";
-import { ContentStorage } from "@katalyst/content/src/storage/ContentStorage";
-import { MetaverseContentService } from "@katalyst/content/src/service/Service";
-import { HistoryManager } from "@katalyst/content/src/service/history/HistoryManager";
-import { Hashing, ContentFileHash } from '@katalyst/content/src/service/Hashing';
-import { assertPromiseRejectionIs } from "@katalyst/test-helpers/test/helpers/PromiseAssertions";
-import { buildEntityAndFile } from "@katalyst/test-helpers/test/helpers/service/EntityTestFactory";
+import { ENTITY_FILE_NAME, Timestamp, ContentFile } from "@katalyst/content/service/Service";
+import { EntityType, Entity } from "@katalyst/content/service/Entity";
+import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment";
+import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
+import { NameKeeper } from "@katalyst/content/service/naming/NameKeeper";
+import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
+import { MetaverseContentService } from "@katalyst/content/service/Service";
+import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
+import { Hashing, ContentFileHash } from '@katalyst/content/service/Hashing';
+import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
+import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 
