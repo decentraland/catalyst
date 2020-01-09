@@ -14,6 +14,7 @@ import { Cache } from "./caching/Cache"
 import { AuditManager, AuditInfo } from "./audit/Audit";
 import { EthAddress, Signature } from "./auth/Authenticator";
 import { Validations, Validation } from "./validations/Validation";
+import { CONTENT_KATALYST_VERSION } from "../Environment";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -145,6 +146,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             deployedTimestamp,
             ethAddress,
             signature,
+            version: CONTENT_KATALYST_VERSION,
         }
         return this.auditManager.setAuditInfo(entityId, auditInfo)
     }
@@ -197,7 +199,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     getStatus(): Promise<ServerStatus> {
         return Promise.resolve({
             name: this.nameKeeper.getServerName(),
-            version: "1.0",
+            version: CONTENT_KATALYST_VERSION,
             currentTime: Date.now(),
             lastImmutableTime: this.getLastImmutableTime()
         })

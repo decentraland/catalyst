@@ -21,6 +21,7 @@ import { EventDeployerFactory } from "./service/synchronization/EventDeployerFac
 import { BlacklistFactory } from "./blacklist/BlacklistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
 
+export const CONTENT_KATALYST_VERSION: string = "0.1"
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 
