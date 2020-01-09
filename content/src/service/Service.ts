@@ -3,6 +3,7 @@ import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { ServerName } from "./naming/NameKeeper";
 import { AuditInfo } from "./audit/Audit";
 import { EthAddress, Signature } from "./auth/Authenticator";
+import { Timestamp } from "./time/TimeSorting";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -43,8 +44,6 @@ export type ContentFile = {
     name: string
     content: Buffer
 }
-
-export type Timestamp = number
 
 export type ServerVersion = string
 

@@ -1,5 +1,5 @@
 import { ContentFileHash } from "./Hashing"
-import { Timestamp } from "./Service"
+import { Timestamp } from "./time/TimeSorting"
 
 export class Entity {
 

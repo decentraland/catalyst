@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
-import { Timestamp, ContentFile, ServerStatus } from "../../../Service";
+import { ContentFile, ServerStatus } from "../../../Service";
+import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
 import { ContentFileHash } from "../../../Hashing";

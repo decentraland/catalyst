@@ -1,0 +1,34 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
+
+ts_library(
+    name = "content",
+    srcs = glob(["**/*.ts"]),
+    module_name = "@katalyst/content",
+    deps = [
+        "@npm//@types",
+        "@npm//@types/node",
+        "@npm//cors",
+        "@npm//express",
+        "@npm//morgan",
+        "@npm//multer",
+        "@npm//@types/multer",
+        "@npm//cids",
+        "@npm//multihashing-async",
+        "@npm//node-fetch",
+        "@npm//@types/node-fetch",
+        "@npm//uuid",
+        "@npm//@types/uuid",
+        "@npm//ip",
+        "@npm//analytics-node",
+        "@npm//@types/analytics-node",
+        "@npm//eth-crypto",
+        "@npm//caching-map",
+        "@npm//ms",
+        "@npm//@types/ms",
+
+        "@npm//form-data",
+        "@npm//@types/form-data",
+    ],
+)

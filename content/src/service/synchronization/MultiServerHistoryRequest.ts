@@ -1,6 +1,6 @@
 import { ServerName } from "../naming/NameKeeper";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
-import { Timestamp } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
 import { EventDeployer } from "./EventDeployer";
 

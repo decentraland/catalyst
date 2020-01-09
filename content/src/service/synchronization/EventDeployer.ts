@@ -7,6 +7,7 @@ import { ContentCluster } from "./ContentCluster";
 import { AuditInfo } from "../audit/Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
+import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class EventDeployer {
 
@@ -20,9 +21,8 @@ export class EventDeployer {
         const map: Map<EntityId, DeploymentEvent> = new Map()
         histories.forEach(history => history.forEach(event => map.set(event.entityId, event)))
 
-        // Unify and sort
+        // Unify
         const unifiedHistory = Array.from(map.values())
-            .sort((a, b) => a.timestamp - b.timestamp) // Sorting from oldest to newest
 
         // Deploy
         return this.deployHistory(unifiedHistory)
@@ -33,10 +33,11 @@ export class EventDeployer {
         const entitiesInHistory: EntityId[] = history.map(({ entityId }) => entityId)
         const newEntities: EntityId[] = await this.filterOutKnownFiles(entitiesInHistory)
 
-        // Deploy only the new entities
-        const deployments = history.filter(event => newEntities.includes(event.entityId))
-            .map(event => this.deployEvent(event, source))
+        // Keep and sort new deployments
+        const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
 
+        // Deploy
+        const deployments = newDeployments.map(event => this.deployEvent(event, source))
         await Promise.all(deployments)
     }
 

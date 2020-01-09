@@ -1,4 +1,4 @@
-import { Timestamp } from "../service/Service";
+import { Timestamp } from "../service/time/TimeSorting";
 import { BlacklistTarget } from "./BlacklistTarget";
 import { EthAddress, Signature, Authenticator } from "../service/auth/Authenticator";
 import { BlacklistStorage } from "./BlacklistStorage";

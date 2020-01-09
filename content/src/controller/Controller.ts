@@ -1,7 +1,8 @@
 import express from "express";
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import fs from "fs"
-import { MetaverseContentService, ContentFile, Timestamp } from "../service/Service";
+import { MetaverseContentService, ContentFile } from "../service/Service";
+import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { EthAddress, Signature } from "../service/auth/Authenticator";

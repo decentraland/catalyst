@@ -1,8 +1,9 @@
-import { Timestamp } from "../Service"
+import { Timestamp } from "../time/TimeSorting"
 import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManager, DeploymentEvent, DeploymentHistory } from "./HistoryManager"
 import { Entity } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
+import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest, sortFromNewestToOldest } from "../time/TimeSorting"
 
 export class HistoryManagerImpl implements HistoryManager {
 
@@ -31,10 +32,9 @@ export class HistoryManagerImpl implements HistoryManager {
     }
 
     async setTimeAsImmutable(immutableTime: number): Promise<void> {
-        const index = this.tempHistory.findIndex(savedEvent => savedEvent.timestamp < immutableTime)
+        const index = this.tempHistory.findIndex(savedEvent => happenedBeforeTime(savedEvent, immutableTime))
         if (index >= 0) {
-            const nowImmutable: DeploymentHistory = this.tempHistory.splice(index, this.tempHistory.length - index)
-                .sort((a, b) => a.timestamp - b.timestamp) // Sorting from oldest to newest
+            const nowImmutable: DeploymentHistory = sortFromOldestToNewest(this.tempHistory.splice(index, this.tempHistory.length - index))
             await this.storage.setTempHistory(this.tempHistory)
             await this.storage.appendToImmutableHistory(nowImmutable)
         }
@@ -66,11 +66,12 @@ export class HistoryManagerImpl implements HistoryManager {
 
     private async getImmutableHistory(): Promise<DeploymentHistory> {
         const immutableHistory = await this.storage.getImmutableHistory()
-        return immutableHistory.sort((a, b) => b.timestamp - a.timestamp) // Sorting from newest to oldest
+        return sortFromNewestToOldest(immutableHistory)
     }
 
     private addEventToTempHistory(newEvent: DeploymentEvent): void {
-        const index = this.tempHistory.findIndex(savedEvent => savedEvent.timestamp < newEvent.timestamp || (savedEvent.timestamp == newEvent.timestamp && savedEvent.entityId < newEvent.entityId))
+        // Find index where event happened before the new event
+        const index = this.tempHistory.findIndex(savedEvent => happenedBefore(savedEvent, newEvent))
         if (index >= 0) {
             this.tempHistory.splice(index, 0, newEvent)
         } else {

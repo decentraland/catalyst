@@ -10,7 +10,7 @@ import { HistoryManager } from "./service/history/HistoryManager";
 import { NameKeeper } from "./service/naming/NameKeeper";
 import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFactory";
 import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
-import { SynchronizationManager } from "../../content/src/service/synchronization/SynchronizationManager";
+import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { AccessChecker } from "./service/access/AccessChecker";

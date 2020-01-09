@@ -1,9 +1,10 @@
 import { setInterval, clearInterval } from "timers"
+import { Environment, EnvironmentConfig } from "../../Environment";
 import { DAOClient } from "./clients/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
-import { Environment, EnvironmentConfig } from "../../../src/Environment";
-import { Timestamp } from "../Service";
+
+import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
@@ -30,6 +31,9 @@ export class ContentCluster {
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
+        // TODO: Remove before releasing
+        await this.registerServer()
+
         // Set the immutable time
         this.setImmutableTime(lastImmutableTime)
 
@@ -41,9 +45,6 @@ export class ContentCluster {
 
         // Set up continuous sync interval
         this.syncInterval = setInterval(() => this.syncWithDAO(), this.updateFromDAOInterval)
-
-        // TODO: Remove before releasing
-        await this.registerServer()
     }
 
     /** Stop syncing with DAO */

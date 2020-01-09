@@ -1,4 +1,4 @@
-import { Environment, EnvironmentConfig } from "../../../src/Environment"
+import { Environment, EnvironmentConfig } from "../../Environment"
 import { ContentAnalytics } from "./ContentAnalytics"
 import { ContentAnalyticsWithSegment } from "./ContentAnalyticsWithSegment"
 import { DummyContentAnalytics } from "./DummyContentAnalytics"

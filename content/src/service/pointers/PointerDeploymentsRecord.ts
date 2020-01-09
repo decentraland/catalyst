@@ -1,5 +1,5 @@
 import { EntityType, Pointer, EntityId, Entity } from "../Entity";
-import { Timestamp } from "../Service";
+import { Timestamp } from "../time/TimeSorting";
 
 /**
  * When syncing with other nodes, we might not get all deployments in order. In order to make sure that
