@@ -90,6 +90,19 @@ export class Peer implements IPeer {
     console.log(`[PEER: ${this.nickname}]`, ...entries);
   }
 
+  // async joinLayer(layer: string): Promise<void> {
+  //   const response = await fetch(`${this.lighthouseUrl}/layers/${layer}`, {
+  //     method: "PUT",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       [PeerHeaders.PeerToken]: this.config.token!
+  //     },
+  //     body: JSON.stringify({ userId: this.nickname })
+  //   });
+
+    
+  // }
+
   async joinRoom(roomId: string): Promise<any> {
     const response = await fetch(`${this.lighthouseUrl}/rooms/${roomId}`, {
       method: "PUT",
