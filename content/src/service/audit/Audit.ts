@@ -40,6 +40,7 @@ export type AuditInfo = {
     deployedTimestamp: Timestamp
     ethAddress: EthAddress
     signature: Signature,
+    version: string,
     overwrittenBy?: EntityId,
     isBlacklisted?: boolean,
     blacklistedContent?: ContentFileHash[]

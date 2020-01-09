@@ -6,6 +6,7 @@ import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { EthAddress, Signature } from "@katalyst/content/service/auth/Authenticator"
 import { buildEntityAndFile } from "./EntityTestFactory"
+import { CONTENT_KATALYST_VERSION } from "@katalyst/content/Environment"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 
@@ -20,6 +21,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         deployedTimestamp: Date.now(),
         ethAddress: random.alphaNumeric(10),
         signature: random.alphaNumeric(10),
+        version: CONTENT_KATALYST_VERSION,
     }
 
     private readonly entities: Entity[]

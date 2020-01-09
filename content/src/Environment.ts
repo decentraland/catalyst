@@ -21,6 +21,7 @@ import { EventDeployerFactory } from "./service/synchronization/EventDeployerFac
 import { BlacklistFactory } from "./blacklist/BlacklistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
 
+export const CONTENT_KATALYST_VERSION: string = "0.1"
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 
@@ -147,7 +148,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('20s'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DAO_ADDRESS               , () => process.env.DAO_ADDRESS ?? 'localhost:3000')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DAO_ADDRESS               , () => process.env.DAO_ADDRESS ?? 'http://localhost:3000')
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

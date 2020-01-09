@@ -7,16 +7,21 @@ export class DAOClient {
 
     // TODO: Remove this on final version
     async registerServerInDAO(address: ServerAddress): Promise<void> {
-        await fetch(`http://${this.daoAddress}/register`, {
+        console.log(this.daoAddress)
+        const result = await fetch(`${this.daoAddress}/register`, {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ server: address })
         });
-        console.log("Server registered in DAO.");
+        if (result.ok) {
+            console.log("Server registered in DAO.");
+        } else {
+            throw new Error(`Couldn't connect to the DAO. Error: ${result.statusText}`)
+        }
     }
 
     async getAllServers(): Promise<Set<ServerAddress>> {
-        const response = await fetch(`http://${this.daoAddress}/all-servers`)
+        const response = await fetch(`${this.daoAddress}/servers`)
         const serverAddresses: any[] = await response.json()
         return new Set(serverAddresses.map(({ address }) => address))
     }
