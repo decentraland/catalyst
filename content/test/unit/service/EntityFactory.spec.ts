@@ -47,14 +47,7 @@ describe("Service", () => {
         const invalidEntity = copyEntity(entity)
         invalidEntity.timestamp = "invalidTimestamp"
 
-        assertInvalidEntity(invalidEntity, `Please set a valid timestamp`)
-    });
-
-    it(`When timestamp is not valid, then an exceptions is thrown`, () => {
-        const invalidEntity = copyEntity(entity)
-        invalidEntity.timestamp = "invalidTimestamp"
-
-        assertInvalidEntity(invalidEntity, `Please set a valid timestamp`)
+        assertInvalidEntity(invalidEntity, `Please set a valid timestamp. We got ${invalidEntity.timestamp}`)
     });
 
     it(`When content is not an array, then an exceptions is thrown`, () => {
