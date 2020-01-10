@@ -10,7 +10,7 @@ export class Authenticator {
     private static async isSignatureValid(msg: string, ethAddress: string, signature: string): Promise<boolean> {
         try {
             const signerAddress = EthCrypto.recover(signature, Authenticator.createEthereumMessageHash(msg));
-            return ethAddress == signerAddress
+            return ethAddress.toLocaleLowerCase() === signerAddress.toLocaleLowerCase()
         } catch (e) {
             // console.error(e)
         }
