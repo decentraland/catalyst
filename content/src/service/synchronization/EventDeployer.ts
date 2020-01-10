@@ -8,7 +8,6 @@ import { AuditInfo } from "../audit/Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
 import { sortFromOldestToNewest } from "../time/TimeSorting";
-import { ControllerEntity } from "@katalyst/content/controller/Controller";
 
 export class EventDeployer {
 
