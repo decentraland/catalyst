@@ -27,7 +27,7 @@ export function getScenes(req: Request, res: Response) {
                 scenesResult.data.push({
                     parcel_id: pointer,
                     root_cid: entity.id,
-                    scene_cid: entity.id,
+                    scene_cid: findSceneJsonId(entity),
                 })
             })
         })
@@ -75,7 +75,7 @@ export function getInfo(req: Request, res: Response) {
         entities.forEach((entity: V3ControllerEntity) => {
             parcelInfoResult.data.push({
                 root_cid: entity.id,
-                scene_cid: entity.id,
+                scene_cid: findSceneJsonId(entity),
                 content: {
                     parcel_id: entity.pointers[0],
                     contents: entity.content ?? [],
@@ -132,3 +132,10 @@ export function getContents(req: Request, res: Response) {
     })
 }
 
+function findSceneJsonId(entity:V3ControllerEntity): string {
+    try {
+        return entity.content.find(entityContent => entityContent.file==="scene.json").hash
+    } catch {
+        return ""
+    }
+}
