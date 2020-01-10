@@ -9,10 +9,7 @@ import { Chat } from "./components/Chat";
 
 type ScreenEnum = "connect" | "chat";
 
-class App extends React.Component<
-  {},
-  { screen: ScreenEnum; peer?: IPeer; room?: string; url?: string }
-> {
+class App extends React.Component<{}, { screen: ScreenEnum; peer?: IPeer; room?: string; url?: string; layer?: string }> {
   constructor(props: {}) {
     super(props);
     this.state = { screen: "connect" };
@@ -24,13 +21,7 @@ class App extends React.Component<
         return this.connectForm();
       case "chat":
         if (this.state.peer && this.state.room) {
-          return (
-            <Chat
-              peer={this.state.peer}
-              room={this.state.room}
-              url={this.state.url!}
-            />
-          );
+          return <Chat peer={this.state.peer} room={this.state.room} url={this.state.url!} layer={this.state.layer!} />;
         } else {
           return this.connectForm();
         }
@@ -40,19 +31,12 @@ class App extends React.Component<
   // @ts-ignore
   private connectForm(): React.ReactElement<
     any,
-    | string
-    | ((
-        props: any
-      ) => React.ReactElement<
-        any,
-        string | any | (new (props: any) => React.Component<any, any, any>)
-      >)
-    | (new (props: any) => React.Component<any, any, any>)
+    string | ((props: any) => React.ReactElement<any, string | any | (new (props: any) => React.Component<any, any, any>)>) | (new (props: any) => React.Component<any, any, any>)
   > {
     return (
       <ConnectForm
-        onConnected={(peer, room, url) => {
-          this.setState({ screen: "chat", peer, room, url });
+        onConnected={(peer, layer, room, url) => {
+          this.setState({ screen: "chat", peer, layer, room, url });
         }}
         peerClass={Peer}
       />

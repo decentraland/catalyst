@@ -5,17 +5,13 @@ import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
-  return (
-    <Field
-      label={label}
-      onChange={ev => setter(ev.target.value)}
-      value={value}
-    />
-  );
+  return <Field label={label} onChange={ev => setter(ev.target.value)} value={value} />;
 }
 
+export const layer = "blue";
+
 export function ConnectForm(props: {
-  onConnected: (peer: IPeer, room: string, url: string) => any;
+  onConnected: (peer: IPeer, layer: string, room: string, url: string) => any;
   peerClass: {
     new (url: string, nickname: string, callback: any, config: any): IPeer;
   };
@@ -49,9 +45,10 @@ export function ConnectForm(props: {
           ]
         }
       });
+      await peer.setLayer(layer);
       await peer.joinRoom(room);
       setLoading(false);
-      props.onConnected(peer, room, url);
+      props.onConnected(peer, layer, room, url);
     } catch (e) {
       setError(e.message ?? e.toString());
       setLoading(false);
@@ -64,12 +61,7 @@ export function ConnectForm(props: {
       {fieldFor("Nickname", nickname, setNickname)}
       {fieldFor("Room", room, setRoom)}
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <Button
-        primary
-        disabled={[url, nickname, room].some(it => it === "") || isLoading}
-        onClick={joinRoom}
-        loading={isLoading}
-      >
+      <Button primary disabled={[url, nickname, room].some(it => it === "") || isLoading} onClick={joinRoom} loading={isLoading}>
         Connect
       </Button>
     </div>

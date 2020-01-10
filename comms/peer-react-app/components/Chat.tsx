@@ -58,7 +58,7 @@ function randomColor() {
 
 let intervalId: number | undefined = undefined;
 
-export function Chat(props: { peer: IPeer; room: string; url: string }) {
+export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
   const [cursors, setCursors] = useState<Record<string, Cursor>>({});
@@ -135,7 +135,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   useEffect(() => {
     setInterval(async () => {
       try {
-        const response = await fetch(`${props.url}/rooms`);
+        const response = await fetch(`${props.url}/layers/${props.layer}/rooms`);
         const rooms = await response.json();
         setAvailableRooms(rooms.filter(room => !joinedRooms.some(joined => joined.id === room)));
       } catch (e) {}
