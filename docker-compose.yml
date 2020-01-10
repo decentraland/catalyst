@@ -11,7 +11,7 @@ services:
     working_dir: /app
     command: content
     environment:
-        - SERVER_PORT=${CONTENT_SERVER_PORT}
+        - CONTENT_SERVER_PORT=${CONTENT_SERVER_PORT}
         - MY_PUBLIC_ADDRESS=${MY_PUBLIC_ADDRESS}
         - DAO_ADDRESS=${DAO_ADDRESS}
     ports:
