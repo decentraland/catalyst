@@ -90,10 +90,10 @@ export class Validator {
     }
 
     // TODO: decide if we want to externalize this as a configuration
-    private static REQUEST_TTL = ms('10s')
+    private static REQUEST_TTL = ms('5m') // 5 minutes
     private requestIsRecent(entityToBeDeployed: Entity): void {
         const delta = Date.now() - entityToBeDeployed.timestamp
-        if (delta > Validator.REQUEST_TTL || delta < -ms('1s')) {
+        if (delta > Validator.REQUEST_TTL || delta < -ms('5s')) {
             this.errors.push("The request is not recent, please submit it again with a new timestamp.")
         }
     }
