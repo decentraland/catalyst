@@ -4,13 +4,13 @@ import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { isReliable, connectionIdFor, util } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { PeerConnectionData, IPeer, Room } from "./types";
+import { KnownPeerData, IPeer, Room } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 
 const PROTOCOL_VERSION = 1;
 
 interface PacketData {
-  hi: { room: { id: string; users: PeerConnectionData[] } };
+  hi: { room: { id: string; users: KnownPeerData[] } };
   message: { room: string; src: string; dst: string; payload: any; hops?: number; ttl?: number };
 }
 
@@ -50,6 +50,8 @@ type PeerConfig = {
   token?: string;
   sessionId?: string;
   relay?: RelayMode;
+  minConnections?: number;
+  maxConnections?: number;
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
@@ -60,10 +62,9 @@ export class Peer implements IPeer {
 
   private peerConnectionPromises: Record<string, { resolve: () => void; reject: () => void }[]> = {};
 
-  private currentLayer?: string;
+  private knownPeers: Record<string, KnownPeerData> = {};
 
-  //@ts-ignore
-  private layerPeers: PeerConnectionData[];
+  private currentLayer?: string;
 
   public readonly currentRooms: Room[] = [];
   private connectionConfig: any;
@@ -74,6 +75,9 @@ export class Peer implements IPeer {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
+
+    this.config.minConnections = this.config.minConnections ?? 5;
+    this.config.maxConnections = this.config.maxConnections ?? 10;
 
     const secure = url.protocol === "https:";
 
@@ -106,7 +110,8 @@ export class Peer implements IPeer {
     });
 
     this.currentLayer = layer;
-    this.layerPeers = json;
+    this.currentRooms.length = 0;
+    this.knownPeers = json;
   }
 
   async joinRoom(roomId: string): Promise<any> {
@@ -117,29 +122,52 @@ export class Peer implements IPeer {
       bodyObject: { userId: this.nickname, peerId: this.nickname }
     });
 
-    const roomUsers: PeerConnectionData[] = json;
+    const roomUsers: KnownPeerData[] = json;
 
     const room = {
       id: roomId,
-      users: new Map(roomUsers.map(data => [this.key(data), data]))
+      users: roomUsers.map(data => data.userId)
     };
+
     this.currentRooms.push(room);
+    this.updateKnownPeersWith(room, roomUsers);
 
-    return Promise.all(
-      roomUsers
-        .filter(user => user.userId !== this.nickname)
-        .map(user => {
-          if (!this.hasConnectionsFor(user.peerId) && user.peerId !== this.nickname) {
-            this.getOrCreatePeer(user.peerId, true, roomId);
-          }
-          this.sendPacket(user, {
-            type: "hi",
-            data: { room: { id: room.id, users: [...room.users.values()] } }
-          });
+    await this.updateNetwork();
+    return await this.roomConnectionHealthy(roomId);
+  }
 
-          return this.beConnectedTo(user.peerId);
-        })
-    );
+  updateKnownPeersWith(room: Room, roomPeersData: KnownPeerData[]) {
+    //We remove the room for those known peers which are not in the room and have it
+    Object.keys(this.knownPeers).forEach( it => {
+      const roomIndex = this.knownPeers[it].rooms.indexOf(room.id);
+      if(room.users.indexOf(it) < 0 && roomIndex > 0) {
+        this.knownPeers[it].rooms.splice(roomIndex, 1);
+      }
+    })
+
+    //We add the room to those known peers that are in the room
+    roomPeersData.forEach(it => {
+      if(!this.knownPeers[it.userId]) {
+        this.knownPeers[it.userId] = {...it, rooms: [room.id]}
+      } else if(this.knownPeers[it.userId].rooms.indexOf(room.id) < 0) {
+        this.knownPeers[it.userId].rooms.push(room.id);
+      }
+    })
+  }
+
+  async roomConnectionHealthy(roomId: string) {
+    // - Send ping to each member of the room
+    // - Await responses. Once responces amount reach a certain threshold, assume healthy
+    // - If not healthy after 5 seconds (or configurable amount) and if max connections are not reached, establish connection with more peers
+  }
+
+  async updateNetwork() {
+    if(Object.keys(this.connectedPeers).length < this.config.minConnections!) {
+      // - Build a list of connection candidates
+      // - Try to connect to the amount needed to reach minConnections
+      // - If the connections succeed, or if the candidates are exhausted, resolve
+      // - Otherwise, keep trying
+    }
   }
 
   private assertPeerInLayer() {
@@ -151,7 +179,7 @@ export class Peer implements IPeer {
 
     const response = await this.httpClient.fetch(`layers/${this.currentLayer}/rooms/${roomId}/users/${this.nickname}`, { method: "DELETE" });
 
-    const roomUsers: PeerConnectionData[] = await response.json();
+    const roomUsers: KnownPeerData[] = await response.json();
 
     const index = this.currentRooms.findIndex(room => room.id === roomId);
 
@@ -206,7 +234,7 @@ export class Peer implements IPeer {
     }
   }
 
-  private key(data: PeerConnectionData) {
+  private key(data: KnownPeerData) {
     return `${data.userId}:${data.peerId}`;
   }
 
@@ -326,7 +354,7 @@ export class Peer implements IPeer {
     return Promise.resolve();
   }
 
-  private sendMessageTo(user: PeerConnectionData, roomId: string, payload: any, src: string = this.nickname, reliable: boolean = true) {
+  private sendMessageTo(user: KnownPeerData, roomId: string, payload: any, src: string = this.nickname, reliable: boolean = true) {
     const data = {
       room: roomId,
       src,
@@ -344,7 +372,7 @@ export class Peer implements IPeer {
     this.sendPacket(user, packet);
   }
 
-  private sendPacket<T extends PacketType>(user: PeerConnectionData, packet: Packet<T>) {
+  private sendPacket<T extends PacketType>(user: KnownPeerData, packet: Packet<T>) {
     const peer = this.config.relay === RelayMode.All && user.peerId === this.nickname ? this.connectedPeers[user.userId] : this.connectedPeers[user.peerId];
     if (peer) {
       // const connection = reliable

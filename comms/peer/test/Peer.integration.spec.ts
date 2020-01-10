@@ -1,5 +1,5 @@
 import { Peer, PacketCallback } from "../src/Peer";
-import { PeerConnectionData } from "../src/types";
+import { KnownPeerData } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
 
@@ -53,7 +53,7 @@ function createPeer(
 }
 
 describe("Peer Integration Test", function() {
-  let peerIds: Record<string, PeerConnectionData[]>;
+  let peerIds: Record<string, KnownPeerData[]>;
 
   function expectSinglePeerInRoom(peer: Peer, roomId: string) {
     expect(peerIds[roomId]).toBeDefined();

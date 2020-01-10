@@ -1,5 +1,5 @@
-export type Room = { id: string; users: Map<string, PeerConnectionData> };
-export type PeerConnectionData = { userId: string; peerId: string };
+export type Room = { id: string; users: string[] };
+export type KnownPeerData = { userId: string; peerId: string, rooms: string[] };
 
 export interface IPeer {
   nickname: string;
