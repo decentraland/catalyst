@@ -15,7 +15,7 @@ services:
         - MY_PUBLIC_ADDRESS=${MY_PUBLIC_ADDRESS}
         - DAO_ADDRESS=${DAO_ADDRESS}
     ports:
-      - "${CONTENT_SERVER_PORT}:6969"
+      - "${CONTENT_SERVER_PORT}:${CONTENT_SERVER_PORT}"
   lambdas:
     image: katalyst:latest
     working_dir: /app
