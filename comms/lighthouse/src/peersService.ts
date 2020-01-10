@@ -1,13 +1,24 @@
 import { IRealm } from "peerjs-server";
 import { PeerInfo } from "./types";
+import { serverStorage } from "./simpleStorage";
+import { StorageKeys } from "./storageKeys";
+import { util } from "../../peer/src/peerjs-server-connector/util";
+import * as wrtc from "wrtc";
+import { Peer, RelayMode } from "../../peer/src/Peer";
 
 export enum NotificationType {
   PEER_LEFT_ROOM = "PEER_LEFT_ROOM",
   PEER_LEFT_LAYER = "PEER_LEFT_LAYER"
 }
 
+async function getPeerToken(layerId: string) {
+  return await serverStorage.getOrSetString(`${StorageKeys.PEER_TOKEN}-${layerId}`, util.generateToken(64));
+}
+
+require("isomorphic-fetch");
+
 export class PeersService {
-  constructor(private realmProvider: () => IRealm) {}
+  constructor(private realmProvider: () => IRealm, private lighthouseSecure: boolean, private lighthousePort: number) {}
 
   notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
     peers.forEach($ => {
@@ -21,6 +32,40 @@ export class PeersService {
         });
       }
     });
+  }
+
+  async createServerPeer(layerId: string) {
+    const peerToken = await getPeerToken(layerId);
+    return new Peer(
+      `${this.lighthouseSecure ? "https" : "http"}://localhost:${this.lighthousePort}`,
+      "lighthouse",
+      (sender, room, payload) => {
+        const message = JSON.stringify(payload, null, 3);
+        console.log(`Received message from ${sender} in ${room}: ${message}`);
+      },
+      {
+        wrtc,
+        socketBuilder: url => new WebSocket(url),
+        relay: RelayMode.All,
+        token: peerToken,
+        connectionConfig: {
+          iceServers: [
+            {
+              urls: "stun:stun.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun2.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun3.l.google.com:19302"
+            },
+            {
+              urls: "stun:stun4.l.google.com:19302"
+            }
+          ]
+        }
+      }
+    );
   }
 
   private get peerRealm() {

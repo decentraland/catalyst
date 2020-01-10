@@ -7,7 +7,6 @@ import { UserMustBeInLayerError } from "./errors";
 
 type LayersServiceConfig = Partial<{
   serverPeerEnabled: boolean;
-  serverPeerProvider: () => Peer | undefined;
   peersService: PeersService;
 }>;
 
@@ -20,6 +19,8 @@ function newLayer(layerId: string) {
 //from the product side. In the future with more information this could be refactored
 export class LayersService {
   private layers: Record<string, Layer> = {};
+  private serverPeers: Record<string, Peer> = {};
+
   constructor(private config: LayersServiceConfig) {}
 
   getLayerIds(): string[] {
@@ -34,8 +35,12 @@ export class LayersService {
     if (!this.exists(layerId)) {
       return undefined;
     } else {
-      return new RoomsService(layerId, this.layers[layerId].rooms, this.config);
+      return new RoomsService(layerId, this.layers[layerId].rooms, { ...this.config, serverPeerProvider: () => this.getPeerForLayer(layerId) });
     }
+  }
+
+  getPeerForLayer(layerId: string): Peer | undefined {
+    return this.serverPeers[layerId];
   }
 
   exists(layerId: string) {
@@ -62,11 +67,13 @@ export class LayersService {
     if (!layer) {
       this.layers[layerId] = layer = newLayer(layerId);
 
-      // TODO: Add serverPeer to layer and maybe refactor like removeUserFromLayer
-      // const serverPeer = getServerPeer(this.config.serverPeerProvider)
-      // if (this.config.serverPeerEnabled && this.config) {
-      //   await serverPeer.joinRoom(roomId);
-      // }
+      if (this.config.serverPeerEnabled) {
+        // Clean up old peer?
+
+        this.serverPeers[layerId] = await this.config.peersService?.createServerPeer(layerId)!;
+
+        //await this.serverPeers[layerId].setLayer(layerId)
+      }
     }
 
     if (!this.isUserInLayer(layerId, peer)) {
