@@ -72,7 +72,7 @@ export class ContentCluster {
     /** Register this server in the DAO id required */
     private async registerServer() {
         const env: Environment = await Environment.getInstance()
-        const serverIP = process.env.MY_ADDRESS ?? require('ip').address()
+        const serverIP = process.env.MY_PUBLIC_ADDRESS ?? require('ip').address()
         const port: number = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
         await this.dao.registerServerInDAO(`${serverIP}:${port}`)

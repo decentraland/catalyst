@@ -10,9 +10,13 @@ services:
     image: katalyst:latest
     working_dir: /app
     command: content
+    environment:
+        - SERVER_PORT=${CONTENT_SERVER_PORT}
+        - MY_PUBLIC_ADDRESS=${MY_PUBLIC_ADDRESS}
+        - DAO_ADDRESS=${DAO_ADDRESS}
     ports:
-      - "6969:6969"
-  content-server:
+      - "${CONTENT_SERVER_PORT}:6969"
+  lambdas:
     image: katalyst:latest
     working_dir: /app
     command: lambdas

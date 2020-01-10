@@ -7,14 +7,13 @@ export class DAOClient {
 
     // TODO: Remove this on final version
     async registerServerInDAO(address: ServerAddress): Promise<void> {
-        console.log(this.daoAddress)
         const result = await fetch(`${this.daoAddress}/register`, {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ server: address })
         });
         if (result.ok) {
-            console.log("Server registered in DAO.");
+            console.log(`Server registered in DAO. Address is ${address}`);
         } else {
             throw new Error(`Couldn't connect to the DAO. Error: ${result.statusText}`)
         }
