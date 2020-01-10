@@ -36,7 +36,7 @@ export class EntityFactory {
             throw new Error(`Please set valid pointers`)
         }
         if (!object.timestamp || (typeof object.timestamp) != "number") {
-            throw new Error(`Please set a valid timestamp`)
+            throw new Error(`Please set a valid timestamp. We got ${object.timestamp}`)
         }
 
         let content: Map<string, ContentFileHash> | undefined = undefined
