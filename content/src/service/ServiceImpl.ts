@@ -30,7 +30,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private accessChecker: AccessChecker,
         private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean) {
-        this.entities = Cache.withCalculation((entityId: EntityId) => this.getEntityById(entityId), 1000)
+        this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
     }
 
     static async build(storage: ServiceStorage,
@@ -130,7 +130,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         await this.storeAuditInfo(entityId, ethAddress, signature, deploymentTimestamp)
 
         // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-        await this.pointerManager.commitEntity(entity, deploymentTimestamp, entityId => this.getEntityById(entityId));
+        await this.pointerManager.commitEntity(entity, deploymentTimestamp, entityId => this.entities.get(entityId));
 
         // Add the new deployment to history
         await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
@@ -149,11 +149,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             version: CONTENT_KATALYST_VERSION,
         }
         return this.auditManager.setAuditInfo(entityId, auditInfo)
-    }
-
-    private async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        const buffer = await this.storage.getContent(id)
-        return buffer ? EntityFactory.fromBufferWithId(buffer, id) : undefined
     }
 
     private storeEntityContent(hashes: Map<ContentFileHash, ContentFile>, alreadyStoredHashes: Map<ContentFileHash, Boolean>): Promise<any> {

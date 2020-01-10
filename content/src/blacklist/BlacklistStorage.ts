@@ -74,7 +74,7 @@ export class BlacklistStorage {
 
     private buildEvent(target: BlacklistTarget, metadata: BlacklistMetadata, action: BlacklistAction): BlacklistEvent {
         return {
-            target,
+            target: target.asString(),
             metadata,
             action,
         }
@@ -83,7 +83,7 @@ export class BlacklistStorage {
 }
 
 type BlacklistEvent = {
-    target: BlacklistTarget,
+    target: string,
     metadata: BlacklistMetadata,
     action: BlacklistAction
 }

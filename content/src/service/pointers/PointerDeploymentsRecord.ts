@@ -12,12 +12,12 @@ export class PointerDeploymentsRecord {
     private readonly tempDeploymentInfo: EntityDeployment[] // sorted from newest to oldest, by entity timestamp
     constructor(private readonly pointerReader: (entityType: EntityType, pointer: Pointer) => Promise<EntityId | undefined>,
         storedTempDeployments: Buffer | undefined) {
-            this.tempDeploymentInfo = storedTempDeployments ? JSON.parse(storedTempDeployments.toString()) : []
+            this.tempDeploymentInfo = storedTempDeployments ? fromSerializableMany(JSON.parse(storedTempDeployments.toString())) : []
         }
 
     /** Return the information necessary to store */
     getInformationToStore(): Buffer {
-        return Buffer.from(JSON.stringify(this.tempDeploymentInfo))
+        return Buffer.from(JSON.stringify(toSerializableMany(this.tempDeploymentInfo)))
     }
 
     /** When we have a new immutable time, we can get rid of all the deployments that happened before */
@@ -243,4 +243,43 @@ type EntityReferenceData = {
     pointers: Pointer[],
     entityTimestamp: Timestamp,
     entityId: EntityId,
+}
+
+type SerializableEntityDeployment = {
+    entityId: EntityId,
+    entityType: EntityType,
+    pointers: Pointer[],
+    entityTimestamp: Timestamp,
+    overwrittenEntities: [EntityId, EntityReferenceData][],
+    deploymentTimestamp: Timestamp,
+}
+
+function toSerializableMany(deployments: EntityDeployment[]): SerializableEntityDeployment[] {
+    return deployments.map(deployment => toSerializable(deployment))
+}
+
+function toSerializable(deployment: EntityDeployment): SerializableEntityDeployment {
+    return {
+        entityId: deployment.entityId,
+        entityType: deployment.entityType,
+        pointers: deployment.pointers,
+        entityTimestamp: deployment.entityTimestamp,
+        overwrittenEntities: Array.from(deployment.overwrittenEntities.entries()),
+        deploymentTimestamp: deployment.deploymentTimestamp,
+    }
+}
+
+function fromSerializableMany(deployments: SerializableEntityDeployment[]): EntityDeployment[] {
+    return deployments.map(deployment => fromSerializable(deployment))
+}
+
+function fromSerializable(deployment: SerializableEntityDeployment): EntityDeployment {
+    return {
+        entityId: deployment.entityId,
+        entityType: deployment.entityType,
+        pointers: deployment.pointers,
+        entityTimestamp: deployment.entityTimestamp,
+        overwrittenEntities: new Map(deployment.overwrittenEntities),
+        deploymentTimestamp: deployment.deploymentTimestamp,
+    }
 }

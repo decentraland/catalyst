@@ -8,6 +8,7 @@ import { AuditInfo } from "../audit/Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
 import { sortFromOldestToNewest } from "../time/TimeSorting";
+import { ControllerEntity } from "@katalyst/content/controller/Controller";
 
 export class EventDeployer {
 
@@ -77,11 +78,17 @@ export class EventDeployer {
         } else {
             // It looks like the entity was blacklisted
             const entity: Entity = await this.getEntity(deployment, source);
-            const newEntity = new Entity(entity.id, entity.type, entity.pointers, entity.timestamp,
-                undefined, EventDeployer.BLACKLISTED_ON_CLUSTER_METADATA)
+
+            const serializableEntity = {
+                id: entity.id,
+                type: entity.type,
+                pointers: entity.pointers,
+                timestamp: entity.timestamp,
+                metadata: EventDeployer.BLACKLISTED_ON_CLUSTER_METADATA,
+            }
 
             // Build a new entity file, based on the sanitized entity
-            const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(newEntity)) }
+            const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(serializableEntity)) }
 
             // Deploy the entity file
             return this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
@@ -93,7 +100,7 @@ export class EventDeployer {
      */
     private async getContentFiles(deployment: DeploymentEvent, entityFile: ContentFile, source?: ContentServerClient): Promise<(ContentFile | undefined)[]> {
         // Retrieve the entity from the server
-        const entity: Entity = EntityFactory.fromBufferWithId(entityFile.content, deployment.entityId)
+        const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
 
         // Read the entity, and get all content file hashes
         const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
