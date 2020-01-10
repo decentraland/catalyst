@@ -13,7 +13,7 @@ export class DAOClient {
             body: JSON.stringify({ server: address })
         });
         if (result.ok) {
-            console.log(`Server registered in DAO. Address is ${address}`);
+            console.log(`Server registered in DAO. Address is ${this.daoAddress}`);
         } else {
             throw new Error(`Couldn't connect to the DAO. Error: ${result.statusText}`)
         }
