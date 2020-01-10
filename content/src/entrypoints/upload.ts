@@ -51,7 +51,7 @@ async function run(argv: string[]) {
             });
         })
 
-        const deployResponse = await fetch(`http://${serverAddress}/entities`, { method: 'POST', body: form })
+        const deployResponse = await fetch(`${serverAddress}/entities`, { method: 'POST', body: form })
         if (!deployResponse.ok) {
             throw new Error("Response note ok")
         }

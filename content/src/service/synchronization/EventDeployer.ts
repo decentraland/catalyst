@@ -36,9 +36,10 @@ export class EventDeployer {
         // Keep and sort new deployments
         const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
 
-        // Deploy
-        const deployments = newDeployments.map(event => this.deployEvent(event, source))
-        await Promise.all(deployments)
+        // Deploy all
+        for (const newDeployment of newDeployments) {
+            await this.deployEvent(newDeployment, source)
+        }
     }
 
     /** Process a specific deployment */
@@ -48,8 +49,6 @@ export class EventDeployer {
 
         // Get the audit info
         const auditInfo = await this.getAuditInfo(deployment, source)
-
-        console.log(entityFile?.content.toString())
 
         if (entityFile) {
             // If entity file was retrieved, we know that the entity wasn't blacklisted

@@ -33,7 +33,7 @@ export class TestServer extends Server {
     }
 
     getAddress(): ServerAddress {
-        return `localhost:${this.serverPort}`
+        return `http://localhost:${this.serverPort}`
     }
 
     start(): Promise<void> {
@@ -56,7 +56,7 @@ export class TestServer extends Server {
         form.append('signature' , deployData.signature)
         deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
 
-        const deployResponse = await fetch(`http://${this.getAddress()}/entities`, { method: 'POST', body: form })
+        const deployResponse = await fetch(`${this.getAddress()}/entities`, { method: 'POST', body: form })
         expect(deployResponse.ok).toBe(true)
 
         const { creationTimestamp } = await deployResponse.json()
@@ -64,16 +64,16 @@ export class TestServer extends Server {
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
-        return this.makeRequest(`http://${this.getAddress()}/pointers/${type}`)
+        return this.makeRequest(`${this.getAddress()}/pointers/${type}`)
     }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
         const filterParam = pointers.map(pointer => `pointer=${pointer}`).join("&")
-        return this.makeRequest(`http://${this.getAddress()}/entities/${type}?${filterParam}`)
+        return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
     }
 
     getHistory(): Promise<DeploymentHistory> {
-        return this.makeRequest(`http://${this.getAddress()}/history`)
+        return this.makeRequest(`${this.getAddress()}/history`)
     }
 
     getStatus(): Promise<ServerStatus> {
@@ -82,7 +82,7 @@ export class TestServer extends Server {
 
     getEntitiesByIds(type: string, ...ids: EntityId[]): Promise<ControllerEntity[]> {
         const filterParam = ids.map(id => `id=${id}`).join("&")
-        return this.makeRequest(`http://${this.getAddress()}/entities/${type}?${filterParam}`)
+        return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
     }
 
     async getEntityById(type: string, id: EntityId): Promise<ControllerEntity> {
@@ -121,7 +121,7 @@ export class TestServer extends Server {
             "signature": signature
         }
 
-        const deployResponse = await fetch(`http://${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
+        const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
         expect(deployResponse.ok).toBe(true)
     }
 

@@ -15,7 +15,7 @@ export abstract class ContentServerClient {
         protected lastKnownTimestamp: Timestamp) { }
 
     getNewDeployments(): Promise<DeploymentHistory> {
-        return this.getHistory(this.lastKnownTimestamp, this.name)
+        return this.getHistory(this.lastKnownTimestamp + 1, this.name)
     }
 
     getLastKnownTimestamp(): Timestamp {
@@ -39,7 +39,7 @@ export abstract class ContentServerClient {
 
 /** Return the server's name, or the text "UNREACHABLE" it it couldn't be reached */
 export async function getServerName(address: ServerAddress): Promise<ServerName> {
-    return fetch(`http://${address}/status`)
+    return fetch(`${address}/status`)
         .then(response => response.json())
         .then(({ name }) => name)
         .catch(() => UNREACHABLE)
