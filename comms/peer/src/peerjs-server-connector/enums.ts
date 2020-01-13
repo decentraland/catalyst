@@ -54,6 +54,7 @@ export enum ServerMessageType {
   Candidate = "CANDIDATE",
   Offer = "OFFER",
   Answer = "ANSWER",
+  Reject = "REJECT",
   Open = "OPEN", // The connection to the server is open.
   Error = "ERROR", // Server error.
   IdTaken = "ID-TAKEN", // The selected ID is taken.

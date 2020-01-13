@@ -3,12 +3,15 @@ import { Field, Button } from "decentraland-ui";
 
 import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
+import { Peer } from "../../peer/src";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return <Field label={label} onChange={ev => setter(ev.target.value)} value={value} />;
 }
 
 export const layer = "blue";
+
+declare const window: Window & { peer: Peer };
 
 export function ConnectForm(props: {
   onConnected: (peer: IPeer, layer: string, room: string, url: string) => any;
@@ -26,7 +29,8 @@ export function ConnectForm(props: {
     setError("");
     setLoading(true);
     try {
-      const peer = new props.peerClass(url, nickname, () => {}, {
+      //@ts-ignore
+      const peer = (window.peer = new props.peerClass(url, nickname, () => {}, {
         token: PeerToken.getToken(nickname),
         connectionConfig: {
           iceServers: [
@@ -44,7 +48,7 @@ export function ConnectForm(props: {
             }
           ]
         }
-      });
+      }));
       await peer.setLayer(layer);
       await peer.joinRoom(room);
       setLoading(false);

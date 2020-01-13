@@ -221,16 +221,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
             <ul>
               {users.map((user, i) => (
                 <li className="room-user" key={`room-user-${i}`}>
-                  {user.userId}
-                  <span
-                    className="room-user-relay"
-                    style={{
-                      display: user.userId === user.peerId ? "none" : "inline"
-                    }}
-                  >
-                    {" "}
-                    ({user.peerId})
-                  </span>
+                  {user}
                 </li>
               ))}
             </ul>

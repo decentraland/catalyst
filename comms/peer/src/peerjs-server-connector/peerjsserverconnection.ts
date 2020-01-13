@@ -38,11 +38,11 @@ export function createOfferMessage(myId: string, peerData: PeerData, handshakeDa
     reliable: isReliable(handshakeData.connectionId)
   };
 
-  return createMessage(myId, peerData, ServerMessageType.Offer, payload);
+  return createMessage(myId, peerData.id, ServerMessageType.Offer, payload);
 }
 
 export function createAnswerMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
-  return createMessage(myId, peerData, ServerMessageType.Offer, handshakeData);
+  return createMessage(myId, peerData.id, ServerMessageType.Answer, handshakeData);
 }
 
 export function createCandidateMessage(myId: string, peerData: PeerData, candidateData: any, connectionId: string) {
@@ -60,11 +60,11 @@ export function createCandidateMessage(myId: string, peerData: PeerData, candida
   return candidate;
 }
 
-function createMessage(myId: string, peerData: PeerData, type: ServerMessageType, payload: any) {
+function createMessage(myId: string, dst: string, type: ServerMessageType, payload: any) {
   return {
     type,
     src: myId,
-    dst: peerData.id,
+    dst: dst,
     payload
   };
 }
@@ -331,6 +331,10 @@ export class PeerJSServerConnection extends EventEmitter {
 
   sendCandidate(peerData: PeerData, candidateData: any, connectionId: string) {
     this.socket.send(createCandidateMessage(this.id!, peerData, candidateData, connectionId));
+  }
+
+  sendRejection(dst: string, sessionId: string, label: string, reason: string) {
+    this.socket.send(createMessage(this.id!, dst, ServerMessageType.Reject, { sessionId, label, reason }));
   }
 
   /**

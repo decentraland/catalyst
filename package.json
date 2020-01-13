@@ -80,7 +80,7 @@
     "multer": "^1.4.2",
     "multihashing-async": "^0.8.0",
     "node-fetch": "^2.6.0",
-    "peerjs-server": "https://github.com/decentraland/peerjs-server.git#08e49570051443be526ec5c18080bd65f2ef6a66",
+    "peerjs-server": "https://github.com/decentraland/peerjs-server.git#6b10c801f98e709fe8f740f73ad6876070174af1",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "simple-peer": "^9.6.2",
