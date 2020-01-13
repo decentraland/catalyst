@@ -11,13 +11,17 @@ const PROTOCOL_VERSION = 1;
 
 interface PacketData {
   hi: { room: { id: string; users: KnownPeerData[] } };
-  message: { room: string; src: string; dst: string; payload: any; hops?: number; ttl?: number };
+  message: { room: string; src: string; dst?: string; payload: any };
 }
 
 type PacketType = keyof PacketData;
 type Packet<T extends PacketType> = {
+  id: string;
   type: T;
   data: PacketData[T];
+  hops?: number;
+  ttl?: number;
+  receivedBy: string[];
 };
 
 export type PeerData = {
@@ -53,6 +57,7 @@ type PeerConfig = {
   minConnections?: number;
   maxConnections?: number;
   peerConnectTimeout?: number;
+  messageExpirationTime?: number;
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
@@ -65,6 +70,8 @@ export class Peer implements IPeer {
 
   private knownPeers: Record<string, KnownPeerData> = {};
 
+  private receivedMessages: Record<string, number> = {};
+
   private currentLayer?: string;
 
   public readonly currentRooms: Room[] = [];
@@ -74,6 +81,9 @@ export class Peer implements IPeer {
 
   private updatingNetwork: boolean = false;
 
+  //@ts-ignore we should use this for cleanup
+  private expireIntervalId: number;
+
   constructor(lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { relay: RelayMode.None }) {
     const url = new URL(lighthouseUrl);
 
@@ -82,6 +92,7 @@ export class Peer implements IPeer {
     this.config.minConnections = this.config.minConnections ?? 2;
     this.config.maxConnections = this.config.maxConnections ?? 3;
     this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 2000;
+    this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
 
     const secure = url.protocol === "https:";
 
@@ -101,6 +112,27 @@ export class Peer implements IPeer {
     this.connectionConfig = {
       ...(config.connectionConfig || {})
     };
+
+    this.expireIntervalId = window.setInterval(() => {
+      this.expireMessages();
+    }, 1000);
+  }
+
+  private expireMessages() {
+    const currentTimestamp = new Date().getTime();
+
+    const keys = Object.keys(this.receivedMessages);
+
+    // if(keys.length > 0) console.log(`Expiring messages with ${keys.length} known messages`)
+    keys.forEach(id => {
+      if (currentTimestamp - this.receivedMessages[id] > this.config.messageExpirationTime!) {
+        delete this.receivedMessages[id];
+      }
+    });
+  }
+
+  private markReceived(id: string) {
+    this.receivedMessages[id] = new Date().getTime();
   }
 
   private log(...entries: any[]) {
@@ -342,23 +374,47 @@ export class Peer implements IPeer {
         // break;
       }
       case "message": {
+        console.log("Received message", parsed);
         const data = parsed.data as PacketData["message"];
-        if (data.dst !== this.nickname && this.config.relay === RelayMode.All) {
-          // this.log(`relaying message to ${data.dst}`);
-          // this.sendMessageTo(
-          //   { userId: data.dst, peerId: data.dst },
-          //   data.room,
-          //   data.payload,
-          //   data.src,
-          //   true // TODO - for the time being
-          // );
+
+        const alreadyReceived = this.receivedMessages[parsed.id];
+
+        this.markReceived(parsed.id)
+        
+        if (alreadyReceived) {
+          console.log(`Already received message ${parsed.id}. Ignoring`);
         } else {
-          // assume it's for me
-          this.callback(data.src, data.room, data.payload);
+          if (this.isInRoom(data.room)) {
+            this.callback(data.src, data.room, data.payload);
+          }
+
+          parsed.hops += 1;
+
+          if (parsed.hops < parsed.ttl) {
+            this.sendPacket(parsed);
+          }
         }
+        // if (typeof data.dst !== !== this.nickname && this.config.relay === RelayMode.All) {
+        //   // this.log(`relaying message to ${data.dst}`);
+        //   // this.sendMessageTo(
+        //   //   { userId: data.dst, peerId: data.dst },
+        //   //   data.room,
+        //   //   data.payload,
+        //   //   data.src,
+        //   //   true // TODO - for the time being
+        //   // );
+        // } else {
+        //   // assume it's for me
+        //   this.callback(data.src, data.room, data.payload);
+        // }
         break;
       }
     }
+  }
+
+
+  private isInRoom(room: string) {
+    return this.currentRooms.some(it => it.id === room);
   }
 
   private handleDisconnection(peerData: PeerData, reliable: boolean) {
@@ -407,42 +463,70 @@ export class Peer implements IPeer {
     // TODO: Send multicast message;
     // [...room.users.values()].filter(user => user.userId !== this.nickname).forEach(user => this.sendMessageTo(user, roomId, payload, this.nickname, reliable));
 
-    return Promise.resolve();
-  }
-
-  sendMessageTo(user: KnownPeerData, roomId: string, payload: any, src: string = this.nickname, reliable: boolean = true) {
     const data = {
       room: roomId,
-      src,
-      dst: user.userId,
-      payload,
-      hops: 0,
-      ttl: 5
+      src: this.nickname,
+      payload
     };
 
     const packet: Packet<"message"> = {
+      id: this.nickname + util.randomToken(),
       type: "message",
-      data
+      data,
+      hops: 0,
+      ttl: 5,
+      receivedBy: []
     };
 
-    this.sendPacket(user, packet);
+    this.sendPacket(packet);
+
+    return Promise.resolve();
   }
 
-  private sendPacket<T extends PacketType>(user: KnownPeerData, packet: Packet<T>) {
-    const peer = this.config.relay === RelayMode.All && user.peerId === this.nickname ? this.connectedPeers[user.userId] : this.connectedPeers[user.peerId];
-    if (peer) {
-      // const connection = reliable
-      //   ? "reliableConnection"
-      //   : "unreliableConnection";
-      const connection = "reliableConnection";
-      const conn = peer[connection];
-      if (conn.writable) {
-        conn.write(JSON.stringify(packet));
-      }
-    } else {
-      // TODO - review this case - moliva - 11/12/2019
-      this.log(`peer ${user.peerId} required to talk to user ${user.userId} does not exist`);
-    }
+  // sendMessageTo(user: KnownPeerData, roomId: string, payload: any, src: string = this.nickname, reliable: boolean = true) {
+  //   const data = {
+  //     room: roomId,
+  //     src,
+  //     dst: user.userId,
+  //     payload,
+  //     hops: 0,
+  //     ttl: 5,
+  //     receivedBy: []
+  //   };
+
+  //   const packet: Packet<"message"> = {
+  //     type: "message",
+  //     data
+  //   };
+
+  //   this.sendPacket(user, packet);
+  // }
+
+  private sendPacket<T extends PacketType>(packet: Packet<T>) {
+    if (!packet.receivedBy.includes(this.nickname)) packet.receivedBy.push(this.nickname);
+
+    Object.keys(this.connectedPeers)
+      .filter(it => !packet.receivedBy.includes(it))
+      .forEach(peer => {
+        const conn = this.connectedPeers[peer].reliableConnection;
+        if (conn?.writable) {
+          conn.write(JSON.stringify(packet));
+        }
+      });
+
+    // if (peer) {
+    //   // const connection = reliable
+    //   //   ? "reliableConnection"
+    //   //   : "unreliableConnection";
+    //   const connection = "reliableConnection";
+    //   const conn = peer[connection];
+    //   if (conn.writable) {
+    //     conn.write(JSON.stringify(packet));
+    //   }
+    // } else {
+    //   // TODO - review this case - moliva - 11/12/2019
+    //   this.log(`peer ${user.peerId} required to talk to user ${user.userId} does not exist`);
+    // }
     //TODO: Fail on error? Promise rejection?
   }
 
