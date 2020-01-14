@@ -4,15 +4,15 @@ import { WebsocketProvider } from "web3x/providers";
 import { Katalyst } from "./Katalyst";
 
 type Network = typeof networks.ropsten;
-type Provider = ReturnType<typeof handlerForNetwork>;
+// type Provider = ReturnType<typeof handlerForNetwork>;
 type Contract = keyof typeof networks.ropsten.contracts;
 
-const networks = {
+export const networks = {
   ropsten: {
     wss: "wss://ropsten.infura.io/ws",
     contracts: {
       katalyst: {
-        address: "x89550d8fc174b2ca216f2bd1bc20128413a2ab9d",
+        address: "0x89550d8fc174b2ca216f2bd1bc20128413a2ab9d",
         class: Katalyst
       }
     }

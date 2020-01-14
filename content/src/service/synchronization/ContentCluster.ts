@@ -1,5 +1,4 @@
 import { setInterval, clearInterval } from "timers"
-import { Environment, EnvironmentConfig } from "../../Environment";
 import { DAOClient } from "./clients/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
@@ -31,9 +30,6 @@ export class ContentCluster {
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
-        // TODO: Remove before releasing
-        await this.registerServer()
-
         // Set the immutable time
         this.setImmutableTime(lastImmutableTime)
 
@@ -50,6 +46,7 @@ export class ContentCluster {
     /** Stop syncing with DAO */
     disconnect() {
         clearInterval(this.syncInterval)
+        this.dao.disconnect()
     }
 
     getAllServersInCluster(): ContentServerClient[] {
@@ -67,15 +64,6 @@ export class ContentCluster {
 
     listenToRemoval(listener: Listener<DAORemoval>): Disposable {
         return this.removalEvent.on(listener)
-    }
-
-    /** Register this server in the DAO id required */
-    private async registerServer() {
-        const env: Environment = await Environment.getInstance()
-        const serverIP = process.env.MY_PUBLIC_ADDRESS ?? require('ip').address()
-        const port: number = env.getConfig(EnvironmentConfig.SERVER_PORT)
-
-        await this.dao.registerServerInDAO(`${serverIP}:${port}`)
     }
 
     /** Update our data with the DAO's servers list */
