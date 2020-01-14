@@ -141,7 +141,7 @@ export class EnvironmentBuilder {
         const env = new Environment()
 
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER       , () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT               , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT               , () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY         , () => process.env.SEGMENT_WRITE_KEY)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS !== 'false')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')

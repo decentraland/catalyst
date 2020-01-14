@@ -27,7 +27,7 @@ describe("End 2 end - Node onboarding", function() {
     })
 
     beforeEach(async () => {
-        dao = MockedDAOClient.with('localhost:6060', 'localhost:7070')
+        dao = MockedDAOClient.with('http://localhost:6060', 'http://localhost:7070')
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, dao)
         server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, dao)
         server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, dao)

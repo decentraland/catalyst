@@ -34,34 +34,21 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
-        const json = await this.fetchJson(`http://${this.address}/entities/${entityType}?id=${entityId}`)
+        const json = await this.fetchJson(`${this.address}/entities/${entityType}?id=${entityId}`)
         const entity = json[0];
         return EntityFactory.fromJsonObject(entity);
     }
 
     getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
-        return this.fetchJson(`http://${this.address}/audit/${entityType}/${entityId}`)
+        return this.fetchJson(`${this.address}/audit/${entityType}/${entityId}`)
     }
 
     getStatus(): Promise<ServerStatus> {
-        return this.fetchJson(`http://${this.address}/status`)
-    }
-
-    async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
-        const response = await fetch(`http://${this.address}/contents/${fileHash}`);
-        if (response.ok) {
-            const content = await response.buffer();
-            return {
-                name: fileHash,
-                content: content
-            };
-        } else {
-            throw new Error(`Failed to fetch file with hash ${fileHash}`)
-        }
+        return this.fetchJson(`${this.address}/status`)
     }
 
     getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
-        let url = `http://${this.address}/history?from=${from}`
+        let url = `${this.address}/history?from=${from}`
         if (to) {
             url += `&to=${to}`
         }
@@ -75,9 +62,17 @@ class ActiveContentServerClient extends ContentServerClient {
         return true
     }
 
-    private async getCurrentTimestamp(): Promise<Timestamp> {
-        const { currentTime } = await this.fetchJson(`http://${this.address}/status`)
-        return currentTime;
+    async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
+        const response = await fetch(`${this.address}/contents/${fileHash}`);
+        if (response.ok) {
+            const content = await response.buffer();
+            return {
+                name: fileHash,
+                content: content
+            };
+        } else {
+            throw new Error(`Failed to fetch file with hash ${fileHash}`)
+        }
     }
 
     private async fetchJson(url: string): Promise<any> {
@@ -87,5 +82,10 @@ class ActiveContentServerClient extends ContentServerClient {
         } else {
             throw new Error(`Failed to fetch ${url}. Got status ${response.status}, ${response.statusText}`)
         }
+    }
+
+    private async getCurrentTimestamp(): Promise<Timestamp> {
+        const { currentTime } = await this.fetchJson(`${this.address}/status`)
+        return currentTime;
     }
 }

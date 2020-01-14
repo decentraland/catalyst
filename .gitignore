@@ -1,4 +1,5 @@
 
+.env
 dist
 bazel-out
 **/node_modules

@@ -72,7 +72,7 @@ export class ContentCluster {
     /** Register this server in the DAO id required */
     private async registerServer() {
         const env: Environment = await Environment.getInstance()
-        const serverIP = process.env.MY_ADDRESS ?? require('ip').address()
+        const serverIP = process.env.MY_PUBLIC_ADDRESS ?? require('ip').address()
         const port: number = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
         await this.dao.registerServerInDAO(`${serverIP}:${port}`)
@@ -95,8 +95,8 @@ export class ContentCluster {
             for (const { address, name: newName } of names) {
                 let newClient: ContentServerClient
                 // Check if we already knew the server
-                if (this.serversInDAO.has(address)) {
-                    const previousClient = this.serversInDAO.get(address) as ContentServerClient
+                const previousClient: ContentServerClient | undefined = this.serversInDAO.get(address);
+                if (previousClient && previousClient.getName() != UNREACHABLE) {
                     if (newName == UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
@@ -111,7 +111,7 @@ export class ContentCluster {
                     } else {
                         // Create new client
                         newClient = getClient(address, newName, this.lastImmutableTime)
-                        console.log(`Connected to new server ${newName}`)
+                        console.log(`Connected to new server ${newName} on ${address}`)
                     }
                 }
                 this.serversInDAO.set(address, newClient)

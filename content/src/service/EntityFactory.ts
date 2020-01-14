@@ -3,9 +3,11 @@ import { ContentFile } from "./Service";
 import { ContentFileHash } from "./Hashing";
 
 export class EntityFactory {
+
     static fromFile(file: ContentFile, id: EntityId): Entity {
         return this.fromBufferWithId(file.content, id)
     }
+
     static fromBufferWithId(buffer: Buffer, id: EntityId): Entity {
         const object = EntityFactory.parseJsonIntoObject(buffer)
         return EntityFactory.fromObject(object, id)
@@ -34,7 +36,7 @@ export class EntityFactory {
             throw new Error(`Please set valid pointers`)
         }
         if (!object.timestamp || (typeof object.timestamp) != "number") {
-            throw new Error(`Please set a valid timestamp`)
+            throw new Error(`Please set a valid timestamp. We got ${object.timestamp}`)
         }
 
         let content: Map<string, ContentFileHash> | undefined = undefined

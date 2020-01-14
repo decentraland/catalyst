@@ -25,16 +25,18 @@ open localhost:3001
 docker build . -t katalyst:latest
 ```
 
-* Run it locally:
-```
-docker run -ti --rm --name comms   -p 9000:9000 katalyst:latest comms
-docker run -ti --rm --name content -p 6969:6969 katalyst:latest content
-docker run -ti --rm --name lambdas -p 7070:7070 katalyst:latest lambdas
-```
+* Modify the .env file to set your configuration
 
 * Run it with compose:
 ```
 docker-compose up
+```
+
+* Run it locally:
+```
+docker run -ti --rm --name comms   --env-file .env -p 9000:9000 katalyst:latest comms
+docker run -ti --rm --name content --env-file .env -p 6969:6969 katalyst:latest content
+docker run -ti --rm --name lambdas --env-file .env -p 7070:7070 katalyst:latest lambdas
 ```
 
 * Give it a try:

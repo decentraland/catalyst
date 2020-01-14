@@ -30,7 +30,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private accessChecker: AccessChecker,
         private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean) {
-        this.entities = Cache.withCalculation((entityId: EntityId) => this.getEntityById(entityId), 1000)
+        this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
     }
 
     static async build(storage: ServiceStorage,
@@ -108,10 +108,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         hashes.delete(entityFileHash)
         hashes.set(entityId, entityFile)
 
-        const alreadyStoredHashes: Map<ContentFileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
+        const alreadyStoredContent: Map<ContentFileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
 
         if (validations.shouldExecute(Validation.CONTENT)) {
-            validation.validateContent(entity, hashes, alreadyStoredHashes)
+            validation.validateContent(entity, hashes, alreadyStoredContent)
         }
 
         if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
@@ -120,23 +120,28 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
         // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
 
+        // Check if the entity had already been deployed previously
+        const wasEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId);
+
         // Store the entity's content
-        await this.storeEntityContent(hashes, alreadyStoredHashes)
+        await this.storeEntityContent(hashes, alreadyStoredContent)
 
         // Calculate timestamp
         const deploymentTimestamp: Timestamp = timestampGenerator()
 
-        // Save audit information
-        await this.storeAuditInfo(entityId, ethAddress, signature, deploymentTimestamp)
+        if (!wasEntityAlreadyDeployed) {
+            // Save audit information
+            await this.storeAuditInfo(entityId, ethAddress, signature, deploymentTimestamp)
 
-        // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-        await this.pointerManager.commitEntity(entity, deploymentTimestamp, entityId => this.getEntityById(entityId));
+            // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
+            await this.pointerManager.commitEntity(entity, deploymentTimestamp, entityId => this.entities.get(entityId));
 
-        // Add the new deployment to history
-        await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
+            // Add the new deployment to history
+            await this.historyManager.newEntityDeployment(serverName, entity, deploymentTimestamp)
 
-        // Record deployment for analytics
-        this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ethAddress)
+            // Record deployment for analytics
+            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ethAddress)
+        }
 
         return deploymentTimestamp
     }
@@ -149,11 +154,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             version: CONTENT_KATALYST_VERSION,
         }
         return this.auditManager.setAuditInfo(entityId, auditInfo)
-    }
-
-    private async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        const buffer = await this.storage.getContent(id)
-        return buffer ? EntityFactory.fromBufferWithId(buffer, id) : undefined
     }
 
     private storeEntityContent(hashes: Map<ContentFileHash, ContentFile>, alreadyStoredHashes: Map<ContentFileHash, Boolean>): Promise<any> {
@@ -224,6 +224,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     async setImmutableTime(immutableTime: number): Promise<void> {
         this.lastImmutableTime = immutableTime
         await Promise.all([this.historyManager.setTimeAsImmutable(immutableTime), this.pointerManager.setTimeAsImmutable(immutableTime)])
+    }
+
+    private async isEntityAlreadyDeployed(entityId: EntityId) {
+        const entityIdDeployed = await this.isContentAvailable([entityId]);
+        return entityIdDeployed.get(entityId)
     }
 
     getLastImmutableTime(): Timestamp {

@@ -89,7 +89,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
      * When a node is removed from the DAO, we want to ask all other servers on the DAO if they knew something else about it
      */
     private handleServerRemoval({ serverRemoved, lastKnownTimestamp, remainingServers }): Promise<void> {
-        console.log(`Handing removal of ${serverRemoved}. It's last known timestamp if ${lastKnownTimestamp}`)
+        console.log(`Handling removal of ${serverRemoved}. It's last known timestamp is ${lastKnownTimestamp}`)
 
         // Prepare request
         const request = new MultiServerHistoryRequest(remainingServers, this.deployer, lastKnownTimestamp, serverRemoved)
