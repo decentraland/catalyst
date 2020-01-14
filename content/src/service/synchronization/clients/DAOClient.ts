@@ -1,28 +1,38 @@
 import { ServerAddress } from "./contentserver/ContentServerClient";
-import fetch from "node-fetch";
+import { handlerForNetwork, networks } from "decentraland-katalyst-contracts/utils"
 
 export class DAOClient {
 
-    constructor(private readonly daoAddress: string) { }
+    private contract
+    private triggerDisconnect
 
-    // TODO: Remove this on final version
-    async registerServerInDAO(address: ServerAddress): Promise<void> {
-        const result = await fetch(`${this.daoAddress}/register`, {
-            method: 'POST',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ server: address })
-        });
-        if (result.ok) {
-            console.log(`Server registered in DAO. Address is ${this.daoAddress}`);
-        } else {
-            throw new Error(`Couldn't connect to the DAO. Error: ${result.statusText}`)
-        }
+    constructor() {
+        const { contract, disconnect } = handlerForNetwork(networks.ropsten, "katalyst");
+        this.contract = contract
+        this.triggerDisconnect = disconnect
     }
 
     async getAllServers(): Promise<Set<ServerAddress>> {
-        const response = await fetch(`${this.daoAddress}/servers`)
-        const serverAddresses: any[] = await response.json()
-        return new Set(serverAddresses.map(({ address }) => address))
+        const result: Set<ServerAddress> = new Set()
+
+        let count = 0
+        try {
+            count = parseInt(await this.contract.methods.katalystCount().call());
+        } catch(error) { }
+
+        for (let i = 0; i < count; i++) {
+            try {
+                const id = await this.contract.methods.katalystIds(i).call();
+                const url = await this.contract.methods.katalystDomain(id).call();
+                result.add(url)
+            } catch(error) { }
+        }
+
+        return result
+    }
+
+    disconnect() {
+        this.triggerDisconnect()
     }
 
 }

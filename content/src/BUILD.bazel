@@ -7,6 +7,7 @@ ts_library(
     srcs = glob(["**/*.ts"]),
     module_name = "@katalyst/content",
     deps = [
+        "//contracts",
         "@npm//@types",
         "@npm//@types/node",
         "@npm//cors",
@@ -27,8 +28,5 @@ ts_library(
         "@npm//caching-map",
         "@npm//ms",
         "@npm//@types/ms",
-
-        "@npm//form-data",
-        "@npm//@types/form-data",
     ],
 )

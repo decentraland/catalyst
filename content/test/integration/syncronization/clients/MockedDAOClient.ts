@@ -4,11 +4,7 @@ import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAO
 export class MockedDAOClient extends DAOClient {
 
     private constructor(private addresses: Set<ServerAddress>) {
-        super("Will not be using this")
-    }
-
-    registerServerInDAO(address: ServerAddress): Promise<void> {
-        return Promise.resolve()
+        super()
     }
 
     getAllServers(): Promise<Set<ServerAddress>> {

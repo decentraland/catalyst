@@ -32,7 +32,8 @@
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
     "paths": {
         "@katalyst/content/*": ["content/src/*"],
-        "@katalyst/test-helpers/*": ["content/test/helpers/*"]
+        "@katalyst/test-helpers/*": ["content/test/helpers/*"],
+        "decentraland-katalyst-contracts/*": ["contracts/*"],
     },
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
