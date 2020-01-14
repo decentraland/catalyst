@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Field, Button } from "decentraland-ui";
 
 import { IPeer } from "../../peer/src/types";
@@ -21,11 +21,10 @@ export function ConnectForm(props: {
   };
 }) {
   const [url, setUrl] = useState("http://localhost:9000");
-  const [nickname, setNickname] = useState("");
-  const [room, setRoom] = useState("");
+  let [nickname, setNickname] = useState("");
+  let [room, setRoom] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [autojoin, setAutojoin] = useState(false);
 
   const searchParams = new URLSearchParams(window.location.search);
 
@@ -66,15 +65,14 @@ export function ConnectForm(props: {
     }
   }
 
-  if (searchParams.get("join") && !autojoin) {
-    setRoom(queryRoom ?? "room");
-    setNickname(queryNickname ?? "peer-" + util.randomToken());
-    setAutojoin(true);
-  }
+  useEffect(() => {
+    if (searchParams.get("join")) {
+      room = queryRoom ?? "room";
+      nickname = queryNickname ?? "peer-" + util.randomToken();
 
-  if (autojoin) {
-    joinRoom();
-  }
+      joinRoom();
+    }
+  }, []);
 
   return (
     <div className="connect-form">
