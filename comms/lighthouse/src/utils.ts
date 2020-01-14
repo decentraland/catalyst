@@ -16,6 +16,7 @@ export function removeUserAndNotify<T extends UserContainer>(
   containerId: string,
   userId: string,
   notificationType: NotificationType,
+  containerKey: string,
   peersService?: PeersService
 ): T {
   let container = containers[containerId];
@@ -27,7 +28,7 @@ export function removeUserAndNotify<T extends UserContainer>(
       peersService?.notifyPeers(container.users, notificationType, {
         userId: peerData.userId,
         peerId: peerData.peerId,
-        containerId
+        [containerKey]: containerId
       });
     }
 

@@ -57,7 +57,7 @@ export class LayersService {
 
   removeUserFromLayer(layerId: string, userId: string) {
     this.getRoomsService(layerId)?.removeUser(userId);
-    return removeUserAndNotify(this.layers, layerId, userId, NotificationType.PEER_LEFT_LAYER);
+    return removeUserAndNotify(this.layers, layerId, userId, NotificationType.PEER_LEFT_LAYER, "layerId", this.config.peersService);
   }
 
   async setUserLayer(layerId: string, peer: PeerInfo) {
@@ -77,7 +77,13 @@ export class LayersService {
     }
 
     if (!this.isUserInLayer(layerId, peer)) {
+      const peersToNotify = layer.users.slice();
       layer.users.push(peer);
+      this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
+        userId: peer.userId,
+        peerId: peer.peerId,
+        layerId: layerId
+      });
     }
 
     return layer;

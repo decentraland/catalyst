@@ -58,11 +58,12 @@ function randomColor() {
 
 let intervalId: number | undefined = undefined;
 
+
 export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
   const [cursors, setCursors] = useState<Record<string, Cursor>>({});
-  const [updatingCursors, setUpdatingCursors] = useState(false);
+  const [updatingCursors, setUpdatingCursors] = useState(!!new URLSearchParams(location.search).get("updatingCursors"));
   const [currentRoom, setCurrentRoom] = useState(props.room);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms);
@@ -115,7 +116,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  });
+  }, [messages]);
 
   useEffect(() => {
     document.addEventListener("mousemove", mouseListener);

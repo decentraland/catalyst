@@ -53,14 +53,20 @@ export class RoomsService {
     }
 
     if (!room.users.some($ => $.userId === peer.userId)) {
-      room.users.push(this.config.serverPeerEnabled && serverPeer ? { ...peer, peerId: serverPeer.nickname } : peer);
+      const peersToNotify = room.users.slice();
+      room.users.push(peer);
+      this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
+        userId: peer.userId,
+        peerId: peer.peerId,
+        roomId
+      });
     }
 
     return room;
   }
 
   removeUserFromRoom(roomId: string, userId: string) {
-    return removeUserAndNotify(this.rooms, roomId, userId, NotificationType.PEER_LEFT_ROOM, this.peersService);
+    return removeUserAndNotify(this.rooms, roomId, userId, NotificationType.PEER_LEFT_ROOM, "roomId", this.peersService);
   }
 
   removeUser(userId: string) {

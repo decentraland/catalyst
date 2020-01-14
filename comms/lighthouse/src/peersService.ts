@@ -4,11 +4,13 @@ import { serverStorage } from "./simpleStorage";
 import { StorageKeys } from "./storageKeys";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import * as wrtc from "wrtc";
-import { Peer, RelayMode } from "../../peer/src/Peer";
+import { Peer } from "../../peer/src/Peer";
 
 export enum NotificationType {
   PEER_LEFT_ROOM = "PEER_LEFT_ROOM",
-  PEER_LEFT_LAYER = "PEER_LEFT_LAYER"
+  PEER_LEFT_LAYER = "PEER_LEFT_LAYER",
+  PEER_JOINED_LAYER = "PEER_JOINED_LAYER",
+  PEER_JOINED_ROOM = "PEER_JOINED_ROOM"
 }
 
 async function getPeerToken(layerId: string) {
@@ -21,11 +23,12 @@ export class PeersService {
   constructor(private realmProvider: () => IRealm, private lighthouseSecure: boolean, private lighthousePort: number) {}
 
   notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
+    console.log(`Sending ${type} notification to: `, peers);
     peers.forEach($ => {
       const client = this.peerRealm!.getClientById($.peerId);
       if (client) {
         client.send({
-          type: NotificationType,
+          type,
           src: "__lighthouse_notification__",
           dst: $.userId,
           payload
@@ -46,7 +49,6 @@ export class PeersService {
       {
         wrtc,
         socketBuilder: url => new WebSocket(url),
-        relay: RelayMode.All,
         token: peerToken,
         connectionConfig: {
           iceServers: [

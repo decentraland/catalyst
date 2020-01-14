@@ -1,5 +1,5 @@
 import { EventEmitter } from "eventemitter3";
-import { util, isReliable } from "./util";
+import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket, SocketBuilder } from "./socket";
 import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from "./enums";
@@ -31,14 +31,8 @@ type HandshakeData = {
   sessionId: string;
 };
 
-//There is repeated code between this function and the one below. Maybe it could be extracted
 export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
-  const payload = {
-    ...handshakeData,
-    reliable: isReliable(handshakeData.connectionId)
-  };
-
-  return createMessage(myId, peerData.id, ServerMessageType.Offer, payload);
+  return createMessage(myId, peerData.id, ServerMessageType.Offer, handshakeData);
 }
 
 export function createAnswerMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {

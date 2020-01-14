@@ -38,17 +38,9 @@ export const util = new (class {
   }
 })();
 
-export const ConnectionSuffixes = {
-  reliable: "reliable",
-  unreliable: "unreliable"
-};
 
-export function connectionIdFor(myId: string, peerId: string, sessionId: string, reliable: boolean) {
-  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${sessionId}_${reliable ? ConnectionSuffixes.reliable : ConnectionSuffixes.unreliable}`;
-}
-
-export function isReliable(connectionId: string) {
-  return !connectionId.endsWith(ConnectionSuffixes.unreliable);
+export function connectionIdFor(myId: string, peerId: string, sessionId: string) {
+  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${sessionId}`;
 }
 
 export function delay(time: number) {

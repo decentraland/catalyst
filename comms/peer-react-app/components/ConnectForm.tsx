@@ -4,6 +4,7 @@ import { Field, Button } from "decentraland-ui";
 import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
 import { Peer } from "../../peer/src";
+import { util } from "../../peer/src/peerjs-server-connector/util";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return <Field label={label} onChange={ev => setter(ev.target.value)} value={value} />;
@@ -24,6 +25,12 @@ export function ConnectForm(props: {
   const [room, setRoom] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [autojoin, setAutojoin] = useState(false);
+
+  const searchParams = new URLSearchParams(window.location.search);
+
+  const queryRoom = searchParams.get("room");
+  const queryNickname = searchParams.get("nickname");
 
   async function joinRoom() {
     setError("");
@@ -57,6 +64,16 @@ export function ConnectForm(props: {
       setError(e.message ?? e.toString());
       setLoading(false);
     }
+  }
+
+  if (searchParams.get("join") && !autojoin) {
+    setRoom(queryRoom ?? "room");
+    setNickname(queryNickname ?? "peer-" + util.randomToken());
+    setAutojoin(true);
+  }
+
+  if (autojoin) {
+    joinRoom();
   }
 
   return (

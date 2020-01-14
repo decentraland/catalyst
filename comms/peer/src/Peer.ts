@@ -2,9 +2,9 @@ import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverco
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import { isReliable, connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-connector/util";
+import { connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { KnownPeerData, IPeer, Room } from "./types";
+import { KnownPeerData, IPeer, Room, PeerIdentity as MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 
 const PROTOCOL_VERSION = 1;
@@ -17,6 +17,7 @@ interface PacketData {
 type PacketType = keyof PacketData;
 type Packet<T extends PacketType> = {
   id: string;
+  timestamp: number;
   type: T;
   data: PacketData[T];
   hops?: number;
@@ -28,23 +29,13 @@ export type PeerData = {
   id: string;
   sessionId: string;
   initiator: boolean;
-  reliableConnection: SimplePeer.Instance;
-  // unreliableConnection: SimplePeer.Instance;
+  connection: SimplePeer.Instance;
 };
 
 const PeerSignals = { offer: "offer", answer: "answer" };
 
 function signalMessage(peer: PeerData, connectionId: string, signal: SignalData) {
-  if (isReliable(connectionId)) {
-    peer.reliableConnection.signal(signal);
-    // } else {
-    // peer.unreliableConnection.signal(signal);
-  }
-}
-
-export enum RelayMode {
-  None,
-  All
+  peer.connection.signal(signal);
 }
 
 type PeerConfig = {
@@ -53,7 +44,6 @@ type PeerConfig = {
   socketBuilder?: SocketBuilder;
   token?: string;
   sessionId?: string;
-  relay?: RelayMode;
   minConnections?: number;
   maxConnections?: number;
   peerConnectTimeout?: number;
@@ -80,17 +70,18 @@ export class Peer implements IPeer {
   private httpClient: PeerHttpClient;
 
   private updatingNetwork: boolean = false;
+  private currentMessageId: number = 0;
 
   //@ts-ignore we should use this for cleanup
   private expireIntervalId: number;
 
-  constructor(lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { relay: RelayMode.None }) {
+  constructor(lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {}) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
 
-    this.config.minConnections = this.config.minConnections ?? 2;
-    this.config.maxConnections = this.config.maxConnections ?? 3;
+    this.config.minConnections = this.config.minConnections ?? 5;
+    this.config.maxConnections = this.config.maxConnections ?? 10;
     this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 2000;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
 
@@ -147,10 +138,7 @@ export class Peer implements IPeer {
 
     this.currentLayer = layer;
     this.currentRooms.length = 0;
-    this.knownPeers = json.reduce((peers, current) => {
-      return { ...peers, [current.userId]: current };
-    }, {});
-    delete this.knownPeers[this.nickname];
+    this.updateKnownPeers(json);
   }
 
   async joinRoom(roomId: string): Promise<any> {
@@ -161,7 +149,7 @@ export class Peer implements IPeer {
       bodyObject: { userId: this.nickname, peerId: this.nickname }
     });
 
-    const roomUsers: KnownPeerData[] = json;
+    const roomUsers: MinPeerData[] = json;
 
     const room = {
       id: roomId,
@@ -169,13 +157,13 @@ export class Peer implements IPeer {
     };
 
     this.currentRooms.push(room);
-    this.updateKnownPeersWith(room, roomUsers);
+    this.updateKnownPeersWithRoom(room, roomUsers);
 
     await this.updateNetwork();
     return await this.roomConnectionHealthy(roomId);
   }
 
-  updateKnownPeersWith(room: Room, roomPeersData: KnownPeerData[]) {
+  private updateKnownPeersWithRoom(room: Room, roomPeersData: MinPeerData[]) {
     //We remove the room for those known peers which are not in the room and have it
     Object.keys(this.knownPeers).forEach(it => {
       const roomIndex = this.knownPeers[it].rooms?.indexOf(room.id);
@@ -194,6 +182,34 @@ export class Peer implements IPeer {
           this.knownPeers[it.userId].rooms.push(room.id);
         }
       });
+  }
+
+  private updateKnownPeers(newPeers: MinPeerData[]) {
+    //We remove those peers that are not in this newPeers list
+    Object.keys(this.knownPeers).forEach(userId => {
+      if (!newPeers.some($ => $.userId === userId)) {
+        this.removeKnownPeer(userId);
+      }
+    });
+
+    newPeers.forEach(peer => {
+      //We only replace those that were not previously added
+      if (peer.userId != this.nickname) {
+        this.addKnownPeer(peer);
+      }
+    });
+  }
+
+  private addKnownPeer(peer: MinPeerData) {
+    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: [], ...peer };
+  }
+
+  private removeKnownPeer(userId: string) {
+    const peerData = this.knownPeers[userId];
+    delete this.knownPeers[userId];
+    if (peerData) {
+      peerData.rooms.forEach(room => this.removeUserFromRoom(room, userId));
+    }
   }
 
   async roomConnectionHealthy(roomId: string) {
@@ -256,9 +272,7 @@ export class Peer implements IPeer {
   async leaveRoom(roomId: string) {
     this.assertPeerInLayer();
 
-    const response = await this.httpClient.fetch(`layers/${this.currentLayer}/rooms/${roomId}/users/${this.nickname}`, { method: "DELETE" });
-
-    const roomUsers: KnownPeerData[] = await response.json();
+    await this.httpClient.fetch(`layers/${this.currentLayer}/rooms/${roomId}/users/${this.nickname}`, { method: "DELETE" });
 
     const index = this.currentRooms.findIndex(room => room.id === roomId);
 
@@ -269,21 +283,21 @@ export class Peer implements IPeer {
 
     this.currentRooms.splice(index, 1);
 
-    roomUsers.forEach(user => {
-      const peer = this.connectedPeers[user.peerId];
+    // roomUsers.forEach(user => {
+    //   const peer = this.connectedPeers[user.peerId];
 
-      if (peer && !this.sharesRoomWith(peer.id)) {
-        peer.reliableConnection.once("close", () => {
-          delete this.connectedPeers[user.peerId];
-        });
-        peer.reliableConnection.destroy();
-      }
-    });
+    //   if (peer && !this.sharesRoomWith(peer.id)) {
+    //     peer.connection.once("close", () => {
+    //       delete this.connectedPeers[user.peerId];
+    //     });
+    //     peer.connection.destroy();
+    //   }
+    // });
   }
 
-  private sharesRoomWith(userId: string) {
-    return this.currentRooms.some(room => [...room.users.values()].indexOf(userId) >= 0);
-  }
+  // private sharesRoomWith(userId: string) {
+  //   return this.currentRooms.some(room => [...room.users.values()].indexOf(userId) >= 0);
+  // }
 
   public beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -306,7 +320,7 @@ export class Peer implements IPeer {
   public disconnectFrom(peerId: string) {
     if (this.connectedPeers[peerId]) {
       this.log("[PEER] Disconnecting from " + peerId);
-      this.connectedPeers[peerId].reliableConnection.destroy();
+      this.connectedPeers[peerId].connection.destroy();
       delete this.connectedPeers[peerId];
     } else {
       this.log("[PEER] Already not connected to peer " + peerId);
@@ -328,7 +342,7 @@ export class Peer implements IPeer {
   private isConnectedTo(peerId: string): boolean {
     return (
       //@ts-ignore The `connected` property is not typed but it seems to be public
-      this.connectedPeers[peerId] && this.connectedPeers[peerId].reliableConnection.connected
+      this.connectedPeers[peerId] && this.connectedPeers[peerId].connection.connected
     );
   }
 
@@ -336,51 +350,39 @@ export class Peer implements IPeer {
     return this.currentRooms.find($ => $.id === id);
   }
 
-  private subscribeToConnection(peerData: PeerData, connection: SimplePeer.Instance, reliable: boolean) {
-    connection.on("signal", this.handleSignal(peerData, reliable));
-    connection.on("close", () => this.handleDisconnection(peerData, reliable));
-    connection.on("connect", () => this.handleConnection(peerData, reliable));
+  private subscribeToConnection(peerData: PeerData, connection: SimplePeer.Instance) {
+    connection.on("signal", this.handleSignal(peerData));
+    connection.on("close", () => this.handleDisconnection(peerData));
+    connection.on("connect", () => this.handleConnection(peerData));
 
     connection.on("error", err => {
-      this.log("error in peer connection " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable), err);
+      this.log("error in peer connection " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId), err);
       connection.removeAllListeners();
       connection.destroy();
-      this.handleDisconnection(peerData, reliable);
+      this.handleDisconnection(peerData);
     });
 
     connection.on("data", data => this.handlePeerPacket(data, peerData.id));
   }
 
+  private updateTimeStamp(peerId: string, timestamp: number) {
+    if (this.knownPeers[peerId]) {
+      this.knownPeers[peerId].timestamp = Math.max(this.knownPeers[peerId].timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
+    }
+  }
+
   private handlePeerPacket(data: string, peerId: string) {
     const parsed = JSON.parse(data);
     switch (parsed.type as PacketType) {
-      case "hi": {
-        // const parsedData = parsed.data as PacketData["hi"];
-        // // process hi message and reconcile with state
-        // const room = this.findRoom(parsedData.room.id);
-        // if (room) {
-        //   parsedData.room.users.forEach(user => {
-        //     room.users.push(user.userId);
-        //   });
-        // }
-        // // relay hi to other peers
-        // if (this.config.relay === RelayMode.All) {
-        //   room?.users.forEach(user => {
-        //     if (user.userId !== peerId && user.userId !== this.nickname) {
-        //       this.sendPacket(user, parsed);
-        //     }
-        //   });
-        // }
-        // break;
-      }
       case "message": {
-        console.log("Received message", parsed);
         const data = parsed.data as PacketData["message"];
 
         const alreadyReceived = this.receivedMessages[parsed.id];
 
-        this.markReceived(parsed.id)
-        
+        this.updateTimeStamp(parsed.src, parsed.timestamp);
+
+        this.markReceived(parsed.id);
+
         if (alreadyReceived) {
           console.log(`Already received message ${parsed.id}. Ignoring`);
         } else {
@@ -394,31 +396,17 @@ export class Peer implements IPeer {
             this.sendPacket(parsed);
           }
         }
-        // if (typeof data.dst !== !== this.nickname && this.config.relay === RelayMode.All) {
-        //   // this.log(`relaying message to ${data.dst}`);
-        //   // this.sendMessageTo(
-        //   //   { userId: data.dst, peerId: data.dst },
-        //   //   data.room,
-        //   //   data.payload,
-        //   //   data.src,
-        //   //   true // TODO - for the time being
-        //   // );
-        // } else {
-        //   // assume it's for me
-        //   this.callback(data.src, data.room, data.payload);
-        // }
         break;
       }
     }
   }
 
-
   private isInRoom(room: string) {
     return this.currentRooms.some(it => it.id === room);
   }
 
-  private handleDisconnection(peerData: PeerData, reliable: boolean) {
-    this.log("DISCONNECTED from " + peerData.id + " through " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable));
+  private handleDisconnection(peerData: PeerData) {
+    this.log("DISCONNECTED from " + peerData.id + " through " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId));
     // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
     if (this.connectedPeers[peerData.id]) {
       delete this.connectedPeers[peerData.id];
@@ -443,8 +431,13 @@ export class Peer implements IPeer {
     // });
   }
 
-  private handleConnection(peerData: PeerData, reliable: boolean) {
-    this.log("CONNECTED to " + peerData.id + " through " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable));
+  private generateMessageId() {
+    this.currentMessageId += 1;
+    return `${this.nickname}-${this.currentMessageId}`;
+  }
+
+  private handleConnection(peerData: PeerData) {
+    this.log("CONNECTED to " + peerData.id + " through " + connectionIdFor(this.nickname, peerData.id, peerData.sessionId));
 
     this.peerConnectionPromises[peerData.id]?.forEach($ => $.resolve());
     delete this.peerConnectionPromises[peerData.id];
@@ -454,14 +447,14 @@ export class Peer implements IPeer {
     // TODO - we may need to close the connection if we are no longer interested in the room - moliva - 13/12/2019
   }
 
-  sendMessage(roomId: string, payload: any, reliable: boolean = true) {
+  sendMessage(roomId: string, payload: any) {
     const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
       return Promise.reject(new Error(`cannot send a message in a room not joined (${roomId})`));
     }
 
     // TODO: Send multicast message;
-    // [...room.users.values()].filter(user => user.userId !== this.nickname).forEach(user => this.sendMessageTo(user, roomId, payload, this.nickname, reliable));
+    // [...room.users.values()].filter(user => user.userId !== this.nickname).forEach(user => this.sendMessageTo(user, roomId, payload, this.nickname));
 
     const data = {
       room: roomId,
@@ -470,8 +463,9 @@ export class Peer implements IPeer {
     };
 
     const packet: Packet<"message"> = {
-      id: this.nickname + util.randomToken(),
+      id: this.generateMessageId(),
       type: "message",
+      timestamp: new Date().getTime(),
       data,
       hops: 0,
       ttl: 5,
@@ -483,7 +477,7 @@ export class Peer implements IPeer {
     return Promise.resolve();
   }
 
-  // sendMessageTo(user: KnownPeerData, roomId: string, payload: any, src: string = this.nickname, reliable: boolean = true) {
+  // sendMessageTo(user: KnownPeerData, roomId: string, payload: any, src: string = this.nickname) {
   //   const data = {
   //     room: roomId,
   //     src,
@@ -508,30 +502,15 @@ export class Peer implements IPeer {
     Object.keys(this.connectedPeers)
       .filter(it => !packet.receivedBy.includes(it))
       .forEach(peer => {
-        const conn = this.connectedPeers[peer].reliableConnection;
+        const conn = this.connectedPeers[peer].connection;
         if (conn?.writable) {
           conn.write(JSON.stringify(packet));
         }
       });
-
-    // if (peer) {
-    //   // const connection = reliable
-    //   //   ? "reliableConnection"
-    //   //   : "unreliableConnection";
-    //   const connection = "reliableConnection";
-    //   const conn = peer[connection];
-    //   if (conn.writable) {
-    //     conn.write(JSON.stringify(packet));
-    //   }
-    // } else {
-    //   // TODO - review this case - moliva - 11/12/2019
-    //   this.log(`peer ${user.peerId} required to talk to user ${user.userId} does not exist`);
-    // }
-    //TODO: Fail on error? Promise rejection?
   }
 
-  private handleSignal(peerData: PeerData, reliable: boolean) {
-    const connectionId = connectionIdFor(this.nickname, peerData.id, peerData.sessionId, reliable);
+  private handleSignal(peerData: PeerData) {
+    const connectionId = connectionIdFor(this.nickname, peerData.id, peerData.sessionId);
     return (data: SignalData) => {
       this.log(`Signal in peer connection ${connectionId}: ${data.type ?? "candidate"}`);
       if (data.type === PeerSignals.offer) {
@@ -552,8 +531,8 @@ export class Peer implements IPeer {
     } else if (sessionId) {
       if (peer.sessionId !== sessionId) {
         this.log(`Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`);
-        peer.reliableConnection.removeAllListeners();
-        peer.reliableConnection.destroy();
+        peer.connection.removeAllListeners();
+        peer.connection.destroy();
         peer = this.createPeer(peerId, sessionId, initiator);
       }
     }
@@ -565,30 +544,18 @@ export class Peer implements IPeer {
       id: peerId,
       sessionId,
       initiator,
-      reliableConnection: new SimplePeer({
+      connection: new SimplePeer({
         initiator,
         config: this.connectionConfig,
         channelConfig: {
-          label: connectionIdFor(this.nickname, peerId, sessionId, true)
+          label: connectionIdFor(this.nickname, peerId, sessionId)
         },
         wrtc: this.wrtc,
         objectMode: true
       })
-      // unreliableConnection: new SimplePeer({
-      //   initiator,
-      //   config: this.connectionConfig,
-      //   channelConfig: {
-      //     label: connectionIdFor(this.nickname, peerId, false),
-      //     ordered: false,
-      //     maxPacketLifetime: 1000 //This value should be aligned with frame refreshes. Maybe configurable?
-      //   },
-      //   wrtc: this.wrtc,
-      //   objectMode: true
-      // })
     });
 
-    this.subscribeToConnection(peer, peer.reliableConnection, true);
-    // this.subscribeToConnection(peerId, peer.unreliableConnection, false);
+    this.subscribeToConnection(peer, peer.connection);
     return peer;
   }
 
@@ -625,19 +592,58 @@ export class Peer implements IPeer {
         }
         case ServerMessageType.Reject: {
           const peer = this.connectedPeers[peerId];
-          peer?.reliableConnection?.destroy();
+          peer?.connection?.destroy();
           break;
         }
         case ServerMessageType.PeerLeftRoom: {
           const { roomId, userId } = payload;
-          const room = this.findRoom(roomId);
-          if (room) {
-            const userIndex = room.users.indexOf(userId);
-            if (userIndex >= 0) room.users.splice(userIndex, 1);
+          this.removeUserFromRoom(roomId, userId);
+          break;
+        }
+        case ServerMessageType.PeerLeftLayer: {
+          const { layerId, userId } = payload;
+          if (this.currentLayer === layerId) {
+            this.removeKnownPeer(userId);
+          }
+          break;
+        }
+        case ServerMessageType.PeerJoinedRoom: {
+          const { roomId, userId, peerId } = payload;
+          this.addUserToRoom(roomId, { userId, peerId });
+          break;
+        }
+        case ServerMessageType.PeerJoinedLayer: {
+          const { layerId, userId, peerId } = payload;
+          if (this.currentLayer === layerId) {
+            this.addKnownPeer({ userId, peerId });
           }
           break;
         }
       }
+    }
+  }
+
+  private removeUserFromRoom(roomId: string, userId: string) {
+    const room = this.findRoom(roomId);
+    if (room) {
+      const userIndex = room.users.indexOf(userId);
+      if (userIndex >= 0) room.users.splice(userIndex, 1);
+    }
+  }
+
+  private addUserToRoom(roomId: string, peerData: MinPeerData) {
+    peerData.rooms = [...(peerData.rooms ?? []), roomId];
+
+    const knownPeer = this.knownPeers[peerData.userId];
+    if (!knownPeer) {
+      this.addKnownPeer(peerData);
+    } else if (!knownPeer.rooms.includes(roomId)) {
+      knownPeer.rooms.push(roomId);
+    }
+
+    const room = this.findRoom(roomId);
+    if (room && !room.users.includes(peerData.userId)) {
+      room.users.push(peerData.userId);
     }
   }
 
