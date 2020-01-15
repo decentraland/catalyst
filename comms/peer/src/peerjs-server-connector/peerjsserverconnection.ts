@@ -26,6 +26,13 @@ class PeerOptions {
   authHandler?: (msg: string) => Promise<string>;
 }
 
+type HandshakeData = {
+  sdp: any;
+  connectionId: string;
+  protocolVersion: number;
+  sessionId: string;
+};
+
 export function createValidationMessage(myId: string, payload: string) {
   return {
     type: ServerMessageType.Validation,
@@ -33,13 +40,6 @@ export function createValidationMessage(myId: string, payload: string) {
     payload
   };
 }
-
-type HandshakeData = {
-  sdp: any;
-  connectionId: string;
-  protocolVersion: number;
-  sessionId: string;
-};
 
 export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
   return createMessage(myId, peerData.id, ServerMessageType.Offer, handshakeData);
@@ -237,6 +237,8 @@ export class PeerJSServerConnection extends EventEmitter {
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
         this._open = true;
+        break;
+      case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         const { authHandler } = this._options;
         if (authHandler && payload) {
           authHandler(payload)
@@ -249,6 +251,9 @@ export class PeerJSServerConnection extends EventEmitter {
         break;
       case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         this.emit(PeerEventType.Valid, this.id);
+        break;
+      case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
+        this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
         break;
       case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
         this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
