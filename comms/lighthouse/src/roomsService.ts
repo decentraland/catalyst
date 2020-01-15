@@ -1,5 +1,5 @@
 import { Peer } from "../../peer/src/Peer";
-import { PeersService, NotificationType } from "./peersService";
+import { IPeersService, NotificationType } from "./peersService";
 import { Room, PeerInfo } from "./types";
 import { getServerPeer, removeUserAndNotify } from "./utils";
 
@@ -10,7 +10,7 @@ type RoomsFilter = Partial<{
 type RoomsServiceConfig = Partial<{
   serverPeerEnabled: boolean;
   serverPeerProvider: () => Peer | undefined;
-  peersService: PeersService;
+  peersService: IPeersService;
 }>;
 
 function newRoom(roomId: string): Room {

@@ -4,7 +4,7 @@ import { serverStorage } from "./simpleStorage";
 import { StorageKeys } from "./storageKeys";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import * as wrtc from "wrtc";
-import { Peer } from "../../peer/src/Peer";
+import { Peer, IPeer } from "../../peer/src";
 
 export enum NotificationType {
   PEER_LEFT_ROOM = "PEER_LEFT_ROOM",
@@ -19,7 +19,12 @@ async function getPeerToken(layerId: string) {
 
 require("isomorphic-fetch");
 
-export class PeersService {
+export interface IPeersService {
+  notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object): void;
+  createServerPeer(layerId: string): Promise<IPeer>;
+}
+
+export class PeersService implements IPeersService {
   constructor(private realmProvider: () => IRealm, private lighthouseSecure: boolean, private lighthousePort: number) {}
 
   notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {

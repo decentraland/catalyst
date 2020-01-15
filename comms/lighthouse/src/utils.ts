@@ -1,6 +1,6 @@
 import { Peer } from "../../peer/src/Peer";
 import { PeerInfo } from "./types";
-import { NotificationType, PeersService } from "./peersService";
+import { NotificationType, IPeersService } from "./peersService";
 
 export function getServerPeer(peerProvider?: () => Peer | undefined) {
   return peerProvider ? peerProvider() : undefined;
@@ -17,7 +17,7 @@ export function removeUserAndNotify<T extends UserContainer>(
   userId: string,
   notificationType: NotificationType,
   containerKey: string,
-  peersService?: PeersService
+  peersService?: IPeersService
 ): T {
   let container = containers[containerId];
   if (container) {
