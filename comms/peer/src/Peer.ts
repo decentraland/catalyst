@@ -4,7 +4,7 @@ import { ServerMessageType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { KnownPeerData, IPeer, Room, PeerIdentity as MinPeerData } from "./types";
+import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 
 const PROTOCOL_VERSION = 1;
@@ -272,7 +272,7 @@ export class Peer implements IPeer {
   async leaveRoom(roomId: string) {
     this.assertPeerInLayer();
 
-    await this.httpClient.fetch(`layers/${this.currentLayer}/rooms/${roomId}/users/${this.nickname}`, { method: "DELETE" });
+    await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}/users/${this.nickname}`, { method: "DELETE" });
 
     const index = this.currentRooms.findIndex(room => room.id === roomId);
 
@@ -379,13 +379,15 @@ export class Peer implements IPeer {
 
         const alreadyReceived = this.receivedMessages[parsed.id];
 
-        this.updateTimeStamp(parsed.src, parsed.timestamp);
-
         this.markReceived(parsed.id);
 
-        if (alreadyReceived) {
-          console.log(`Already received message ${parsed.id}. Ignoring`);
-        } else {
+        //TODO: Depending on the type of the message, ignore messages received in unordered fashion
+        //Ignore messages that arrive "too late". If compared to the last timestamp of the peer, the message is older
+        //than the message expire time, then discard it.
+        //Some "real time" messages could have even a lower expiration time.
+        if (!alreadyReceived) {
+          this.updateTimeStamp(parsed.src, parsed.timestamp);
+
           if (this.isInRoom(data.room)) {
             this.callback(data.src, data.room, data.payload);
           }

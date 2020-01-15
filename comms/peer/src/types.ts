@@ -1,6 +1,6 @@
 export type Room = { id: string; users: string[] };
 export type KnownPeerData = { userId: string; peerId: string, rooms: string[], timestamp?: number };
-export type PeerIdentity = { userId: string; peerId: string, rooms?: string[] }
+export type MinPeerData = { userId: string; peerId: string, rooms?: string[] }
 
 export interface IPeer {
   nickname: string;
