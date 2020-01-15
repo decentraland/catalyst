@@ -53,7 +53,8 @@ export function ConnectForm(props: {
               urls: "stun:stun4.l.google.com:19302"
             }
           ]
-        }
+        },
+        authHandler: msg => Promise.resolve(msg)
       }));
       await peer.setLayer(layer);
       await peer.joinRoom(room);

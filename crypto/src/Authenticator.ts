@@ -1,5 +1,5 @@
 import { hash, sign, recover } from "eth-crypto";
-import { AuthChain, EthAddress, AuthLinkType, IdentityType, AuditInfo, AuthLink, Signature } from "./types";
+import { AuthIdentity, AuthChain, EthAddress, AuthLinkType, IdentityType, AuditInfo, AuthLink, Signature } from "./types";
 
 export class Authenticator {
   /** Validate that the signature belongs to the Ethereum address */
@@ -52,6 +52,35 @@ export class Authenticator {
     ];
 
     return authChain;
+  }
+
+  static async initializeAuthChain(
+    ethAddress: EthAddress,
+    ephemeralIdentity: IdentityType,
+    ephemeralMinutesDuration: number,
+    signer: (message: string) => Promise<string>
+  ): Promise<AuthIdentity> {
+    let expiration = new Date();
+    expiration.setMinutes(expiration.getMinutes() + ephemeralMinutesDuration);
+
+    const ephemeralMessage = `Decentraland Login\nEphemeral address: ${ephemeralIdentity.address}\nExpiration: ${expiration}`;
+    const firstSignature = await signer(ephemeralMessage);
+
+    const authChain: AuthChain = [
+      { type: AuthLinkType.SIGNER, payload: ethAddress, signature: "" },
+      { type: AuthLinkType.ECDSA_EPHEMERAL, payload: ephemeralMessage, signature: firstSignature }
+    ];
+
+    return {
+      ephemeralIdentity,
+      expiration,
+      authChain
+    };
+  }
+
+  static signPayload(authIdentity: AuthIdentity, entityId: string) {
+    const secondSignature = Authenticator.createSignature(authIdentity.ephemeralIdentity, entityId);
+    return [...authIdentity.authChain, { type: AuthLinkType.ECDSA_SIGNED_ENTITY, payload: entityId, signature: secondSignature }];
   }
 
   static createSignature(identity: IdentityType, message: string) {
