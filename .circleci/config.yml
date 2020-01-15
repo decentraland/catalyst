@@ -86,6 +86,14 @@ jobs:
           name: Run integration tests
           command: npx bazel test //content:integration_test --test_output=all
 
+  build-lambdas:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Run tests
+          command: npx bazel test //lambdas:unit_test --test_output=all
+
   publish-peer:
     <<: *base_env
     steps:
@@ -116,6 +124,10 @@ workflows:
           requires:
             - checkout
       - build-content:
+          <<: *all_branches_and_tags
+          requires:
+            - checkout
+      - build-lambdas:
           <<: *all_branches_and_tags
           requires:
             - checkout
