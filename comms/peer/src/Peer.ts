@@ -41,12 +41,13 @@ export enum RelayMode {
 }
 
 type PeerConfig = {
-  connectionConfig?: any;
-  wrtc?: any;
-  socketBuilder?: SocketBuilder;
-  token?: string;
-  sessionId?: string;
-  relay?: RelayMode;
+  connectionConfig: any;
+  wrtc: any;
+  socketBuilder: SocketBuilder;
+  token: string;
+  sessionId: string;
+  relay: RelayMode;
+  authHandler: (msg: string) => Promise<string>;
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
@@ -61,7 +62,12 @@ export class Peer implements IPeer {
   private connectionConfig: any;
   private wrtc: any;
 
-  constructor(private lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { relay: RelayMode.None }) {
+  constructor(
+    private lighthouseUrl: string,
+    public nickname: string,
+    public callback: PacketCallback = () => {},
+    private config: Partial<PeerConfig> = { relay: RelayMode.None, authHandler: msg => Promise.resolve(msg) }
+  ) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
@@ -74,6 +80,7 @@ export class Peer implements IPeer {
       path: url.pathname,
       secure,
       token: this.config.token,
+      authHandler: config.authHandler,
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 

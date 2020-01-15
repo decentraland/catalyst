@@ -5,13 +5,7 @@ import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
-  return (
-    <Field
-      label={label}
-      onChange={ev => setter(ev.target.value)}
-      value={value}
-    />
-  );
+  return <Field label={label} onChange={ev => setter(ev.target.value)} value={value} />;
 }
 
 export function ConnectForm(props: {
@@ -47,7 +41,8 @@ export function ConnectForm(props: {
               urls: "stun:stun4.l.google.com:19302"
             }
           ]
-        }
+        },
+        authHandler: msg => Promise.resolve(msg)
       });
       await peer.joinRoom(room);
       setLoading(false);
@@ -64,12 +59,7 @@ export function ConnectForm(props: {
       {fieldFor("Nickname", nickname, setNickname)}
       {fieldFor("Room", room, setRoom)}
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <Button
-        primary
-        disabled={[url, nickname, room].some(it => it === "") || isLoading}
-        onClick={joinRoom}
-        loading={isLoading}
-      >
+      <Button primary disabled={[url, nickname, room].some(it => it === "") || isLoading} onClick={joinRoom} loading={isLoading}>
         Connect
       </Button>
     </div>

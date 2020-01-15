@@ -10,6 +10,8 @@ import { serverStorage } from "./simpleStorage";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { StorageKeys } from "./storageKeys";
 import { requireParameters, validatePeerToken } from "./handlers";
+import { IConfig } from "peerjs-server/dist/src/config";
+import { recover } from "web3x/utils";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -129,9 +131,22 @@ const server = app.listen(port, async () => {
   }
 });
 
-const options = {
-  debug: true,
-  path: "/"
+const options: Partial<IConfig> = {
+  path: "/",
+  authHandler: async (client, message) => {
+    if (!client) {
+      return false;
+    }
+    try {
+      const address = recover(client?.getMsg(), message.payload);
+      const result = address.toString().toLowerCase() === client.getId().toLowerCase();
+
+      return result;
+    } catch (e) {
+      console.log(`error while recovering address for client ${client.getId()}`, e);
+      return false;
+    }
+  }
 };
 
 const peerServer = ExpressPeerServer(server, options);

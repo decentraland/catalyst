@@ -17,6 +17,7 @@ ts_library(
         "@npm//isomorphic-fetch",
         "@npm//morgan",
         "@npm//peerjs-server",
+        "@npm//web3x",
         "@npm//wrtc",
         "@npm//ws",
     ],

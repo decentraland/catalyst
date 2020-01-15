@@ -2,12 +2,7 @@ import { EventEmitter } from "eventemitter3";
 import { util, isReliable } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket, SocketBuilder } from "./socket";
-import {
-  PeerErrorType,
-  PeerEventType,
-  SocketEventType,
-  ServerMessageType
-} from "./enums";
+import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from "./enums";
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import { PeerData } from "../Peer";
@@ -27,16 +22,19 @@ class PeerOptions {
   pingInterval?: number;
   socketBuilder?: SocketBuilder;
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
+  authHandler?: (msg: string) => Promise<string>;
 }
 
 //There is repeated code between this function and the one below. Maybe it could be extracted
-export function createOfferMessage(
-  myId: string,
-  peerData: PeerData,
-  offerData: any,
-  connectionId: string,
-  label: string
-) {
+export function createValidationMessage(myId: string, payload: string) {
+  return {
+    type: ServerMessageType.Validation,
+    src: myId,
+    payload
+  };
+}
+
+export function createOfferMessage(myId: string, peerData: PeerData, offerData: any, connectionId: string, label: string) {
   const payload = {
     browser: "chrome",
     sdp: offerData,
@@ -57,13 +55,7 @@ export function createOfferMessage(
   return offer;
 }
 
-export function createAnswerMessage(
-  myId: string,
-  peerData: PeerData,
-  answerData: any,
-  connectionId: string,
-  label: string
-) {
+export function createAnswerMessage(myId: string, peerData: PeerData, answerData: any, connectionId: string, label: string) {
   const payload = {
     browser: "chrome",
     sdp: answerData,
@@ -83,13 +75,7 @@ export function createAnswerMessage(
   return answer;
 }
 
-export function createCandidateMessage(
-  myId: string,
-  peerData: PeerData,
-  candidateData: any,
-  connectionId: string,
-  label: string
-) {
+export function createCandidateMessage(myId: string, peerData: PeerData, candidateData: any, connectionId: string, label: string) {
   const payload = {
     ...candidateData,
     connectionId: connectionId,
@@ -247,10 +233,7 @@ export class PeerJSServerConnection extends EventEmitter {
     this.socket.on(SocketEventType.Close, () => {
       // If we haven't explicitly disconnected, emit error.
       if (!this.disconnected) {
-        this._abort(
-          PeerErrorType.SocketClosed,
-          "Underlying socket is already closed."
-        );
+        this._abort(PeerErrorType.SocketClosed, "Underlying socket is already closed.");
       }
     });
   }
@@ -271,7 +254,16 @@ export class PeerJSServerConnection extends EventEmitter {
     switch (type) {
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
+        const { authHandler } = this._options;
+        if (authHandler && payload) {
+          authHandler(payload).then(response => this.sendValidation(response));
+        }
+        break;
+      case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         this._open = true;
+        break;
+      case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
+        this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
         break;
       case ServerMessageType.Error: // Server error.
         this._abort(PeerErrorType.ServerError, payload.msg);
@@ -280,16 +272,10 @@ export class PeerJSServerConnection extends EventEmitter {
         this._abort(PeerErrorType.UnavailableID, `ID "${this.id}" is taken`);
         break;
       case ServerMessageType.InvalidKey: // The given API key cannot be found.
-        this._abort(
-          PeerErrorType.InvalidKey,
-          `API KEY "${this._options.key}" is invalid`
-        );
+        this._abort(PeerErrorType.InvalidKey, `API KEY "${this._options.key}" is invalid`);
         break;
       case ServerMessageType.Expire: // The offer sent to a peer has expired without response.
-        this.emitError(
-          PeerErrorType.PeerUnavailable,
-          "Could not connect to peer " + peerId
-        );
+        this.emitError(PeerErrorType.PeerUnavailable, "Could not connect to peer " + peerId);
         break;
       default:
         //All other messages are handled by the provided handler
@@ -355,63 +341,32 @@ export class PeerJSServerConnection extends EventEmitter {
   /** Attempts to reconnect with the same ID. */
   reconnect(): void {
     if (this.disconnected) {
-      logger.log(
-        "Attempting reconnection to server with ID " + this._lastServerId
-      );
+      logger.log("Attempting reconnection to server with ID " + this._lastServerId);
       this._disconnected = false;
       this._initializeServerConnection();
       this._initialize(this._lastServerId);
     } else if (!this.disconnected && !this.open) {
       // Do nothing. We're still connecting the first time.
-      logger.error(
-        "In a hurry? We're still trying to make the initial connection!"
-      );
+      logger.error("In a hurry? We're still trying to make the initial connection!");
     } else {
-      throw new Error(
-        "Peer " +
-          this.id +
-          " cannot reconnect because it is not disconnected from the server!"
-      );
+      throw new Error("Peer " + this.id + " cannot reconnect because it is not disconnected from the server!");
     }
   }
 
-  sendOffer(
-    peerData: PeerData,
-    offerData: any,
-    connectionId: string,
-    label: string
-  ) {
-    this.socket.send(
-      createOfferMessage(this.id!, peerData, offerData, connectionId, label)
-    );
+  sendValidation(payload: string) {
+    this.socket.send(createValidationMessage(this.id!, payload));
   }
 
-  sendAnswer(
-    peerData: PeerData,
-    answerData: any,
-    connectionId: string,
-    label: string
-  ) {
-    this.socket.send(
-      createAnswerMessage(this.id!, peerData, answerData, connectionId, label)
-    );
+  sendOffer(peerData: PeerData, offerData: any, connectionId: string, label: string) {
+    this.socket.send(createOfferMessage(this.id!, peerData, offerData, connectionId, label));
   }
 
-  sendCandidate(
-    peerData: PeerData,
-    candidateData: any,
-    connectionId: string,
-    label: string
-  ) {
-    this.socket.send(
-      createCandidateMessage(
-        this.id!,
-        peerData,
-        candidateData,
-        connectionId,
-        label
-      )
-    );
+  sendAnswer(peerData: PeerData, answerData: any, connectionId: string, label: string) {
+    this.socket.send(createAnswerMessage(this.id!, peerData, answerData, connectionId, label));
+  }
+
+  sendCandidate(peerData: PeerData, candidateData: any, connectionId: string, label: string) {
+    this.socket.send(createCandidateMessage(this.id!, peerData, candidateData, connectionId, label));
   }
 
   /**

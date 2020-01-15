@@ -33,7 +33,8 @@ export enum PeerErrorType {
   SocketError = "socket-error",
   SocketClosed = "socket-closed",
   UnavailableID = "unavailable-id",
-  WebRTC = "webrtc"
+  WebRTC = "webrtc",
+  ValidationError = "validation-error"
 }
 
 export enum SerializationType {
@@ -55,6 +56,9 @@ export enum ServerMessageType {
   Offer = "OFFER",
   Answer = "ANSWER",
   Open = "OPEN", // The connection to the server is open.
+  Validation = "VALIDATION", // Answer challenge with auth handler result
+  ValidationOk = "VALIDATION_OK", // Server accepts connection
+  ValidationNok = "VALIDATION_NOK", // Server declines connection due to error in challenge result
   Error = "ERROR", // Server error.
   IdTaken = "ID-TAKEN", // The selected ID is taken.
   InvalidKey = "INVALID-KEY", // The given API key cannot be found.
