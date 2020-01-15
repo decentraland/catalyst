@@ -9,8 +9,7 @@ RUN apt-get update && \
     apt-get install -yq yarn git zlib1g zlib1g-dev && \
     yarn install && \
     yarn bazel build //comms/lighthouse:server && \
-    yarn bazel build content:server && \
-    yarn bazel build lambdas:server
+    yarn bazel build content:server
 
 EXPOSE 6969
 EXPOSE 7070
