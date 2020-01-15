@@ -4,6 +4,7 @@ import morgan from "morgan";
 import multer from "multer";
 import http from "http";
 import { Controller } from "./controller/Controller";
+import { Metrics } from '../../commons/src/metrics';
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 
@@ -25,6 +26,10 @@ export class Server {
       this.app.use(express.json());
       if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
         this.app.use(morgan("combined"));
+      }
+
+      if (env.getConfig(EnvironmentConfig.METRICS)) {
+         Metrics.initialize(this.app);
       }
 
       this.registerRoute("/entities/:type"       , controller, controller.getEntities)

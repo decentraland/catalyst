@@ -7,6 +7,7 @@ import * as wrtc from "wrtc";
 import WebSocket from "ws";
 import { RoomsService } from "./roomsService";
 import { serverStorage } from "./simpleStorage";
+import { Metrics } from '../../../commons/src/metrics';
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { StorageKeys } from "./storageKeys";
 import { requireParameters, validatePeerToken } from "./handlers";
@@ -15,6 +16,7 @@ const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
 const port = parseInt(process.env.PORT ?? "9000");
 const secure = parseBoolean(process.env.SECURE ?? "false");
+const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
 
 function parseBoolean(string: string) {
   return string.toLowerCase() === "true";
@@ -23,6 +25,11 @@ function parseBoolean(string: string) {
 let peer: Peer;
 
 const app = express();
+
+//Metrics
+if (enableMetrics) {
+  Metrics.initialize(app);
+}
 
 //Services
 const roomsService = new RoomsService({
