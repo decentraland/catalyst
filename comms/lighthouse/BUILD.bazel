@@ -49,6 +49,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":lighthouse",
+        "//comms/peer",
         "@npm//@types/jasmine",
     ],
 )

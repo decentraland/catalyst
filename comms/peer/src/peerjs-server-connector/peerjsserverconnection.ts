@@ -1,5 +1,5 @@
 import { EventEmitter } from "eventemitter3";
-import { util, isReliable } from "./util";
+import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket, SocketBuilder } from "./socket";
 import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from "./enums";
@@ -25,7 +25,6 @@ class PeerOptions {
   authHandler?: (msg: string) => Promise<string>;
 }
 
-//There is repeated code between this function and the one below. Maybe it could be extracted
 export function createValidationMessage(myId: string, payload: string) {
   return {
     type: ServerMessageType.Validation,
@@ -34,54 +33,26 @@ export function createValidationMessage(myId: string, payload: string) {
   };
 }
 
-export function createOfferMessage(myId: string, peerData: PeerData, offerData: any, connectionId: string, label: string) {
-  const payload = {
-    browser: "chrome",
-    sdp: offerData,
-    connectionId: connectionId,
-    sessionId: peerData.sessionId,
-    label,
-    reliable: isReliable(connectionId),
-    serialization: "binary"
-  };
+type HandshakeData = {
+  sdp: any;
+  connectionId: string;
+  protocolVersion: number;
+  sessionId: string;
+};
 
-  const offer = {
-    type: ServerMessageType.Offer,
-    src: myId,
-    dst: peerData.id,
-    payload
-  };
-
-  return offer;
+export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
+  return createMessage(myId, peerData.id, ServerMessageType.Offer, handshakeData);
 }
 
-export function createAnswerMessage(myId: string, peerData: PeerData, answerData: any, connectionId: string, label: string) {
-  const payload = {
-    browser: "chrome",
-    sdp: answerData,
-    connectionId,
-    sessionId: peerData.sessionId,
-    label,
-    type: "data"
-  };
-
-  const answer = {
-    type: ServerMessageType.Answer,
-    src: myId,
-    dst: peerData.id,
-    payload
-  };
-
-  return answer;
+export function createAnswerMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
+  return createMessage(myId, peerData.id, ServerMessageType.Answer, handshakeData);
 }
 
-export function createCandidateMessage(myId: string, peerData: PeerData, candidateData: any, connectionId: string, label: string) {
+export function createCandidateMessage(myId: string, peerData: PeerData, candidateData: any, connectionId: string) {
   const payload = {
     ...candidateData,
     connectionId: connectionId,
-    sessionId: peerData.sessionId,
-    label,
-    type: "data"
+    sessionId: peerData.sessionId
   };
   const candidate = {
     type: ServerMessageType.Candidate,
@@ -90,6 +61,15 @@ export function createCandidateMessage(myId: string, peerData: PeerData, candida
     payload
   };
   return candidate;
+}
+
+function createMessage(myId: string, dst: string, type: ServerMessageType, payload: any) {
+  return {
+    type,
+    src: myId,
+    dst: dst,
+    payload
+  };
 }
 
 /**
@@ -363,16 +343,20 @@ export class PeerJSServerConnection extends EventEmitter {
     this.socket.send(createValidationMessage(this.id!, payload));
   }
 
-  sendOffer(peerData: PeerData, offerData: any, connectionId: string, label: string) {
-    this.socket.send(createOfferMessage(this.id!, peerData, offerData, connectionId, label));
+  sendOffer(peerData: PeerData, handshakeData: HandshakeData) {
+    this.socket.send(createOfferMessage(this.id!, peerData, handshakeData));
   }
 
-  sendAnswer(peerData: PeerData, answerData: any, connectionId: string, label: string) {
-    this.socket.send(createAnswerMessage(this.id!, peerData, answerData, connectionId, label));
+  sendAnswer(peerData: PeerData, handshakeData: HandshakeData) {
+    this.socket.send(createAnswerMessage(this.id!, peerData, handshakeData));
   }
 
-  sendCandidate(peerData: PeerData, candidateData: any, connectionId: string, label: string) {
-    this.socket.send(createCandidateMessage(this.id!, peerData, candidateData, connectionId, label));
+  sendCandidate(peerData: PeerData, candidateData: any, connectionId: string) {
+    this.socket.send(createCandidateMessage(this.id!, peerData, candidateData, connectionId));
+  }
+
+  sendRejection(dst: string, sessionId: string, label: string, reason: string) {
+    this.socket.send(createMessage(this.id!, dst, ServerMessageType.Reject, { sessionId, label, reason }));
   }
 
   /**

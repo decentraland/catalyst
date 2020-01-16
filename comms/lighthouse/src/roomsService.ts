@@ -1,30 +1,27 @@
-import { PeerConnectionData } from "../../peer/src/types";
 import { Peer } from "../../peer/src/Peer";
-import { IRealm } from "peerjs-server";
+import { IPeersService, NotificationType } from "./peersService";
+import { Room, PeerInfo } from "./types";
+import { getServerPeer, removeUserAndNotify } from "./utils";
 
 type RoomsFilter = Partial<{
   userId: string;
 }>;
 
 type RoomsServiceConfig = Partial<{
-  relay: boolean;
+  serverPeerEnabled: boolean;
   serverPeerProvider: () => Peer | undefined;
-  realmProvider: () => IRealm;
+  peersService: IPeersService;
 }>;
 
+function newRoom(roomId: string): Room {
+  return { id: roomId, users: [] };
+}
+
 export class RoomsService {
-  private rooms: Record<string, PeerConnectionData[]> = {};
+  constructor(layer: string, private rooms: Record<string, Room>, private config: RoomsServiceConfig) {}
 
-  constructor(private config: RoomsServiceConfig) {}
-
-  private get serverPeer() {
-    return this.config.serverPeerProvider
-      ? this.config.serverPeerProvider()
-      : undefined;
-  }
-
-  private get peerRealm() {
-    return this.config.realmProvider ? this.config.realmProvider() : undefined;
+  private get peersService() {
+    return this.config.peersService;
   }
 
   getRoomIds(filter?: RoomsFilter): string[] {
@@ -32,76 +29,51 @@ export class RoomsService {
 
     return userId
       ? Object.entries(this.rooms)
-          .filter(([, users]) => users.some(user => user.userId === userId))
+          .filter(([, room]) => room.users.some(user => user.userId === userId))
           .map(([id]) => id)
       : Object.keys(this.rooms);
   }
 
-  getUsers(roomId: string): PeerConnectionData[] {
-    return this.rooms[roomId];
+  getUsers(roomId: string): PeerInfo[] {
+    return this.rooms[roomId]?.users;
   }
 
-  async addUserToRoom(roomId: string, peer: PeerConnectionData) {
+  async addUserToRoom(roomId: string, peer: PeerInfo) {
     let room = this.rooms[roomId];
 
+    const serverPeer = getServerPeer(this.config.serverPeerProvider);
+
     if (!room) {
-      this.rooms[roomId] = room = [];
+      this.rooms[roomId] = room = newRoom(roomId);
       // if relaying peer exists, add to room when it's created
-      if (this.config.relay && this.serverPeer) {
-        await this.serverPeer.joinRoom(roomId);
+
+      if (this.config.serverPeerEnabled && serverPeer) {
+        await serverPeer.joinRoom(roomId);
       }
     }
 
-    if (!room.some($ => $.userId === peer.userId)) {
-      room.push(
-        this.config.relay && this.serverPeer
-          ? { ...peer, peerId: this.serverPeer.nickname }
-          : peer
-      );
+    if (!room.users.some($ => $.userId === peer.userId)) {
+      const peersToNotify = room.users.slice();
+      room.users.push(peer);
+      this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
+        userId: peer.userId,
+        peerId: peer.peerId,
+        roomId
+      });
     }
 
     return room;
   }
 
   removeUserFromRoom(roomId: string, userId: string) {
-    let room = this.rooms[roomId];
-    if (room) {
-      const index = room.findIndex($ => $.userId === userId);
-      if (index !== -1) {
-        const [peerData] = room.splice(index, 1);
-
-        if (this.peerRealm) {
-          //This particular logic may need to be extracted to another service of some kind
-          room.forEach($ => {
-            const client = this.peerRealm!.getClientById($.userId);
-            if (client) {
-              client.send({
-                type: "PEER_LEFT_ROOM",
-                src: "__lighthouse__",
-                dst: $.userId,
-                payload: {
-                  userId: peerData.userId,
-                  peerId: peerData.peerId,
-                  roomId
-                }
-              });
-            }
-          });
-        }
-      }
-    }
-    if (room.length === 0) {
-      delete this.rooms[roomId];
-    }
-    return room;
+    return removeUserAndNotify(this.rooms, roomId, userId, NotificationType.PEER_LEFT_ROOM, "roomId", this.peersService);
   }
 
   removeUser(userId: string) {
-    Object.keys(this.rooms).forEach(room =>
-      this.removeUserFromRoom(room, userId)
-    );
-    if (this.serverPeer) {
-      this.serverPeer.disconnectFrom(userId);
+    Object.keys(this.rooms).forEach(room => this.removeUserFromRoom(room, userId));
+    const serverPeer = getServerPeer(this.config.serverPeerProvider);
+    if (serverPeer) {
+      serverPeer.disconnectFrom(userId);
     }
   }
 }

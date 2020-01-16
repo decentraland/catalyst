@@ -1,30 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Field, Button } from "decentraland-ui";
 
 import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
+import { Peer } from "../../peer/src";
+import { util } from "../../peer/src/peerjs-server-connector/util";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return <Field label={label} onChange={ev => setter(ev.target.value)} value={value} />;
 }
 
+export const layer = "blue";
+
+declare const window: Window & { peer: Peer };
+
 export function ConnectForm(props: {
-  onConnected: (peer: IPeer, room: string, url: string) => any;
+  onConnected: (peer: IPeer, layer: string, room: string, url: string) => any;
   peerClass: {
     new (url: string, nickname: string, callback: any, config: any): IPeer;
   };
 }) {
   const [url, setUrl] = useState("http://localhost:9000");
-  const [nickname, setNickname] = useState("");
-  const [room, setRoom] = useState("");
+  let [nickname, setNickname] = useState("");
+  let [room, setRoom] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const searchParams = new URLSearchParams(window.location.search);
+
+  const queryRoom = searchParams.get("room");
+  const queryNickname = searchParams.get("nickname");
 
   async function joinRoom() {
     setError("");
     setLoading(true);
     try {
-      const peer = new props.peerClass(url, nickname, () => {}, {
+      //@ts-ignore
+      const peer = (window.peer = new props.peerClass(url, nickname, () => {}, {
         token: PeerToken.getToken(nickname),
         connectionConfig: {
           iceServers: [
@@ -43,15 +55,26 @@ export function ConnectForm(props: {
           ]
         },
         authHandler: msg => Promise.resolve(msg)
-      });
+        }
+      ));
+      await peer.setLayer(layer);
       await peer.joinRoom(room);
       setLoading(false);
-      props.onConnected(peer, room, url);
+      props.onConnected(peer, layer, room, url);
     } catch (e) {
       setError(e.message ?? e.toString());
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (searchParams.get("join")) {
+      room = queryRoom ?? "room";
+      nickname = queryNickname ?? "peer-" + util.randomToken();
+
+      joinRoom();
+    }
+  }, []);
 
   return (
     <div className="connect-form">
