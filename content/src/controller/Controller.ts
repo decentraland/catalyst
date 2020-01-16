@@ -8,6 +8,8 @@ import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { EthAddress, Signature } from "../service/auth/Authenticator";
 import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
+import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
+import { CURRENT_CONTENT_VERSION } from "../Environment";
 
 export class Controller {
 
@@ -73,6 +75,39 @@ export class Controller {
         return [elements]
     }
 
+    createLegacyEntity(req: express.Request, res: express.Response) {
+        // Method: POST
+        // Path: /legacy-entities
+        // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
+        const entityId:EntityId     = req.body.entityId;
+        const ethAddress:EthAddress = req.body.ethAddress;
+        const signature:Signature   = req.body.signature;
+        const originalVersion:EntityVersion = EntityVersion[req.body.version.toUpperCase().trim()];
+        const migrationInformation  = JSON.parse(req.body.migration_data);
+        const files                 = req.files
+
+        const auditInfo: AuditInfo = { ethAddress,
+            signature,
+            deployedTimestamp: NO_TIMESTAMP,
+            version: CURRENT_CONTENT_VERSION,
+            originalMetadata: {
+                originalVersion,
+                data: migrationInformation
+            }
+        }
+
+
+        let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
+        if (files instanceof Array) {
+            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
+        }
+        deployFiles
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, auditInfo))
+        .then(t => res.send({
+            creationTimestamp: t
+        }))
+    }
+
     createEntity(req: express.Request, res: express.Response) {
         // Method: POST
         // Path: /entities
@@ -87,7 +122,7 @@ export class Controller {
             deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
         deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, ethAddress, signature))
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, { ethAddress, signature, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}))
         .then(t => res.send({
             creationTimestamp: t
         }))

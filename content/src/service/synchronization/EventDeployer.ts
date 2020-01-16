@@ -54,7 +54,7 @@ export class EventDeployer {
             // If entity file was retrieved, we know that the entity wasn't blacklisted
             if (auditInfo.overwrittenBy) {
                 // Deploy the entity as overwritten
-                return this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+                return this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName)
             } else {
                 // Download all entity's files
                 const files: (ContentFile | undefined)[] = await this.getContentFiles(deployment, entityFile, source)
@@ -67,10 +67,10 @@ export class EventDeployer {
 
                 if (definedFiles.length == files.length) {
                     // Since there was no blacklisted files, deploy the new entity normally
-                    return this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+                    return this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
                 } else {
                     // It looks like there was a blacklisted content
-                    return this.service.deployEntityWithBlacklistedContent(definedFiles, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+                    return this.service.deployEntityWithBlacklistedContent(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
                 }
             }
         } else {
@@ -89,7 +89,7 @@ export class EventDeployer {
             const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(serializableEntity)) }
 
             // Deploy the entity file
-            return this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo.ethAddress, auditInfo.signature, deployment.serverName, deployment.timestamp)
+            return this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo, deployment.serverName)
         }
     }
 

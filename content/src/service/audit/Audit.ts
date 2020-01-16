@@ -4,6 +4,8 @@ import { AuditStorage } from "./AuditStorage";
 import { EthAddress, Signature } from "../auth/Authenticator";
 import { ContentFileHash } from "../Hashing";
 
+export const NO_TIMESTAMP: Timestamp = -1
+
 export interface AuditOverwrite {
     setEntityAsOverwritten(id: EntityId, overwrittenBy: EntityId): Promise<void>
 }
@@ -12,7 +14,6 @@ export interface AuditManager {
     getAuditInfo(id: EntityId): Promise<AuditInfo | undefined>;
     setAuditInfo(id: EntityId, info: AuditInfo): Promise<void>;
 }
-
 
 export class Audit implements AuditOverwrite, AuditManager {
 
@@ -40,8 +41,17 @@ export type AuditInfo = {
     deployedTimestamp: Timestamp
     ethAddress: EthAddress
     signature: Signature,
-    version: string,
+    version: EntityVersion,
     overwrittenBy?: EntityId,
     isBlacklisted?: boolean,
-    blacklistedContent?: ContentFileHash[]
+    blacklistedContent?: ContentFileHash[],
+    originalMetadata?: { // This is used for migrations
+        originalVersion: EntityVersion,
+        data: any,
+    },
+}
+
+export enum EntityVersion {
+    V2 = "v2",
+    V3 = "v3"
 }
