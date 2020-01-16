@@ -1,20 +1,21 @@
 import * as EthCrypto from "eth-crypto"
-import { Validator } from "../../../../src/service/validations/Validator"
+import { Validations } from "../../../../src/service/validations/Validations"
 import { Entity, EntityType } from "../../../../src/service/Entity"
 import { Authenticator } from "../../../../src/service/auth/Authenticator"
 import { MockedAccessChecker } from "../../../helpers/service/access/MockedAccessChecker"
+import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext"
 
-describe("Validator", function () {
+describe("Validations", function () {
 
     it(`When a non uploaded hash is referenced, it is reported`, () => {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
             ["name-2", "hash-2"],
         ]))
-        let validation = new Validator(new MockedAccessChecker())
+        let validation = new Validations(new MockedAccessChecker())
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}]
-        ]), new Map([]))
+        ]), new Map([]), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe(notAvailableHashMessage("hash-2"))
@@ -25,8 +26,8 @@ describe("Validator", function () {
             ["name-1", "hash-1"],
             ["name-2", "hash-2"],
         ]))
-        let validation = new Validator(new MockedAccessChecker())
-        validation.validateContent(entity, new Map([]), new Map([["hash-2", true]]))
+        let validation = new Validations(new MockedAccessChecker())
+        validation.validateContent(entity, new Map([]), new Map([["hash-2", true]]), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe(notAvailableHashMessage("hash-1"))
@@ -36,11 +37,11 @@ describe("Validator", function () {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
         ]))
-        let validation = new Validator(new MockedAccessChecker())
+        let validation = new Validations(new MockedAccessChecker())
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}],
             ["hash-2", {name:"name-2", content: Buffer.from([])}]
-        ]), new Map([]))
+        ]), new Map([]), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe(notReferencedHashMessage("hash-2"))
@@ -50,12 +51,12 @@ describe("Validator", function () {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
         ]))
-        let validation = new Validator(new MockedAccessChecker())
+        let validation = new Validations(new MockedAccessChecker())
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}],
         ]), new Map([
             ["hash-2", true]
-        ]))
+        ]), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(0)
     })
@@ -79,8 +80,8 @@ describe("Validator", function () {
     })
 
     it(`when signature is invalid, it's reported`, async () => {
-        let validation = new Validator(new MockedAccessChecker())
-        await validation.validateSignature("some-entity-id", "some-address", "some-signature")
+        let validation = new Validations(new MockedAccessChecker())
+        await validation.validateSignature("some-entity-id", "some-address", "some-signature", ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe("The signature is invalid.")
@@ -89,7 +90,7 @@ describe("Validator", function () {
     it(`when signature is valid, it's recognized`, async () => {
         const identity = EthCrypto.createIdentity();
         const entityId = "some-entity-id"
-        let validation = new Validator(new MockedAccessChecker())
+        let validation = new Validations(new MockedAccessChecker())
         await validation.validateSignature(
             entityId,
             identity.address,
@@ -97,7 +98,7 @@ describe("Validator", function () {
                 identity.privateKey,
                 Authenticator.createEthereumMessageHash(entityId)
             )
-        )
+        , ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(0)
     })
