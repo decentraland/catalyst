@@ -1,10 +1,15 @@
 import { RoomsService } from "../src/roomsService";
+import { IPeersService, NotificationType } from "../src/peersService";
+import { PeerInfo } from "../src/types";
+import { IPeer } from "../../peer/src/types";
 
 const { arrayWithExactContents } = jasmine;
 
+const layerId = "blue";
+
 describe("Rooms service", () => {
   let peerLibrary: any;
-  let realm: any;
+  let peerService: IPeersService & { sentMessages: [string, any][] };
   let roomsService: RoomsService;
 
   const lighthouseId = "lighthouse";
@@ -24,14 +29,17 @@ describe("Rooms service", () => {
       disconnectFrom(x) {}
     };
 
-    realm = {
-      getClientById(id: string) {}
+    peerService = {
+      notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
+        peers.forEach(it => this.sentMessages.push([it.userId, { type, payload }]));
+      },
+      createServerPeer(layerId: string): Promise<IPeer> {
+        return Promise.resolve(peerLibrary);
+      },
+      sentMessages: []
     };
 
-    roomsService = new RoomsService({
-      serverPeerProvider: () => peerLibrary,
-      realmProvider: () => realm
-    });
+    roomsService = new RoomsService(layerId, {}, { peersService: peerService });
   });
 
   it("should allow to add a user to an non-existing room and create it", async () => {
@@ -47,18 +55,14 @@ describe("Rooms service", () => {
     await roomsService.addUserToRoom("room", peer1);
     await roomsService.addUserToRoom("room", peer2);
 
-    expect(roomsService.getUsers("room")).toEqual(
-      arrayWithExactContents([peer1, peer2])
-    );
+    expect(roomsService.getUsers("room")).toEqual(arrayWithExactContents([peer1, peer2]));
   });
 
   it("should list all the rooms", async () => {
     await roomsService.addUserToRoom("room1", createPeer());
     await roomsService.addUserToRoom("room2", createPeer());
 
-    expect(roomsService.getRoomIds()).toEqual(
-      arrayWithExactContents(["room1", "room2"])
-    );
+    expect(roomsService.getRoomIds()).toEqual(arrayWithExactContents(["room1", "room2"]));
   });
 
   it("should list all the rooms that a user is in", async () => {
@@ -68,26 +72,23 @@ describe("Rooms service", () => {
     await roomsService.addUserToRoom("room2", aPeer);
     await roomsService.addUserToRoom("room3", aPeer);
 
-    expect(roomsService.getRoomIds({ userId: aPeer.userId })).toEqual(
-      arrayWithExactContents(["room2", "room3"])
-    );
+    expect(roomsService.getRoomIds({ userId: aPeer.userId })).toEqual(arrayWithExactContents(["room2", "room3"]));
   });
 
-  it("should add peer server to a new room if relay is conigured", async () => {
-    roomsService = new RoomsService({
-      serverPeerProvider: () => peerLibrary,
-      realmProvider: () => realm,
-      relay: true
-    });
+  it("should add peer server to a new room if peer server is configured", async () => {
+    roomsService = new RoomsService(
+      layerId,
+      {},
+      {
+        peersService: peerService,
+        serverPeerProvider: () => peerLibrary,
+        serverPeerEnabled: true
+      }
+    );
 
     const peer1 = createPeer();
     await roomsService.addUserToRoom("room", peer1);
-    expect(roomsService.getUsers("room")).toEqual(
-      arrayWithExactContents([
-        { userId: peer1.userId, peerId: lighthouseId },
-        lighthousePeerData
-      ])
-    );
+    expect(roomsService.getUsers("room")).toEqual(arrayWithExactContents([peer1, lighthousePeerData]));
   });
 
   it("should allow removing a user from a room", async () => {
@@ -127,17 +128,6 @@ describe("Rooms service", () => {
   });
 
   it("should notify when a user is removed from a room", async () => {
-    const sentMessages: [string, any][] = [];
-
-    realm = {
-      getClientById(id: string) {
-        return {
-          id: id,
-          send: data => sentMessages.push([id, data])
-        };
-      }
-    };
-
     const peer1 = createPeer();
     const peer2 = createPeer();
 
@@ -146,9 +136,13 @@ describe("Rooms service", () => {
 
     roomsService.removeUserFromRoom("room1", peer1.userId);
 
-    const [[id, message]] = sentMessages;
+    const leftMessages = peerService.sentMessages.filter(([id, message]) => message.type === "PEER_LEFT_ROOM");
+
+    expect(leftMessages.length).toEqual(1);
+
+    const [[id, message]] = leftMessages;
+
     expect(id).toEqual(peer2.userId);
-    expect(message.type).toEqual("PEER_LEFT_ROOM");
     expect(message.payload.userId).toEqual(peer1.userId);
     expect(message.payload.roomId).toEqual("room1");
   });

@@ -54,13 +54,17 @@ export enum ServerMessageType {
   Candidate = "CANDIDATE",
   Offer = "OFFER",
   Answer = "ANSWER",
+  Reject = "REJECT",
   Open = "OPEN", // The connection to the server is open.
   Error = "ERROR", // Server error.
   IdTaken = "ID-TAKEN", // The selected ID is taken.
   InvalidKey = "INVALID-KEY", // The given API key cannot be found.
   Leave = "LEAVE", // Another peer has closed its connection to this peer.
   Expire = "EXPIRE", // The offer sent to a peer has expired without response.
-  PeerLeftRoom = "PEER_LEFT_ROOM" // Another peer left a particular room.
+  PeerLeftRoom = "PEER_LEFT_ROOM", // Another peer left a particular room.
+  PeerJoinedRoom = "PEER_JOINED_ROOM", // Another peer joined a particular room.
+  PeerLeftLayer = "PEER_LEFT_LAYER", // Another peer left the layer.
+  PeerJoinedLayer = "PEER_JOINED_LAYER" // Another peer joined the layer.
 }
 
 export enum PeerHeaders {
