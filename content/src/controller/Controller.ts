@@ -120,9 +120,9 @@ export class Controller {
         const cids = this.asArray(req.query.cid)
 
         this.service.isContentAvailable(cids)
-        .then(availableContent => res.send({
-            availableContent: [...availableContent],
-        }))
+            .then(availableContent => res.send(
+                Array.from(availableContent.entries())
+                    .map(([fileHash, isAvailable]) => ({ cid: fileHash, available: isAvailable }))))
     }
 
     getPointers(req: express.Request, res: express.Response) {

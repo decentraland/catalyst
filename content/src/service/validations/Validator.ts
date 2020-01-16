@@ -52,27 +52,8 @@ export class Validator {
 
     /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
     async validateAccess(pointers: Pointer[], ethAddress: EthAddress, entityType: EntityType): Promise<void> {
-        if (entityType===EntityType.SCENE) {
-            await Promise.all(
-                pointers.map(async pointer => {
-                    try {
-                        const pointerParts: string[] = pointer.split(',')
-                        if (pointerParts.length===2) {
-                            const x: number = parseInt(pointerParts[0], 10)
-                            const y: number = parseInt(pointerParts[1], 10)
-                            const hasAccess = await this.accessChecker.hasParcelAccess(x,y,ethAddress)
-                            if (!hasAccess) {
-                                this.errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
-                            }
-                        } else {
-                            this.errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
-                        }
-                    } catch(e) {
-                        this.errors.push(`There was an error processing this pointer: ${pointer}`)
-                    }
-                })
-            )
-        }
+        const errors = await this.accessChecker.hasAccess(entityType, pointers, ethAddress);
+        this.errors = this.errors.concat(errors)
     }
 
     /** Validate that the deployment is valid in terms of timing */
