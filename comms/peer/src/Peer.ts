@@ -1,36 +1,33 @@
 import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
-<<<<<<< HEAD
-import { ServerMessageType, PeerHeaders, PeerEventType } from "./peerjs-server-connector/enums";
-=======
-import { ServerMessageType } from "./peerjs-server-connector/enums";
->>>>>>> Gossip network + some refactors (#18)
+import { ServerMessageType,  PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-<<<<<<< HEAD
-import { PeerConnectionData, IPeer, Room } from "./types";
 import { future } from "fp-future";
-=======
 import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
+import { PeerMessageType, PeerMessageTypes } from "./messageTypes";
 
 const PROTOCOL_VERSION = 1;
->>>>>>> Gossip network + some refactors (#18)
 
 interface PacketData {
   hi: { room: { id: string; users: KnownPeerData[] } };
-  message: { room: string; src: string; dst?: string; payload: any };
+  message: { room: string; dst?: string; payload: any };
 }
 
 type PacketType = keyof PacketData;
 type Packet<T extends PacketType> = {
   id: string;
   timestamp: number;
+  src: string;
   type: T;
+  subtype?: string;
+  discardOlderThan?: number;
+  expireTime?: number;
   data: PacketData[T];
-  hops?: number;
-  ttl?: number;
+  hops: number;
+  ttl: number;
   receivedBy: string[];
 };
 
@@ -48,15 +45,6 @@ function signalMessage(peer: PeerData, connectionId: string, signal: SignalData)
 }
 
 type PeerConfig = {
-<<<<<<< HEAD
-  connectionConfig: any;
-  wrtc: any;
-  socketBuilder: SocketBuilder;
-  token: string;
-  sessionId: string;
-  relay: RelayMode;
-  authHandler: (msg: string) => Promise<string>;
-=======
   connectionConfig?: any;
   wrtc?: any;
   socketBuilder?: SocketBuilder;
@@ -66,7 +54,7 @@ type PeerConfig = {
   maxConnections?: number;
   peerConnectTimeout?: number;
   messageExpirationTime?: number;
->>>>>>> Gossip network + some refactors (#18)
+  authHandler: (msg: string) => Promise<string>;
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
@@ -79,7 +67,7 @@ export class Peer implements IPeer {
 
   private knownPeers: Record<string, KnownPeerData> = {};
 
-  private receivedMessages: Record<string, number> = {};
+  private receivedMessages: Record<string, {timestamp: number, expirationTime: number}> = {};
 
   private currentLayer?: string;
 
@@ -94,16 +82,7 @@ export class Peer implements IPeer {
   //@ts-ignore we should use this for cleanup
   private expireIntervalId: number;
 
-<<<<<<< HEAD
-  constructor(
-    private lighthouseUrl: string,
-    public nickname: string,
-    public callback: PacketCallback = () => {},
-    private config: Partial<PeerConfig> = { relay: RelayMode.None, authHandler: msg => Promise.resolve(msg) }
-  ) {
-=======
-  constructor(lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {}) {
->>>>>>> Gossip network + some refactors (#18)
+  constructor(lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {authHandler: msg => Promise.resolve(msg)}) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
@@ -144,18 +123,18 @@ export class Peer implements IPeer {
     const keys = Object.keys(this.receivedMessages);
 
     keys.forEach(id => {
-      if (currentTimestamp - this.receivedMessages[id] > this.config.messageExpirationTime!) {
+      const received = this.receivedMessages[id];
+      if (currentTimestamp - received.timestamp > received.expirationTime) {
         delete this.receivedMessages[id];
       }
     });
   }
 
-<<<<<<< HEAD
   awaitConnectionEstablished(timeoutMs: number = 10000): Promise<void> {
     const result = future<void>();
 
     setTimeout(() => {
-      result.isPending && result.reject(new Error(`[${this.nickname}] Awaiting connection to server ${this.lighthouseUrl} timed out after ${timeoutMs}ms`));
+      result.isPending && result.reject(new Error(`[${this.nickname}] Awaiting connection to server timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
     this.peerJsConnection.on(PeerEventType.Error, err => result.isPending && result.reject(err));
@@ -164,14 +143,15 @@ export class Peer implements IPeer {
     return result;
   }
 
-  log(...entries: any[]) {
-=======
-  private markReceived(id: string) {
-    this.receivedMessages[id] = new Date().getTime();
+  private markReceived(message: Packet<any>) {
+    this.receivedMessages[message.id] = { timestamp: message.timestamp, expirationTime: this.getExpireTime(message)}
+  }
+
+  private getExpireTime(message: Packet<any>): number {
+    return message.expireTime ?? this.config.messageExpirationTime!
   }
 
   private log(...entries: any[]) {
->>>>>>> Gossip network + some refactors (#18)
     console.log(`[PEER: ${this.nickname}]`, ...entries);
   }
 
@@ -222,7 +202,7 @@ export class Peer implements IPeer {
       .filter(it => it.userId !== this.nickname)
       .forEach(it => {
         if (!this.knownPeers[it.userId] || typeof this.knownPeers[it.userId].rooms === "undefined") {
-          this.knownPeers[it.userId] = { ...it, rooms: [room.id] };
+          this.knownPeers[it.userId] = { ...it, rooms: [room.id], timestampByType: {} };
         } else if (this.knownPeers[it.userId].rooms.indexOf(room.id) < 0) {
           this.knownPeers[it.userId].rooms.push(room.id);
         }
@@ -246,7 +226,7 @@ export class Peer implements IPeer {
   }
 
   private addKnownPeer(peer: MinPeerData) {
-    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: [], ...peer };
+    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: [], ...peer, timestampByType: {} };
   }
 
   private removeKnownPeer(userId: string) {
@@ -391,31 +371,33 @@ export class Peer implements IPeer {
     connection.on("data", data => this.handlePeerPacket(data, peerData.id));
   }
 
-  private updateTimeStamp(peerId: string, timestamp: number) {
-    if (this.knownPeers[peerId]) {
-      this.knownPeers[peerId].timestamp = Math.max(this.knownPeers[peerId].timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
+  private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number) {
+    const knownPeer = this.knownPeers[peerId];
+    if (knownPeer) {
+      knownPeer.timestamp = Math.max(knownPeer.timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
+      if(subtype) {
+        knownPeer.timestampByType[subtype] = Math.max(knownPeer.timestampByType[subtype] ?? Number.MIN_SAFE_INTEGER, timestamp)
+      }
     }
   }
 
   private handlePeerPacket(data: string, peerId: string) {
-    const parsed = JSON.parse(data);
+    const parsed: Packet<any> = JSON.parse(data);
     switch (parsed.type as PacketType) {
       case "message": {
         const data = parsed.data as PacketData["message"];
 
         const alreadyReceived = this.receivedMessages[parsed.id];
 
-        this.markReceived(parsed.id);
+        this.markReceived(parsed);
 
-        //TODO: Depending on the type of the message, ignore messages received in unordered fashion
-        //Ignore messages that arrive "too late". If compared to the last timestamp of the peer, the message is older
-        //than the message expire time, then discard it.
-        //Some "real time" messages could have even a lower expiration time.
-        if (!alreadyReceived) {
-          this.updateTimeStamp(parsed.src, parsed.timestamp);
+        const expired = this.checkExpired(parsed);
+
+        if (!alreadyReceived && !expired) {
+          this.updateTimeStamp(parsed.src, parsed.subtype, parsed.timestamp);
 
           if (this.isInRoom(data.room)) {
-            this.callback(data.src, data.room, data.payload);
+            this.callback(parsed.src, data.room, data.payload);
           }
 
           parsed.hops += 1;
@@ -427,6 +409,23 @@ export class Peer implements IPeer {
         break;
       }
     }
+  }
+
+  private checkExpired(packet: Packet<"message">) {
+    let discardedByOlderThan: boolean = false;
+    if(packet.discardOlderThan && packet.subtype) {
+      const timestamp = this.knownPeers[packet.src]?.timestampByType[packet.subtype]
+      discardedByOlderThan = timestamp - packet.timestamp > packet.discardOlderThan;
+    }
+
+    let discardedByExpireTime: boolean = false;
+    const expireTime = this.getExpireTime(packet) 
+
+    if(this.knownPeers[packet.src]?.timestamp) {
+      discardedByExpireTime = this.knownPeers[packet.src]?.timestamp - packet.timestamp > expireTime;
+    }
+
+    return discardedByOlderThan || discardedByExpireTime;
   }
 
   private isInRoom(room: string) {
@@ -461,34 +460,39 @@ export class Peer implements IPeer {
     delete this.peerConnectionPromises[peerData.id];
   }
 
-  sendMessage(roomId: string, payload: any) {
+  sendMessage(roomId: string, payload: any, type: PeerMessageType = PeerMessageTypes.reliable) {
     const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
       return Promise.reject(new Error(`cannot send a message in a room not joined (${roomId})`));
     }
 
-    // TODO: Send multicast message;
-    // [...room.users.values()].filter(user => user.userId !== this.nickname).forEach(user => this.sendMessageTo(user, roomId, payload, this.nickname));
-
     const data = {
       room: roomId,
-      src: this.nickname,
       payload
     };
 
     const packet: Packet<"message"> = {
       id: this.generateMessageId(),
       type: "message",
+      subtype: type.name,
+      expireTime: type.expirationTime,
+      discardOlderThan: type.discardOlderThan,
       timestamp: new Date().getTime(),
+      src: this.nickname,
       data,
       hops: 0,
-      ttl: 5,
+      ttl: this.getTTL(type),
       receivedBy: []
     };
 
     this.sendPacket(packet);
 
     return Promise.resolve();
+  }
+
+  getTTL(type: PeerMessageType) {
+    //TODO: Interleaving or function
+    return typeof type.ttl === "number" ? type.ttl : 10;
   }
 
   private sendPacket<T extends PacketType>(packet: Packet<T>) {
