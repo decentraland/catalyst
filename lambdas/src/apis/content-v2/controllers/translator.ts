@@ -133,9 +133,16 @@ export function getContents(req: Request, res: Response) {
 }
 
 function findSceneJsonId(entity:V3ControllerEntity): string {
+    let sceneJsonHash = ""
     try {
-        return entity.content.find(entityContent => entityContent.file==="scene.json").hash
-    } catch {
-        return ""
+        if (entity.content) {
+            const sceneJsonContent: V3ControllerEntityContent|undefined = entity.content.find(entityContent => entityContent.file==="scene.json")
+            if (sceneJsonContent) {
+                sceneJsonHash = sceneJsonContent.hash
+            }
+        }
+    } catch(e) {
+        console.error("Error while looking for scene.json file hash. ", e)
     }
+    return sceneJsonHash
 }
