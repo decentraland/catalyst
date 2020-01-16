@@ -1,7 +1,8 @@
 import { EthAddress } from "../auth/Authenticator";
+import { EntityType, Pointer } from "../Entity";
 
 export interface AccessChecker {
 
-    hasParcelAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean>
+    hasAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress): Promise<string[]>
 
 }
