@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { IPeer } from "../../peer/src/types";
 import { Button, Radio } from "decentraland-ui";
+import { PeerMessageTypes } from "../../peer/src/messageTypes";
 
 type Message = {
   sender: string;
@@ -58,7 +59,6 @@ function randomColor() {
 
 let intervalId: number | undefined = undefined;
 
-
 export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
@@ -98,12 +98,12 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }
 
   function sendCursorMessage() {
-    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, false);
+    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, PeerMessageTypes.unreliable);
   }
 
   function sendMessage() {
     appendMessage(currentRoom, props.peer.nickname, message);
-    props.peer.sendMessage(currentRoom, { type: "chat", message });
+    props.peer.sendMessage(currentRoom, { type: "chat", message }, PeerMessageTypes.reliable);
     setMessage("");
   }
 
