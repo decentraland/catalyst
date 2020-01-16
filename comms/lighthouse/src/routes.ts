@@ -20,7 +20,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     if (layersService.exists(req.params.layerId)) {
       next();
     } else {
-      res.status(404).send({ status: "not-found" });
+      res.status(404).send({ status: "layer-not-found" });
     }
   };
 
@@ -47,7 +47,7 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.get("/layers/:layerId/rooms/:roomId", validateLayerExists, (req, res, next) => {
     const roomUsers = layersService.getRoomsService(req.params.layerId)!.getUsers(req.params.roomId);
     if (typeof roomUsers === "undefined") {
-      res.status(404).send({ status: "not-found" });
+      res.status(404).send({ status: "room-not-found" });
     } else {
       res.send(roomUsers);
     }
