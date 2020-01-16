@@ -114,7 +114,6 @@ export class Peer implements IPeer {
 
     const keys = Object.keys(this.receivedMessages);
 
-    // if(keys.length > 0) console.log(`Expiring messages with ${keys.length} known messages`)
     keys.forEach(id => {
       if (currentTimestamp - this.receivedMessages[id] > this.config.messageExpirationTime!) {
         delete this.receivedMessages[id];
@@ -194,7 +193,7 @@ export class Peer implements IPeer {
 
     newPeers.forEach(peer => {
       //We only replace those that were not previously added
-      if (peer.userId != this.nickname) {
+      if (peer.userId !== this.nickname) {
         this.addKnownPeer(peer);
       }
     });
@@ -282,22 +281,7 @@ export class Peer implements IPeer {
     }
 
     this.currentRooms.splice(index, 1);
-
-    // roomUsers.forEach(user => {
-    //   const peer = this.connectedPeers[user.peerId];
-
-    //   if (peer && !this.sharesRoomWith(peer.id)) {
-    //     peer.connection.once("close", () => {
-    //       delete this.connectedPeers[user.peerId];
-    //     });
-    //     peer.connection.destroy();
-    //   }
-    // });
   }
-
-  // private sharesRoomWith(userId: string) {
-  //   return this.currentRooms.some(room => [...room.users.values()].indexOf(userId) >= 0);
-  // }
 
   public beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -326,10 +310,6 @@ export class Peer implements IPeer {
       this.log("[PEER] Already not connected to peer " + peerId);
     }
   }
-
-  // private key(data: KnownPeerData) {
-  //   return `${data.userId}:${data.peerId}`;
-  // }
 
   private hasConnectionsFor(peerId: string) {
     return !!this.connectedPeers[peerId];
@@ -420,17 +400,7 @@ export class Peer implements IPeer {
     }
 
     this.updateNetwork();
-
-    // TODO: We should also update rooms
-
-    // removing all users connected via this peer of each room
-    // this.currentRooms.forEach(room => {
-    //   [...room.users.values()].forEach(user => {
-    //     if (user.peerId === peerData.id) {
-    //       room.users.delete(this.key(user));
-    //     }
-    //   });
-    // });
+    // TODO: Is there something else that we should do when someone disconnects? Maybe update the rooms and the known peers
   }
 
   private generateMessageId() {
@@ -443,10 +413,6 @@ export class Peer implements IPeer {
 
     this.peerConnectionPromises[peerData.id]?.forEach($ => $.resolve());
     delete this.peerConnectionPromises[peerData.id];
-
-    // const room = this.findRoom(roomId);
-    // TODO: Check rooms with user that connected
-    // TODO - we may need to close the connection if we are no longer interested in the room - moliva - 13/12/2019
   }
 
   sendMessage(roomId: string, payload: any) {
@@ -479,34 +445,17 @@ export class Peer implements IPeer {
     return Promise.resolve();
   }
 
-  // sendMessageTo(user: KnownPeerData, roomId: string, payload: any, src: string = this.nickname) {
-  //   const data = {
-  //     room: roomId,
-  //     src,
-  //     dst: user.userId,
-  //     payload,
-  //     hops: 0,
-  //     ttl: 5,
-  //     receivedBy: []
-  //   };
-
-  //   const packet: Packet<"message"> = {
-  //     type: "message",
-  //     data
-  //   };
-
-  //   this.sendPacket(user, packet);
-  // }
-
   private sendPacket<T extends PacketType>(packet: Packet<T>) {
     if (!packet.receivedBy.includes(this.nickname)) packet.receivedBy.push(this.nickname);
+
+    const serializedPacket = JSON.stringify(packet);
 
     Object.keys(this.connectedPeers)
       .filter(it => !packet.receivedBy.includes(it))
       .forEach(peer => {
         const conn = this.connectedPeers[peer].connection;
         if (conn?.writable) {
-          conn.write(JSON.stringify(packet));
+          conn.write(serializedPacket);
         }
       });
   }
