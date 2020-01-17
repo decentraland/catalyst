@@ -45,10 +45,9 @@
 
 * Give it a try:
     ```
-    curl http://localhost:9000/rooms
+    curl http://localhost:9000/hello
     curl http://localhost:6969/status
     ```
-
 
 ## Lighthouse endpoints
 
@@ -72,3 +71,8 @@ Try the following endpoints for a minimal monitoring of the rooms state.
 * List of users in room
 
     `curl localhost:9000/rooms/${ROOM_ID}`
+
+
+## Monitoring
+
+For monitoring see [the following doc](docs/MONITORING.md)
