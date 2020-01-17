@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { IPeer } from "../../peer/src/types";
 import { Button, Radio } from "decentraland-ui";
+import { PeerMessageTypes } from "../../peer/src/messageTypes";
 
 type Message = {
   sender: string;
@@ -58,11 +59,11 @@ function randomColor() {
 
 let intervalId: number | undefined = undefined;
 
-export function Chat(props: { peer: IPeer; room: string; url: string }) {
+export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
   const [cursors, setCursors] = useState<Record<string, Cursor>>({});
-  const [updatingCursors, setUpdatingCursors] = useState(false);
+  const [updatingCursors, setUpdatingCursors] = useState(!!new URLSearchParams(location.search).get("updatingCursors"));
   const [currentRoom, setCurrentRoom] = useState(props.room);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms);
@@ -97,12 +98,12 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   }
 
   function sendCursorMessage() {
-    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, false);
+    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, PeerMessageTypes.unreliable);
   }
 
   function sendMessage() {
     appendMessage(currentRoom, props.peer.nickname, message);
-    props.peer.sendMessage(currentRoom, { type: "chat", message });
+    props.peer.sendMessage(currentRoom, { type: "chat", message }, PeerMessageTypes.reliable);
     setMessage("");
   }
 
@@ -115,7 +116,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  });
+  }, [messages]);
 
   useEffect(() => {
     document.addEventListener("mousemove", mouseListener);
@@ -135,7 +136,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
   useEffect(() => {
     setInterval(async () => {
       try {
-        const response = await fetch(`${props.url}/rooms`);
+        const response = await fetch(`${props.url}/layers/${props.layer}/rooms`);
         const rooms = await response.json();
         setAvailableRooms(rooms.filter(room => !joinedRooms.some(joined => joined.id === room)));
       } catch (e) {}
@@ -221,16 +222,7 @@ export function Chat(props: { peer: IPeer; room: string; url: string }) {
             <ul>
               {users.map((user, i) => (
                 <li className="room-user" key={`room-user-${i}`}>
-                  {user.userId}
-                  <span
-                    className="room-user-relay"
-                    style={{
-                      display: user.userId === user.peerId ? "none" : "inline"
-                    }}
-                  >
-                    {" "}
-                    ({user.peerId})
-                  </span>
+                  {user}
                 </li>
               ))}
             </ul>

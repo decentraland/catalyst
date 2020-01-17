@@ -20,8 +20,9 @@ import { ContentClusterFactory } from "./service/synchronization/ContentClusterF
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
 import { BlacklistFactory } from "./blacklist/BlacklistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
+import { EntityVersion } from "./service/audit/Audit";
 
-export const CONTENT_KATALYST_VERSION: string = "0.1"
+export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 
@@ -84,6 +85,7 @@ export const enum EnvironmentConfig {
     UPDATE_FROM_DAO_INTERVAL,
     SYNC_WITH_SERVERS_INTERVAL,
     IGNORE_VALIDATION_ERRORS,
+    ALLOW_LEGACY_ENTITIES,
 }
 
 export class EnvironmentBuilder {
@@ -149,6 +151,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('20s'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

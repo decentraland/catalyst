@@ -44,6 +44,10 @@ export class Server {
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.addToBlacklist, HttpMethod.PUT);
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.removeFromBlacklist, HttpMethod.DELETE);
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.isTargetBlacklisted, HttpMethod.HEAD);
+
+      if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
+        this.registerRoute("/legacy-entities"    , controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())
+      }
    }
 
    private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response)=>void, method: HttpMethod = HttpMethod.GET, extraHandler?: RequestHandler) {

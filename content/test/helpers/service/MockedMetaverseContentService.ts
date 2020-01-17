@@ -4,9 +4,8 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
-import { EthAddress, Signature } from "@katalyst/content/service/auth/Authenticator"
 import { buildEntityAndFile } from "./EntityTestFactory"
-import { CONTENT_KATALYST_VERSION } from "@katalyst/content/Environment"
+import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 
@@ -21,7 +20,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         deployedTimestamp: Date.now(),
         ethAddress: random.alphaNumeric(10),
         signature: random.alphaNumeric(10),
-        version: CONTENT_KATALYST_VERSION,
+        version: CURRENT_CONTENT_VERSION,
     }
 
     private readonly entities: Entity[]
@@ -47,7 +46,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(pointers)
     }
 
-    deployEntity(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<Timestamp> {
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<Timestamp> {
         return Promise.resolve(Date.now())
     }
 

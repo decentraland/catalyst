@@ -34,16 +34,6 @@ filegroup(
     )
 )
 
-nodejs_binary(
-    name = "upload",
-    data = [
-        "//content/src:content",
-        "@npm//@bazel/typescript",
-        "@npm//typescript",
-    ],
-    entry_point = "//content/src:entrypoints/upload.ts",
-)
-
 ts_library(
     name = "tests_unit",
     testonly = 1,

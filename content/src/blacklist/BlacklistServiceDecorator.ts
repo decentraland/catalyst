@@ -3,7 +3,6 @@ import { Entity, EntityType, EntityId, Pointer } from "../service/Entity";
 import { ContentFileHash } from "../service/Hashing";
 import { Blacklist } from "./Blacklist";
 import { buildPointerTarget, buildEntityTarget, BlacklistTarget, buildContentTarget, buildAddressTarget } from "./BlacklistTarget";
-import { EthAddress, Signature } from "../service/auth/Authenticator";
 import { AuditInfo } from "../service/audit/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
@@ -98,10 +97,10 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return this.service.getStatus()
     }
 
-    async deployEntity(files: ContentFile[], entityId: EntityId, ethAddress: EthAddress, signature: Signature): Promise<number> {
+    async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<number> {
         // No deployments from blacklisted eth addresses are allowed
-        if (await this.areBlacklisted(buildAddressTarget(ethAddress))) {
-            throw new Error(`Can't allow a deployment from address '${ethAddress}' since it was blacklisted.`);
+        if (await this.areBlacklisted(buildAddressTarget(auditInfo.ethAddress))) {
+            throw new Error(`Can't allow a deployment from address '${auditInfo.ethAddress}' since it was blacklisted.`);
         }
 
         // Find the entity file
@@ -123,7 +122,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         }
 
         // If all validations passed, then deploy the entity
-        return this.service.deployEntity(files, entityId, ethAddress, signature)
+        return this.service.deployEntity(files, entityId, auditInfo)
     }
 
     /** When an entity is blacklisted, we don't want to show its content and metadata  */

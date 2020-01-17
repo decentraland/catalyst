@@ -29,8 +29,7 @@ export const util = new (class {
   }
 
   generateToken(n: number) {
-    var chars =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     var token = "";
     for (var i = 0; i < n; i++) {
       token += chars[Math.floor(Math.random() * chars.length)];
@@ -39,26 +38,31 @@ export const util = new (class {
   }
 })();
 
-export const ConnectionSuffixes = {
-  reliable: "reliable",
-  unreliable: "unreliable"
-};
 
-export function connectionIdFor(
-  myId: string,
-  peerId: string,
-  sessionId: string,
-  reliable: boolean
-) {
-  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${sessionId}_${
-    reliable ? ConnectionSuffixes.reliable : ConnectionSuffixes.unreliable
-  }`;
-}
-
-export function isReliable(connectionId: string) {
-  return !connectionId.endsWith(ConnectionSuffixes.unreliable);
+export function connectionIdFor(myId: string, peerId: string, sessionId: string) {
+  return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${sessionId}`;
 }
 
 export function delay(time: number) {
   return new Promise(resolve => setTimeout(resolve, time));
+}
+
+export function shuffle<T>(array: T[]): T[] {
+  return array.sort(() => 0.5 - Math.random());
+}
+
+export function noReject<T>(promise: Promise<T>) {
+  return promise.then(value => ["fulfilled", value], error => ["rejected", error]);
+}
+
+/**
+ * Picks count random elements from the array and returns them and the remaining elements. If the array
+ * has less or equal elements than the amount required, then it returns a copy of the array.
+ */
+export function pickRandom<T>(array: T[], count: number): [T[], T[]] {
+  const shuffled = shuffle(array);
+
+  const selected = shuffled.splice(0, count);
+
+  return [selected, shuffled];
 }
