@@ -7,6 +7,7 @@ import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
+import * as path from "path";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -70,3 +71,51 @@ export function getPeerJsRealm(): IRealm {
 }
 
 app.use("/peerjs", peerServer);
+
+const monitorServer = MonitorServer();
+
+const patho = path.join(__dirname, "../../../../npm/node_modules")
+console.log(`patho ${patho}`)
+app.use("/static", express.static(patho));
+app.use("/monitor", monitorServer);
+
+function MonitorServer() {
+  return (req, res, next) => {
+    res.send(
+      `
+      <!DOCTYPE html>
+      <html lang="en"><head>
+      <meta charset="UTF-8">
+        <title>Decentraland Lighthouse</title>
+      </head>
+     
+      <body><div id="root">
+      <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/viz.js"></script>
+      <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/full.render.js"></script>
+      <script>
+        async function renderTopology() {
+          const viz = new Viz();
+
+          const response = await fetch("http://localhost:9000/layers/blue/topology?format=graphviz")
+          const topology = await response.text()
+          console.log('topology', topology)
+          
+          viz.renderSVGElement(topology)
+          .then(function(element) {
+            document.body.appendChild(element);
+          })
+          .catch(error => {
+            // Create a new Viz instance (@see Caveats page for more info)
+            viz = new Viz();
+        
+            // Possibly display the error
+            console.error(error);
+          });
+        }
+        renderTopology()
+      </script>
+      </div></body>
+      </html>`
+    );
+  };
+}
