@@ -43,6 +43,7 @@ export const enum Bean {
 export const enum EnvironmentConfig {
     SERVER_PORT,
     LOG_REQUESTS,
+    CONTENT_SERVER_ADDRESS,
 }
 
 export class EnvironmentBuilder {
@@ -64,8 +65,9 @@ export class EnvironmentBuilder {
     async build(): Promise<Environment> {
         const env = new Environment()
 
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT               , () => process.env.SERVER_PORT         ?? DEFAULT_SERVER_PORT)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS !== 'false')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT           , () => process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS          , () => process.env.LOG_REQUESTS !== 'false')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SERVER_ADDRESS, () => process.env.CONTENT_SERVER_ADDRESS)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
