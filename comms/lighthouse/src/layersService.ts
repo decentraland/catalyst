@@ -18,6 +18,7 @@ function newLayer(layerId: string) {
 //But I think it is too soon to extract a common abstraction, since they seem to be different entities
 //from the product side. In the future with more information this could be refactored
 export class LayersService {
+
   private layers: Record<string, Layer> = {};
   private serverPeers: Record<string, Peer> = {};
 
@@ -105,5 +106,9 @@ export class LayersService {
     Object.keys(this.layers).forEach(layerId => {
       this.removeUserFromLayer(layerId, userId);
     });
+  }
+
+  getLayerTopology(layerId: string) {
+    return this.layers[layerId].users.map(it => ({...it, connectedPeerIds: this.config.peersService!.getConnectedPeers(it)}))
   }
 }

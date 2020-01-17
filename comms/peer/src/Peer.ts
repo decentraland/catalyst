@@ -99,6 +99,7 @@ export class Peer implements IPeer {
       path: url.pathname,
       secure,
       token: this.config.token,
+      heartbeatExtras: () => this.buildTopologyInfo(),
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 
@@ -133,6 +134,10 @@ export class Peer implements IPeer {
         delete this.receivedMessages[id];
       }
     });
+  }
+
+  private buildTopologyInfo() {
+    return { connectedPeerIds: Object.keys(this.connectedPeers) };
   }
 
   private markReceived(message: Packet<any>) {
