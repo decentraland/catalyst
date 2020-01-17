@@ -154,7 +154,7 @@ export class Peer implements IPeer {
     return message.expireTime ?? this.config.messageExpirationTime!;
   }
 
-  awaitConnectionEstablished(timeoutMs: number = 10000) {
+  awaitConnectionEstablished(timeoutMs: number = 10000): Promise<void> {
     const result = future<void>();
 
     setTimeout(() => {
