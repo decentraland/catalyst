@@ -18,7 +18,8 @@ export enum PeerEventType {
   Connection = "connection",
   Call = "call",
   Disconnected = "disconnected",
-  Error = "error"
+  Error = "error",
+  Valid = "valid"
 }
 
 export enum PeerErrorType {

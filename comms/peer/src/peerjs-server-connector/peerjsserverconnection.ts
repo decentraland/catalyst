@@ -254,13 +254,14 @@ export class PeerJSServerConnection extends EventEmitter {
     switch (type) {
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
+        this._open = true;
         const { authHandler } = this._options;
         if (authHandler && payload) {
           authHandler(payload).then(response => this.sendValidation(response));
         }
         break;
       case ServerMessageType.ValidationOk: // The connection to the server is accepted.
-        this._open = true;
+        this.emit(PeerEventType.Valid, this.id);
         break;
       case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
         this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);

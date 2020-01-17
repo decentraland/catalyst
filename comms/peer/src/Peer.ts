@@ -1,10 +1,11 @@
 import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
-import { ServerMessageType, PeerHeaders } from "./peerjs-server-connector/enums";
+import { ServerMessageType, PeerHeaders, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import { isReliable, connectionIdFor, util } from "./peerjs-server-connector/util";
+import { isReliable, connectionIdFor, util, delay } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { PeerConnectionData, IPeer, Room } from "./types";
+import { future } from "fp-future";
 
 interface PacketData {
   hi: { room: { id: string; users: PeerConnectionData[] } };
@@ -89,6 +90,19 @@ export class Peer implements IPeer {
     this.connectionConfig = {
       ...(config.connectionConfig || {})
     };
+  }
+
+  awaitConnectionEstablished(timeoutMs: number = 10000) {
+    const result = future<void>();
+
+    setTimeout(() => {
+      result.isPending && result.reject(new Error(`[${this.nickname}] Awaiting connection to server ${this.lighthouseUrl} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    this.peerJsConnection.on(PeerEventType.Error, err => result.isPending && result.reject(err));
+    this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
+
+    return result;
   }
 
   log(...entries: any[]) {
