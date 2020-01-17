@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
-import { Environment, EnvironmentConfig } from '../../../Environment'
+import { Environment } from '../../../Environment'
 import { baseContentServerUrl } from '../../../EnvironmentUtils'
 
 
