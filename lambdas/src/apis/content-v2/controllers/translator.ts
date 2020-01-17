@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
+import { Environment, EnvironmentConfig } from '../../../Environment'
+import { baseContentServerUrl } from '../../../EnvironmentUtils'
 
 
-export function getScenes(req: Request, res: Response) {
+export function getScenes(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /scenes
     // Query String: ?x1={number}&x2={number}&y1={number}&y2={number}
@@ -17,7 +19,7 @@ export function getScenes(req: Request, res: Response) {
         }
     }
     const pointerParams = pointers.join('&')
-    const v3Url = `http://localhost:6969/entities/scenes?${pointerParams}`
+    const v3Url = baseContentServerUrl(env) + `/entities/scenes?${pointerParams}`
     fetch(v3Url)
     .then(response => response.json())
     .then((entities:V3ControllerEntity[]) => {
@@ -60,14 +62,14 @@ interface ScenesItem {
 }
 
 
-export function getInfo(req: Request, res: Response) {
+export function getInfo(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /parcel_info
     // Query String: ?cids={id[]}
     const cids:string[] = asArray(req.query.cids)
     const ids = cids.map(cid => `id=${cid}`)
     const idParams = ids.join('&')
-    const v3Url = `http://localhost:6969/entities/scenes?${idParams}`
+    const v3Url = baseContentServerUrl(env) + `/entities/scenes?${idParams}`
     fetch(v3Url)
     .then(response => response.json())
     .then((entities:V3ControllerEntity[]) => {
@@ -118,18 +120,20 @@ interface ParcelInfoItem {
 
 }
 
-export function getContents(req: Request, res: Response) {
+export async function getContents(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /contents/:cid
     const cid = req.params.cid;
 
-    const v3Url = `http://localhost:6969/contents/${cid}`
-    fetch(v3Url)
-    .then(response => response.buffer())
-    .then((data:Buffer) => {
+    const v3Url = baseContentServerUrl(env) + `/contents/${cid}`
+    const response = await fetch(v3Url)
+    if (response.ok) {
+        const data = await response.buffer()
         res.contentType('application/octet-stream')
         res.end(data, 'binary')
-    })
+    } else {
+        res.status(404).send()
+    }
 }
 
 function findSceneJsonId(entity:V3ControllerEntity): string {

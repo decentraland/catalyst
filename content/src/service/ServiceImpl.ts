@@ -79,9 +79,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate signature
         await validation.validateSignature(entityId, auditInfo.ethAddress, auditInfo.signature, validationContext)
 
-        // Validate request size
-        validation.validateRequestSize(files, validationContext)
-
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
 
@@ -90,14 +87,19 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
             // TODO: Validate that dcl performed the deployment
-            // TODO: Validate that there is no entity with a higher version
+
+            // Validate that there is no entity with a higher version
+            await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers), (type, id) => this.getAuditInfo(type, id), validationContext)
         } else {
+            // Validate request size
+            validation.validateRequestSize(files, validationContext)
+
             // Validate ethAddress access
             await validation.validateAccess(entity.type, entity.pointers, auditInfo.ethAddress, validationContext)
         }
 
         // Validate that the entity is "fresh"
-        await validation.validateFreshDeployment(entity, (type,pointers) => this.getEntitiesByPointers(type, pointers), validationContext)
+        await validation.validateFreshDeployment(entity, (type, pointers) => this.getEntitiesByPointers(type, pointers), validationContext)
 
         // Hash all files, and validate them
         const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)

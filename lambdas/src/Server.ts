@@ -6,6 +6,7 @@ import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
 import { initializeWearablesRoutes } from "./apis/wearables/routes";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
+import { initializeProfilesRoutes } from "./apis/profiles/routes";
 
 export class Server {
    private port: number;
@@ -25,13 +26,13 @@ export class Server {
       }
 
       // Base endpoints
-      this.registerRoute("/status"               , controller, controller.getStatus);
+      this.registerRoute("/status", controller, controller.getStatus);
 
       // Backwards compatibility for older Content API
-      this.app.use("/contentv2", initializeContentV2Routes(express.Router()))
+      this.app.use("/contentv2", initializeContentV2Routes(express.Router(), env))
 
       // Profile API implementation
-      this.app.use("/profile", initializeContentV2Routes(express.Router()))
+      this.app.use("/profile", initializeProfilesRoutes(express.Router(), env))
 
       // Wearables API implementation
       this.app.use("/wearables", initializeWearablesRoutes(express.Router()))
