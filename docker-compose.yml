@@ -20,7 +20,6 @@ services:
     working_dir: /app
     command: content
     environment:
-      - DAO_ADDRESS=dao:3000
       - METRICS=true
     ports:
       - "${CONTENT_SERVER_PORT}:6969"
