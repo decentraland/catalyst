@@ -79,9 +79,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate signature
         await validation.validateSignature(entityId, auditInfo.ethAddress, auditInfo.signature, validationContext)
 
-        // Validate request size
-        validation.validateRequestSize(files, validationContext)
-
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
 
@@ -94,6 +91,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             // Validate that there is no entity with a higher version
             await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers), (type, id) => this.getAuditInfo(type, id), validationContext)
         } else {
+            // Validate request size
+            validation.validateRequestSize(files, validationContext)
+
             // Validate ethAddress access
             await validation.validateAccess(entity.type, entity.pointers, auditInfo.ethAddress, validationContext)
         }
