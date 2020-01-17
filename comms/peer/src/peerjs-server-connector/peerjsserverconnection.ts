@@ -248,8 +248,6 @@ export class PeerJSServerConnection extends EventEmitter {
               return "";
             });
         }
-        break;
-      case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         this.emit(PeerEventType.Valid, this.id);
         break;
       case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct

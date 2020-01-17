@@ -56,11 +56,7 @@ type PeerConfig = {
   peerConnectTimeout?: number;
   oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
-<<<<<<< HEAD
-  authHandler: (msg: string) => Promise<string>;
-=======
   authHandler?: (msg: string) => Promise<string>;
->>>>>>> adding auth handling on peer and lighthouse
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
@@ -110,7 +106,6 @@ export class Peer implements IPeer {
       token: this.config.token,
       authHandler: config.authHandler,
       heartbeatExtras: () => this.buildTopologyInfo(),
-      authHandler: config.authHandler,
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 
@@ -147,19 +142,6 @@ export class Peer implements IPeer {
     });
   }
 
-  awaitConnectionEstablished(timeoutMs: number = 10000): Promise<void> {
-    const result = future<void>();
-
-    setTimeout(() => {
-      result.isPending && result.reject(new Error(`[${this.nickname}] Awaiting connection to server timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    this.peerJsConnection.on(PeerEventType.Error, err => result.isPending && result.reject(err));
-    this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
-
-    return result;
-  }
-
   private buildTopologyInfo() {
     return { connectedPeerIds: Object.keys(this.connectedPeers) };
   }
@@ -170,6 +152,19 @@ export class Peer implements IPeer {
 
   private getExpireTime(message: Packet<any>): number {
     return message.expireTime ?? this.config.messageExpirationTime!;
+  }
+
+  awaitConnectionEstablished(timeoutMs: number = 10000) {
+    const result = future<void>();
+
+    setTimeout(() => {
+      result.isPending && result.reject(new Error(`[${this.nickname}] Awaiting connection to server timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    this.peerJsConnection.on(PeerEventType.Error, err => result.isPending && result.reject(err));
+    this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
+
+    return result;
   }
 
   private log(...entries: any[]) {
