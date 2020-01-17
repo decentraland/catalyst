@@ -2,7 +2,7 @@ import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverco
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType, PeerHeaders, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import { isReliable, connectionIdFor, util, delay } from "./peerjs-server-connector/util";
+import { isReliable, connectionIdFor, util } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { PeerConnectionData, IPeer, Room } from "./types";
 import { future } from "fp-future";
@@ -92,7 +92,7 @@ export class Peer implements IPeer {
     };
   }
 
-  awaitConnectionEstablished(timeoutMs: number = 10000) {
+  awaitConnectionEstablished(timeoutMs: number = 10000): Promise<void> {
     const result = future<void>();
 
     setTimeout(() => {

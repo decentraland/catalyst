@@ -257,7 +257,12 @@ export class PeerJSServerConnection extends EventEmitter {
         this._open = true;
         const { authHandler } = this._options;
         if (authHandler && payload) {
-          authHandler(payload).then(response => this.sendValidation(response));
+          authHandler(payload)
+            .then(response => this.sendValidation(response))
+            .catch(e => {
+              logger.error("error while trying to handle auth message");
+              return "";
+            });
         }
         break;
       case ServerMessageType.ValidationOk: // The connection to the server is accepted.
