@@ -131,18 +131,20 @@ interface ParcelInfoItem {
 
 }
 
-export function getContents(env: Environment, req: Request, res: Response) {
+export async function getContents(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /contents/:cid
     const cid = req.params.cid;
 
     const v3Url = baseContentServerUrl(env) + `/contents/${cid}`
-    fetch(v3Url)
-    .then(response => response.buffer())
-    .then((data:Buffer) => {
+    const response = await fetch(v3Url)
+    if (response.ok) {
+        const data = await response.buffer()
         res.contentType('application/octet-stream')
         res.end(data, 'binary')
-    })
+    } else {
+        res.status(404).send()
+    }
 }
 
 function findSceneJsonId(entity:V3ControllerEntity): string {
