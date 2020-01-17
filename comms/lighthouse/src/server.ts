@@ -7,6 +7,8 @@ import { recover } from "web3x/utils";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
+import { IMessage } from "peerjs-server/dist/src/models/message";
+import { MessageType } from "peerjs-server/dist/src/enums";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -70,6 +72,13 @@ peerServer.on("disconnect", (client: any) => {
 });
 
 peerServer.on("error", console.log);
+
+//@ts-ignore
+peerServer.on("message", (client: IClient, message: IMessage) => {
+  if (message.type === MessageType.HEARTBEAT) {
+    peersService.updateTopology(client, message);
+  }
+});
 
 export function getPeerJsRealm(): IRealm {
   return peerServer.get("peerjs-realm");

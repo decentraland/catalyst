@@ -102,6 +102,7 @@ export class Peer implements IPeer {
       secure,
       token: this.config.token,
       authHandler: config.authHandler,
+      heartbeatExtras: () => this.buildTopologyInfo(),
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 
@@ -149,6 +150,10 @@ export class Peer implements IPeer {
     this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
 
     return result;
+  }
+
+  private buildTopologyInfo() {
+    return { connectedPeerIds: Object.keys(this.connectedPeers) };
   }
 
   private markReceived(message: Packet<any>) {
