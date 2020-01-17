@@ -96,7 +96,6 @@ export class Controller {
             }
         }
 
-
         let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
         if (files instanceof Array) {
             deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))

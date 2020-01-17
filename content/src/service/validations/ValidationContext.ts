@@ -5,6 +5,7 @@ export enum Validation {
     ACCESS,
     ENTITY_STRUCTURE,
     FRESHNESS,
+    LEGACY_ENTITY,
     CONTENT,
     ENTITY_HASH,
 }
