@@ -6,6 +6,7 @@ import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
 import { Authenticator, EthAddress, Signature } from "../auth/Authenticator";
 import { ValidationContext, Validation } from "./ValidationContext";
+import { AuditInfo } from "../audit/Audit";
 
 export class Validations {
 
@@ -86,6 +87,29 @@ export class Validations {
 
             // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
             this.requestIsRecent(entityToBeDeployed)
+        }
+    }
+
+    /** Validate that there is no entity with a higher version already deployed that the legacy entity is trying to overwrite */
+    async validateLegacyEntity(entityToBeDeployed: Entity,
+        auditInfoBeingDeployed: AuditInfo,
+        entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>,
+        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfo>,
+        validationContext: ValidationContext): Promise<void> {
+        if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
+            const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
+            const currentAuditInfos = await Promise.all(currentPointedEntities.map(entity => auditInfoFetcher(entity.type, entity.id)))
+            currentAuditInfos.forEach(currentAuditInfo => {
+                if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
+                    this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {
+                    if (!currentAuditInfo.originalMetadata) {
+                        this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                    } else if (currentAuditInfo.originalMetadata.originalVersion > auditInfoBeingDeployed.originalMetadata.originalVersion) {
+                        this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                    }
+                }
+            })
         }
     }
 
