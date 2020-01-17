@@ -103,6 +103,14 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.get("/layers/:layerId/topology", validateLayerExists, (req, res, next) => {
     const { layerId } = req.params;
     const topologyInfo = layersService.getLayerTopology(layerId);
-    res.send(topologyInfo);
+    if (req.query.format === "graphviz") {
+      res.send(`
+      strict digraph graphName {
+        concentrate=true
+        ${topologyInfo.map(it => (it.connectedPeerIds?.length ? it.connectedPeerIds.map(connected => `"${it.peerId}"->"${connected}"`).join("\n") : `"${it.peerId}"`)).join("\n")}
+      }`);
+    } else {
+      res.send(topologyInfo);
+    }
   });
 }
