@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import { Router, Request, Response } from 'express'
 import { getProfileById } from './controllers/profiles'
 import { Environment } from '../../Environment'
 
