@@ -12,4 +12,5 @@ export interface IPeer {
   joinRoom(room: string): Promise<void>;
   leaveRoom(roomId: string): Promise<void>;
   sendMessage(room: string, payload: any, type?: PeerMessageType): Promise<void>;
+  dispose(): Promise<void>;
 }
