@@ -32,7 +32,7 @@ export class Server {
       this.app.use("/contentv2", initializeContentV2Routes(express.Router(), env))
 
       // Profile API implementation
-      this.app.use("/profile", initializeProfilesRoutes(express.Router()))
+      this.app.use("/profile", initializeProfilesRoutes(express.Router(), env))
 
       // Wearables API implementation
       this.app.use("/wearables", initializeWearablesRoutes(express.Router()))
