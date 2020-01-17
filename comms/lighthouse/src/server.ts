@@ -138,7 +138,7 @@ const options: Partial<IConfig> = {
       return false;
     }
     try {
-      const address = recover(client?.getMsg(), message.payload);
+      const address = recover(client.getMsg(), message.payload);
       const result = address.toString().toLowerCase() === client.getId().toLowerCase();
 
       return result;
