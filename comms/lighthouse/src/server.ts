@@ -5,6 +5,7 @@ import { ExpressPeerServer, IRealm } from "peerjs-server";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
+import { Metrics } from '../../../commons/src/metrics';
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
@@ -13,12 +14,17 @@ const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
 const port = parseInt(process.env.PORT ?? "9000");
 const secure = parseBoolean(process.env.SECURE ?? "false");
+const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
 
 function parseBoolean(string: string) {
   return string.toLowerCase() === "true";
 }
 
 const app = express();
+
+if (enableMetrics) {
+  Metrics.initialize(app);
+}
 
 const peersService = new PeersService(getPeerJsRealm, secure, port);
 

@@ -1,20 +1,77 @@
-version: '3'
+version: "3"
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+
 services:
   comms-server:
-    image: katalyst:latest
+    image: decentraland/katalyst:latest
     working_dir: /app
     command: comms
+    environment:
+      - METRICS=true
     ports:
       - "9000:9000"
+    restart: always
+
   content-server:
-    image: katalyst:latest
+    image: decentraland/katalyst:latest
     working_dir: /app
     command: content
+    environment:
+      - METRICS=true
     ports:
       - "${CONTENT_SERVER_PORT}:6969"
+    restart: always
+
   lambdas:
-    image: katalyst:latest
+    image: decentraland/katalyst:latest
     working_dir: /app
     command: lambdas
     ports:
       - "7070:7070"
+
+  prometheus:
+    image: prom/prometheus:v2.15.2
+    volumes:
+      - prometheus_data:/prometheus
+      - ./local/prom/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - comms-server
+      - content-server
+      - cadvisor
+    restart: always
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - content-server
+      - comms-server
+      - lambdas
+
+  grafana:
+    image: grafana/grafana:6.5.2
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./local/grafana/provisioning:/etc/grafana/provisioning/
+    env_file:
+      - ./local/grafana/provisioning/config.monitoring
+    restart: always
