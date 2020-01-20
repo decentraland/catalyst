@@ -7,7 +7,6 @@ nodejs_binary(
     name = "server",
     data = [
         "//content/src:content",
-
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
@@ -43,7 +42,6 @@ ts_library(
     deps = [
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
-
         "@npm//@types/node",
         "@npm//@types/jasmine",
         "@npm//faker",
@@ -62,7 +60,6 @@ ts_library(
     deps = [
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
-
         "@npm//@types/node",
         "@npm//@types/jasmine",
         "@npm//node-fetch",

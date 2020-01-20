@@ -10,6 +10,7 @@ ts_library(
     srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/lighthouse",
     deps = [
+        "//commons",
         "//comms/peer",
         "@npm//@types",
         "@npm//cors",
