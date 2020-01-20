@@ -47,7 +47,7 @@ export class Blacklist {
     }
 
     private async validateBlocker(target: BlacklistTarget, metadata: BlacklistMetadata) {
-        if (!await Authenticator.validateSignature(this.buildMessageToSign(target, metadata), metadata.blocker, metadata.signature)) {
+        if (!await Authenticator.validateSignature(this.buildMessageToSign(target, metadata), [{signature: metadata.signature, signingAddress: metadata.blocker}] )) {
             throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }
     }
