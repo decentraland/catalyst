@@ -39,8 +39,7 @@ export class Audit implements AuditOverwrite, AuditManager {
 
 export type AuditInfo = {
     deployedTimestamp: Timestamp
-    ethAddress: EthAddress
-    signature: Signature,
+    signatures: SignatureItem[],
     version: EntityVersion,
     overwrittenBy?: EntityId,
     isBlacklisted?: boolean,
@@ -49,6 +48,11 @@ export type AuditInfo = {
         originalVersion: EntityVersion,
         data: any,
     },
+}
+
+export type SignatureItem = {
+    signature: Signature,
+    signningAddress: EthAddress,
 }
 
 export enum EntityVersion {

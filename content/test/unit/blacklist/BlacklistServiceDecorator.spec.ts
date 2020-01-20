@@ -16,7 +16,7 @@ describe("BlacklistServiceDecorator", () => {
     const content1 = buildRandomContent()
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
-    const auditInfo: AuditInfo = { ethAddress, signature: random.alphaNumeric(), version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
+    const auditInfo: AuditInfo = { signatures:[{signature: random.alphaNumeric(), signningAddress:ethAddress}], version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
 
     let entity1: Entity;
@@ -177,8 +177,8 @@ describe("BlacklistServiceDecorator", () => {
         const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id);
 
         expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
-        expect(auditInfo.ethAddress).toEqual(MockedMetaverseContentService.AUDIT_INFO.ethAddress)
-        expect(auditInfo.signature).toEqual(MockedMetaverseContentService.AUDIT_INFO.signature)
+        expect(auditInfo.signatures[0].signningAddress).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signningAddress)
+        expect(auditInfo.signatures[0].signature).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signature)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isBlacklisted).toBeTruthy()
         expect(auditInfo.blacklistedContent).toBeUndefined()
@@ -191,8 +191,8 @@ describe("BlacklistServiceDecorator", () => {
         const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id);
 
         expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
-        expect(auditInfo.ethAddress).toEqual(MockedMetaverseContentService.AUDIT_INFO.ethAddress)
-        expect(auditInfo.signature).toEqual(MockedMetaverseContentService.AUDIT_INFO.signature)
+        expect(auditInfo.signatures[0].signningAddress).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signningAddress)
+        expect(auditInfo.signatures[0].signature).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signature)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isBlacklisted).toBeUndefined()
         expect(auditInfo.blacklistedContent).toEqual([content1.hash])

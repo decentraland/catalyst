@@ -81,7 +81,7 @@ describe("Validations", function () {
 
     it(`when signature is invalid, it's reported`, async () => {
         let validation = new Validations(new MockedAccessChecker())
-        await validation.validateSignature("some-entity-id", "some-address", "some-signature", ValidationContext.ALL)
+        await validation.validateSignature("some-entity-id", [{signature:"some-signature", signningAddress:"some-address"}], ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe("The signature is invalid.")
@@ -93,11 +93,13 @@ describe("Validations", function () {
         let validation = new Validations(new MockedAccessChecker())
         await validation.validateSignature(
             entityId,
-            identity.address,
-            EthCrypto.sign(
-                identity.privateKey,
-                Authenticator.createEthereumMessageHash(entityId)
-            )
+            [{
+                signningAddress: identity.address,
+                signature: EthCrypto.sign(
+                    identity.privateKey,
+                    Authenticator.createEthereumMessageHash(entityId)
+                )
+            }]
         , ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(0)

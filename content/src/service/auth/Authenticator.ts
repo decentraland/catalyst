@@ -1,10 +1,18 @@
 import * as EthCrypto from "eth-crypto"
+import { SignatureItem } from "../audit/Audit";
 
 export class Authenticator {
 
     /** Validate that the signature belongs to the Ethereum address */
-    static async validateSignature(msg: string, ethAddress: EthAddress, signature: Signature): Promise<boolean> {
-        return Authenticator.isSignatureValid(msg, ethAddress, signature)
+    static async validateSignature(msg: string, signatures: SignatureItem[]): Promise<boolean> {
+        if (signatures.length==0) {
+            return true
+        }
+        const currentItem = signatures[signatures.length-1]
+        if (await Authenticator.isSignatureValid(msg, currentItem.signningAddress, currentItem.signature)) {
+            return await this.validateSignature(currentItem.signningAddress, signatures.slice(0, -1))
+        }
+        return false
     }
 
     private static async isSignatureValid(msg: string, ethAddress: string, signature: string): Promise<boolean> {
