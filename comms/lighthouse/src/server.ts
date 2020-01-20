@@ -10,7 +10,6 @@ import { LayersService } from "./layersService";
 import { Metrics } from "../../../commons/src/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
-import * as path from "path";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
