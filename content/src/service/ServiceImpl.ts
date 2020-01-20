@@ -77,7 +77,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         validation.validateEntityHash(entityId, entityFileHash, validationContext)
 
         // Validate signature
-        await validation.validateSignature(entityId, auditInfo.ethAddress, auditInfo.signature, validationContext)
+        await validation.validateSignature(entityId, auditInfo.signatures, validationContext)
 
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
@@ -95,7 +95,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             validation.validateRequestSize(files, validationContext)
 
             // Validate ethAddress access
-            await validation.validateAccess(entity.type, entity.pointers, auditInfo.ethAddress, validationContext)
+            const ownerAddress = auditInfo.signatures[0].signingAddress
+            await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
         }
 
         // Validate that the entity is "fresh"
@@ -127,8 +128,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Calculate timestamp (if necessary)
         const newAuditInfo: AuditInfo = {
             deployedTimestamp: auditInfo.deployedTimestamp == NO_TIMESTAMP ? Date.now() : auditInfo.deployedTimestamp,
-            ethAddress: auditInfo.ethAddress,
-            signature: auditInfo.signature,
+            signatures: auditInfo.signatures,
             version: auditInfo.version,
             originalMetadata: auditInfo.originalMetadata,
         }
@@ -144,7 +144,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
             // Record deployment for analytics
-            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, newAuditInfo.ethAddress)
+            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, newAuditInfo.signatures[0].signingAddress)
         }
 
         return newAuditInfo.deployedTimestamp
