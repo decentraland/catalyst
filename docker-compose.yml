@@ -3,6 +3,7 @@ version: "3"
 volumes:
   prometheus_data: {}
   grafana_data: {}
+  content_server_storage: {}
 
 services:
   comms-server:
@@ -21,9 +22,12 @@ services:
     command: content
     environment:
       - METRICS=true
+      - STORAGE_ROOT_FOLDER=/app/storage/content_server/
     ports:
-      - "${CONTENT_SERVER_PORT}:6969"
+      - "6969:6969"
     restart: always
+    volumes:
+      - content_server_storage:/app/storage/content_server/
 
   lambdas:
     image: decentraland/katalyst:latest
