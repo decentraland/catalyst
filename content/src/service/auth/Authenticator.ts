@@ -5,12 +5,19 @@ export class Authenticator {
 
     /** Validate that the signature belongs to the Ethereum address */
     static async validateSignature(msg: string, signatures: SignatureItem[]): Promise<boolean> {
+        if (!signatures || signatures.length < 1) {
+            return false
+        }
+        return this.internalValidateSignature(msg, signatures)
+    }
+
+    private static async internalValidateSignature(msg: string, signatures: SignatureItem[]): Promise<boolean> {
         if (signatures.length==0) {
             return true
         }
         const currentItem = signatures[signatures.length-1]
-        if (await Authenticator.isSignatureValid(msg, currentItem.signningAddress, currentItem.signature)) {
-            return await this.validateSignature(currentItem.signningAddress, signatures.slice(0, -1))
+        if (await Authenticator.isSignatureValid(msg, currentItem.signingAddress, currentItem.signature)) {
+            return await this.internalValidateSignature(currentItem.signingAddress, signatures.slice(0, -1))
         }
         return false
     }

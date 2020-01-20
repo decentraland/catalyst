@@ -95,7 +95,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             validation.validateRequestSize(files, validationContext)
 
             // Validate ethAddress access
-            const ownerAddress = auditInfo.signatures[0].signningAddress
+            const ownerAddress = auditInfo.signatures[0].signingAddress
             await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
         }
 
@@ -144,7 +144,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
             // Record deployment for analytics
-            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, newAuditInfo.signatures[0].signningAddress)
+            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, newAuditInfo.signatures[0].signingAddress)
         }
 
         return newAuditInfo.deployedTimestamp

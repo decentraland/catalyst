@@ -52,7 +52,7 @@ export type AuditInfo = {
 
 export type SignatureItem = {
     signature: Signature,
-    signningAddress: EthAddress,
+    signingAddress: EthAddress,
 }
 
 export enum EntityVersion {

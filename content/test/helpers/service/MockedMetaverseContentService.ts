@@ -18,7 +18,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     static readonly AUDIT_INFO: AuditInfo = {
         deployedTimestamp: Date.now(),
-        signatures: [{signature:random.alphaNumeric(10), signningAddress:random.alphaNumeric(10)}],
+        signatures: [{signature:random.alphaNumeric(10), signingAddress:random.alphaNumeric(10)}],
         version: CURRENT_CONTENT_VERSION,
     }
 

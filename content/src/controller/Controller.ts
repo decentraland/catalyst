@@ -87,7 +87,7 @@ export class Controller {
         const files                 = req.files
 
         const auditInfo: AuditInfo = {
-            signatures: [{signature:signature, signningAddress:ethAddress}],
+            signatures: [{signature:signature, signingAddress:ethAddress}],
             deployedTimestamp: NO_TIMESTAMP,
             version: CURRENT_CONTENT_VERSION,
             originalMetadata: {
@@ -120,7 +120,7 @@ export class Controller {
         if (!signatures && ethAddress && signature) {
             signatures = [{
                 signature: signature,
-                signningAddress: ethAddress,
+                signingAddress: ethAddress,
             }]
         }
         let deployFiles: Promise<ContentFile[]> = Promise.resolve([])

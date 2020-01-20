@@ -82,7 +82,7 @@ describe("Validations", function () {
 
     it(`when signature is invalid, it's reported`, async () => {
         let validation = new Validations(new MockedAccessChecker())
-        await validation.validateSignature("some-entity-id", [{signature:"some-signature", signningAddress:"some-address"}], ValidationContext.ALL)
+        await validation.validateSignature("some-entity-id", [{signature:"some-signature", signingAddress:"some-address"}], ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe("The signature is invalid.")
@@ -95,7 +95,7 @@ describe("Validations", function () {
         await validation.validateSignature(
             entityId,
             [{
-                signningAddress: identity.address,
+                signingAddress: identity.address,
                 signature: EthCrypto.sign(
                     identity.privateKey,
                     Authenticator.createEthereumMessageHash(entityId)
@@ -116,8 +116,8 @@ describe("Validations", function () {
         const secondSignature = createSignature(ephemeralIdentity, entityId)
 
         const signatures: SignatureItem[] = [
-            {signature: firstSignature , signningAddress: ownerIdentity.address},
-            {signature: secondSignature, signningAddress: ephemeralIdentity.address},
+            {signature: firstSignature , signingAddress: ownerIdentity.address},
+            {signature: secondSignature, signingAddress: ephemeralIdentity.address},
         ]
 
         let validation = new Validations(new MockedAccessChecker())
@@ -135,8 +135,8 @@ describe("Validations", function () {
         const secondSignature = createSignature(ephemeralIdentity, entityId)
 
         const signatures_second_is_invalid: SignatureItem[] = [
-            {signature: firstSignature , signningAddress: ownerIdentity.address},
-            {signature: 'invalid-signature', signningAddress: ephemeralIdentity.address},
+            {signature: firstSignature , signingAddress: ownerIdentity.address},
+            {signature: 'invalid-signature', signingAddress: ephemeralIdentity.address},
         ]
 
         let validation = new Validations(new MockedAccessChecker())
@@ -145,8 +145,8 @@ describe("Validations", function () {
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
 
         const signatures_first_is_invalid: SignatureItem[] = [
-            {signature: 'invalid-signature', signningAddress: ownerIdentity.address},
-            {signature: secondSignature, signningAddress: ephemeralIdentity.address},
+            {signature: 'invalid-signature', signingAddress: ownerIdentity.address},
+            {signature: secondSignature, signingAddress: ephemeralIdentity.address},
         ]
 
         validation = new Validations(new MockedAccessChecker())
@@ -154,6 +154,15 @@ describe("Validations", function () {
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
     })
+
+    it(`when no signature are provided, it's reported`, async () => {
+        const validation = new Validations(new MockedAccessChecker())
+        await validation.validateSignature("some-entity-id", [], ValidationContext.ALL)
+        expect(validation.getErrors().length).toBe(1)
+        expect(validation.getErrors()[0]).toBe('The signature is invalid.')
+
+    })
+
     type IdentityType = {
         privateKey: string,
         publicKey: string,

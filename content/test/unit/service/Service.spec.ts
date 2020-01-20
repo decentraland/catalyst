@@ -18,7 +18,7 @@ import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/Mocke
 describe("Service", function () {
 
     const serverName = "A server Name"
-    const auditInfo: AuditInfo = { signatures: [{signature: "signature", signningAddress: "ethAddress"}], version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
+    const auditInfo: AuditInfo = { signatures: [{signature: "signature", signingAddress: "ethAddress"}], version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
     let randomFile: { name: string, content: Buffer }
     let randomFileHash: ContentFileHash
