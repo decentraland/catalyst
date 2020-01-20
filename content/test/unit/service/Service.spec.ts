@@ -50,13 +50,13 @@ describe("Service", function () {
     })
 
     it(`When no file called '${ENTITY_FILE_NAME}' is uploaded, then an exception is thrown`, async () => {
-        assertPromiseRejectionIs(async () => await service.deployEntity([randomFile], randomFileHash, auditInfo),
+        assertPromiseRejectionIs(async () => await service.deployEntity([randomFile], randomFileHash, auditInfo, ''),
             `Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
     });
 
     it(`When two or more files called '${ENTITY_FILE_NAME}' are uploaded, then an exception is thrown`, async () => {
         const invalidEntityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
-        assertPromiseRejectionIs(async () => await service.deployEntity([entityFile, invalidEntityFile], "some-id", auditInfo),
+        assertPromiseRejectionIs(async () => await service.deployEntity([entityFile, invalidEntityFile], "some-id", auditInfo, ''),
             `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
     });
 
@@ -64,7 +64,7 @@ describe("Service", function () {
         const storageSpy = spyOn(storage, "store").and.callThrough()
         const historySpy = spyOn(historyManager, "newEntityDeployment")
 
-        const timestamp: Timestamp = await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
+        const timestamp: Timestamp = await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
         const deltaMilliseconds = Date.now() - timestamp
         expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
         expect(deltaMilliseconds).toBeLessThanOrEqual(10)
@@ -77,11 +77,11 @@ describe("Service", function () {
     });
 
     it(`When an entity is successfully deployed, then previous overlapping entities are deleted`, async () => {
-        await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
+        await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
 
         const [newEntity, newEntityFile] = await buildEntityAndFile(EntityType.SCENE, ["X2,Y2", "X3,Y3"], Date.now())
 
-        await service.deployEntity([newEntityFile], newEntity.id, auditInfo)
+        await service.deployEntity([newEntityFile], newEntity.id, auditInfo, '')
 
         expect(await service.getEntitiesByIds(EntityType.SCENE, [entity.id])).toEqual([entity])
         expect(await service.getEntitiesByPointers(EntityType.SCENE, ["X1,Y1", "X2,Y2"])).toEqual([newEntity])
@@ -93,7 +93,7 @@ describe("Service", function () {
         spyOn(storage, "exists").and.callFake((_: string, id: string) => Promise.resolve(id === randomFileHash))
         const storeSpy = spyOn(storage, "store")
 
-        await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
+        await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
 
         expect(storeSpy).toHaveBeenCalledWith("contents", entity.id, entityFile.content)
         expect(storeSpy).not.toHaveBeenCalledWith("contents", randomFileHash, randomFile.content)

@@ -11,9 +11,9 @@ export class ContentAnalyticsWithSegment implements ContentAnalytics {
         this.segmentClient = new Analytics(writeKey);
     }
 
-    recordDeployment(serverName: string, entity: Entity, ethAddress: EthAddress): void {
+    recordDeployment(serverName: string, entity: Entity, ethAddress: EthAddress, origin: string): void {
         this.segmentClient.track(
-            ContentAnalyticsWithSegment.createRecordEvent(serverName, entity, ethAddress),
+            ContentAnalyticsWithSegment.createRecordEvent(serverName, entity, ethAddress, origin),
             (err: Error, data: any) => {
                 if (err) {
                     console.log("There was an error while reporting metrics: ", err)
@@ -21,10 +21,10 @@ export class ContentAnalyticsWithSegment implements ContentAnalytics {
             })
 	}
 
-    static createRecordEvent(serverName: string, entity: Entity, ethAddress: EthAddress): any {
+    static createRecordEvent(serverName: string, entity: Entity, ethAddress: EthAddress, origin: string): any {
         return {
             userId: ethAddress,
-            event: 'Content Upload',
+            event: 'Katalyst Content Upload',
             properties: {
                 server: serverName,
                 type: entity.type,
@@ -34,7 +34,7 @@ export class ContentAnalyticsWithSegment implements ContentAnalytics {
                     path: entry[0],
                     cid: entry[1]
                 }}),
-                origin: "",
+                origin: origin,
             }
         }
 	}

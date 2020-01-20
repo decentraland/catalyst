@@ -4,8 +4,8 @@ import { ContentAnalyticsWithSegment } from "@katalyst/content/service/analytics
 
 export class MockedContentAnalytics implements ContentAnalytics {
 
-    recordDeployment(serverName: string, entity: Entity, ethAddress: string): void {
-        console.log("MockContentAnalytics: ", ContentAnalyticsWithSegment.createRecordEvent(serverName, entity, ethAddress))
+    recordDeployment(serverName: string, entity: Entity, ethAddress: string, origin: string): void {
+        console.log("MockContentAnalytics: ", ContentAnalyticsWithSegment.createRecordEvent(serverName, entity, ethAddress, origin))
     }
 
 }

@@ -220,14 +220,14 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith()
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        await decorator.deployEntity([entityFile1], entity1.id, auditInfo);
+        await decorator.deployEntity([entityFile1], entity1.id, auditInfo, '');
     })
 
     it(`When address is blacklisted, then it can't deploy entities`, async () => {
         const blacklist = blacklistWith(ethAddressTarget)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo),
+        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow a deployment from address '${ethAddress}' since it was blacklisted.`)
     })
 
@@ -235,7 +235,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(P1Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo),
+        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a blacklisted pointer.`)
     })
 
@@ -243,7 +243,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(content1Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo),
+        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a blacklisted content.`)
     })
 

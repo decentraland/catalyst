@@ -97,7 +97,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return this.service.getStatus()
     }
 
-    async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<number> {
+    async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<number> {
         // No deployments from blacklisted eth addresses are allowed
         const ownerAddress = auditInfo.signatures[0].signingAddress
         if (await this.areBlacklisted(buildAddressTarget(ownerAddress))) {
@@ -123,7 +123,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         }
 
         // If all validations passed, then deploy the entity
-        return this.service.deployEntity(files, entityId, auditInfo)
+        return this.service.deployEntity(files, entityId, auditInfo, origin)
     }
 
     /** When an entity is blacklisted, we don't want to show its content and metadata  */
