@@ -65,7 +65,7 @@ export class Peer implements IPeer {
 
   private knownPeers: Record<string, KnownPeerData> = {};
 
-  private receivedMessages: Record<string, {timestamp: number, expirationTime: number}> = {};
+  private receivedMessages: Record<string, { timestamp: number; expirationTime: number }> = {};
 
   private currentLayer?: string;
 
@@ -77,8 +77,7 @@ export class Peer implements IPeer {
   private updatingNetwork: boolean = false;
   private currentMessageId: number = 0;
 
-  //@ts-ignore we should use this for cleanup
-  private expireIntervalId: number;
+  private expireTimeoutId: any;
 
   constructor(lighthouseUrl: string, public nickname: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {}) {
     const url = new URL(lighthouseUrl);
@@ -100,6 +99,7 @@ export class Peer implements IPeer {
       path: url.pathname,
       secure,
       token: this.config.token,
+      heartbeatExtras: () => this.buildTopologyInfo(),
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 
@@ -109,9 +109,18 @@ export class Peer implements IPeer {
       ...(config.connectionConfig || {})
     };
 
-    this.expireIntervalId = window.setInterval(() => {
-      this.expireMessages();
-    }, 1000);
+    const scheduleExpiration = () =>
+      setTimeout(() => {
+        try {
+          this.expireMessages();
+        } catch (e) {
+          this.log("Couldn't expire messages", e);
+        } finally {
+          this.expireTimeoutId = scheduleExpiration();
+        }
+      }, 1000);
+
+    scheduleExpiration();
   }
 
   private expireMessages() {
@@ -127,12 +136,16 @@ export class Peer implements IPeer {
     });
   }
 
+  private buildTopologyInfo() {
+    return { connectedPeerIds: Object.keys(this.connectedPeers) };
+  }
+
   private markReceived(message: Packet<any>) {
-    this.receivedMessages[message.id] = { timestamp: message.timestamp, expirationTime: this.getExpireTime(message)}
+    this.receivedMessages[message.id] = { timestamp: new Date().getTime(), expirationTime: this.getExpireTime(message) };
   }
 
   private getExpireTime(message: Packet<any>): number {
-    return message.expireTime ?? this.config.messageExpirationTime!
+    return message.expireTime ?? this.config.messageExpirationTime!;
   }
 
   private log(...entries: any[]) {
@@ -359,8 +372,8 @@ export class Peer implements IPeer {
     const knownPeer = this.knownPeers[peerId];
     if (knownPeer) {
       knownPeer.timestamp = Math.max(knownPeer.timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
-      if(subtype) {
-        knownPeer.timestampByType[subtype] = Math.max(knownPeer.timestampByType[subtype] ?? Number.MIN_SAFE_INTEGER, timestamp)
+      if (subtype) {
+        knownPeer.timestampByType[subtype] = Math.max(knownPeer.timestampByType[subtype] ?? Number.MIN_SAFE_INTEGER, timestamp);
       }
     }
   }
@@ -397,15 +410,15 @@ export class Peer implements IPeer {
 
   private checkExpired(packet: Packet<"message">) {
     let discardedByOlderThan: boolean = false;
-    if(packet.discardOlderThan && packet.subtype) {
-      const timestamp = this.knownPeers[packet.src]?.timestampByType[packet.subtype]
+    if (packet.discardOlderThan && packet.subtype) {
+      const timestamp = this.knownPeers[packet.src]?.timestampByType[packet.subtype];
       discardedByOlderThan = timestamp - packet.timestamp > packet.discardOlderThan;
     }
 
     let discardedByExpireTime: boolean = false;
-    const expireTime = this.getExpireTime(packet) 
+    const expireTime = this.getExpireTime(packet);
 
-    if(this.knownPeers[packet.src]?.timestamp) {
+    if (this.knownPeers[packet.src]?.timestamp) {
       discardedByExpireTime = this.knownPeers[packet.src]?.timestamp - packet.timestamp > expireTime;
     }
 
@@ -639,5 +652,9 @@ export class Peer implements IPeer {
     }
 
     return isCrossOfferToBeDiscarded;
+  }
+
+  async dispose() {
+    clearTimeout(this.expireTimeoutId);
   }
 }

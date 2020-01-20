@@ -32,7 +32,8 @@ export class Socket extends EventEmitter {
     path: string,
     key: string,
     private readonly pingInterval: number = 5000,
-    private socketBuilder: SocketBuilder
+    private socketBuilder: SocketBuilder,
+    private heartbeatExtras?: () => object
   ) {
     super();
 
@@ -106,7 +107,7 @@ export class Socket extends EventEmitter {
       return;
     }
 
-    const message = JSON.stringify({ type: ServerMessageType.Heartbeat });
+    const message = JSON.stringify({ type: ServerMessageType.Heartbeat, payload: this.heartbeatExtras ? this.heartbeatExtras() : {} });
 
     this._socket!.send(message);
 

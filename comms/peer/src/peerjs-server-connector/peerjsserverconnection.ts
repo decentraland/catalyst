@@ -21,6 +21,7 @@ class PeerOptions {
   secure?: boolean;
   pingInterval?: number;
   socketBuilder?: SocketBuilder;
+  heartbeatExtras?: () => object;
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
@@ -182,7 +183,8 @@ export class PeerJSServerConnection extends EventEmitter {
       this._options.path!,
       this._options.key!,
       this._options.pingInterval,
-      this._options.socketBuilder!
+      this._options.socketBuilder!,
+      this._options.heartbeatExtras
     );
 
     this.socket.on(SocketEventType.Message, data => {

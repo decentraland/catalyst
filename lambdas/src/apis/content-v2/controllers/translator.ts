@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
-import { Environment, EnvironmentConfig } from '../../../Environment'
+import { Environment } from '../../../Environment'
+import { baseContentServerUrl } from '../../../EnvironmentUtils'
 
 
 export function getScenes(env: Environment, req: Request, res: Response) {
@@ -34,18 +35,6 @@ export function getScenes(env: Environment, req: Request, res: Response) {
         })
         res.send(scenesResult)
     })
-}
-
-function baseContentServerUrl(env: Environment): string {
-    let configAddress: string = env.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
-    configAddress = configAddress.toLocaleLowerCase()
-    if (!configAddress.startsWith('http')) {
-        configAddress = 'http://' + configAddress
-    }
-    while(configAddress.endsWith('/')) {
-        configAddress = configAddress.slice(0,-1)
-    }
-    return configAddress
 }
 
 interface V3ControllerEntity {
@@ -131,18 +120,20 @@ interface ParcelInfoItem {
 
 }
 
-export function getContents(env: Environment, req: Request, res: Response) {
+export async function getContents(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /contents/:cid
     const cid = req.params.cid;
 
     const v3Url = baseContentServerUrl(env) + `/contents/${cid}`
-    fetch(v3Url)
-    .then(response => response.buffer())
-    .then((data:Buffer) => {
+    const response = await fetch(v3Url)
+    if (response.ok) {
+        const data = await response.buffer()
         res.contentType('application/octet-stream')
         res.end(data, 'binary')
-    })
+    } else {
+        res.status(404).send()
+    }
 }
 
 function findSceneJsonId(entity:V3ControllerEntity): string {
