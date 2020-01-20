@@ -35,6 +35,7 @@ export type PeerData = {
   id: string;
   sessionId: string;
   initiator: boolean;
+  createTimestamp: number;
   connection: SimplePeer.Instance;
 };
 
@@ -53,6 +54,7 @@ type PeerConfig = {
   minConnections?: number;
   maxConnections?: number;
   peerConnectTimeout?: number;
+  oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
   authHandler: (msg: string) => Promise<string>;
 };
@@ -89,6 +91,7 @@ export class Peer implements IPeer {
     this.config.minConnections = this.config.minConnections ?? 5;
     this.config.maxConnections = this.config.maxConnections ?? 10;
     this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 2000;
+    this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
 
     const secure = url.protocol === "https:";
@@ -270,6 +273,8 @@ export class Peer implements IPeer {
 
     this.updatingNetwork = true;
     return new Promise(async (resolve, reject) => {
+      this.checkConnectionsSanity();
+
       let toConnectCount = this.config.minConnections! - this.connectedCount();
       let remaining = this.calculateConnectionCandidates();
       let toConnect = [] as string[];
@@ -293,6 +298,17 @@ export class Peer implements IPeer {
     });
   }
 
+  private checkConnectionsSanity() {
+    //Since there may be flows that leave connections that are actually lost, we check if relatively
+    //old connections are not connected and discard them.
+    Object.keys(this.connectedPeers).forEach(it => {
+      if (!this.isConnectedTo(it) && new Date().getTime() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
+        console.log(`The connection to ${it} is not in a sane state. Discarding it.`);
+        this.disconnectFrom(it);
+      }
+    });
+  }
+
   private connectedCount() {
     return Object.keys(this.connectedPeers).length;
   }
@@ -300,7 +316,11 @@ export class Peer implements IPeer {
   async connectTo(known: KnownPeerData) {
     const peer = this.createPeer(known.peerId, util.generateToken(16), true);
 
-    return this.beConnectedTo(peer.id, this.config.peerConnectTimeout);
+    return this.beConnectedTo(peer.id, this.config.peerConnectTimeout).catch(e => {
+      // If we timeout, we want to abort the connection
+      this.disconnectFrom(known.peerId);
+      throw e;
+    });
   }
 
   private assertPeerInLayer() {
@@ -426,7 +446,7 @@ export class Peer implements IPeer {
 
   private checkExpired(packet: Packet<"message">) {
     let discardedByOlderThan: boolean = false;
-    if (packet.discardOlderThan && packet.subtype) {
+    if (typeof packet.discardOlderThan !== "undefined" && packet.subtype) {
       const timestamp = this.knownPeers[packet.src]?.timestampByType[packet.subtype];
       discardedByOlderThan = timestamp - packet.timestamp > packet.discardOlderThan;
     }
@@ -558,6 +578,7 @@ export class Peer implements IPeer {
       id: peerId,
       sessionId,
       initiator,
+      createTimestamp: new Date().getTime(),
       connection: new SimplePeer({
         initiator,
         config: this.connectionConfig,
