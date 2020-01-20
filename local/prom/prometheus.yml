@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: 'content-server'
+    static_configs:
+         - targets: ['content-server:6969']
+  - job_name: 'comms-server'
+    static_configs:
+         - targets: ['comms-server:9000']
+  - job_name: 'cadvisor'
+    static_configs:
+         - targets: ['cadvisor:8080']
