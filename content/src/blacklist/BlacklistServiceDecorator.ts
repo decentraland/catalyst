@@ -99,8 +99,9 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
     async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<number> {
         // No deployments from blacklisted eth addresses are allowed
-        if (await this.areBlacklisted(buildAddressTarget(auditInfo.ethAddress))) {
-            throw new Error(`Can't allow a deployment from address '${auditInfo.ethAddress}' since it was blacklisted.`);
+        const ownerAddress = auditInfo.signatures[0].signingAddress
+        if (await this.areBlacklisted(buildAddressTarget(ownerAddress))) {
+            throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was blacklisted.`);
         }
 
         // Find the entity file
