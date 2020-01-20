@@ -117,7 +117,7 @@ function MonitorServer() {
         async function renderTopology() {
           const viz = new Viz();
 
-          const response = await fetch("http://localhost:9000/layers/blue/topology?format=graphviz")
+          const response = await fetch("/layers/blue/topology?format=graphviz")
           const topology = await response.text()
           console.log('topology', topology)
           
