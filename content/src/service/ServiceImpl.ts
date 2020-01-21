@@ -14,6 +14,7 @@ import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Au
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
+import { Authenticator } from "./auth/Authenticator";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -77,7 +78,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         validation.validateEntityHash(entityId, entityFileHash, validationContext)
 
         // Validate signature
-        await validation.validateSignature(entityId, auditInfo.signatures, validationContext)
+        await validation.validateSignature(entityId, auditInfo.authChain, validationContext)
 
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
@@ -85,6 +86,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate entity
         validation.validateEntity(entity, validationContext)
 
+        const ownerAddress = Authenticator.ownerAddress(auditInfo)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
             // TODO: Validate that dcl performed the deployment
 
@@ -95,7 +97,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             validation.validateRequestSize(files, validationContext)
 
             // Validate ethAddress access
-            const ownerAddress = auditInfo.signatures[0].signingAddress
             await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
         }
 
@@ -128,7 +129,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Calculate timestamp (if necessary)
         const newAuditInfo: AuditInfo = {
             deployedTimestamp: auditInfo.deployedTimestamp == NO_TIMESTAMP ? Date.now() : auditInfo.deployedTimestamp,
-            signatures: auditInfo.signatures,
+            authChain: auditInfo.authChain,
             version: auditInfo.version,
             originalMetadata: auditInfo.originalMetadata,
         }
@@ -144,7 +145,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
             // Record deployment for analytics
-            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, newAuditInfo.signatures[0].signingAddress)
+            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress)
         }
 
         return newAuditInfo.deployedTimestamp

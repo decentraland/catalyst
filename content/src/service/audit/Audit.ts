@@ -1,7 +1,7 @@
 import { Timestamp } from "../time/TimeSorting";
 import { EntityId } from "../Entity";
 import { AuditStorage } from "./AuditStorage";
-import { EthAddress, Signature } from "../auth/Authenticator";
+import { AuthChain } from "../auth/Authenticator";
 import { ContentFileHash } from "../Hashing";
 
 export const NO_TIMESTAMP: Timestamp = -1
@@ -38,24 +38,24 @@ export class Audit implements AuditOverwrite, AuditManager {
 }
 
 export type AuditInfo = {
-    deployedTimestamp: Timestamp
-    signatures: SignatureItem[],
     version: EntityVersion,
+    deployedTimestamp: Timestamp
+
+    authChain: AuthChain,
+
     overwrittenBy?: EntityId,
+
     isBlacklisted?: boolean,
     blacklistedContent?: ContentFileHash[],
+
     originalMetadata?: { // This is used for migrations
         originalVersion: EntityVersion,
         data: any,
     },
 }
 
-export type SignatureItem = {
-    signature: Signature,
-    signingAddress: EthAddress,
-}
-
 export enum EntityVersion {
     V2 = "v2",
     V3 = "v3"
 }
+
