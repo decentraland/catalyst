@@ -12,27 +12,47 @@ filegroup(
         include = [
             "static/**/*",
         ],
-        exclude = ["static/**/*.ts"],
+        exclude = [
+            "static/**/*.ts",
+            "static/**/*.tsx",
+        ],
     ),
 )
 
 ts_library(
     name = "monitor",
-    srcs = glob(["static/monitor/src/**/*.ts"]),
+    srcs = glob([
+        "static/monitor/src/**/*.ts",
+        "static/monitor/src/**/*.tsx",
+    ]),
     module_name = "lighthouse-monitor",
+    deps = [
+        "@npm//@types/react",
+        "@npm//@types/react-dom",
+        "@npm//react",
+        "@npm//react-dom",
+        "@npm//viz.js",
+    ],
 )
 
 # naming this rule this way to include the resulting bundle in the desired directory 'static/monitor/src' as said in https://github.com/bazelbuild/rules_nodejs/issues/1379
 rollup_bundle(
     name = "static/monitor/src/bundle",
+    srcs = [
+        "@npm//react",
+        "@npm//react-dom",
+    ],
     config_file = ":rollup.config.js",
-    entry_point = "static/monitor/src/monitor.ts",
+    entry_point = "static/monitor/src/monitor.tsx",
     format = "umd",
     output_dir = False,
     deps = [
         ":monitor",
+        "@npm//@rollup/plugin-commonjs",
+        "@npm//@rollup/plugin-node-resolve",
         "@npm//@wessberg/rollup-plugin-ts",
         "@npm//rollup-plugin-json",
+        "@npm//rollup-plugin-node-globals",
     ],
 )
 

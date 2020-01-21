@@ -1,3 +1,9 @@
+import React from "react";
+import ReactDOM from "react-dom";
+
+import Viz from "viz.js";
+import { Module, render } from "viz.js/full.render.js";
+
 async function renderTopology() {
   const layersResponse = await fetch("/layers");
   const layers = await layersResponse.json();
@@ -12,29 +18,8 @@ async function renderTopology() {
   }
 }
 
-async function checkEvent(precondition) {
-  const checkEvent = (resolve, reject, attempt) => {
-    if (precondition()) {
-      resolve();
-    } else if (attempt > 1000) {
-      reject(new Error("event not met"));
-    } else {
-      setTimeout(() => checkEvent(resolve, reject, attempt + 1), 100);
-    }
-  };
-
-  return new Promise((resolve, reject) => {
-    checkEvent(resolve, reject, 0);
-  });
-}
-
-declare const Viz: any;
-
 async function renderLayers(layers) {
-  await checkEvent(() => typeof Viz !== "undefined");
-  await checkEvent(() => typeof Viz.render !== "undefined");
-
-  let viz = new Viz();
+  let viz = new Viz({ Module, render });
 
   for (const layer of layers) {
     const h1 = document.createElement("h1");
@@ -64,3 +49,13 @@ async function renderLayers(layers) {
 }
 
 renderTopology();
+
+function App() {
+  return <p>react test</p>;
+}
+
+export default function renderApp() {
+  ReactDOM.render(<App />, document.getElementById("root"));
+}
+
+renderApp();
