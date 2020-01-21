@@ -12,13 +12,15 @@ import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertio
 import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
-import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion, AuditInfo, NO_TIMESTAMP, AuthLinkType } from "@katalyst/content/service/audit/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 
 describe("Service", function () {
 
     const serverName = "A server Name"
-    const auditInfo: AuditInfo = { signatures: [{signature: "signature", signingAddress: "ethAddress"}], version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
+    const auditInfo: AuditInfo = {
+        authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:"signature", payload:"ethAddress"}],
+        version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
     let randomFile: { name: string, content: Buffer }
     let randomFileHash: ContentFileHash

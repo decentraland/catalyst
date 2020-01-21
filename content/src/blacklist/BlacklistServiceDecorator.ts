@@ -3,7 +3,7 @@ import { Entity, EntityType, EntityId, Pointer } from "../service/Entity";
 import { ContentFileHash } from "../service/Hashing";
 import { Blacklist } from "./Blacklist";
 import { buildPointerTarget, buildEntityTarget, BlacklistTarget, buildContentTarget, buildAddressTarget } from "./BlacklistTarget";
-import { AuditInfo } from "../service/audit/Audit";
+import { AuditInfo, ownerAddress } from "../service/audit/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
 
@@ -99,9 +99,9 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
     async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<number> {
         // No deployments from blacklisted eth addresses are allowed
-        const ownerAddress = auditInfo.signatures[0].signingAddress
-        if (await this.areBlacklisted(buildAddressTarget(ownerAddress))) {
-            throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was blacklisted.`);
+        const deployOwnerAddress = ownerAddress(auditInfo)
+        if (await this.areBlacklisted(buildAddressTarget(deployOwnerAddress))) {
+            throw new Error(`Can't allow a deployment from address '${deployOwnerAddress}' since it was blacklisted.`);
         }
 
         // Find the entity file

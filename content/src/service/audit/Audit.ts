@@ -38,24 +38,74 @@ export class Audit implements AuditOverwrite, AuditManager {
 }
 
 export type AuditInfo = {
-    deployedTimestamp: Timestamp
-    signatures: SignatureItem[],
     version: EntityVersion,
+    deployedTimestamp: Timestamp
+
+    authChain: AuthChain,
+
     overwrittenBy?: EntityId,
+
     isBlacklisted?: boolean,
     blacklistedContent?: ContentFileHash[],
+
     originalMetadata?: { // This is used for migrations
         originalVersion: EntityVersion,
         data: any,
     },
 }
 
-export type SignatureItem = {
+export type AuthChain = AuthLink[];
+
+export type AuthLink = {
+    type: AuthLinkType,
+    payload: string,
     signature: Signature,
-    signingAddress: EthAddress,
+}
+
+export enum AuthLinkType {
+    SIGNER = 'SIGNER',
+    ECDSA_EPHEMERAL = 'ECDSA_EPHEMERAL',
+    ECDSA_SIGNED_ENTITY = 'ECDSA_SIGNED_ENTITY',
 }
 
 export enum EntityVersion {
     V2 = "v2",
     V3 = "v3"
 }
+
+export function ownerAddress(auditInfo: AuditInfo): EthAddress {
+    if (auditInfo.authChain.length > 0) {
+        if (auditInfo.authChain[0].type === AuthLinkType.SIGNER) {
+            return auditInfo.authChain[0].payload;
+        }
+    }
+    return 'Invalid-Owner-Address'
+}
+
+export function createSimpleAuthChain(finalPayload: string, ownerAddress: EthAddress, signature: Signature): AuthChain {
+    return [
+        {
+            type: AuthLinkType.SIGNER,
+            payload: ownerAddress,
+            signature: '',
+        },{
+            type: AuthLinkType.ECDSA_SIGNED_ENTITY,
+            payload: finalPayload,
+            signature: signature,
+        }
+    ]
+}
+
+// export function createEphemeralAuthChain(finalPayload: string, ownerAddress: EthAddress, signature: Signature): AuthChain {
+//     return [
+//         {
+//             type: AuthLinkType.SIGNER,
+//             payload: ownerAddress,
+//             signature: '',
+//         },{
+//             type: AuthLinkType.ECDSA_SIGNED_ENTITY,
+//             payload: finalPayload,
+//             signature: signature,
+//         }
+//     ]
+// }

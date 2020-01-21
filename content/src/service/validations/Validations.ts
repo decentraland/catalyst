@@ -6,7 +6,7 @@ import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
 import { Authenticator, EthAddress } from "../auth/Authenticator";
 import { ValidationContext, Validation } from "./ValidationContext";
-import { AuditInfo, SignatureItem } from "../audit/Audit";
+import { AuditInfo, AuthChain } from "../audit/Audit";
 
 export class Validations {
 
@@ -27,9 +27,9 @@ export class Validations {
     }
 
     /** Validate that the signature belongs to the Ethereum address */
-    async validateSignature(entityId: EntityId, signatures: SignatureItem[], validationContext: ValidationContext): Promise<void> {
+    async validateSignature(entityId: EntityId, authChain: AuthChain, validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.SIGNATURE)) {
-            if(!await Authenticator.validateSignature(entityId, signatures)) {
+            if(!await Authenticator.validateSignature(entityId, authChain)) {
                 this.errors.push("The signature is invalid.")
             }
         }

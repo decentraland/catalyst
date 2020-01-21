@@ -7,7 +7,7 @@ import { ContentFile } from "@katalyst/content/service/Service";
 import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
-import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion, AuditInfo, NO_TIMESTAMP, createSimpleAuthChain } from "@katalyst/content/service/audit/Audit";
 
 describe("BlacklistServiceDecorator", () => {
 
@@ -16,7 +16,9 @@ describe("BlacklistServiceDecorator", () => {
     const content1 = buildRandomContent()
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
-    const auditInfo: AuditInfo = { signatures:[{signature: random.alphaNumeric(), signingAddress:ethAddress}], version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
+    const auditInfo: AuditInfo = {
+        authChain: createSimpleAuthChain('', ethAddress, random.alphaNumeric(10)),
+        version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
 
     let entity1: Entity;
@@ -177,8 +179,7 @@ describe("BlacklistServiceDecorator", () => {
         const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id);
 
         expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
-        expect(auditInfo.signatures[0].signingAddress).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signingAddress)
-        expect(auditInfo.signatures[0].signature).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signature)
+        expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isBlacklisted).toBeTruthy()
         expect(auditInfo.blacklistedContent).toBeUndefined()
@@ -191,8 +192,7 @@ describe("BlacklistServiceDecorator", () => {
         const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id);
 
         expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
-        expect(auditInfo.signatures[0].signingAddress).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signingAddress)
-        expect(auditInfo.signatures[0].signature).toEqual(MockedMetaverseContentService.AUDIT_INFO.signatures[0].signature)
+        expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isBlacklisted).toBeUndefined()
         expect(auditInfo.blacklistedContent).toEqual([content1.hash])

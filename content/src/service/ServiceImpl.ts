@@ -10,7 +10,7 @@ import { PointerManager } from "./pointers/PointerManager";
 import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
-import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Audit";
+import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion, ownerAddress } from "./audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
@@ -77,7 +77,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         validation.validateEntityHash(entityId, entityFileHash, validationContext)
 
         // Validate signature
-        await validation.validateSignature(entityId, auditInfo.signatures, validationContext)
+        await validation.validateSignature(entityId, auditInfo.authChain, validationContext)
 
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
@@ -85,6 +85,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate entity
         validation.validateEntity(entity, validationContext)
 
+        const deploymentOwnerAddress = ownerAddress(auditInfo)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
             // TODO: Validate that dcl performed the deployment
 
@@ -95,8 +96,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             validation.validateRequestSize(files, validationContext)
 
             // Validate ethAddress access
-            const ownerAddress = auditInfo.signatures[0].signingAddress
-            await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
+            await validation.validateAccess(entity.type, entity.pointers, deploymentOwnerAddress, validationContext)
         }
 
         // Validate that the entity is "fresh"
@@ -128,7 +128,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Calculate timestamp (if necessary)
         const newAuditInfo: AuditInfo = {
             deployedTimestamp: auditInfo.deployedTimestamp == NO_TIMESTAMP ? Date.now() : auditInfo.deployedTimestamp,
-            signatures: auditInfo.signatures,
+            authChain: auditInfo.authChain,
             version: auditInfo.version,
             originalMetadata: auditInfo.originalMetadata,
         }
@@ -144,7 +144,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
             // Record deployment for analytics
-            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, newAuditInfo.signatures[0].signingAddress)
+            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, deploymentOwnerAddress)
         }
 
         return newAuditInfo.deployedTimestamp

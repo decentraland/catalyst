@@ -4,7 +4,7 @@ import { Entity, EntityType } from "../../../../src/service/Entity"
 import { Authenticator } from "../../../../src/service/auth/Authenticator"
 import { MockedAccessChecker } from "../../../helpers/service/access/MockedAccessChecker"
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext"
-import { SignatureItem } from "@katalyst/content/service/audit/Audit"
+import { createSimpleAuthChain, AuthChain, AuthLinkType } from "@katalyst/content/service/audit/Audit"
 
 describe("Validations", function () {
 
@@ -82,7 +82,7 @@ describe("Validations", function () {
 
     it(`when signature is invalid, it's reported`, async () => {
         let validation = new Validations(new MockedAccessChecker())
-        await validation.validateSignature("some-entity-id", [{signature:"some-signature", signingAddress:"some-address"}], ValidationContext.ALL)
+        await validation.validateSignature("some-entity-id", createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe("The signature is invalid.")
@@ -94,13 +94,10 @@ describe("Validations", function () {
         let validation = new Validations(new MockedAccessChecker())
         await validation.validateSignature(
             entityId,
-            [{
-                signingAddress: identity.address,
-                signature: EthCrypto.sign(
-                    identity.privateKey,
-                    Authenticator.createEthereumMessageHash(entityId)
-                )
-            }]
+            createSimpleAuthChain(entityId, identity.address, EthCrypto.sign(
+                identity.privateKey,
+                Authenticator.createEthereumMessageHash(entityId)
+            ))
         , ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(0)
@@ -112,16 +109,21 @@ describe("Validations", function () {
         const ownerIdentity = EthCrypto.createIdentity();
         const ephemeralIdentity = EthCrypto.createIdentity();
 
-        const firstSignature  = createSignature(ownerIdentity    , ephemeralIdentity.address)
+        let expiration = new Date()
+        expiration.setMinutes(expiration.getMinutes()+30)
+
+        const ephemeralMessage = `Decentraland Login\nEphemeral address: ${ephemeralIdentity.address}\nExpiration: ${expiration}`
+        const firstSignature  = createSignature(ownerIdentity    , ephemeralMessage)
         const secondSignature = createSignature(ephemeralIdentity, entityId)
 
-        const signatures: SignatureItem[] = [
-            {signature: firstSignature , signingAddress: ownerIdentity.address},
-            {signature: secondSignature, signingAddress: ephemeralIdentity.address},
+        const authChain: AuthChain = [
+            {type: AuthLinkType.SIGNER             , payload: ownerIdentity.address, signature: ''},
+            {type: AuthLinkType.ECDSA_EPHEMERAL    , payload: ephemeralMessage     , signature: firstSignature},
+            {type: AuthLinkType.ECDSA_SIGNED_ENTITY, payload: entityId             , signature: secondSignature},
         ]
 
         let validation = new Validations(new MockedAccessChecker())
-        await validation.validateSignature(entityId, signatures, ValidationContext.ALL)
+        await validation.validateSignature(entityId, authChain, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(0)
     })
 
@@ -131,12 +133,17 @@ describe("Validations", function () {
         const ownerIdentity = EthCrypto.createIdentity();
         const ephemeralIdentity = EthCrypto.createIdentity();
 
-        const firstSignature  = createSignature(ownerIdentity    , ephemeralIdentity.address)
+        let expiration = new Date()
+        expiration.setMinutes(expiration.getMinutes()+30)
+
+        const ephemeralMessage = `Decentraland Login\nEphemeral address: ${ephemeralIdentity.address}\nExpiration: ${expiration}`
+        const firstSignature  = createSignature(ownerIdentity    , ephemeralMessage)
         const secondSignature = createSignature(ephemeralIdentity, entityId)
 
-        const signatures_second_is_invalid: SignatureItem[] = [
-            {signature: firstSignature , signingAddress: ownerIdentity.address},
-            {signature: 'invalid-signature', signingAddress: ephemeralIdentity.address},
+        const signatures_second_is_invalid: AuthChain = [
+            {type: AuthLinkType.SIGNER             , payload: ownerIdentity.address, signature: ''},
+            {type: AuthLinkType.ECDSA_EPHEMERAL    , payload: ephemeralMessage     , signature: firstSignature},
+            {type: AuthLinkType.ECDSA_SIGNED_ENTITY, payload: entityId             , signature: 'invalid-signature'},
         ]
 
         let validation = new Validations(new MockedAccessChecker())
@@ -144,9 +151,10 @@ describe("Validations", function () {
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
 
-        const signatures_first_is_invalid: SignatureItem[] = [
-            {signature: 'invalid-signature', signingAddress: ownerIdentity.address},
-            {signature: secondSignature, signingAddress: ephemeralIdentity.address},
+        const signatures_first_is_invalid: AuthChain = [
+            {type: AuthLinkType.SIGNER             , payload: ownerIdentity.address, signature: ''},
+            {type: AuthLinkType.ECDSA_EPHEMERAL    , payload: ephemeralMessage     , signature: 'invalid-signature'},
+            {type: AuthLinkType.ECDSA_SIGNED_ENTITY, payload: entityId             , signature: secondSignature},
         ]
 
         validation = new Validations(new MockedAccessChecker())
@@ -157,7 +165,20 @@ describe("Validations", function () {
 
     it(`when no signature are provided, it's reported`, async () => {
         const validation = new Validations(new MockedAccessChecker())
-        await validation.validateSignature("some-entity-id", [], ValidationContext.ALL)
+        const invalidAuthChain: AuthChain = []
+        await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL)
+        expect(validation.getErrors().length).toBe(1)
+        expect(validation.getErrors()[0]).toBe('The signature is invalid.')
+
+    })
+
+    it(`when only signer link is provided, it's reported`, async () => {
+        const validation = new Validations(new MockedAccessChecker())
+        const ownerIdentity = EthCrypto.createIdentity();
+        const invalidAuthChain: AuthChain = [
+            {type: AuthLinkType.SIGNER, payload: ownerIdentity.address, signature: ''},
+        ]
+        await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
 
