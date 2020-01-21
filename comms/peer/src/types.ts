@@ -5,7 +5,7 @@ export type KnownPeerData = { userId: string; peerId: string, rooms: string[], t
 export type MinPeerData = { userId: string; peerId: string, rooms?: string[] }
 
 export interface IPeer {
-  nickname: string;
+  peerId: string;
   currentRooms: Room[];
   callback: (sender: string, room: string, payload: any) => void;
   setLayer(layer: string): Promise<void>;

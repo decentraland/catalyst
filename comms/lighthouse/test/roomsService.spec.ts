@@ -22,7 +22,7 @@ describe("Rooms service", () => {
 
   beforeEach(() => {
     peerLibrary = {
-      nickname: lighthouseId,
+      peerId: lighthouseId,
       joinRoom(roomId: string) {
         roomsService.addUserToRoom(roomId, lighthousePeerData);
       },
