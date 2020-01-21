@@ -5,10 +5,10 @@ import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
-import { EthAddress, Signature } from "../service/auth/Authenticator";
+import { EthAddress, Signature, Authenticator, AuthLink } from "../service/auth/Authenticator";
 import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
-import { NO_TIMESTAMP, EntityVersion, AuditInfo, SignatureItem } from "../service/audit/Audit";
+import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 
 export class Controller {
@@ -87,7 +87,7 @@ export class Controller {
         const files                 = req.files
 
         const auditInfo: AuditInfo = {
-            signatures: [{signature:signature, signingAddress:ethAddress}],
+            authChain: Authenticator.createSimpleAuthChain(entityId, ethAddress, signature),
             deployedTimestamp: NO_TIMESTAMP,
             version: CURRENT_CONTENT_VERSION,
             originalMetadata: {
@@ -111,24 +111,21 @@ export class Controller {
         // Method: POST
         // Path: /entities
         // Body: JSON with entityId,ethAddress,signature; and a set of files
-        const entityId:EntityId           = req.body.entityId;
-        let   signatures: SignatureItem[] = req.body.signatures;
-        const ethAddress:EthAddress       = req.body.ethAddress;
-        const signature:Signature         = req.body.signature;
-        const files                       = req.files
+        const entityId:EntityId     = req.body.entityId;
+        let   authChain: AuthLink[] = req.body.authChain;
+        const ethAddress:EthAddress = req.body.ethAddress;
+        const signature:Signature   = req.body.signature;
+        const files                 = req.files
 
-        if (!signatures && ethAddress && signature) {
-            signatures = [{
-                signature: signature,
-                signingAddress: ethAddress,
-            }]
+        if (!authChain && ethAddress && signature) {
+            authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
         }
         let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
         if (files instanceof Array) {
             deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
         deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, { signatures, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}))
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}))
         .then(t => res.send({
             creationTimestamp: t
         }))
