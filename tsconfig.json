@@ -36,5 +36,5 @@
         "decentraland-katalyst-contracts/*": ["contracts/*"],
     },
   },
-  "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
+  "exclude": ["node_modules", "bazel-*", "**/node_modules/*", "dist"]
 }
