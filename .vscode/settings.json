@@ -3,7 +3,7 @@
         "bazel*": true,
         "node_modules": true,
         "data*": true,
-        "dist": true
+        "dist/**/*": true
     },
     "typescript.tsdk": "node_modules/typescript/lib",
     "cSpell.words": [
