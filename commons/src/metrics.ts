@@ -54,7 +54,3 @@ export class Metrics {
         app.listen(port);
     };
 }
-
-
-'use strict';
-
