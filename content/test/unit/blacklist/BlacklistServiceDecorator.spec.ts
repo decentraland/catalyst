@@ -7,7 +7,8 @@ import { ContentFile } from "@katalyst/content/service/Service";
 import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
-import { EntityVersion, AuditInfo, NO_TIMESTAMP, createSimpleAuthChain } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
+import { Authenticator } from "@katalyst/content/service/auth/Authenticator";
 
 describe("BlacklistServiceDecorator", () => {
 
@@ -17,7 +18,7 @@ describe("BlacklistServiceDecorator", () => {
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
     const auditInfo: AuditInfo = {
-        authChain: createSimpleAuthChain('', ethAddress, random.alphaNumeric(10)),
+        authChain: Authenticator.createSimpleAuthChain('', ethAddress, random.alphaNumeric(10)),
         version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
 

@@ -1,5 +1,5 @@
 import * as EthCrypto from "eth-crypto"
-import { AuthChain, AuthLink, AuthLinkType } from "../audit/Audit";
+import { AuditInfo } from "../audit/Audit";
 
 export class Authenticator {
 
@@ -21,6 +21,50 @@ export class Authenticator {
         let msgWithPrefix: string = `\x19Ethereum Signed Message:\n${msg.length}${msg}`
         const msgHash = EthCrypto.hash.keccak256(msgWithPrefix);
         return msgHash
+    }
+
+    static createSimpleAuthChain(finalPayload: string, ownerAddress: EthAddress, signature: Signature): AuthChain {
+        return [
+            {
+                type: AuthLinkType.SIGNER,
+                payload: ownerAddress,
+                signature: '',
+            },{
+                type: AuthLinkType.ECDSA_SIGNED_ENTITY,
+                payload: finalPayload,
+                signature: signature,
+            }
+        ]
+    }
+
+    static createAuthChain(ownerIdentity: IdentityType, ephemeralIdentity: IdentityType, ephemeralMinutesDuration: number, entityId: string): AuthChain {
+        let expiration = new Date()
+        expiration.setMinutes(expiration.getMinutes() + ephemeralMinutesDuration)
+
+        const ephemeralMessage = `Decentraland Login\nEphemeral address: ${ephemeralIdentity.address}\nExpiration: ${expiration}`
+        const firstSignature  = Authenticator.createSignature(ownerIdentity    , ephemeralMessage)
+        const secondSignature = Authenticator.createSignature(ephemeralIdentity, entityId)
+
+        const authChain: AuthChain = [
+            {type: AuthLinkType.SIGNER             , payload: ownerIdentity.address, signature: ''},
+            {type: AuthLinkType.ECDSA_EPHEMERAL    , payload: ephemeralMessage     , signature: firstSignature},
+            {type: AuthLinkType.ECDSA_SIGNED_ENTITY, payload: entityId             , signature: secondSignature},
+        ]
+
+        return authChain
+    }
+
+    private static createSignature(identity: IdentityType, message: string) {
+        return EthCrypto.sign(identity.privateKey, Authenticator.createEthereumMessageHash(message))
+    }
+
+    static ownerAddress(auditInfo: AuditInfo): EthAddress {
+        if (auditInfo.authChain.length > 0) {
+            if (auditInfo.authChain[0].type === AuthLinkType.SIGNER) {
+                return auditInfo.authChain[0].payload;
+            }
+        }
+        return 'Invalid-Owner-Address'
     }
 }
 
@@ -78,3 +122,23 @@ function getValidatorByType(type: AuthLinkType): ValidatorType {
 
 export type Signature = string
 export type EthAddress = string
+
+export type IdentityType = {
+    privateKey: string,
+    publicKey: string,
+    address: string
+}
+
+export type AuthChain = AuthLink[];
+
+export type AuthLink = {
+    type: AuthLinkType,
+    payload: string,
+    signature: Signature,
+}
+
+export enum AuthLinkType {
+    SIGNER = 'SIGNER',
+    ECDSA_EPHEMERAL = 'ECDSA_EPHEMERAL',
+    ECDSA_SIGNED_ENTITY = 'ECDSA_SIGNED_ENTITY',
+}

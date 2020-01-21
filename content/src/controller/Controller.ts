@@ -5,10 +5,10 @@ import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
-import { EthAddress, Signature } from "../service/auth/Authenticator";
+import { EthAddress, Signature, Authenticator, AuthLink } from "../service/auth/Authenticator";
 import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
-import { NO_TIMESTAMP, EntityVersion, AuditInfo, AuthLink, createSimpleAuthChain } from "../service/audit/Audit";
+import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 
 export class Controller {
@@ -87,7 +87,7 @@ export class Controller {
         const files                 = req.files
 
         const auditInfo: AuditInfo = {
-            authChain: createSimpleAuthChain(entityId, ethAddress, signature),
+            authChain: Authenticator.createSimpleAuthChain(entityId, ethAddress, signature),
             deployedTimestamp: NO_TIMESTAMP,
             version: CURRENT_CONTENT_VERSION,
             originalMetadata: {
@@ -118,7 +118,7 @@ export class Controller {
         const files                 = req.files
 
         if (!authChain && ethAddress && signature) {
-            authChain = createSimpleAuthChain(entityId, ethAddress, signature)
+            authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
         }
         let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
         if (files instanceof Array) {

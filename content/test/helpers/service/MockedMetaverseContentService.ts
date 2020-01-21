@@ -3,9 +3,10 @@ import { MetaverseContentService, ContentFile, ServerStatus } from "@katalyst/co
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { AuditInfo, AuthLinkType } from "@katalyst/content/service/audit/Audit"
+import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
+import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 

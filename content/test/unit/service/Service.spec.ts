@@ -12,8 +12,9 @@ import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertio
 import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
-import { EntityVersion, AuditInfo, NO_TIMESTAMP, AuthLinkType } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
+import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator";
 
 describe("Service", function () {
 

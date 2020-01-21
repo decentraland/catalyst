@@ -10,10 +10,11 @@ import { PointerManager } from "./pointers/PointerManager";
 import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
-import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion, ownerAddress } from "./audit/Audit";
+import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
+import { Authenticator } from "./auth/Authenticator";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -85,7 +86,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate entity
         validation.validateEntity(entity, validationContext)
 
-        const deploymentOwnerAddress = ownerAddress(auditInfo)
+        const ownerAddress = Authenticator.ownerAddress(auditInfo)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
             // TODO: Validate that dcl performed the deployment
 
@@ -96,7 +97,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             validation.validateRequestSize(files, validationContext)
 
             // Validate ethAddress access
-            await validation.validateAccess(entity.type, entity.pointers, deploymentOwnerAddress, validationContext)
+            await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
         }
 
         // Validate that the entity is "fresh"
@@ -144,7 +145,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
             // Record deployment for analytics
-            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, deploymentOwnerAddress)
+            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress)
         }
 
         return newAuditInfo.deployedTimestamp

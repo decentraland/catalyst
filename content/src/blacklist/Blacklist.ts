@@ -2,7 +2,6 @@ import { Timestamp } from "../service/time/TimeSorting";
 import { BlacklistTarget } from "./BlacklistTarget";
 import { EthAddress, Signature, Authenticator } from "../service/auth/Authenticator";
 import { BlacklistStorage } from "./BlacklistStorage";
-import { createSimpleAuthChain } from "../service/audit/Audit";
 
 export class Blacklist {
 
@@ -49,7 +48,7 @@ export class Blacklist {
 
     private async validateBlocker(target: BlacklistTarget, metadata: BlacklistMetadata) {
         const messageToSign = this.buildMessageToSign(target, metadata)
-        const authChain = createSimpleAuthChain(messageToSign, metadata.blocker, metadata.signature)
+        const authChain = Authenticator.createSimpleAuthChain(messageToSign, metadata.blocker, metadata.signature)
         if (!await Authenticator.validateSignature(messageToSign, authChain)) {
             throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }

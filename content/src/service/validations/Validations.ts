@@ -4,9 +4,9 @@ import { ENTITY_FILE_NAME } from "../Service";
 import { ContentFile } from '../Service';
 import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
-import { Authenticator, EthAddress } from "../auth/Authenticator";
+import { Authenticator, EthAddress, AuthChain } from "../auth/Authenticator";
 import { ValidationContext, Validation } from "./ValidationContext";
-import { AuditInfo, AuthChain } from "../audit/Audit";
+import { AuditInfo } from "../audit/Audit";
 
 export class Validations {
 
