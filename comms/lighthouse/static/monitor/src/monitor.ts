@@ -8,11 +8,11 @@ async function renderTopology() {
     element.appendChild(text);
     document.body.appendChild(element);
   } else {
-    renderLayers(layers);
+    await renderLayers(layers);
   }
 }
 
-async function event(precondition) {
+async function checkEvent(precondition) {
   const checkEvent = (resolve, reject, attempt) => {
     if (precondition()) {
       resolve();
@@ -28,11 +28,13 @@ async function event(precondition) {
   });
 }
 
-async function renderLayers(layers) {
-  await event(() => typeof Viz !== "undefined");
-  await event(() => typeof Viz.render !== "undefined");
+declare const Viz: any;
 
-  const viz = new Viz();
+async function renderLayers(layers) {
+  await checkEvent(() => typeof Viz !== "undefined");
+  await checkEvent(() => typeof Viz.render !== "undefined");
+
+  let viz = new Viz();
 
   for (const layer of layers) {
     const h1 = document.createElement("h1");
