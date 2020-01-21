@@ -10,6 +10,8 @@ ts_library(
     deps = [
         "@npm//prom-client",
         "@npm//response-time",
+        "@npm//express",
+        "@npm//@types",
     ],
 )
 
