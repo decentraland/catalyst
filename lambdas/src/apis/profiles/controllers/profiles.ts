@@ -2,21 +2,37 @@ import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Environment } from '../../../Environment'
 import { baseContentServerUrl } from '../../../EnvironmentUtils'
+import { ownsENS } from '../ensFiltering'
 
-export function getProfileById(env: Environment, req: Request, res: Response) {
+export async function getProfileById(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /:id
     const profileId:string = req.params.id
     const v3Url = baseContentServerUrl(env) + `/entities/profile?pointer=${profileId}`
-    fetch(v3Url)
-    .then(response => response.json())
-    .then((entities:V3ControllerEntity[]) => {
-        if (entities.length > 0 && entities[0].metadata) {
-            res.send(addBaseUrlToSnapshots(baseContentServerUrl(env), entities[0].metadata))
-        } else {
-            res.send([])
+    const response = await fetch(v3Url)
+    let returnProfile: EntityMetadata = { avatars:[] }
+    if (response.ok) {
+        const entities:V3ControllerEntity[] = await response.json()
+        if (entities && entities.length > 0 && entities[0].metadata) {
+            const profile = entities[0].metadata
+            returnProfile = profile
+            returnProfile = await filterNonOwnedNames(profileId, returnProfile)
+            returnProfile = addBaseUrlToSnapshots(baseContentServerUrl(env), returnProfile)
         }
-    })
+    }
+    res.send(returnProfile)
+}
+
+/**
+ * We filter ENS to avoid send an ENS that is no longer owned by the user
+ */
+async function filterNonOwnedNames(profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
+    const avatars = await Promise.all(metadata.avatars.map(async profile => (
+        {
+            ...profile,
+            name: await ownsENS(profileId, profile.name) ? profile.name : '',
+        })))
+    return { avatars }
 }
 
 /**
