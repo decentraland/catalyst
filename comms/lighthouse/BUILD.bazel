@@ -5,6 +5,15 @@ load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "static",
+    srcs = glob(
+        include = [
+            "static/**/*",
+        ],
+    ),
+)
+
 ts_library(
     name = "lighthouse",
     srcs = glob(["src/**/*.ts"]),
@@ -28,6 +37,7 @@ nodejs_binary(
     name = "server",
     data = [
         ":lighthouse",
+        ":static",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
