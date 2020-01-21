@@ -15,9 +15,11 @@ import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
 import { Authenticator } from "./auth/Authenticator";
+import { Lock } from "./locking/Lock";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
+    private readonly lock: Lock
     private entities: Cache<EntityId, Entity | undefined>
 
     private constructor(
@@ -31,6 +33,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
+        this.lock = new Lock()
     }
 
     static async build(storage: ServiceStorage,
@@ -119,36 +122,37 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         }
 
         // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
+        return this.lock.runExclusive(async () => {
+            // Check if the entity had already been deployed previously
+            const wasEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId);
 
-        // Check if the entity had already been deployed previously
-        const wasEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId);
+            // Store the entity's content
+            await this.storeEntityContent(hashes, alreadyStoredContent)
 
-        // Store the entity's content
-        await this.storeEntityContent(hashes, alreadyStoredContent)
+            // Calculate timestamp (if necessary)
+            const newAuditInfo: AuditInfo = {
+                deployedTimestamp: auditInfo.deployedTimestamp == NO_TIMESTAMP ? Date.now() : auditInfo.deployedTimestamp,
+                authChain: auditInfo.authChain,
+                version: auditInfo.version,
+                originalMetadata: auditInfo.originalMetadata,
+            }
 
-        // Calculate timestamp (if necessary)
-        const newAuditInfo: AuditInfo = {
-            deployedTimestamp: auditInfo.deployedTimestamp == NO_TIMESTAMP ? Date.now() : auditInfo.deployedTimestamp,
-            authChain: auditInfo.authChain,
-            version: auditInfo.version,
-            originalMetadata: auditInfo.originalMetadata,
-        }
+            if (!wasEntityAlreadyDeployed) {
+                // Save audit information
+                await this.auditManager.setAuditInfo(entityId, newAuditInfo)
 
-        if (!wasEntityAlreadyDeployed) {
-            // Save audit information
-            await this.auditManager.setAuditInfo(entityId, newAuditInfo)
+                // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
+                await this.pointerManager.commitEntity(entity, newAuditInfo.deployedTimestamp, entityId => this.entities.get(entityId));
 
-            // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-            await this.pointerManager.commitEntity(entity, newAuditInfo.deployedTimestamp, entityId => this.entities.get(entityId));
+                // Add the new deployment to history
+                await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
-            // Add the new deployment to history
-            await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
+                // Record deployment for analytics
+                this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress)
+            }
 
-            // Record deployment for analytics
-            this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress)
-        }
-
-        return newAuditInfo.deployedTimestamp
+            return newAuditInfo.deployedTimestamp
+        })
     }
 
     private storeEntityContent(hashes: Map<ContentFileHash, ContentFile>, alreadyStoredHashes: Map<ContentFileHash, Boolean>): Promise<any> {
@@ -218,7 +222,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     async setImmutableTime(immutableTime: number): Promise<void> {
         this.lastImmutableTime = immutableTime
-        await Promise.all([this.historyManager.setTimeAsImmutable(immutableTime), this.pointerManager.setTimeAsImmutable(immutableTime)])
+        return this.lock.runExclusive(async () => {
+            await Promise.all([this.historyManager.setTimeAsImmutable(immutableTime), this.pointerManager.setTimeAsImmutable(immutableTime)])
+        })
     }
 
     private async isEntityAlreadyDeployed(entityId: EntityId) {
