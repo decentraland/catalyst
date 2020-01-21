@@ -2,6 +2,7 @@ load("@npm_bazel_typescript//:index.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 load("//tools/npm:package.bzl", "dataform_npm_package")
 load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+load("@npm_bazel_rollup//:index.bzl", "rollup_bundle")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -11,7 +12,28 @@ filegroup(
         include = [
             "static/**/*",
         ],
+        exclude = ["static/**/*.ts"],
     ),
+)
+
+ts_library(
+    name = "monitor",
+    srcs = glob(["static/monitor/src/**/*.ts"]),
+    module_name = "lighthouse-monitor",
+)
+
+# naming this rule this way to include the resulting bundle in the desired directory 'static/monitor/src' as said in https://github.com/bazelbuild/rules_nodejs/issues/1379
+rollup_bundle(
+    name = "static/monitor/src/bundle",
+    config_file = ":rollup.config.js",
+    entry_point = "static/monitor/src/monitor.ts",
+    format = "umd",
+    output_dir = False,
+    deps = [
+        ":monitor",
+        "@npm//@wessberg/rollup-plugin-ts",
+        "@npm//rollup-plugin-json",
+    ],
 )
 
 ts_library(
@@ -37,6 +59,7 @@ nodejs_binary(
     data = [
         ":lighthouse",
         ":static",
+        ":static/monitor/src/bundle",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
