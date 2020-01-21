@@ -79,19 +79,78 @@ describe("Validations", function () {
         expect(signer).toBe(identity.address)
     })
 
-    // it(`signature test for Nacho`, async () => {
-    //     const message = '0xe79f0e594d5aca4260c4956b519240c056783985fc42f2472cac6732ca26699c';
-    //     const messageHash = Authenticator.createEthereumMessageHash(message);
-    //     const signature = '0xf4e4ff3339e374411128e61a3ed2b7cf0a146ad4574ddc0a04f85379a306a4df194c1f808d07c4d762a7ab642a237e8547cb5032a102582a8aa508047f321ff21c';
+    it(`signature test on ipfs hash`, async () => {
+        const message = 'QmUX9jcGbUATv4MAZaMGT9qiDJb59KBhN8TkyeGsWwzHon';
+        const signature = '0x7f34bc8e3bce648c7e31705172f10b171777eda2d6b87cc53d581faa0ed0f518281691afc6ac51fd7848ba5464642878ae7728e13819dd359f1c9a15e15013fb1b';
+        const expectedSigner = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
 
-    //     const signer = EthCrypto.recover(
-    //         signature,
-    //         messageHash
-    //     );
-    //     console.log(signer) // => 0x9337D3BE7d13b6D61e9B5CF47d9f048b3739E1f0
+    it(`signature test on human readable message`, async () => {
+        const message = 'Decentraland Login\nEphemeral address: 0x1F19d3EC0BE294f913967364c1D5B416e6A74555\nExpiration: Tue Jan 21 2020 16:34:32 GMT+0000 (Coordinated Universal Time)'
+        const signature = '0x49c5d57fc804e6a06f83ee8d499aec293a84328766864d96349db599ef9ebacc072892ec1f3e2777bdc8265b53d8b84edd646bdc711dd5290c18adcc5de4a2831b';
+        const expectedSigner = '0x1f19d3ec0be294f913967364c1d5b416e6a74555'
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
 
-    //     expect(signer).toBe('0xa578a36D3bc9d69e855A3faf0Edb54495238d2fb')
-    // })
+    it(`signature test on human readable message 2`, async () => {
+        const identity = EthCrypto.createIdentity();
+        let expiration = new Date()
+        expiration.setMinutes(expiration.getMinutes() + 30)
+
+        const message = `Decentraland Login\nEphemeral address: ${identity.address}\nExpiration: ${expiration}`
+        const signature = Authenticator.createSignature(identity, message);
+        const expectedSigner = identity.address.toLocaleLowerCase()
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
+
+    it(`signature test on human readable message 3`, async () => {
+        const message = 'Decentraland Login\nEphemeral address: ${ephemeralIdentity.address}\nExpiration: ${expiration}';
+        const signature = '0x93e6c60fbe79e5a6b94c2f560730eaf1b8eeac4859046ac90d3cff14f9be65aa6d7fad907ce320979d56848d7d7c13cb10295d739eb2a3d99f0e6e9cba56ff7c1b';
+        const expectedSigner = '0xe4d3ba99ffdae47c003f1756c01d8e7ee8fef7c9'
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
+
+    it(`signature test on human readable message 4`, async () => {
+        const identity = EthCrypto.createIdentity();
+        const message = 'Decentraland Login\nEphemeral';
+        const signature = Authenticator.createSignature(identity, message);
+        const expectedSigner = identity.address.toLocaleLowerCase()
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
+
+    it(`signature test on human readable message 4b`, async () => {
+        const message = 'Decentraland Login\nEphemeral';
+        const signature = '0x4163812d18beaa732edc4c9d106c4824b7efa565b96841e0a3d9c1863112cab627fb1d7ff7c1b3330d7c5021b76852080d349f7dfd26d59afdac21fc378d51a21b';
+        const expectedSigner = '0xd5af26a5adfc888843d765da9a5cda6f1416eb9d'
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
+
+    it(`signature test on human readable message 5`, async () => {
+        const identity = EthCrypto.createIdentity();
+        const message = 'Decentraland Login Ephemeral';
+        const signature = Authenticator.createSignature(identity, message);
+        const expectedSigner = identity.address.toLocaleLowerCase()
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
+
+    it(`signature test on human readable message 5b`, async () => {
+        const message = 'Decentraland Login Ephemeral';
+        const signature = '0x29561864c8c058688dc5043e04a1dc234d7cbd9201d26029402c0ca4d86d3a337e200f4136dbf40ada341674c79ece56946720b20bc645dd3cc029ab824680891b';
+        const expectedSigner = '0xf37cb6620d0efcfdaf4a166e3ddd75daa4975b39'
+        validateExpectedAddress(message, signature, expectedSigner)
+    })
+
+    function validateExpectedAddress(message: string, signature: string, expectedSigner: string ) {
+        const messageHash = Authenticator.createEthereumMessageHash(message);
+
+        const signer = EthCrypto.recover(
+            signature,
+            messageHash
+        ).toLocaleLowerCase();
+
+        expect(signer).toBe(expectedSigner)
+    }
 
     it(`when signature is invalid, it's reported`, async () => {
         let validation = new Validations(new MockedAccessChecker())
