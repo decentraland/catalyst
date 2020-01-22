@@ -41,7 +41,8 @@ export class EventDeployer {
 
         // Deploy all
         for (const newDeployment of newDeployments) {
-            await this.prepareDeployment(newDeployment, source)
+            const execution = await this.prepareDeployment(newDeployment, source)
+            await execution()
         }
     }
 
@@ -64,22 +65,37 @@ export class EventDeployer {
 
         // For each deployment detected, download all files necessary
         const transform = parallelTransform(EventDeployer.PARALLEL_DOWNLOAD_WORKERS, {objectMode: true}, async ([index, deploymentEvent], done) => {
-            const execution = await this.prepareDeployment(deploymentEvent)
-            done(null, [index, execution]);
+            try {
+                const execution = await this.prepareDeployment(deploymentEvent)
+                done(null, [index, execution]);
+            } catch (error) {
+                done(error)
+            }
         })
 
         // With everything in place, execute the deployment locally
         const deployer = new Stream.Writable({
             objectMode: true,
             write: async ([index, execution], _, done) => {
-                await execution()
-                console.log(`Deployed ${index + 1}/${newEntities.length}`)
-                done();
+                try {
+                    await execution()
+                    console.log(`Deployed ${index + 1}/${newEntities.length}`)
+                    done();
+                } catch(error) {
+                    console.log(`Failed when trying to deploy ${index + 1}/${newEntities.length}`)
+                    done(error)
+                }
             },
-          });
+        });
+
+        transform.on('error', error => console.log(`Error preparing the deployment:\n${error}`))
+        deployer.on('error', error => console.log(`Error deploying:\n${error}`))
 
         // Execute the pipeline
         readable.pipe(transform).pipe(deployer)
+
+        // Wait for pipeline to finish
+        await new Promise(fulfill => deployer.on("finish", fulfill));
     }
 
     /** Download and prepare everything necessary to deploy an entity */
@@ -177,7 +193,7 @@ export class EventDeployer {
      */
     private async getFileOrUndefinedIfBlacklisted(deployment: DeploymentEvent, fileHash: ContentFileHash, checkIfBlacklisted: (auditInfo: AuditInfo) => boolean, source?: ContentServerClient): Promise<ContentFile | undefined> {
         try {
-            return await tryOnCluster(server => server.getContentFile(fileHash), this.cluster, source)
+            return await tryOnCluster(server => server.getContentFile(fileHash), this.cluster, { preferred: source })
         } catch (error) {
             // If we reach this point, then no other server on the DAO could give us the file we are looking for. Maybe it's been blacklisted?
             const auditInfo: AuditInfo = await this.getAuditInfo(deployment, source)
@@ -194,11 +210,11 @@ export class EventDeployer {
     }
 
     private getEntity(deployment: DeploymentEvent, source: ContentServerClient | undefined): Promise<Entity> {
-        return tryOnCluster(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, source);
+        return tryOnCluster(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, { preferred: source });
     }
 
     private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo> {
-        return tryOnCluster(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, source)
+        return tryOnCluster(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, { preferred: source })
     }
 
     private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {

@@ -1,3 +1,4 @@
+import ms from "ms"
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 
@@ -5,15 +6,24 @@ import { ContentCluster } from "./ContentCluster";
 /**
  * This method tries to execute a request on all cluster servers, until one responds successfully
  */
-export async function tryOnCluster<T>(execution: (server: ContentServerClient) => Promise<T>, cluster: ContentCluster, preferred?: ContentServerClient): Promise<T> {
+export async function tryOnCluster<T>(execution: (server: ContentServerClient) => Promise<T>, cluster: ContentCluster, options?: { retries?: number, preferred?: ContentServerClient}): Promise<T> {
     // Re order server list
-    const servers = reorderAccordingToPreference(cluster.getAllActiveServersInCluster(), preferred);
+    const servers = reorderAccordingToPreference(cluster.getAllActiveServersInCluster(), options?.preferred);
 
-    // Try on every cluster server, until one answers the request
-    for (const server of servers) {
-        try {
-            return await execution(server)
-        } catch (error) { }
+    // Calculate amount of retries. Default is one
+    let retries = options?.retries ?? 1
+
+    while (retries >= 0) {
+        // Try on every cluster server, until one answers the request
+        for (const server of servers) {
+            try {
+                return await execution(server)
+            } catch (error) { }
+        }
+        // Wait a little before retrying
+        await sleep(ms("2s"))
+        retries--;
+        console.log("All calls to other servers failed. Going to retry.")
     }
 
     throw new Error(`Tried to execute request on all servers on the cluster, but they all failed`)
@@ -27,5 +37,9 @@ function reorderAccordingToPreference(activeServers: ContentServerClient[], pref
     } else {
         return activeServers
     }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
 }
 
