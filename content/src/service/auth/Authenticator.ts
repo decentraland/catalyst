@@ -54,7 +54,7 @@ export class Authenticator {
         return authChain
     }
 
-    private static createSignature(identity: IdentityType, message: string) {
+    static createSignature(identity: IdentityType, message: string) {
         return EthCrypto.sign(identity.privateKey, Authenticator.createEthereumMessageHash(message))
     }
 
