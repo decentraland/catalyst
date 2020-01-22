@@ -5,11 +5,12 @@ import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
-import { EthAddress, Signature, Authenticator, AuthLink } from "../service/auth/Authenticator";
 import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
 import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
+import { EthAddress, Signature, AuthLink } from "decentraland-crypto/types";
+import { Authenticator } from "decentraland-crypto/Authenticator";
 
 export class Controller {
 

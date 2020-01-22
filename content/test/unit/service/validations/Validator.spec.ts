@@ -1,10 +1,10 @@
 import * as EthCrypto from "eth-crypto"
 import { Validations } from "../../../../src/service/validations/Validations"
 import { Entity, EntityType } from "../../../../src/service/Entity"
-import { Authenticator, AuthChain, AuthLinkType } from "../../../../src/service/auth/Authenticator"
 import { MockedAccessChecker } from "../../../helpers/service/access/MockedAccessChecker"
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext"
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl"
+import { Authenticator, AuthChain, AuthLinkType  } from "dcl-crypto"
 
 describe("Validations", function () {
 

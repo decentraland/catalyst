@@ -4,9 +4,10 @@ import { ENTITY_FILE_NAME } from "../Service";
 import { ContentFile } from '../Service';
 import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
-import { Authenticator, EthAddress, AuthChain } from "../auth/Authenticator";
 import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
+import { AuthChain, EthAddress } from "decentraland-crypto/types";
+import { Authenticator } from "decentraland-crypto/Authenticator";
 
 export class Validations {
 

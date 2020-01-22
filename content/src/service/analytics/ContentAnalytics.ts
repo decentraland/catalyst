@@ -1,5 +1,5 @@
 import { Entity } from "../Entity";
-import { EthAddress } from "../auth/Authenticator";
+import { EthAddress } from "decentraland-crypto/types";
 
 export interface ContentAnalytics {
 

@@ -14,8 +14,8 @@ import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Au
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
-import { Authenticator } from "./auth/Authenticator";
 import { Lock } from "./locking/Lock";
+import { Authenticator } from "decentraland-crypto/Authenticator";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 

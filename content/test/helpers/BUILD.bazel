@@ -9,6 +9,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//content/src:content",
+        "//crypto/src",
 
         "@npm//faker",
         "@npm//@types/faker"

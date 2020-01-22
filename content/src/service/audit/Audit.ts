@@ -1,8 +1,8 @@
 import { Timestamp } from "../time/TimeSorting";
 import { EntityId } from "../Entity";
 import { AuditStorage } from "./AuditStorage";
-import { AuthChain } from "../auth/Authenticator";
 import { ContentFileHash } from "../Hashing";
+import { AuthChain } from "decentraland-crypto/types";
 
 export const NO_TIMESTAMP: Timestamp = -1
 

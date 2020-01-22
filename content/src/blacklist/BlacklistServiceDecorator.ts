@@ -6,7 +6,7 @@ import { buildPointerTarget, buildEntityTarget, BlacklistTarget, buildContentTar
 import { AuditInfo } from "../service/audit/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
-import { Authenticator } from "../service/auth/Authenticator";
+import { Authenticator } from "decentraland-crypto/Authenticator";
 
 /**
  * This decorator takes a MetaverseContentService and adds blacklisting functionality to it

@@ -1,5 +1,5 @@
-import { EthAddress } from "../auth/Authenticator";
 import { EntityType, Pointer } from "../Entity";
+import { EthAddress } from "decentraland-crypto/types";
 
 export interface AccessChecker {
 

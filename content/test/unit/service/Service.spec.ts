@@ -14,8 +14,7 @@ import { MockedStorage } from "../storage/MockedStorage";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
-import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator";
-import { Authenticator } from "@katalyst/content/service/auth/Authenticator";
+import { AuthLinkType, Authenticator } from "dcl-crypto";
 
 describe("Service", function () {
 

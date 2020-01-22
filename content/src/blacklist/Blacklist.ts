@@ -1,8 +1,8 @@
 import { Timestamp } from "../service/time/TimeSorting";
 import { BlacklistTarget } from "./BlacklistTarget";
-import { EthAddress, Signature, Authenticator } from "../service/auth/Authenticator";
 import { BlacklistStorage } from "./BlacklistStorage";
 import { ContentCluster } from "../service/synchronization/ContentCluster";
+import { Authenticator, EthAddress, Signature  } from "dcl-crypto";
 
 export class Blacklist {
 

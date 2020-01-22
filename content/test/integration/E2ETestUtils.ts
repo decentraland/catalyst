@@ -1,7 +1,6 @@
 import fs from "fs"
 import path from "path"
 import * as EthCrypto from "eth-crypto"
-import { Authenticator, EthAddress } from "@katalyst/content/service/auth/Authenticator"
 import { Pointer, EntityType } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing"
@@ -12,6 +11,7 @@ import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/
 import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { TestServer } from "./TestServer"
+import { Authenticator, EthAddress } from "dcl-crypto"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, identity)

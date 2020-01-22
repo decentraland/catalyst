@@ -1,5 +1,5 @@
 import { AccessChecker } from "./AccessChecker";
-import { EthAddress, Authenticator } from "../auth/Authenticator";
+import { EthAddress, Authenticator } from "dcl-crypto";
 import { Pointer, EntityType } from "../Entity";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
