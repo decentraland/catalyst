@@ -1,4 +1,4 @@
-import { EnvironmentBuilder } from "@katalyst/content/Environment"
+import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
@@ -19,6 +19,7 @@ describe("End 2 end deploy test", () => {
             .withAnalytics(new MockedContentAnalytics())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
+            .withConfig(EnvironmentConfig.METRICS, false)
             .build()
         server = new TestServer(env)
         await server.start()
