@@ -1,3 +1,5 @@
+import { Stream } from "stream"
+import parallelTransform from "parallel-transform"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Entity, EntityId } from "../Entity";
@@ -11,7 +13,7 @@ import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class EventDeployer {
 
-    static readonly DEPLOYMENT_CHUNK_SIZE = 15
+    static readonly PARALLEL_DOWNLOAD_WORKERS = 15
     static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
 
     constructor(private readonly cluster: ContentCluster,
@@ -55,26 +57,29 @@ export class EventDeployer {
         const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
         console.log(`Found a history of size ${history.length} to bootstrap with. Only ${newDeployments.length} are new and will be deployed`)
 
+        // Create readable stream with all the deployments
+        const readable = new Stream.Readable({ objectMode: true });
+        newDeployments.forEach((deployment, index) => readable.push([index, deployment]))
+        readable.push(null)
 
-        let i = 0;
-        for (const events of this.splitInChunks(newDeployments, EventDeployer.DEPLOYMENT_CHUNK_SIZE)) {
-            // Prepare all deployments
-            const preparedDeployments = await Promise.all(events.map(event => this.prepareDeployment(event)));
+        // For each deployment detected, download all files necessary
+        const transform = parallelTransform(EventDeployer.PARALLEL_DOWNLOAD_WORKERS, {objectMode: true}, async ([index, deploymentEvent], done) => {
+            const execution = await this.prepareDeployment(deploymentEvent)
+            done(null, [index, execution]);
+        })
 
-            // Deploy each entity
-            preparedDeployments.forEach(preparedDeployment => preparedDeployment())
+        // With everything in place, execute the deployment locally
+        const deployer = new Stream.Writable({
+            objectMode: true,
+            write: async ([index, execution], _, done) => {
+                await execution()
+                console.log(`Deployed ${index + 1}/${newEntities.length}`)
+                done();
+            },
+          });
 
-            // Report
-            i = Math.min(i + EventDeployer.DEPLOYMENT_CHUNK_SIZE, newDeployments.length)
-            console.log(`Deployed ${i}/${newDeployments.length} already.`)
-        }
-    }
-
-    private splitInChunks<T>(array: T[], chunkSize: number) {
-        const result: T[][] = [];
-        for (let i = 0; i < array.length; i += chunkSize)
-            result.push(array.slice(i, i + chunkSize));
-        return result;
+        // Execute the pipeline
+        readable.pipe(transform).pipe(deployer)
     }
 
     /** Download and prepare everything necessary to deploy an entity */

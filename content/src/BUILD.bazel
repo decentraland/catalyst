@@ -30,6 +30,8 @@ ts_library(
         "@npm//ms",
         "@npm//@types/ms",
         "@npm//aws-sdk",
-        "@npm//async-mutex"
+        "@npm//async-mutex",
+        "@npm//parallel-transform",
+        "@npm//@types/parallel-transform"
     ],
 )
