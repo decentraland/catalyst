@@ -1,4 +1,5 @@
-import { Stream } from "stream"
+import { Stream, pipeline } from "stream"
+import util from "util"
 import parallelTransform from "parallel-transform"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
@@ -13,7 +14,7 @@ import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class EventDeployer {
 
-    static readonly PARALLEL_DOWNLOAD_WORKERS = 15
+    static readonly PARALLEL_DOWNLOAD_WORKERS = 10
     static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
 
     constructor(private readonly cluster: ContentCluster,
@@ -69,6 +70,7 @@ export class EventDeployer {
                 const execution = await this.prepareDeployment(deploymentEvent)
                 done(null, [index, execution]);
             } catch (error) {
+                console.log(`Failed preparing the deployment ${index + 1}/${newEntities.length}`)
                 done(error)
             }
         })
@@ -76,9 +78,9 @@ export class EventDeployer {
         // With everything in place, execute the deployment locally
         const deployer = new Stream.Writable({
             objectMode: true,
-            write: async ([index, execution], _, done) => {
+            write: async ([index, performDeployment], _, done) => {
                 try {
-                    await execution()
+                    await performDeployment()
                     console.log(`Deployed ${index + 1}/${newEntities.length}`)
                     done();
                 } catch(error) {
@@ -88,14 +90,15 @@ export class EventDeployer {
             },
         });
 
-        transform.on('error', error => console.log(`Error preparing the deployment:\n${error}`))
-        deployer.on('error', error => console.log(`Error deploying:\n${error}`))
+        const awaitablePipeline = util.promisify(pipeline);
 
-        // Execute the pipeline
-        readable.pipe(transform).pipe(deployer)
-
-        // Wait for pipeline to finish
-        await new Promise(fulfill => deployer.on("finish", fulfill));
+        // Build and execute the pipeline
+        try {
+            await awaitablePipeline(readable,transform, deployer)
+            console.log("All good")
+        } catch (error) {
+            console.log("Error " + error)
+        }
     }
 
     /** Download and prepare everything necessary to deploy an entity */
