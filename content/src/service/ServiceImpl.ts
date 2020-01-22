@@ -60,7 +60,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return Promise.all(ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
             .map((entityId: EntityId) => this.entities.get(entityId)))
-            .then((entities:(Entity | undefined)[]) => entities.filter(entity => entity !== undefined)) as Promise<Entity[]>
+            .then((entities:(Entity | undefined)[]) => entities.filter(entity => entity !== undefined && entity.type===type)) as Promise<Entity[]>
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {

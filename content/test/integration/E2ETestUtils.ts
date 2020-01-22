@@ -74,6 +74,7 @@ export function buildBaseEnv(namePrefix: string, port: number, syncInterval: num
         .withConfig(EnvironmentConfig.NAME_PREFIX, namePrefix)
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, "storage_" + namePrefix)
+        .withConfig(EnvironmentConfig.METRICS, false)
         .withConfig(EnvironmentConfig.LOG_REQUESTS, false)
         .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
         .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, syncInterval)
