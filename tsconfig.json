@@ -37,5 +37,5 @@
         "katalyst/comms/peer/proto/*": ["dist/bin/comms/peer/proto/*"]
     },
   },
-  "exclude": ["node_modules", "bazel-*", "**/node_modules/*"]
+  "exclude": ["node_modules", "bazel-*", "**/node_modules/*", "dist"]
 }

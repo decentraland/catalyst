@@ -2,7 +2,7 @@ import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
 import { S3ContentStorage } from "@katalyst/content/storage/S3ContentStorage";
 import AWS from 'aws-sdk'
 
-xdescribe("ContentStorage", () => {
+xdescribe("S3ContentStorage", () => {
 
     // TODO: Reuse ContentStorage.spec.ts but with a different configuration.
 
