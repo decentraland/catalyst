@@ -66,6 +66,7 @@ jobs:
       - run:
           name: Run tests
           command: npx bazel test //comms/lighthouse:unit_test --test_output=all
+          no_output_timeout: 30m
 
   build-peer:
     <<: *base_env
@@ -74,6 +75,7 @@ jobs:
       - run:
           name: Run tests
           command: npx bazel test //comms/peer:config_test --test_output=all
+          no_output_timeout: 30m
 
   build-content:
     <<: *base_env
@@ -104,6 +106,7 @@ jobs:
       - run:
           name: Publish peer
           command: npx bazel run //comms/peer:package.publish
+          no_output_timeout: 30m
 
 workflows:
   version: 2
