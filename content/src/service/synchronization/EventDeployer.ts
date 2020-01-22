@@ -11,6 +11,7 @@ import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class EventDeployer {
 
+    static readonly DEPLOYMENT_CHUNK_SIZE = 15
     static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
 
     constructor(private readonly cluster: ContentCluster,
@@ -38,7 +39,7 @@ export class EventDeployer {
 
         // Deploy all
         for (const newDeployment of newDeployments) {
-            await this.deployEvent(newDeployment, source)
+            await this.prepareDeployment(newDeployment, source)
         }
     }
 
@@ -54,19 +55,30 @@ export class EventDeployer {
         const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
         console.log(`Found a history of size ${history.length} to bootstrap with. Only ${newDeployments.length} are new and will be deployed`)
 
-        for (let i = 0; i < newDeployments.length; i++) {
-            const event = newDeployments[i]
-            console.log(`About to deploy ${i + 1}/${newDeployments.length}`)
-            try {
-               await this.deployEvent(event)
-            } catch (error) {
-                console.log(`Failed to deploy entity ${event.entityId} during bootstrap. This will probably cause synchronization issues. Error was:\n${error}`)
-            }
+
+        let i = 0;
+        for (const events of this.splitInChunks(newDeployments, EventDeployer.DEPLOYMENT_CHUNK_SIZE)) {
+            // Prepare all deployments
+            const preparedDeployments = await Promise.all(events.map(event => this.prepareDeployment(event)));
+
+            // Deploy each entity
+            preparedDeployments.forEach(preparedDeployment => preparedDeployment())
+
+            // Report
+            i = Math.min(i + EventDeployer.DEPLOYMENT_CHUNK_SIZE, newDeployments.length)
+            console.log(`Deployed ${i}/${newDeployments.length} already.`)
         }
     }
 
-    /** Process a specific deployment */
-    async deployEvent(deployment: DeploymentEvent, source?: ContentServerClient): Promise<void> {
+    private splitInChunks<T>(array: T[], chunkSize: number) {
+        const result: T[][] = [];
+        for (let i = 0; i < array.length; i += chunkSize)
+            result.push(array.slice(i, i + chunkSize));
+        return result;
+    }
+
+    /** Download and prepare everything necessary to deploy an entity */
+    private async prepareDeployment(deployment: DeploymentEvent, source?: ContentServerClient): Promise<() => Promise<void>> {
         // Download the entity file
         const entityFile: ContentFile | undefined = await this.getEntityFile(deployment, source);
 
@@ -77,7 +89,7 @@ export class EventDeployer {
             // If entity file was retrieved, we know that the entity wasn't blacklisted
             if (auditInfo.overwrittenBy) {
                 // Deploy the entity as overwritten
-                return this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName)
+                return () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName)
             } else {
                 // Download all entity's files
                 const files: (ContentFile | undefined)[] = await this.getContentFiles(deployment, entityFile, source)
@@ -90,10 +102,10 @@ export class EventDeployer {
 
                 if (definedFiles.length == files.length) {
                     // Since there was no blacklisted files, deploy the new entity normally
-                    return this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
+                    return () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
                 } else {
                     // It looks like there was a blacklisted content
-                    return this.service.deployEntityWithBlacklistedContent(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
+                    return () => this.service.deployEntityWithBlacklistedContent(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
                 }
             }
         } else {
@@ -112,7 +124,7 @@ export class EventDeployer {
             const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(serializableEntity)) }
 
             // Deploy the entity file
-            return this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo, deployment.serverName)
+            return () => this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo, deployment.serverName)
         }
     }
 
