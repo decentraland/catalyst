@@ -9,7 +9,9 @@ import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType, PeerMessageTypes } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "katalyst/comms/peer/proto/peer_pb";
 
-const PROTOCOL_VERSION = 1;
+const PROTOCOL_VERSION = 2;
+
+const MAX_UINT32 = 4294967295
 
 export type PeerData = {
   id: string;
@@ -59,7 +61,7 @@ export class Peer implements IPeer {
 
   private updatingNetwork: boolean = false;
   private currentMessageId: number = 0;
-  private instanceId: string;
+  private instanceId: number;
 
   private expireTimeoutId: any;
 
@@ -76,7 +78,7 @@ export class Peer implements IPeer {
 
     const secure = url.protocol === "https:";
 
-    this.instanceId = util.generateToken(10);
+    this.instanceId = Math.floor(Math.random() * MAX_UINT32);
 
     this.httpClient = new PeerHttpClient(lighthouseUrl, () => this.config.token!);
 
@@ -591,6 +593,11 @@ export class Peer implements IPeer {
       switch (type) {
         case ServerMessageType.Offer:
           if (this.checkForCrossOffers(peerId)) {
+            break;
+          }
+          
+          if(payload.protocolVersion !== PROTOCOL_VERSION) {
+            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
             break;
           }
 
