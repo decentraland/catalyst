@@ -1,4 +1,4 @@
-import { EnvironmentBuilder } from "@katalyst/content/Environment"
+import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { BlacklistServiceDecorator } from "@katalyst/content/blacklist/BlacklistServiceDecorator"
 import { buildDeployData, deleteServerStorage } from "./E2ETestUtils"
@@ -19,6 +19,7 @@ describe("End 2 end - Blacklist", () => {
             .withAnalytics(new MockedContentAnalytics())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
+            .withConfig(EnvironmentConfig.METRICS, false)
             .build()
         server = new TestServer(env)
         await server.start()
