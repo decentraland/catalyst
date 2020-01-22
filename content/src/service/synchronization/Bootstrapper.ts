@@ -24,6 +24,8 @@ export class Bootstrapper {
 
             // Execute the request
             return request.execute()
+        } else {
+            console.log(`Couldn't find servers to bootstrap with`)
         }
     }
 
@@ -31,7 +33,13 @@ export class Bootstrapper {
         // Get one (any) server's last immutable time and history
         const [immutableTime, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
-        for (const event of sortFromOldestToNewest(history)) {
+        // Sort history
+        const sortedHistory = sortFromOldestToNewest(history);
+        console.log(`Found a history of size ${history.length} to bootstrap with`)
+
+        for (let i = 0; i < sortedHistory.length; i++) {
+            const event = sortedHistory[i]
+            console.log(`About to deploy ${i + 1}/${sortedHistory.length}`)
             try {
                await deployer.deployEvent(event)
             } catch (error) {
