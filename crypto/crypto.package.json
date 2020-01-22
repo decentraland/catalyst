@@ -1,0 +1,7 @@
+{
+  "name": "decentraland-crypto",
+  "description": "Decentraland Cryptography",
+  "dependencies": {
+    "eth-crypto": "^1.5.0"
+  }
+}
