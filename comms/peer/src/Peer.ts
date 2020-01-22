@@ -11,7 +11,7 @@ import { Packet, PayloadEncoding, MessageData } from "katalyst/comms/peer/proto/
 
 const PROTOCOL_VERSION = 2;
 
-const MAX_UINT32 = 4294967295
+const MAX_UINT32 = 4294967295;
 
 export type PeerData = {
   id: string;
@@ -40,6 +40,26 @@ type PeerConfig = {
   messageExpirationTime?: number;
 };
 
+class Stats {
+  public packets: number = 0;
+  public packetDuplicates: number = 0;
+  public totalBytes: number = 0;
+  public averagePacketSize?: number = undefined;
+  public duplicatePercentage: number = 0;
+  public optimistic: number = 0;
+
+  countPacket(packet: Packet, length: number, duplicate: boolean = false) {
+    this.packets += 1;
+    if (duplicate) this.packetDuplicates += 1;
+
+    this.totalBytes += length;
+
+    this.averagePacketSize = this.totalBytes / this.packets;
+    this.duplicatePercentage = this.packetDuplicates / this.packets;
+    if (packet.getOptimistic()) this.optimistic += 1;
+  }
+}
+
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
 export class Peer implements IPeer {
@@ -65,13 +85,15 @@ export class Peer implements IPeer {
 
   private expireTimeoutId: any;
 
+  private stats: Stats = new Stats();
+
   constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {}) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
 
-    this.config.minConnections = this.config.minConnections ?? 5;
-    this.config.maxConnections = this.config.maxConnections ?? 10;
+    this.config.minConnections = this.config.minConnections ?? 4;
+    this.config.maxConnections = this.config.maxConnections ?? 8;
     this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 2000;
     this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
@@ -395,6 +417,8 @@ export class Peer implements IPeer {
 
     const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
 
+    this.stats.countPacket(packet, data.length, alreadyReceived);
+
     this.markReceived(packet);
 
     const expired = this.checkExpired(packet);
@@ -507,30 +531,37 @@ export class Peer implements IPeer {
     packet.setSrc(this.peerId);
     packet.setMessagedata(messageData);
     packet.setHops(0);
-    packet.setTtl(this.getTTL(type));
+    packet.setTtl(this.getTTL(packet.getSequenceid(), type));
     packet.setReceivedbyList([]);
+    packet.setOptimistic(this.getOptimistic(packet.getSequenceid(), type));
 
     this.sendPacket(packet);
 
     return Promise.resolve();
   }
 
-  getTTL(type: PeerMessageType) {
-    //TODO: Interleaving or function
-    return typeof type.ttl === "number" ? type.ttl : 10;
+  getTTL(index: number, type: PeerMessageType) {
+    return typeof type.ttl !== "undefined" ? (typeof type.ttl === "number" ? type.ttl : type.ttl(index, type)) : 10;
+  }
+
+  getOptimistic(index: number, type: PeerMessageType) {
+    return typeof type.optimistic === "boolean" ? type.optimistic : type.optimistic(index, type);
   }
 
   private sendPacket(packet: Packet) {
     if (!packet.getReceivedbyList().includes(this.peerId)) packet.setReceivedbyList([...packet.getReceivedbyList(), this.peerId]);
 
-    Object.keys(this.connectedPeers)
-      .filter(it => !packet.getReceivedbyList().includes(it))
-      .forEach(peer => {
-        const conn = this.connectedPeers[peer].connection;
-        if (conn?.writable) {
-          conn.write(packet.serializeBinary());
-        }
-      });
+    const peersToSend = Object.keys(this.connectedPeers).filter(it => !packet.getReceivedbyList().includes(it));
+    if (packet.getOptimistic()) {
+      packet.setReceivedbyList([...packet.getReceivedbyList(), ...peersToSend]);
+    }
+
+    peersToSend.forEach(peer => {
+      const conn = this.connectedPeers[peer].connection;
+      if (conn?.writable) {
+        conn.write(packet.serializeBinary());
+      }
+    });
   }
 
   private handleSignal(peerData: PeerData) {
@@ -595,8 +626,8 @@ export class Peer implements IPeer {
           if (this.checkForCrossOffers(peerId)) {
             break;
           }
-          
-          if(payload.protocolVersion !== PROTOCOL_VERSION) {
+
+          if (payload.protocolVersion !== PROTOCOL_VERSION) {
             this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
             break;
           }
