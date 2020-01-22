@@ -42,6 +42,29 @@ export class EventDeployer {
         }
     }
 
+    /**
+     * This method is pretty similar to 'deployHistory'. In this case, the bootstrapping process continues, even if one of the deployments fails.
+     */
+    async bootstrapWithHistory(history: DeploymentHistory) {
+        // Determine whether I already know the entities
+        const entitiesInHistory: EntityId[] = history.map(({ entityId }) => entityId)
+        const newEntities: EntityId[] = await this.filterOutKnownFiles(entitiesInHistory)
+
+        // Keep and sort new deployments
+        const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
+        console.log(`Found a history of size ${history.length} to bootstrap with. Only ${newDeployments.length} are new and will be deployed`)
+
+        for (let i = 0; i < newDeployments.length; i++) {
+            const event = newDeployments[i]
+            console.log(`About to deploy ${i + 1}/${newDeployments.length}`)
+            try {
+               await this.deployEvent(event)
+            } catch (error) {
+                console.log(`Failed to deploy entity ${event.entityId} during bootstrap. This will probably cause synchronization issues. Error was:\n${error}`)
+            }
+        }
+    }
+
     /** Process a specific deployment */
     async deployEvent(deployment: DeploymentEvent, source?: ContentServerClient): Promise<void> {
         // Download the entity file
