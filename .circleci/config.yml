@@ -171,6 +171,6 @@ workflows:
       
       # publish docker image
       - publish-docker:
-          <<: *master_and_tags
+          <<: *all_branches_and_tags
           requires:
             - checkout
