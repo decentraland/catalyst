@@ -171,7 +171,7 @@ workflows:
       
       # publish docker image
       - publish-docker:
-          <<: *all_branches_and_tags
+          <<: *master_and_tags
           requires:
             - checkout
             - build-peer
