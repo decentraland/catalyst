@@ -7,30 +7,9 @@ import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType, PeerMessageTypes } from "./messageTypes";
-import { Packet, PayloadEncoding, MessageData } from "../peer_pb";
-import Long from "long";
+import { Packet, PayloadEncoding, MessageData } from "katalyst/comms/peer/proto/peer_pb";
 
 const PROTOCOL_VERSION = 1;
-
-// interface PacketData {
-//   hi: { room: { id: string; users: KnownPeerData[] } };
-//   message: { room: string; dst?: string; payload: any };
-// }
-
-// type PacketType = keyof PacketData;
-// type Packet<T extends PacketType> = {
-//   id: string;
-//   timestamp: number;
-//   src: string;
-//   type: T;
-//   subtype?: string;
-//   discardOlderThan?: number;
-//   expireTime?: number;
-//   data: PacketData[T];
-//   hops: number;
-//   ttl: number;
-//   receivedBy: string[];
-// };
 
 export type PeerData = {
   id: string;
@@ -153,11 +132,11 @@ export class Peer implements IPeer {
   }
 
   private packetKey(packet: Packet) {
-    return `${packet.src}_${packet.instanceId}_${packet.sequenceId}`;
+    return `${packet.getSrc()}_${packet.getInstanceid()}_${packet.getSequenceid()}`;
   }
 
   private getExpireTime(packet: Packet): number {
-    return packet.expireTime > 0 ? packet.expireTime : this.config.messageExpirationTime!;
+    return packet.getExpiretime() > 0 ? packet.getExpiretime() : this.config.messageExpirationTime!;
   }
 
   private log(...entries: any[]) {
@@ -408,56 +387,57 @@ export class Peer implements IPeer {
   }
 
   private handlePeerPacket(data: Uint8Array, peerId: string) {
-    const packet: Packet = Packet.decode(data);
+    data.constructor = Uint8Array;
+    const packet: Packet = Packet.deserializeBinary(data);
     // if (parsed.hasMessagedata()) {
 
-    const alreadyReceived = !!!this.receivedPackets[this.packetKey(packet)];
+    const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
 
     this.markReceived(packet);
 
     const expired = this.checkExpired(packet);
 
     if (!alreadyReceived && !expired) {
-      this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp.toNumber());
+      this.updateTimeStamp(packet.getSrc(), packet.getSubtype(), packet.getTimestamp());
 
-      const messageData = packet.messageData;
-      if (packet.data === "messageData" && messageData) {
-        if (this.isInRoom(messageData.room)) {
-          this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
+      const messageData = packet.getMessagedata();
+      if (packet.hasMessagedata() && messageData) {
+        if (this.isInRoom(messageData.getRoom())) {
+          this.callback(packet.getSrc(), messageData.getRoom(), this.decodePayload(messageData.getPayload_asU8(), messageData.getEncoding()));
         }
       }
 
-      packet.hops = packet.hops + 1;
+      packet.setHops(packet.getHops() + 1);
 
-      if (packet.hops < packet.ttl) {
+      if (packet.getHops() < packet.getTtl()) {
         this.sendPacket(packet);
       }
     }
   }
 
-  decodePayload(payload: string | Uint8Array, encoding: number): any {
+  decodePayload(payload: Uint8Array, encoding: number): any {
     switch (encoding) {
       case PayloadEncoding.BYTES:
         return payload as Uint8Array;
       case PayloadEncoding.STRING:
-        return payload instanceof Uint8Array ? new TextDecoder("utf-8").decode(payload) : payload;
+        return new TextDecoder("utf-8").decode(payload);
       case PayloadEncoding.JSON:
-        return payload instanceof Uint8Array ? JSON.parse(new TextDecoder("utf-8").decode(payload)) : JSON.parse(payload);
+        return JSON.parse(new TextDecoder("utf-8").decode(payload));
     }
   }
 
   private checkExpired(packet: Packet) {
     let discardedByOlderThan: boolean = false;
-    if (packet.discardOlderThan >= 0 && packet.subtype) {
-      const timestamp = this.knownPeers[packet.src]?.timestampByType[packet.subtype];
-      discardedByOlderThan = !!timestamp && timestamp - packet.timestamp.toNumber() > packet.discardOlderThan;
+    if (packet.getDiscardolderthan() >= 0 && packet.getSubtype()) {
+      const timestamp = this.knownPeers[packet.getSrc()]?.timestampByType[packet.getSubtype()];
+      discardedByOlderThan = !!timestamp && timestamp - packet.getTimestamp() > packet.getDiscardolderthan();
     }
 
     let discardedByExpireTime: boolean = false;
     const expireTime = this.getExpireTime(packet);
 
-    if (this.knownPeers[packet.src]?.timestamp) {
-      discardedByExpireTime = this.knownPeers[packet.src]?.timestamp - packet.timestamp.toNumber() > expireTime;
+    if (this.knownPeers[packet.getSrc()]?.timestamp) {
+      discardedByExpireTime = this.knownPeers[packet.getSrc()]?.timestamp - packet.getTimestamp() > expireTime;
     }
 
     return discardedByOlderThan || discardedByExpireTime;
@@ -502,22 +482,31 @@ export class Peer implements IPeer {
     }
 
     const messageData = new MessageData();
-    messageData.room = roomId;
-    messageData.payload = 
-      payload instanceof Uint8Array  ? payload : new TextEncoder().encode(JSON.stringify(payload));
+    messageData.setRoom(roomId);
+
+    if (payload instanceof Uint8Array) {
+      messageData.setEncoding(PayloadEncoding.BYTES);
+      messageData.setPayload(payload);
+    } else if (typeof payload === "string") {
+      messageData.setEncoding(PayloadEncoding.STRING);
+      messageData.setPayload(new TextEncoder().encode(payload));
+    } else {
+      messageData.setEncoding(PayloadEncoding.JSON);
+      messageData.setPayload(new TextEncoder().encode(JSON.stringify(payload)));
+    }
 
     const packet: Packet = new Packet();
-    packet.sequenceId = this.generateMessageId();
-    packet.instanceId = this.instanceId;
-    packet.subtype = type.name;
-    packet.expireTime = type.expirationTime ?? -1;
-    packet.discardOlderThan = type.discardOlderThan ?? -1;
-    packet.timestamp = Long.fromNumber(new Date().getTime());
-    packet.src = this.peerId;
-    packet.messageData = messageData;
-    packet.hops = 0;
-    packet.ttl = this.getTTL(type);
-    packet.receivedBy = [];
+    packet.setSequenceid(this.generateMessageId());
+    packet.setInstanceid(this.instanceId);
+    packet.setSubtype(type.name);
+    packet.setExpiretime(type.expirationTime ?? -1);
+    packet.setDiscardolderthan(type.discardOlderThan ?? -1);
+    packet.setTimestamp(new Date().getTime());
+    packet.setSrc(this.peerId);
+    packet.setMessagedata(messageData);
+    packet.setHops(0);
+    packet.setTtl(this.getTTL(type));
+    packet.setReceivedbyList([]);
 
     this.sendPacket(packet);
 
@@ -530,14 +519,14 @@ export class Peer implements IPeer {
   }
 
   private sendPacket(packet: Packet) {
-    if (!packet.receivedBy.includes(this.peerId)) packet.receivedBy.push(this.peerId);
+    if (!packet.getReceivedbyList().includes(this.peerId)) packet.setReceivedbyList([...packet.getReceivedbyList(), this.peerId]);
 
     Object.keys(this.connectedPeers)
-      .filter(it => !packet.receivedBy.includes(it))
+      .filter(it => !packet.getReceivedbyList().includes(it))
       .forEach(peer => {
         const conn = this.connectedPeers[peer].connection;
         if (conn?.writable) {
-          conn.write(Packet.encode(packet).finish());
+          conn.write(packet.serializeBinary());
         }
       });
   }

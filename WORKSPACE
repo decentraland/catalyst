@@ -102,6 +102,15 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_
 rules_proto_dependencies()
 rules_proto_toolchains()
 
-load("@npm_bazel_labs//:package.bzl", "npm_bazel_labs_dependencies")
+http_archive(
+    name = "rules_typescript_proto",
+    sha256 = "0c76ae0d04eaa4d4c5f12556615cb70d294082ee672aee6dd849fea4ec2075ee",
+    strip_prefix = "rules_typescript_proto-0.0.3",
+    urls = [
+	"https://github.com/Dig-Doug/rules_typescript_proto/archive/0.0.3.tar.gz",
+    ],
+)
 
-npm_bazel_labs_dependencies()
+load("@rules_typescript_proto//:index.bzl", "rules_typescript_proto_dependencies")
+
+rules_typescript_proto_dependencies()

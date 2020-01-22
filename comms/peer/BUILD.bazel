@@ -3,8 +3,6 @@ load("//tools/npm:package.bzl", "dataform_npm_package")
 load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
 load("@npm_bazel_rollup//:index.bzl", "rollup_bundle")
 load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package")
-load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@npm_bazel_labs//:index.bzl", "ts_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,11 +12,11 @@ ts_library(
     module_name = "decentraland-katalyst-peer",
     tsconfig = "//:tsconfig.json",
     deps = [
-        ":peer_proto_ts",
+        "//comms/peer/proto:peer_proto_ts",
         "@npm//eventemitter3",
         "@npm//fp-future",
         "@npm//simple-peer",
-        "@npm//long",
+        "@npm//google-protobuf",
     ],
 )
 
@@ -53,17 +51,6 @@ npm_package(
     ],
 )
 
-proto_library(
-    name = "peer_proto",
-    srcs = ["src/proto/peer.proto"],
-)
-
-ts_proto_library(
-    name = "peer_proto_ts",
-    deps = [":peer_proto"],
-    output_name = "peer_pb",
-)
-
 ts_library(
     name = "tests",
     testonly = 1,
@@ -94,9 +81,25 @@ karma_web_test_suite(
     deps = [
         "test/config.js",
         ":tests",
+        ":google_protobuf_requirejs",
         "@npm//eventemitter3:eventemitter3__umd",
         "@npm//fp-future:fp-future__umd",
         "@npm//karma-mocha-reporter",
         "@npm//karma-spec-reporter",
     ],
+)
+
+# Copy the google-protobuf library and convert it to a AMD module so it can be loaded in the
+# RequireJS test environment.
+genrule(
+    name = "google_protobuf_requirejs",
+    srcs = [
+        "@npm//:node_modules/google-protobuf/google-protobuf.js",
+    ],
+    outs = [
+        "google-protobuf.js",
+    ],
+    cmd = """echo "define('google-protobuf', function(require, exports, module) {" > $@ \
+             && cat $< >> $@ \
+             && echo '});' >> $@""",
 )
