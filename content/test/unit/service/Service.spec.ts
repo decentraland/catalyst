@@ -14,11 +14,14 @@ import { MockedStorage } from "../storage/MockedStorage";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
+import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator";
 
 describe("Service", function () {
 
     const serverName = "A server Name"
-    const auditInfo: AuditInfo = { signatures: [{signature: "signature", signingAddress: "ethAddress"}], version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
+    const auditInfo: AuditInfo = {
+        authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:"signature", payload:"ethAddress"}],
+        version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
     let randomFile: { name: string, content: Buffer }
     let randomFileHash: ContentFileHash

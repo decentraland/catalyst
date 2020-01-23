@@ -6,6 +6,7 @@ import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
+import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 
@@ -18,7 +19,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     static readonly AUDIT_INFO: AuditInfo = {
         deployedTimestamp: Date.now(),
-        signatures: [{signature:random.alphaNumeric(10), signingAddress:random.alphaNumeric(10)}],
+        authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
         version: CURRENT_CONTENT_VERSION,
     }
 

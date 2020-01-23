@@ -5,7 +5,6 @@ import { EventDeployer } from "./EventDeployer";
 import { ContentCluster } from "./ContentCluster";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { tryOnCluster } from "./ClusterUtils";
-import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class Bootstrapper {
 
@@ -24,6 +23,8 @@ export class Bootstrapper {
 
             // Execute the request
             return request.execute()
+        } else {
+            console.log(`Couldn't find servers to bootstrap with`)
         }
     }
 
@@ -31,14 +32,10 @@ export class Bootstrapper {
         // Get one (any) server's last immutable time and history
         const [immutableTime, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
-        for (const event of sortFromOldestToNewest(history)) {
-            try {
-               await deployer.deployEvent(event)
-            } catch (error) {
-                console.log(`Failed to deploy entity ${event.entityId} during bootstrap. This will probably cause synchronization issues. Error was:\n${error}`)
-            }
-        }
+        // Bootstrap
+        await deployer.deployHistory(history, { logging: true, continueOnFailure: true })
 
+        console.log("Finished bootstrapping")
         return immutableTime
     }
 

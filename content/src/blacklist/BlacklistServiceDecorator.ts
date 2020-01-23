@@ -6,6 +6,7 @@ import { buildPointerTarget, buildEntityTarget, BlacklistTarget, buildContentTar
 import { AuditInfo } from "../service/audit/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
+import { Authenticator } from "../service/auth/Authenticator";
 
 /**
  * This decorator takes a MetaverseContentService and adds blacklisting functionality to it
@@ -99,7 +100,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
     async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<number> {
         // No deployments from blacklisted eth addresses are allowed
-        const ownerAddress = auditInfo.signatures[0].signingAddress
+        const ownerAddress = Authenticator.ownerAddress(auditInfo)
         if (await this.areBlacklisted(buildAddressTarget(ownerAddress))) {
             throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was blacklisted.`);
         }

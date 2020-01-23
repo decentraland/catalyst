@@ -22,6 +22,7 @@ describe("unit tests in jasmine", function() {
                 .withContent(content)
                 .build())
             .withSynchronizationManager(new MockedSynchronizationManager())
+            .withConfig(EnvironmentConfig.METRICS, false)
             .build()
         server = new Server(env)
         await server.start()
