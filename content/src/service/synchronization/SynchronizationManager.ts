@@ -76,7 +76,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             const newDeployments: DeploymentHistory = await contentServer.getNewDeployments()
 
             // Process them
-            await this.deployer.deployHistory(newDeployments, contentServer)
+            await this.deployer.deployHistory(newDeployments, { preferredServer: contentServer })
 
             // Let the client know that the deployment was successful, and update the last known timestamp
             await contentServer.updateTimestamp(newDeployments[0]?.timestamp)
