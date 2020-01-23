@@ -8,6 +8,8 @@ require.config({
       'fp-future': 'npm/node_modules/fp-future/index',
       'simple-peer': 'npm/node_modules/simple-peer/simplepeer.min',
       'eventemitter3': 'npm/node_modules/eventemitter3/umd/eventemitter3',
+      'protobufjs/minimal': 'npm/node_modules/protobufjs/dist/minimal/protobuf',
+      'long': 'npm/node_modules/long/dist/long'
       //redux: '/npm/node_modules/redux/dist/redux',
       //d3: '/npm/node_modules/d3/dist/d3',
       //jsonwebtoken: 'static/jsonwebtoken.umd',

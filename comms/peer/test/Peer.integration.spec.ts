@@ -81,7 +81,7 @@ describe("Peer Integration Test", function() {
 
     expect(peerRoom.id).toBe(roomId);
     expect(peerRoom.users.length).toBe(1);
-    expect(peerRoom.users.includes(peer.nickname)).toBeTrue();
+    expect(peerRoom.users.includes(peer.peerId)).toBeTrue();
   }
 
   function notify(peers: MinPeerData[], notificationKey: string, notification: ServerMessageType, peerPair: MinPeerData, collectionId: string) {
@@ -364,7 +364,7 @@ describe("Peer Integration Test", function() {
 
   function expectPeerToBeConnectedTo(peer: Peer, otherPeer: Peer) {
     //@ts-ignore
-    const peerToPeer = peer.connectedPeers[otherPeer.nickname];
+    const peerToPeer = peer.connectedPeers[otherPeer.peerId];
     expect(peerToPeer.connection).toBeDefined();
     expect(peerToPeer.connection.writable).toBeTrue();
   }
@@ -376,7 +376,7 @@ describe("Peer Integration Test", function() {
     expect(peerRoom.users.length).toBe(otherPeers.length + 1);
 
     for (const otherPeer of otherPeers) {
-      expect(peerRoom.users.includes(otherPeer.nickname)).toBeTrue();
+      expect(peerRoom.users.includes(otherPeer.peerId)).toBeTrue();
     }
   }
 });
@@ -397,6 +397,6 @@ function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
   expect(peers.length).toBeGreaterThanOrEqual(others.length);
 
   for (const other of others) {
-    expect(peers.some(($: any) => $.id === other.nickname)).toBeTrue();
+    expect(peers.some(($: any) => $.id === other.peerId)).toBeTrue();
   }
 }

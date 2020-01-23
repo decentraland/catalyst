@@ -36,7 +36,6 @@ ts_devserver(
         "npm/node_modules/react-dom/umd",
         "react_samples/src/styles",
     ],
-    data = ["//:node_modules"],
     entry_module = "katalyst/comms/peer-react-app/index",
     port = 3001,
     # This is the path we'll request from the browser, see index.html
@@ -51,6 +50,7 @@ ts_devserver(
         ":peer-react-app",
         "@npm//decentraland-ui",
         "@npm//fp-future:fp-future__umd",
+        "@npm//protobufjs:protobufjs__umd",
         "@npm//react",
         "@npm//react-dom",
     ],
