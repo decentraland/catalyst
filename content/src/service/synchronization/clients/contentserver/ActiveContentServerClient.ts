@@ -4,11 +4,12 @@ import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
-import { ContentFileHash } from "../../../Hashing";
+import { ContentFileHash, Hashing } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
 import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, ServerAddress } from "./ContentServerClient";
+import { sleep } from "../../ClusterUtils";
 
 export function getClient(address: ServerAddress, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
     return new ActiveContentServerClient(address, name, lastKnownTimestamp)
@@ -63,13 +64,23 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
-        const response = await fetch(`${this.address}/contents/${fileHash}`);
-        if (response.ok) {
-            const content = await response.buffer();
-            return {
-                name: fileHash,
-                content: content
-            };
+        let retries = 3
+        let content: Buffer | undefined = undefined
+
+        while (retries >= 0) {
+            const response = await fetch(`${this.address}/contents/${fileHash}`);
+            if (response.ok) {
+                content = await response.buffer();
+                const downloadedHash = await Hashing.calculateBufferHash(content)
+                if (downloadedHash == fileHash) {
+                    break;
+                }
+            }
+            await sleep(ms("1s"))
+            retries--;
+        }
+        if (retries >=0 && content) {
+            return { name: fileHash, content: content }
         } else {
             throw new Error(`Failed to fetch file with hash ${fileHash}`)
         }

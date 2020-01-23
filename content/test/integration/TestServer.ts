@@ -93,8 +93,12 @@ export class TestServer extends Server {
     }
 
     async downloadContent(fileHash: ContentFileHash): Promise<Buffer> {
-        return this.client.getContentFile(fileHash)
-            .then(file => file.content)
+        const response = await fetch(`${this.getAddress()}/contents/${fileHash}`);
+        if (response.ok) {
+            return await response.buffer();
+        }
+
+        throw new Error(`Failed to fetch file with hash ${fileHash}`)
     }
 
     async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
