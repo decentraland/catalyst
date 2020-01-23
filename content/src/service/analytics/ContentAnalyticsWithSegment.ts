@@ -24,7 +24,7 @@ export class ContentAnalyticsWithSegment implements ContentAnalytics {
     static createRecordEvent(serverName: string, entity: Entity, ethAddress: EthAddress, origin: string): any {
         return {
             userId: ethAddress,
-            event: 'Katalyst Content Upload',
+            event: 'Catalyst Content Upload',
             properties: {
                 server: serverName,
                 type: entity.type,
