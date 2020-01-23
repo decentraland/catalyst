@@ -101,7 +101,7 @@ export class Controller {
             deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
         deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, auditInfo))
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, auditInfo, 'legacy'))
         .then(t => res.send({
             creationTimestamp: t
         }))
@@ -116,6 +116,7 @@ export class Controller {
         const ethAddress:EthAddress = req.body.ethAddress;
         const signature:Signature   = req.body.signature;
         const files                 = req.files
+        const origin                = req.header('x-upload-origin') ?? "unknown"
 
         if (!authChain && ethAddress && signature) {
             authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
@@ -125,7 +126,7 @@ export class Controller {
             deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
         deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}))
+        .then(fileSet => this.service.deployEntity(fileSet, entityId, { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}, origin))
         .then(t => res.send({
             creationTimestamp: t
         }))
