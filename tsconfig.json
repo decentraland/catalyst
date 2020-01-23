@@ -34,7 +34,8 @@
       "@katalyst/content/*": ["content/src/*"],
       "@katalyst/test-helpers/*": ["content/test/helpers/*"],
       "decentraland-katalyst-contracts/*": ["contracts/*"],
-      "decentraland-crypto/*": ["crypto/src/*"]
+      "decentraland-crypto/*": ["crypto/src/*"],
+      "katalyst/comms/peer/proto/*": ["dist/bin/comms/peer/proto/*"]
     }
   },
   "exclude": ["node_modules", "bazel-*", "**/node_modules/*", "dist"]

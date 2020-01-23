@@ -92,7 +92,7 @@ const sessionId = urlParams.get("sessionId") ?? util.randomToken();
       if (peerContainer.messagesSent < messageCount) {
         setTimeout(send, timeBetweenMessages);
       } else {
-        console.log("Peer finished: " + peerContainer.peer!.nickname);
+        console.log("Peer finished: " + peerContainer.peer!.peerId);
         finishedPeers.push(peerContainer);
 
         if (finishedPeers.length === peers.length) {

@@ -1,6 +1,8 @@
 load("@npm_bazel_typescript//:index.bzl", "ts_library")
 load("//tools/npm:package.bzl", "dataform_npm_package")
 load("@npm_bazel_karma//:index.bzl", "karma_web_test_suite")
+load("@npm_bazel_rollup//:index.bzl", "rollup_bundle")
+load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,6 +14,9 @@ ts_library(
     deps = [
         "@npm//eventemitter3",
         "@npm//fp-future",
+        "@npm//long",
+        "@npm//@types/long",
+        "@npm//protobufjs",
         "@npm//simple-peer",
     ],
 )
@@ -25,8 +30,6 @@ dataform_npm_package(
     deps = [":peer"],
 )
 
-load("@npm_bazel_rollup//:index.bzl", "rollup_bundle")
-
 rollup_bundle(
     name = "bundle",
     config_file = ":rollup.config.js",
@@ -39,8 +42,6 @@ rollup_bundle(
         "@npm//rollup-plugin-json",
     ],
 )
-
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package")
 
 npm_package(
     name = "package",
@@ -74,6 +75,8 @@ karma_web_test_suite(
     static_files = [
         "test/config.js",
         "@npm//simple-peer:simple-peer__files",
+        "@npm//protobufjs:protobufjs__files",
+        "@npm//long:long__files",
     ],
     tags = [],
     runtime_deps = [
@@ -83,6 +86,7 @@ karma_web_test_suite(
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
         "@npm//fp-future:fp-future__umd",
+        "@npm//protobufjs:protobufjs__umd",
         "@npm//karma-mocha-reporter",
         "@npm//karma-spec-reporter",
     ],
