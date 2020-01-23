@@ -42,6 +42,7 @@ async function filterNonOwnedNames(profileId: string, metadata: EntityMetadata):
 function addBaseUrlToSnapshots(baseUrl: string, metadata: EntityMetadata): EntityMetadata {
     const avatars = metadata.avatars.map(profile => (
         {
+            ...profile,
             name: profile.name,
             description: profile.description,
             avatar: {
