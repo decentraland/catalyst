@@ -9,25 +9,16 @@ package(default_visibility = ["//visibility:public"])
 ts_library(
     name = "peer",
     srcs = glob(["src/**/*.ts"]),
-    data = [":peer_proto_files"],
     module_name = "decentraland-katalyst-peer",
     tsconfig = "//:tsconfig.json",
     deps = [
         "@npm//eventemitter3",
         "@npm//fp-future",
-        "@npm//google-protobuf",
+        "@npm//long",
+        "@npm//@types/long",
+        "@npm//protobufjs",
         "@npm//simple-peer",
     ],
-)
-
-filegroup(
-    name = "peer_proto_files",
-    srcs = glob(
-        include = [
-            "src/proto/*",
-        ],
-    ),
-    visibility = ["//visibility:public"],
 )
 
 dataform_npm_package(
@@ -41,18 +32,12 @@ dataform_npm_package(
 
 rollup_bundle(
     name = "bundle",
-    srcs = glob(
-        include = [
-            "src/proto/*",
-        ],
-    ),
     config_file = ":rollup.config.js",
     entry_point = "src/index.ts",
     format = "esm",
     output_dir = False,
     deps = [
         ":peer",
-        ":peer_proto_files",
         "@npm//@wessberg/rollup-plugin-ts",
         "@npm//rollup-plugin-json",
     ],
@@ -64,7 +49,6 @@ npm_package(
         ":bundle.js",
         ":dpackage_gen_package_json",
         ":peer",
-        ":peer_proto_files",
     ],
 )
 
@@ -97,27 +81,10 @@ karma_web_test_suite(
     ],
     deps = [
         "test/config.js",
-        ":google_protobuf_requirejs",
-        ":peer_proto_files",
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
         "@npm//fp-future:fp-future__umd",
         "@npm//karma-mocha-reporter",
         "@npm//karma-spec-reporter",
     ],
-)
-
-# Copy the google-protobuf library and convert it to a AMD module so it can be loaded in the
-# RequireJS test environment.
-genrule(
-    name = "google_protobuf_requirejs",
-    srcs = [
-        "@npm//:node_modules/google-protobuf/google-protobuf.js",
-    ],
-    outs = [
-        "google-protobuf.js",
-    ],
-    cmd = """echo "define('google-protobuf', function(require, exports, module) {" > $@ \
-             && cat $< >> $@ \
-             && echo '});' >> $@""",
 )

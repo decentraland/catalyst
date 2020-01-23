@@ -80,7 +80,6 @@ nodejs_binary(
         ":lighthouse",
         ":static",
         ":static/monitor/src/bundle",
-        "//comms/peer:peer_proto_files",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
