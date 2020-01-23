@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+enum PacketType {
+  UKNOWN_PACKET_TYPE = 0;
+  MESSAGE = 1;
+  PING = 2;
+  PONG = 3;
+}
+
+enum PayloadEncoding {
+  BYTES = 0;
+  STRING = 1;
+  JSON = 2;
+}
+
+message MessageData {
+  string room = 1;
+  repeated bytes dst = 2;
+  bytes payload = 3;
+  PayloadEncoding encoding = 4;
+}
+
+message PingData {
+  uint32 pingId = 1;
+}
+
+message PongData {
+  uint32 pingId = 1;
+}
+
+message Packet {
+  uint32 sequenceId = 1;
+  uint32 instanceId = 2;
+  uint64 timestamp = 3;
+  string src = 4;
+  string subtype = 5;
+  //If negative, it means it is not set.
+  int32 discardOlderThan = 6;
+  //If negative, it means it is not set.
+  bool optimistic = 14;
+  int32 expireTime = 7;
+  uint32 hops = 8;
+  uint32 ttl = 9;
+  repeated string receivedBy = 10;
+  oneof data {
+    MessageData messageData = 11;
+    PingData pingData = 12;
+    PongData pongData = 13;
+  }
+}
