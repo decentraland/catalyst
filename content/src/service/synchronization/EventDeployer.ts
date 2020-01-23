@@ -1,6 +1,3 @@
-import { Stream, pipeline } from "stream"
-import util from "util"
-import parallelTransform from "parallel-transform"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Entity, EntityId } from "../Entity";
@@ -10,15 +7,17 @@ import { ContentCluster } from "./ContentCluster";
 import { AuditInfo } from "../audit/Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
-import { sortFromOldestToNewest } from "../time/TimeSorting";
+import { EventStreamProcessor } from "./EventStreamProcessor";
 
 export class EventDeployer {
 
-    static readonly PARALLEL_DOWNLOAD_WORKERS = 10
     static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
+    private readonly eventProcessor: EventStreamProcessor
 
     constructor(private readonly cluster: ContentCluster,
-        private readonly service: ClusterDeploymentsService) { }
+        private readonly service: ClusterDeploymentsService) {
+            this.eventProcessor = new EventStreamProcessor(event => this.prepareDeployment(event))
+        }
 
     deployHistories(histories: DeploymentHistory[]) {
         // Remove duplicates
@@ -32,73 +31,20 @@ export class EventDeployer {
         return this.deployHistory(unifiedHistory)
     }
 
-    async deployHistory(history: DeploymentHistory, source?: ContentServerClient) {
+    async deployHistory(history: DeploymentHistory, options?: HistoryDeploymentOptions) {
         // Determine whether I already know the entities
         const entitiesInHistory: EntityId[] = history.map(({ entityId }) => entityId)
         const newEntities: EntityId[] = await this.filterOutKnownFiles(entitiesInHistory)
 
-        // Keep and sort new deployments
-        const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
+        // Keep only new deployments
+        const newDeployments = history.filter(event => newEntities.includes(event.entityId));
 
-        // Deploy all
-        for (const newDeployment of newDeployments) {
-            const execution = await this.prepareDeployment(newDeployment, source)
-            await execution()
+        if (options?.logging) {
+            console.log(`History had ${history.length} entities, only ${newDeployments.length} new.`)
         }
-    }
 
-    /**
-     * This method is pretty similar to 'deployHistory'. In this case, the bootstrapping process continues, even if one of the deployments fails.
-     */
-    async bootstrapWithHistory(history: DeploymentHistory) {
-        // Determine whether I already know the entities
-        const entitiesInHistory: EntityId[] = history.map(({ entityId }) => entityId)
-        const newEntities: EntityId[] = await this.filterOutKnownFiles(entitiesInHistory)
-
-        // Keep and sort new deployments
-        const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
-        console.log(`Found a history of size ${history.length} to bootstrap with. Only ${newDeployments.length} are new and will be deployed`)
-
-        // Create readable stream with all the deployments
-        const readable = new Stream.Readable({ objectMode: true });
-        newDeployments.forEach((deployment, index) => readable.push([index, deployment]))
-        readable.push(null)
-
-        // For each deployment detected, download all files necessary
-        const transform = parallelTransform(EventDeployer.PARALLEL_DOWNLOAD_WORKERS, {objectMode: true}, async ([index, deploymentEvent], done) => {
-            try {
-                const execution = await this.prepareDeployment(deploymentEvent)
-                done(null, [index, execution]);
-            } catch (error) {
-                console.log(`Failed preparing the deployment ${index + 1}/${newEntities.length}`)
-                done(error)
-            }
-        })
-
-        // With everything in place, execute the deployment locally
-        const deployer = new Stream.Writable({
-            objectMode: true,
-            write: async ([index, performDeployment], _, done) => {
-                try {
-                    await performDeployment()
-                    console.log(`Deployed ${index + 1}/${newEntities.length}`)
-                    done();
-                } catch(error) {
-                    console.log(`Failed when trying to deploy ${index + 1}/${newEntities.length}`)
-                    done(error)
-                }
-            },
-        });
-
-        const awaitablePipeline = util.promisify(pipeline);
-
-        // Build and execute the pipeline
-        try {
-            await awaitablePipeline(readable,transform, deployer)
-            console.log("All good")
-        } catch (error) {
-            console.log("Error " + error)
-        }
+        // Process history and deploy it
+        return this.eventProcessor.deployHistory(newDeployments, options)
     }
 
     /** Download and prepare everything necessary to deploy an entity */
@@ -230,4 +176,10 @@ export class EventDeployer {
             .map(([fileHash, _]) => fileHash)
     }
 
+}
+
+export type HistoryDeploymentOptions ={
+    logging?: boolean,
+    continueOnFailure?: boolean,
+    preferredServer?: ContentServerClient
 }

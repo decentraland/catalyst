@@ -23,7 +23,9 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
         // Wait a little before retrying
         await sleep(ms("2s"))
         retries--;
-        console.log("All calls to other servers failed. Going to retry.")
+        if (retries >= 0) {
+            console.log("All calls to other servers failed. Going to retry.")
+        }
     }
 
     throw new Error(`Tried to execute request on all servers on the cluster, but they all failed`)
