@@ -1,3 +1,6 @@
+import { Stream, pipeline } from "stream"
+import util from "util"
+import parallelTransform from "parallel-transform"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Entity, EntityId } from "../Entity";
@@ -11,7 +14,7 @@ import { sortFromOldestToNewest } from "../time/TimeSorting";
 
 export class EventDeployer {
 
-    static readonly DEPLOYMENT_CHUNK_SIZE = 15
+    static readonly PARALLEL_DOWNLOAD_WORKERS = 10
     static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
 
     constructor(private readonly cluster: ContentCluster,
@@ -39,7 +42,8 @@ export class EventDeployer {
 
         // Deploy all
         for (const newDeployment of newDeployments) {
-            await this.prepareDeployment(newDeployment, source)
+            const execution = await this.prepareDeployment(newDeployment, source)
+            await execution()
         }
     }
 
@@ -55,26 +59,46 @@ export class EventDeployer {
         const newDeployments = sortFromOldestToNewest(history.filter(event => newEntities.includes(event.entityId)))
         console.log(`Found a history of size ${history.length} to bootstrap with. Only ${newDeployments.length} are new and will be deployed`)
 
+        // Create readable stream with all the deployments
+        const readable = new Stream.Readable({ objectMode: true });
+        newDeployments.forEach((deployment, index) => readable.push([index, deployment]))
+        readable.push(null)
 
-        let i = 0;
-        for (const events of this.splitInChunks(newDeployments, EventDeployer.DEPLOYMENT_CHUNK_SIZE)) {
-            // Prepare all deployments
-            const preparedDeployments = await Promise.all(events.map(event => this.prepareDeployment(event)));
+        // For each deployment detected, download all files necessary
+        const transform = parallelTransform(EventDeployer.PARALLEL_DOWNLOAD_WORKERS, {objectMode: true}, async ([index, deploymentEvent], done) => {
+            try {
+                const execution = await this.prepareDeployment(deploymentEvent)
+                done(null, [index, execution]);
+            } catch (error) {
+                console.log(`Failed preparing the deployment ${index + 1}/${newEntities.length}`)
+                done(error)
+            }
+        })
 
-            // Deploy each entity
-            preparedDeployments.forEach(preparedDeployment => preparedDeployment())
+        // With everything in place, execute the deployment locally
+        const deployer = new Stream.Writable({
+            objectMode: true,
+            write: async ([index, performDeployment], _, done) => {
+                try {
+                    await performDeployment()
+                    console.log(`Deployed ${index + 1}/${newEntities.length}`)
+                    done();
+                } catch(error) {
+                    console.log(`Failed when trying to deploy ${index + 1}/${newEntities.length}`)
+                    done(error)
+                }
+            },
+        });
 
-            // Report
-            i = Math.min(i + EventDeployer.DEPLOYMENT_CHUNK_SIZE, newDeployments.length)
-            console.log(`Deployed ${i}/${newDeployments.length} already.`)
+        const awaitablePipeline = util.promisify(pipeline);
+
+        // Build and execute the pipeline
+        try {
+            await awaitablePipeline(readable,transform, deployer)
+            console.log("All good")
+        } catch (error) {
+            console.log("Error " + error)
         }
-    }
-
-    private splitInChunks<T>(array: T[], chunkSize: number) {
-        const result: T[][] = [];
-        for (let i = 0; i < array.length; i += chunkSize)
-            result.push(array.slice(i, i + chunkSize));
-        return result;
     }
 
     /** Download and prepare everything necessary to deploy an entity */
@@ -172,7 +196,7 @@ export class EventDeployer {
      */
     private async getFileOrUndefinedIfBlacklisted(deployment: DeploymentEvent, fileHash: ContentFileHash, checkIfBlacklisted: (auditInfo: AuditInfo) => boolean, source?: ContentServerClient): Promise<ContentFile | undefined> {
         try {
-            return await tryOnCluster(server => server.getContentFile(fileHash), this.cluster, source)
+            return await tryOnCluster(server => server.getContentFile(fileHash), this.cluster, { preferred: source })
         } catch (error) {
             // If we reach this point, then no other server on the DAO could give us the file we are looking for. Maybe it's been blacklisted?
             const auditInfo: AuditInfo = await this.getAuditInfo(deployment, source)
@@ -189,11 +213,11 @@ export class EventDeployer {
     }
 
     private getEntity(deployment: DeploymentEvent, source: ContentServerClient | undefined): Promise<Entity> {
-        return tryOnCluster(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, source);
+        return tryOnCluster(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, { preferred: source });
     }
 
     private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo> {
-        return tryOnCluster(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, source)
+        return tryOnCluster(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, { preferred: source })
     }
 
     private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {

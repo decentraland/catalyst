@@ -34,7 +34,7 @@ export class Bootstrapper {
 
         // Bootstrap
         await deployer.bootstrapWithHistory(history)
-
+        console.log("DONE")
         return immutableTime
     }
 
