@@ -31,6 +31,10 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
     throw new Error(`Tried to execute request on all servers on the cluster, but they all failed`)
 }
 
+export function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 function reorderAccordingToPreference(activeServers: ContentServerClient[], preferred: ContentServerClient | undefined): ContentServerClient[] {
     if (preferred) {
         const newOrder = activeServers.filter(server => server.getName() != preferred.getName())
@@ -39,9 +43,5 @@ function reorderAccordingToPreference(activeServers: ContentServerClient[], pref
     } else {
         return activeServers
     }
-}
-
-function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
 }
 
