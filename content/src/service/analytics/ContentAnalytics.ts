@@ -3,6 +3,6 @@ import { EthAddress } from "../auth/Authenticator";
 
 export interface ContentAnalytics {
 
-    recordDeployment(serverName: string, entity: Entity, ethAddress: EthAddress): void
+    recordDeployment(serverName: string, entity: Entity, ethAddress: EthAddress, origin: string): void
 
 }

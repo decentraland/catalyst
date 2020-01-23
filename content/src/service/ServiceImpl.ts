@@ -67,12 +67,12 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.pointerManager.getActivePointers(type)
     }
 
-    async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<Timestamp> {
-        return this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.ALL)
+    async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string = ''): Promise<Timestamp> {
+        return this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.ALL, origin)
     }
 
     // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName, validationContext: ValidationContext): Promise<Timestamp> {
+    private async deployEntityWithServerAndTimestamp(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName, validationContext: ValidationContext, origin: string): Promise<Timestamp> {
         const validation = new Validations(this.accessChecker)
 
         // Find entity file and make sure its hash is the expected
@@ -148,7 +148,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
 
                 // Record deployment for analytics
-                this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress)
+                this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
             }
 
             return newAuditInfo.deployedTimestamp
@@ -205,19 +205,19 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, serverName, ValidationContext.SYNCED)
+        await this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, serverName, ValidationContext.SYNCED, 'sync')
     }
 
     async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp([entityFile], entityId, auditInfo, serverName, ValidationContext.OVERWRITE)
+        await this.deployEntityWithServerAndTimestamp([entityFile], entityId, auditInfo, serverName, ValidationContext.OVERWRITE, 'sync')
     }
 
     async deployEntityWithBlacklistedContent(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_CONTENT)
+        await this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_CONTENT, 'sync')
     }
 
     async deployEntityWithBlacklistedEntity(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp([entityFile], entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_ENTITY)
+        await this.deployEntityWithServerAndTimestamp([entityFile], entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_ENTITY, 'sync')
     }
 
     async setImmutableTime(immutableTime: number): Promise<void> {
