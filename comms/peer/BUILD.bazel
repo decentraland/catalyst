@@ -75,6 +75,8 @@ karma_web_test_suite(
     static_files = [
         "test/config.js",
         "@npm//simple-peer:simple-peer__files",
+        "@npm//protobufjs:protobufjs__files",
+        "@npm//long:long__files",
     ],
     tags = [],
     runtime_deps = [
@@ -84,6 +86,7 @@ karma_web_test_suite(
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
         "@npm//fp-future:fp-future__umd",
+        "@npm//protobufjs:protobufjs__umd",
         "@npm//karma-mocha-reporter",
         "@npm//karma-spec-reporter",
     ],

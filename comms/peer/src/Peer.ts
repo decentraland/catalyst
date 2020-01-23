@@ -412,7 +412,6 @@ export class Peer implements IPeer {
   }
 
   private handlePeerPacket(data: Uint8Array, peerId: string) {
-    data.constructor = Uint8Array;
     const packet: Packet = Packet.decode(Reader.create(data));
     // if (parsed.hasMessagedata()) {
 
@@ -638,16 +637,17 @@ export class Peer implements IPeer {
             break;
           }
 
-          if (payload.protocolVersion !== PROTOCOL_VERSION) {
-            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
-            break;
-          }
-
           if (this.connectedCount() >= this.config.maxConnections!) {
             this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
             break;
           }
         case ServerMessageType.Answer: {
+          
+          if (payload.protocolVersion !== PROTOCOL_VERSION) {
+            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
+            break;
+          }
+
           const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
           signalMessage(peer, payload.connectionId, payload.sdp);
           break;
