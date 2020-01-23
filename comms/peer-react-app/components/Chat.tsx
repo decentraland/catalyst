@@ -102,7 +102,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }
 
   function sendMessage() {
-    appendMessage(currentRoom, props.peer.nickname, message);
+    appendMessage(currentRoom, props.peer.peerId, message);
     props.peer.sendMessage(currentRoom, { type: "chat", message }, PeerMessageTypes.reliable);
     setMessage("");
   }
@@ -157,7 +157,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
 
   return (
     <div className="chat">
-      <h2 className="welcome-message">Welcome to the Chat {props.peer.nickname}</h2>
+      <h2 className="welcome-message">Welcome to the Chat {props.peer.peerId}</h2>
       <div className="side">
         <h3>Available rooms</h3>
         <ul className="available-rooms">
@@ -237,7 +237,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
           </div>
           <div className="messages-container">
             {messages[currentRoom]?.map((it, i) => (
-              <MessageBubble message={it} key={i} own={it.sender === props.peer.nickname} />
+              <MessageBubble message={it} key={i} own={it.sender === props.peer.peerId} />
             ))}
             <div style={{ float: "left", clear: "both" }} ref={messagesEndRef}></div>
           </div>

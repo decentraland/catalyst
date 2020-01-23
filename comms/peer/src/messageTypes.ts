@@ -1,16 +1,5 @@
-
-export type TTLInterleaving = {
-  interval: number;
-  ttls: [
-    {
-      from: number;
-      to: number;
-      ttl: number;
-    }
-  ];
-};
-
-export type TTLFunction = (index: number, type: PeerMessageType) => number  
+export type TTLFunction = (index: number, type: PeerMessageType) => number
+export type OptimisticFunction = (index: number, type: PeerMessageType) => boolean  
 
 export type PeerMessageType = {
   /**
@@ -19,7 +8,7 @@ export type PeerMessageType = {
    * 
    * NOTE: Interleaving is not implemented yet.
    */
-  ttl?: number | TTLInterleaving | TTLFunction; 
+  ttl?: number | TTLFunction; 
   /**
   * If the time since received the last message of the same type (calculated using the message timestamp) is greater than this value,
   * then the message is discarded. Set to 0 to discard al messages older than the last one. 
@@ -33,6 +22,11 @@ export type PeerMessageType = {
   expirationTime?: number;
 
   /**
+   * If a packet is optimistic, then the members of the received by list are set before sending the packet.
+   * An optimistic package should have a lot less duplicates, but it could be less reliable if the peer connection is not healthy
+   */
+  optimistic: boolean | OptimisticFunction;
+  /**
    * The name of the type is used as a key for some data structures, so it should be unique
    */
   name: string;
@@ -42,12 +36,14 @@ export const PeerMessageTypes = {
   reliable: {
     name: "reliable",
     ttl: 10,
-    expirationTime: 20 * 1000
+    expirationTime: 20 * 1000,
+    optimistic: false
   },
   unreliable: {
     name: "unreliable",
     ttl: 10, 
     discardOlderThan: 0,
-    expirationTime: 2000
+    expirationTime: 2000,
+    optimistic: true //9 out of 10 packets are optimistic
   }
 };

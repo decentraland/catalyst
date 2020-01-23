@@ -17,7 +17,7 @@ declare const window: Window & { peer: Peer };
 export function ConnectForm(props: {
   onConnected: (peer: IPeer, layer: string, room: string, url: string) => any;
   peerClass: {
-    new (url: string, nickname: string, callback: any, config: any): IPeer;
+    new (url: string, peerId: string, callback: any, config: any): IPeer;
   };
 }) {
   const [url, setUrl] = useState("http://localhost:9000");
