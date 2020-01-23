@@ -12,3 +12,4 @@ typescript_proto_library(
     name = "peer_proto_ts",
     proto = ":peer_proto",
 )
+

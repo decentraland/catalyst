@@ -7,7 +7,7 @@ import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType, PeerMessageTypes } from "./messageTypes";
-import { Packet, PayloadEncoding, MessageData } from "katalyst/comms/peer/proto/peer_pb";
+import { Packet, PayloadEncoding, MessageData } from "./proto/peer_pb";
 
 const PROTOCOL_VERSION = 2;
 

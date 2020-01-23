@@ -48,6 +48,7 @@ ts_devserver(
     deps = [
         "static/config.js",
         ":peer-react-app",
+        "//comms/peer:peer_proto_files",
         "//comms/peer:google_protobuf_requirejs",
         "@npm//decentraland-ui",
         "@npm//fp-future:fp-future__umd",
