@@ -16,7 +16,7 @@ export class EventDeployer {
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: ClusterDeploymentsService) {
-            this.eventProcessor = new EventStreamProcessor(event => this.prepareDeployment(event))
+            this.eventProcessor = new EventStreamProcessor((event, source) => this.prepareDeployment(event, source))
         }
 
     deployHistories(histories: DeploymentHistory[]) {

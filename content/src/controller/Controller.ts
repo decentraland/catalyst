@@ -192,7 +192,8 @@ export class Controller {
         }
 
         this.service.getAuditInfo(type, entityId)
-        .then(auditInfo => res.send(auditInfo))
+            .then(auditInfo => res.send(auditInfo))
+            .catch(() => res.status(404).send())
     }
 
     getHistory(req: express.Request, res: express.Response) {
