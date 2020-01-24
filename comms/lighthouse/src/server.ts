@@ -3,7 +3,6 @@ import express from "express";
 import morgan from "morgan";
 import { ExpressPeerServer, IRealm } from "peerjs-server";
 import { IConfig } from "peerjs-server/dist/src/config";
-import { recover } from "web3x/utils";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
@@ -11,6 +10,7 @@ import { Metrics } from "../../../commons/src/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
+import { Authenticator } from "decentraland-crypto/Authenticator";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -60,8 +60,7 @@ const options: Partial<IConfig> = {
       return false;
     }
     try {
-      const address = recover(client.getMsg(), message.payload);
-      const result = address.toString().toLowerCase() === client.getId().toLowerCase();
+      const result = Authenticator.validateSignature(client.getMsg(), message.payload);
 
       return result;
     } catch (e) {

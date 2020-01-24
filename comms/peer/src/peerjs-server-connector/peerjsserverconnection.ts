@@ -237,8 +237,6 @@ export class PeerJSServerConnection extends EventEmitter {
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
         this._open = true;
-        break;
-      case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         const { authHandler } = this._options;
         if (authHandler && payload) {
           authHandler(payload)
@@ -248,6 +246,8 @@ export class PeerJSServerConnection extends EventEmitter {
               return "";
             });
         }
+        break;
+      case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         this.emit(PeerEventType.Valid, this.id);
         break;
       case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
