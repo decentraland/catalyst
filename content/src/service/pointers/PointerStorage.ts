@@ -17,7 +17,7 @@ export class PointerStorage {
     }
 
     async getPointerReference(entityType: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
-        const buffer = await this.storage.getContent(this.resolveCategory(entityType), pointer);
+        const buffer = await this.storage.getContent(this.resolveCategory(entityType), pointer.toLocaleLowerCase());
         if (buffer) {
             return buffer.toString();
         } else {
@@ -26,7 +26,7 @@ export class PointerStorage {
     }
 
     setPointerReference(entityType: EntityType, pointer: Pointer, entityId: EntityId): Promise<void> {
-        return this.storage.store(this.resolveCategory(entityType), pointer, Buffer.from(entityId))
+        return this.storage.store(this.resolveCategory(entityType), pointer.toLocaleLowerCase(), Buffer.from(entityId))
     }
 
     deletePointerReference(entityType: EntityType, pointer: Pointer): Promise<void> {
