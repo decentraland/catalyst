@@ -10,6 +10,7 @@ export class AccessCheckerImpl implements AccessChecker {
             case EntityType.SCENE:
                 return this.checkSceneAccess(pointers, ethAddress)
             case EntityType.PROFILE:
+                return this.checkProfileAccess(pointers, ethAddress)
             case EntityType.WEARABLE:
                 // TODO: Implement
                 return []
@@ -55,6 +56,20 @@ export class AccessCheckerImpl implements AccessChecker {
             console.error(e)
         }
         return false
+    }
+
+    private async checkProfileAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
+        const errors: string[] = []
+
+        if (pointers.length!=1) {
+            errors.push(`Only one pointer is allowed when you create a Profile. Received: ${pointers}`)
+        }
+
+        if (pointers[0].toLocaleLowerCase() !== ethAddress.toLocaleLowerCase()) {
+            errors.push(`You can only alter your own profile. The pointer address and the signer address are different.`)
+        }
+
+        return errors
     }
 
 }

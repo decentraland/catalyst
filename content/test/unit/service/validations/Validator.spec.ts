@@ -4,6 +4,7 @@ import { Entity, EntityType } from "../../../../src/service/Entity"
 import { Authenticator, AuthChain, AuthLinkType } from "../../../../src/service/auth/Authenticator"
 import { MockedAccessChecker } from "../../../helpers/service/access/MockedAccessChecker"
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext"
+import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl"
 
 describe("Validations", function () {
 
@@ -217,7 +218,6 @@ describe("Validations", function () {
         await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
-
     })
 
     it(`when only signer link is provided, it's reported`, async () => {
@@ -229,7 +229,24 @@ describe("Validations", function () {
         await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
+    })
 
+    it(`when a profile is created its access is checked`, async () => {
+        const validation = new Validations(new AccessCheckerImpl())
+        await validation.validateAccess(EntityType.PROFILE, ['some-address'], 'some-address', ValidationContext.ALL)
+        expect(validation.getErrors().length).toBe(0)
+    })
+
+    it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
+        const validation = new Validations(new AccessCheckerImpl())
+        await validation.validateAccess(EntityType.PROFILE, ['some-address', 'other-address'], 'some-address', ValidationContext.ALL)
+        expect(validation.getErrors().length).toBe(1)
+    })
+
+    it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
+        const validation = new Validations(new AccessCheckerImpl())
+        await validation.validateAccess(EntityType.PROFILE, ['other-address'], 'some-address', ValidationContext.ALL)
+        expect(validation.getErrors().length).toBe(1)
     })
 
 })
