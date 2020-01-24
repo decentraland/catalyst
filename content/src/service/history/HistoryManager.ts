@@ -7,6 +7,7 @@ export interface HistoryManager {
     setTimeAsImmutable(immutableTime: Timestamp): Promise<void>;
     getLastImmutableTime(): Promise<Timestamp | undefined>;
     getHistory(from?: Timestamp, to?: Timestamp, contentServerName?: ServerName): Promise<DeploymentHistory>;
+    getHistorySize(): Promise<number>;
 }
 
 export type DeploymentEvent = {

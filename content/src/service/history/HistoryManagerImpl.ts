@@ -53,6 +53,12 @@ export class HistoryManagerImpl implements HistoryManager {
         return this.filterHistory(allHistory, from, to, serverName)
     }
 
+    /** Returns the size for the entire history */
+    async getHistorySize(): Promise<number> {
+        const immutableHistory = await this.storage.getImmutableHistory()
+        return this.tempHistory.length + immutableHistory.length
+    }
+
     private filterHistory(history: DeploymentHistory, from: Timestamp | undefined, to: Timestamp | undefined, serverName: ServerName | undefined): DeploymentHistory {
         if (from || to || serverName) {
             return history.filter((event: DeploymentEvent) =>
@@ -64,6 +70,7 @@ export class HistoryManagerImpl implements HistoryManager {
         }
     }
 
+    private
     private async getImmutableHistory(): Promise<DeploymentHistory> {
         const immutableHistory = await this.storage.getImmutableHistory()
         return sortFromNewestToOldest(immutableHistory)

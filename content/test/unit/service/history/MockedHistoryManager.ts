@@ -21,4 +21,8 @@ export class MockedHistoryManager implements HistoryManager {
         throw new Error("Method not implemented.");
     }
 
+    getHistorySize(): Promise<number> {
+        throw new Error("Method not implemented.");
+    }
+
 }

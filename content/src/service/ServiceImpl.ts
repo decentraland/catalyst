@@ -187,13 +187,14 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.storage.isContentAvailable(fileHashes)
     }
 
-    getStatus(): Promise<ServerStatus> {
-        return Promise.resolve({
+    async getStatus(): Promise<ServerStatus> {
+        return {
             name: this.nameKeeper.getServerName(),
             version: CURRENT_CONTENT_VERSION,
             currentTime: Date.now(),
-            lastImmutableTime: this.getLastImmutableTime()
-        })
+            lastImmutableTime: this.getLastImmutableTime(),
+            historySize: await this.historyManager.getHistorySize(),
+        }
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
