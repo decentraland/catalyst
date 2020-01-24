@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Environment } from '../../../Environment'
 import { baseContentServerUrl } from '../../../EnvironmentUtils'
-import { ownsENS } from '../ensFiltering'
+import { getOwnedENS } from '../ensFiltering'
 
 export async function getProfileById(env: Environment, req: Request, res: Response) {
     // Method: GET
@@ -27,12 +27,17 @@ export async function getProfileById(env: Environment, req: Request, res: Respon
  * We filter ENS to avoid send an ENS that is no longer owned by the user
  */
 async function filterNonOwnedNames(profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
+    const ownedENS = await getOwnedENS(profileId)
     const avatars = await Promise.all(metadata.avatars.map(async profile => (
         {
             ...profile,
-            name: await ownsENS(profileId, profile.name) ? profile.name : '',
+            name: ownsENS(ownedENS, profile.name) ? profile.name : '',
         })))
     return { avatars }
+}
+
+function ownsENS(ownedENS: string[], ensToCheck: string): boolean {
+    return ownedENS.findIndex(ens => ens===ensToCheck) >= 0
 }
 
 /**
