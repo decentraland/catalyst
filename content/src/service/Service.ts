@@ -15,7 +15,7 @@ export interface MetaverseContentService {
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
     getActivePointers(type: EntityType): Promise<Pointer[]>;
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
-    getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo>;
+    getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<Buffer | undefined>;
     getStatus(): Promise<ServerStatus>;

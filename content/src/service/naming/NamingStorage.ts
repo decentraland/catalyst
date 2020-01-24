@@ -9,12 +9,11 @@ export class NamingStorage {
     constructor(private storage: ContentStorage) { }
 
     async getName(): Promise<ServerName | undefined> {
-        const exists: Boolean = await this.storage.exists(NamingStorage.NAMING_CATEGORY, NamingStorage.NAMING_ID)
-        if (exists) {
-            const content: Buffer = await this.storage.getContent(NamingStorage.NAMING_CATEGORY, NamingStorage.NAMING_ID)
-            return content.toString()
+        const buffer = await this.storage.getContent(NamingStorage.NAMING_CATEGORY, NamingStorage.NAMING_ID)
+        if (buffer) {
+            return buffer.toString()
         } else {
-            return Promise.resolve(undefined)
+            return undefined
         }
     }
 

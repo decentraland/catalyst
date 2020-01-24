@@ -179,7 +179,7 @@ export class Controller {
         .then(pointers => res.send(pointers))
     }
 
-    getAudit(req: express.Request, res: express.Response) {
+    async getAudit(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /audit/:type/:entityId
         const type     = this.parseEntityType(req.params.type)
@@ -191,9 +191,12 @@ export class Controller {
             return
         }
 
-        this.service.getAuditInfo(type, entityId)
-            .then(auditInfo => res.send(auditInfo))
-            .catch(() => res.status(404).send())
+        const auditInfo = await this.service.getAuditInfo(type, entityId)
+        if (auditInfo) {
+            res.send(auditInfo)
+        } else {
+            res.status(404).send()
+        }
     }
 
     getHistory(req: express.Request, res: express.Response) {

@@ -62,7 +62,7 @@ describe("End 2 end - Unreachable node", function() {
         await assertHistoryOnServerHasEvents(server3, )
 
         // Wait for long sync interval
-        await sleep(LONG_SYNC_INTERVAL)
+        await sleep(LONG_SYNC_INTERVAL * 2)
 
         // Now, server 3 detected that server 1 is down, and asked for its updated to server 2
         await assertHistoryOnServerHasEvents(server3, deploymentEvent)

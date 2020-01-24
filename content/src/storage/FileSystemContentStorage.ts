@@ -27,9 +27,12 @@ export class FileSystemContentStorage implements ContentStorage {
         await fs.promises.unlink(this.getFilePath(category, id))
     }
 
-    getContent(category: string, id: string): Promise<Buffer> {
-        // TODO: Catch potential exception if file doesn't exist, and return better error message
-        return fs.promises.readFile(this.getFilePath(category, id))
+    async getContent(category: string, id: string): Promise<Buffer | undefined> {
+        try {
+            return await fs.promises.readFile(this.getFilePath(category, id))
+        } catch (error) {
+            return Promise.resolve(undefined)
+        }
     }
 
     listIds(category: string): Promise<string[]> {

@@ -58,40 +58,45 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return availability
     }
 
-    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
+    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined> {
         // Retrieve audit info and entity
         const auditInfo = await this.service.getAuditInfo(type, id);
-        const entity = (await this.service.getEntitiesByIds(type, [id]))[0]
 
-        // Build respective targets
-        const entityTarget = buildEntityTarget(type, id);
-        const contentTargets: Map<ContentFileHash, BlacklistTarget> = new Map(Array.from(entity.content?.values() ?? [])
-            .map(fileHash => [fileHash, buildContentTarget(fileHash)]))
-        const allTargets = [entityTarget, ...contentTargets.values()]
+        if (!auditInfo) {
+            return undefined
+        } else {
+            const entity = (await this.service.getEntitiesByIds(type, [id]))[0]
 
-        // Check if any of the targets are blacklisted
-        const blacklisted: Map<BlacklistTarget, boolean> = await this.blacklist.areTargetsBlacklisted(allTargets);
+            // Build respective targets
+            const entityTarget = buildEntityTarget(type, id);
+            const contentTargets: Map<ContentFileHash, BlacklistTarget> = new Map(Array.from(entity.content?.values() ?? [])
+                .map(fileHash => [fileHash, buildContentTarget(fileHash)]))
+            const allTargets = [entityTarget, ...contentTargets.values()]
 
-        // Create new result
-        let result: AuditInfo = {
-            ...auditInfo
+            // Check if any of the targets are blacklisted
+            const blacklisted: Map<BlacklistTarget, boolean> = await this.blacklist.areTargetsBlacklisted(allTargets);
+
+            // Create new result
+            let result: AuditInfo = {
+                ...auditInfo
+            }
+
+            // If entity is blacklisted, then mark it on the audit info
+            if (blacklisted.get(entityTarget)) {
+                result.isBlacklisted = true
+            }
+
+            // If any of the content is blacklisted, then add them to the audit info
+            const blacklistedContent: ContentFileHash[] = Array.from(contentTargets.entries())
+                .filter(([, target]) => blacklisted.get(target))
+                .map(([fileHash, ]) => fileHash)
+
+            if (blacklistedContent.length > 0) {
+                result.blacklistedContent = blacklistedContent
+            }
+
+            return result
         }
-
-        // If entity is blacklisted, then mark it on the audit info
-        if (blacklisted.get(entityTarget)) {
-            result.isBlacklisted = true
-        }
-
-        // If any of the content is blacklisted, then add them to the audit info
-        const blacklistedContent: ContentFileHash[] = Array.from(contentTargets.entries())
-            .filter(([, target]) => blacklisted.get(target))
-            .map(([fileHash, ]) => fileHash)
-
-        if (blacklistedContent.length > 0) {
-            result.blacklistedContent = blacklistedContent
-        }
-
-        return result
     }
 
     getStatus(): Promise<ServerStatus> {
