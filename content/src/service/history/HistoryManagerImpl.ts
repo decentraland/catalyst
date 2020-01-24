@@ -39,7 +39,9 @@ export class HistoryManagerImpl implements HistoryManager {
             const nowImmutable: DeploymentHistory = sortFromOldestToNewest(this.tempHistory.splice(index, this.tempHistory.length - index))
             await this.storage.setTempHistory(this.tempHistory)
             await this.storage.appendToImmutableHistory(nowImmutable)
-            this.immutableHistorySize = (await this.getImmutableHistorySize()) + nowImmutable.length
+            if (this.immutableHistorySize) {
+                this.immutableHistorySize = this.immutableHistorySize + nowImmutable.length
+            }
         }
     }
 
