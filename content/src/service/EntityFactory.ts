@@ -1,4 +1,4 @@
-import { Entity, EntityId, EntityType } from "./Entity";
+import { Entity, EntityId, EntityType, Pointer } from "./Entity";
 import { ContentFile } from "./Service";
 import { ContentFileHash } from "./Hashing";
 
@@ -48,7 +48,7 @@ export class EntityFactory {
         }
 
         const type: EntityType = EntityType[object.type.toUpperCase().trim()]
-        return new Entity(id, type, object.pointers, object.timestamp, content, object.metadata)
+        return new Entity(id, type, object.pointers.map((pointer: Pointer) => pointer.toLocaleLowerCase()), object.timestamp, content, object.metadata)
     }
 
     private static parseContent(contents: any[]): Map<string, ContentFileHash> {

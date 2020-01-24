@@ -51,6 +51,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
         return Promise.all(pointers
+            .map((pointer: Pointer) => pointer.toLocaleLowerCase())
             .map((pointer: Pointer) => this.pointerManager.getEntityInPointer(type, pointer)))
             .then((entityIds:(EntityId|undefined)[]) => entityIds.filter(entity => entity !== undefined))
             .then(entityIds => this.getEntitiesByIds(type, entityIds as EntityId[]))
