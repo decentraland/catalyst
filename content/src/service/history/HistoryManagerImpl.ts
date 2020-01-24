@@ -10,6 +10,8 @@ export class HistoryManagerImpl implements HistoryManager {
     /** This history is sorted from newest to oldest */
     private tempHistory: DeploymentHistory
 
+    private immutableHistorySize: number | undefined
+
     private constructor(private storage: HistoryStorage, tempHistory: DeploymentHistory) {
         this.tempHistory = tempHistory
     }
@@ -37,6 +39,7 @@ export class HistoryManagerImpl implements HistoryManager {
             const nowImmutable: DeploymentHistory = sortFromOldestToNewest(this.tempHistory.splice(index, this.tempHistory.length - index))
             await this.storage.setTempHistory(this.tempHistory)
             await this.storage.appendToImmutableHistory(nowImmutable)
+            this.immutableHistorySize = (await this.getImmutableHistorySize()) + nowImmutable.length
         }
     }
 
@@ -55,8 +58,15 @@ export class HistoryManagerImpl implements HistoryManager {
 
     /** Returns the size for the entire history */
     async getHistorySize(): Promise<number> {
-        const immutableHistory = await this.storage.getImmutableHistory()
-        return this.tempHistory.length + immutableHistory.length
+        return (await this.getImmutableHistorySize()) + this.tempHistory.length
+    }
+
+    private async getImmutableHistorySize(): Promise<number> {
+        if (!this.immutableHistorySize) {
+            const immutableHistory = await this.storage.getImmutableHistory()
+            this.immutableHistorySize = immutableHistory.length
+        }
+        return this.immutableHistorySize
     }
 
     private filterHistory(history: DeploymentHistory, from: Timestamp | undefined, to: Timestamp | undefined, serverName: ServerName | undefined): DeploymentHistory {
