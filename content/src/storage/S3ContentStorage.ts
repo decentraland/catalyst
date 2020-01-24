@@ -21,9 +21,11 @@ export class S3ContentStorage implements ContentStorage {
         const key: string = this.createKey(category, id)
 
         if (append) {
-            // TODO: This is extremelly unefficient but S3 does not provide an append operation. Can we find a better approach?
+            // TODO: This is extremely inefficient but S3 does not provide an append operation. Can we find a better approach?
             const currentContent = await this.getContent(category, id)
-            content = Buffer.concat([currentContent, content])
+            if (currentContent) {
+                content = Buffer.concat([currentContent, content])
+            }
         }
 
         const request: AWS.S3.Types.PutObjectRequest = {
@@ -63,18 +65,18 @@ export class S3ContentStorage implements ContentStorage {
         })
     }
 
-    getContent(category: string, id: string): Promise<Buffer> {
+    getContent(category: string, id: string): Promise<Buffer | undefined> {
         const key: string = this.createKey(category, id)
         const request: AWS.S3.Types.GetObjectRequest = {
             Bucket: this.bucket,
             Key: key,
         }
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             this.s3Client.getObject(request, (error, data: AWS.S3.Types.GetObjectOutput) => {
                 if (error) {
                     console.error(`Error retrieving data from S3. Id: ${key}`, error);
-                    return reject(error)
+                    return resolve(undefined)
                 }
 
                 console.log(`Successfully retrieved data from S3. Id: ${key}`);

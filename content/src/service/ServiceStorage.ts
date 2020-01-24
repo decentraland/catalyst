@@ -13,12 +13,8 @@ export class ServiceStorage {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
     }
 
-    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
-        try {
-            return await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
-        } catch (error) {
-            return Promise.resolve(undefined)
-        }
+    getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
+        return this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
     }
 
     async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
@@ -30,10 +26,10 @@ export class ServiceStorage {
     }
 
     async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        try {
-            const buffer = await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, id)
+        const buffer = await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, id)
+        if (buffer) {
             return EntityFactory.fromBufferWithId(buffer, id)
-        } catch (error) {
+        } else {
             return undefined
         }
     }

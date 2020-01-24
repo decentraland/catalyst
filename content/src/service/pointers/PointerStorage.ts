@@ -17,11 +17,11 @@ export class PointerStorage {
     }
 
     async getPointerReference(entityType: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
-        try {
-            const buffer = await this.storage.getContent(this.resolveCategory(entityType), pointer);
+        const buffer = await this.storage.getContent(this.resolveCategory(entityType), pointer);
+        if (buffer) {
             return buffer.toString();
-        } catch (e) {
-            return Promise.resolve(undefined)
+        } else {
+            return undefined
         }
     }
 
@@ -37,12 +37,8 @@ export class PointerStorage {
         return this.storage.store(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID, Buffer.from(tempDeployments))
     }
 
-    async readStoredTempDeployments(): Promise<Buffer | undefined> {
-        try {
-            return await this.storage.getContent(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID)
-        } catch (e) {
-            return Promise.resolve(undefined)
-        }
+    readStoredTempDeployments(): Promise<Buffer | undefined> {
+        return this.storage.getContent(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID)
     }
 
     private resolveCategory(type: EntityType): string {

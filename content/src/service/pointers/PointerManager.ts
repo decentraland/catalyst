@@ -88,11 +88,7 @@ export class PointerManager {
     }
 
     private getPointerFromDisk(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
-        try {
-            return this.storage.getPointerReference(type, pointer)
-        } catch (e) {
-            return Promise.resolve(undefined)
-        }
+        return this.storage.getPointerReference(type, pointer)
     }
 
 }

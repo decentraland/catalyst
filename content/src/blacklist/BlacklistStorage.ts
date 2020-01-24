@@ -49,10 +49,10 @@ export class BlacklistStorage {
     }
 
     private async retrieveMetadata(targetAsId: string): Promise<BlacklistMetadata | undefined> {
-        try {
-            const metadataBuffer = await this.storage.getContent(BlacklistStorage.BLACKLIST_CATEGORY, targetAsId);
+        const metadataBuffer = await this.storage.getContent(BlacklistStorage.BLACKLIST_CATEGORY, targetAsId);
+        if (metadataBuffer) {
             return JSON.parse(metadataBuffer.toString())
-        } catch (error) {
+        } else {
             return undefined
         }
     }

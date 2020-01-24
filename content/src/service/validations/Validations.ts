@@ -94,12 +94,14 @@ export class Validations {
     async validateLegacyEntity(entityToBeDeployed: Entity,
         auditInfoBeingDeployed: AuditInfo,
         entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>,
-        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfo>,
+        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfo | undefined>,
         validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
             const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
             const currentAuditInfos = await Promise.all(currentPointedEntities.map(entity => auditInfoFetcher(entity.type, entity.id)))
-            currentAuditInfos.forEach(currentAuditInfo => {
+            currentAuditInfos
+                .filter((currentAuditInfo): currentAuditInfo is AuditInfo => !!currentAuditInfo)
+                .forEach((currentAuditInfo: AuditInfo) => {
                 if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
                     this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
                 } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {

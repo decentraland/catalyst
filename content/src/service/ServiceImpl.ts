@@ -179,20 +179,12 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.storage.getContent(fileHash);
     }
 
-    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        const auditInfo: AuditInfo | undefined = await this.auditManager.getAuditInfo(id);
-        return this.assertDefined(auditInfo, `Failed to find the audit information for the entity with type ${type} and id ${id}.`)
+    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined> {
+        return this.auditManager.getAuditInfo(id);
     }
 
     async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         return this.storage.isContentAvailable(fileHashes)
-    }
-
-    private assertDefined<T>(value: T | undefined, errorMessage: string): T {
-        if (!value) {
-            throw new Error(errorMessage)
-        }
-        return value
     }
 
     getStatus(): Promise<ServerStatus> {

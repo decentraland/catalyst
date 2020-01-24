@@ -22,12 +22,8 @@ export class MockedStorage implements ContentStorage {
         this.storage.delete(this.getKey(category, id))
         return Promise.resolve()
     }
-    getContent(category: string, id: string): Promise<Buffer> {
-        const content: Buffer | undefined = this.storage.get(this.getKey(category, id))
-        if (!content) {
-            throw new Error("Content not found");
-        }
-        return Promise.resolve(content)
+    getContent(category: string, id: string): Promise<Buffer | undefined> {
+        return Promise.resolve(this.storage.get(this.getKey(category, id)))
     }
     listIds(category: string): Promise<string[]> {
         const ids = Array.from(this.storage.keys())
