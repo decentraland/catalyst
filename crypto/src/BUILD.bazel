@@ -1,0 +1,33 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
+load("//tools/npm:package.bzl", "dataform_npm_package")
+load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package")
+
+ts_library(
+    name = "src",
+    srcs = glob(["**/*.ts"]),
+    module_name = "decentraland-crypto",
+    deps = [
+        "@npm//@types",
+        "@npm//eth-crypto",
+    ],
+)
+
+dataform_npm_package(
+    name = "dpackage",
+    package_layers = [
+        "//:common.package.json",
+        "//crypto:crypto.package.json",
+    ],
+    version = "0.0.1",
+    deps = [],
+)
+
+npm_package(
+    name = "package",
+    deps = [
+        ":dpackage_gen_package_json",
+        ":src",
+    ],
+)

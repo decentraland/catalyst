@@ -1,13 +1,13 @@
 load("@build_bazel_rules_nodejs//:defs.bzl", "npm_package")
 load("//:version.bzl", "LH_VERSION")
 
-def dataform_npm_package(name, deps, srcs = [], package_layers = []):
+def dataform_npm_package(name, deps, srcs = [], package_layers = [], version = LH_VERSION):
     native.genrule(
         name = name + "_gen_package_json",
         srcs = package_layers,
         tools = ["//tools/json-merge:bin"],
         outs = ["package.json"],
-        cmd = "$(location //tools/json-merge:bin) --output-path $(OUTS) --layer-paths $(SRCS) --substitutions '{{ \"$$LH_VERSION\": \"{lh_version}\" }}'".format(lh_version = LH_VERSION),
+        cmd = "$(location //tools/json-merge:bin) --output-path $(OUTS) --layer-paths $(SRCS) --substitutions '{{ \"$$LH_VERSION\": \"{lh_version}\" }}'".format(lh_version = version),
     )
 
     npm_package(
