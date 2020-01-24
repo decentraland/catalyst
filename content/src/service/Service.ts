@@ -51,6 +51,7 @@ export type ServerStatus = {
     version: ServerVersion
     currentTime: Timestamp
     lastImmutableTime: Timestamp
+    historySize: number
 }
 
 

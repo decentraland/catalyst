@@ -33,6 +33,7 @@ class RedirectContentServerClient extends ContentServerClient {
             version: "Unknown",
             currentTime: this.lastKnownTimestamp,
             lastImmutableTime: -1,
+            historySize: -1,
         };
         return Promise.resolve(status)
     }
