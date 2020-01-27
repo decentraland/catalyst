@@ -3,6 +3,13 @@ import { AuditInfo } from "../audit/Audit";
 
 export class Authenticator {
 
+    static DECENTRALAND_ADDRESS: EthAddress = "0x1337e0507eb4ab47e08a179573ed4533d9e22a7b"
+
+    /** Return whether the given address used is owned by Decentraland */
+    static isAddressOwnedByDecentraland(address: EthAddress) {
+        return address.toLocaleLowerCase() === Authenticator.DECENTRALAND_ADDRESS
+    }
+
     /** Validate that the signature belongs to the Ethereum address */
     static async validateSignature(expectedFinalAuthority: string, authChain: AuthChain): Promise<boolean> {
         let currentAuthority: string = ''
