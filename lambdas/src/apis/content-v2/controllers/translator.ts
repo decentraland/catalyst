@@ -132,6 +132,15 @@ export async function getContents(env: Environment, req: Request, res: Response)
         res.contentType('application/octet-stream')
         res.end(data, 'binary')
     } else {
+        if (response.status===404) {
+            // Let's try on the old content server
+            const responsev2 = await fetch(`https://content.decentraland.org/contents/${cid}`)
+            if (responsev2.ok) {
+                const data = await responsev2.buffer()
+                res.contentType('application/octet-stream')
+                res.end(data, 'binary')
+            }
+        }
         res.status(404).send()
     }
 }
