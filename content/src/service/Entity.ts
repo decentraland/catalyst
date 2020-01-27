@@ -13,6 +13,5 @@ export type EntityId = ContentFileHash
 
 export enum EntityType {
     SCENE = "scene",
-    WEARABLE = "wearable",
     PROFILE = "profile",
 }
