@@ -11,7 +11,7 @@ export async function buildEntityAndFile(type: EntityType, pointers: Pointer[], 
     const entity: Entity = new Entity("temp-id", type, pointers, timestamp, content, metadata)
     const file: ContentFile = entityToFile(entity, ENTITY_FILE_NAME)
     const fileHash: ContentFileHash = await Hashing.calculateHash(file)
-    const entityWithCorrectId = new Entity(fileHash, entity.type, entity.pointers, entity.timestamp, entity.content, entity.metadata)
+    const entityWithCorrectId = new Entity(fileHash, entity.type, entity.pointers.map(pointer => pointer.toLocaleLowerCase()), entity.timestamp, entity.content, entity.metadata)
     return [entityWithCorrectId, file]
 }
 

@@ -3,7 +3,10 @@ import { ContentFileHash } from "../service/Hashing";
 import { EthAddress } from "../service/auth/Authenticator";
 
 export class BlacklistTarget {
-    constructor(private readonly type: BlacklistTargetType, private readonly id: BlacklistTargetId) { }
+    private readonly id: BlacklistTargetId;
+    constructor(private readonly type: BlacklistTargetType, id: BlacklistTargetId) {
+        this.id = id.toLocaleLowerCase()
+    }
 
     asString(): string {
         return `${this.type}-${this.id}`

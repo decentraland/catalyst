@@ -26,7 +26,7 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
 
     const [entity, entityFile] = await buildControllerEntityAndFile(
         EntityType.SCENE,
-        pointers,
+        pointers.map(pointer => pointer.toLocaleLowerCase()),
         (afterEntity?.timestamp ?? Date.now()) + 1,
         content,
         metadata)
