@@ -12,8 +12,8 @@ import { Authenticator } from "@katalyst/content/service/auth/Authenticator";
 
 describe("BlacklistServiceDecorator", () => {
 
-    const P1: Pointer = "P1"
-    const P2: Pointer = "P2"
+    const P1: Pointer = "p1"
+    const P2: Pointer = "p2"
     const content1 = buildRandomContent()
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
