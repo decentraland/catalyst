@@ -1,17 +1,19 @@
 import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { BlacklistServiceDecorator } from "@katalyst/content/blacklist/BlacklistServiceDecorator"
-import { buildDeployData, deleteServerStorage } from "./E2ETestUtils"
+import { buildDeployData, deleteServerStorage, createIdentity } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { assertFileIsOnServer, assertEntityIsNotBlacklisted, assertEntityIsBlacklisted, assertFileIsNotOnServer, assertContentNotIsBlacklisted, assertContentIsBlacklisted, assertRequiredFieldsOnEntitiesAreEqual } from "./E2EAssertions"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { MockedContentAnalytics } from "../helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
+import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
 
 describe("End 2 end - Blacklist", () => {
 
     const metadata: string = "Some metadata"
+    const identity = createIdentity()
     let server: TestServer
 
     beforeEach(async () => {
@@ -20,6 +22,7 @@ describe("End 2 end - Blacklist", () => {
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withConfig(EnvironmentConfig.METRICS, false)
+            .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
             .build()
         server = new TestServer(env)
         await server.start()
@@ -47,8 +50,8 @@ describe("End 2 end - Blacklist", () => {
         // Assert that audit info doesn't say that it is blacklisted
         await assertEntityIsNotBlacklisted(server, entityBeingDeployed)
 
-        // Black list the entity
-        await server.blacklistEntity(entityBeingDeployed)
+        // Blacklist the entity
+        await server.blacklistEntity(entityBeingDeployed, identity)
 
         // Assert that entity has been sanitized
         const blacklistedEntity = await server.getEntityById(EntityType[entityBeingDeployed.type.toUpperCase()], entityBeingDeployed.id)
@@ -61,6 +64,30 @@ describe("End 2 end - Blacklist", () => {
 
         // Assert that audit info marks the entity as blacklisted
         await assertEntityIsBlacklisted(server, entityBeingDeployed)
+    });
+
+    it(`When an entity is unblacklisted, then it goes back to normal`, async () => {
+        // Prepare entity to deploy
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
+
+        // Deploy the entity
+        await server.deploy(deployData)
+
+        // Blacklist the entity
+        await server.blacklistEntity(entityBeingDeployed, identity)
+
+        // Assert that entity file is not available
+        await assertEntityIsBlacklisted(server, entityBeingDeployed)
+
+        // Unblacklist the entity
+        await server.unblacklistEntity(entityBeingDeployed, identity)
+
+        // Assert that audit info marks the entity as blacklisted
+        await assertEntityIsNotBlacklisted(server, entityBeingDeployed)
+
+        // Assert that the entity is not sanitized
+        const entityOnServer = await server.getEntityById(EntityType[entityBeingDeployed.type.toUpperCase()], entityBeingDeployed.id)
+        expect(entityOnServer).toEqual(entityBeingDeployed)
     });
 
     it(`When content is blacklisted, then the entity that contains it says so`, async () => {
@@ -78,7 +105,7 @@ describe("End 2 end - Blacklist", () => {
         await assertContentNotIsBlacklisted(server, entityBeingDeployed, contentHash)
 
         // Blacklist the content
-        await server.blacklistContent(contentHash)
+        await server.blacklistContent(contentHash, identity)
 
         // Assert that the content file is not available
         await assertFileIsNotOnServer(server, contentHash)
@@ -86,4 +113,28 @@ describe("End 2 end - Blacklist", () => {
         // Assert that audit info marks content entity as blacklisted
         await assertContentIsBlacklisted(server, entityBeingDeployed, contentHash)
     });
+
+    it(`When random identity tries to blacklist an entity, then an error is thrown`, async () => {
+        // Prepare entity to deploy
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+
+        // Deploy the entity
+        await server.deploy(deployData)
+
+        // Blacklist the entity
+        assertPromiseIsRejected(() => server.blacklistEntity(entityBeingDeployed, createIdentity()))
+    });
+
+    it(`When random identity tries to blacklist some content, then an error is thrown`, async () => {
+        // Prepare entity to deploy
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
+        const contentHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
+
+        // Deploy the entity
+        await server.deploy(deployData)
+
+        // Blacklist the content
+        assertPromiseIsRejected(() => server.blacklistContent(contentHash, createIdentity()))
+    });
+
 })

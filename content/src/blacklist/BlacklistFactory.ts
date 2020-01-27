@@ -4,6 +4,6 @@ import { BlacklistStorage } from "./BlacklistStorage";
 
 export class BlacklistFactory {
     static create(env: Environment): Blacklist {
-        return new Blacklist(new BlacklistStorage(env.getBean(Bean.STORAGE)))
+        return new Blacklist(new BlacklistStorage(env.getBean(Bean.STORAGE)), env.getBean(Bean.AUTHENTICATOR))
     }
 }

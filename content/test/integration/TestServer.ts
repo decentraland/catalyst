@@ -7,7 +7,7 @@ import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { DeployData, hashAndSignMessage } from "./E2ETestUtils"
+import { DeployData, hashAndSignMessage, Identity } from "./E2ETestUtils"
 import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
@@ -105,19 +105,24 @@ export class TestServer extends Server {
         return this.client.getAuditInfo(type, id)
     }
 
-    blacklistEntity(entity: ControllerEntity): Promise<void> {
+    blacklistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
         const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-        return this.blacklistTarget(entityTarget)
+        return this.blacklistTarget(entityTarget, identity)
     }
 
-    async blacklistContent(fileHash: ContentFileHash): Promise<void> {
+    unblacklistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
+        const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
+        return this.unblacklistTarget(entityTarget, identity)
+    }
+
+    async blacklistContent(fileHash: ContentFileHash, identity: Identity): Promise<void> {
         const contentTarget = buildContentTarget(fileHash)
-        return this.blacklistTarget(contentTarget)
+        return this.blacklistTarget(contentTarget, identity)
     }
 
-    private async blacklistTarget(target: BlacklistTarget) {
+    private async blacklistTarget(target: BlacklistTarget, identity: Identity) {
         const timestamp = Date.now()
-        const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`)
+        const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
 
         const body = {
             "timestamp": timestamp,
@@ -126,6 +131,14 @@ export class TestServer extends Server {
         }
 
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
+        expect(deployResponse.ok).toBe(true)
+    }
+
+    private async unblacklistTarget(target: BlacklistTarget, identity: Identity) {
+        const timestamp = Date.now()
+        const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
+        const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
+        const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
         expect(deployResponse.ok).toBe(true)
     }
 

@@ -13,7 +13,7 @@ describe("Validations", function () {
             ["name-1", "hash-1"],
             ["name-2", "hash-2"],
         ]))
-        let validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}]
         ]), new Map([]), ValidationContext.ALL)
@@ -27,7 +27,7 @@ describe("Validations", function () {
             ["name-1", "hash-1"],
             ["name-2", "hash-2"],
         ]))
-        let validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         validation.validateContent(entity, new Map([]), new Map([["hash-2", true]]), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
@@ -38,7 +38,7 @@ describe("Validations", function () {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
         ]))
-        let validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}],
             ["hash-2", {name:"name-2", content: Buffer.from([])}]
@@ -52,7 +52,7 @@ describe("Validations", function () {
         let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([
             ["name-1", "hash-1"],
         ]))
-        let validation = new Validations(new MockedAccessChecker())
+        let validation = getValidatorWithMockedAccess()
         validation.validateContent(entity, new Map([
             ["hash-1", {name:"name-1", content: Buffer.from([])}],
         ]), new Map([
@@ -154,7 +154,7 @@ describe("Validations", function () {
     }
 
     it(`when signature is invalid, it's reported`, async () => {
-        let validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         await validation.validateSignature("some-entity-id", Authenticator.createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
@@ -164,7 +164,7 @@ describe("Validations", function () {
     it(`when signature is valid, it's recognized`, async () => {
         const identity = EthCrypto.createIdentity();
         const entityId = "some-entity-id"
-        let validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         await validation.validateSignature(
             entityId,
             Authenticator.createSimpleAuthChain(entityId, identity.address, EthCrypto.sign(
@@ -184,7 +184,7 @@ describe("Validations", function () {
 
         const authChain = Authenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
 
-        let validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         await validation.validateSignature(entityId, authChain, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(0)
     })
@@ -198,7 +198,7 @@ describe("Validations", function () {
         const signatures_second_is_invalid = Authenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
         signatures_second_is_invalid[2].signature = 'invalid-signature'
 
-        let validation = new Validations(new MockedAccessChecker())
+        let validation = getValidatorWithMockedAccess()
         await validation.validateSignature(entityId, signatures_second_is_invalid, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
@@ -206,14 +206,14 @@ describe("Validations", function () {
         const signatures_first_is_invalid = Authenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
         signatures_first_is_invalid[1].signature = 'invalid-signature'
 
-        validation = new Validations(new MockedAccessChecker())
+        validation = getValidatorWithMockedAccess()
         await validation.validateSignature(entityId, signatures_first_is_invalid, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
     })
 
     it(`when no signature are provided, it's reported`, async () => {
-        const validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         const invalidAuthChain: AuthChain = []
         await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
@@ -221,7 +221,7 @@ describe("Validations", function () {
     })
 
     it(`when only signer link is provided, it's reported`, async () => {
-        const validation = new Validations(new MockedAccessChecker())
+        const validation = getValidatorWithMockedAccess()
         const ownerIdentity = EthCrypto.createIdentity();
         const invalidAuthChain: AuthChain = [
             {type: AuthLinkType.SIGNER, payload: ownerIdentity.address, signature: ''},
@@ -232,19 +232,22 @@ describe("Validations", function () {
     })
 
     it(`when a profile is created its access is checked`, async () => {
-        const validation = new Validations(new AccessCheckerImpl())
+        const authenticator = new Authenticator()
+        const validation = new Validations(new AccessCheckerImpl(authenticator), authenticator)
         await validation.validateAccess(EntityType.PROFILE, ['some-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(0)
     })
 
     it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
-        const validation = new Validations(new AccessCheckerImpl())
+        const authenticator = new Authenticator()
+        const validation = new Validations(new AccessCheckerImpl(authenticator), authenticator)
         await validation.validateAccess(EntityType.PROFILE, ['some-address', 'other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })
 
     it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
-        const validation = new Validations(new AccessCheckerImpl())
+        const authenticator = new Authenticator()
+        const validation = new Validations(new AccessCheckerImpl(authenticator), authenticator)
         await validation.validateAccess(EntityType.PROFILE, ['other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })
@@ -257,4 +260,8 @@ const notAvailableHashMessage = (hash) => {
 
 const notReferencedHashMessage = (hash) => {
     return `This hash was uploaded but is not referenced in the entity: ${hash}`
+}
+
+function getValidatorWithMockedAccess() {
+    return new Validations(new MockedAccessChecker(), new Authenticator())
 }

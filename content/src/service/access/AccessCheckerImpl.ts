@@ -5,6 +5,8 @@ import { Pointer, EntityType } from "../Entity";
 
 export class AccessCheckerImpl implements AccessChecker {
 
+    constructor(private readonly authenticator: Authenticator) { }
+
     async hasAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         switch(entityType) {
             case EntityType.SCENE:
@@ -22,7 +24,7 @@ export class AccessCheckerImpl implements AccessChecker {
         pointers.map(pointer => pointer.toLocaleLowerCase())
             .forEach(async pointer => {
                 if (pointer.startsWith("default")) {
-                    if (!Authenticator.isAddressOwnedByDecentraland(ethAddress)) {
+                    if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
                         errors.push(`Only Decentraland can add or modify default scenes`)
                     }
                 } else {

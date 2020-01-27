@@ -14,13 +14,15 @@ import { SynchronizationManager } from "./service/synchronization/Synchronizatio
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { AccessChecker } from "./service/access/AccessChecker";
-import { AccessCheckerImpl } from "./service/access/AccessCheckerImpl";
 import { AuditFactory } from "./service/audit/AuditFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
 import { BlacklistFactory } from "./blacklist/BlacklistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
 import { EntityVersion } from "./service/audit/Audit";
+import { Authenticator } from "./service/auth/Authenticator";
+import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
+import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -73,6 +75,7 @@ export const enum Bean {
     CONTENT_CLUSTER,
     EVENT_DEPLOYER,
     BLACKLIST,
+    AUTHENTICATOR,
 }
 
 export const enum EnvironmentConfig {
@@ -86,6 +89,7 @@ export const enum EnvironmentConfig {
     SYNC_WITH_SERVERS_INTERVAL,
     IGNORE_VALIDATION_ERRORS,
     ALLOW_LEGACY_ENTITIES,
+    DECENTRALAND_ADDRESS,
 }
 
 export class EnvironmentBuilder {
@@ -151,12 +155,14 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('20s'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS      , () => Authenticator.DECENTRALAND_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
@@ -169,7 +175,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.BLACKLIST                   , () => BlacklistFactory.create(env))
         const pointerManager = await PointerManagerFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => pointerManager)
-        this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => new AccessCheckerImpl())
+        this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
         const service = await ServiceFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))

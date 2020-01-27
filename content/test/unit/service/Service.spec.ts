@@ -1,7 +1,7 @@
 import { ENTITY_FILE_NAME, ContentFile } from "@katalyst/content/service/Service";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { EntityType, Entity } from "@katalyst/content/service/Entity";
-import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment";
+import { EnvironmentBuilder, EnvironmentConfig, Bean } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
 import { NameKeeper } from "@katalyst/content/service/naming/NameKeeper";
 import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
@@ -15,6 +15,7 @@ import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator";
+import { Authenticator } from "@katalyst/content/service/auth/Authenticator";
 
 describe("Service", function () {
 
@@ -46,6 +47,7 @@ describe("Service", function () {
             .withHistoryManager(historyManager)
             .withAccessChecker(new MockedAccessChecker())
             .withNameKeeper({ getServerName: () => serverName } as NameKeeper)
+            .withBean(Bean.AUTHENTICATOR, new Authenticator())
             .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
             .build()
 

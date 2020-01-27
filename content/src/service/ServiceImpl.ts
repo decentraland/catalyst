@@ -30,6 +30,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
+        private authenticator: Authenticator,
         private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
@@ -43,10 +44,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         nameKeeper: NameKeeper,
         analytics: ContentAnalytics,
         accessChecker: AccessChecker,
+        authenticator: Authenticator,
         ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
             const lastImmutableTime: Timestamp = await historyManager.getLastImmutableTime() ?? 0
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, accessChecker, lastImmutableTime, ignoreValidationErrors)
+                analytics, accessChecker, authenticator, lastImmutableTime, ignoreValidationErrors)
         }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -74,7 +76,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     // TODO: Maybe move this somewhere else?
     private async deployEntityWithServerAndTimestamp(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName, validationContext: ValidationContext, origin: string): Promise<Timestamp> {
-        const validation = new Validations(this.accessChecker)
+        const validation = new Validations(this.accessChecker, this.authenticator)
 
         // Find entity file and make sure its hash is the expected
         const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
