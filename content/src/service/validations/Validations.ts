@@ -18,6 +18,15 @@ export class Validations {
         return this.errors
     }
 
+    /** Validate that the address used was owned by Decentraland */
+    validateDecentralandAddress(address: EthAddress, validationContext: ValidationContext) {
+        if (validationContext.shouldValidate(Validation.DECENTRALAND_ADDRESS)) {
+            if (!Authenticator.isAddressOwnedByDecentraland(address)){
+                this.errors.push(`Expected an address owned by decentraland. Instead, we found ${address}`)
+            }
+        }
+    }
+
     validateEntityHash(entityId: EntityId, entityFileHash: ContentFileHash, validationContext: ValidationContext) {
         if (validationContext.shouldValidate(Validation.ENTITY_HASH)) {
             if (entityId !== entityFileHash) {

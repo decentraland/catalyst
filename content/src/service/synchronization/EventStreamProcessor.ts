@@ -66,6 +66,7 @@ export class EventStreamProcessor {
             } catch (error) {
                 console.log(`Failed preparing the deployment ${index + 1}/${historyLength}. Entity id is ${deploymentEvent.entityId}`);
                 if (continueOnFailure) {
+                    console.log(`Error was:\n${error}`)
                     done();
                 } else {
                     done(error);
@@ -88,6 +89,7 @@ export class EventStreamProcessor {
                 } catch (error) {
                     console.log(`Failed when trying to deploy ${index + 1}/${historyLength}. Entity id is ${entityId}`);
                     if (continueOnFailure) {
+                        console.log(`Error was:\n${error}`)
                         done();
                     } else {
                         done(error);

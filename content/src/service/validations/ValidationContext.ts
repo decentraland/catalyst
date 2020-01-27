@@ -8,6 +8,7 @@ export enum Validation {
     LEGACY_ENTITY,
     CONTENT,
     ENTITY_HASH,
+    DECENTRALAND_ADDRESS,
 }
 
 export class ValidationContext {

@@ -92,7 +92,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
         const ownerAddress = Authenticator.ownerAddress(auditInfo)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
-            // TODO: Validate that dcl performed the deployment
+            // Validate that Decentraland performed the deployment
+            validation.validateDecentralandAddress(ownerAddress, validationContext)
 
             // Validate that there is no entity with a higher version
             await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers), (type, id) => this.getAuditInfo(type, id), validationContext)

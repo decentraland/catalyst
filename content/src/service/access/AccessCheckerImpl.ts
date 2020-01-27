@@ -1,6 +1,6 @@
 import { AccessChecker } from "./AccessChecker";
 import fetch from "node-fetch"
-import { EthAddress } from "../auth/Authenticator";
+import { EthAddress, Authenticator } from "../auth/Authenticator";
 import { Pointer, EntityType } from "../Entity";
 
 export class AccessCheckerImpl implements AccessChecker {
@@ -19,27 +19,28 @@ export class AccessCheckerImpl implements AccessChecker {
     private async checkSceneAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         const errors: string[] = []
 
-        const parcels: {x: number, y: number}[] = []
+        pointers.map(pointer => pointer.toLocaleLowerCase())
+            .forEach(async pointer => {
+                if (pointer.startsWith("default")) {
+                    if (!Authenticator.isAddressOwnedByDecentraland(ethAddress)) {
+                        errors.push(`Only Decentraland can add or modify default scenes`)
+                    }
+                } else {
+                    const pointerParts: string[] = pointer.split(',')
+                    if (pointerParts.length === 2) {
+                        const x: number = parseInt(pointerParts[0], 10)
+                        const y: number = parseInt(pointerParts[1], 10)
 
-        // Transform pointers into parcels
-        pointers.forEach(pointer => {
-            const pointerParts: string[] = pointer.split(',')
-            if (pointerParts.length === 2) {
-                const x: number = parseInt(pointerParts[0], 10)
-                const y: number = parseInt(pointerParts[1], 10)
-                parcels.push({x, y})
-            } else {
-                errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
-            }
-        })
-
-        // Check that the address has access
-        for (const {x, y} of parcels) {
-            const hasAccess = await this.checkParcelAccess(x, y, ethAddress)
-            if (!hasAccess) {
-                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
-            }
-        }
+                        // Check that the address has access
+                        const hasAccess = await this.checkParcelAccess(x, y, ethAddress)
+                        if (!hasAccess) {
+                            errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+                        }
+                    } else {
+                        errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
+                    }
+                }
+            })
 
         return errors
     }
