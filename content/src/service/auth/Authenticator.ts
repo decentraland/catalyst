@@ -5,13 +5,15 @@ export class Authenticator {
 
     static DECENTRALAND_ADDRESS: EthAddress = "0x1337e0507eb4ab47e08a179573ed4533d9e22a7b"
 
+    constructor(private readonly decentralandAddress: EthAddress = Authenticator.DECENTRALAND_ADDRESS) { }
+
     /** Return whether the given address used is owned by Decentraland */
-    static isAddressOwnedByDecentraland(address: EthAddress) {
-        return address.toLocaleLowerCase() === Authenticator.DECENTRALAND_ADDRESS
+    isAddressOwnedByDecentraland(address: EthAddress) {
+        return address.toLocaleLowerCase() === this.decentralandAddress.toLocaleLowerCase()
     }
 
     /** Validate that the signature belongs to the Ethereum address */
-    static async validateSignature(expectedFinalAuthority: string, authChain: AuthChain): Promise<boolean> {
+    async validateSignature(expectedFinalAuthority: string, authChain: AuthChain): Promise<boolean> {
         let currentAuthority: string = ''
         authChain.forEach(authLink => {
             const validator: ValidatorType = getValidatorByType(authLink.type)

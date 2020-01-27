@@ -4,7 +4,6 @@ import morgan from "morgan";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
-import { initializeWearablesRoutes } from "./apis/wearables/routes";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
 
@@ -34,8 +33,6 @@ export class Server {
       // Profile API implementation
       this.app.use("/profile", initializeProfilesRoutes(express.Router(), env))
 
-      // Wearables API implementation
-      this.app.use("/wearables", initializeWearablesRoutes(express.Router()))
     }
 
    private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response)=>void, isPost?:boolean, extraHandler?: RequestHandler) {

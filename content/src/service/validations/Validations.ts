@@ -12,7 +12,7 @@ export class Validations {
 
     private errors: string[] = []
 
-    constructor(private accessChecker: AccessChecker) {}
+    constructor(private accessChecker: AccessChecker, private authenticator: Authenticator) {}
 
     getErrors(): string[] {
         return this.errors
@@ -21,7 +21,7 @@ export class Validations {
     /** Validate that the address used was owned by Decentraland */
     validateDecentralandAddress(address: EthAddress, validationContext: ValidationContext) {
         if (validationContext.shouldValidate(Validation.DECENTRALAND_ADDRESS)) {
-            if (!Authenticator.isAddressOwnedByDecentraland(address)){
+            if (!this.authenticator.isAddressOwnedByDecentraland(address)){
                 this.errors.push(`Expected an address owned by decentraland. Instead, we found ${address}`)
             }
         }
@@ -38,7 +38,7 @@ export class Validations {
     /** Validate that the signature belongs to the Ethereum address */
     async validateSignature(entityId: EntityId, authChain: AuthChain, validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.SIGNATURE)) {
-            if(!await Authenticator.validateSignature(entityId, authChain)) {
+            if(!await this.authenticator.validateSignature(entityId, authChain)) {
                 this.errors.push("The signature is invalid.")
             }
         }

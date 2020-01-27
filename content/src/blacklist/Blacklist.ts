@@ -5,13 +5,14 @@ import { BlacklistStorage } from "./BlacklistStorage";
 
 export class Blacklist {
 
-    constructor(private readonly storage: BlacklistStorage) { }
+    constructor(private readonly storage: BlacklistStorage, private readonly authenticator: Authenticator) { }
 
     async addTarget(target: BlacklistTarget, metadata: BlacklistMetadata) {
-        // TODO: Validate that blocker can blacklist
+        // Validate that blocker can blacklist
+        this.validateBlocker(metadata)
 
         // Validate that signature belongs to the blocker
-        await this.validateBlocker(target, metadata);
+        await this.validateSignature(target, metadata);
 
         // Add blacklist
         await this.storage.addBlacklist(target, metadata)
@@ -21,10 +22,11 @@ export class Blacklist {
     }
 
     async removeTarget(target: BlacklistTarget, metadata: BlacklistMetadata) {
-        // TODO: Validate that blocker can remove from blacklist
+        // Validate that blocker can remove from blacklist
+        this.validateBlocker(metadata)
 
         // Validate that signature belongs to the blocker
-        await this.validateBlocker(target, metadata);
+        await this.validateSignature(target, metadata);
 
         // Remove blacklist
         await this.storage.removeBlacklist(target)
@@ -46,10 +48,18 @@ export class Blacklist {
         return this.storage.areTargetsBlacklisted(targets)
     }
 
-    private async validateBlocker(target: BlacklistTarget, metadata: BlacklistMetadata) {
+    private validateBlocker(metadata: BlacklistMetadata) {
+        // TODO: Validate that the owner can also blacklist
+        // Check if address belongs to Decentraland
+        if (!this.authenticator.isAddressOwnedByDecentraland(metadata.blocker)) {
+            throw new Error("Expected the blacklister to be either Decentraland, or the node's owner")
+        }
+    }
+
+    private async validateSignature(target: BlacklistTarget, metadata: BlacklistMetadata) {
         const messageToSign = this.buildMessageToSign(target, metadata)
         const authChain = Authenticator.createSimpleAuthChain(messageToSign, metadata.blocker, metadata.signature)
-        if (!await Authenticator.validateSignature(messageToSign, authChain)) {
+        if (!await this.authenticator.validateSignature(messageToSign, authChain)) {
             throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }
     }

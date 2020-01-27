@@ -1,6 +1,6 @@
 import ms from "ms"
 import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotBlacklisted, assertRequiredFieldsOnEntitiesAreEqual, assertContentNotIsBlacklisted, assertFileIsNotOnServer, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer } from "../E2EAssertions"
-import { Environment } from "@katalyst/content/Environment"
+import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { EventDeployer } from "@katalyst/content/service/synchronization/EventDeployer"
@@ -9,12 +9,13 @@ import { ControllerEntityContent } from "@katalyst/content/controller/Controller
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage } from "../E2ETestUtils"
+import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
 
 
 describe("End 2 end - Blacklist handling", () => {
 
     const DAO = MockedDAOClient.with('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
+    const identity = createIdentity()
     let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("1s")
     let server1: TestServer, server2: TestServer, onboardingServer: TestServer
@@ -53,7 +54,7 @@ describe("End 2 end - Blacklist handling", () => {
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Black list the entity
-        await server1.blacklistEntity(entityBeingDeployed)
+        await server1.blacklistEntity(entityBeingDeployed, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -91,7 +92,7 @@ describe("End 2 end - Blacklist handling", () => {
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Black list the entity
-        await server1.blacklistContent(contentHash)
+        await server1.blacklistContent(contentHash, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -128,7 +129,7 @@ describe("End 2 end - Blacklist handling", () => {
         await sleep(SYNC_INTERVAL * 2)
 
         // Black list the entity
-        await server1.blacklistEntity(entityBeingDeployed)
+        await server1.blacklistEntity(entityBeingDeployed, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -167,7 +168,7 @@ describe("End 2 end - Blacklist handling", () => {
         await sleep(SYNC_INTERVAL * 2)
 
         // Black list the entity
-        await server1.blacklistContent(contentHash)
+        await server1.blacklistContent(contentHash, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -190,7 +191,9 @@ describe("End 2 end - Blacklist handling", () => {
     });
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
-        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient).build()
+        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
+            .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+            .build()
         return new TestServer(env)
     }
 })
