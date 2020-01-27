@@ -11,9 +11,8 @@ export class AccessCheckerImpl implements AccessChecker {
                 return this.checkSceneAccess(pointers, ethAddress)
             case EntityType.PROFILE:
                 return this.checkProfileAccess(pointers, ethAddress)
-            case EntityType.WEARABLE:
-                // TODO: Implement
-                return []
+            default:
+                return ["Unknown type provided"]
         }
     }
 

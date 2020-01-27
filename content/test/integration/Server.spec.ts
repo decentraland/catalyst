@@ -58,11 +58,6 @@ describe("unit tests in jasmine", function() {
         expect(response.ok).toBe(true)
     });
 
-    it(`Get support wearables`, async () => {
-        const response = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/wearables?id=1`)
-        expect(response.ok).toBe(true)
-    });
-
     it(`Get detects invalid entity types`, async () => {
         const response = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/invalids?id=1`)
         expect(response.ok).toBe(false)
