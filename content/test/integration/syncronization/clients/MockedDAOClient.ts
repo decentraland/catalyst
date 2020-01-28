@@ -1,21 +1,30 @@
 import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient";
+import { ServerMetadata } from "@katalyst/content/service/synchronization/ContentCluster";
+import { EthAddress } from "@katalyst/content/service/auth/Authenticator";
 
 export class MockedDAOClient extends DAOClient {
 
-    private constructor(private addresses: Set<ServerAddress>) {
+    private readonly servers: Map<string, ServerMetadata>
+
+    private constructor(servers: {address: ServerAddress, owner: EthAddress}[]) {
         super()
+        this.servers = new Map(servers.map(server => [server.address, {...server, id: "Id"}]))
     }
 
-    getAllServers(): Promise<Set<ServerAddress>> {
-        return Promise.resolve(this.addresses)
+    async getAllServers(): Promise<Set<ServerMetadata>> {
+        return new Set(this.servers.values())
     }
 
     remove(address: ServerAddress) {
-        this.addresses.delete(address)
+        this.servers.delete(address)
     }
 
-    static with(...addresses: ServerAddress[]): MockedDAOClient {
-        return new MockedDAOClient(new Set(addresses))
+    static withAddresses(...addresses: ServerAddress[]): MockedDAOClient {
+        return new MockedDAOClient(addresses.map(address => ({ address, owner: "0x..."})))
     }
+    static with(address: ServerAddress, owner: EthAddress): MockedDAOClient {
+        return new MockedDAOClient([{ address, owner }])
+    }
+
 }
