@@ -54,7 +54,7 @@ describe("End 2 end deploy test", () => {
         const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, ["0,0"])
         await validateReceivedData(scenesByPointer, deployData)
 
-        const [deploymentEvent]: DeploymentHistory = await server.getHistory()
+        const [deploymentEvent]: DeploymentHistory = (await server.getHistory()).events
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
     });
 

@@ -28,7 +28,7 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
 
 /** Please set the expected events from older to newer */
 export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: DeploymentEvent[]) {
-    const deploymentHistory: DeploymentHistory = await server.getHistory()
+    const deploymentHistory: DeploymentHistory = (await server.getHistory()).events
     expect(deploymentHistory.length).toEqual(expectedEvents.length, `Expected ${server.namePrefix} to have ${expectedEvents.length} deployments in history`)
     for (let i = 0; i < expectedEvents.length; i++) {
         const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]

@@ -1,6 +1,6 @@
 import { Timestamp } from "../time/TimeSorting"
 import { HistoryStorage } from "./HistoryStorage"
-import { HistoryManager, DeploymentEvent, DeploymentHistory } from "./HistoryManager"
+import { HistoryManager, DeploymentEvent, DeploymentHistory, PartialDeploymentHistory } from "./HistoryManager"
 import { Entity } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
 import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest, sortFromNewestToOldest } from "../time/TimeSorting"
@@ -51,12 +51,31 @@ export class HistoryManagerImpl implements HistoryManager {
         return immutableHistory[0]?.timestamp
     }
 
+    private static MAX_HISTORY_LIMIT = 500
+    private static DEFAULT_HISTORY_LIMIT = 500
     /** Returns the history sorted from newest to oldest */
-    async getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName): Promise<DeploymentHistory> {
+    async getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
         // TODO: We will need to find a better way to do this and avoid loading the entire file to then filter
         const allHistory: DeploymentHistory = this.tempHistory.concat(await this.getImmutableHistory())
-        return this.filterHistory(allHistory, from, to, serverName)
+        const filteredHistory = this.filterHistory(allHistory, from, to, serverName)
+        const curatedOffset = (offset && offset>=0) ? offset : 0
+        const curatedLimit = (limit && limit>0 && limit<=HistoryManagerImpl.MAX_HISTORY_LIMIT) ? limit : HistoryManagerImpl.DEFAULT_HISTORY_LIMIT
+        const endPositionExclusive = curatedOffset+curatedLimit
+        return {
+            events: filteredHistory.slice(curatedOffset, endPositionExclusive),
+            filters: {
+                from: from,
+                to: to,
+                serverName: serverName
+            },
+            pagination: {
+                offset: curatedOffset,
+                limit: curatedLimit,
+                moreData: endPositionExclusive < filteredHistory.length
+            }
+        }
     }
+
 
     /** Returns the size for the entire history */
     async getHistorySize(): Promise<number> {
@@ -71,7 +90,7 @@ export class HistoryManagerImpl implements HistoryManager {
         return this.immutableHistorySize
     }
 
-    private filterHistory(history: DeploymentHistory, from: Timestamp | undefined, to: Timestamp | undefined, serverName: ServerName | undefined): DeploymentHistory {
+    private filterHistory(history: DeploymentHistory, from: Timestamp | undefined, to: Timestamp | undefined, serverName: ServerName | undefined): DeploymentEvent[] {
         if (from || to || serverName) {
             return history.filter((event: DeploymentEvent) =>
                 (!from || event.timestamp >= from) &&
@@ -82,7 +101,6 @@ export class HistoryManagerImpl implements HistoryManager {
         }
     }
 
-    private
     private async getImmutableHistory(): Promise<DeploymentHistory> {
         const immutableHistory = await this.storage.getImmutableHistory()
         return sortFromNewestToOldest(immutableHistory)
