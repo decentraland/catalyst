@@ -105,6 +105,7 @@ export class Controller {
         .then(t => res.send({
             creationTimestamp: t
         }))
+        .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
     createEntity(req: express.Request, res: express.Response) {

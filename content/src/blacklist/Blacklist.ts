@@ -2,10 +2,13 @@ import { Timestamp } from "../service/time/TimeSorting";
 import { BlacklistTarget } from "./BlacklistTarget";
 import { EthAddress, Signature, Authenticator } from "../service/auth/Authenticator";
 import { BlacklistStorage } from "./BlacklistStorage";
+import { ContentCluster } from "../service/synchronization/ContentCluster";
 
 export class Blacklist {
 
-    constructor(private readonly storage: BlacklistStorage, private readonly authenticator: Authenticator) { }
+    constructor(private readonly storage: BlacklistStorage,
+        private readonly authenticator: Authenticator,
+        private readonly cluster: ContentCluster) { }
 
     async addTarget(target: BlacklistTarget, metadata: BlacklistMetadata) {
         // Validate that blocker can blacklist
@@ -49,9 +52,10 @@ export class Blacklist {
     }
 
     private validateBlocker(metadata: BlacklistMetadata) {
-        // TODO: Validate that the owner can also blacklist
         // Check if address belongs to Decentraland
-        if (!this.authenticator.isAddressOwnedByDecentraland(metadata.blocker)) {
+        const nodeOwner: EthAddress | undefined = this.cluster.getOwnIdentity()?.owner
+        const isBlockerTheNodeOwner: boolean = !!nodeOwner && nodeOwner === metadata.blocker
+        if (!isBlockerTheNodeOwner && !this.authenticator.isAddressOwnedByDecentraland(metadata.blocker)) {
             throw new Error("Expected the blacklister to be either Decentraland, or the node's owner")
         }
     }

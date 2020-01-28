@@ -9,11 +9,12 @@ import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
+import { EthAddress } from "../auth/Authenticator";
 
 export class ContentCluster {
 
-    // My own address
-    private myAddress: ServerAddress | undefined
+    // My own identity
+    private myIdentity: ServerMetadata | undefined
     // Interval set to sync with DAO
     private syncInterval: NodeJS.Timeout;
     // Servers that were reached at least once
@@ -32,9 +33,6 @@ export class ContentCluster {
     async connect(lastImmutableTime: Timestamp): Promise<void> {
         // Set the immutable time
         this.setImmutableTime(lastImmutableTime)
-
-        // Detect my own address
-        this.myAddress = await this.detectMyAddress()
 
         // Perform first sync with the DAO
         await this.syncWithDAO()
@@ -66,11 +64,22 @@ export class ContentCluster {
         return this.removalEvent.on(listener)
     }
 
+    getOwnIdentity(): ServerMetadata | undefined {
+        return this.myIdentity
+    }
+
     /** Update our data with the DAO's servers list */
     private async syncWithDAO() {
         try {
+            // Ask the DAO for all the servers
+            const allServers: Set<ServerMetadata> = await this.dao.getAllServers()
+
+            if (!this.myIdentity) {
+                await this.detectMyIdentity(allServers)
+            }
+
             // Get all addresses in cluster (except for me)
-            const allAddresses: ServerAddress[] = await this.getAllOtherAddressesOnDAO()
+            const allAddresses: ServerAddress[] = this.getAllOtherAddressesOnDAO(allServers)
 
             // Handle the possibility that some servers where removed from the DAO.
             // If so, remove them from the list, and raise an event
@@ -133,37 +142,38 @@ export class ContentCluster {
         await Promise.all(listenerReactions)
     }
 
-    /** Detect my own address */
-    private async detectMyAddress(): Promise<ServerAddress | undefined> {
+    /** Detect my own identity */
+    private async detectMyIdentity(servers: Set<ServerMetadata>): Promise<void> {
         try {
-            // Ask the DAO for all the addresses
-            const allAddresses: Set<ServerAddress> = await this.dao.getAllServers()
-
             // Ask each server for their name
-            const serverNames = await Promise.all(Array.from(allAddresses)
-                .map(address => getServerName(address).then(name => ({ address, name }))))
+            const serverNames = await Promise.all(Array.from(servers)
+                .map(serverMetadata => getServerName(serverMetadata.address).then(name => ({ metadata: serverMetadata, name }))))
 
             // Filter out other servers
             const serversWithMyName = serverNames.filter(({ name }) => name == this.nameKeeper.getServerName())
 
             if (serversWithMyName.length > 1) {
-                throw new Error(`Expected to find only one server with my name '${this.nameKeeper.getServerName()}', but found ${serversWithMyName.length}`)
+                console.log(`Expected to find only one server with my name '${this.nameKeeper.getServerName()}', but found ${serversWithMyName.length}`)
             } else {
-                return serversWithMyName[0]?.address
+                this.myIdentity = serversWithMyName[0]?.metadata
             }
         } catch (error) {
-            throw new Error(`Failed to connect with the DAO \n${error}`)
+            console.log(`Failed to connect with the DAO \n${error}`)
         }
     }
 
     /** Returns all the addresses on the DAO, except for the current server's */
-    private async getAllOtherAddressesOnDAO(): Promise<ServerAddress[]> {
-        // Ask the DAO for all the addresses
-        const allAddresses: Set<ServerAddress> = await this.dao.getAllServers()
-
+    private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerAddress[] {
         // Filter myself out
-        return Array.from(allAddresses)
-            .filter(address => address != this.myAddress)
+        return Array.from(allServers)
+            .map(({ address }) => address)
+            .filter(address => address !== this.myIdentity?.address)
     }
 
+}
+
+export type ServerMetadata = {
+    address: ServerAddress,
+    owner: EthAddress,
+    id: string
 }
