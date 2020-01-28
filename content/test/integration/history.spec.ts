@@ -1,10 +1,10 @@
 import { TestServer } from "./TestServer"
 import { deleteServerStorage, buildBaseEnv, buildDeployData } from "./E2ETestUtils"
-import { MockedDAOClient } from "@katalyst/content/service/synchronization/clients/MockedDAOClient"
 import ms from "ms"
 import { Environment } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
 import { DeploymentEvent, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { MockedDAOClient } from "./syncronization/clients/MockedDAOClient"
 
 describe("History integration tests", function() {
 
