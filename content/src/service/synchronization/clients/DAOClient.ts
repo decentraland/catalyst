@@ -1,5 +1,5 @@
-import { ServerAddress } from "./contentserver/ContentServerClient";
 import { handlerForNetwork, networks } from "decentraland-katalyst-contracts/utils"
+import { ServerMetadata } from "../ContentCluster";
 
 export class DAOClient {
 
@@ -12,8 +12,8 @@ export class DAOClient {
         this.triggerDisconnect = disconnect
     }
 
-    async getAllServers(): Promise<Set<ServerAddress>> {
-        const result: Set<ServerAddress> = new Set()
+    async getAllServers(): Promise<Set<ServerMetadata>> {
+        const result: Set<ServerMetadata> = new Set()
 
         let count = 0
         try {
@@ -22,9 +22,9 @@ export class DAOClient {
 
         for (let i = 0; i < count; i++) {
             try {
-                const id = await this.contract.methods.katalystIds(i).call();
-                const url: string = await this.contract.methods.katalystDomain(id).call();
-                result.add(url)
+                const katalystId = await this.contract.methods.katalystIds(i).call();
+                const { id, owner, domain } = await this.contract.methods.katalystById(katalystId).call();
+                result.add({ address: domain, owner, id })
             } catch(error) { }
         }
 
