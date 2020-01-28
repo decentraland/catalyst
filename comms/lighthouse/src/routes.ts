@@ -2,7 +2,7 @@ import express from "express";
 import { requireParameters, validatePeerToken } from "./handlers";
 import { LayersService } from "./layersService";
 import { IRealm } from "peerjs-server";
-import { UserMustBeInLayerError } from "./errors";
+import { RequestError } from "./errors";
 
 export type RoutesOptions = Partial<{
   env: any;
@@ -33,7 +33,13 @@ export function configureRoutes(app: express.Express, services: Services, option
   });
 
   app.get("/layers", (req, res, next) => {
-    res.send(layersService.getLayerIds());
+    res.send(
+      layersService.getLayers().map(it => ({
+        name: it.id,
+        usersCount: it.users.length,
+        maxUsers: it.maxUsers
+      }))
+    );
   });
 
   app.get("/layers/:layerId/users", validateLayerExists, (req, res, next) => {
@@ -63,7 +69,7 @@ export function configureRoutes(app: express.Express, services: Services, option
         const layer = await layersService.setUserLayer(layerId, req.body);
         res.send(layer.users);
       } catch (err) {
-        next(err);
+        handleError(err, res, next);
       }
     }
   );
@@ -79,11 +85,7 @@ export function configureRoutes(app: express.Express, services: Services, option
         const room = await layersService.addUserToRoom(layerId, roomId, req.body);
         res.send(room.users);
       } catch (err) {
-        if (err instanceof UserMustBeInLayerError) {
-          res.status(400).send({ status: "bad-request", message: err.message });
-        } else {
-          next(err);
-        }
+        handleError(err, res, next);
       }
     }
   );
@@ -114,4 +116,12 @@ export function configureRoutes(app: express.Express, services: Services, option
       res.send(topologyInfo);
     }
   });
+
+  function handleError(err: any, res, next) {
+    if (err instanceof RequestError) {
+      res.status(400).send(JSON.stringify({ status: "bad-request", message: err.message }));
+    } else {
+      next(err);
+    }
+  }
 }

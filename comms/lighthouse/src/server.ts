@@ -9,12 +9,16 @@ import { Metrics } from "../../../commons/src/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
+import { DEFAULT_LAYERS } from "./default_layers";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
 const port = parseInt(process.env.PORT ?? "9000");
 const secure = parseBoolean(process.env.SECURE ?? "false");
 const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
+const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? "false");
+const maxUsersPerLayer = parseInt(process.env.MAX_PER_LAYER ?? "50");
+const existingLayers = process.env.DEFAULT_LAYERS?.split(",").map(it => it.trim()) ?? DEFAULT_LAYERS;
 
 function parseBoolean(string: string) {
   return string.toLowerCase() === "true";
@@ -34,7 +38,7 @@ if (accessLogs) {
   app.use(morgan("combined"));
 }
 
-const layersService = new LayersService({ serverPeerEnabled: relay, peersService });
+const layersService = new LayersService({ serverPeerEnabled: relay, peersService, maxUsersPerLayer, existingLayers, allowNewLayers });
 
 configureRoutes(
   app,

@@ -12,4 +12,5 @@ export type Layer = {
   id: string;
   users: PeerInfo[];
   rooms: Record<string, Room>;
+  maxUsers?: number;
 };
