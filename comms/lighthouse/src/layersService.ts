@@ -3,29 +3,39 @@ import { PeerInfo, Layer } from "./types";
 import { RoomsService } from "./roomsService";
 import { PeersService, NotificationType } from "./peersService";
 import { removeUserAndNotify } from "./utils";
-import { UserMustBeInLayerError } from "./errors";
+import { UserMustBeInLayerError, LayerIsFullError } from "./errors";
 
 type LayersServiceConfig = Partial<{
   serverPeerEnabled: boolean;
   peersService: PeersService;
+  existingLayers: string[];
+  allowNewLayers: boolean;
+  maxUsersPerLayer: number;
 }>;
-
-function newLayer(layerId: string) {
-  return { id: layerId, users: [], rooms: {} };
-}
 
 //TODO - pablitar: There are some similarities between this service and the RoomsService.ts one.
 //But I think it is too soon to extract a common abstraction, since they seem to be different entities
 //from the product side. In the future with more information this could be refactored
 export class LayersService {
-
   private layers: Record<string, Layer> = {};
   private serverPeers: Record<string, Peer> = {};
 
-  constructor(private config: LayersServiceConfig) {}
+  private newLayer(layerId: string): Layer {
+    return { id: layerId, users: [], rooms: {}, maxUsers: this.config.maxUsersPerLayer };
+  }
+
+  constructor(private config: LayersServiceConfig) {
+    if (this.config.existingLayers) {
+      this.config.existingLayers.forEach(layerId => this.createLayer(layerId));
+    }
+  }
 
   getLayerIds(): string[] {
     return Object.keys(this.layers);
+  }
+
+  getLayers(): Layer[] {
+    return Object.values(this.layers);
   }
 
   getLayerUsers(layerId: string): PeerInfo[] {
@@ -61,23 +71,31 @@ export class LayersService {
     return removeUserAndNotify(this.layers, layerId, userId, NotificationType.PEER_LEFT_LAYER, "layerId", this.config.peersService);
   }
 
+  createLayer(layerId: string) {
+    return (this.layers[layerId] = this.newLayer(layerId));
+    // if (this.config.serverPeerEnabled) {
+    //   // Clean up old peer?
+
+    //   this.serverPeers[layerId] = await this.config.peersService?.createServerPeer(layerId)!;
+
+    //   //await this.serverPeers[layerId].setLayer(layerId)
+    // }
+  }
+
   async setUserLayer(layerId: string, peer: PeerInfo) {
-    this.removeUserFromOtherLayers(layerId, peer);
     let layer = this.layers[layerId];
 
     if (!layer) {
-      this.layers[layerId] = layer = newLayer(layerId);
-
-      if (this.config.serverPeerEnabled) {
-        // Clean up old peer?
-
-        this.serverPeers[layerId] = await this.config.peersService?.createServerPeer(layerId)!;
-
-        //await this.serverPeers[layerId].setLayer(layerId)
-      }
+      layer = this.createLayer(layerId);
     }
 
     if (!this.isUserInLayer(layerId, peer)) {
+      if (layer.maxUsers && layer.users.length >= layer.maxUsers) {
+        throw new LayerIsFullError(layer, peer);
+      }
+
+      this.removeUserFromOtherLayers(layerId, peer);
+
       const peersToNotify = layer.users.slice();
       layer.users.push(peer);
       this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
@@ -109,6 +127,6 @@ export class LayersService {
   }
 
   getLayerTopology(layerId: string) {
-    return this.layers[layerId].users.map(it => ({...it, connectedPeerIds: this.config.peersService!.getConnectedPeers(it)}))
+    return this.layers[layerId].users.map(it => ({ ...it, connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
   }
 }
