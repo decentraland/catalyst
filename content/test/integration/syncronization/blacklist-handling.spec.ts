@@ -14,7 +14,7 @@ import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage, createIdenti
 
 describe("End 2 end - Blacklist handling", () => {
 
-    const DAO = MockedDAOClient.with('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
+    const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
     const identity = createIdentity()
     let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("1s")
