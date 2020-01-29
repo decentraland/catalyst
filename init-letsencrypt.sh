@@ -102,6 +102,7 @@ leCertEmit () {
 dir=default_dir file=default_file verbose_level=0
 while getopts d:f:v o; do
   case $o in
+    echo ${OPTARG}
     (f) file=$OPTARG;;
     (d) dir=$OPTARG;;
     (v) verbose_level=$((verbose_level + 1));;
