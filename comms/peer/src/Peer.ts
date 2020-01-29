@@ -10,7 +10,7 @@ import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 
-const PROTOCOL_VERSION = 2;
+const PROTOCOL_VERSION = 3;
 
 const MAX_UINT32 = 4294967295;
 
@@ -65,6 +65,18 @@ class Stats {
   }
 }
 
+class GlobalStats extends Stats {
+  public statsByType: Record<string, Stats> = {};
+
+  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
+    super.countPacket(packet, length, duplicate, expired);
+    if (packet.subtype) {
+      const stats = (this.statsByType[packet.subtype] = this.statsByType[packet.subtype] ?? new Stats());
+      stats.countPacket(packet, length, duplicate, expired);
+    }
+  }
+}
+
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
 export class Peer implements IPeer {
@@ -90,7 +102,7 @@ export class Peer implements IPeer {
 
   private expireTimeoutId: any;
 
-  private stats: Stats = new Stats();
+  private stats = new GlobalStats();
 
   constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {}) {
     const url = new URL(lighthouseUrl);
@@ -115,7 +127,9 @@ export class Peer implements IPeer {
       path: url.pathname,
       secure,
       token: this.config.token,
-      heartbeatExtras: () => this.buildTopologyInfo(),
+      heartbeatExtras: () => ({
+        ...this.buildTopologyInfo()
+      }),
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
 
@@ -175,7 +189,7 @@ export class Peer implements IPeer {
   async setLayer(layer: string): Promise<void> {
     const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
       method: "PUT",
-      bodyObject: { userId: this.peerId, peerId: this.peerId }
+      bodyObject: { userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
     });
 
     this.currentLayer = layer;

@@ -99,8 +99,7 @@ export class LayersService {
       const peersToNotify = layer.users.slice();
       layer.users.push(peer);
       this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
-        userId: peer.userId,
-        peerId: peer.peerId,
+        ...peer,
         layerId: layerId
       });
     }
