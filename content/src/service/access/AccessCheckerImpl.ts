@@ -1,7 +1,7 @@
 import { AccessChecker } from "./AccessChecker";
-import fetch from "node-fetch"
 import { EthAddress, Authenticator } from "../auth/Authenticator";
 import { Pointer, EntityType } from "../Entity";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 export class AccessCheckerImpl implements AccessChecker {
 
@@ -51,8 +51,7 @@ export class AccessCheckerImpl implements AccessChecker {
         const dclApiBaseUrl = "https://api.decentraland.org/v1"
         const accessURL = `${dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
         try {
-            const response = await fetch(accessURL)
-            const responseJson = await response.json()
+            const responseJson = await FetchHelper.fetchJson(accessURL)
             return responseJson.data.isUpdateAuthorized
         } catch(e) {
             console.error(e)

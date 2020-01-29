@@ -207,9 +207,14 @@ export class Controller {
         const from       = req.query.from
         const to         = req.query.to
         const serverName = req.query.serverName
+        const offset     = this.asInt(req.query.offset)
+        const limit      = this.asInt(req.query.limit)
 
-        this.historyManager.getHistory(from, to, serverName)
+        this.historyManager.getHistory(from, to, serverName, offset, limit)
         .then(history => res.send(history))
+    }
+    private asInt(value: any): number | undefined {
+        return value ? parseInt(value) : undefined
     }
 
     getStatus(req: express.Request, res: express.Response) {

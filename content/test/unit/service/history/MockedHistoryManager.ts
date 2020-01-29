@@ -1,4 +1,4 @@
-import { HistoryManager, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
+import { HistoryManager, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
 import { Entity } from "@katalyst/content/service/Entity";
 import { ServerName } from "@katalyst/content/service/naming/NameKeeper";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
@@ -17,7 +17,7 @@ export class MockedHistoryManager implements HistoryManager {
         return Promise.resolve()
     }
 
-    getHistory(from?: number, to?: number): Promise<DeploymentHistory> {
+    getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
         throw new Error("Method not implemented.");
     }
 

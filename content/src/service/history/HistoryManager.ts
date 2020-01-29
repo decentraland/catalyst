@@ -6,7 +6,7 @@ export interface HistoryManager {
     newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void>;
     setTimeAsImmutable(immutableTime: Timestamp): Promise<void>;
     getLastImmutableTime(): Promise<Timestamp | undefined>;
-    getHistory(from?: Timestamp, to?: Timestamp, contentServerName?: ServerName): Promise<DeploymentHistory>;
+    getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentHistory>;
     getHistorySize(): Promise<number>;
 }
 
@@ -20,3 +20,17 @@ export type DeploymentEvent = {
 }
 
 export type DeploymentHistory = DeploymentEvent[]
+
+export type PartialDeploymentHistory = {
+    events: DeploymentEvent[],
+    filters: {
+        from?: Timestamp,
+        to?: Timestamp,
+        serverName?: ServerName,
+    },
+    pagination: {
+        offset: number,
+        limit: number,
+        moreData: boolean,
+    },
+}

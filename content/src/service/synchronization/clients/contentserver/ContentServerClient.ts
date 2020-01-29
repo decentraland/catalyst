@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
@@ -6,6 +5,7 @@ import { DeploymentHistory } from "../../../history/HistoryManager";
 import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { AuditInfo } from "../../../audit/Audit";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 export const UNREACHABLE: string = "UNREACHABLE"
 
@@ -39,10 +39,12 @@ export abstract class ContentServerClient {
 
 /** Return the server's name, or the text "UNREACHABLE" it it couldn't be reached */
 export async function getServerName(address: ServerAddress): Promise<ServerName> {
-    return fetch(`${address}/status`)
-        .then(response => response.json())
-        .then(({ name }) => name)
-        .catch(() => UNREACHABLE)
+    try {
+        const { name } = await FetchHelper.fetchJson(`${address}/status`)
+        return name
+    } catch (error) {
+        return UNREACHABLE
+    }
 }
 
 export type ServerAddress = string
