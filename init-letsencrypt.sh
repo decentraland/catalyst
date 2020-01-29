@@ -1,5 +1,5 @@
 #!/bin/bash
-leCertEmit {
+leCertEmit () {
   if ! [ -x "$(command -v docker-compose)" ]; then
     echo 'Error: docker-compose is not installed.' >&2
     exit 1
@@ -83,5 +83,6 @@ leCertEmit {
 #####
 # Main
 #####
+leCertEmit
 docker-compose stop 
 docker-compose run -d
