@@ -1,18 +1,18 @@
 import { EnvironmentConfig, EnvironmentBuilder, Bean } from "@katalyst/content/Environment"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { BlacklistServiceDecorator } from "@katalyst/content/blacklist/BlacklistServiceDecorator"
-import { buildDeployData, deleteServerStorage, createIdentity, Identity } from "./E2ETestUtils"
-import { TestServer } from "./TestServer"
-import { assertFileIsOnServer, assertEntityIsNotBlacklisted, assertEntityIsBlacklisted, assertFileIsNotOnServer, assertContentNotIsBlacklisted, assertContentIsBlacklisted, assertRequiredFieldsOnEntitiesAreEqual } from "./E2EAssertions"
+import { buildDeployData, deleteServerStorage, createIdentity, Identity } from "../E2ETestUtils"
+import { TestServer } from "../TestServer"
+import { assertFileIsOnServer, assertEntityIsNotBlacklisted, assertEntityIsBlacklisted, assertFileIsNotOnServer, assertContentNotIsBlacklisted, assertContentIsBlacklisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
-import { MockedContentAnalytics } from "../helpers/service/analytics/MockedContentAnalytics"
-import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
-import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
+import { MockedContentAnalytics } from "../../helpers/service/analytics/MockedContentAnalytics"
+import { MockedSynchronizationManager } from "../../helpers/service/synchronization/MockedSynchronizationManager"
+import { MockedAccessChecker } from "../../helpers/service/access/MockedAccessChecker"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
 import { mock, when, instance } from "ts-mockito"
 import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster"
 
-describe("End 2 end - Blacklist", () => {
+describe("Integration - Blacklist", () => {
 
     const metadata: string = "Some metadata"
     const decentralandIdentity = createIdentity()
