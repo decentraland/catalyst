@@ -39,6 +39,6 @@ export class HistoryClient {
             offset = partialHistory.pagination.offset + partialHistory.pagination.limit
             keepRetrievingHistory = partialHistory.pagination.moreData
         }
-        return Promise.resolve(events)
+        return events
     }
 }

@@ -213,7 +213,7 @@ export class Controller {
         this.historyManager.getHistory(from, to, serverName, offset, limit)
         .then(history => res.send(history))
     }
-    private asInt(value: any): number|undefined {
+    private asInt(value: any): number | undefined {
         return value ? parseInt(value) : undefined
     }
 

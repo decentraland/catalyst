@@ -1,17 +1,25 @@
 import { TestServer } from "./TestServer"
-import { deleteServerStorage, buildBaseEnv, buildDeployData } from "./E2ETestUtils"
-import ms from "ms"
-import { Environment } from "@katalyst/content/Environment"
+import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
 import { DeploymentEvent, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
-import { MockedDAOClient } from "./syncronization/clients/MockedDAOClient"
+import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
+import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
+import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
+import { deleteServerStorage, buildDeployData } from "./E2ETestUtils"
 
 describe("History integration tests", function() {
 
     let server: TestServer
 
     beforeEach(async () => {
-        const env: Environment = await buildBaseEnv('', 6060, ms("1m"), MockedDAOClient.withAddresses()).build()
+        const env = await new EnvironmentBuilder()
+            .withAnalytics(new MockedContentAnalytics())
+            .withSynchronizationManager(new MockedSynchronizationManager())
+            .withAccessChecker(new MockedAccessChecker())
+            .withConfig(EnvironmentConfig.SERVER_PORT, 8080)
+            .withConfig(EnvironmentConfig.METRICS, false)
+            .build()
+
         server = new TestServer(env)
         await server.start()
     })

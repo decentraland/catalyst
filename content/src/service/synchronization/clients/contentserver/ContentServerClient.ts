@@ -40,8 +40,8 @@ export abstract class ContentServerClient {
 /** Return the server's name, or the text "UNREACHABLE" it it couldn't be reached */
 export async function getServerName(address: ServerAddress): Promise<ServerName> {
     try {
-        const responseJson = await FetchHelper.fetchJson(`${address}/status`)
-        return responseJson.name
+        const { name } = await FetchHelper.fetchJson(`${address}/status`)
+        return name
     } catch (error) {
         return UNREACHABLE
     }
