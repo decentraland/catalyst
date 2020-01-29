@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import ms from "ms";
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
@@ -10,6 +9,8 @@ import { EntityFactory } from "../../../EntityFactory";
 import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, ServerAddress } from "./ContentServerClient";
 import { sleep } from "../../ClusterUtils";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
 
 export function getClient(address: ServerAddress, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
     return new ActiveContentServerClient(address, name, lastKnownTimestamp)
@@ -35,28 +36,21 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
-        const json = await this.fetchJson(`${this.address}/entities/${entityType}?id=${entityId}`)
+        const json = await FetchHelper.fetchJson(`${this.address}/entities/${entityType}?id=${entityId}`)
         const entity = json[0];
         return EntityFactory.fromJsonObject(entity);
     }
 
     getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
-        return this.fetchJson(`${this.address}/audit/${entityType}/${entityId}`)
+        return FetchHelper.fetchJson(`${this.address}/audit/${entityType}/${entityId}`)
     }
 
     getStatus(): Promise<ServerStatus> {
-        return this.fetchJson(`${this.address}/status`)
+        return FetchHelper.fetchJson(`${this.address}/status`)
     }
 
-    getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
-        let url = `${this.address}/history?from=${from}`
-        if (to) {
-            url += `&to=${to}`
-        }
-        if (serverName) {
-            url += `&serverName=${serverName}`
-        }
-        return this.fetchJson(url)
+    async getHistory(from: Timestamp, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
+        return HistoryClient.consumeAllHistory(this.address, from, to, serverName)
     }
 
     isActive(): boolean {
@@ -68,35 +62,25 @@ class ActiveContentServerClient extends ContentServerClient {
         let content: Buffer | undefined = undefined
 
         while (retries >= 0) {
-            const response = await fetch(`${this.address}/contents/${fileHash}`);
-            if (response.ok) {
-                content = await response.buffer();
+            try {
+                content = await FetchHelper.fetchBuffer(`${this.address}/contents/${fileHash}`);
                 const downloadedHash = await Hashing.calculateBufferHash(content)
                 if (downloadedHash == fileHash) {
                     break;
                 }
+            } catch (error) {
+                await sleep(ms("1s"))
+                retries--;
             }
-            await sleep(ms("1s"))
-            retries--;
         }
         if (retries >=0 && content) {
             return { name: fileHash, content: content }
-        } else {
-            throw new Error(`Failed to fetch file with hash ${fileHash}`)
         }
-    }
-
-    private async fetchJson(url: string): Promise<any> {
-        const response = await fetch(url);
-        if (response.ok) {
-            return response.json()
-        } else {
-            throw new Error(`Failed to fetch ${url}. Got status ${response.status}, ${response.statusText}`)
-        }
+        throw new Error(`Failed to fetch file with hash ${fileHash}`)
     }
 
     private async getCurrentTimestamp(): Promise<Timestamp> {
-        const { currentTime } = await this.fetchJson(`${this.address}/status`)
+        const { currentTime } = await FetchHelper.fetchJson(`${this.address}/status`)
         return currentTime;
     }
 }

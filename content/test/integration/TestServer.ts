@@ -5,7 +5,7 @@ import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { DeployData, hashAndSignMessage, Identity } from "./E2ETestUtils"
 import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
@@ -72,7 +72,7 @@ export class TestServer extends Server {
         return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
     }
 
-    getHistory(): Promise<DeploymentHistory> {
+    getHistory(): Promise<PartialDeploymentHistory> {
         return this.makeRequest(`${this.getAddress()}/history`)
     }
 

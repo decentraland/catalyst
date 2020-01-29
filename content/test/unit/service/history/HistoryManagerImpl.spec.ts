@@ -29,7 +29,7 @@ describe("HistoryManager", () => {
         expect(spy).toHaveBeenCalledWith([event2, event1])
 
         const history = await manager.getHistory();
-        expect(history).toEqual([event2, event1])
+        expect(history.events).toEqual([event2, event1])
     });
 
     it(`When time is set as immutable, then all deployments that happened before are stored as immutable`, async () => {
@@ -53,7 +53,7 @@ describe("HistoryManager", () => {
         expect(immutableSpy).toHaveBeenCalledWith([event2])
 
         const history = await manager.getHistory();
-        expect(history).toEqual([event3, event2, event1])
+        expect(history.events).toEqual([event3, event2, event1])
     });
 
     type Deployment = {
