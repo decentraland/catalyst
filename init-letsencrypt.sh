@@ -1,4 +1,19 @@
 #!/bin/bash
+PROGNAME=$0
+
+####
+# Functions
+#####
+usage() {
+  cat << EOF >&2
+Usage: $PROGNAME [-v] [-d <dir>] [-f <file>]
+-f <file>: ...
+ -d <dir>: ...
+       -v: ...
+EOF
+  exit 1
+}
+
 leCertEmit () {
   if ! [ -x "$(command -v docker-compose)" ]; then
     echo 'Error: docker-compose is not installed.' >&2
@@ -83,6 +98,21 @@ leCertEmit () {
 #####
 # Main
 #####
+
+dir=default_dir file=default_file verbose_level=0
+while getopts d:f:v o; do
+  case $o in
+    (f) file=$OPTARG;;
+    (d) dir=$OPTARG;;
+    (v) verbose_level=$((verbose_level + 1));;
+    (*) usage
+  esac
+done
+shift "$((OPTIND - 1))"
+
+echo Remaining arguments: "$@"
+exit 0
+
 leCertEmit
 docker-compose stop 
 docker-compose up -d
