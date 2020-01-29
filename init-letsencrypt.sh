@@ -85,4 +85,4 @@ leCertEmit () {
 #####
 leCertEmit
 docker-compose stop 
-docker-compose run -d
+docker-compose up -d
