@@ -98,12 +98,12 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }
 
   function sendCursorMessage() {
-    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, PeerMessageTypes.unreliable);
+    props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, PeerMessageTypes.unreliable("cursorPosition"));
   }
 
   function sendMessage() {
     appendMessage(currentRoom, props.peer.peerId, message);
-    props.peer.sendMessage(currentRoom, { type: "chat", message }, PeerMessageTypes.reliable);
+    props.peer.sendMessage(currentRoom, { type: "chat", message }, PeerMessageTypes.reliable("chat"));
     setMessage("");
   }
 

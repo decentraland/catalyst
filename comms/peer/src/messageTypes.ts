@@ -1,24 +1,26 @@
-export type TTLFunction = (index: number, type: PeerMessageType) => number
-export type OptimisticFunction = (index: number, type: PeerMessageType) => boolean  
+export type TTLFunction = (index: number, type: PeerMessageType) => number;
+export type OptimisticFunction = (index: number, type: PeerMessageType) => boolean;
 
 export type PeerMessageType = {
   /**
    * Time to Live of the messages of this particular type. How many hops will the message do before being discarded.
    * It can be set to a number, or to an interleaving (to have variable TTL depending on the index of the message).
-   * 
+   *
    * NOTE: Interleaving is not implemented yet.
    */
-  ttl?: number | TTLFunction; 
+  ttl?: number | TTLFunction;
   /**
-  * If the time since received the last message of the same type (calculated using the message timestamp) is greater than this value,
-  * then the message is discarded. Set to 0 to discard al messages older than the last one. 
-  */ 
+   * If the time since received the last message of the same type (calculated using the message timestamp) is greater than this value,
+   * then the message is discarded. Set to 0 to discard al messages older than the last one.
+   */
+
   discardOlderThan?: number;
   /**
-  * Time to preserve the messages in the list of known messages, in order to avoid processing them multiple times.
-  * If a message is received with a timestamp which indicates that it is older than this expiration time (calculated using the timestamp of the known peer),
-  * then the message is discarded directly. 
-  */ 
+   * Time to preserve the messages in the list of known messages, in order to avoid processing them multiple times.
+   * If a message is received with a timestamp which indicates that it is older than this expiration time (calculated using the timestamp of the known peer),
+   * then the message is discarded directly.
+   */
+
   expirationTime?: number;
 
   /**
@@ -33,17 +35,17 @@ export type PeerMessageType = {
 };
 
 export const PeerMessageTypes = {
-  reliable: {
-    name: "reliable",
+  reliable: (name: string) => ({
+    name,
     ttl: 10,
     expirationTime: 20 * 1000,
     optimistic: false
-  },
-  unreliable: {
+  }),
+  unreliable: (name: string) => ({
     name: "unreliable",
-    ttl: 10, 
+    ttl: 10,
     discardOlderThan: 0,
     expirationTime: 2000,
-    optimistic: true //9 out of 10 packets are optimistic
-  }
+    optimistic: true
+  })
 };

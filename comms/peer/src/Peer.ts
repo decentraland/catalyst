@@ -6,7 +6,7 @@ import { connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-con
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
-import { PeerMessageType, PeerMessageTypes } from "./messageTypes";
+import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 
@@ -42,14 +42,16 @@ type PeerConfig = {
 };
 
 class Stats {
-  public packets: number = 0;
+  public expired: number = 0;
+  public expiredPercentage: number = 0;
   public packetDuplicates: number = 0;
-  public totalBytes: number = 0;
-  public averagePacketSize?: number = undefined;
   public duplicatePercentage: number = 0;
+  public averagePacketSize?: number = undefined;
   public optimistic: number = 0;
+  public packets: number = 0;
+  public totalBytes: number = 0;
 
-  countPacket(packet: Packet, length: number, duplicate: boolean = false) {
+  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
     this.packets += 1;
     if (duplicate) this.packetDuplicates += 1;
 
@@ -58,6 +60,8 @@ class Stats {
     this.averagePacketSize = this.totalBytes / this.packets;
     this.duplicatePercentage = this.packetDuplicates / this.packets;
     if (packet.optimistic) this.optimistic += 1;
+    if (expired) this.expired += 1;
+    this.expiredPercentage = this.expired / this.packets;
   }
 }
 
@@ -215,7 +219,7 @@ export class Peer implements IPeer {
       .filter(it => it.userId !== this.peerId)
       .forEach(it => {
         if (!this.knownPeers[it.userId] || typeof this.knownPeers[it.userId].rooms === "undefined") {
-          this.knownPeers[it.userId] = { ...it, rooms: [room.id], timestampByType: {} };
+          this.knownPeers[it.userId] = { ...it, rooms: [room.id], subtypeData: {} };
         } else if (this.knownPeers[it.userId].rooms.indexOf(room.id) < 0) {
           this.knownPeers[it.userId].rooms.push(room.id);
         }
@@ -231,7 +235,6 @@ export class Peer implements IPeer {
     });
 
     newPeers.forEach(peer => {
-      //We only replace those that were not previously added
       if (peer.userId !== this.peerId) {
         this.addKnownPeer(peer);
       }
@@ -239,7 +242,15 @@ export class Peer implements IPeer {
   }
 
   private addKnownPeer(peer: MinPeerData) {
-    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: [], ...peer, timestampByType: {} };
+    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+  }
+
+  private ensureKnownPeer(packet: Packet) {
+    this.addKnownPeer({ peerId: packet.src, userId: packet.src, rooms: packet.messageData?.room ? [packet.messageData?.room] : [] });
+
+    if (packet.messageData?.room && !this.knownPeers[packet.src].rooms.includes(packet.messageData?.room)) {
+      this.knownPeers[packet.src].rooms.push(packet.messageData.room);
+    }
   }
 
   private removeKnownPeer(userId: string) {
@@ -401,13 +412,15 @@ export class Peer implements IPeer {
     connection.on("data", data => this.handlePeerPacket(data, peerData.id));
   }
 
-  private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number) {
+  private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number, sequenceId: number) {
     const knownPeer = this.knownPeers[peerId];
-    if (knownPeer) {
-      knownPeer.timestamp = Math.max(knownPeer.timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
-      if (subtype) {
-        knownPeer.timestampByType[subtype] = Math.max(knownPeer.timestampByType[subtype] ?? Number.MIN_SAFE_INTEGER, timestamp);
-      }
+    knownPeer.timestamp = Math.max(knownPeer.timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
+    if (subtype) {
+      const lastData = knownPeer.subtypeData[subtype];
+      knownPeer.subtypeData[subtype] = {
+        lastTimestamp: Math.max(lastData?.lastTimestamp ?? Number.MIN_SAFE_INTEGER, timestamp),
+        lastSequenceId: Math.max(lastData?.lastSequenceId ?? Number.MIN_SAFE_INTEGER, sequenceId)
+      };
     }
   }
 
@@ -417,14 +430,20 @@ export class Peer implements IPeer {
 
     const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
 
-    this.stats.countPacket(packet, data.length, alreadyReceived);
+    this.ensureKnownPeer(packet);
 
-    this.markReceived(packet);
+    if (packet.discardOlderThan !== 0) {
+      //If discardOlderThan is zero, then we don't need to store the package.
+      //Same or older packages will be instantly discarded
+      this.markReceived(packet);
+    }
 
     const expired = this.checkExpired(packet);
 
+    this.stats.countPacket(packet, data.length, alreadyReceived, expired);
+
     if (!alreadyReceived && !expired) {
-      this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp);
+      this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
 
       const messageData = packet.messageData;
       if (messageData) {
@@ -455,15 +474,15 @@ export class Peer implements IPeer {
   private checkExpired(packet: Packet) {
     let discardedByOlderThan: boolean = false;
     if (packet.discardOlderThan >= 0 && packet.subtype) {
-      const timestamp = this.knownPeers[packet.src]?.timestampByType[packet.subtype];
-      discardedByOlderThan = !!timestamp && timestamp - packet.timestamp > packet.discardOlderThan;
+      const subtypeData = this.knownPeers[packet.src]?.subtypeData[packet.subtype];
+      discardedByOlderThan = subtypeData && subtypeData.lastTimestamp - packet.timestamp > packet.discardOlderThan && subtypeData.lastSequenceId >= packet.sequenceId;
     }
 
     let discardedByExpireTime: boolean = false;
     const expireTime = this.getExpireTime(packet);
 
-    if (this.knownPeers[packet.src]?.timestamp) {
-      discardedByExpireTime = this.knownPeers[packet.src]?.timestamp - packet.timestamp > expireTime;
+    if (this.knownPeers[packet.src].timestamp) {
+      discardedByExpireTime = this.knownPeers[packet.src].timestamp! - packet.timestamp > expireTime;
     }
 
     return discardedByOlderThan || discardedByExpireTime;
@@ -511,7 +530,7 @@ export class Peer implements IPeer {
     }
   }
 
-  sendMessage(roomId: string, payload: any, type: PeerMessageType = PeerMessageTypes.reliable) {
+  sendMessage(roomId: string, payload: any, type: PeerMessageType) {
     const room = this.currentRooms.find(room => room.id === roomId);
     if (!room) {
       return Promise.reject(new Error(`cannot send a message in a room not joined (${roomId})`));
@@ -642,7 +661,6 @@ export class Peer implements IPeer {
             break;
           }
         case ServerMessageType.Answer: {
-          
           if (payload.protocolVersion !== PROTOCOL_VERSION) {
             this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
             break;

@@ -3,6 +3,7 @@ import { MinPeerData } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
 import { ServerMessageType } from "../src/peerjs-server-connector/enums";
+import { PeerMessageTypes } from "../src/messageTypes";
 
 declare var global: any;
 
@@ -222,7 +223,7 @@ describe("Peer Integration Test", function() {
       };
     });
 
-    await peer2.sendMessage("room", { hello: "world" });
+    await peer2.sendMessage("room", { hello: "world" }, PeerMessageTypes.reliable("reliable"));
 
     const received = await peer1MessagePromise;
 
@@ -273,7 +274,7 @@ describe("Peer Integration Test", function() {
     };
     setTimeout(() => message3.resolve(undefined), 200);
 
-    await peer2.sendMessage("room", { hello: "world" });
+    await peer2.sendMessage("room", { hello: "world" }, PeerMessageTypes.reliable("reliable"));
 
     const received = await message1;
 
