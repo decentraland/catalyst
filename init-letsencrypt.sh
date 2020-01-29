@@ -1,5 +1,6 @@
 #!/bin/bash
 PROGNAME=$0
+staging=1
 
 ####
 # Functions
@@ -98,22 +99,17 @@ leCertEmit () {
 #####
 # Main
 #####
-
-dir=default_dir file=default_file verbose_level=0
-while getopts d:f:v o; do
-  case $o in
-    echo ${OPTARG}
-    (f) file=$OPTARG;;
-    (d) dir=$OPTARG;;
-    (v) verbose_level=$((verbose_level + 1));;
-    (*) usage
-  esac
-done
-shift "$((OPTIND - 1))"
-
-echo Remaining arguments: "$@"
-exit 0
+#staging=1
+#while getopts s:d o; do
+#  case $o in
+#    (s) staging=${OPTARG};;
+#    (d) domain=
+#    (*) usage
+#  esac
+#done
+#shift "$((OPTIND - 1))"
 
 leCertEmit
+echo "### Restarting containers to reload the new certs..."
 docker-compose stop 
 docker-compose up -d
