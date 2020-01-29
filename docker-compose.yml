@@ -33,6 +33,9 @@ services:
     image: decentraland/katalyst:latest
     working_dir: /app
     command: lambdas
+    environment:
+      - METRICS=true
+      - CONTENT_SERVER_ADDRESS=https://katalyst-content.decentraland.zone
     ports:
       - "7070:7070"
 
