@@ -66,7 +66,7 @@ export function createIdentity(): Identity {
     return EthCrypto.createIdentity()
 }
 
-function deleteFolderRecursive(pathToDelete: string) {
+export function deleteFolderRecursive(pathToDelete: string) {
     if (fs.existsSync(pathToDelete)) {
         fs.readdirSync(pathToDelete).forEach((file, index) => {
             const curPath = path.join(pathToDelete, file);

@@ -26,6 +26,7 @@ ts_library(
         "@npm//dcl-crypto",
         "@npm//eth-crypto",
         "@npm//express",
+        "@npm//fs-reverse",
         "@npm//ip",
         "@npm//morgan",
         "@npm//ms",
