@@ -11,7 +11,7 @@ import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
 import { DEFAULT_LAYERS } from "./default_layers";
-import { Authenticator } from "decentraland-crypto/Authenticator";
+import { Authenticator } from "dcl-crypto";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");

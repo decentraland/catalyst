@@ -4,15 +4,16 @@ import { ENTITY_FILE_NAME } from "../Service";
 import { ContentFile } from '../Service';
 import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
-import { Authenticator, EthAddress, AuthChain } from "../auth/Authenticator";
 import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
+import { AuthChain, EthAddress } from "dcl-crypto";
+import { ContentAuthenticator } from "../auth/Authenticator";
 
 export class Validations {
 
     private errors: string[] = []
 
-    constructor(private accessChecker: AccessChecker, private authenticator: Authenticator) {}
+    constructor(private accessChecker: AccessChecker, private authenticator: ContentAuthenticator) {}
 
     getErrors(): string[] {
         return this.errors
