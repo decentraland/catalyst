@@ -1,4 +1,4 @@
-import { ContentStorage } from "./ContentStorage";
+import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
 import fs from 'fs';
 
 export class FileSystemContentStorage implements ContentStorage {
@@ -7,7 +7,7 @@ export class FileSystemContentStorage implements ContentStorage {
 
     static async build(root: string): Promise<FileSystemContentStorage> {
         while (root.endsWith('/')) {
-            root = root.slice(0,-1)
+            root = root.slice(0, -1)
         }
         await this.ensureDirectoryExists(root)
         return new FileSystemContentStorage(root)
@@ -27,12 +27,14 @@ export class FileSystemContentStorage implements ContentStorage {
         await fs.promises.unlink(this.getFilePath(category, id))
     }
 
-    async getContent(category: string, id: string): Promise<Buffer | undefined> {
+    async getContent(category: string, id: string): Promise<ContentItem | undefined> {
         try {
-            return await fs.promises.readFile(this.getFilePath(category, id))
-        } catch (error) {
-            return Promise.resolve(undefined)
-        }
+            const filePath = this.getFilePath(category, id)
+            if (await FileSystemContentStorage.existPath(filePath)) {
+                return SimpleContentItem.fromStream(fs.createReadStream(filePath))
+            }
+        } catch (error) { }
+        return undefined
     }
 
     listIds(category: string): Promise<string[]> {
@@ -70,4 +72,6 @@ export class FileSystemContentStorage implements ContentStorage {
             return false
         }
     }
+
 }
+

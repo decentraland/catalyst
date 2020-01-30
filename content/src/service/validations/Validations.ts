@@ -4,15 +4,16 @@ import { ENTITY_FILE_NAME } from "../Service";
 import { ContentFile } from '../Service';
 import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
-import { Authenticator, EthAddress, AuthChain } from "../auth/Authenticator";
 import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
+import { AuthChain, EthAddress } from "dcl-crypto";
+import { ContentAuthenticator } from "../auth/Authenticator";
 
 export class Validations {
 
     private errors: string[] = []
 
-    constructor(private accessChecker: AccessChecker, private authenticator: Authenticator) {}
+    constructor(private accessChecker: AccessChecker, private authenticator: ContentAuthenticator) {}
 
     getErrors(): string[] {
         return this.errors
@@ -46,13 +47,15 @@ export class Validations {
 
     /** Validate that the full request size is within limits */
     // TODO: decide if we want to externalize this as a configuration
-    private static MAX_UPLOAD_SIZE = 10 * 1024 * 1024  // 10 MB
-    validateRequestSize(files: ContentFile[], validationContext: ValidationContext): void {
+    private static MAX_UPLOAD_SIZE_PER_POINTER_MB = 15
+    private static MAX_UPLOAD_SIZE_PER_POINTER = Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB * 1024 * 1024
+    validateRequestSize(files: ContentFile[], pointers: Pointer[], validationContext: ValidationContext): void {
         if (validationContext.shouldValidate(Validation.REQUEST_SIZE)) {
             var totalSize = 0
-            files.forEach(file => totalSize += file.content.length)
-            if (totalSize > Validations.MAX_UPLOAD_SIZE) {
-                this.errors.push("The sum of all entity's file exceeds the total allowed size (10 MB).")
+            files.forEach(file => totalSize += file.content.byteLength)
+            const sizePerPointer = totalSize / pointers.length
+            if (sizePerPointer > Validations.MAX_UPLOAD_SIZE_PER_POINTER) {
+                this.errors.push(`The deployment is too big. The maximum allowed size per pointer is ${Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB} MB. You can upload up to ${pointers.length * Validations.MAX_UPLOAD_SIZE_PER_POINTER} bytes but you tried to upload ${totalSize}.`)
             }
         }
     }

@@ -1,13 +1,14 @@
 import { Timestamp } from "../service/time/TimeSorting";
 import { BlacklistTarget } from "./BlacklistTarget";
-import { EthAddress, Signature, Authenticator } from "../service/auth/Authenticator";
 import { BlacklistStorage } from "./BlacklistStorage";
 import { ContentCluster } from "../service/synchronization/ContentCluster";
+import { EthAddress, Signature } from "dcl-crypto";
+import { ContentAuthenticator } from "../service/auth/Authenticator";
 
 export class Blacklist {
 
     constructor(private readonly storage: BlacklistStorage,
-        private readonly authenticator: Authenticator,
+        private readonly authenticator: ContentAuthenticator,
         private readonly cluster: ContentCluster) { }
 
     async addTarget(target: BlacklistTarget, metadata: BlacklistMetadata) {
@@ -62,7 +63,7 @@ export class Blacklist {
 
     private async validateSignature(target: BlacklistTarget, metadata: BlacklistMetadata) {
         const messageToSign = this.buildMessageToSign(target, metadata)
-        const authChain = Authenticator.createSimpleAuthChain(messageToSign, metadata.blocker, metadata.signature)
+        const authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, metadata.blocker, metadata.signature)
         if (!await this.authenticator.validateSignature(messageToSign, authChain)) {
             throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }

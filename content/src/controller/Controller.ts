@@ -5,11 +5,13 @@ import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
-import { EthAddress, Signature, Authenticator, AuthLink } from "../service/auth/Authenticator";
 import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
 import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
+import { EthAddress, Signature, AuthLink } from "dcl-crypto";
+import { Authenticator } from "dcl-crypto";
+import { ContentItem } from "../storage/ContentStorage";
 
 export class Controller {
 
@@ -144,10 +146,10 @@ export class Controller {
         // Path: /contents/:hashId
         const hashId = req.params.hashId;
 
-        const data: Buffer | undefined = await this.service.getContent(hashId);
+        const data: ContentItem | undefined = await this.service.getContent(hashId);
         if (data) {
             res.contentType('application/octet-stream')
-            res.end(data, 'binary')
+            data.asStream().pipe(res)
         } else {
             res.status(404).send()
         }

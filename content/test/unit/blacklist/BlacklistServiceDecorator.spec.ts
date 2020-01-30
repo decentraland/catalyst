@@ -8,7 +8,7 @@ import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
-import { Authenticator } from "@katalyst/content/service/auth/Authenticator";
+import { Authenticator } from "dcl-crypto";
 
 describe("BlacklistServiceDecorator", () => {
 
@@ -132,7 +132,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(content1Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        const buffer = await decorator.getContent(content2.hash)
+        const buffer = await (await decorator.getContent(content2.hash))?.asBuffer()
 
         expect(buffer).toBe(content2.buffer)
     })
@@ -148,7 +148,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(entity2Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        const buffer = await decorator.getContent(entity1.id)
+        const buffer = await (await decorator.getContent(entity1.id))?.asBuffer()
 
         expect(buffer).toEqual(Buffer.from(entity1.id))
     })
