@@ -42,7 +42,7 @@ export const PeerMessageTypes = {
     optimistic: false
   }),
   unreliable: (name: string) => ({
-    name: "unreliable",
+    name,
     ttl: 10,
     discardOlderThan: 0,
     expirationTime: 2000,
