@@ -7,6 +7,7 @@ import { AuditInfo } from "../service/audit/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
 import { Authenticator } from "../service/auth/Authenticator";
+import { ContentItem } from "../storage/ContentStorage";
 
 /**
  * This decorator takes a MetaverseContentService and adds blacklisting functionality to it
@@ -34,7 +35,7 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
         return this.filterBlacklisted(activePointers, pointer => buildPointerTarget(type, pointer))
     }
 
-    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
+    async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
         const isBlacklisted = await this.isFileHashBlacklisted(fileHash);
         if (isBlacklisted) {
             return undefined

@@ -1,5 +1,5 @@
 import { EntityId, Entity } from "./Entity"
-import { ContentStorage } from "../storage/ContentStorage"
+import { ContentStorage, ContentItem } from "../storage/ContentStorage"
 import { EntityFactory } from "./EntityFactory"
 import { ContentFileHash } from "./Hashing"
 
@@ -13,9 +13,8 @@ export class ServiceStorage {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
     }
 
-    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
-        const contentItem = await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
-        return contentItem?.asBuffer()
+    async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
+        return this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
     }
 
     async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
