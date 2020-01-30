@@ -24,10 +24,10 @@ leCertEmit () {
   rsa_key_size=4096
   data_path="./local/certbot"
   email="alejandro@decentraland.zone" # Adding a valid address is strongly recommended
-  if test -z staging; then
+  #if test -z staging; then
     echo "## requeting a staging certificate"
     staging=1 # Set to 1 if you're testing your setup to avoid hitting request limits
-  fi
+  #fi
   if [ -d "$data_path" ]; then
     read -p "Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
     if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
