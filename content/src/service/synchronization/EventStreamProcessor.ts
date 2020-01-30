@@ -1,10 +1,10 @@
-import { pipeline, Stream } from "stream"
-import util from "util"
+import { Stream } from "stream"
 import parallelTransform from "parallel-transform"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { sortFromOldestToNewest } from "../time/TimeSorting";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { HistoryDeploymentOptions } from "./EventDeployer";
+import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -27,7 +27,7 @@ export class EventStreamProcessor {
         const sortedHistory = sortFromOldestToNewest(history)
 
         // Create a readable stream with all the deployments
-        const deploymentsStream = this.prepareSourceStream(sortedHistory);
+        const deploymentsStream = streamFrom(sortedHistory.map((event, index) => [index, event]));
 
         // Build a transform stream that process the deployment info and prepares the deployment
         const transform = this.prepareDeploymentBuilder(history.length, continueOnFailure, options?.preferredServer)
@@ -35,23 +35,12 @@ export class EventStreamProcessor {
         // Create writer stream that deploys the entity on this server
         const deployerStream = this.prepareStreamDeployer(history.length, logging, continueOnFailure);
 
-        // Build pipeline than can be awaited
-        const awaitablePipeline = util.promisify(pipeline);
-
         // Build and execute the pipeline
         try {
             await awaitablePipeline(deploymentsStream, transform, deployerStream)
         } catch(error) {
             console.log(`Something failed when trying to deploy the history:\n${error}`)
         }
-    }
-
-    /** Build the source stream reader that provides the history */
-    private prepareSourceStream(deploymentHistory: DeploymentHistory) {
-        const readable = new Stream.Readable({ objectMode: true });
-        deploymentHistory.forEach((deployment, index) => readable.push([index, deployment]));
-        readable.push(null); // Mark the end of the stream
-        return readable;
     }
 
     /**

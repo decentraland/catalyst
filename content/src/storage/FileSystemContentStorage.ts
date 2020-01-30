@@ -1,5 +1,7 @@
-import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
+import { Readable, Writable } from "stream"
+import backwardsStream from "fs-reverse"
 import fs from 'fs';
+import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
 
 export class FileSystemContentStorage implements ContentStorage {
 
@@ -20,6 +22,14 @@ export class FileSystemContentStorage implements ContentStorage {
             return await fs.promises.appendFile(this.getFilePath(category, id), content);
         }
         return fs.promises.writeFile(this.getFilePath(category, id), content)
+    }
+
+    writeStream(category: string, id: string): Writable {
+        return fs.createWriteStream(this.getFilePath(category, id))
+    }
+
+    readStreamBackwards(category: string, id: string): Readable {
+        return backwardsStream(this.getFilePath(category, id), { })
     }
 
     async delete(category: string, id: string): Promise<void> {

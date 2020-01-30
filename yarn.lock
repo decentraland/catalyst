@@ -3299,6 +3299,11 @@ fresh@0.5.2:
   resolved "https://registry.yarnpkg.com/fresh/-/fresh-0.5.2.tgz#3d8cadd90d976569fa835ab1f8e4b23a105605a7"
   integrity sha1-PYyt2Q2XZWn6g1qx+OSyOhBWBac=
 
+from@~0.1:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/from/-/from-0.1.7.tgz#83c60afc58b9c56997007ed1a768b3ab303a44fe"
+  integrity sha1-g8YK/Fi5xWmXAH7Rp2izqzA6RP4=
+
 fs-constants@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs-constants/-/fs-constants-1.0.0.tgz#6be0de9be998ce16af8afc24497b9ee9b7ccd9ad"
@@ -3328,6 +3333,13 @@ fs-minipass@^1.2.5:
   integrity sha512-GWSSJGFy4e9GUeCcbIkED+bgAoFyj7XF1mV8rma3QW4NIqX9Kyx79N/PF61H5udOV3aY1IaMLs6pGbH71nlCTA==
   dependencies:
     minipass "^2.6.0"
+
+fs-reverse@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/fs-reverse/-/fs-reverse-0.0.3.tgz#5ef1e180a65fc0ee3cfb972d376114814203b43d"
+  integrity sha512-zu+5yhmaWueDBAWm7y6ejj2PipVep3EQlQYdfS6r3zsfzIfTVkcdbrsqye2UovisDqogu5dJFxae/dUAOYQqBA==
+  dependencies:
+    from "~0.1"
 
 fs.realpath@^1.0.0:
   version "1.0.0"
