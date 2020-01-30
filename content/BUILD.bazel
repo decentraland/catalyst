@@ -30,8 +30,8 @@ filegroup(
         [
             "test/integration/**/*.txt",
             "test/integration/**/*.png",
-        ]
-    )
+        ],
+    ),
 )
 
 ts_library(
@@ -42,13 +42,14 @@ ts_library(
     deps = [
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
-        "@npm//@types/node",
-        "@npm//@types/jasmine",
-        "@npm//faker",
         "@npm//@types/faker",
-        "@npm//eth-crypto",
-        "@npm//ts-mockito",
+        "@npm//@types/jasmine",
+        "@npm//@types/node",
         "@npm//aws-sdk",
+        "@npm//dcl-crypto",
+        "@npm//eth-crypto",
+        "@npm//faker",
+        "@npm//ts-mockito",
     ],
 )
 
@@ -60,18 +61,19 @@ ts_library(
     deps = [
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
-        "@npm//@types/node",
-        "@npm//@types/jasmine",
-        "@npm//node-fetch",
-        "@npm//@types/node-fetch",
-        "@npm//form-data",
-        "@npm//@types/form-data",
-        "@npm//faker",
         "@npm//@types/faker",
-        "@npm//eth-crypto",
-        "@npm//ms",
+        "@npm//@types/form-data",
+        "@npm//@types/jasmine",
         "@npm//@types/ms",
-        "@npm//ts-mockito"
+        "@npm//@types/node",
+        "@npm//@types/node-fetch",
+        "@npm//dcl-crypto",
+        "@npm//eth-crypto",
+        "@npm//faker",
+        "@npm//form-data",
+        "@npm//ms",
+        "@npm//node-fetch",
+        "@npm//ts-mockito",
     ],
 )
 

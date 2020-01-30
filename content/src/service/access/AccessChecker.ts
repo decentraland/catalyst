@@ -1,5 +1,5 @@
-import { EthAddress } from "../auth/Authenticator";
 import { EntityType, Pointer } from "../Entity";
+import { EthAddress } from "dcl-crypto";
 
 export interface AccessChecker {
 
