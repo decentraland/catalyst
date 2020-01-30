@@ -1,7 +1,7 @@
 import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient";
 import { ServerMetadata } from "@katalyst/content/service/synchronization/ContentCluster";
-import { EthAddress } from "@katalyst/content/service/auth/Authenticator";
+import { EthAddress } from 'dcl-crypto';
 
 export class MockedDAOClient extends DAOClient {
 

@@ -9,7 +9,7 @@ import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
-import { EthAddress } from "../auth/Authenticator";
+import { EthAddress } from "dcl-crypto";
 
 export class ContentCluster {
 

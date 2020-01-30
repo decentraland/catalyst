@@ -6,7 +6,7 @@ import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
-import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator"
+import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 
 export class MockedMetaverseContentService implements MetaverseContentService {

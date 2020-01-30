@@ -1,10 +1,11 @@
 import * as EthCrypto from "eth-crypto"
 import { Validations } from "../../../../src/service/validations/Validations"
 import { Entity, EntityType } from "../../../../src/service/Entity"
-import { Authenticator, AuthChain, AuthLinkType } from "../../../../src/service/auth/Authenticator"
 import { MockedAccessChecker } from "../../../helpers/service/access/MockedAccessChecker"
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext"
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl"
+import {  AuthChain, AuthLinkType  } from "dcl-crypto"
+import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator"
 
 describe("Validations", function () {
 
@@ -100,7 +101,7 @@ describe("Validations", function () {
         expiration.setMinutes(expiration.getMinutes() + 30)
 
         const message = `Decentraland Login\nEphemeral address: ${identity.address}\nExpiration: ${expiration}`
-        const signature = Authenticator.createSignature(identity, message);
+        const signature = ContentAuthenticator.createSignature(identity, message);
         const expectedSigner = identity.address.toLocaleLowerCase()
         validateExpectedAddress(message, signature, expectedSigner)
     })
@@ -115,7 +116,7 @@ describe("Validations", function () {
     it(`signature test on human readable message 4`, async () => {
         const identity = EthCrypto.createIdentity();
         const message = 'Decentraland Login\nEphemeral';
-        const signature = Authenticator.createSignature(identity, message);
+        const signature = ContentAuthenticator.createSignature(identity, message);
         const expectedSigner = identity.address.toLocaleLowerCase()
         validateExpectedAddress(message, signature, expectedSigner)
     })
@@ -130,7 +131,7 @@ describe("Validations", function () {
     it(`signature test on human readable message 5`, async () => {
         const identity = EthCrypto.createIdentity();
         const message = 'Decentraland Login Ephemeral';
-        const signature = Authenticator.createSignature(identity, message);
+        const signature = ContentAuthenticator.createSignature(identity, message);
         const expectedSigner = identity.address.toLocaleLowerCase()
         validateExpectedAddress(message, signature, expectedSigner)
     })
@@ -143,7 +144,7 @@ describe("Validations", function () {
     })
 
     function validateExpectedAddress(message: string, signature: string, expectedSigner: string ) {
-        const messageHash = Authenticator.createEthereumMessageHash(message);
+        const messageHash = ContentAuthenticator.createEthereumMessageHash(message);
 
         const signer = EthCrypto.recover(
             signature,
@@ -155,7 +156,7 @@ describe("Validations", function () {
 
     it(`when signature is invalid, it's reported`, async () => {
         const validation = getValidatorWithMockedAccess()
-        await validation.validateSignature("some-entity-id", Authenticator.createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL)
+        await validation.validateSignature("some-entity-id", ContentAuthenticator.createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL)
 
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe("The signature is invalid.")
@@ -167,9 +168,9 @@ describe("Validations", function () {
         const validation = getValidatorWithMockedAccess()
         await validation.validateSignature(
             entityId,
-            Authenticator.createSimpleAuthChain(entityId, identity.address, EthCrypto.sign(
+            ContentAuthenticator.createSimpleAuthChain(entityId, identity.address, EthCrypto.sign(
                 identity.privateKey,
-                Authenticator.createEthereumMessageHash(entityId)
+                ContentAuthenticator.createEthereumMessageHash(entityId)
             ))
         , ValidationContext.ALL)
 
@@ -182,7 +183,7 @@ describe("Validations", function () {
         const ownerIdentity = EthCrypto.createIdentity();
         const ephemeralIdentity = EthCrypto.createIdentity();
 
-        const authChain = Authenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
+        const authChain = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
 
         const validation = getValidatorWithMockedAccess()
         await validation.validateSignature(entityId, authChain, ValidationContext.ALL)
@@ -195,7 +196,7 @@ describe("Validations", function () {
         const ownerIdentity = EthCrypto.createIdentity();
         const ephemeralIdentity = EthCrypto.createIdentity();
 
-        const signatures_second_is_invalid = Authenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
+        const signatures_second_is_invalid = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
         signatures_second_is_invalid[2].signature = 'invalid-signature'
 
         let validation = getValidatorWithMockedAccess()
@@ -203,7 +204,7 @@ describe("Validations", function () {
         expect(validation.getErrors().length).toBe(1)
         expect(validation.getErrors()[0]).toBe('The signature is invalid.')
 
-        const signatures_first_is_invalid = Authenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
+        const signatures_first_is_invalid = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
         signatures_first_is_invalid[1].signature = 'invalid-signature'
 
         validation = getValidatorWithMockedAccess()
@@ -232,21 +233,21 @@ describe("Validations", function () {
     })
 
     it(`when a profile is created its access is checked`, async () => {
-        const authenticator = new Authenticator()
+        const authenticator = new ContentAuthenticator()
         const validation = new Validations(new AccessCheckerImpl(authenticator), authenticator)
         await validation.validateAccess(EntityType.PROFILE, ['some-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(0)
     })
 
     it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
-        const authenticator = new Authenticator()
+        const authenticator = new ContentAuthenticator()
         const validation = new Validations(new AccessCheckerImpl(authenticator), authenticator)
         await validation.validateAccess(EntityType.PROFILE, ['some-address', 'other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })
 
     it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
-        const authenticator = new Authenticator()
+        const authenticator = new ContentAuthenticator()
         const validation = new Validations(new AccessCheckerImpl(authenticator), authenticator)
         await validation.validateAccess(EntityType.PROFILE, ['other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
@@ -263,5 +264,5 @@ const notReferencedHashMessage = (hash) => {
 }
 
 function getValidatorWithMockedAccess() {
-    return new Validations(new MockedAccessChecker(), new Authenticator())
+    return new Validations(new MockedAccessChecker(), new ContentAuthenticator())
 }
