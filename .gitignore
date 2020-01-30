@@ -9,3 +9,4 @@ yarn-error.log
 local/certbot/conf/keys
 local/certbot/conf/csr
 local/certbot/conf/live
+local/nginx/conf.d/00-katalyst.conf

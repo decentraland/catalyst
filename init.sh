@@ -103,15 +103,19 @@ if test $? -ne 0; then
   exit 1
 fi
 printMessage ok
-echo -n " - staging:        " ; echo -e "\e[33m ${staging} \e[39m"
-echo -n " - domains:        " ; echo -e "[ \e[33m ${domains} \e[39m ]"
-echo -n " - email:          " ; echo -e "\e[33m ${email} \e[39m"
-echo -n " - rsa_key_size:   " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
-echo -n " - data_path:      " ; echo -e "\e[33m ${data_path} \e[39m"
+echo -n " - staging:            " ; echo -e "\e[33m ${staging} \e[39m"
+echo -n " - domains:            " ; echo -e "[ \e[33m ${domains} \e[39m ]"
+echo -n " - email:              " ; echo -e "\e[33m ${email} \e[39m"
+echo -n " - rsa_key_size:       " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
+echo -n " - data_path:          " ; echo -e "\e[33m ${data_path} \e[39m"
+echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
+
 echo ""
 read -rp "Enter to continue, CTRL+C to abort... " dummy
 docker-compose stop
 docker-compose rm
+echo -n "## Replacing '$katalyst_host' on nginx server file"
+sed -i "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
 leCertEmit
 if test $? -ne 0; then
   echo -n "Failed to deploy certificates. Look upstairs for errors: " 
