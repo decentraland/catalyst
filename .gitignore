@@ -6,7 +6,8 @@ bazel-out
 yarn-error.log
 **/package-lock.json
 **/.DS_Store
-local/certbot/conf/keys
-local/certbot/conf/csr
-local/certbot/conf/live
+local/certbot/conf/keys/**
+local/certbot/conf/csr/**
+local/certbot/conf/live/**
+local/certbot/conf/archive/**
 local/nginx/conf.d/00-katalyst.conf

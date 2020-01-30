@@ -109,13 +109,22 @@ echo -n " - email:              " ; echo -e "\e[33m ${email} \e[39m"
 echo -n " - rsa_key_size:       " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
 echo -n " - data_path:          " ; echo -e "\e[33m ${data_path} \e[39m"
 echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
+echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
+
 
 echo ""
 read -rp "Enter to continue, CTRL+C to abort... " dummy
 docker-compose stop
 docker-compose rm
-echo -n "## Replacing '$katalyst_host' on nginx server file"
-sed -i "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
+echo -n "## Replacing \$katalyst_host on nginx server file... "
+sed "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
+matches=`cat ${nginx_server_file} | grep ${domains} | wc -l`
+if test $matches -eq 0; then
+  printMessage failed
+  echo "Failed to perform changes on nginx server file, no changes found. Look into ${nginx_server_file} for more information" 
+  exit 1
+fi
+printMessage ok
 leCertEmit
 if test $? -ne 0; then
   echo -n "Failed to deploy certificates. Look upstairs for errors: " 
