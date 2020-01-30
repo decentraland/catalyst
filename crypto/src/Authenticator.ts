@@ -96,9 +96,21 @@ const ECDSA_EPHEMERAL_VALIDATOR: ValidatorType = (authority: string, authLink: A
     const expiration = Date.parse(expirationString);
 
     if (expiration > Date.now()) {
-      const signerAddress = recover(authLink.signature, Authenticator.createEthereumMessageHash(authLink.payload));
-      if (authority.toLocaleLowerCase() === signerAddress.toLocaleLowerCase()) {
-        return { nextAuthority: ephemeralAddress };
+      if (authLink.type === AuthLinkType.ECDSA_EPHEMERAL) {
+        const signerAddress = recover(authLink.signature, Authenticator.createEthereumMessageHash(authLink.payload));
+        if (authority.toLocaleLowerCase() === signerAddress.toLocaleLowerCase()) {
+          return { nextAuthority: ephemeralAddress };
+        }
+      }
+      if (authLink.type === AuthLinkType.ECDSA_DAPPER_EPHEMERAL) {
+        const dapperAddress = payloadParts[3].substr("Identity Contract: ".length)
+        const dapperIdentityContract = web3.eth.contract(ERC_1271_ABI).at(dapperAddress)
+
+        const result = dapperIdentityContract.isValidSignature(authLink.payload, authLink.signature).call()
+
+        if (result === ERC_1271_MAGIC_VALUE) {
+          return { nextAuthority: ephemeralAddress };
+        }
       }
     }
   } catch (e) {
@@ -116,6 +128,7 @@ function getValidatorByType(type: AuthLinkType): ValidatorType {
     case AuthLinkType.SIGNER:
       return SIGNER_VALIDATOR;
     case AuthLinkType.ECDSA_EPHEMERAL:
+    case AuthLinkType.ECDSA_DAPPER_EPHEMERAL:
       return ECDSA_EPHEMERAL_VALIDATOR;
     case AuthLinkType.ECDSA_SIGNED_ENTITY:
       return ECDSA_SIGNED_ENTITY_VALIDATOR;
