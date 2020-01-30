@@ -14,7 +14,8 @@ import { MockedStorage } from "../storage/MockedStorage";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
-import { AuthLinkType, Authenticator } from "dcl-crypto";
+import { AuthLinkType } from "dcl-crypto";
+import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 
 describe("Service", function () {
 
@@ -46,7 +47,7 @@ describe("Service", function () {
             .withHistoryManager(historyManager)
             .withAccessChecker(new MockedAccessChecker())
             .withNameKeeper({ getServerName: () => serverName } as NameKeeper)
-            .withBean(Bean.AUTHENTICATOR, new Authenticator())
+            .withBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
             .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
             .build()
 
