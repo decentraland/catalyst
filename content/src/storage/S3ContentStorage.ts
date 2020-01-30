@@ -1,5 +1,6 @@
-import { ContentStorage } from "./ContentStorage";
+import { ContentStorage, ContentItem, streamToBuffer } from "./ContentStorage";
 import AWS from 'aws-sdk'
+import { Readable } from "stream";
 
 export class S3ContentStorage implements ContentStorage {
 
@@ -22,8 +23,9 @@ export class S3ContentStorage implements ContentStorage {
 
         if (append) {
             // TODO: This is extremely inefficient but S3 does not provide an append operation. Can we find a better approach?
-            const currentContent = await this.getContent(category, id)
-            if (currentContent) {
+            const contentItem = await this.getContent(category, id)
+            if (contentItem) {
+                const currentContent = await contentItem.asBuffer()
                 content = Buffer.concat([currentContent, content])
             }
         }
@@ -65,13 +67,20 @@ export class S3ContentStorage implements ContentStorage {
         })
     }
 
-    getContent(category: string, id: string): Promise<Buffer | undefined> {
+    async getContent(category: string, id: string): Promise<ContentItem | undefined> {
         const key: string = this.createKey(category, id)
         const request: AWS.S3.Types.GetObjectRequest = {
             Bucket: this.bucket,
             Key: key,
         }
+        const content = await this.getContentFromS3(key, request)
+        if (content) {
+            return new S3ContentItem(content)
+        }
+        return undefined
+    }
 
+    private getContentFromS3(key: string, request: AWS.S3.Types.GetObjectRequest): Promise<Readable | undefined> {
         return new Promise((resolve) => {
             this.s3Client.getObject(request, (error, data: AWS.S3.Types.GetObjectOutput) => {
                 if (error) {
@@ -80,7 +89,7 @@ export class S3ContentStorage implements ContentStorage {
                 }
 
                 console.log(`Successfully retrieved data from S3. Id: ${key}`);
-                return resolve(data.Body as Buffer)
+                return resolve(data.Body as Readable)
             })
         })
     }
@@ -134,6 +143,20 @@ export class S3ContentStorage implements ContentStorage {
             return category + '/' + id
         }
         return category + '/'
+    }
+
+}
+
+class S3ContentItem implements ContentItem {
+
+    constructor(private readable: Readable) { }
+
+    asBuffer(): Promise<Buffer> {
+        return streamToBuffer(this.readable)
+    }
+
+    asStream(): Readable {
+        return this.readable
     }
 
 }

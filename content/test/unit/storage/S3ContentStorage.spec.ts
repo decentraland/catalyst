@@ -71,7 +71,7 @@ xdescribe("S3ContentStorage", () => {
         await storage.store(category, id, content)
 
         const retrievedContent = await storage.getContent(category, id)
-        expect(retrievedContent).toEqual(content);
+        expect(await retrievedContent?.asBuffer()).toEqual(content);
     });
 
     it(`When content is stored, then it can be listed`, async function () {
@@ -97,7 +97,7 @@ xdescribe("S3ContentStorage", () => {
         await storage.store(category, id, newContent)
 
         const retrievedContent = await storage.getContent(category, id)
-        expect(retrievedContent).toEqual(newContent);
+        expect(await retrievedContent?.asBuffer()).toEqual(newContent);
     });
 
     it(`When content is deleted, then it is no longer available`, async function () {

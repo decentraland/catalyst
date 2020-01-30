@@ -23,6 +23,7 @@ class PeerOptions {
   socketBuilder?: SocketBuilder;
   heartbeatExtras?: () => object;
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
+  authHandler?: (msg: string) => Promise<string>;
 }
 
 type HandshakeData = {
@@ -34,6 +35,14 @@ type HandshakeData = {
 
 export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
   return createMessage(myId, peerData.id, ServerMessageType.Offer, handshakeData);
+}
+
+export function createValidationMessage(myId: string, payload: string) {
+  return {
+    type: ServerMessageType.Validation,
+    src: myId,
+    payload
+  };
 }
 
 export function createAnswerMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
@@ -228,6 +237,24 @@ export class PeerJSServerConnection extends EventEmitter {
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
         this._open = true;
+        const { authHandler } = this._options;
+        if (authHandler && payload) {
+          authHandler(payload)
+            .then(response => this.sendValidation(response))
+            .catch(e => {
+              logger.error("error while trying to handle auth message");
+              return "";
+            });
+        }
+        break;
+      case ServerMessageType.ValidationOk: // The connection to the server is accepted.
+        this.emit(PeerEventType.Valid, this.id);
+        break;
+      case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
+        this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
+        break;
+      case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
+        this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
         break;
       case ServerMessageType.Error: // Server error.
         this._abort(PeerErrorType.ServerError, payload.msg);
@@ -323,6 +350,10 @@ export class PeerJSServerConnection extends EventEmitter {
 
   sendAnswer(peerData: PeerData, handshakeData: HandshakeData) {
     this.socket.send(createAnswerMessage(this.id!, peerData, handshakeData));
+  }
+
+  sendValidation(payload: string) {
+    this.socket.send(createValidationMessage(this.id!, payload));
   }
 
   sendCandidate(peerData: PeerData, candidateData: any, connectionId: string) {

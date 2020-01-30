@@ -3,6 +3,7 @@ import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { ServerName } from "./naming/NameKeeper";
 import { AuditInfo } from "./audit/Audit";
 import { Timestamp } from "./time/TimeSorting";
+import { ContentItem } from "../storage/ContentStorage";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -17,7 +18,7 @@ export interface MetaverseContentService {
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
-    getContent(fileHash: ContentFileHash): Promise<Buffer | undefined>;
+    getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
     getStatus(): Promise<ServerStatus>;
 }
 
