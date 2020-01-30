@@ -110,7 +110,8 @@ echo -n " - rsa_key_size:   " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
 echo -n " - data_path:      " ; echo -e "\e[33m ${data_path} \e[39m"
 echo ""
 read -rp "Enter to continue, CTRL+C to abort... " dummy
-
+docker-compose stop
+docker-compose rm
 leCertEmit
 if test $? -ne 0; then
   echo -n "Failed to deploy certificates. Look upstairs for errors: " 
@@ -120,5 +121,5 @@ fi
 echo -n "## Certs emited: " 
 printMessage ok
 echo "## Restarting containers to reload the new certs..."
-docker-compose stop 
+docker-compose stop
 docker-compose up -d
