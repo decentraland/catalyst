@@ -1,6 +1,6 @@
 import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverconnection";
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
-import { ServerMessageType } from "./peerjs-server-connector/enums";
+import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
@@ -9,6 +9,7 @@ import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
+import { future } from 'fp-future';
 
 const PROTOCOL_VERSION = 3;
 
@@ -39,6 +40,7 @@ type PeerConfig = {
   peerConnectTimeout?: number;
   oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
+  authHandler?: (msg: string) => Promise<string>;
 };
 
 class Stats {
@@ -104,7 +106,7 @@ export class Peer implements IPeer {
 
   private stats = new GlobalStats();
 
-  constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {}) {
+  constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {authHandler: msg => Promise.resolve(msg)}) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
@@ -127,6 +129,7 @@ export class Peer implements IPeer {
       path: url.pathname,
       secure,
       token: this.config.token,
+      authHandler: config.authHandler,
       heartbeatExtras: () => ({
         ...this.buildTopologyInfo()
       }),
@@ -180,6 +183,19 @@ export class Peer implements IPeer {
 
   private getExpireTime(packet: Packet): number {
     return packet.expireTime > 0 ? packet.expireTime : this.config.messageExpirationTime!;
+  }
+
+  awaitConnectionEstablished(timeoutMs: number = 10000): Promise<void> {
+    const result = future<void>();
+
+    setTimeout(() => {
+      result.isPending && result.reject(new Error(`[${this.peerId}] Awaiting connection to server timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    this.peerJsConnection.on(PeerEventType.Error, err => result.isPending && result.reject(err));
+    this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
+
+    return result;
   }
 
   private log(...entries: any[]) {
