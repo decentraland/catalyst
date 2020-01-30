@@ -1,6 +1,6 @@
 import { Entity } from "../Entity";
 import { ContentAnalytics } from "./ContentAnalytics";
-import { EthAddress } from "../auth/Authenticator";
+import { EthAddress } from "dcl-crypto";
 
 export class DummyContentAnalytics implements ContentAnalytics {
 

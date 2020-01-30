@@ -63,9 +63,9 @@ ts_library(
     deps = [
         "//commons",
         "//comms/peer",
-        "//crypto/src",
         "@npm//@types",
         "@npm//cors",
+        "@npm//dcl-crypto",
         "@npm//express",
         "@npm//isomorphic-fetch",
         "@npm//morgan",
