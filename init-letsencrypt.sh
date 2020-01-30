@@ -20,7 +20,7 @@ leCertEmit () {
     exit 1
   fi
 
-  domains=(katalyst-nginx.decentraland.zone katalyst-comms-relay.decentraland.zone katalyst-content.decentraland.zone katalyst-lambdas.decentraland.zone)
+  domains=(*.decentraland.zone)
   rsa_key_size=4096
   data_path="./local/certbot"
   email="alejandro@decentraland.zone" # Adding a valid address is strongly recommended
