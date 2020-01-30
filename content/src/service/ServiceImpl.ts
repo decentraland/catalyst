@@ -15,7 +15,7 @@ import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
 import { Lock } from "./locking/Lock";
-import { Authenticator } from "dcl-crypto";
+import { ContentAuthenticator } from "./auth/Authenticator";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -30,7 +30,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
-        private authenticator: Authenticator,
+        private authenticator: ContentAuthenticator,
         private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
@@ -44,7 +44,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         nameKeeper: NameKeeper,
         analytics: ContentAnalytics,
         accessChecker: AccessChecker,
-        authenticator: Authenticator,
+        authenticator: ContentAuthenticator,
         ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
             const lastImmutableTime: Timestamp = await historyManager.getLastImmutableTime() ?? 0
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
@@ -92,7 +92,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate entity
         validation.validateEntity(entity, validationContext)
 
-        const ownerAddress = Authenticator.ownerAddress(auditInfo)
+        const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
             // Validate that Decentraland performed the deployment
             validation.validateDecentralandAddress(ownerAddress, validationContext)

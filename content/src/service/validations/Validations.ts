@@ -7,13 +7,13 @@ import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
 import { AuthChain, EthAddress } from "dcl-crypto";
-import { Authenticator } from "dcl-crypto";
+import { ContentAuthenticator } from "../auth/Authenticator";
 
 export class Validations {
 
     private errors: string[] = []
 
-    constructor(private accessChecker: AccessChecker, private authenticator: Authenticator) {}
+    constructor(private accessChecker: AccessChecker, private authenticator: ContentAuthenticator) {}
 
     getErrors(): string[] {
         return this.errors

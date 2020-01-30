@@ -1,11 +1,12 @@
 import { AccessChecker } from "./AccessChecker";
-import { EthAddress, Authenticator } from "dcl-crypto";
+import { EthAddress  } from "dcl-crypto";
 import { Pointer, EntityType } from "../Entity";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { ContentAuthenticator } from "../auth/Authenticator";
 
 export class AccessCheckerImpl implements AccessChecker {
 
-    constructor(private readonly authenticator: Authenticator) { }
+    constructor(private readonly authenticator: ContentAuthenticator) { }
 
     async hasAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         switch(entityType) {
