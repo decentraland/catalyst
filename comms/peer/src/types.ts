@@ -1,8 +1,13 @@
 import { PeerMessageType } from "./messageTypes";
 
+type PacketSubtypeData = {
+  lastTimestamp: number;
+  lastSequenceId: number;
+};
+
 export type Room = { id: string; users: string[] };
-export type KnownPeerData = { userId: string; peerId: string, rooms: string[], timestamp?: number, timestampByType: Record<string, number> };
-export type MinPeerData = { userId: string; peerId: string, rooms?: string[] }
+export type KnownPeerData = { userId: string; peerId: string; rooms: string[]; timestamp?: number; subtypeData: Record<string, PacketSubtypeData> };
+export type MinPeerData = { userId: string; peerId: string; rooms?: string[] };
 
 export interface IPeer {
   peerId: string;

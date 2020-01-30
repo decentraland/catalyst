@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import { ExpressPeerServer, IRealm } from "peerjs-server";
+import { IConfig } from "peerjs-server/dist/src/config";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
@@ -10,6 +11,7 @@ import { IMessage } from "peerjs-server/dist/src/models/message";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
 import { DEFAULT_LAYERS } from "./default_layers";
+import { Authenticator } from "decentraland-crypto/Authenticator";
 
 const relay = parseBoolean(process.env.RELAY ?? "false");
 const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
@@ -55,9 +57,21 @@ const server = app.listen(port, async () => {
   console.info(`==> Lighthouse listening on port ${port}.`);
 });
 
-const options = {
-  debug: true,
-  path: "/"
+const options: Partial<IConfig> = {
+  path: "/",
+  authHandler: async (client, message) => {
+    if (!client) {
+      return false;
+    }
+    try {
+      const result = Authenticator.validateSignature(client.getMsg(), message.payload);
+
+      return result;
+    } catch (e) {
+      console.log(`error while recovering address for client ${client.getId()}`, e);
+      return false;
+    }
+  }
 };
 
 const peerServer = ExpressPeerServer(server, options);

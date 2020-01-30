@@ -4,7 +4,7 @@ import { EntityType, Pointer, EntityId } from "../Entity";
 export class PointerStorage {
 
     private static POINTER_CATEGORY: string = "pointers"
-    private static TEMP_DEPLOYMENTS_ID: string = "temp_deploys"
+    private static TEMP_DEPLOYMENTS_ID: string = "temp_deploys.txt"
 
     constructor(private storage: ContentStorage) { }
 

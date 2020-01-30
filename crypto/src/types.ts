@@ -47,3 +47,9 @@ export type Timestamp = number;
 
 export type EntityId = ContentFileHash;
 export type ContentFileHash = string;
+
+export type AuthIdentity = {
+  ephemeralIdentity: IdentityType;
+  expiration: Date;
+  authChain: AuthChain;
+};

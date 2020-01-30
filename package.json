@@ -92,7 +92,7 @@
     "multihashing-async": "^0.8.0",
     "node-fetch": "^2.6.0",
     "parallel-transform": "^1.2.0",
-    "peerjs-server": "https://github.com/decentraland/peerjs-server.git#6b10c801f98e709fe8f740f73ad6876070174af1",
+    "peerjs-server": "https://github.com/decentraland/peerjs-server.git#39dbf82be7fc58ddda780f9b19230440f4f71793",
     "prom-client": "^11.5.2",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
