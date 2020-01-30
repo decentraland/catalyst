@@ -1,5 +1,5 @@
 import { EntityId, Entity } from "./Entity"
-import { ContentStorage } from "../storage/ContentStorage"
+import { ContentStorage, ContentItem } from "../storage/ContentStorage"
 import { EntityFactory } from "./EntityFactory"
 import { ContentFileHash } from "./Hashing"
 
@@ -13,7 +13,7 @@ export class ServiceStorage {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
     }
 
-    getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
+    getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
         return this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
     }
 
@@ -26,11 +26,10 @@ export class ServiceStorage {
     }
 
     async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        const buffer = await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, id)
-        if (buffer) {
-            return EntityFactory.fromBufferWithId(buffer, id)
-        } else {
-            return undefined
+        const contentItem = await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, id)
+        if (contentItem) {
+            return EntityFactory.fromBufferWithId(await contentItem.asBuffer(), id)
         }
+        return undefined
     }
 }

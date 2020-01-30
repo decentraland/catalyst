@@ -1,4 +1,4 @@
-import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
+import { ContentStorage, ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage";
 
 export class MockedStorage implements ContentStorage {
 
@@ -22,8 +22,9 @@ export class MockedStorage implements ContentStorage {
         this.storage.delete(this.getKey(category, id))
         return Promise.resolve()
     }
-    getContent(category: string, id: string): Promise<Buffer | undefined> {
-        return Promise.resolve(this.storage.get(this.getKey(category, id)))
+    getContent(category: string, id: string): Promise<ContentItem | undefined> {
+        const content = this.storage.get(this.getKey(category, id))
+        return Promise.resolve(content ? SimpleContentItem.fromBuffer(content) : undefined)
     }
     listIds(category: string): Promise<string[]> {
         const ids = Array.from(this.storage.keys())

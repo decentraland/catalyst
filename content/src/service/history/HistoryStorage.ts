@@ -31,12 +31,11 @@ export class HistoryStorage {
     }
 
     private async readHistoryFile(fileId: StorageFileId): Promise<DeploymentHistory> {
-        const buffer = await this.storage.getContent(HistoryStorage.HISTORY_CATEGORY, fileId)
-        if (buffer) {
-            return EventSerializer.unserializeHistory(buffer)
-        } else {
-            return []
+        const contentItem = await this.storage.getContent(HistoryStorage.HISTORY_CATEGORY, fileId)
+        if (contentItem) {
+            return EventSerializer.unserializeHistory(await contentItem.asBuffer())
         }
+        return []
     }
 
 }
