@@ -102,7 +102,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers), (type, id) => this.getAuditInfo(type, id), validationContext)
         } else {
             // Validate request size
-            validation.validateRequestSize(files, validationContext)
+            validation.validateRequestSize(files, entity.pointers, validationContext)
 
             // Validate ethAddress access
             await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
