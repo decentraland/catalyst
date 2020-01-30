@@ -16,6 +16,7 @@ import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
 import { Authenticator } from "./auth/Authenticator";
 import { Lock } from "./locking/Lock";
+import { ContentItem } from "../storage/ContentStorage";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -179,7 +180,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return filesWithName[0];
     }
 
-    async getContent(fileHash: ContentFileHash): Promise<Buffer | undefined> {
+    async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
         return this.storage.getContent(fileHash);
     }
 

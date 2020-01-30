@@ -13,12 +13,11 @@ export class AuditStorage {
     }
 
     async getAuditInfo(id: EntityId): Promise<AuditInfo | undefined> {
-        const buffer = await this.storage.getContent(AuditStorage.PROOF_CATEGORY, id)
-        if (buffer) {
-            return JSON.parse(buffer.toString())
-        } else {
-            return undefined
+        const contentItem = await this.storage.getContent(AuditStorage.PROOF_CATEGORY, id)
+        if (contentItem) {
+            return JSON.parse((await contentItem.asBuffer()).toString())
         }
+        return undefined
     }
 
 }

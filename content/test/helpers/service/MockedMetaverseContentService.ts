@@ -7,6 +7,7 @@ import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "@katalyst/content/service/auth/Authenticator"
+import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 
@@ -56,16 +57,16 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(new Map(entries))
     }
 
-    getContent(fileHash: string): Promise<Buffer> {
+    getContent(fileHash: string): Promise<ContentItem> {
         const buffer = this.content.get(fileHash)
         if (!buffer) {
             if (this.isThereAnEntityWithId(fileHash)) {
                 // Returning the buffer with the id, since we don't have the actual file content
-                return Promise.resolve(Buffer.from(fileHash))
+                return Promise.resolve(SimpleContentItem.fromBuffer(Buffer.from(fileHash)))
             }
             throw new Error(`Failed to find content with hash ${fileHash}`);
         } else {
-            return Promise.resolve(buffer)
+            return Promise.resolve(SimpleContentItem.fromBuffer(buffer))
         }
     }
 
