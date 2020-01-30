@@ -82,12 +82,12 @@ export class Server {
    }
 
    async stop(): Promise<void> {
+        await this.synchronizationManager.stop()
         if (this.httpServer) {
             this.httpServer.close(() => {
                 console.info(`==> Content Server stopped.`);
             })
         }
-        await this.synchronizationManager.stop()
    }
 }
 
