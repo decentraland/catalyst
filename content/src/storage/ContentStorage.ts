@@ -1,4 +1,4 @@
-import * as stream from "stream";
+import { Readable, Duplex } from "stream";
 
 export interface ContentStorage {
     store(category: string, id: string, content: Buffer, append?: boolean): Promise<void>;
@@ -10,18 +10,18 @@ export interface ContentStorage {
 
 export interface ContentItem {
     asBuffer(): Promise<Buffer>
-    asStream(): stream.Readable
+    asStream(): Readable
 }
 
 export class SimpleContentItem implements ContentItem {
 
-    private constructor(private buffer?: Buffer, private stream?: stream.Readable) { }
+    private constructor(private buffer?: Buffer, private stream?: Readable) { }
 
     static fromBuffer(buffer: Buffer): SimpleContentItem {
         return new SimpleContentItem(buffer)
     }
 
-    static fromStream(stream: stream.Readable): SimpleContentItem {
+    static fromStream(stream: Readable): SimpleContentItem {
         return new SimpleContentItem(undefined, stream)
     }
 
@@ -32,7 +32,7 @@ export class SimpleContentItem implements ContentItem {
         return streamToBuffer(this.stream)
     }
 
-    asStream(): stream.Readable {
+    asStream(): Readable {
         if (this.stream) {
             return this.stream
         }
@@ -41,8 +41,8 @@ export class SimpleContentItem implements ContentItem {
 
 }
 
-export function bufferToStream(buffer): stream.Readable {
-    let streamDuplex = new stream.Duplex();
+export function bufferToStream(buffer): Readable {
+    let streamDuplex = new Duplex();
     streamDuplex.push(buffer);
     streamDuplex.push(null);
     return streamDuplex;

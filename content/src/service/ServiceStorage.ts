@@ -13,7 +13,7 @@ export class ServiceStorage {
         return this.storage.store(ServiceStorage.CONTENT_CATEGORY, fileHash, content)
     }
 
-    async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
+    getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
         return this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, fileHash)
     }
 

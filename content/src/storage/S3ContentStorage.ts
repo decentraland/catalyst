@@ -1,6 +1,6 @@
 import { ContentStorage, ContentItem, streamToBuffer } from "./ContentStorage";
 import AWS from 'aws-sdk'
-import * as stream from "stream";
+import { Readable } from "stream";
 
 export class S3ContentStorage implements ContentStorage {
 
@@ -80,7 +80,7 @@ export class S3ContentStorage implements ContentStorage {
         return undefined
     }
 
-    private getContentFromS3(key: string, request: AWS.S3.Types.GetObjectRequest): Promise<stream.Readable | undefined> {
+    private getContentFromS3(key: string, request: AWS.S3.Types.GetObjectRequest): Promise<Readable | undefined> {
         return new Promise((resolve) => {
             this.s3Client.getObject(request, (error, data: AWS.S3.Types.GetObjectOutput) => {
                 if (error) {
@@ -89,7 +89,7 @@ export class S3ContentStorage implements ContentStorage {
                 }
 
                 console.log(`Successfully retrieved data from S3. Id: ${key}`);
-                return resolve(data.Body as stream.Readable)
+                return resolve(data.Body as Readable)
             })
         })
     }
@@ -149,13 +149,13 @@ export class S3ContentStorage implements ContentStorage {
 
 class S3ContentItem implements ContentItem {
 
-    constructor(private readable: stream.Readable) { }
+    constructor(private readable: Readable) { }
 
     asBuffer(): Promise<Buffer> {
         return streamToBuffer(this.readable)
     }
 
-    asStream(): stream.Readable {
+    asStream(): Readable {
         return this.readable
     }
 

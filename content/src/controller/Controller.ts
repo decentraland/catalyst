@@ -148,7 +148,6 @@ export class Controller {
         const data: ContentItem | undefined = await this.service.getContent(hashId);
         if (data) {
             res.contentType('application/octet-stream')
-            // res.end(data, 'binary')
             data.asStream().pipe(res)
         } else {
             res.status(404).send()
