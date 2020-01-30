@@ -1,35 +1,29 @@
 #!/bin/bash
-PROGNAME=$0
+Progname=$0
+Source=".default_env"
+
 
 ####
 # Functions
 #####
-usage() {
-  cat << EOF >&2
-Usage: $PROGNAME [-v] [-d <dir>] [-f <file>]
--f <file>: ...
- -d <dir>: ...
-       -v: ...
-EOF
-  exit 1
-}
 
 leCertEmit () {
   if ! [ -x "$(command -v docker-compose)" ]; then
-    echo 'Error: docker-compose is not installed.' >&2
+    echo -n "Error: docker-compose is not installed..." >&2
+    printMessage failed
     exit 1
   fi
-
-  domains=(*.decentraland.zone)
-  rsa_key_size=4096
-  data_path="./local/certbot"
-  email="alejandro@decentraland.zone" # Adding a valid address is strongly recommended
-  #if test -z staging; then
-    echo "## requeting a staging certificate"
-    staging=1 # Set to 1 if you're testing your setup to avoid hitting request limits
-  #fi
+  
+  # Are we on staging mode?
+  if test ${staging} -eq 1; then
+    echo -e "## requeting a \e[92m STAGING \e[39mcertificate"
+    staging_arg="--staging"
+  else
+    echo -e "## requesting a \e[1m\e[5mPRODUCTION \e[25m\e[21mcertificate"
+    read -rp "Enter to continue, CTRL+C to abort... " dummy
+  fi
   if [ -d "$data_path" ]; then
-    read -p "Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
+    read -p "## Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
     if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
       return 0
     fi
@@ -37,7 +31,7 @@ leCertEmit () {
 
 
   if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
-    echo "### Downloading recommended TLS parameters ..."
+    echo "## Downloading recommended TLS parameters ..."
     mkdir -p "$data_path/conf"
     curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
     curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > "$data_path/conf/ssl-dhparams.pem"
@@ -70,18 +64,13 @@ leCertEmit () {
   echo "### Requesting Let's Encrypt certificate for $domains ..."
   #Join $domains to -d args
   domain_args=""
-  for domain in "${domains[@]}"; do
-    domain_args="$domain_args -d $domain"
-  done
-
+  domain_args="$domain_args -d $domains"
+  
   # Select appropriate email arg
   case "$email" in
     "") email_arg="--register-unsafely-without-email" ;;
     *) email_arg="--email $email" ;;
   esac
-
-  # Enable staging mode if needed
-  if [ $staging != "0" ]; then staging_arg="--staging"; fi
 
   docker-compose run --rm --entrypoint "\
     certbot certonly --webroot -w /var/www/certbot \
@@ -97,20 +86,39 @@ leCertEmit () {
   docker-compose exec nginx nginx -s reload
 }
 
-#####
-# Main
-#####
-#staging=1
-#while getopts s:d o; do
-#  case $o in
-#    (s) staging=${OPTARG};;
-#    (d) domain=
-#    (*) usage
-#  esac
-#done
-#shift "$((OPTIND - 1))"
+printMessage () {
+    Type=$1
+    case ${Type} in
+      ok) echo -e "[\e[92m OK \e[39m]" ;;
+      failed) echo -e "[\e[91m FAILED \e[39m]" ;;
+      *) echo "";;
+    esac
+}
+clear
+echo -n "## Loading env variables. If you placed more env variables, than the default shall not be shown:...   "
+. ${Source}
+if test $? -ne 0; then
+  printMessage failed
+  echo "Failed to load ${Source}. Name?, permissions?"
+  exit 1
+fi
+printMessage ok
+echo -n " - staging:        " ; echo -e "\e[33m ${staging} \e[39m"
+echo -n " - domains:        " ; echo -e "[ \e[33m ${domains} \e[39m ]"
+echo -n " - email:          " ; echo -e "\e[33m ${email} \e[39m"
+echo -n " - rsa_key_size:   " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
+echo -n " - data_path:      " ; echo -e "\e[33m ${data_path} \e[39m"
+echo ""
+read -rp "Enter to continue, CTRL+C to abort... " dummy
 
 leCertEmit
-echo "### Restarting containers to reload the new certs..."
+if test $? -ne 0; then
+  echo -n "Failed to deploy certificates. Look upstairs for errors: " 
+  printMessage failed
+  exit 1
+fi
+echo -n "## Certs emited: " 
+printMessage ok
+echo "## Restarting containers to reload the new certs..."
 docker-compose stop 
 docker-compose up -d
