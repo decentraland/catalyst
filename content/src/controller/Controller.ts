@@ -9,8 +9,8 @@ import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
 import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
-import { EthAddress, Signature, AuthLink } from "decentraland-crypto/types";
-import { Authenticator } from "decentraland-crypto/Authenticator";
+import { EthAddress, Signature, AuthLink } from "dcl-crypto";
+import { Authenticator } from "dcl-crypto";
 
 export class Controller {
 

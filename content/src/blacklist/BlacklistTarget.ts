@@ -1,6 +1,6 @@
 import { Pointer, EntityType, EntityId } from "../service/Entity";
 import { ContentFileHash } from "../service/Hashing";
-import { EthAddress } from "decentraland-crypto/types";
+import { EthAddress } from "dcl-crypto";
 
 export class BlacklistTarget {
     private readonly id: BlacklistTargetId;

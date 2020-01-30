@@ -15,7 +15,7 @@ import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
 import { Lock } from "./locking/Lock";
-import { Authenticator } from "decentraland-crypto/Authenticator";
+import { Authenticator } from "dcl-crypto";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 

@@ -9,7 +9,6 @@ ts_library(
     deps = [
         "//commons",
         "//contracts",
-        "//crypto/src",
         "@npm//@types",
         "@npm//@types/analytics-node",
         "@npm//@types/ms",
@@ -23,6 +22,7 @@ ts_library(
         "@npm//caching-map",
         "@npm//cids",
         "@npm//cors",
+        "@npm//dcl-crypto",
         "@npm//eth-crypto",
         "@npm//express",
         "@npm//ip",

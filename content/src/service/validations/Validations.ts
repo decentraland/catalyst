@@ -6,8 +6,8 @@ import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
-import { AuthChain, EthAddress } from "decentraland-crypto/types";
-import { Authenticator } from "decentraland-crypto/Authenticator";
+import { AuthChain, EthAddress } from "dcl-crypto";
+import { Authenticator } from "dcl-crypto";
 
 export class Validations {
 

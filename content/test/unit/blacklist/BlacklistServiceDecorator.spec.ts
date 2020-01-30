@@ -8,7 +8,7 @@ import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
-import { Authenticator } from "decentraland-crypto/Authenticator";
+import { Authenticator } from "dcl-crypto";
 
 describe("BlacklistServiceDecorator", () => {
 

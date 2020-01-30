@@ -1,7 +1,7 @@
 import Analytics from "analytics-node"
 import { Entity } from "../Entity";
 import { ContentAnalytics } from "./ContentAnalytics";
-import { EthAddress } from "decentraland-crypto/types";
+import { EthAddress } from "dcl-crypto";
 
 export class ContentAnalyticsWithSegment implements ContentAnalytics {
 
