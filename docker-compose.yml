@@ -3,7 +3,7 @@ version: "3"
 volumes:
   prometheus_data: {}
   grafana_data: {}
-  content_server_storage: {/srv/katalyst_content/storage}
+  content_server_storage: {}
   nginx_storage: {}
 
 services:
@@ -29,7 +29,7 @@ services:
       - "6969:6969"
     restart: always
     volumes:
-      - content_server_storage:/app/storage/content_server/
+      - /srv/katalyst_content/storage:/app/storage/content_server/
 
   lambdas:
     image: decentraland/katalyst:latest

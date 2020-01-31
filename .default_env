@@ -5,4 +5,4 @@ rsa_key_size=4096
 data_path="./local/certbot"
 nginx_server_file="local/nginx/conf.d/00-katalyst.conf"
 nginx_server_template="local/nginx/conf.d/katalyst.conf.template"
-
+content_server_storage="/srv/katalyst_content/storage"
