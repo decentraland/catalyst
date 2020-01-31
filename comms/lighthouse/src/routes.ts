@@ -118,8 +118,16 @@ export function configureRoutes(app: express.Express, services: Services, option
   });
 
   function handleError(err: any, res, next) {
+    const statusTexts = {
+      400: "bad-request",
+      401: "unauthorized",
+      402: "method-not-allowed",
+      403: "forbidden",
+      404: "not-found"
+    };
+
     if (err instanceof RequestError) {
-      res.status(400).send(JSON.stringify({ status: "bad-request", message: err.message }));
+      res.status(err.status).send(JSON.stringify({ status: statusTexts[err.status] ?? "error", message: err.message }));
     } else {
       next(err);
     }
