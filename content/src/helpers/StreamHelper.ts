@@ -86,7 +86,11 @@ export function streamOfObjectsToJsonStringArray() {
             }
         },
         final: () => {
-            this.emit('data', ']');
+            if (firstWrite) {
+                this.emit('data', '[]');
+            } else {
+                this.emit('data', ']');
+            }
         }
     });
 }

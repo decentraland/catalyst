@@ -1,8 +1,7 @@
-import { Writable } from "stream";
 import { EntityType, EntityId } from "../Entity";
+import { Timestamp } from "../time/TimeSorting";
 import { DeploymentEvent } from "../history/HistoryManager";
 import { FailedDeploymentsStorage } from "./FailedDeploymentsStorage";
-import { StreamPipeline } from "@katalyst/content/helpers/StreamHelper";
 
 /** This manager will remember all failed deployments */
 export class FailedDeploymentsManager {
@@ -10,10 +9,10 @@ export class FailedDeploymentsManager {
     constructor(private readonly storage: FailedDeploymentsStorage) { }
 
     reportFailedDeployment(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
-        return this.storage.addFailedDeployment({ deployment, status: DeploymentStatus[reason]})
+        return this.storage.addFailedDeployment({ deployment, reason, moment: Date.now() })
     }
 
-    getAllFailedDeployments(): StreamPipeline {
+    getAllFailedDeployments(): Promise<FailedDeployment[]> {
         return this.storage.getAllFailedDeployments()
     }
 
@@ -21,45 +20,39 @@ export class FailedDeploymentsManager {
         return this.storage.deleteDeploymentEventIfPresent(entityType, entityId)
     }
 
-    getDeploymentStatus(entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
-        const failedDeployments: StreamPipeline = this.getAllFailedDeployments()
-        return this.findStatus(failedDeployments, entityType, entityId)
+    async getDeploymentStatus(entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
+        const failedDeployments: FailedDeployment[] = await this.getAllFailedDeployments()
+        if (failedDeployments) {
+            return this.findStatus(failedDeployments, entityType, entityId)
+        }
+        return NoFailure.SUCCESS
     }
 
-    private async findStatus(failedDeploymentsStream: StreamPipeline, entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
-        let status: DeploymentStatus = DeploymentStatus.SUCCESSFUL
-        const stream = new Writable({
-            objectMode: true,
-            write: async (failedDeployment: FailedDeployment, _, done) => {
-                if (failedDeployment.deployment.entityId === entityId &&
-                    failedDeployment.deployment.entityType === entityType &&
-                    status == DeploymentStatus.SUCCESSFUL) {
-                    status = failedDeployment.status
-                    failedDeploymentsStream.destroy()
-                }
-                done()
+    private async findStatus(failedDeployments: FailedDeployment[], entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
+        for (const failedDeployment of failedDeployments) {
+            if (failedDeployment.deployment.entityId === entityId &&
+                failedDeployment.deployment.entityType === entityType) {
+                return failedDeployment.reason;
             }
-        });
-
-        await failedDeploymentsStream.addAndExecute(stream)
-        return status
+        }
+        return NoFailure.SUCCESS
     }
 }
 
 export type FailedDeployment = {
     deployment: DeploymentEvent,
-    status: DeploymentStatus
+    reason: FailureReason,
+    moment: Timestamp,
 }
 
 export enum FailureReason {
-    UNKNOWN_ENTITY = "UNKNOWN_ENTITY",
-    FETCH_PROBLEM = "FETCH_PROBLEM",
-    DEPLOYMENT_ERROR = "DEPLOYMENT_ERROR"
-}
-
-export enum DeploymentStatus {
-    SUCCESSFUL = "Successful", // Deployment was successful
     UNKNOWN_ENTITY = "Unknown entity", // During sync, we couldn't fetch the entity
     FETCH_PROBLEM = "Fetch problem", // During sync, we could learn the entity, but we couldn't fetch some of its files or audit info
     DEPLOYMENT_ERROR = "Deployment error", // During sync, there was an error during deployment. Could be due to a validation
 }
+
+export enum NoFailure {
+    SUCCESS
+}
+
+export type DeploymentStatus = FailureReason | NoFailure

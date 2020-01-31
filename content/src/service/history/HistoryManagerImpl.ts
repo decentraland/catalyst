@@ -3,7 +3,7 @@ import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManager, DeploymentEvent, DeploymentHistory, PartialDeploymentHistory } from "./HistoryManager"
 import { Entity } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
-import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest, sortFromNewestToOldest } from "../time/TimeSorting"
+import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest } from "../time/TimeSorting"
 
 export class HistoryManagerImpl implements HistoryManager {
 
@@ -103,7 +103,8 @@ export class HistoryManagerImpl implements HistoryManager {
 
     private async getImmutableHistory(): Promise<DeploymentHistory> {
         const immutableHistory = await this.storage.getImmutableHistory()
-        return sortFromNewestToOldest(immutableHistory)
+        // Sort from newest to oldest
+        return immutableHistory.reverse()
     }
 
     private addEventToTempHistory(newEvent: DeploymentEvent): void {

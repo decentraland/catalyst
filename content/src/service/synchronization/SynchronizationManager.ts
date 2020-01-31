@@ -19,6 +19,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private syncWithNodesInterval: NodeJS.Timeout;
     private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
+    private processing: number = 0
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: TimeKeepingService,
@@ -46,10 +47,14 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         clearInterval(this.syncWithNodesInterval)
         this.daoRemovalEventSubscription?.dispose()
         this.cluster.disconnect()
+        console.log(`Still processing: ${this.processing}`)
         return Promise.resolve()
     }
 
     private async syncWithServers(): Promise<void> {
+        // Update counter
+        this.processing++;
+
         // Gather all servers
         const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
@@ -67,6 +72,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             this.cluster.setImmutableTime(minTimestamp)
             await this.service.setImmutableTime(minTimestamp)
         }
+
+        // Update counter
+        this.processing--;
     }
 
     /** Get all updates from one specific content server */

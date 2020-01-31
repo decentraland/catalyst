@@ -44,6 +44,7 @@ export class Server {
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.addToBlacklist, HttpMethod.PUT);
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.removeFromBlacklist, HttpMethod.DELETE);
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.isTargetBlacklisted, HttpMethod.HEAD);
+      this.registerRoute("/failedDeployments"    , controller, controller.getFailedDeployments);
 
       if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
         this.registerRoute("/legacy-entities"    , controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())
