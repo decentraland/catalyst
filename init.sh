@@ -135,8 +135,6 @@ else
     printMessage ok
 fi
 
-content_server_storage
-
 echo -n "## Replacing \$katalyst_host on nginx server file... "
 sed "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
 matches=`cat ${nginx_server_file} | grep ${domains} | wc -l`
