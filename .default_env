@@ -1,5 +1,5 @@
 export staging=1
-export email=alejandro@decentraland.org
+export email=no-reply@decentraland.org
 export domains="bot1-katalyst.decentraland.zone"
 rsa_key_size=4096
 data_path="./local/certbot"
