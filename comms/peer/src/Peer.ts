@@ -9,7 +9,7 @@ import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
-import { future } from 'fp-future';
+import { future } from "fp-future";
 
 const PROTOCOL_VERSION = 3;
 
@@ -106,7 +106,7 @@ export class Peer implements IPeer {
 
   private stats = new GlobalStats();
 
-  constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = {authHandler: msg => Promise.resolve(msg)}) {
+  constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { authHandler: msg => Promise.resolve(msg) }) {
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
@@ -186,6 +186,14 @@ export class Peer implements IPeer {
   }
 
   awaitConnectionEstablished(timeoutMs: number = 10000): Promise<void> {
+    // check connection state
+    if (this.peerJsConnection.connected) {
+      return Promise.resolve();
+    } else if (this.peerJsConnection.disconnected) {
+      return Promise.reject(new Error("Peer already disconnected!"));
+    }
+
+    // otherwise wait for connection to be established/rejected
     const result = future<void>();
 
     setTimeout(() => {

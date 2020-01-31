@@ -73,6 +73,24 @@ describe("Peer Integration Test", function() {
     return [peer1, peer2];
   }
 
+  function setPeerConnectionEstablished(peer: Peer) {
+    // @ts-ignore
+    peer.peerJsConnection._open = true;
+    // @ts-ignore
+    peer.peerJsConnection._valid = true;
+    // @ts-ignore
+    peer.peerJsConnection._disconnected = false;
+  }
+
+  function setPeerConnectionRejected(peer: Peer) {
+    // @ts-ignore
+    peer.peerJsConnection._open = false;
+    // @ts-ignore
+    peer.peerJsConnection._valid = false;
+    // @ts-ignore
+    peer.peerJsConnection._disconnected = true;
+  }
+
   function expectSinglePeerInRoom(peer: Peer, roomId: string) {
     expect(roomPeers[roomId]).toBeDefined();
     expect(roomPeers[roomId].length).toBe(1);
@@ -241,6 +259,25 @@ describe("Peer Integration Test", function() {
 
     expectSinglePeerInRoom(peer, "room");
     expectPeerToHaveNoConnections(peer);
+  });
+
+  it("Awaits connection when connection is already established", async () => {
+    const [, peer] = await createPeer("peer");
+
+    setPeerConnectionEstablished(peer);
+
+    await peer.awaitConnectionEstablished();
+  });
+
+  it("Awaits connection when connection is already disconnected", async () => {
+    const [, peer] = await createPeer("peer");
+
+    setPeerConnectionRejected(peer);
+
+    return peer
+      .awaitConnectionEstablished()
+      .then(() => new Error("Promise should not be resolved"))
+      .catch(e => {});
   });
 
   it("Does not see peers in other rooms", async () => {

@@ -89,6 +89,8 @@ export class PeerJSServerConnection extends EventEmitter {
   // States.
   private _disconnected = false;
   private _open = false;
+  /** Valid connection after the peer and the server complete the handshake (signature and validation of message) */
+  private _valid = false;
 
   private _socket: Socket;
 
@@ -106,6 +108,10 @@ export class PeerJSServerConnection extends EventEmitter {
 
   get open() {
     return this._open;
+  }
+
+  get connected() {
+    return this._open && this._valid;
   }
 
   get socket() {
@@ -249,6 +255,7 @@ export class PeerJSServerConnection extends EventEmitter {
         break;
       case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         this.emit(PeerEventType.Valid, this.id);
+        this._valid = true;
         break;
       case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
         this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
@@ -318,6 +325,7 @@ export class PeerJSServerConnection extends EventEmitter {
       if (!this.disconnected) {
         this._disconnected = true;
         this._open = false;
+        this._valid = false;
         if (this.socket) {
           this.socket.close();
         }
