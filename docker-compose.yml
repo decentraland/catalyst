@@ -3,7 +3,7 @@ version: "3"
 volumes:
   prometheus_data: {}
   grafana_data: {}
-  content_server_storage: {}
+  content_server_storage: {/srv/katalyst_content/storage}
   nginx_storage: {}
 
 services:
@@ -24,6 +24,7 @@ services:
     environment:
       - METRICS=true
       - STORAGE_ROOT_FOLDER=/app/storage/content_server/
+      - ALLOW_LEGACY_ENTITIES=true
     ports:
       - "6969:6969"
     restart: always

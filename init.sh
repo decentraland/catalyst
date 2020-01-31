@@ -110,12 +110,33 @@ echo -n " - rsa_key_size:       " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
 echo -n " - data_path:          " ; echo -e "\e[33m ${data_path} \e[39m"
 echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
-
-
+echo -n " - content_server_storage:  " ; echo -e "\e[33m ${content_server_storage} \e[39m"
 echo ""
 read -rp "Enter to continue, CTRL+C to abort... " dummy
 docker-compose stop
 docker-compose rm
+echo -n "## Checking if local storage folder is reachable..."
+if test -d content_server_storage; then
+  printMessage ok
+else
+  read -p "## Not reachable. Do you want me to create it? (y/N) " decision
+    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
+      echo -n "## Unable to continue"
+      printMessage failed
+      exit 1
+    fi
+    mkdir -p ${content_server_storage}
+    if test $? -ne 0; then
+      echo -n "Failed to create local storage folder." 
+      printMessage failed
+      exit 1
+    fi
+    echo -n "Folder ${content_server_storage} created..."
+    printMessage ok
+fi
+
+content_server_storage
+
 echo -n "## Replacing \$katalyst_host on nginx server file... "
 sed "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
 matches=`cat ${nginx_server_file} | grep ${domains} | wc -l`
