@@ -39,18 +39,22 @@ server {
     
     location ~ ^/content(.*)$ {
         proxy_pass http://content-server$1$is_args$args;
+        proxy_pass_request_headers  on;
     }
     
     location  ~ ^/comms(.*)$ {
         proxy_pass http://comms-server$1$is_args$args; 
+        proxy_pass_request_headers  on;
     }
     
     location  ~ ^/lambdas(.*)$ {
         proxy_pass http://lambdas$1$is_args$args;
+        proxy_pass_request_headers  on;
     }
     
     location  ~ ^/metrics(.*)$ {
         proxy_pass http://metrics$1$is_args$args;
+        proxy_pass_request_headers  on;
     }
 
     location / {
