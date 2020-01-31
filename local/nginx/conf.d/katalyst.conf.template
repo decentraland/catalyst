@@ -38,19 +38,19 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/bot1-katalyst.decentraland.zone/privkey.pem;
     
     location ~ ^/content(.*)$ {
-        proxy_pass http://content-server$1;
+        proxy_pass http://content-server$1$is_args$args;
     }
     
     location  ~ ^/comms(.*)$ {
-        proxy_pass http://comms-server$1; 
+        proxy_pass http://comms-server$1$is_args$args; 
     }
     
     location  ~ ^/lambdas(.*)$ {
-        proxy_pass http://lambdas$1;
+        proxy_pass http://lambdas$1$is_args$args;
     }
     
     location  ~ ^/metrics(.*)$ {
-        proxy_pass http://metrics$1;
+        proxy_pass http://metrics$1$is_args$args;
     }
 
     location / {
