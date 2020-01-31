@@ -3,6 +3,7 @@ import { EntityId } from "../Entity";
 import { AuditStorage } from "./AuditStorage";
 import { ContentFileHash } from "../Hashing";
 import { AuthChain } from "dcl-crypto";
+import { FailureReason } from "../errors/FailedDeploymentsManager";
 
 export const NO_TIMESTAMP: Timestamp = -1
 
@@ -40,14 +41,11 @@ export class Audit implements AuditOverwrite, AuditManager {
 export type AuditInfo = {
     version: EntityVersion,
     deployedTimestamp: Timestamp
-
     authChain: AuthChain,
-
     overwrittenBy?: EntityId,
-
+    failureReason?: FailureReason,
     isBlacklisted?: boolean,
     blacklistedContent?: ContentFileHash[],
-
     originalMetadata?: { // This is used for migrations
         originalVersion: EntityVersion,
         data: any,

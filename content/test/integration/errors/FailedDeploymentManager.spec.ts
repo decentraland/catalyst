@@ -1,12 +1,11 @@
 import { random } from "faker"
 import { EnvironmentConfig, Environment, Bean } from "@katalyst/content/Environment"
-import { FailedDeploymentsManager, FailureReason, DeploymentStatus, FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
+import { FailedDeploymentsManager, FailureReason, FailedDeployment, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { ContentStorageFactory } from "@katalyst/content/storage/ContentStorageFactory"
 import { FailedDeploymentsManagerFactory } from "@katalyst/content/service/errors/FailedDeploymentsManagerFactory"
-import { deleteFolderRecursive } from "../E2ETestUtils"
-import { streamToArray, StreamPipeline } from "@katalyst/content/helpers/StreamHelper"
 import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
 import { EntityType } from "@katalyst/content/service/Entity"
+import { deleteFolderRecursive } from "../E2ETestUtils"
 
 describe("Integration - Failed Deployments Manager", function() {
 
@@ -30,12 +29,12 @@ describe("Integration - Failed Deployments Manager", function() {
         await manager.reportFailedDeployment(deployment, FailureReason.UNKNOWN_ENTITY)
 
         let status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
-        expect(status).toBe(DeploymentStatus.UNKNOWN_ENTITY)
+        expect(status).toBe(FailureReason.UNKNOWN_ENTITY)
 
         await manager.reportFailedDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
 
         status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
-        expect(status).toBe(DeploymentStatus.DEPLOYMENT_ERROR)
+        expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
     })
 
     it(`When failures are reported, then all are reported correctly`, async () => {
@@ -45,11 +44,11 @@ describe("Integration - Failed Deployments Manager", function() {
         await manager.reportFailedDeployment(deployment1, FailureReason.UNKNOWN_ENTITY)
         await manager.reportFailedDeployment(deployment2, FailureReason.DEPLOYMENT_ERROR)
 
-        const [failed1, failed2]: Array<FailedDeployment> = await toArray(manager.getAllFailedDeployments())
+        const [failed1, failed2]: Array<FailedDeployment> = await manager.getAllFailedDeployments()
 
-        expect(failed1.status).toBe(DeploymentStatus.DEPLOYMENT_ERROR)
+        expect(failed1.reason).toBe(FailureReason.DEPLOYMENT_ERROR)
         expect(failed1.deployment).toEqual(deployment2)
-        expect(failed2.status).toBe(DeploymentStatus.UNKNOWN_ENTITY)
+        expect(failed2.reason).toBe(FailureReason.UNKNOWN_ENTITY)
         expect(failed2.deployment).toEqual(deployment1)
     })
 
@@ -62,16 +61,8 @@ describe("Integration - Failed Deployments Manager", function() {
         await manager.reportSuccessfulDeployment(deployment.entityType, deployment.entityId)
 
         const status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
-        expect(status).toBe(DeploymentStatus.SUCCESSFUL)
+        expect(status).toBe(NoFailure.SUCCESS)
     })
-
-    async function toArray<T>(pipeline: StreamPipeline): Promise<Array<T>> {
-        const results: Array<T> = []
-        const stream = streamToArray(results)
-        await pipeline.addAndExecute(stream)
-        return results
-    }
-
 
     function buildRandomDeployment(): DeploymentEvent {
         const timestamp = random.number()

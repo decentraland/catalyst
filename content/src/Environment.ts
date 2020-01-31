@@ -23,6 +23,7 @@ import { EntityVersion } from "./service/audit/Audit";
 import { ContentAuthenticator } from "./service/auth/Authenticator";
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
+import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -76,6 +77,7 @@ export const enum Bean {
     EVENT_DEPLOYER,
     BLACKLIST,
     AUTHENTICATOR,
+    FAILED_DEPLOYMENTS_MANAGER,
 }
 
 export const enum EnvironmentConfig {
@@ -176,6 +178,7 @@ export class EnvironmentBuilder {
         const pointerManager = await PointerManagerFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => pointerManager)
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => FailedDeploymentsManagerFactory.create(env))
         const service = await ServiceFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))

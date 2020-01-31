@@ -33,7 +33,7 @@ export class PointerStorage {
     }
 
     storeTempDeployments(tempDeployments: Buffer): Promise<void> {
-        return this.storage.store(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID, Buffer.from(tempDeployments))
+        return this.storage.store(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID, tempDeployments)
     }
 
     async readStoredTempDeployments(): Promise<Buffer | undefined> {

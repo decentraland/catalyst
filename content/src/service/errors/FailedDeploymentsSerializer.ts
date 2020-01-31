@@ -1,41 +1,47 @@
-import { FailedDeployment, DeploymentStatus } from "./FailedDeploymentsManager";
-import { streamMap, streamFilter, StreamPipeline } from "@katalyst/content/helpers/StreamHelper";
+import { FailedDeployment, FailureReason } from "./FailedDeploymentsManager";
 import { EntityType } from "../Entity";
 
 export class FailedDeploymentsSerializer {
 
+    private static EVENT_SEPARATOR: string = '\n'
     private static ATTRIBUTES_SEPARATOR: string = ' '
 
-    static addUnserialization(pipeline: StreamPipeline) {
-        const filter = streamFilter((serializedFailedDeployment: string) => serializedFailedDeployment.length > 0)
-        const map = streamMap((serializedFailedDeployment: string) => FailedDeploymentsSerializer.unserialize(serializedFailedDeployment))
-        return pipeline.add(filter)
-            .add(map)
+    static unserializeFailedDeployments(buffer: Buffer): FailedDeployment[] {
+        const serializedHistory: string = buffer.toString().trimEnd()
+        if (serializedHistory.includes(FailedDeploymentsSerializer.ATTRIBUTES_SEPARATOR)) {
+            return serializedHistory.split(FailedDeploymentsSerializer.EVENT_SEPARATOR)
+                .map(FailedDeploymentsSerializer.unserialize)
+        } else {
+            return []
+        }
     }
 
-    static serializeStream() {
-        return streamMap((failedDeployment: FailedDeployment) => FailedDeploymentsSerializer.serialize(failedDeployment))
+    static serializeFailedDeployments(failedDeployments: FailedDeployment[]): Buffer {
+        let serializedDeployments: string = failedDeployments.map(FailedDeploymentsSerializer.serialize).join(FailedDeploymentsSerializer.EVENT_SEPARATOR)
+        if (failedDeployments.length > 0) {
+            serializedDeployments += FailedDeploymentsSerializer.EVENT_SEPARATOR
+        }
+        return Buffer.from(serializedDeployments)
     }
 
-    private static unserialize(serializedEvent: string | Buffer): FailedDeployment {
-        const stringEvent: string = (serializedEvent instanceof Buffer) ? serializedEvent.toString() : serializedEvent
-        const parts: string[] = stringEvent.split(FailedDeploymentsSerializer.ATTRIBUTES_SEPARATOR)
-        const [status, serverName, entityType, entityId, timestamp] = parts
+    static serialize(failedDeployment: FailedDeployment): string {
+        return [failedDeployment.reason.replace(' ', '_').toLocaleUpperCase(), failedDeployment.moment, failedDeployment.deployment.serverName, failedDeployment.deployment.entityType, failedDeployment.deployment.entityId, failedDeployment.deployment.timestamp]
+            .join(FailedDeploymentsSerializer.ATTRIBUTES_SEPARATOR)
+    }
+
+    private static unserialize(serializedEvent: string): FailedDeployment {
+        const parts: string[] = serializedEvent.split(FailedDeploymentsSerializer.ATTRIBUTES_SEPARATOR)
+        const [reason, moment, serverName, entityType, entityId, timestamp] = parts
         return {
-            status: DeploymentStatus[status],
+            reason: FailureReason[reason],
+            moment: parseInt(moment),
             deployment: {
                 serverName,
                 entityType: EntityType[entityType.toUpperCase().trim()],
                 entityId: entityId,
                 timestamp: parseInt(timestamp),
-            }
+            },
         }
-    }
-
-    static serialize(failedDeployment: FailedDeployment): string {
-        const { status, deployment } = failedDeployment
-        return [status.replace(" ", "_").toLocaleUpperCase(), deployment.serverName, deployment.entityType, deployment.entityId, deployment.timestamp]
-            .join(FailedDeploymentsSerializer.ATTRIBUTES_SEPARATOR)
     }
 
 }

@@ -12,12 +12,14 @@ import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { EthAddress, Signature, AuthLink } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
+import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
 
 export class Controller {
 
     constructor(private readonly service: MetaverseContentService,
         private readonly historyManager: HistoryManager,
-        private readonly blacklist: Blacklist) { }
+        private readonly blacklist: Blacklist,
+        private readonly failedDeploymentsManager: FailedDeploymentsManager) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -283,6 +285,14 @@ export class Controller {
         const target = parseBlacklistTypeAndId(type, id)
         this.blacklist.isTargetBlacklisted(target)
             .then(isBlacklisted => isBlacklisted ? res.status(200).send() : res.status(404).send())
+    }
+
+    async getFailedDeployments(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /failedDeployments
+
+        const failedDeployments = await this.failedDeploymentsManager.getAllFailedDeployments()
+        res.send(failedDeployments)
     }
 
 }
