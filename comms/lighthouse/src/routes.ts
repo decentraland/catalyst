@@ -24,7 +24,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   };
 
-  app.get("/hello", (req, res, next) => {
+  app.get("/status", (req, res, next) => {
     const status = {
       currenTime: Date.now(),
       env: options.env
