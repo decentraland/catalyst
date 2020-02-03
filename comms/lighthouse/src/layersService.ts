@@ -150,13 +150,13 @@ export class LayersService {
 }
 
 class LayerChecker {
-  private layersBeingChecked: string[] = [];
+  private layersBeingChecked: Set<string> = new Set();
 
   constructor(private layersService: LayersService, private peersService?: PeersService) {}
 
   checkLayer(layer: Layer) {
-    if (!this.layersBeingChecked.includes(layer.id)) {
-      this.layersBeingChecked.push(layer.id);
+    if (!this.layersBeingChecked.has(layer.id)) {
+      this.layersBeingChecked.add(layer.id);
 
       //We execute the check as a background task to avoid impacting a request, even though this should be pretty quick
       setTimeout(() => {
@@ -167,7 +167,7 @@ class LayerChecker {
           }
         });
 
-        this.layersBeingChecked.splice(this.layersBeingChecked.indexOf(layer.id), 1);
+        this.layersBeingChecked.delete(layer.id);
       }, 0);
     }
   }
