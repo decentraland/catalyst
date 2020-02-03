@@ -24,10 +24,7 @@ describe("require parameters", () => {
   });
 
   it("should respond 400 when some parameters are missing", () => {
-    const handler = requireParameters(
-      ["name", "age", "surname"],
-      (req, res) => req.body
-    );
+    const handler = requireParameters(["name", "age", "surname"], (req, res) => req.body);
 
     request.body = { name: "pepe" };
 
@@ -46,11 +43,7 @@ describe("require parameters", () => {
     expect(next).toHaveBeenCalled();
   });
 
-  function expectMissingParameters(
-    response: any,
-    parameters: string,
-    next: any
-  ) {
+  function expectMissingParameters(response: any, parameters: string, next: any) {
     expect(response.statusCode).toBe(400);
     expect(response.sent).toEqual({
       status: "bad-request",
@@ -66,10 +59,12 @@ describe("Validate token", () => {
   let response: any;
   let realm: any;
   let next: any;
+  let authenticated: boolean = true;
 
   const validToken = "valid-token";
 
   beforeEach(() => {
+    authenticated = true;
     request = {
       header(header: string) {
         return this._token;
@@ -80,7 +75,8 @@ describe("Validate token", () => {
     realm = {
       getClientById(id) {
         return {
-          getToken: () => validToken
+          getToken: () => validToken,
+          isAuthenticated: () => authenticated
         };
       }
     };
@@ -115,9 +111,21 @@ describe("Validate token", () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it("should reject when the user is not authenticated", () => {
+    const handler = validatePeerToken(() => realm);
+
+    request._token = validToken;
+
+    authenticated = false;
+
+    handler(request, response, next);
+
+    expectInvalidToken(response);
+  });
+
   function expectInvalidToken(response: any) {
     expect(response.statusCode).toBe(401);
-    expect(response.sent).toEqual({ status: "invalid-token" });
+    expect(response.sent).toEqual({ status: "unauthorized" });
     expect(next).not.toHaveBeenCalled();
   }
 });
