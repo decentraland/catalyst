@@ -90,4 +90,8 @@ export class PeersService implements IPeersService {
   getConnectedPeers(it: PeerInfo): string[] | undefined {
     return this.peersTopology[it.peerId];
   }
+
+  peerExistsInRealm(user: PeerInfo) {
+    return !!this.peerRealm.getClientById(user.peerId);
+  }
 }

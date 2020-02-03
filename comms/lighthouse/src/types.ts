@@ -14,4 +14,5 @@ export type Layer = {
   users: PeerInfo[];
   rooms: Record<string, Room>;
   maxUsers?: number;
+  lastCheckTimestamp: number;
 };
