@@ -44,7 +44,7 @@ export class PointerDeploymentsRecord {
         const [overwrittenEntities, pointersToDelete] = await this.calculateOlderOverwrittenDeployments(newDeployment, insertionIndex, this.entityFetcherToReferenceFinder(entityFetcher))
 
         // Check if a newer entity overwrites the new deployment
-        const overwritingEntity: EntityId | undefined = this.wouldGetOverwritten(newDeployment, insertionIndex)
+        const overwritingEntity: EntityDeployment | undefined = this.wouldGetOverwritten(newDeployment, insertionIndex)
 
         // Prepare result
         const result: CommitResult = {
@@ -58,7 +58,11 @@ export class PointerDeploymentsRecord {
 
         // Set if the new deployment was overwritten
         if (overwritingEntity) {
-            result.overwrites.set(newDeployment.entityId, overwritingEntity)
+            result.overwritingEntity = {
+                ...overwritingEntity,
+                timestamp: overwritingEntity.entityTimestamp,
+            }
+            result.overwrites.set(newDeployment.entityId, overwritingEntity.entityId)
         }
 
         return result
@@ -117,13 +121,13 @@ export class PointerDeploymentsRecord {
     }
 
     /** Check if there is another entity that would overwrite this one. If not, then commit the new deployment */
-    private wouldGetOverwritten(newDeployment: EntityDeployment, insertionIndex: number): EntityId | undefined {
+    private wouldGetOverwritten(newDeployment: EntityDeployment, insertionIndex: number): EntityDeployment | undefined {
         const overwritingDeployment: EntityDeployment | undefined = this.findDeploymentThatWouldOverwriteNewDeployment(newDeployment, insertionIndex);
         if (overwritingDeployment) {
             // If found, then this entity deployment would overwrite the entity being deployed, so mark it
             overwritingDeployment.overwrittenEntities.set(newDeployment.entityId, { ...overwritingDeployment })
         }
-        return overwritingDeployment?.entityId
+        return overwritingDeployment
     }
 
     /**
@@ -237,6 +241,12 @@ export type CommitResult = {
     deletedPointers: Set<Pointer>,
     // Whether the new deployment can be committed or not (if a newer deployment would overwrite it, then don't commit it)
     committed: boolean,
+    // The entity that overwrote the current deployment
+    overwritingEntity?: {
+        entityId: EntityId,
+        timestamp: Timestamp,
+        pointers: Pointer[],
+    }
 }
 
 type EntityReferenceData = {

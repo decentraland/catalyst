@@ -52,27 +52,37 @@ export class PointerManager {
 
         const { overwrites ,
             deletedPointers,
-            committed } = await this.tempDeployments.exerciseCommit(entityBeingDeployed, deploymentTimestamp, entityFetcher)
+            overwritingEntity } = await this.tempDeployments.exerciseCommit(entityBeingDeployed, deploymentTimestamp, entityFetcher)
 
         // Update overwrites on audit info
         const overwriteUpdates: Promise<void>[] = Array.from(overwrites.entries())
             .map(([overwritten, overwrittenBy]) => this.auditOverwrite.setEntityAsOverwritten(overwritten, overwrittenBy))
 
-        // Delete pointers that need to be deleted
-        const deletionUpdates: Promise<void>[] = Array.from(deletedPointers.values())
-            .map(pointer => this.storage.deletePointerReference(entityBeingDeployed.type, pointer))
+        // Delete the pointers of all previous entities being overwritten
+        const previousEntitiesDeletions = Array.from(deletedPointers.values())
+            .filter(pointer => !entityBeingDeployed.pointers.includes(pointer))
+            .map(pointer => this.storage.deletePointerReference(entityBeingDeployed.type, pointer, entityBeingDeployed.timestamp))
 
+        // Also invalidate these pointers
         Array.from(deletedPointers.values()).forEach(pointer => this.invalidate(entityBeingDeployed.type, pointer))
 
-        // Commit the entity (if necessary)
-        let commitUpdates: Promise<void>[] = []
-        if (committed) {
-            commitUpdates = entityBeingDeployed.pointers.map(pointer => this.storage.setPointerReference(entityBeingDeployed.type, pointer, entityBeingDeployed.id))
+        // Write the new deployment on the pointers' histories
+        await Promise.all(entityBeingDeployed.pointers.map(pointer => this.storage.setPointerReference(entityBeingDeployed.type, pointer, entityBeingDeployed.id, entityBeingDeployed.timestamp)))
+
+        let deletionUpdates: Promise<void>[] = []
+
+        if (!overwritingEntity) {
+            // Since the current entity will be committed, invalidate its pointers
             entityBeingDeployed.pointers.forEach(pointer => this.invalidate(entityBeingDeployed.type, pointer))
+        } else {
+            // Delete all the pointers of the current entity that were not directly overwritten. This way, we know those pointers were deleted when looking at the pointer files
+            deletionUpdates = entityBeingDeployed.pointers
+                .filter(pointer => !overwritingEntity.pointers.includes(pointer))
+                .map(pointer => this.storage.deletePointerReference(entityBeingDeployed.type, pointer, overwritingEntity.timestamp));
         }
 
         // Wait for everything
-        await Promise.all([...overwriteUpdates, ...deletionUpdates, ...commitUpdates, this.saveToStorage()])
+        await Promise.all([...overwriteUpdates, ...previousEntitiesDeletions, ...deletionUpdates, this.saveToStorage()])
     }
 
     private saveToStorage(): Promise<void> {
