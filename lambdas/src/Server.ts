@@ -1,6 +1,7 @@
 import cors from "cors";
 import express, { RequestHandler } from "express";
 import morgan from "morgan";
+import compression from "compression";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
@@ -18,6 +19,7 @@ export class Server {
       this.app = express();
       const controller: Controller = env.getBean(Bean.CONTROLLER)
 
+      this.app.use(compression({ filter: (req, res) => true }));
       this.app.use(cors());
       this.app.use(express.json());
       if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {

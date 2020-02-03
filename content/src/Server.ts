@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { RequestHandler } from "express";
+import compression from "compression";
 import morgan from "morgan";
 import multer from "multer";
 import http from "http";
@@ -22,6 +23,7 @@ export class Server {
       const controller: Controller = env.getBean(Bean.CONTROLLER)
       this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
+      this.app.use(compression({ filter: (req, res) => true }));
       this.app.use(cors());
       this.app.use(express.json());
       if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
