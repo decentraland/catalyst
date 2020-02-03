@@ -82,6 +82,12 @@ leCertEmit () {
       --force-renewal" certbot
   echo
 
+  if test $? -ne 0; then
+  echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
+  printMessage failed
+  exit 1
+fi
+
   echo "### Reloading nginx ..."
   docker-compose exec nginx nginx -s reload
 }
