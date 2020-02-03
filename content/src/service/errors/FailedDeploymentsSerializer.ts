@@ -25,7 +25,7 @@ export class FailedDeploymentsSerializer {
     }
 
     static serialize(failedDeployment: FailedDeployment): string {
-        return [failedDeployment.reason.replace(' ', '_').toLocaleUpperCase(), failedDeployment.moment, failedDeployment.deployment.serverName, failedDeployment.deployment.entityType, failedDeployment.deployment.entityId, failedDeployment.deployment.timestamp]
+        return [failedDeployment.reason.replace(/ /g, '_').toLocaleUpperCase(), failedDeployment.moment, failedDeployment.deployment.serverName, failedDeployment.deployment.entityType, failedDeployment.deployment.entityId, failedDeployment.deployment.timestamp]
             .join(FailedDeploymentsSerializer.ATTRIBUTES_SEPARATOR)
     }
 

@@ -33,10 +33,10 @@ describe("End 2 end - Unreachable node", function() {
         server3 = await buildServer("Server3_", 8080, LONG_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
     })
 
-    afterEach(function() {
-        server1.stop()
-        server2.stop()
-        server3.stop()
+    afterEach(async function() {
+        await server1.stop()
+        await server2.stop()
+        await server3.stop()
         deleteServerStorage(server1, server2, server3)
     })
 

@@ -98,7 +98,7 @@ export class TestServer extends Server {
             return await response.buffer();
         }
 
-        throw new Error(`Failed to fetch file with hash ${fileHash}`)
+        throw new Error(`Failed to fetch file with hash ${fileHash} on server ${this.namePrefix}`)
     }
 
     async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {

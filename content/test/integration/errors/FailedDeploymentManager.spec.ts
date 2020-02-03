@@ -26,10 +26,10 @@ describe("Integration - Failed Deployments Manager", function() {
     it(`When failures are reported, then the last status is returned`, async () => {
         const deployment = buildRandomDeployment()
 
-        await manager.reportFailedDeployment(deployment, FailureReason.UNKNOWN_ENTITY)
+        await manager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
 
         let status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
-        expect(status).toBe(FailureReason.UNKNOWN_ENTITY)
+        expect(status).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
 
         await manager.reportFailedDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
 
@@ -41,21 +41,21 @@ describe("Integration - Failed Deployments Manager", function() {
         const deployment1 = buildRandomDeployment()
         const deployment2 = buildRandomDeployment()
 
-        await manager.reportFailedDeployment(deployment1, FailureReason.UNKNOWN_ENTITY)
+        await manager.reportFailedDeployment(deployment1, FailureReason.NO_ENTITY_OR_AUDIT)
         await manager.reportFailedDeployment(deployment2, FailureReason.DEPLOYMENT_ERROR)
 
         const [failed1, failed2]: Array<FailedDeployment> = await manager.getAllFailedDeployments()
 
         expect(failed1.reason).toBe(FailureReason.DEPLOYMENT_ERROR)
         expect(failed1.deployment).toEqual(deployment2)
-        expect(failed2.reason).toBe(FailureReason.UNKNOWN_ENTITY)
+        expect(failed2.reason).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
         expect(failed2.deployment).toEqual(deployment1)
     })
 
     it(`When successful deployment is reported, then all previous failures of such reported are deleted`, async () => {
         const deployment = buildRandomDeployment()
 
-        await manager.reportFailedDeployment(deployment, FailureReason.UNKNOWN_ENTITY)
+        await manager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
         await manager.reportFailedDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
 
         await manager.reportSuccessfulDeployment(deployment.entityType, deployment.entityId)

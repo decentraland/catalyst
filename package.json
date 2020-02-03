@@ -84,7 +84,6 @@
     "faker": "^4.1.0",
     "form-data": "^3.0.0",
     "fp-future": "^1.0.1",
-    "fs-reverse": "^0.0.3",
     "google-protobuf": "^3.11.2",
     "ip": "^1.1.5",
     "isomorphic-fetch": "^2.2.1",
