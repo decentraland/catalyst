@@ -128,21 +128,26 @@ export async function getContents(env: Environment, req: Request, res: Response)
     const v3Url = baseContentServerUrl(env) + `/contents/${cid}`
     const response = await fetch(v3Url)
     if (response.ok) {
-        const data = await response.buffer()
-        res.contentType('application/octet-stream')
-        res.end(data, 'binary')
+        res.contentType("application/octet-stream");
+        copyContentLength(response, res)
+        response.body.pipe(res);
     } else {
         if (response.status===404) {
             // Let's try on the old content server
             const responsev2 = await fetch(`https://content.decentraland.org/contents/${cid}`)
             if (responsev2.ok) {
-                const data = await responsev2.buffer()
                 res.contentType('application/octet-stream')
-                res.end(data, 'binary')
+                copyContentLength(response, res)
+                response.body.pipe(res);
             }
         }
         res.status(404).send()
     }
+}
+
+function copyContentLength(response, res: Response) {
+    if (response.headers.get("Content-Length"))
+        res.setHeader("Content-Length", response.headers.get("Content-Length")!)
 }
 
 function findSceneJsonId(entity:V3ControllerEntity): string {
