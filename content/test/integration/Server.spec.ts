@@ -27,7 +27,7 @@ describe("unit tests in jasmine", function() {
         server = new Server(env)
         await server.start()
     })
-    afterAll(() => server.stop())
+    afterAll(async () => await server.stop())
 
     it(`Get all scenes by id`, async () => {
         const response = await fetch(`http://localhost:${env.getConfig(EnvironmentConfig.SERVER_PORT)}/entities/scenes?id=${entity1.id}&id=${entity2.id}`)

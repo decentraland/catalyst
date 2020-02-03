@@ -3,7 +3,9 @@ import { Timestamp } from "../time/TimeSorting";
 import { DeploymentEvent } from "../history/HistoryManager";
 import { FailedDeploymentsStorage } from "./FailedDeploymentsStorage";
 
-/** This manager will remember all failed deployments */
+/**
+ * This manager will handle all failed deployments
+ */
 export class FailedDeploymentsManager {
 
     constructor(private readonly storage: FailedDeploymentsStorage) { }
@@ -46,8 +48,8 @@ export type FailedDeployment = {
 }
 
 export enum FailureReason {
-    UNKNOWN_ENTITY = "Unknown entity", // During sync, we couldn't fetch the entity
-    FETCH_PROBLEM = "Fetch problem", // During sync, we could learn the entity, but we couldn't fetch some of its files or audit info
+    NO_ENTITY_OR_AUDIT = "No entity or audit", // During sync, we couldn't fetch the entity or the audit info
+    FETCH_PROBLEM = "Fetch problem", // During sync, we could learn the entity and the audit, but we couldn't fetch some of its files
     DEPLOYMENT_ERROR = "Deployment error", // During sync, there was an error during deployment. Could be due to a validation
 }
 

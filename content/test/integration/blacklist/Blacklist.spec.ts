@@ -32,8 +32,8 @@ describe("Integration - Blacklist", () => {
         await server.start()
     })
 
-    afterEach(() => {
-        server.stop()
+    afterEach(async () => {
+        await server.stop()
         deleteServerStorage(server)
     })
 

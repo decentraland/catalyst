@@ -25,8 +25,8 @@ describe("End 2 end deploy test", () => {
         await server.start()
     })
 
-    afterAll(() => {
-        server.stop()
+    afterAll(async () => {
+        await server.stop()
         deleteServerStorage(server)
     })
 

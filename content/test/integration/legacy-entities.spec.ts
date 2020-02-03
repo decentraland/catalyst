@@ -27,8 +27,8 @@ describe("End 2 end - Legacy Entities", () => {
         await server.start()
     })
 
-    afterEach(() => {
-        server.stop()
+    afterEach(async () => {
+        await server.stop()
         deleteServerStorage(server)
     })
 

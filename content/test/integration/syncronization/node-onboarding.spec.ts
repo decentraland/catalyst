@@ -33,10 +33,10 @@ describe("End 2 end - Node onboarding", function() {
         server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, dao)
     })
 
-    afterEach(function() {
-        server1.stop()
-        server2.stop()
-        server3.stop()
+    afterEach(async function() {
+        await server1.stop()
+        await server2.stop()
+        await server3.stop()
         deleteServerStorage(server1, server2, server3)
     })
 
@@ -64,7 +64,7 @@ describe("End 2 end - Node onboarding", function() {
         await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2)
         await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2)
         await assertFileIsOnServer(server1, entity1ContentHash)
-        await assertFileIsOnServer(server2, entity1ContentHash)
+        await assertFileIsNotOnServer(server2, entity1ContentHash)
         await assertEntityIsOverwrittenBy(server1, entity1, entity2)
         await assertEntityIsOverwrittenBy(server2, entity1, entity2)
 

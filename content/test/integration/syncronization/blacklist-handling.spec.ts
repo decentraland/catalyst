@@ -35,10 +35,10 @@ describe("End 2 end - Blacklist handling", () => {
         onboardingServer = await buildServer("OnboardingServer_", 8080, SYNC_INTERVAL, DAO)
     })
 
-    afterEach(function() {
-        server1.stop()
-        server2.stop()
-        onboardingServer.stop()
+    afterEach(async function() {
+        await server1.stop()
+        await server2.stop()
+        await onboardingServer.stop()
         deleteServerStorage(server1, server2, onboardingServer)
     })
 
@@ -72,7 +72,7 @@ describe("End 2 end - Blacklist handling", () => {
         const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
         assertRequiredFieldsOnEntitiesAreEqual(entity, entityBeingDeployed)
         expect(entity.content).toBeUndefined()
-        expect(entity.metadata).toEqual(EventDeployer.BLACKLISTED_ON_CLUSTER_METADATA)
+        expect(entity.metadata).toEqual(EventDeployer.FETCH_ERROR_METADATA)
 
         // Assert entity file matches the entity
         const fileContent = await onboardingServer.downloadContent(entity.id)
@@ -108,7 +108,9 @@ describe("End 2 end - Blacklist handling", () => {
 
         // Assert the entity is retrieved correctly
         const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
-        expect(entity).toEqual(entityBeingDeployed)
+        assertRequiredFieldsOnEntitiesAreEqual(entity, entityBeingDeployed)
+        expect(entity.content).toBeUndefined()
+        expect(entity.metadata).toEqual(EventDeployer.FETCH_ERROR_METADATA)
 
         // Assert can't fetch content because onboarding server couldn't download it
         await assertFileIsNotOnServer(onboardingServer, contentHash)

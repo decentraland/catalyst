@@ -178,7 +178,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 // Save audit information
                 await this.auditManager.setAuditInfo(entityId, newAuditInfo)
 
-                if (!wasEntityAlreadyDeployed || await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id) === FailureReason.UNKNOWN_ENTITY) {
+                if (!wasEntityAlreadyDeployed || await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id) === FailureReason.NO_ENTITY_OR_AUDIT) {
                     // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
                     await this.pointerManager.commitEntity(entity, newAuditInfo.deployedTimestamp, entityId => this.entities.get(entityId));
                 }
@@ -262,12 +262,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         await this.deployInternal([entityFile], entityId, auditInfo, serverName, ValidationContext.OVERWRITE, 'sync')
     }
 
-    async deployEntityWithBlacklistedContent(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployInternal(files, entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_CONTENT, 'sync')
-    }
-
-    async deployEntityWithBlacklistedEntity(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployInternal([entityFile], entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_ENTITY, 'sync')
+    async deployEntityWithErrorDuringSync(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
+        await this.deployInternal([entityFile], entityId, auditInfo, serverName, ValidationContext.ERROR_DURING_SYNC, 'sync')
     }
 
     async setImmutableTime(immutableTime: number): Promise<void> {

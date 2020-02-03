@@ -1,10 +1,10 @@
-import { Stream } from "stream"
+import { Writable } from "stream"
+import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
 import parallelTransform from "parallel-transform"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { sortFromOldestToNewest } from "../time/TimeSorting";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { HistoryDeploymentOptions } from "./EventDeployer";
-import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -66,7 +66,7 @@ export class EventStreamProcessor {
 
     /** Build the stream writer that will execute the deployment */
     private prepareStreamDeployer(historyLength: number, logging: boolean, continueOnFailure: boolean) {
-        return new Stream.Writable({
+        return new Writable({
             objectMode: true,
             write: async ([index, entityId, performDeployment], _, done) => {
                 try {

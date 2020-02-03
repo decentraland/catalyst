@@ -21,8 +21,7 @@ export class ValidationContext {
     static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL
     static readonly SYNCED: ValidationContext = ValidationContext.ALL.without(Validation.NO_NEWER, Validation.RECENT, Validation.NO_REDEPLOYS, Validation.PREVIOUS_DEPLOYMENT_STATUS)
     static readonly OVERWRITE: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
-    static readonly BLACKLISTED_CONTENT: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
-    static readonly BLACKLISTED_ENTITY: ValidationContext = ValidationContext.BLACKLISTED_CONTENT.without(Validation.ENTITY_HASH)
+    static readonly ERROR_DURING_SYNC: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT, Validation.ENTITY_HASH)
 
     private readonly toExecute: Set<Validation>;
     private constructor (toExecute: Validation[]) {

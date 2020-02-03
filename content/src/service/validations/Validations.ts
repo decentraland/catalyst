@@ -28,7 +28,7 @@ export class Validations {
             const deploymentStatus: DeploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id);
             if (deploymentStatus === NoFailure.SUCCESS) {
                 this.errors.push(`You are trying to fix an entity that was deployed successfully`)
-            } else if (deploymentStatus === FailureReason.UNKNOWN_ENTITY && deploymentTimestamp <= currentImmutableTime) {
+            } else if (deploymentStatus === FailureReason.NO_ENTITY_OR_AUDIT && deploymentTimestamp <= currentImmutableTime) {
                 this.errors.push(`You can't redeploy this entity, since the immutableTime has advanced already. You will need to ask the person who deployed it to re-deploy it for you.`)
             }
         }
