@@ -17,7 +17,8 @@ export function removeUserAndNotify<T extends UserContainer>(
   userId: string,
   notificationType: NotificationType,
   containerKey: string,
-  peersService?: IPeersService
+  peersService?: IPeersService,
+  deleteIfEmpty: boolean = true
 ): T {
   let container = containers[containerId];
   if (container) {
@@ -32,7 +33,7 @@ export function removeUserAndNotify<T extends UserContainer>(
       });
     }
 
-    if (container.users.length === 0) {
+    if (container.users.length === 0 && deleteIfEmpty) {
       delete containers[containerId];
     }
   }
