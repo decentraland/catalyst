@@ -1,6 +1,6 @@
 export staging=1
-export email=devops@decentraland.org
-export domains="bot1-katalyst.decentraland.org"
+export email=no-reply@decentraland.org
+export domains="bot1-katalyst.decentraland.zone"
 export rsa_key_size=4096
 export data_path="./local/certbot"
 export nginx_server_file="local/nginx/conf.d/00-katalyst.conf"

@@ -18,24 +18,24 @@ upstream metrics {
 
 server {
     listen 80;
-    server_name bot1-katalyst.decentraland.zone;
+    server_name $katalyst_host;
     
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }   
 
     location / {
-        return 301 https://bot1-katalyst.decentraland.zone$request_uri;
+        return 301 https://$katalyst_host$request_uri;
     } 
 }
 
 server {
     listen 443 ssl;
-    server_name bot1-katalyst.decentraland.zone;
+    server_name $katalyst_host;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-    ssl_certificate /etc/letsencrypt/live/bot1-katalyst.decentraland.zone/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/bot1-katalyst.decentraland.zone/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/$katalyst_host/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$katalyst_host/privkey.pem;
     client_max_body_size 128M;
 
     
