@@ -36,6 +36,8 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     ssl_certificate /etc/letsencrypt/live/bot1-katalyst.decentraland.zone/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/bot1-katalyst.decentraland.zone/privkey.pem;
+    client_max_body_size 128M;
+
     
     location ~ ^/content(.*)$ {
         proxy_pass http://content-server$1$is_args$args;
