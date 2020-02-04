@@ -33,11 +33,7 @@ describe("End 2 end - Node onboarding", function() {
         server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, dao)
     })
 
-<<<<<<< HEAD
-    afterEach(async function() {
-=======
     afterEach(async () => {
->>>>>>> master
         await server1.stop()
         await server2.stop()
         await server3.stop()
