@@ -147,7 +147,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 await this.auditManager.setAuditInfo(entityId, newAuditInfo)
 
                 // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-                await this.pointerManager.commitEntity(entity, newAuditInfo.deployedTimestamp, entityId => this.entities.get(entityId));
+                await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
 
                 // Add the new deployment to history
                 await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
@@ -221,7 +221,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     async setImmutableTime(immutableTime: number): Promise<void> {
         this.lastImmutableTime = immutableTime
         return this.lock.runExclusive(async () => {
-            await Promise.all([this.historyManager.setTimeAsImmutable(immutableTime), this.pointerManager.setTimeAsImmutable(immutableTime)])
+            await this.historyManager.setTimeAsImmutable(immutableTime)
         })
     }
 

@@ -38,6 +38,10 @@ export class LayersService {
     return Object.values(this.layers);
   }
 
+  getLayer(layerId: string): Layer | undefined {
+    return this.layers[layerId];
+  }
+
   getLayerUsers(layerId: string): PeerInfo[] {
     const layer = this.layers[layerId];
     if (layer) this.checkLayerPeersIfNeeded(layer);

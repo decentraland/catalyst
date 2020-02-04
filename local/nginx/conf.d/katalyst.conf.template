@@ -51,6 +51,8 @@ server {
     location  ~ ^/comms(.*)$ {
         proxy_pass http://comms-server$1$is_args$args; 
         proxy_pass_request_headers  on;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
     }
     
     location  ~ ^/lambdas(.*)$ {
