@@ -37,7 +37,7 @@ services:
     command: lambdas
     environment:
       - METRICS=true
-      - CONTENT_SERVER_ADDRESS=https://katalyst-content.decentraland.zone
+      - CONTENT_SERVER_ADDRESS=https://bot2-katalyst.decentraland.zone/content
     ports:
       - "7070:7070"
 
