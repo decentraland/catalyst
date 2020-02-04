@@ -6,7 +6,7 @@ import { ContentAuthenticator } from "../auth/Authenticator";
 
 export class AccessCheckerImpl implements AccessChecker {
 
-    constructor(private readonly authenticator: ContentAuthenticator) { }
+    constructor(private readonly authenticator: ContentAuthenticator, private readonly dclApiBaseUrl: string) { }
 
     async hasAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         switch(entityType) {
@@ -49,8 +49,7 @@ export class AccessCheckerImpl implements AccessChecker {
     }
 
     private async checkParcelAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean> {
-        const dclApiBaseUrl = "https://api.decentraland.org/v1"
-        const accessURL = `${dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
+        const accessURL = `${this.dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
         try {
             const responseJson = await FetchHelper.fetchJson(accessURL)
             return responseJson.data.isUpdateAuthorized
