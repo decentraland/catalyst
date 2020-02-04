@@ -33,7 +33,7 @@ export class Bootstrapper {
         const [immutableTime, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
         // Bootstrap
-        await deployer.deployHistory(history, { logging: true, continueOnFailure: true })
+        await deployer.deployHistory(history, { logging: true })
 
         console.log("Finished bootstrapping")
         return immutableTime
