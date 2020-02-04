@@ -7,7 +7,7 @@ export class DAOClient {
     private triggerDisconnect
 
     constructor(networkName: string) {
-        const handler = handlerForNetwork("ropsten", "katalyst");
+        const handler = handlerForNetwork(networkName, "katalyst");
         if (handler) {
             const { contract, disconnect } = handler;
             this.contract = contract
