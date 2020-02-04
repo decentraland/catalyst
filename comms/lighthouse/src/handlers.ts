@@ -20,7 +20,8 @@ export function requireParameters(paramNames: string[], objectGetter: (req: Requ
 
 export function validatePeerToken(realmProvider: () => IRealm): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
-    const existingClient = realmProvider().getClientById(req.body.userId);
+    const userId = req.body.userId ?? req.params.userId;
+    const existingClient = realmProvider().getClientById(userId);
     if (!existingClient || !existingClient.isAuthenticated() || existingClient.getToken() !== req.header(PeerHeaders.PeerToken)) {
       res.status(401).send({ status: "unauthorized" });
     } else {
