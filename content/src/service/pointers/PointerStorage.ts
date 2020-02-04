@@ -1,14 +1,14 @@
 import { ContentStorage } from "../../storage/ContentStorage";
-import { EntityType, Pointer, EntityId } from "../Entity";
+import { EntityType, Pointer } from "../Entity";
+import { PointerReference } from "./PointerManager";
 
 export class PointerStorage {
 
     private static POINTER_CATEGORY: string = "pointers"
-    private static TEMP_DEPLOYMENTS_ID: string = "temp_deploys.txt"
 
     constructor(private storage: ContentStorage) { }
 
-    async getActivePointers(entityType: EntityType): Promise<Pointer[]> {
+    async getPointersAllFiles(entityType: EntityType): Promise<Pointer[]> {
         try {
             return await this.storage.listIds(this.resolveCategory(entityType))
         } catch (error) {
@@ -16,29 +16,19 @@ export class PointerStorage {
         }
     }
 
-    async getPointerReference(entityType: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
+    async getPointerReferences(entityType: EntityType, pointer: Pointer): Promise<PointerReference[]> {
         const contentItem = await this.storage.getContent(this.resolveCategory(entityType), pointer.toLocaleLowerCase());
         if (contentItem) {
-            return (await contentItem.asBuffer()).toString();
+            const lines: string[] = (await contentItem.asBuffer()).toString().split('\n')
+            return lines.map(line => line.split(' '))
+                .map(([entityId, timestamp]) => ({ entityId, timestamp: parseInt(timestamp) }))
         }
-        return undefined
+        return []
     }
 
-    setPointerReference(entityType: EntityType, pointer: Pointer, entityId: EntityId): Promise<void> {
-        return this.storage.store(this.resolveCategory(entityType), pointer.toLocaleLowerCase(), Buffer.from(entityId))
-    }
-
-    deletePointerReference(entityType: EntityType, pointer: Pointer): Promise<void> {
-        return this.storage.delete(this.resolveCategory(entityType), pointer)
-    }
-
-    storeTempDeployments(tempDeployments: Buffer): Promise<void> {
-        return this.storage.store(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID, Buffer.from(tempDeployments))
-    }
-
-    async readStoredTempDeployments(): Promise<Buffer | undefined> {
-        const contentItem = await this.storage.getContent(PointerStorage.POINTER_CATEGORY, PointerStorage.TEMP_DEPLOYMENTS_ID)
-        return contentItem?.asBuffer()
+    async setPointerReferences(entityType: EntityType, pointer: Pointer, references: PointerReference[]): Promise<void> {
+        const text = references.map(({ entityId, timestamp }) => `${entityId} ${timestamp}`).join('\n')
+        return this.storage.store(this.resolveCategory(entityType), pointer.toLocaleLowerCase(), Buffer.from(text))
     }
 
     private resolveCategory(type: EntityType): string {
