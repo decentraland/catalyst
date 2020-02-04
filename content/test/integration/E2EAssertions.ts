@@ -1,6 +1,6 @@
 import { TestServer } from "./TestServer"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { Pointer, EntityId, EntityType } from "@katalyst/content/service/Entity"
+import { EntityId, EntityType } from "@katalyst/content/service/Entity"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
@@ -19,8 +19,6 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
 export async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
     for (const entity of entities) {
         const entityType = parseEntityType(entity)
-        const activePointers: Pointer[] = await server.getActivePointers(entityType)
-        entity.pointers.forEach(pointer => expect(activePointers).toContain(pointer, `Failed on server ${server.namePrefix}`))
         expect(await server.getEntitiesByPointers(entityType, entity.pointers)).toEqual([entity])
         await assertEntityIsOnServer(server, entityType, entity.id)
     }
