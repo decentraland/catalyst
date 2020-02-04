@@ -2,13 +2,14 @@ import { ServerAddress } from "@katalyst/content/service/synchronization/clients
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient";
 import { ServerMetadata } from "@katalyst/content/service/synchronization/ContentCluster";
 import { EthAddress } from 'dcl-crypto';
+import { DEFAULT_ETH_NETWORK } from "@katalyst/content/Environment";
 
 export class MockedDAOClient extends DAOClient {
 
     private readonly servers: Map<string, ServerMetadata>
 
     private constructor(servers: {address: ServerAddress, owner: EthAddress}[]) {
-        super()
+        super(DEFAULT_ETH_NETWORK)
         this.servers = new Map(servers.map(server => [server.address, {...server, id: "Id"}]))
     }
 
