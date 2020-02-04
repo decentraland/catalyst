@@ -63,10 +63,6 @@ export class TestServer extends Server {
         return creationTimestamp
     }
 
-    getActivePointers(type: EntityType): Promise<Pointer[]> {
-        return this.makeRequest(`${this.getAddress()}/pointers/${type}`)
-    }
-
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
         const filterParam = pointers.map(pointer => `pointer=${pointer}`).join("&")
         return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)

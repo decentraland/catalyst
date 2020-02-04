@@ -5,8 +5,6 @@ import { StorageKeys } from "./storageKeys";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import * as wrtc from "wrtc";
 import { Peer, IPeer } from "../../peer/src";
-import { IMessage } from "peerjs-server/dist/src/models/message";
-import { IClient } from "peerjs-server/dist/src/models/client";
 
 export enum NotificationType {
   PEER_LEFT_ROOM = "PEER_LEFT_ROOM",
@@ -79,8 +77,8 @@ export class PeersService implements IPeersService {
     );
   }
 
-  updateTopology(client: IClient, message: IMessage) {
-    this.peersTopology[client.getId()] = message.payload?.connectedPeerIds;
+  updateTopology(peerId: string, connectedPeerIds: string[]) {
+    this.peersTopology[peerId] = connectedPeerIds;
   }
 
   private get peerRealm() {
@@ -89,5 +87,9 @@ export class PeersService implements IPeersService {
 
   getConnectedPeers(it: PeerInfo): string[] | undefined {
     return this.peersTopology[it.peerId];
+  }
+
+  peerExistsInRealm(user: PeerInfo) {
+    return !!this.peerRealm.getClientById(user.peerId);
   }
 }

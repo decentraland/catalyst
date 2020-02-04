@@ -236,19 +236,34 @@ describe("Validations", function () {
     })
 
     it(`when a profile is created its access is checked`, async () => {
+<<<<<<< HEAD
         const validation = getValidatorWithRealAccess()
+=======
+        const authenticator = new ContentAuthenticator()
+        const validation = new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator)
+>>>>>>> master
         await validation.validateAccess(EntityType.PROFILE, ['some-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(0)
     })
 
     it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
+<<<<<<< HEAD
         const validation = getValidatorWithRealAccess()
+=======
+        const authenticator = new ContentAuthenticator()
+        const validation = new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator)
+>>>>>>> master
         await validation.validateAccess(EntityType.PROFILE, ['some-address', 'other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })
 
     it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
+<<<<<<< HEAD
         const validation = getValidatorWithRealAccess()
+=======
+        const authenticator = new ContentAuthenticator()
+        const validation = new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator)
+>>>>>>> master
         await validation.validateAccess(EntityType.PROFILE, ['other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })

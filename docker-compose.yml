@@ -4,6 +4,7 @@ volumes:
   prometheus_data: {}
   grafana_data: {}
   content_server_storage: {}
+  nginx_storage: {}
 
 services:
   comms-server:
@@ -23,11 +24,12 @@ services:
     environment:
       - METRICS=true
       - STORAGE_ROOT_FOLDER=/app/storage/content_server/
+      - ALLOW_LEGACY_ENTITIES=true
     ports:
       - "6969:6969"
     restart: always
     volumes:
-      - content_server_storage:/app/storage/content_server/
+      - /srv/katalyst_content/storage:/app/storage/content_server/
 
   lambdas:
     image: decentraland/katalyst:latest
@@ -82,3 +84,27 @@ services:
     env_file:
       - ./local/grafana/provisioning/config.monitoring
     restart: always
+  
+  nginx:
+    image: nginx:1.15-alpine
+    ports:
+       - "80:80"
+       - "443:443"
+    command: "/bin/sh -c 'while :; do sleep 10s & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    volumes:
+       - ./local/nginx/conf.d:/etc/nginx/conf.d
+       - ./local/certbot/conf:/etc/letsencrypt
+       - ./local/certbot/www:/var/www/certbot
+    depends_on:
+       - grafana
+       - prometheus
+       - lambdas
+       - content-server
+       - comms-server
+       
+  certbot:
+    image: certbot/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    volumes:
+      - ./local/certbot/conf:/etc/letsencrypt
+      - ./local/certbot/www:/var/www/certbot

@@ -11,8 +11,10 @@ ts_library(
     deps = [
         "@npm//@types",
         "@npm//@types/node",
+        "@npm//@types/compression",
         "@npm//cors",
         "@npm//express",
+        "@npm//compression",
         "@npm//morgan",
         "@npm//multer",
         "@npm//@types/multer",

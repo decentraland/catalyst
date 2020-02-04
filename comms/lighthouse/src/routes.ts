@@ -3,6 +3,7 @@ import { requireParameters, validatePeerToken } from "./handlers";
 import { LayersService } from "./layersService";
 import { IRealm } from "peerjs-server";
 import { RequestError } from "./errors";
+import { PeerInfo, Layer } from "./types";
 
 export type RoutesOptions = Partial<{
   env: any;
@@ -24,7 +25,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   };
 
-  app.get("/hello", (req, res, next) => {
+  app.get("/status", (req, res, next) => {
     const status = {
       currenTime: Date.now(),
       env: options.env
@@ -33,17 +34,15 @@ export function configureRoutes(app: express.Express, services: Services, option
   });
 
   app.get("/layers", (req, res, next) => {
-    res.send(
-      layersService.getLayers().map(it => ({
-        name: it.id,
-        usersCount: it.users.length,
-        maxUsers: it.maxUsers
-      }))
-    );
+    res.send(layersService.getLayers().map(it => mapLayerToJson(it)));
+  });
+
+  app.get("/layers/:layerId", validateLayerExists, (req, res, next) => {
+    res.send(mapLayerToJson(layersService.getLayer(req.params.layerId)!));
   });
 
   app.get("/layers/:layerId/users", validateLayerExists, (req, res, next) => {
-    res.send(layersService.getLayerUsers(req.params.layerId));
+    res.send(mapUsersToJson(layersService.getLayerUsers(req.params.layerId)));
   });
 
   app.get("/layers/:layerId/rooms", validateLayerExists, (req, res, next) => {
@@ -55,7 +54,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     if (typeof roomUsers === "undefined") {
       res.status(404).send({ status: "room-not-found" });
     } else {
-      res.send(roomUsers);
+      res.send(mapUsersToJson(roomUsers));
     }
   });
 
@@ -67,7 +66,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       const { layerId } = req.params;
       try {
         const layer = await layersService.setUserLayer(layerId, req.body);
-        res.send(layer.users);
+        res.send(mapUsersToJson(layer.users));
       } catch (err) {
         handleError(err, res, next);
       }
@@ -83,7 +82,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       const { layerId, roomId } = req.params;
       try {
         const room = await layersService.addUserToRoom(layerId, roomId, req.body);
-        res.send(room.users);
+        res.send(mapUsersToJson(room.users));
       } catch (err) {
         handleError(err, res, next);
       }
@@ -93,13 +92,13 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.delete("/layers/:layerId/rooms/:roomId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { roomId, userId, layerId } = req.params;
     const room = layersService.getRoomsService(layerId)?.removeUserFromRoom(roomId, userId);
-    res.send(room?.users);
+    res.send(mapUsersToJson(room?.users));
   });
 
   app.delete("/layers/:layerId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { userId, layerId } = req.params;
     const layer = layersService.removeUserFromLayer(layerId, userId);
-    res.send(layer?.users);
+    res.send(mapUsersToJson(layer?.users));
   });
 
   app.get("/layers/:layerId/topology", validateLayerExists, (req, res, next) => {
@@ -117,11 +116,34 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   });
 
+  function mapLayerToJson(layer: Layer) {
+    return {
+      name: layer.id,
+      usersCount: layer.users.length,
+      usersParcels: layer.users.map(it => it.parcel).filter(it => !!it),
+      maxUsers: layer.maxUsers
+    };
+  }
+
   function handleError(err: any, res, next) {
+    const statusTexts = {
+      400: "bad-request",
+      401: "unauthorized",
+      402: "method-not-allowed",
+      403: "forbidden",
+      404: "not-found"
+    };
+
     if (err instanceof RequestError) {
-      res.status(400).send(JSON.stringify({ status: "bad-request", message: err.message }));
+      res.status(err.status).send(JSON.stringify({ status: statusTexts[err.status] ?? "error", message: err.message }));
     } else {
       next(err);
     }
+  }
+
+  function mapUsersToJson(user?: PeerInfo[]) {
+    //For now this returns everything the user has. Eventually it could return a different entity.
+    //For instance, we may want to avoid returning the position of each user for privacy concerns
+    return user?.map(it => ({ ...it }));
   }
 }

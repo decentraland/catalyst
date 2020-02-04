@@ -56,6 +56,7 @@ export function ConnectForm(props: {
         },
         authHandler: msg => Promise.resolve(msg)
       }));
+      await peer.awaitConnectionEstablished();
       await peer.setLayer(layer);
       await peer.joinRoom(room);
       setLoading(false);
