@@ -8,7 +8,7 @@ import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
 import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
-import { DeploymentStatus, FailedDeploymentsManager, NoFailure, FailureReason } from "../errors/FailedDeploymentsManager";
+import { DeploymentStatus, FailedDeploymentsManager, NoFailure } from "../errors/FailedDeploymentsManager";
 
 export class Validations {
 
@@ -23,13 +23,11 @@ export class Validations {
     }
 
     /** Make sure that the deployment actually failed, and that it can be re-deployed */
-    async validatePreviousDeploymentStatus(entity: Entity, deploymentTimestamp: number, currentImmutableTime: number, validationContext: ValidationContext) {
+    async validatePreviousDeploymentStatus(entity: Entity, validationContext: ValidationContext) {
         if (validationContext.shouldValidate(Validation.PREVIOUS_DEPLOYMENT_STATUS)) {
             const deploymentStatus: DeploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id);
             if (deploymentStatus === NoFailure.SUCCESS) {
                 this.errors.push(`You are trying to fix an entity that was deployed successfully`)
-            } else if (deploymentStatus === FailureReason.NO_ENTITY_OR_AUDIT && deploymentTimestamp <= currentImmutableTime) {
-                this.errors.push(`You can't redeploy this entity, since the immutableTime has advanced already. You will need to ask the person who deployed it to re-deploy it for you.`)
             }
         }
     }
