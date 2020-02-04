@@ -154,7 +154,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity), validationContext)
 
             // Validate that if the entity was already deployed, the status it was left is what we expect
-            await validation.validatePreviousDeploymentStatus(entity, auditInfo.deployedTimestamp, this.lastImmutableTime, validationContext)
+            await validation.validatePreviousDeploymentStatus(entity, validationContext)
 
             if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
                 throw new Error(validation.getErrors().join('\n'))
