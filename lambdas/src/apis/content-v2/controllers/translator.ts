@@ -138,9 +138,9 @@ export async function getContents(env: Environment, req: Request, res: Response)
             const responsev2 = await fetch(`https://content.decentraland.org/contents/${cid}`)
             if (responsev2.ok) {
                 res.contentType('application/octet-stream')
-                copyContentLength(response, res)
+                copyContentLength(responsev2, res)
                 res.status(200);
-                response.body.pipe(res);
+                responsev2.body.pipe(res);
             } else {
                 res.status(404).send()
             }
