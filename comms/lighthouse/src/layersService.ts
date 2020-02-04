@@ -148,11 +148,11 @@ export class LayersService {
     return this.layers[layerId].users.map(it => ({ ...it, connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
   }
 
-  updateUserPosition(peerId: string, position?: [number, number]) {
+  updateUserParcel(peerId: string, parcel?: [number, number]) {
     Object.values(this.layers).forEach(layer => {
       const user = layer.users.find(it => it.peerId === peerId);
       if (user) {
-        user.position = position;
+        user.parcel = parcel;
       }
     });
   }

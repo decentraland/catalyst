@@ -88,7 +88,7 @@ peerServer.on("error", console.log);
 peerServer.on("message", (client: IClient, message: IMessage) => {
   if (message.type === MessageType.HEARTBEAT) {
     peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
-    layersService.updateUserPosition(client.getId(), message.payload?.position);
+    layersService.updateUserParcel(client.getId(), message.payload?.parcel);
   }
 });
 

@@ -41,7 +41,7 @@ type PeerConfig = {
   oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
   authHandler?: (msg: string) => Promise<string>;
-  positionGetter?: () => [number, number];
+  parcelGetter?: () => [number, number];
 };
 
 class Stats {
@@ -133,7 +133,7 @@ export class Peer implements IPeer {
       authHandler: config.authHandler,
       heartbeatExtras: () => ({
         ...this.buildTopologyInfo(),
-        ...this.buildPositionInfo()
+        ...this.buildParcelInfo()
       }),
       ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
     });
@@ -175,8 +175,8 @@ export class Peer implements IPeer {
     return { connectedPeerIds: Object.keys(this.connectedPeers) };
   }
 
-  private buildPositionInfo() {
-    return this.config.positionGetter ? { position: this.config.positionGetter() } : {};
+  private buildParcelInfo() {
+    return this.config.parcelGetter ? { parcel: this.config.parcelGetter() } : {};
   }
 
   private markReceived(packet: Packet) {

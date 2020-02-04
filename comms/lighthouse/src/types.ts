@@ -2,7 +2,7 @@ export type PeerInfo = {
   userId: string;
   peerId: string;
   protocolVersion?: number;
-  position?: [number, number];
+  parcel?: [number, number];
 };
 
 export type Room = {
