@@ -140,8 +140,9 @@ export async function getContents(env: Environment, req: Request, res: Response)
                 copyContentLength(response, res)
                 response.body.pipe(res);
             }
+        } else {
+            res.status(404).send()
         }
-        res.status(404).send()
     }
 }
 
