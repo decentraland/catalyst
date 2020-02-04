@@ -147,6 +147,15 @@ export class LayersService {
   getLayerTopology(layerId: string) {
     return this.layers[layerId].users.map(it => ({ ...it, connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
   }
+
+  updateUserParcel(peerId: string, parcel?: [number, number]) {
+    Object.values(this.layers).forEach(layer => {
+      const user = layer.users.find(it => it.peerId === peerId);
+      if (user) {
+        user.parcel = parcel;
+      }
+    });
+  }
 }
 
 class LayerChecker {
