@@ -65,7 +65,7 @@ export class PointerManager {
         const overwrittenEntities: (Entity | undefined)[] = await Promise.all(Array.from(overwrittenByNewDeployment.values())
             .map(entityId => entityFetcher(entityId)))
 
-        // Combine all pointers
+        // Combine all pointers that were not directly overwritten by the new deployment
         const overwrittenEntitiesPointers: Pointer[] = overwrittenEntities.filter((entity): entity is Entity => !!entity)
             .map(entity => entity.pointers)
             .reduce((pointers1, pointers2) => pointers1.concat(pointers2), [])
@@ -77,7 +77,7 @@ export class PointerManager {
             references.set(pointer, array)
         }
 
-        // Mark as deleted the pointers that were not directly overwritten by the new deployment
+        // Mark the pointers as deleted
         const deletedByNewDeployment: PointerReference = { entityId: PointerManager.DELETED, timestamp: entityBeingDeployed.timestamp }
         overwrittenEntitiesPointers
             .forEach(pointer => {
@@ -127,14 +127,14 @@ export class PointerManager {
             auditInfoUpdates.push(this.auditOverwrite.setEntityAsOverwritten(entityBeingDeployed.id, overwriting.entityId))
         }
 
-        // Store all changes back
+        // Store all changes back to their files
         const storageUpdates = Array.from(references.entries())
             .map(([pointer, array]) => this.storage.setPointerReferences(entityBeingDeployed.type, pointer, array))
 
-        // Invalidate all pointers
+        // Invalidate all pointers changed by the new deployment
         entityBeingDeployed.pointers.forEach(pointer => this.invalidate(entityBeingDeployed.type, pointer))
 
-        // Wait for everything
+        // Wait for everything to finish
         await Promise.all([...auditInfoUpdates, ...storageUpdates])
     }
 
@@ -167,7 +167,6 @@ export class PointerManager {
             return reference.entityId
         }
     }
-
 }
 
 export type PointerReference = {
