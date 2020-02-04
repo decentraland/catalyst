@@ -8,6 +8,7 @@ import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
 import { Metrics } from "../../../commons/src/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
+import { IClient } from "peerjs-server/dist/src/models/client";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
 import { DEFAULT_LAYERS } from "./default_layers";
@@ -86,7 +87,8 @@ peerServer.on("error", console.log);
 //@ts-ignore
 peerServer.on("message", (client: IClient, message: IMessage) => {
   if (message.type === MessageType.HEARTBEAT) {
-    peersService.updateTopology(client, message);
+    peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
+    layersService.updateUserParcel(client.getId(), message.payload?.parcel);
   }
 });
 
