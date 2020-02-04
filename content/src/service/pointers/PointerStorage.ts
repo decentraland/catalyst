@@ -1,6 +1,7 @@
 import { ContentStorage } from "../../storage/ContentStorage";
 import { EntityType, Pointer, EntityId } from "../Entity";
 import { Timestamp, happenedBefore } from "../time/TimeSorting";
+import { PointerReference } from "./PointerManager";
 
 export class PointerStorage {
 
@@ -10,32 +11,27 @@ export class PointerStorage {
 
     constructor(private storage: ContentStorage) { }
 
-    async getActivePointers(entityType: EntityType): Promise<Pointer[]> {
+    async getPointersAllFiles(entityType: EntityType): Promise<Pointer[]> {
         try {
-            const allFiles: string[] = await this.storage.listIds(this.resolveCategory(entityType))
-            const pointerWithRef: [Pointer, EntityId | undefined][] = await Promise.all(allFiles.map(async pointer => [pointer, await this.getPointerReference(entityType, pointer)] as [Pointer, EntityId | undefined]))
-            return pointerWithRef.filter(([, ref]) => !!ref)
-                .map(([pointer]) => pointer)
+            return await this.storage.listIds(this.resolveCategory(entityType))
         } catch (error) {
             return []
         }
     }
 
-    async getPointerReference(entityType: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
+    async getPointerReferences(entityType: EntityType, pointer: Pointer): Promise<PointerReference[]> {
         const contentItem = await this.storage.getContent(this.resolveCategory(entityType), pointer.toLocaleLowerCase());
         if (contentItem) {
             const lines: string[] = (await contentItem.asBuffer()).toString().split('\n')
-            const lastLine = lines[lines.length - 1]
-            const [entityId, ] = lastLine.split(' ')
-            if (entityId !== PointerStorage.DELETED_ENTITY) {
-                return entityId
-            }
+            return lines.map(line => line.split(' '))
+                .map(([entityId, timestamp]) => ({ entityId, timestamp: parseInt(timestamp) }))
         }
-        return undefined
+        return []
     }
 
-    async setPointerReference(entityType: EntityType, pointer: Pointer, entityId: EntityId, timestamp: Timestamp): Promise<void> {
-        return this.addToHistory(entityType, pointer, entityId, timestamp)
+    async setPointerReferences(entityType: EntityType, pointer: Pointer, references: PointerReference[]): Promise<void> {
+        const text = references.map(({ entityId, timestamp }) => `${entityId} ${timestamp}`).join('\n')
+        return this.storage.store(this.resolveCategory(entityType), pointer.toLocaleLowerCase(), Buffer.from(text))
     }
 
     deletePointerReference(entityType: EntityType, pointer: Pointer, timestamp: Timestamp): Promise<void> {

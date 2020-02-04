@@ -173,8 +173,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
         this.registerBeanIfNotAlreadySet(env, Bean.AUDIT                       , () => AuditFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.BLACKLIST                   , () => BlacklistFactory.create(env))
-        const pointerManager = await PointerManagerFactory.create(env);
-        this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => pointerManager)
+        this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
         const service = await ServiceFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
