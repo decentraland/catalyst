@@ -3,10 +3,6 @@ import { Eth } from "web3x/eth";
 import { WebsocketProvider } from "web3x/providers";
 import { Katalyst } from "./Katalyst";
 
-type Network = typeof networks.ropsten;
-// type Provider = ReturnType<typeof handlerForNetwork>;
-type Contract = keyof typeof networks.ropsten.contracts;
-
 export const networks = {
   ropsten: {
     wss: "wss://ropsten.infura.io/ws",
@@ -19,21 +15,26 @@ export const networks = {
   }
 };
 
-export function handlerForNetwork(network: Network, contractConfig: Contract) {
-  const provider = new WebsocketProvider(network.wss);
-  const eth = new Eth(provider);
-  const contract = network.contracts[contractConfig];
-  const address = Address.fromString(contract.address);
-  const contractInstance = new contract.class(eth, address);
+export function handlerForNetwork(networkKey: string, contractKey: string) {
+    try {
+        const network = networks[networkKey]
+        const provider = new WebsocketProvider(network.wss);
+        const eth = new Eth(provider);
+        const contract = network.contracts[contractKey];
+        const address = Address.fromString(contract.address);
+        const contractInstance = new contract.class(eth, address);
 
-  return {
-    provider,
-    network,
-    contract: contractInstance,
-    disconnect: () => {
-      provider.disconnect();
+        return {
+          provider,
+          network,
+          contract: contractInstance,
+          disconnect: () => {
+            provider.disconnect();
+          }
+        };
+    } catch (error) {
+        return undefined
     }
-  };
 }
 
 // async function main() {

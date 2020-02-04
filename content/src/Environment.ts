@@ -28,6 +28,7 @@ export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 const DEFAULT_DCL_API_URL = "https://api.decentraland.zone/v1"
+export const DEFAULT_ETH_NETWORK = "ropsten"
 
 export class Environment {
     private configs: Map<EnvironmentConfig, any> = new Map();
@@ -92,6 +93,7 @@ export const enum EnvironmentConfig {
     ALLOW_LEGACY_ENTITIES,
     DECENTRALAND_ADDRESS,
     DCL_API_URL,
+    ETH_NETWORK,
 }
 
 export class EnvironmentBuilder {
@@ -160,6 +162,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS      , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_API_URL               , () => process.env.DCL_API_URL ?? DEFAULT_DCL_API_URL)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK               , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

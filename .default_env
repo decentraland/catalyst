@@ -15,6 +15,7 @@ export content_server_storage="/srv/katalyst_content/storage"
 #    NAME_PREFIX
 #    SEGMENT_WRITE_KEY
 #    DCL_API_URL
+#    ETH_NETWORK
 # Lambda related:
 #    SERVER_PORT
 #    CONTENT_SERVER_ADDRESS
