@@ -6,3 +6,20 @@ export data_path="./local/certbot"
 export nginx_server_file="local/nginx/conf.d/00-katalyst.conf"
 export nginx_server_template="local/nginx/conf.d/katalyst.conf.template"
 export content_server_storage="/srv/katalyst_content/storage"
+
+
+# Remember to add the following variables:
+# Content related:
+#    STORAGE_ROOT_FOLDER
+#    SERVER_PORT
+#    NAME_PREFIX
+#    SEGMENT_WRITE_KEY
+#    DCL_API_URL
+# Lambda related:
+#    SERVER_PORT
+#    CONTENT_SERVER_ADDRESS
+#    ENS_OWNER_PROVIDER_URL
+# Comms related:
+#
+#
+
