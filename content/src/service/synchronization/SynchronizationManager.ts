@@ -49,7 +49,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         clearInterval(this.syncWithNodesInterval)
         this.daoRemovalEventSubscription?.dispose()
         this.cluster.disconnect()
-        return this.waitUntilAllSyncFinish()
+        return this.waitUntilAllSyncingFinishes()
     }
 
     private async syncWithServers(): Promise<void> {
@@ -107,7 +107,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         return request.execute()
     }
 
-    private waitUntilAllSyncFinish(): Promise<void> {
+    private waitUntilAllSyncingFinishes(): Promise<void> {
         return new Promise(async (resolve) => {
             while (this.processing > 0) {
                 await sleep(ms('1s'))

@@ -79,6 +79,7 @@ export class EventDeployer {
                     return this.buildDeploymentExecution(entityFile, auditInfo, deployment, () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName))
                 } else {
                     // Looks like there was a problem fetching one of the files
+                    await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.FETCH_PROBLEM)
                     return this.buildDeploymentForError(entity, auditInfo, deployment)
                 }
             }
@@ -94,6 +95,7 @@ export class EventDeployer {
                 throw new Error('Failed to find fetch both the entity file and the entity itself')
             } else {
                 // Deploy the entity file
+                await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.FETCH_PROBLEM)
                 return this.buildDeploymentForError(entity, auditInfo, deployment)
             }
         }
@@ -213,6 +215,5 @@ export type DeploymentExecution = {
 
 export type HistoryDeploymentOptions = {
     logging?: boolean,
-    continueOnFailure?: boolean,
     preferredServer?: ContentServerClient
 }
