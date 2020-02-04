@@ -10,16 +10,16 @@ const query = `
       createdAt
     }
   }`
-const url = "https://api.thegraph.com/subgraphs/name/nicosantangelo/testing";
+
 const opts = (ethAddress) => ({
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables: { beneficiary: ethAddress } })
 })
 
-export async function getOwnedENS(ethAddress: string): Promise<string[]> {
+export async function getOwnedENS(theGraphBaseUrl: string, ethAddress: string): Promise<string[]> {
     try {
-        const response = await fetch(url, opts(ethAddress))
+        const response = await fetch(theGraphBaseUrl, opts(ethAddress))
         if (response.ok) {
             const jsonResponse: GraphResponse = await response.json()
             return jsonResponse.data.nameRegistrations.map(registration => registration.subdomain)

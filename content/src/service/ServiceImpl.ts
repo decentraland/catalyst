@@ -126,7 +126,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers), (type, id) => this.getAuditInfo(type, id), validationContext)
         } else {
             // Validate request size
-            validation.validateRequestSize(files, validationContext)
+            validation.validateRequestSize(files, entity.pointers, validationContext)
 
             // Validate ethAddress access
             await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
@@ -180,7 +180,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
                 if (!wasEntityAlreadyDeployed || await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id) === FailureReason.NO_ENTITY_OR_AUDIT) {
                     // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-                    await this.pointerManager.commitEntity(entity, newAuditInfo.deployedTimestamp, entityId => this.entities.get(entityId));
+                    await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
                 }
 
                 if (!wasEntityAlreadyDeployed) {
@@ -269,7 +269,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     async setImmutableTime(immutableTime: number): Promise<void> {
         this.lastImmutableTime = immutableTime
         return this.lock.runExclusive(async () => {
-            await Promise.all([this.historyManager.setTimeAsImmutable(immutableTime), this.pointerManager.setTimeAsImmutable(immutableTime)])
+            await this.historyManager.setTimeAsImmutable(immutableTime)
         })
     }
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
-import { Environment } from '../../../Environment'
+import { Environment, EnvironmentConfig } from '../../../Environment'
 import { baseContentServerUrl } from '../../../EnvironmentUtils'
 import { getOwnedENS } from '../ensFiltering'
 
@@ -14,9 +14,10 @@ export async function getProfileById(env: Environment, req: Request, res: Respon
     if (response.ok) {
         const entities:V3ControllerEntity[] = await response.json()
         if (entities && entities.length > 0 && entities[0].metadata) {
+            const theGraphBaseUrl:string = env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL);
             const profile = entities[0].metadata
             returnProfile = profile
-            returnProfile = await filterNonOwnedNames(profileId, returnProfile)
+            returnProfile = await filterNonOwnedNames(theGraphBaseUrl, profileId, returnProfile)
             returnProfile = addBaseUrlToSnapshots(baseContentServerUrl(env), returnProfile)
         }
     }
@@ -26,8 +27,8 @@ export async function getProfileById(env: Environment, req: Request, res: Respon
 /**
  * We filter ENS to avoid send an ENS that is no longer owned by the user
  */
-async function filterNonOwnedNames(profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
-    const ownedENS = await getOwnedENS(profileId)
+async function filterNonOwnedNames(theGraphBaseUrl: string, profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
+    const ownedENS = await getOwnedENS(theGraphBaseUrl, profileId)
     const avatars = await Promise.all(metadata.avatars.map(async profile => (
         {
             ...profile,

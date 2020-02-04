@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { RequestHandler } from "express";
+import compression from "compression";
 import morgan from "morgan";
 import multer from "multer";
 import http from "http";
@@ -22,6 +23,7 @@ export class Server {
       const controller: Controller = env.getBean(Bean.CONTROLLER)
       this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
+      this.app.use(compression({ filter: (req, res) => true }));
       this.app.use(cors());
       this.app.use(express.json());
       if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
@@ -36,7 +38,7 @@ export class Server {
       this.registerRoute("/entities"             , controller, controller.createEntity, HttpMethod.POST, upload.any())
       this.registerRoute("/contents/:hashId"     , controller, controller.getContent);
       this.registerRoute("/available-content"    , controller, controller.getAvailableContent);
-      this.registerRoute("/pointers/:type"       , controller, controller.getPointers);
+    //   this.registerRoute("/pointers/:type"       , controller, controller.getPointers);
       this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
       this.registerRoute("/history"              , controller, controller.getHistory);
       this.registerRoute("/status"               , controller, controller.getStatus);
