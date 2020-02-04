@@ -1,8 +1,10 @@
-import { Environment, Bean } from "@katalyst/content/Environment";
+import { Environment, Bean, EnvironmentConfig } from "@katalyst/content/Environment";
 import { AccessCheckerImpl } from "./AccessCheckerImpl";
 
 export class AccessCheckerImplFactory {
     static create(env: Environment): AccessCheckerImpl {
-        return new AccessCheckerImpl(env.getBean(Bean.AUTHENTICATOR))
+        return new AccessCheckerImpl(
+            env.getBean(Bean.AUTHENTICATOR),
+            env.getConfig(EnvironmentConfig.DCL_API_URL))
     }
 }
