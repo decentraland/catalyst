@@ -15,7 +15,7 @@ leCertEmit () {
     echo
   fi
 
-  echo "## Creating dummy certificate for $domains ..."
+  echo " Creating dummy certificate for $domains ..."
   path="/etc/letsencrypt/live/$domains"
   mkdir -p "$data_path/conf/live/$domains"
   docker-compose run --rm --entrypoint "\
@@ -35,6 +35,7 @@ leCertEmit () {
     printMessage failed
     exit 1
   else 
+    echo -n "## Dummy certificates created ..."
     printMessage ok
   fi
 
@@ -50,6 +51,7 @@ leCertEmit () {
     printMessage failed
     exit 1
   else 
+    echo -n "## files deleted ..."
     printMessage ok
   fi
 
@@ -77,24 +79,25 @@ leCertEmit () {
     printMessage failed
     exit 1
   else 
+    echo -n "## Certificates requested..."
     printMessage ok
   fi
 
-    docker-compose run --rm --entrypoint "\
-    certbot certonly --webroot -w /var/www/certbot \
-      $email_arg \
-      $domain_args \
-      --rsa-key-size $rsa_key_size \
-      --agree-tos \
-      --force-renewal" certbot
+  #  docker-compose run --rm --entrypoint "\
+  #  certbot certonly --webroot -w /var/www/certbot \
+  #    $email_arg \
+  #    $domain_args \
+  #    --rsa-key-size $rsa_key_size \
+  #    --agree-tos \
+  #    --force-renewal" certbot
 
-  if test $? -ne 0; then
-    echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
-    printMessage failed
-    exit 1
-  else 
-    printMessage ok
-  fi
+  #if test $? -ne 0; then
+  #  echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
+  #  printMessage failed
+  #  exit 1
+  #else 
+  #  printMessage ok
+  #fi
 
 
   echo "## Reloading nginx ..."
@@ -176,12 +179,16 @@ printMessage ok
 
 if [ -d "$data_path" ]; then
   echo -n "## Existing data found for $domains. "
+  if test ${regenerate} -eq 1; then
+          leCertEmit
+  else
+          echo -n "## Keeping the current certs"
+  fi
 else
   echo "## No certificates found. Performing certificate creation"
   leCertEmit
 fi
 
-exit 1
 if test $? -ne 0; then
   echo -n "Failed to deploy certificates. Look upstairs for errors: " 
   printMessage failed
