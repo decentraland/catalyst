@@ -70,19 +70,32 @@ leCertEmit () {
       --staging \
       $email_arg \
       $domain_args \
-      --no-eff-email 
+      --no-eff-email \
       --rsa-key-size $rsa_key_size \
       --agree-tos \
       --force-renewal" certbot
 
   if test $? -ne 0; then
-    echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
+    echo -n "Failed to request certificates... " 
     printMessage failed
     exit 1
   else 
     echo -n "## Certificates requested..."
     printMessage ok
   fi
+
+  echo "## Reloading nginx ..."
+  docker-compose exec nginx nginx -s reload
+  if test $? -ne 0; then
+    echo -n "Failed to reload nginx... " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "## Nginx Reloaded"
+    printMessage ok
+  fi
+
+  echo "## Going for the real certs..."
 
   #  docker-compose run --rm --entrypoint "\
   #  certbot certonly --webroot -w /var/www/certbot \
@@ -101,17 +114,18 @@ leCertEmit () {
   #  printMessage ok
   #fi
 
-
-  echo "## Reloading nginx ..."
+  
+  echo "## Reloading nginx with real ..."
   docker-compose exec nginx nginx -s reload
-
   if test $? -ne 0; then
-    echo -n "Failed to reload nginx " 
+    echo -n "Failed to reload nginx... " 
     printMessage failed
     exit 1
   else 
+    echo -n "## Nginx Reloaded"
     printMessage ok
   fi
+
 }
 
 printMessage () {
@@ -144,15 +158,15 @@ echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - content_server_storage:  " ; echo -e "\e[33m ${content_server_storage} \e[39m"
 echo ""
-read -rp "Enter to continue, CTRL+C to abort... " dummy
+echo "Starting in 5 seconds... " && sleep 5
 
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo -n "Error: docker-compose is not installed..." >&2
   printMessage failed
   exit 1
 fi
-docker-compose stop
-docker-compose rm
+docker-compose -f stop
+docker-compose -f rm 
 
 echo -n "## Checking if local storage folder is reachable..."
 if test -d ${content_server_storage}; then
