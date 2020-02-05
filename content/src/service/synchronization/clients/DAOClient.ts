@@ -1,4 +1,4 @@
-import { handlerForNetwork, networks } from "decentraland-katalyst-contracts/utils"
+import { handlerForNetwork } from "decentraland-katalyst-contracts/utils"
 import { ServerMetadata } from "../ContentCluster";
 
 export class DAOClient {
@@ -6,10 +6,15 @@ export class DAOClient {
     private contract
     private triggerDisconnect
 
-    constructor() {
-        const { contract, disconnect } = handlerForNetwork(networks.ropsten, "katalyst");
-        this.contract = contract
-        this.triggerDisconnect = disconnect
+    constructor(networkName: string) {
+        const handler = handlerForNetwork(networkName, "katalyst");
+        if (handler) {
+            const { contract, disconnect } = handler;
+            this.contract = contract
+            this.triggerDisconnect = disconnect
+        } else {
+            throw new Error(`Can not find a network handler for Network="${networkName}`)
+        }
     }
 
     async getAllServers(): Promise<Set<ServerMetadata>> {

@@ -46,6 +46,7 @@ export const enum EnvironmentConfig {
     LOG_REQUESTS,
     CONTENT_SERVER_ADDRESS,
     ENS_OWNER_PROVIDER_URL,
+    COMMIT_HASH,
 }
 
 export class EnvironmentBuilder {
@@ -71,6 +72,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS          , () => process.env.LOG_REQUESTS !== 'false')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SERVER_ADDRESS, () => process.env.CONTENT_SERVER_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENS_OWNER_PROVIDER_URL, () => process.env.ENS_OWNER_PROVIDER_URL ?? DEFAULT_ENS_OWNER_PROVIDER_URL)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH           , () => process.env.COMMIT_HASH ?? 'undefined')
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

@@ -4,7 +4,7 @@ import { LambdasService } from "./Service";
 
 export class ServiceFactory {
     static create(env: Environment): LambdasService {
-        return new ServiceImpl();
+        return new ServiceImpl(env);
     }
 }
 
