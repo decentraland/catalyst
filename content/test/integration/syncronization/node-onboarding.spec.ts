@@ -1,6 +1,6 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { Environment } from "@katalyst/content/Environment"

@@ -1,5 +1,5 @@
 import { setInterval, clearInterval } from "timers"
-import { DAOClient } from "./clients/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
 
@@ -9,7 +9,7 @@ import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
-import { EthAddress } from "dcl-crypto";
+import { ServerMetadata } from "../../../../commons/src/ServerMetadata";
 
 export class ContentCluster {
 
@@ -172,8 +172,3 @@ export class ContentCluster {
 
 }
 
-export type ServerMetadata = {
-    address: ServerAddress,
-    owner: EthAddress,
-    id: string
-}

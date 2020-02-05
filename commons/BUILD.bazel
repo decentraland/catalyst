@@ -8,10 +8,11 @@ ts_library(
     module_name = "decentraland-katalyst-commons",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//contracts",
+        "@npm//@types",
+        "@npm//dcl-crypto",
+        "@npm//express",
         "@npm//prom-client",
         "@npm//response-time",
-        "@npm//express",
-        "@npm//@types",
     ],
 )
-
