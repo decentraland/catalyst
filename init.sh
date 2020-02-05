@@ -1,5 +1,4 @@
 #!/bin/bash
-Progname=$0
 Source=".default_env"
 
 
