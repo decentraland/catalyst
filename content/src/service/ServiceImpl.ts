@@ -1,7 +1,7 @@
 import { ContentFileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { MetaverseContentService, ENTITY_FILE_NAME, ContentFile, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
-import { Timestamp } from "./time/TimeSorting";
+import { Timestamp, happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
@@ -78,17 +78,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.LOCAL, origin)
     }
 
-    async deployToFix(files: ContentFile[], entityId: EntityId, origin: string) {
-        const currentAuditInfo = await this.auditManager.getAuditInfo(entityId);
-        if (!currentAuditInfo) {
-            throw new Error(`Failed to find audit info for the given entity`)
-        }
-
-        // Delete the failure, since we are going to try to fix the deployment
-        delete currentAuditInfo.failureReason
+    async deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string) {
+        const finalAuditInfo = await this.auditManager.getAuditInfo(entityId) ?? auditInfo
 
         // It looks like we are changing the current server name, but since we won't store it, it won't change
-        return this.deployInternal(files, entityId, currentAuditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin)
+        return this.deployInternal(files, entityId, finalAuditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin, true)
     }
 
     private async deployInternal(files: ContentFile[],
@@ -168,7 +162,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 authChain: auditInfo.authChain,
                 version: auditInfo.version,
                 originalMetadata: auditInfo.originalMetadata,
-                failureReason: auditInfo.failureReason,
             }
 
             if (!wasEntityAlreadyDeployed || fixAttempt) {
@@ -192,6 +185,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
 
                 if (fixAttempt) {
+                    this.entities.invalidate(entityId)
                     await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
                 }
             }
@@ -205,7 +199,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate that pointers aren't referring to an entity with a higher timestamp
         const currentPointedEntities = await this.getEntitiesByPointers(entity.type, entity.pointers)
         for (const currentEntity of currentPointedEntities) {
-            if (entity.timestamp <= currentEntity.timestamp) {
+            if (happenedBeforeEntities(entity, currentEntity)) {
                 return true
             }
         }
@@ -260,10 +254,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
         await this.deployInternal([entityFile], entityId, auditInfo, serverName, ValidationContext.OVERWRITE, 'sync')
-    }
-
-    async deployEntityWithErrorDuringSync(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployInternal([entityFile], entityId, auditInfo, serverName, ValidationContext.ERROR_DURING_SYNC, 'sync')
     }
 
     async setImmutableTime(immutableTime: number): Promise<void> {

@@ -1,26 +1,35 @@
 import { TestServer } from "./TestServer"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { EntityId, EntityType } from "@katalyst/content/service/Entity"
+import { ControllerEntity, ControllerEntityContent } from "@katalyst/content/controller/Controller"
+import { EntityType } from "@katalyst/content/service/Entity"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
+import { parseEntityType } from "./E2ETestUtils"
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
     for (const entity of entities) {
         const entityType = parseEntityType(entity)
         const entities: ControllerEntity[] = await server.getEntitiesByPointers(entityType, entity.pointers)
         expect(entities).not.toContain(entity, `Failed on server with prefix ${server.namePrefix}, when checking for pointers ${entity.pointers}`)
-        await assertEntityIsOnServer(server, entityType, entity.id)
+        await assertEntityIsOnServer(server, entity)
     }
+}
+
+export async function assertEntityWasNotDeployed(server: TestServer, entity: ControllerEntity) {
+    await assertFileIsNotOnServer(server, entity.id)
+    const content: ControllerEntityContent[] = (entity.content ?? [])
+    await Promise.all(content.map(({ hash }) => assertFileIsNotOnServer(server, hash)))
+    const entities = await server.getEntitiesByIds(entity.type, entity.id)
+    expect(entities.length).toBe(0)
 }
 
 export async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
     for (const entity of entities) {
         const entityType = parseEntityType(entity)
         expect(await server.getEntitiesByPointers(entityType, entity.pointers)).toEqual([entity])
-        await assertEntityIsOnServer(server, entityType, entity.id)
+        await assertEntityIsOnServer(server, entity)
     }
 }
 
@@ -31,15 +40,20 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
     for (let i = 0; i < expectedEvents.length; i++) {
         const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
         const actualEvent: DeploymentEvent = deploymentHistory[i]
-        expect(actualEvent.entityId).toBe(expectedEvent.entityId)
-        expect(actualEvent.entityType).toBe(expectedEvent.entityType)
-        expect(actualEvent.timestamp).toBe(expectedEvent.timestamp)
-        expect(actualEvent.serverName.startsWith(expectedEvent.serverName)).toBeTruthy()
+        assertEqualsDeployment(actualEvent, expectedEvent)
     }
 }
 
-export async function assertEntityIsOnServer(server: TestServer, entityType: string, entityId: EntityId) {
-    const entity: ControllerEntity = await server.getEntityById(entityType, entityId)
+export function assertEqualsDeployment(actualEvent: DeploymentEvent, expectedEvent: DeploymentEvent) {
+    expect(actualEvent.entityId).toBe(expectedEvent.entityId)
+    expect(actualEvent.entityType).toBe(expectedEvent.entityType)
+    expect(actualEvent.timestamp).toBe(expectedEvent.timestamp)
+    expect(actualEvent.serverName.startsWith(expectedEvent.serverName)).toBeTruthy()
+}
+
+async function assertEntityIsOnServer(server: TestServer, entity: ControllerEntity) {
+    const fetchedEntity: ControllerEntity = await server.getEntityById(parseEntityType(entity), entity.id)
+    expect(fetchedEntity).toEqual(entity)
     return assertFileIsOnServer(server, entity.id)
 }
 
@@ -54,33 +68,33 @@ export async function assertFileIsNotOnServer(server: TestServer, hash: ContentF
 }
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
     expect(auditInfo.overwrittenBy).toEqual(overwrittenBy.id)
 }
 
 export async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
     expect(auditInfo.overwrittenBy).toBeUndefined()
 }
 
 
 export async function assertEntityIsNotBlacklisted(server: TestServer, entity: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
     expect(auditInfo.isBlacklisted).toBeUndefined()
 }
 
 export async function assertEntityIsBlacklisted(server: TestServer, entity: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
     expect(auditInfo.isBlacklisted).toBeTruthy()
 }
 
 export async function assertContentNotIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
     expect(auditInfo.blacklistedContent).not.toContain(contentHash)
 }
 
 export async function assertContentIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(parseEntityType(entity), entity.id)
+    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
     expect(auditInfo.blacklistedContent).toContain(contentHash)
 }
 
@@ -106,8 +120,4 @@ export function assertFieldsOnEntitiesExceptIdsAreEqual(entity1: ControllerEntit
     expect(entity1.timestamp).toEqual(entity2.timestamp)
     expect(entity1.content).toEqual(entity2.content)
     expect(entity1.metadata).toEqual(entity2.metadata)
-}
-
-function parseEntityType(entity: ControllerEntity) {
-    return EntityType[entity.type.toUpperCase().trim()]
 }

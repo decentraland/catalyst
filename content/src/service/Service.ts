@@ -16,6 +16,7 @@ export interface MetaverseContentService {
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
     getActivePointers(type: EntityType): Promise<Pointer[]>;
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
@@ -29,7 +30,6 @@ export interface MetaverseContentService {
 export interface ClusterDeploymentsService {
     deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
     deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
-    deployEntityWithErrorDuringSync(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
 }
 

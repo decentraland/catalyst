@@ -19,7 +19,7 @@ export class Bootstrapper {
             const immutableTime = await Bootstrapper.onboardIntoClusterWithServer(myLastImmutableTime, cluster, deployer)
 
             // Create a request for all servers to get everything from the last immutable time
-            const request = new MultiServerHistoryRequest(servers, deployer, immutableTime)
+            const request = new MultiServerHistoryRequest(servers, deployer, immutableTime + 1)
 
             // Execute the request
             return request.execute()
@@ -30,21 +30,24 @@ export class Bootstrapper {
 
     private static async onboardIntoClusterWithServer(myLastImmutableTime: Timestamp, cluster: ContentCluster, deployer: EventDeployer): Promise<Timestamp> {
         // Get one (any) server's last immutable time and history
-        const [immutableTime, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
+        const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
         // Bootstrap
         await deployer.deployHistory(history, { logging: true })
+
+        // Update the timestamp on the server
+        await server.updateTimestamp(immutableTime)
 
         console.log("Finished bootstrapping")
         return immutableTime
     }
 
-    private static async getImmutableHistoryOnServerFrom(from: Timestamp, server: ContentServerClient): Promise<[Timestamp, DeploymentHistory]> {
+    private static async getImmutableHistoryOnServerFrom(from: Timestamp, server: ContentServerClient): Promise<[Timestamp, ContentServerClient, DeploymentHistory]> {
         // Get server's last immutable time
         const { lastImmutableTime: serversLastImmutableTime } = await server.getStatus()
 
         // Get everything that happened between "from" and the server's immutable time
         const history = await server.getHistory(from, undefined, serversLastImmutableTime)
-        return [serversLastImmutableTime, history]
+        return [serversLastImmutableTime, server, history]
     }
 }

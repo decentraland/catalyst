@@ -112,7 +112,7 @@ export class Controller {
         .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
-    createEntity(req: express.Request, res: express.Response) {
+    async createEntity(req: express.Request, res: express.Response) {
         // Method: POST
         // Path: /entities
         // Body: JSON with entityId,ethAddress,signature; and a set of files
@@ -122,19 +122,25 @@ export class Controller {
         const signature:Signature   = req.body.signature;
         const files                 = req.files
         const origin                = req.header('x-upload-origin') ?? "unknown"
+        const fixAttempt: boolean   = req.query.fix === 'true'
 
         if (!authChain && ethAddress && signature) {
             authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
         }
-        let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
+
+        let deployFiles: ContentFile[] = []
         if (files instanceof Array) {
-            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
+            deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
-        deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}, origin))
-        .then(t => res.send({
-            creationTimestamp: t
-        }))
+
+        const auditInfo: AuditInfo = { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION }
+        let creationTimestamp: Timestamp
+        if (fixAttempt) {
+            creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+        } else {
+            creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+        }
+        res.send({ creationTimestamp })
     }
     private async readFile(name: string, path: string): Promise<ContentFile> {
         return {

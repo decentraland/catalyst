@@ -52,6 +52,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(Date.now())
     }
 
+    deployToFix(files: ContentFile[], entityId: EntityId): Promise<Timestamp> {
+        return Promise.resolve(Date.now())
+    }
+
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         const entries: [ContentFileHash, boolean][] = fileHashes.map(fileHash => [fileHash, this.content.has(fileHash) || this.isThereAnEntityWithId(fileHash)])
         return Promise.resolve(new Map(entries))

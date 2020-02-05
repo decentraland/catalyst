@@ -90,19 +90,16 @@ export class ContentCluster {
                 .map(address => getServerName(address).then(name => ({ address, name }))))
 
             for (const { address, name: newName } of names) {
-                let newClient: ContentServerClient
+                let newClient: ContentServerClient | undefined
                 // Check if we already knew the server
                 const previousClient: ContentServerClient | undefined = this.serversInDAO.get(address);
-                if (previousClient && previousClient.getName() != UNREACHABLE) {
-                    if (newName == UNREACHABLE) {
+                if (previousClient && previousClient.getName() !== UNREACHABLE) {
+                    if (newName === UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
-                    } else {
-                        // Create new client
-                        newClient = getClient(address, newName, previousClient.getLastKnownTimestamp())
                     }
                 } else {
-                    if (newName == UNREACHABLE) {
+                    if (newName === UNREACHABLE) {
                         // Create unreachable client
                         newClient = getUnreachableClient()
                     } else {
@@ -111,7 +108,9 @@ export class ContentCluster {
                         console.log(`Connected to new server ${newName} on ${address}`)
                     }
                 }
-                this.serversInDAO.set(address, newClient)
+                if (newClient) {
+                    this.serversInDAO.set(address, newClient)
+                }
             }
         } catch (error) {
             console.error(`Failed to sync with the DAO \n${error}`)

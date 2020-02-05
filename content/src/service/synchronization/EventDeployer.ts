@@ -12,7 +12,6 @@ import { FailedDeploymentsManager, FailureReason } from "../errors/FailedDeploym
 
 export class EventDeployer {
 
-    static readonly FETCH_ERROR_METADATA: string = "There was a problem when fetching the files for this entity. It could be due to blacklisting, or network problems."
     private readonly eventProcessor: EventStreamProcessor
 
     constructor(private readonly cluster: ContentCluster,
@@ -60,7 +59,7 @@ export class EventDeployer {
         if (entityFile && auditInfo) {
             if (auditInfo.overwrittenBy) {
                 // Deploy the entity as overwritten
-                return this.buildDeploymentExecution(entityFile, auditInfo, deployment, () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName))
+                return this.buildDeploymentExecution(deployment, () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName))
             } else {
                 // Build entity
                 const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
@@ -76,28 +75,20 @@ export class EventDeployer {
 
                 if (definedFiles.length === files.length) {
                     // Since we could fetch all files, deploy the new entity normally
-                    return this.buildDeploymentExecution(entityFile, auditInfo, deployment, () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName))
+                    return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName))
                 } else {
                     // Looks like there was a problem fetching one of the files
                     await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.FETCH_PROBLEM)
-                    return this.buildDeploymentForError(entity, auditInfo, deployment)
+                    throw new Error('Failed to download some content')
                 }
             }
         } else if (!auditInfo) {
             await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
-            throw new Error('Failed to find fetch the audit info')
+            throw new Error('Failed to fetch the audit info')
         } else {
-            // It looks like we could fetch the audit info, but not the entity file. We will try to generate it by looking at the entity
-            const entity: Entity | undefined = await this.getEntity(deployment, source);
-
-            if (!entity) {
-                await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
-                throw new Error('Failed to find fetch both the entity file and the entity itself')
-            } else {
-                // Deploy the entity file
-                await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.FETCH_PROBLEM)
-                return this.buildDeploymentForError(entity, auditInfo, deployment)
-            }
+            // It looks like we could fetch the audit info, but not the entity file
+            await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+            throw new Error('Failed to fetch the entity file')
         }
     }
 
@@ -133,10 +124,6 @@ export class EventDeployer {
         return this.tryOnClusterOrUndefined(server => server.getContentFile(fileHash), this.cluster, { preferred: source })
     }
 
-    private getEntity(deployment: DeploymentEvent, source: ContentServerClient | undefined): Promise<Entity | undefined> {
-        return this.tryOnClusterOrUndefined(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, { preferred: source });
-    }
-
     private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo | undefined> {
         return this.tryOnClusterOrUndefined(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, { preferred: source })
     }
@@ -151,25 +138,10 @@ export class EventDeployer {
             .map(([fileHash, _]) => fileHash)
     }
 
-    private buildDeploymentForError(entity: Entity, auditInfo: AuditInfo, deploymentEvent: DeploymentEvent): DeploymentExecution {
-        const serializableEntity = {
-            id: entity.id,
-            type: entity.type,
-            pointers: entity.pointers,
-            timestamp: entity.timestamp,
-            metadata: EventDeployer.FETCH_ERROR_METADATA,
-        }
 
-        // Build a new entity file, based on the sanitized entity
-        const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(serializableEntity)) }
-        return this.buildDeploymentExecution(entityFile, auditInfo, deploymentEvent, () => this.service.deployEntityWithErrorDuringSync(entityFile, deploymentEvent.entityId, auditInfo, deploymentEvent.serverName))
-    }
-
-    private buildDeploymentExecution(entityFile: ContentFile, auditInfo: AuditInfo, deploymentEvent: DeploymentEvent, execution: () => Promise<void>): DeploymentExecution {
+    private buildDeploymentExecution(deploymentEvent: DeploymentEvent, execution: () => Promise<void>): DeploymentExecution {
         return {
             metadata: {
-                entityFile,
-                auditInfo,
                 deploymentEvent,
             },
             execution,
@@ -183,13 +155,10 @@ export class EventDeployer {
             try {
                 await deploymentExecution.execution()
             } catch (error) {
-                console.log(`Something failed. Will store and empty entity. Error was: \n${error}`)
-                const { entityFile, deploymentEvent, auditInfo } = deploymentExecution.metadata
                 // The deployment failed, so we report it
-                await this.failedDeploymentsManager.reportFailedDeployment(deploymentEvent, FailureReason.DEPLOYMENT_ERROR)
-
-                // Re-deploy, but marking as an error
-                return this.service.deployEntityWithErrorDuringSync(entityFile, deploymentEvent.entityId, auditInfo, deploymentEvent.serverName)
+                await this.failedDeploymentsManager.reportFailedDeployment(deploymentExecution.metadata.deploymentEvent, FailureReason.DEPLOYMENT_ERROR)
+                // Re throw the error
+                throw error
             }
         }
     }
@@ -206,8 +175,6 @@ export class EventDeployer {
 
 export type DeploymentExecution = {
     metadata: {
-        entityFile: ContentFile,
-        auditInfo: AuditInfo,
         deploymentEvent: DeploymentEvent
     },
     execution: () => Promise<void>,
