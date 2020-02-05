@@ -99,25 +99,26 @@ leCertEmit () {
 
   echo "## Going for the real certs..."
 
-  #  docker-compose run --rm --entrypoint "\
-  #  certbot certonly --webroot -w /var/www/certbot \
-  #    $email_arg \
-  #    $domain_args \
-  #    --no-eff-email \
-  #    --rsa-key-size $rsa_key_size \
-  #    --agree-tos \
-  #    --force-renewal" certbot
+  docker-compose run --rm --entrypoint "\
+  certbot certonly --webroot -w /var/www/certbot \
+      $email_arg \
+      $domain_args \
+      --no-eff-email \
+      --rsa-key-size $rsa_key_size \
+      --agree-tos \
+      --force-renewal" certbot
 
-  #if test $? -ne 0; then
-  #  echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
-  #  printMessage failed
-  #  exit 1
-  #else 
-  #  printMessage ok
-  #fi
+  if test $? -ne 0; then
+    echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "Real certs emited OK..."
+    printMessage ok
+  fi
 
   
-  echo "## Reloading nginx with real ..."
+  echo "## Reloading nginx with real certs ..."
   docker-compose exec nginx nginx -s reload
   if test $? -ne 0; then
     echo -n "Failed to reload nginx... " 
