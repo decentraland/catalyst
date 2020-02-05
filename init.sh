@@ -148,6 +148,7 @@ if ! [ -x "$(command -v docker-compose)" ]; then
 fi
 docker-compose stop
 docker-compose rm
+
 echo -n "## Checking if local storage folder is reachable..."
 if test -d ${content_server_storage}; then
   printMessage ok
