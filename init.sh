@@ -158,6 +158,7 @@ echo -n " - rsa_key_size:       " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
 echo -n " - data_path:          " ; echo -e "\e[33m ${data_path} \e[39m"
 echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
+echo -n " - docker_compose_template:  " ; echo -e "\e[33m ${docker_compose_template} \e[39m"
 echo -n " - content_server_storage:  " ; echo -e "\e[33m ${content_server_storage} \e[39m"
 echo ""
 echo "Starting in 5 seconds... " && sleep 5
@@ -167,7 +168,19 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   printMessage failed
   exit 1
 fi
-docker-compose  stop -f
+
+echo -n "## Setting up the docker-compose.yml file... "
+sed "s/\$content_server_address/${domains}/g" ${docker_compose_template} > docker-compose.yml
+
+matches=`cat ${nginx_server_file} | grep ${domains} | wc -l`
+if test $matches -eq 0; then
+  printMessage failed
+  echo "Failed to perform changes on nginx server file, no changes found. Look into ${nginx_server_file} for more information" 
+  exit 1
+fi
+printMessage ok
+
+docker-compose  stop 
 docker-compose rm -f
 
 echo -n "## Checking if local storage folder is reachable..."
@@ -187,6 +200,7 @@ fi
 
 echo -n "## Replacing \$katalyst_host on nginx server file... "
 sed "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
+
 matches=`cat ${nginx_server_file} | grep ${domains} | wc -l`
 if test $matches -eq 0; then
   printMessage failed
@@ -214,6 +228,14 @@ if test $? -ne 0; then
 fi
 echo -n "## Certs emited: " 
 printMessage ok
-echo "## Restarting containers to reload the new certs..."
+echo "## Restarting containers..."
 docker-compose stop
 docker-compose up -d
+
+if test $? -ne 0; then
+  echo -n "Failed to deploy certificates. Look upstairs for errors: " 
+  printMessage failed
+  exit 1
+fi
+echo -n "## containers started Ok... " 
+printMessage ok
