@@ -171,7 +171,17 @@ if ! [ -x "$(command -v docker-compose)" ]; then
 fi
 
 echo -n "## Setting up the docker-compose.yml file... "
-sed "s/\$content_server_address/${domains}/g" ${docker_compose_template} > docker-compose.yml
+sed -i "s/\$content_server_address/${domains}/g" ${docker_compose_template} 
+
+matches=`cat docker-compose.yml | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
+if test $matches -eq 0; then
+  printMessage failed
+  echo "Failed to perform changes on docker-compose.yml." 
+  exit 1
+fi
+
+commit_hash=`git rev-parse HEAD`
+sed -i "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template} > docker-compose.yml
 
 matches=`cat docker-compose.yml | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
 if test $matches -eq 0; then
