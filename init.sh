@@ -173,7 +173,7 @@ fi
 echo -n "## Setting up the docker-compose.yml file... "
 sed -i "s/\$content_server_address/${domains}/g" ${docker_compose_template} 
 
-matches=`cat docker-compose.yml | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
+matches=`cat ${docker_compose_template} | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
 if test $matches -eq 0; then
   printMessage failed
   echo "Failed to perform changes on docker-compose.yml." 
@@ -181,10 +181,10 @@ if test $matches -eq 0; then
 fi
 
 commit_hash=`git rev-parse HEAD`
-sed -i "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template} > docker-compose.yml
+sed "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template} > docker-compose.yml
 
-matches=`cat docker-compose.yml | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
-if test $matches -eq 0; then
+matches=`cat docker-compose.yml | grep COMMIT_HASH | grep -v rev | wc -l`
+if test $matches -ne 0; then
   printMessage failed
   echo "Failed to perform changes on docker-compose.yml." 
   exit 1
@@ -192,7 +192,7 @@ fi
 printMessage ok
 
 docker-compose  stop 
-docker-compose rm -f
+docker-compose rm -f -v
 
 echo -n "## Checking if local storage folder is reachable..."
 if test -d ${content_server_storage}; then
