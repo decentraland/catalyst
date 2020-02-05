@@ -57,7 +57,6 @@ leCertEmit () {
       --rsa-key-size $rsa_key_size \
       --agree-tos \
       --force-renewal" certbot
-  echo
 
   if test $? -ne 0; then
     echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
@@ -136,7 +135,8 @@ printMessage ok
 if [ -d "$data_path" ]; then
   echo -n "## Existing data found for $domains. "
 else
-  echo -n "## No certificates found"
+  echo "## No certificates found. Performing certificate creation"
+  leCertEmit
 fi
 
 exit 1
