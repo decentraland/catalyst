@@ -12,6 +12,15 @@ export const networks = {
         class: Katalyst
       }
     }
+  },
+  mainnet: {
+    wss: "wss://mainnet.infura.io/ws",
+    contracts: {
+      katalyst: {
+        address: "0x2a187453064356c898cae034eaed119e1663acb8",
+        class: Katalyst
+      }
+    }
   }
 };
 
