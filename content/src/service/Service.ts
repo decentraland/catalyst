@@ -4,6 +4,7 @@ import { ServerName } from "./naming/NameKeeper";
 import { AuditInfo } from "./audit/Audit";
 import { Timestamp } from "./time/TimeSorting";
 import { ContentItem } from "../storage/ContentStorage";
+import { FailureReason } from "./errors/FailedDeploymentsManager";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -28,6 +29,7 @@ export interface MetaverseContentService {
  * and that deployments can also happen on other servers.
  */
 export interface ClusterDeploymentsService {
+    reportErrorDuringSync(failureReason: FailureReason, entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName): Promise<void>;
     deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
     deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;

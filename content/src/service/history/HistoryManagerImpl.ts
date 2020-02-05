@@ -1,7 +1,7 @@
 import { Timestamp } from "../time/TimeSorting"
 import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManager, DeploymentEvent, DeploymentHistory, PartialDeploymentHistory } from "./HistoryManager"
-import { Entity } from "../Entity"
+import { EntityType, EntityId } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
 import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest } from "../time/TimeSorting"
 
@@ -21,11 +21,11 @@ export class HistoryManagerImpl implements HistoryManager {
         return new HistoryManagerImpl(storage, tempHistory)
     }
 
-    newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void> {
+    newEntityDeployment(serverName: ServerName, entityType: EntityType, entityId: EntityId, timestamp: Timestamp): Promise<void> {
         const event: DeploymentEvent = {
             serverName,
-            entityType: entity.type,
-            entityId: entity.id,
+            entityType,
+            entityId,
             timestamp,
         }
         this.addEventToTempHistory(event)
