@@ -1,5 +1,7 @@
-# This file is auto generated. Look for .default_env, on
-# docker_compose_template to perform any changes
+# This file is auto generated. Look for docker-compose.yml_template, on
+# local folder to perform any changes
+# If you perform any change on this file, will be erased on the next deploy
+
 version: "3"
 
 volumes:
