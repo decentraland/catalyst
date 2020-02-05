@@ -87,7 +87,7 @@ leCertEmit () {
   fi
 
   echo "## Reloading nginx ..."
-  docker-compose exec nginx nginx -s reload
+  docker-compose restart nginx
   if test $? -ne 0; then
     echo -n "Failed to reload nginx... " 
     printMessage failed
@@ -119,7 +119,7 @@ leCertEmit () {
 
   
   echo "## Reloading nginx with real certs ..."
-  docker-compose exec nginx nginx -s reload
+  docker-compose restart nginx
   if test $? -ne 0; then
     echo -n "Failed to reload nginx... " 
     printMessage failed
