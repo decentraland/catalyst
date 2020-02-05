@@ -1,7 +1,7 @@
 import ms from "ms"
 import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotBlacklisted, assertRequiredFieldsOnEntitiesAreEqual, assertContentNotIsBlacklisted, assertFileIsNotOnServer, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { EventDeployer } from "@katalyst/content/service/synchronization/EventDeployer"
 import { EntityFactory } from "@katalyst/content/service/EntityFactory"

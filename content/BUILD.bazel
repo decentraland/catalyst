@@ -59,6 +59,7 @@ ts_library(
     srcs = glob(["test/integration/**/*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//commons",
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
         "@npm//@types/faker",
