@@ -42,22 +42,22 @@ describe("End 2 end - Error handling", () => {
     })
 
     it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
-        await lala(FailureReason.NO_ENTITY_OR_AUDIT,
+        await runTest(FailureReason.NO_ENTITY_OR_AUDIT,
             entity => server1.blacklistEntity(entity, identity))
     });
 
     it(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
-        await lala(FailureReason.FETCH_PROBLEM,
+        await runTest(FailureReason.FETCH_PROBLEM,
             entity => server1.blacklistContent((entity.content as ControllerEntityContent[])[0].hash, identity))
     });
 
     it(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
-        await lala(FailureReason.DEPLOYMENT_ERROR,
+        await runTest(FailureReason.DEPLOYMENT_ERROR,
             _ => { accessChecker.startReturningErrors(); return Promise.resolve() },
             () => { accessChecker.stopReturningErrors(); return Promise.resolve() })
     });
 
-    async function lala(errorType: FailureReason, causeOfFailure: (entity: ControllerEntity) => Promise<void>, removeCauseOfFailure?: () => Promise<void>, ) {
+    async function runTest(errorType: FailureReason, causeOfFailure: (entity: ControllerEntity) => Promise<void>, removeCauseOfFailure?: () => Promise<void>, ) {
         // Start servers
         await server1.start()
         await server2.start()

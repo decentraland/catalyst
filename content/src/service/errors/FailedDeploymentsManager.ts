@@ -11,12 +11,9 @@ export class FailedDeploymentsManager {
 
     constructor(private readonly storage: FailedDeploymentsStorage) { }
 
-    reportFailedDeployment(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
+    reportFailure(entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName, reason: FailureReason): Promise<void> {
+        const deployment = { entityType, entityId, timestamp: deploymentTimestamp, serverName  }
         return this.storage.addFailedDeployment({ deployment, reason, moment: Date.now() })
-    }
-
-    reportFailure(entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName, reason: FailureReason) {
-        this.reportFailedDeployment({ entityType, entityId, timestamp: deploymentTimestamp, serverName }, reason)
     }
 
     getAllFailedDeployments(): Promise<FailedDeployment[]> {

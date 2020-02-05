@@ -33,8 +33,8 @@ export class Validations {
     }
 
     /** Validate if the entity can be re deployed or not */
-    validateThatEntityCanBeRedeployed(wasEntityRedeployed: boolean, validationContext: ValidationContext) {
-        if (validationContext.shouldValidate(Validation.NO_REDEPLOYS) && wasEntityRedeployed) {
+    validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed: boolean, validationContext: ValidationContext) {
+        if (validationContext.shouldValidate(Validation.NO_REDEPLOYS) && wasEntityAlreadyDeployed) {
             this.errors.push(`This entity was already deployed, and you can't redeploy it`)
         }
     }
