@@ -70,6 +70,7 @@ leCertEmit () {
       --staging \
       $email_arg \
       $domain_args \
+      --no-eff-email 
       --rsa-key-size $rsa_key_size \
       --agree-tos \
       --force-renewal" certbot
@@ -87,6 +88,7 @@ leCertEmit () {
   #  certbot certonly --webroot -w /var/www/certbot \
   #    $email_arg \
   #    $domain_args \
+  #    --no-eff-email \
   #    --rsa-key-size $rsa_key_size \
   #    --agree-tos \
   #    --force-renewal" certbot
