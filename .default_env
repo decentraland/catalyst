@@ -1,4 +1,4 @@
-export staging=1
+export regenerate=0
 export email=no-reply@decentraland.org
 export domains="bot1-katalyst.decentraland.zone"
 export rsa_key_size=4096

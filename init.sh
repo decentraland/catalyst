@@ -7,28 +7,6 @@ Source=".default_env"
 #####
 
 leCertEmit () {
-  if ! [ -x "$(command -v docker-compose)" ]; then
-    echo -n "Error: docker-compose is not installed..." >&2
-    printMessage failed
-    exit 1
-  fi
-  
-  # Are we on staging mode?
-  if test ${staging} -eq 1; then
-    echo -e "## requeting a \e[92m STAGING \e[39mcertificate"
-    staging_arg="--staging"
-  else
-    echo -e "## requesting a \e[1m\e[5mPRODUCTION \e[25m\e[21mcertificate"
-    read -rp "Enter to continue, CTRL+C to abort... " dummy
-  fi
-  if [ -d "$data_path" ]; then
-    read -p "## Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
-    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
-      return 0
-    fi
-  fi
-
-
   if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
     echo "## Downloading recommended TLS parameters ..."
     mkdir -p "$data_path/conf"
@@ -48,7 +26,7 @@ leCertEmit () {
   echo
 
 
-  echo "### Starting nginx ..."
+  echo "## Starting nginx ..."
   docker-compose up --force-recreate -d nginx
   echo
 
@@ -73,7 +51,7 @@ leCertEmit () {
 
   docker-compose run --rm --entrypoint "\
     certbot certonly --webroot -w /var/www/certbot \
-      $staging_arg \
+      --staging \
       $email_arg \
       $domain_args \
       --rsa-key-size $rsa_key_size \
@@ -82,10 +60,10 @@ leCertEmit () {
   echo
 
   if test $? -ne 0; then
-  echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
-  printMessage failed
-  exit 1
-fi
+    echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
+    printMessage failed
+    exit 1
+  fi
 
   echo "### Reloading nginx ..."
   docker-compose exec nginx nginx -s reload
@@ -99,6 +77,10 @@ printMessage () {
       *) echo "";;
     esac
 }
+
+##
+# Main program
+##
 clear
 echo -n "## Loading env variables. If you placed more env variables, than the default shall not be shown:...   "
 . ${Source}
@@ -118,18 +100,19 @@ echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[
 echo -n " - content_server_storage:  " ; echo -e "\e[33m ${content_server_storage} \e[39m"
 echo ""
 read -rp "Enter to continue, CTRL+C to abort... " dummy
+
+if ! [ -x "$(command -v docker-compose)" ]; then
+  echo -n "Error: docker-compose is not installed..." >&2
+  printMessage failed
+  exit 1
+fi
 docker-compose stop
 docker-compose rm
 echo -n "## Checking if local storage folder is reachable..."
 if test -d content_server_storage; then
   printMessage ok
 else
-  read -p "## Not reachable. Do you want me to create it? (y/N) " decision
-    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
-      echo -n "## Unable to continue"
-      printMessage failed
-      exit 1
-    fi
+  echo  "## Not reachable. Creating one for you..."
     mkdir -p ${content_server_storage}
     if test $? -ne 0; then
       echo -n "Failed to create local storage folder." 
@@ -149,7 +132,12 @@ if test $matches -eq 0; then
   exit 1
 fi
 printMessage ok
-leCertEmit
+
+if [ -d "$data_path" ]; then
+  echo -n "## Existing data found for $domains. "
+fi
+
+exit 1
 if test $? -ne 0; then
   echo -n "Failed to deploy certificates. Look upstairs for errors: " 
   printMessage failed
