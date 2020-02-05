@@ -1,10 +1,8 @@
 import ms from "ms"
-import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotBlacklisted, assertRequiredFieldsOnEntitiesAreEqual, assertContentNotIsBlacklisted, assertFileIsNotOnServer, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer } from "../E2EAssertions"
+import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotBlacklisted, assertContentNotIsBlacklisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { EventDeployer } from "@katalyst/content/service/synchronization/EventDeployer"
-import { EntityFactory } from "@katalyst/content/service/EntityFactory"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
@@ -47,7 +45,7 @@ describe("End 2 end - Blacklist handling", () => {
         await server1.start()
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata')
 
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
@@ -62,21 +60,11 @@ describe("End 2 end - Blacklist handling", () => {
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
-        // Assert entity is not blacklisted on onboarding server
-        await assertEntityIsNotBlacklisted(onboardingServer, entityBeingDeployed)
-
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
 
-        // Assert the entity is retrieved correctly
-        const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
-        assertRequiredFieldsOnEntitiesAreEqual(entity, entityBeingDeployed)
-        expect(entity.content).toBeUndefined()
-        expect(entity.metadata).toEqual(EventDeployer.FETCH_ERROR_METADATA)
-
-        // Assert entity file matches the entity
-        const fileContent = await onboardingServer.downloadContent(entity.id)
-        expect(EntityFactory.fromBufferWithId(fileContent, entity.id)).toEqual(EntityFactory.fromJsonObject(entity))
+        // Assert it wasn't deployed
+        await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
     });
 
     it(`When content is blacklisted across all nodes, then onboarding node can still clone the entity`, async () => {
@@ -100,20 +88,11 @@ describe("End 2 end - Blacklist handling", () => {
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
-        // Assert content is not blacklisted on onboarding server
-        await assertContentNotIsBlacklisted(onboardingServer, entityBeingDeployed, contentHash)
-
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
 
-        // Assert the entity is retrieved correctly
-        const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
-        assertRequiredFieldsOnEntitiesAreEqual(entity, entityBeingDeployed)
-        expect(entity.content).toBeUndefined()
-        expect(entity.metadata).toEqual(EventDeployer.FETCH_ERROR_METADATA)
-
-        // Assert can't fetch content because onboarding server couldn't download it
-        await assertFileIsNotOnServer(onboardingServer, contentHash)
+        // Assert it wasn't deployed
+        await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
     });
 
     it(`When an entity is blacklisted in some nodes, then onboarding node can still get it`, async () => {

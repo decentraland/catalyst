@@ -36,7 +36,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         await this.cluster.connect(this.lastImmutableTime)
 
         // Register to listen to when a server is removed from the DAO
-        this.daoRemovalEventSubscription =  this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
+        this.daoRemovalEventSubscription = this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
 
         // Onboard into cluster
         await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime)

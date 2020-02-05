@@ -51,6 +51,10 @@ async function buildDeployDataInternal(pointers: Pointer[], metadata: any, conte
     return [deployData, entity]
 }
 
+export function parseEntityType(entity: ControllerEntity) {
+    return EntityType[entity.type.toUpperCase().trim()]
+}
+
 export function deleteServerStorage(...servers: TestServer[]) {
     servers.map(server => server.storageFolder)
         .forEach(storageFolder => deleteFolderRecursive(storageFolder))

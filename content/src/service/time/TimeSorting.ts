@@ -1,4 +1,4 @@
-import { EntityId } from "../Entity";
+import { EntityId, Entity } from "../Entity";
 
 /** Sort comparable objects from oldest to newest */
 export function sortFromOldestToNewest<T extends EntityComparable> (comparableArray: T[]): T[] {
@@ -13,6 +13,13 @@ export function sortFromNewestToOldest<T extends EntityComparable> (comparableAr
 /** Return true if the first object happened before the second one */
 export function happenedBefore(comparable1: EntityComparable, comparable2: EntityComparable): boolean {
     return comparable1.timestamp < comparable2.timestamp || (comparable1.timestamp == comparable2.timestamp && comparable1.entityId < comparable2.entityId)
+}
+
+/** Return true if the first entity was created happened before the second one */
+export function happenedBeforeEntities(entity1: Entity, entity2: Entity): boolean {
+    const comparable1 = { entityId: entity1.id, timestamp: entity1.timestamp }
+    const comparable2 = { entityId: entity2.id, timestamp: entity2.timestamp }
+    return happenedBefore(comparable1, comparable2)
 }
 
 /** Return true if the first object happened before the given time */

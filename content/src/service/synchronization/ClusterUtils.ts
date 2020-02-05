@@ -21,9 +21,9 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
             } catch (error) { }
         }
         // Wait a little before retrying
-        await sleep(ms("2s"))
         retries--;
         if (retries >= 0) {
+            await sleep(ms("1s"))
             console.log("All calls to other servers failed. Going to retry.")
         }
     }

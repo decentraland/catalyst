@@ -58,7 +58,7 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
-        let retries = 3
+        let retries = 2
         let content: Buffer | undefined = undefined
 
         while (retries >= 0) {
@@ -69,7 +69,7 @@ class ActiveContentServerClient extends ContentServerClient {
                     break;
                 }
             } catch (error) {
-                await sleep(ms("1s"))
+                await sleep(ms("0.5s"))
                 retries--;
             }
         }
