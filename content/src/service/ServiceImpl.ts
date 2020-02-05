@@ -78,11 +78,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.LOCAL, origin)
     }
 
-    async deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string) {
-        const finalAuditInfo = await this.auditManager.getAuditInfo(entityId) ?? auditInfo
-
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
         // It looks like we are changing the current server name, but since we won't store it, it won't change
-        return this.deployInternal(files, entityId, finalAuditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin, true)
+        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin, true)
     }
 
     private async deployInternal(files: ContentFile[],

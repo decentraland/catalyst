@@ -26,12 +26,12 @@ describe("Integration - Failed Deployments Manager", function() {
     it(`When failures are reported, then the last status is returned`, async () => {
         const deployment = buildRandomDeployment()
 
-        await manager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+        await reportDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
 
         let status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
         expect(status).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
 
-        await manager.reportFailedDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
+        await reportDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
 
         status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
         expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
@@ -41,8 +41,8 @@ describe("Integration - Failed Deployments Manager", function() {
         const deployment1 = buildRandomDeployment()
         const deployment2 = buildRandomDeployment()
 
-        await manager.reportFailedDeployment(deployment1, FailureReason.NO_ENTITY_OR_AUDIT)
-        await manager.reportFailedDeployment(deployment2, FailureReason.DEPLOYMENT_ERROR)
+        await reportDeployment(deployment1, FailureReason.NO_ENTITY_OR_AUDIT)
+        await reportDeployment(deployment2, FailureReason.DEPLOYMENT_ERROR)
 
         const [failed1, failed2]: Array<FailedDeployment> = await manager.getAllFailedDeployments()
 
@@ -55,14 +55,19 @@ describe("Integration - Failed Deployments Manager", function() {
     it(`When successful deployment is reported, then all previous failures of such reported are deleted`, async () => {
         const deployment = buildRandomDeployment()
 
-        await manager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
-        await manager.reportFailedDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
+        await reportDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+        await reportDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
 
         await manager.reportSuccessfulDeployment(deployment.entityType, deployment.entityId)
 
         const status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
         expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
     })
+
+    function reportDeployment(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
+        const { entityType, entityId, timestamp, serverName } = deployment
+        return manager.reportFailure(entityType, entityId, timestamp, serverName, reason)
+    }
 
     function buildRandomDeployment(): DeploymentEvent {
         const timestamp = random.number()
