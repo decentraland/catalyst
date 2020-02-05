@@ -90,7 +90,7 @@ if test $? -ne 0; then
   exit 1
 fi
 printMessage ok
-echo -n " - staging:            " ; echo -e "\e[33m ${staging} \e[39m"
+echo -n " - regenerate:            " ; echo -e "\e[33m ${regenerate} \e[39m"
 echo -n " - domains:            " ; echo -e "[ \e[33m ${domains} \e[39m ]"
 echo -n " - email:              " ; echo -e "\e[33m ${email} \e[39m"
 echo -n " - rsa_key_size:       " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
@@ -109,7 +109,7 @@ fi
 docker-compose stop
 docker-compose rm
 echo -n "## Checking if local storage folder is reachable..."
-if test -d content_server_storage; then
+if test -d ${content_server_storage}; then
   printMessage ok
 else
   echo  "## Not reachable. Creating one for you..."
@@ -135,6 +135,8 @@ printMessage ok
 
 if [ -d "$data_path" ]; then
   echo -n "## Existing data found for $domains. "
+else
+  echo -n "## No certificates found"
 fi
 
 exit 1
