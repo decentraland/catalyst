@@ -1,5 +1,3 @@
-# This file is auto generated. Look for .default_env, on
-# docker_compose_template to perform any changes
 version: "3"
 
 volumes:
