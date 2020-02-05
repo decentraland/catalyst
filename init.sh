@@ -58,6 +58,7 @@ leCertEmit () {
   echo "## Requesting Let's Encrypt certificate for $domains ..."
   domain_args=""
   domain_args="$domain_args -d $domains"
+  staging_arg="--staging"
   
   # Select appropriate email arg
   case "$email" in
@@ -65,12 +66,13 @@ leCertEmit () {
     *) email_arg="--email $email" ;;
   esac
 
+
   docker-compose run --rm --entrypoint "\
     certbot certonly --webroot -w /var/www/certbot \
-      --staging \
+      --no-eff-email \
+      $staging_arg \
       $email_arg \
       $domain_args \
-      --no-eff-email \
       --rsa-key-size $rsa_key_size \
       --agree-tos \
       --force-renewal" certbot
@@ -165,8 +167,8 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   printMessage failed
   exit 1
 fi
-docker-compose -f stop
-docker-compose -f rm 
+docker-compose  stop -f
+docker-compose rm -f
 
 echo -n "## Checking if local storage folder is reachable..."
 if test -d ${content_server_storage}; then
