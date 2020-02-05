@@ -1,5 +1,4 @@
 #!/bin/bash
-Progname=$0
 Source=".default_env"
 
 
@@ -8,28 +7,6 @@ Source=".default_env"
 #####
 
 leCertEmit () {
-  if ! [ -x "$(command -v docker-compose)" ]; then
-    echo -n "Error: docker-compose is not installed..." >&2
-    printMessage failed
-    exit 1
-  fi
-  
-  # Are we on staging mode?
-  if test ${staging} -eq 1; then
-    echo -e "## requeting a \e[92m STAGING \e[39mcertificate"
-    staging_arg="--staging"
-  else
-    echo -e "## requesting a \e[1m\e[5mPRODUCTION \e[25m\e[21mcertificate"
-    read -rp "Enter to continue, CTRL+C to abort... " dummy
-  fi
-  if [ -d "$data_path" ]; then
-    read -p "## Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
-    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
-      return 0
-    fi
-  fi
-
-
   if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
     echo "## Downloading recommended TLS parameters ..."
     mkdir -p "$data_path/conf"
@@ -38,7 +15,7 @@ leCertEmit () {
     echo
   fi
 
-  echo "### Creating dummy certificate for $domains ..."
+  echo " Creating dummy certificate for $domains ..."
   path="/etc/letsencrypt/live/$domains"
   mkdir -p "$data_path/conf/live/$domains"
   docker-compose run --rm --entrypoint "\
@@ -49,22 +26,39 @@ leCertEmit () {
   echo
 
 
-  echo "### Starting nginx ..."
+  echo -n "## Starting nginx ..."
   docker-compose up --force-recreate -d nginx
   echo
 
-  echo "### Deleting dummy certificate for $domains ..."
+  if test $? -ne 0; then
+    echo -n "Failed to start nginx...  " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "## Dummy certificates created ..."
+    printMessage ok
+  fi
+
+  echo -n "## Deleting dummy certificate for $domains ..."
   docker-compose run --rm --entrypoint "\
     rm -Rf /etc/letsencrypt/live/$domains && \
     rm -Rf /etc/letsencrypt/archive/$domains && \
     rm -Rf /etc/letsencrypt/renewal/$domains.conf" certbot
   echo
 
+  if test $? -ne 0; then
+    echo -n "Failed to remove files..." 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "## files deleted ..."
+    printMessage ok
+  fi
 
-  echo "### Requesting Let's Encrypt certificate for $domains ..."
-  #Join $domains to -d args
+  echo "## Requesting Let's Encrypt certificate for $domains ..."
   domain_args=""
   domain_args="$domain_args -d $domains"
+  staging_arg="--staging"
   
   # Select appropriate email arg
   case "$email" in
@@ -72,24 +66,69 @@ leCertEmit () {
     *) email_arg="--email $email" ;;
   esac
 
+
   docker-compose run --rm --entrypoint "\
     certbot certonly --webroot -w /var/www/certbot \
+      --no-eff-email \
       $staging_arg \
       $email_arg \
       $domain_args \
       --rsa-key-size $rsa_key_size \
       --agree-tos \
       --force-renewal" certbot
-  echo
 
   if test $? -ne 0; then
-  echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
-  printMessage failed
-  exit 1
-fi
+    echo -n "Failed to request certificates... " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "## Certificates requested..."
+    printMessage ok
+  fi
 
-  echo "### Reloading nginx ..."
+  echo "## Reloading nginx ..."
   docker-compose exec nginx nginx -s reload
+  if test $? -ne 0; then
+    echo -n "Failed to reload nginx... " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "## Nginx Reloaded"
+    printMessage ok
+  fi
+
+  echo "## Going for the real certs..."
+
+  docker-compose run --rm --entrypoint "\
+  certbot certonly --webroot -w /var/www/certbot \
+      $email_arg \
+      $domain_args \
+      --no-eff-email \
+      --rsa-key-size $rsa_key_size \
+      --agree-tos \
+      --force-renewal" certbot
+
+  if test $? -ne 0; then
+    echo -n "Failed to request certificates. Handshake failed?, the URL is pointing to this server?: " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "Real certs emited OK..."
+    printMessage ok
+  fi
+
+  
+  echo "## Reloading nginx with real certs ..."
+  docker-compose exec nginx nginx -s reload
+  if test $? -ne 0; then
+    echo -n "Failed to reload nginx... " 
+    printMessage failed
+    exit 1
+  else 
+    echo -n "## Nginx Reloaded"
+    printMessage ok
+  fi
+
 }
 
 printMessage () {
@@ -100,6 +139,10 @@ printMessage () {
       *) echo "";;
     esac
 }
+
+##
+# Main program
+##
 clear
 echo -n "## Loading env variables. If you placed more env variables, than the default shall not be shown:...   "
 . ${Source}
@@ -109,28 +152,43 @@ if test $? -ne 0; then
   exit 1
 fi
 printMessage ok
-echo -n " - staging:            " ; echo -e "\e[33m ${staging} \e[39m"
+echo -n " - regenerate:            " ; echo -e "\e[33m ${regenerate} \e[39m"
 echo -n " - domains:            " ; echo -e "[ \e[33m ${domains} \e[39m ]"
 echo -n " - email:              " ; echo -e "\e[33m ${email} \e[39m"
 echo -n " - rsa_key_size:       " ; echo -e "\e[33m ${rsa_key_size} \e[39m"
 echo -n " - data_path:          " ; echo -e "\e[33m ${data_path} \e[39m"
 echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
+echo -n " - docker_compose_template:  " ; echo -e "\e[33m ${docker_compose_template} \e[39m"
 echo -n " - content_server_storage:  " ; echo -e "\e[33m ${content_server_storage} \e[39m"
 echo ""
-read -rp "Enter to continue, CTRL+C to abort... " dummy
-docker-compose stop
-docker-compose rm
+echo "Starting in 5 seconds... " && sleep 5
+
+if ! [ -x "$(command -v docker-compose)" ]; then
+  echo -n "Error: docker-compose is not installed..." >&2
+  printMessage failed
+  exit 1
+fi
+
+echo -n "## Setting up the docker-compose.yml file... "
+sed "s/\$content_server_address/${domains}/g" ${docker_compose_template} > docker-compose.yml
+
+matches=`cat docker-compose.yml | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
+if test $matches -eq 0; then
+  printMessage failed
+  echo "Failed to perform changes on docker-compose.yml." 
+  exit 1
+fi
+printMessage ok
+
+docker-compose  stop 
+docker-compose rm -f
+
 echo -n "## Checking if local storage folder is reachable..."
-if test -d content_server_storage; then
+if test -d ${content_server_storage}; then
   printMessage ok
 else
-  read -p "## Not reachable. Do you want me to create it? (y/N) " decision
-    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
-      echo -n "## Unable to continue"
-      printMessage failed
-      exit 1
-    fi
+  echo  "## Not reachable. Creating one for you..."
     mkdir -p ${content_server_storage}
     if test $? -ne 0; then
       echo -n "Failed to create local storage folder." 
@@ -143,6 +201,7 @@ fi
 
 echo -n "## Replacing \$katalyst_host on nginx server file... "
 sed "s/\$katalyst_host/${domains}/g" ${nginx_server_template} > ${nginx_server_file}
+
 matches=`cat ${nginx_server_file} | grep ${domains} | wc -l`
 if test $matches -eq 0; then
   printMessage failed
@@ -150,7 +209,19 @@ if test $matches -eq 0; then
   exit 1
 fi
 printMessage ok
-leCertEmit
+
+if [ -d "$data_path" ]; then
+  echo -n "## Existing data found for $domains. "
+  if test ${regenerate} -eq 1; then
+          leCertEmit
+  else
+          echo -n "## Keeping the current certs"
+  fi
+else
+  echo "## No certificates found. Performing certificate creation"
+  leCertEmit
+fi
+
 if test $? -ne 0; then
   echo -n "Failed to deploy certificates. Look upstairs for errors: " 
   printMessage failed
@@ -158,6 +229,14 @@ if test $? -ne 0; then
 fi
 echo -n "## Certs emited: " 
 printMessage ok
-echo "## Restarting containers to reload the new certs..."
+echo "## Restarting containers..."
 docker-compose stop
 docker-compose up -d
+
+if test $? -ne 0; then
+  echo -n "Failed to deploy certificates. Look upstairs for errors: " 
+  printMessage failed
+  exit 1
+fi
+echo -n "## containers started Ok... " 
+printMessage ok
