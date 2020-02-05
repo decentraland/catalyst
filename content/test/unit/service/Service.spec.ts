@@ -75,7 +75,7 @@ describe("Service", function () {
         expect(deltaMilliseconds).toBeLessThanOrEqual(10)
         expect(storageSpy).toHaveBeenCalledWith("contents", entity.id, entityFile.content)
         expect(storageSpy).toHaveBeenCalledWith("contents", randomFileHash, randomFile.content)
-        expect(historySpy).toHaveBeenCalledWith(serverName, entity, timestamp)
+        expect(historySpy).toHaveBeenCalledWith(serverName, entity.type, entity.id, timestamp)
         expect(await service.getEntitiesByIds(EntityType.SCENE, [entity.id])).toEqual([entity])
         expect(await service.getEntitiesByPointers(EntityType.SCENE, entity.pointers)).toEqual([entity])
         expect(await service.getActivePointers(EntityType.SCENE)).toEqual(entity.pointers)

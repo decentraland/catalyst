@@ -97,6 +97,9 @@ export class ContentCluster {
                     if (newName === UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
+                    } else if (!previousClient.isActive()){
+                        // Create new client
+                        newClient = getClient(address, newName, previousClient.getLastKnownTimestamp())
                     }
                 } else {
                     if (newName === UNREACHABLE) {

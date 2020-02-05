@@ -274,6 +274,6 @@ function getValidatorWithMockedAccess() {
 
 function mockedFailedDeploymentsManager() {
     let mockedManager: FailedDeploymentsManager = mock(FailedDeploymentsManager)
-    when(mockedManager.getDeploymentStatus(anything(), anything())).thenReturn(Promise.resolve(NoFailure.SUCCESS))
+    when(mockedManager.getDeploymentStatus(anything(), anything())).thenReturn(Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED))
     return instance(mockedManager)
 }

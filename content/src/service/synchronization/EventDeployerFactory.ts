@@ -6,8 +6,7 @@ export class EventDeployerFactory {
     static create(env: Environment): EventDeployer {
         return new EventDeployer(
             env.getBean(Bean.CONTENT_CLUSTER),
-            env.getBean(Bean.SERVICE),
-            env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER))
+            env.getBean(Bean.SERVICE))
     }
 
 }

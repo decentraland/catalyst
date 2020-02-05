@@ -1,5 +1,5 @@
 import ms from "ms"
-import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer } from "../E2EAssertions"
+import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
@@ -84,6 +84,9 @@ describe("End 2 end - Error handling", () => {
 
         // Assert entity wasn't deployed
         await assertEntityWasNotDeployed(server2, entityBeingDeployed)
+
+        // Assert history was still modified
+        await assertHistoryOnServerHasEvents(server2, deploymentEvent)
 
         // Assert immutable time is more recent than the entity
         const immutableTime = await server2.getStatus().then(status => status.lastImmutableTime)

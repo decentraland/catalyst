@@ -1,9 +1,9 @@
 import { Timestamp } from "../time/TimeSorting"
-import { EntityType, EntityId, Entity } from "../Entity"
+import { EntityType, EntityId } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
 
 export interface HistoryManager {
-    newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void>;
+    newEntityDeployment(serverName: ServerName, entityType: EntityType, entityId: EntityId, timestamp: Timestamp): Promise<void>;
     setTimeAsImmutable(immutableTime: Timestamp): Promise<void>;
     getLastImmutableTime(): Promise<Timestamp | undefined>;
     getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentHistory>;

@@ -1,5 +1,5 @@
 import { HistoryManager, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
-import { Entity } from "@katalyst/content/service/Entity";
+import { EntityType, EntityId } from "@katalyst/content/service/Entity";
 import { ServerName } from "@katalyst/content/service/naming/NameKeeper";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 
@@ -9,7 +9,7 @@ export class MockedHistoryManager implements HistoryManager {
         return Promise.resolve(undefined)
     }
 
-    newEntityDeployment(serverName: ServerName, entity: Entity, timestamp: Timestamp): Promise<void> {
+    newEntityDeployment(serverName: ServerName, entity: EntityType, entityId: EntityId, timestamp: Timestamp): Promise<void> {
         return Promise.resolve()
     }
 

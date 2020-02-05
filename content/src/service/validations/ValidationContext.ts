@@ -18,7 +18,7 @@ export class ValidationContext {
 
     static readonly ALL: ValidationContext = new ValidationContext(Object.keys(Validation).map(key => Validation[key]))
     static readonly LOCAL: ValidationContext = ValidationContext.ALL.without(Validation.PREVIOUS_DEPLOYMENT_STATUS)
-    static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL.without(Validation.NO_REDEPLOYS)
+    static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL
     static readonly SYNCED: ValidationContext = ValidationContext.ALL.without(Validation.NO_NEWER, Validation.RECENT, Validation.NO_REDEPLOYS, Validation.PREVIOUS_DEPLOYMENT_STATUS)
     static readonly OVERWRITE: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
 

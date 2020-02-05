@@ -61,7 +61,7 @@ describe("Integration - Failed Deployments Manager", function() {
         await manager.reportSuccessfulDeployment(deployment.entityType, deployment.entityId)
 
         const status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
-        expect(status).toBe(NoFailure.SUCCESS)
+        expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
     })
 
     function buildRandomDeployment(): DeploymentEvent {

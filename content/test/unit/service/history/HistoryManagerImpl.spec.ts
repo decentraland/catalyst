@@ -22,10 +22,10 @@ describe("HistoryManager", () => {
             { entity: entity2, timestamp: timestamp2, event: event2 }] = buildDeployments(2)
         const spy = spyOn(storage, "setTempHistory")
 
-        await manager.newEntityDeployment(event1.serverName, entity1, timestamp1)
+        await manager.newEntityDeployment(event1.serverName, entity1.type, entity1.id, timestamp1)
         expect(spy).toHaveBeenCalledWith([event1])
 
-        await manager.newEntityDeployment(event2.serverName, entity2, timestamp2)
+        await manager.newEntityDeployment(event2.serverName, entity2.type, entity2.id, timestamp2)
         expect(spy).toHaveBeenCalledWith([event2, event1])
 
         const history = await manager.getHistory();
@@ -37,9 +37,9 @@ describe("HistoryManager", () => {
             { entity: entity2, timestamp: timestamp2, event: event2 },
             { entity: entity3, timestamp: timestamp3, event: event3 }] = buildDeployments(3)
 
-        await manager.newEntityDeployment(event1.serverName, entity1, timestamp1)
-        await manager.newEntityDeployment(event2.serverName, entity2, timestamp2)
-        await manager.newEntityDeployment(event3.serverName, entity3, timestamp3)
+        await manager.newEntityDeployment(event1.serverName, entity1.type, entity1.id, timestamp1)
+        await manager.newEntityDeployment(event2.serverName, entity2.type, entity2.id, timestamp2)
+        await manager.newEntityDeployment(event3.serverName, entity3.type, entity3.id, timestamp3)
 
         const tempSpy = spyOn(storage, "setTempHistory")
         const immutableSpy = spyOn(storage, "appendToImmutableHistory").and.callThrough()

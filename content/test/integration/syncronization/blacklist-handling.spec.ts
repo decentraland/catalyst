@@ -15,7 +15,7 @@ describe("End 2 end - Blacklist handling", () => {
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
     const identity = createIdentity()
     let jasmine_default_timeout
-    const SYNC_INTERVAL: number = ms("1s")
+    const SYNC_INTERVAL: number = ms("5s")
     let server1: TestServer, server2: TestServer, onboardingServer: TestServer
 
     beforeAll(() => {
@@ -40,7 +40,7 @@ describe("End 2 end - Blacklist handling", () => {
         deleteServerStorage(server1, server2, onboardingServer)
     })
 
-    it(`When an entity is blacklisted across all nodes, then onboarding node generates its own entity file`, async () => {
+    it(`When an entity is blacklisted across all nodes, then no entity is deployed`, async () => {
         // Start server 1
         await server1.start()
 
@@ -67,7 +67,7 @@ describe("End 2 end - Blacklist handling", () => {
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
     });
 
-    it(`When content is blacklisted across all nodes, then onboarding node can still clone the entity`, async () => {
+    it(`When content is blacklisted across all nodes, then no entity is deployed`, async () => {
         // Start server 1
         await server1.start()
 

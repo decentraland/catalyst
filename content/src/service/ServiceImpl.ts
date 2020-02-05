@@ -17,7 +17,7 @@ import { ValidationContext } from "./validations/ValidationContext";
 import { Lock } from "./locking/Lock";
 import { ContentAuthenticator } from "./auth/Authenticator";
 import { ContentItem } from "../storage/ContentStorage";
-import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeploymentsManager";
+import { FailedDeploymentsManager, FailureReason, NoFailure } from "./errors/FailedDeploymentsManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -164,34 +164,43 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 originalMetadata: auditInfo.originalMetadata,
             }
 
-            if (!wasEntityAlreadyDeployed || fixAttempt) {
+            if (!wasEntityAlreadyDeployed) {
                 // Store the entity's content
                 await this.storeEntityContent(hashes, alreadyStoredContent)
 
                 // Save audit information
                 await this.auditManager.setAuditInfo(entityId, newAuditInfo)
 
-                if (!wasEntityAlreadyDeployed || await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id) === FailureReason.NO_ENTITY_OR_AUDIT) {
-                    // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-                    await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
-                }
+                // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
+                await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
 
-                if (!wasEntityAlreadyDeployed) {
+                if (fixAttempt) {
+                    // Invalidate the cache and report the successful deployment
+                    this.entities.invalidate(entity.id)
+                    await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
+                } else {
                     // Add the new deployment to history
-                    await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
+                    await this.historyManager.newEntityDeployment(serverName, entity.type, entityId, newAuditInfo.deployedTimestamp)
                 }
 
                 // Record deployment for analytics
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
-
-                if (fixAttempt) {
-                    this.entities.invalidate(entityId)
-                    await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
-                }
             }
 
             return newAuditInfo.deployedTimestamp
         })
+    }
+
+    async reportErrorDuringSync(failureReason: FailureReason, entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName): Promise<void> {
+        const currentFailureStatus = await this.failedDeploymentsManager.getDeploymentStatus(entityType, entityId);
+        if (currentFailureStatus === NoFailure.NOT_MARKED_AS_FAILED) {
+            // Add the new deployment to history
+            const historyStorage = this.historyManager.newEntityDeployment(serverName, entityType, entityId, deploymentTimestamp)
+
+            // Report failure
+            const failureReport = this.failedDeploymentsManager.reportFailure(entityType, entityId, deploymentTimestamp, serverName, failureReason)
+            await Promise.all([historyStorage, failureReport])
+        }
     }
 
     /** Check if there are newer entities on the given entity's pointers */

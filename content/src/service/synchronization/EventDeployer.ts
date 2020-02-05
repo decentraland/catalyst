@@ -8,15 +8,14 @@ import { AuditInfo } from "../audit/Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
 import { EventStreamProcessor } from "./EventStreamProcessor";
-import { FailedDeploymentsManager, FailureReason } from "../errors/FailedDeploymentsManager";
+import { FailureReason } from "../errors/FailedDeploymentsManager";
 
 export class EventDeployer {
 
     private readonly eventProcessor: EventStreamProcessor
 
     constructor(private readonly cluster: ContentCluster,
-        private readonly service: ClusterDeploymentsService,
-        private readonly failedDeploymentsManager: FailedDeploymentsManager) {
+        private readonly service: ClusterDeploymentsService) {
             this.eventProcessor = new EventStreamProcessor((event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
         }
 
@@ -78,16 +77,16 @@ export class EventDeployer {
                     return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName))
                 } else {
                     // Looks like there was a problem fetching one of the files
-                    await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.FETCH_PROBLEM)
+                    await this.reportError(deployment, FailureReason.FETCH_PROBLEM)
                     throw new Error('Failed to download some content')
                 }
             }
         } else if (!auditInfo) {
-            await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+            await this.reportError(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
             throw new Error('Failed to fetch the audit info')
         } else {
             // It looks like we could fetch the audit info, but not the entity file
-            await this.failedDeploymentsManager.reportFailedDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+            await this.reportError(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
             throw new Error('Failed to fetch the entity file')
         }
     }
@@ -138,6 +137,10 @@ export class EventDeployer {
             .map(([fileHash, _]) => fileHash)
     }
 
+    private reportError(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
+        const { entityId, entityType, timestamp, serverName } = deployment
+        return this.service.reportErrorDuringSync(reason, entityType, entityId, timestamp, serverName)
+    }
 
     private buildDeploymentExecution(deploymentEvent: DeploymentEvent, execution: () => Promise<void>): DeploymentExecution {
         return {
@@ -156,7 +159,7 @@ export class EventDeployer {
                 await deploymentExecution.execution()
             } catch (error) {
                 // The deployment failed, so we report it
-                await this.failedDeploymentsManager.reportFailedDeployment(deploymentExecution.metadata.deploymentEvent, FailureReason.DEPLOYMENT_ERROR)
+                await this.reportError(deploymentExecution.metadata.deploymentEvent, FailureReason.DEPLOYMENT_ERROR)
                 // Re throw the error
                 throw error
             }

@@ -26,8 +26,8 @@ export class Validations {
     async validatePreviousDeploymentStatus(entity: Entity, validationContext: ValidationContext) {
         if (validationContext.shouldValidate(Validation.PREVIOUS_DEPLOYMENT_STATUS)) {
             const deploymentStatus: DeploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id);
-            if (deploymentStatus === NoFailure.SUCCESS) {
-                this.errors.push(`You are trying to fix an entity that was deployed successfully`)
+            if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
+                this.errors.push(`You are trying to fix an entity that is not marked as failed`)
             }
         }
     }

@@ -39,7 +39,7 @@ describe("End 2 end deploy test", () => {
 
         const creationTimestamp = await server.deploy(deployData)
         const deltaTimestamp = Date.now() - creationTimestamp
-        expect(deltaTimestamp).toBeLessThanOrEqual(50)
+        expect(deltaTimestamp).toBeLessThanOrEqual(100)
         expect(deltaTimestamp).toBeGreaterThanOrEqual(0)
 
         //------------------------------

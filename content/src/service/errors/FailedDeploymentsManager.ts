@@ -2,6 +2,7 @@ import { EntityType, EntityId } from "../Entity";
 import { Timestamp } from "../time/TimeSorting";
 import { DeploymentEvent } from "../history/HistoryManager";
 import { FailedDeploymentsStorage } from "./FailedDeploymentsStorage";
+import { ServerName } from "../naming/NameKeeper";
 
 /**
  * This manager will handle all failed deployments
@@ -14,6 +15,10 @@ export class FailedDeploymentsManager {
         return this.storage.addFailedDeployment({ deployment, reason, moment: Date.now() })
     }
 
+    reportFailure(entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName, reason: FailureReason) {
+        this.reportFailedDeployment({ entityType, entityId, timestamp: deploymentTimestamp, serverName }, reason)
+    }
+
     getAllFailedDeployments(): Promise<FailedDeployment[]> {
         return this.storage.getAllFailedDeployments()
     }
@@ -24,10 +29,7 @@ export class FailedDeploymentsManager {
 
     async getDeploymentStatus(entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
         const failedDeployments: FailedDeployment[] = await this.getAllFailedDeployments()
-        if (failedDeployments) {
-            return this.findStatus(failedDeployments, entityType, entityId)
-        }
-        return NoFailure.SUCCESS
+        return this.findStatus(failedDeployments, entityType, entityId)
     }
 
     private async findStatus(failedDeployments: FailedDeployment[], entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
@@ -37,7 +39,7 @@ export class FailedDeploymentsManager {
                 return failedDeployment.reason;
             }
         }
-        return NoFailure.SUCCESS
+        return NoFailure.NOT_MARKED_AS_FAILED
     }
 }
 
@@ -54,7 +56,7 @@ export enum FailureReason {
 }
 
 export enum NoFailure {
-    SUCCESS
+    NOT_MARKED_AS_FAILED
 }
 
 export type DeploymentStatus = FailureReason | NoFailure
