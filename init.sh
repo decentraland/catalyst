@@ -184,7 +184,7 @@ commit_hash=`git rev-parse HEAD`
 sed "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template} > docker-compose.yml
 
 matches=`cat docker-compose.yml | grep COMMIT_HASH | grep -v rev | wc -l`
-if test $matches -ne 0; then
+if test $matches -eq 0; then
   printMessage failed
   echo "Failed to perform changes on docker-compose.yml." 
   exit 1
