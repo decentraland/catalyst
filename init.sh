@@ -143,7 +143,7 @@ printMessage () {
 dockerComposeSetup() {
   echo "## Setting up the docker-compose.yml file... "
   echo -n "## Content server address..."
-  sed -i "s/\$content_server_address/${domains}/g" ${docker_compose_template} 
+  sed "s/\$content_server_address/${domains}/g" ${docker_compose_template} > docker-compose.yml
   matches=`cat ${docker_compose_template} | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
   if test $matches -eq 0; then
     printMessage failed
@@ -154,7 +154,7 @@ dockerComposeSetup() {
 
   echo -n "## Commit hash..."
   commit_hash=`git rev-parse HEAD`
-  sed -i "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template}
+  sed -i "s/\$commit_hash/${commit_hash}/g" docker-compose.yml
   matches=`cat ${docker_compose_template} | grep COMMIT_HASH | grep -v rev | wc -l`
   if test $matches -eq 0; then
     printMessage failed
@@ -164,7 +164,7 @@ dockerComposeSetup() {
   printMessage ok
 
   echo -n "## SEGMENT_WRITE_KEY..."
-  sed -i "s/\$segment_write_key/${SEGMENT_WRITE_KEY}/g" ${docker_compose_template}
+  sed -i "s/\$segment_write_key/${SEGMENT_WRITE_KEY}/g" docker-compose.yml
   matches=`cat ${docker_compose_template} | grep ${SEGMENT_WRITE_KEY} | grep -v write | wc -l`
   if test $matches -eq 0; then
     printMessage failed
@@ -174,7 +174,7 @@ dockerComposeSetup() {
   printMessage ok
 
   echo -n "## DCL_API_URL..."
-  sed -i "s#\$dcl_api_url#${DCL_API_URL}#g" ${docker_compose_template}
+  sed -i "s#\$dcl_api_url#${DCL_API_URL}#g" docker-compose.yml
   matches=`cat ${docker_compose_template} | grep ${DCL_API_URL} | grep -v dcl | wc -l`
   if test $matches -eq 0; then
     printMessage failed
@@ -184,7 +184,7 @@ dockerComposeSetup() {
   printMessage ok
 
   echo -n "## ETH_NETWORK..."
-  sed -i "s/\$eth_network/${ETH_NETWORK}/g" ${docker_compose_template}
+  sed -i "s/\$eth_network/${ETH_NETWORK}/g" docker-compose.yml
   matches=`cat ${docker_compose_template} | grep ${ETH_NETWORK} | grep -v eth | wc -l`
   if test $matches -eq 0; then
     printMessage failed
@@ -194,7 +194,7 @@ dockerComposeSetup() {
   printMessage ok
 
   echo -n "## ENS_OWNER_PROVIDER_URL..."
-  sed "s#\$ens_owner_providerl_url#${ENS_OWNER_PROVIDER_URL}#g" ${docker_compose_template} > docker-compose.yml
+  sed -i "s#\$ens_owner_providerl_url#${ENS_OWNER_PROVIDER_URL}#g" docker-compose.yml
   matches=`cat docker-compose.yml | grep ${ENS_OWNER_PROVIDER_URL} | grep -v owner | wc -l`
   if test $matches -eq 0; then
     printMessage failed
