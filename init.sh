@@ -174,7 +174,7 @@ dockerComposeSetup() {
   printMessage ok
 
   echo -n "## DCL_API_URL..."
-  sed -i "s/\$dcl_api_url/${DCL_API_URL}/g" ${docker_compose_template}
+  sed -i "s#\$dcl_api_url#${DCL_API_URL}#g" ${docker_compose_template}
   matches=`cat ${docker_compose_template} | grep ${DCL_API_URL} | grep -v dcl | wc -l`
   if test $matches -eq 0; then
     printMessage failed
