@@ -10,7 +10,7 @@ type Layer = {
   name: string;
   maxUsers: number;
   usersCount: number;
-}
+};
 
 function LayerSelector(props: { layers: Layer[]; onSelected: (layer: Layer) => any }) {
   return (
@@ -18,8 +18,10 @@ function LayerSelector(props: { layers: Layer[]; onSelected: (layer: Layer) => a
       <label>
         Select a layer
         <select onChange={ev => props.onSelected(props.layers.find(it => it.name === ev.target.value)!)}>
-          {props.layers.map(it => (
-            <option value={it.name}>{it.name} ({it.usersCount})</option>
+          {props.layers.map((it, i) => (
+            <option key={"option-" + i} value={it.name}>
+              {it.name} ({it.usersCount})
+            </option>
           ))}
         </select>
       </label>
@@ -31,7 +33,7 @@ function LayerTopologyViewer(props: { layer: Layer }) {
   const [topology, setTopology] = useState<string | undefined>(undefined);
   useEffect(() => {
     (async () => {
-      const topologyResponse = await fetch(`/layers/${props.layer.name}/topology?format=graphviz`);
+      const topologyResponse = await fetch(`../layers/${props.layer.name}/topology?format=graphviz`);
       const topologyText = await topologyResponse.text();
 
       setTopology(topologyText);
