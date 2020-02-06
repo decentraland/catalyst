@@ -29,6 +29,9 @@ services:
       - METRICS=true
       - STORAGE_ROOT_FOLDER=/app/storage/content_server/
       - ALLOW_LEGACY_ENTITIES=true
+      - SEGMENT_WRITE_KEY=$segment_write_key
+      - DCL_API_URL=$dcl_api_url
+      - ETH_NETWORK=$eth_network
     ports:
       - "6969:6969"
     restart: always
@@ -42,7 +45,8 @@ services:
     environment:
       - METRICS=true
       - CONTENT_SERVER_ADDRESS=https://$content_server_address/content/
-      - COMMIT_HASH="$commit_hash"
+      - COMMIT_HASH=$commit_hash
+      - ENS_OWNER_PROVIDER_URL=$ens_owner_providerl_url
     ports:
       - "7070:7070"
 
