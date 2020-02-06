@@ -2,7 +2,7 @@ import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 
 const DEFAULT_SERVER_PORT = 7070
-const DEFAULT_ENS_OWNER_PROVIDER_URL = "https://api.thegraph.com/subgraphs/name/nicosantangelo/testing"
+const DEFAULT_ENS_OWNER_PROVIDER_URL = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten"
 
 export class Environment {
     private configs: Map<EnvironmentConfig, any> = new Map();
