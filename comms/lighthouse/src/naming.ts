@@ -2,7 +2,7 @@ import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
 import { noReject } from "decentraland-katalyst-commons/src/util";
 
-const defaultNames = ["zeus", "athena", "hera", "hephaestus", "aphrodite", "hades", "hermes", "artemis", "thor", "loki", "odin", "freyja", "fenrir", "heimdallr", "baldr"];
+const defaultNames = ["zeus", "poseidon", "athena", "hera", "hephaestus", "aphrodite", "hades", "hermes", "artemis", "thor", "loki", "odin", "freyja", "fenrir", "heimdallr", "baldr"];
 
 export async function pickName(configuredNames: string | undefined, daoClient: DAOClient) {
   const existingNames: string[] = await getLighthousesNames(daoClient);
