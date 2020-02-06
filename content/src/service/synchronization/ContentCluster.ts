@@ -72,7 +72,7 @@ export class ContentCluster {
     private async syncWithDAO() {
         try {
             // Ask the DAO for all the servers
-            const allServers: Set<ServerMetadata> = await this.dao.getAllServers()
+            const allServers: Set<ServerMetadata> = await this.dao.getAllContentServers()
 
             if (!this.myIdentity) {
                 await this.detectMyIdentity(allServers)

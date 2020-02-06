@@ -17,6 +17,11 @@ export class DAOClient {
     }
   }
 
+  async getAllContentServers(): Promise<Set<ServerMetadata>> {
+    const servers: Set<ServerMetadata> = await this.getAllServers()
+    return new Set(Array.from(servers.values()).map(server => ({ ...server, address: server.address + '/content' })))
+  }
+
   async getAllServers(): Promise<Set<ServerMetadata>> {
     const result: Set<ServerMetadata> = new Set();
 

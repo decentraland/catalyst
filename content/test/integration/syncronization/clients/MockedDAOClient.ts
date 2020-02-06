@@ -13,7 +13,7 @@ export class MockedDAOClient extends DAOClient {
         this.servers = new Map(servers.map(server => [server.address, {...server, id: "Id"}]))
     }
 
-    async getAllServers(): Promise<Set<ServerMetadata>> {
+    async getAllContentServers(): Promise<Set<ServerMetadata>> {
         return new Set(this.servers.values())
     }
 
