@@ -109,7 +109,10 @@ export class Controller {
         .then(t => res.send({
             creationTimestamp: t
         }))
-        .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
+        .catch(error => {
+            console.log(`Returning error '${error.message}'`)
+            res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+        })
     }
 
     async createEntity(req: express.Request, res: express.Response) {
@@ -142,7 +145,10 @@ export class Controller {
         }
         await deployment
             .then(creationTimestamp => res.send({ creationTimestamp }))
-            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
+            .catch(error => {
+                console.log(`Returning error '${error.message}'`)
+                res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+            })
     }
 
     private async readFile(name: string, path: string): Promise<ContentFile> {
