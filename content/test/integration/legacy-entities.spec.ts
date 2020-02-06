@@ -7,6 +7,8 @@ import { TestServer } from "./TestServer"
 import { MockedContentAnalytics } from "../helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
+import { assertResponseIsOkOrThrown } from "./E2EAssertions"
+import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 
 describe("End 2 end - Legacy Entities", () => {
 
@@ -37,7 +39,7 @@ describe("End 2 end - Legacy Entities", () => {
         const [deployData, ] = await buildDeployDataWithIdentity(["0,0", "0,1"], "metadata", createIdentity())
 
         // Try to deploy the entity
-        await deployLegacy(server, deployData, `Expected an address owned by decentraland. Instead, we found ${deployData.ethAddress}`)
+        await assertPromiseRejectionIs(() => deployLegacy(server, deployData), `Expected an address owned by decentraland. Instead, we found ${deployData.ethAddress}`)
     });
 
     it(`When a decentraland address tries to deploy a legacy entity, then it is successful`, async () => {
@@ -48,9 +50,23 @@ describe("End 2 end - Legacy Entities", () => {
         await deployLegacy(server, deployData)
     });
 
+    it(`When a user tries to deploy a legacy entity over an entity with a higher version, then an error is thrown`, async () => {
+        // Prepare entity to deploy
+        const [deployData1, ] = await buildDeployDataWithIdentity(["0,0", "0,1"], "metadata", identity)
+
+        // Deploy entity with current version
+        await server.deploy(deployData1)
+
+        // Prepare new entity to deploy
+        const [deployData2, ] = await buildDeployDataWithIdentity(["0,1"], "metadata", identity)
+
+        // Deploy the entity
+        await assertPromiseRejectionIs(() => deployLegacy(server, deployData2), "Found an overlapping entity with a higher version already deployed.")
+    });
+
 })
 
-async function deployLegacy(server: TestServer, deployData: DeployData, errorMessage?: string) {
+async function deployLegacy(server: TestServer, deployData: DeployData) {
     const form = new FormData();
     form.append('entityId'      , deployData.entityId)
     form.append('ethAddress'    , deployData.ethAddress)
@@ -61,11 +77,5 @@ async function deployLegacy(server: TestServer, deployData: DeployData, errorMes
     deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
 
     const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
-    if (errorMessage) {
-        expect(deployResponse.ok).toBe(false)
-        const text = await deployResponse.text()
-        expect(text).toBe(errorMessage)
-    } else {
-        expect(deployResponse.ok).toBe(true)
-    }
+    await assertResponseIsOkOrThrown(deployResponse)
 }

@@ -1,13 +1,13 @@
-import { TestServer } from "./TestServer"
+import { TestServer } from "../../TestServer"
 import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
 import { DeploymentEvent, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
-import { deleteServerStorage, buildDeployData } from "./E2ETestUtils"
+import { deleteServerStorage, buildDeployData } from "../../E2ETestUtils"
 
-describe("History integration tests", function() {
+describe("Integration - History Client", function() {
 
     let server: TestServer
 
@@ -29,7 +29,7 @@ describe("History integration tests", function() {
         deleteServerStorage(server)
     })
 
-    it(`When history is consumed entirelly, all the events are retrieved`, async () => {
+    it(`When history is consumed entirely, all the events are retrieved`, async () => {
         // Add some deployments
         for(let i=0; i<10; i=i+1) {
             const [deployData, ] = await buildDeployData(["X1,Y1"], "metadata")

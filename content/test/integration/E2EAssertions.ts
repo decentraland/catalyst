@@ -1,3 +1,4 @@
+import { Response } from "node-fetch"
 import { TestServer } from "./TestServer"
 import { ControllerEntity, ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { EntityType } from "@katalyst/content/service/Entity"
@@ -120,4 +121,10 @@ export function assertFieldsOnEntitiesExceptIdsAreEqual(entity1: ControllerEntit
     expect(entity1.timestamp).toEqual(entity2.timestamp)
     expect(entity1.content).toEqual(entity2.content)
     expect(entity1.metadata).toEqual(entity2.metadata)
+}
+
+export async function assertResponseIsOkOrThrown(response: Response) {
+    if (!response.ok) {
+        throw new Error(await response.text())
+    }
 }
