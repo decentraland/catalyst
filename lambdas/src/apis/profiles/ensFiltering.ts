@@ -2,7 +2,7 @@ import fetch from "node-fetch"
 
 const query = `
   query GetNameByBeneficiary($beneficiary: String) {
-    nameRegistrations(where:{beneficiary:$beneficiary}) {
+    enss(where:{beneficiary:$beneficiary}) {
       labelHash
       beneficiary
       caller
