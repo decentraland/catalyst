@@ -21,7 +21,7 @@ const LIGHTHOUSE_VERSION = "0.1";
 const DEFAULT_ETH_NETWORK = "ropsten";
 
 (async function() {
-  const daoClient = new DAOClient( process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
+  const daoClient = new DAOClient(process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK);
 
   const name = await pickName(process.env.LIGHTHOUSE_NAMES, daoClient);
   console.info("Picked name: " + name);
@@ -78,6 +78,11 @@ const DEFAULT_ETH_NETWORK = "ropsten";
     path: "/",
     authHandler: async (client, message) => {
       if (!client) {
+        // client not registered
+        return false;
+      }
+      if (client.getId().toLocaleLowerCase() !== message.payload[0]?.payload?.toLocaleLowerCase()) {
+        // client id mistmaches with auth signer
         return false;
       }
       try {
