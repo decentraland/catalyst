@@ -1,7 +1,7 @@
 rm -rf tmpbin
 
-yarn bazel clean
 yarn install
+yarn bazel clean
 
 yarn bazel build //comms/lighthouse:server && \
   yarn bazel build //content:server && \
