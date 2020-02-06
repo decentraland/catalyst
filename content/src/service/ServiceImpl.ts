@@ -79,7 +79,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
-        // It looks like we are changing the current server name, but since we won't store it, it won't change
+        // It looks like we are changing the deployment's server name but, since we won't store it, it won't change
         return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin, true)
     }
 
@@ -127,12 +127,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Hash all files, and validate them
         const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
 
-        // If the entity was blacklisted across the whole cluster, then the entityFileHash will be different from the entity id
-        hashes.delete(entityFileHash)
-        hashes.set(entityId, entityFile)
-
+        // Check for if content is already stored
         const alreadyStoredContent: Map<ContentFileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
 
+        // Validate the entity's content property
         validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
         return this.lock.runExclusive(async () => {
@@ -146,7 +144,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity), validationContext)
 
             // Validate that if the entity was already deployed, the status it was left is what we expect
-            await validation.validatePreviousDeploymentStatus(entity, validationContext)
+            await validation.validateThatEntityFailedBefore(entity, validationContext)
 
             if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
                 throw new Error(validation.getErrors().join('\n'))
@@ -190,6 +188,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     async reportErrorDuringSync(failureReason: FailureReason, entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName): Promise<void> {
+        // Before reporting the failure, we need to make sure that it hasn't been already reported. Otherwise, we might add the record to history many times
         const currentFailureStatus = await this.failedDeploymentsManager.getDeploymentStatus(entityType, entityId);
         if (currentFailureStatus === NoFailure.NOT_MARKED_AS_FAILED) {
             // Add the new deployment to history

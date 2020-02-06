@@ -134,14 +134,17 @@ export class Controller {
         }
 
         const auditInfo: AuditInfo = { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION }
-        let creationTimestamp: Timestamp
+        let deployment: Promise<Timestamp>
         if (fixAttempt) {
-            creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+            deployment = this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
         } else {
-            creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+            deployment = this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
         }
-        res.send({ creationTimestamp })
+        await deployment
+            .then(creationTimestamp => res.send({ creationTimestamp }))
+            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
+
     private async readFile(name: string, path: string): Promise<ContentFile> {
         return {
             name: name,
@@ -248,8 +251,9 @@ export class Controller {
         const id = req.params.id;
 
         const target = parseBlacklistTypeAndId(type, id)
-        this.blacklist.addTarget(target, { blocker, timestamp ,signature })
+        return this.blacklist.addTarget(target, { blocker, timestamp ,signature })
             .then(() => res.status(201).send())
+            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
     removeFromBlacklist(req: express.Request, res: express.Response) {
@@ -267,8 +271,9 @@ export class Controller {
         const target = parseBlacklistTypeAndId(type, id)
 
         // TODO: Based on the error, return 400 or 404
-        this.blacklist.removeTarget(target, { blocker, timestamp ,signature })
+        return this.blacklist.removeTarget(target, { blocker, timestamp ,signature })
             .then(() => res.status(200).send())
+            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
     async getAllBlacklistTargets(req: express.Request, res: express.Response) {

@@ -58,10 +58,13 @@ export class TestServer extends Server {
         deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
 
         const deployResponse = await fetch(`${this.getAddress()}/entities${fix ? '?fix=true' : ''}`, { method: 'POST', body: form })
-        expect(deployResponse.ok).toBe(true)
-
-        const { creationTimestamp } = await deployResponse.json()
-        return creationTimestamp
+        if (deployResponse.ok) {
+            const { creationTimestamp } = await deployResponse.json()
+            return creationTimestamp
+        } else {
+            const errorMessage = await deployResponse.text()
+            throw new Error(errorMessage)
+        }
     }
 
     getFailedDeployments(): Promise<FailedDeployment[]> {
@@ -132,7 +135,7 @@ export class TestServer extends Server {
         }
 
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
-        expect(deployResponse.ok).toBe(true)
+        await this.assertResponseIsOkOrThrown(deployResponse)
     }
 
     private async unblacklistTarget(target: BlacklistTarget, identity: Identity) {
@@ -140,13 +143,19 @@ export class TestServer extends Server {
         const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
         const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
-        expect(deployResponse.ok).toBe(true)
+        await this.assertResponseIsOkOrThrown(deployResponse)
     }
 
     private async makeRequest(url: string): Promise<any> {
         const response = await fetch(url)
         expect(response.ok).toBe(true, `The request to ${url} failed`)
         return response.json();
+    }
+
+    private async assertResponseIsOkOrThrown(response) {
+        if (!response.ok) {
+            throw new Error(await response.text())
+        }
     }
 
 }

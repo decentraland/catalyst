@@ -55,13 +55,13 @@ describe("Service", function () {
     })
 
     it(`When no file called '${ENTITY_FILE_NAME}' is uploaded, then an exception is thrown`, async () => {
-        assertPromiseRejectionIs(async () => await service.deployEntity([randomFile], randomFileHash, auditInfo, ''),
+        await assertPromiseRejectionIs(async () => await service.deployEntity([randomFile], randomFileHash, auditInfo, ''),
             `Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
     });
 
     it(`When two or more files called '${ENTITY_FILE_NAME}' are uploaded, then an exception is thrown`, async () => {
         const invalidEntityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
-        assertPromiseRejectionIs(async () => await service.deployEntity([entityFile, invalidEntityFile], "some-id", auditInfo, ''),
+        await assertPromiseRejectionIs(async () => await service.deployEntity([entityFile, invalidEntityFile], "some-id", auditInfo, ''),
             `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
     });
 

@@ -9,6 +9,7 @@ import { TestServer } from "../TestServer"
 import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
+import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 
 
 describe("End 2 end - Error handling", () => {
@@ -55,6 +56,31 @@ describe("End 2 end - Error handling", () => {
         await runTest(FailureReason.DEPLOYMENT_ERROR,
             _ => { accessChecker.startReturningErrors(); return Promise.resolve() },
             () => { accessChecker.stopReturningErrors(); return Promise.resolve() })
+    });
+
+    it(`When a user tries to fix an entity that didn't exist, then an error is thrown`, async () => {
+        // Start server
+        await server1.start()
+
+        // Prepare entity to deploy
+        const [deployData] = await buildDeployData(["0,0", "0,1"], 'metadata')
+
+        // Try to deploy the entity, and fail
+        await assertPromiseRejectionIs(() => server1.deploy(deployData, true), "You are trying to fix an entity that is not marked as failed")
+    });
+
+    it(`When a user tries to fix an entity that hadn't fail, then an error is thrown`, async () => {
+        // Start server
+        await server1.start()
+
+        // Prepare entity to deploy
+        const [deployData] = await buildDeployData(["0,0", "0,1"], 'metadata')
+
+        // Deploy the entity
+        await server1.deploy(deployData)
+
+        // Try to fix the entity, and fail
+        await assertPromiseRejectionIs(() => server1.deploy(deployData, true), "This entity was already deployed. You can't redeploy it\nYou are trying to fix an entity that is not marked as failed")
     });
 
     async function runTest(errorType: FailureReason, causeOfFailure: (entity: ControllerEntity) => Promise<void>, removeCauseOfFailure?: () => Promise<void>, ) {
