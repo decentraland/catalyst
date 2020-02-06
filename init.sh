@@ -144,7 +144,7 @@ dockerComposeSetup() {
   echo "## Setting up the docker-compose.yml file... "
   echo -n "## Content server address..."
   sed "s/\$content_server_address/${domains}/g" ${docker_compose_template} > docker-compose.yml
-  matches=`cat ${docker_compose_template} | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
+  matches=`cat docker-compose.yml | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
   if test $matches -eq 0; then
     printMessage failed
     echo "Failed to perform changes on docker-compose.yml." 
@@ -155,7 +155,7 @@ dockerComposeSetup() {
   echo -n "## Commit hash..."
   commit_hash=`git rev-parse HEAD`
   sed -i "s/\$commit_hash/${commit_hash}/g" docker-compose.yml
-  matches=`cat ${docker_compose_template} | grep COMMIT_HASH | grep -v rev | wc -l`
+  matches=`cat docker-compose.yml | grep COMMIT_HASH | grep -v rev | wc -l`
   if test $matches -eq 0; then
     printMessage failed
     echo "Failed to perform changes on docker-compose.yml." 
@@ -165,7 +165,7 @@ dockerComposeSetup() {
 
   echo -n "## SEGMENT_WRITE_KEY..."
   sed -i "s/\$segment_write_key/${SEGMENT_WRITE_KEY}/g" docker-compose.yml
-  matches=`cat ${docker_compose_template} | grep ${SEGMENT_WRITE_KEY} | grep -v write | wc -l`
+  matches=`cat docker-compose.yml | grep ${SEGMENT_WRITE_KEY} | grep -v write | wc -l`
   if test $matches -eq 0; then
     printMessage failed
     echo "Failed to perform changes on docker-compose.yml." 
@@ -175,7 +175,7 @@ dockerComposeSetup() {
 
   echo -n "## DCL_API_URL..."
   sed -i "s#\$dcl_api_url#${DCL_API_URL}#g" docker-compose.yml
-  matches=`cat ${docker_compose_template} | grep ${DCL_API_URL} | grep -v dcl | wc -l`
+  matches=`cat docker-compose.yml | grep ${DCL_API_URL} | grep -v dcl | wc -l`
   if test $matches -eq 0; then
     printMessage failed
     echo "Failed to perform changes on docker-compose.yml." 
@@ -185,7 +185,7 @@ dockerComposeSetup() {
 
   echo -n "## ETH_NETWORK..."
   sed -i "s/\$eth_network/${ETH_NETWORK}/g" docker-compose.yml
-  matches=`cat ${docker_compose_template} | grep ${ETH_NETWORK} | grep -v eth | wc -l`
+  matches=`cat docker-compose.yml | grep ${ETH_NETWORK} | grep -v eth | wc -l`
   if test $matches -eq 0; then
     printMessage failed
     echo "Failed to perform changes on docker-compose.yml." 
