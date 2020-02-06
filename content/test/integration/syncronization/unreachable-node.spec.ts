@@ -1,6 +1,6 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, sleep, buildBaseEnv, deleteServerStorage } from "../E2ETestUtils"

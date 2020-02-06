@@ -38,7 +38,6 @@ export const util = new (class {
   }
 })();
 
-
 export function connectionIdFor(myId: string, peerId: string, sessionId: string) {
   return `${myId < peerId ? myId : peerId}_${myId < peerId ? peerId : myId}_${sessionId}`;
 }
@@ -51,8 +50,11 @@ export function shuffle<T>(array: T[]): T[] {
   return array.sort(() => 0.5 - Math.random());
 }
 
-export function noReject<T>(promise: Promise<T>) {
-  return promise.then(value => ["fulfilled", value], error => ["rejected", error]);
+export function noReject<T>(promise: Promise<T>): Promise<["fulfilled" | "rejected", any]> {
+  return promise.then(
+    value => ["fulfilled", value],
+    error => ["rejected", error]
+  );
 }
 
 /**

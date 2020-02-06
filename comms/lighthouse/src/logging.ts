@@ -1,5 +1,5 @@
 export function patchLog(name: string) {
-  function patch(logMethod: "info" | "error" | "log") {
+  function patch(logMethod: "info" | "error" | "log" | "warn") {
     const originalMethod = console[logMethod];
 
     console[logMethod] = (message?: any, ...optionalParams: any[]) => {
@@ -11,4 +11,5 @@ export function patchLog(name: string) {
   patch("info");
   patch("log");
   patch("error");
+  patch("warn")
 }
