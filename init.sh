@@ -140,6 +140,70 @@ printMessage () {
     esac
 }
 
+dockerComposeSetup() {
+  echo "## Setting up the docker-compose.yml file... "
+  echo -n "## Content server address..."
+  sed -i "s/\$content_server_address/${domains}/g" ${docker_compose_template} 
+  matches=`cat ${docker_compose_template} | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
+  if test $matches -eq 0; then
+    printMessage failed
+    echo "Failed to perform changes on docker-compose.yml." 
+    exit 1
+  fi
+  printMessage ok
+
+  echo -n "## Commit hash..."
+  commit_hash=`git rev-parse HEAD`
+  sed -i "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template}
+  matches=`cat docker-compose.yml | grep COMMIT_HASH | grep -v rev | wc -l`
+  if test $matches -eq 0; then
+    printMessage failed
+    echo "Failed to perform changes on docker-compose.yml." 
+    exit 1
+  fi
+  printMessage ok
+
+  echo -n "## SEGMENT_WRITE_KEY..."
+  sed -i "s/\$segment_write_key/${SEGMENT_WRITE_KEY}/g" ${docker_compose_template}
+  matches=`cat docker-compose.yml | grep ${SEGMENT_WRITE_KEY} | grep -v write | wc -l`
+  if test $matches -eq 0; then
+    printMessage failed
+    echo "Failed to perform changes on docker-compose.yml." 
+    exit 1
+  fi
+  printMessage ok
+
+  echo -n "## DCL_API_URL..."
+  sed -i "s/\$dcl_api_url/${DCL_API_URL}/g" ${docker_compose_template}
+  matches=`cat docker-compose.yml | grep ${DCL_API_URL} | grep -v dcl | wc -l`
+  if test $matches -eq 0; then
+    printMessage failed
+    echo "Failed to perform changes on docker-compose.yml." 
+    exit 1
+  fi
+  printMessage ok
+
+  echo -n "## ETH_NETWORK..."
+  sed -i "s/\$eth_network/${ETH_NETWORK}/g" ${docker_compose_template}
+  matches=`cat docker-compose.yml | grep ${ETH_NETWORK} | grep -v eth | wc -l`
+  if test $matches -eq 0; then
+    printMessage failed
+    echo "Failed to perform changes on docker-compose.yml." 
+    exit 1
+  fi
+  printMessage ok
+
+  echo -n "## ENS_OWNER_PROVIDER_URL..."
+  sed "s/\$eth_network/${ENS_OWNER_PROVIDER_URL}/g" ${docker_compose_template} > docker-compose.yml
+  matches=`cat docker-compose.yml | grep ${ENS_OWNER_PROVIDER_URL} | grep -v owner | wc -l`
+  if test $matches -eq 0; then
+    printMessage failed
+    echo "Failed to perform changes on docker-compose.yml." 
+    exit 1
+  fi
+  printMessage ok
+}
+
 ##
 # Main program
 ##
@@ -160,7 +224,11 @@ echo -n " - data_path:          " ; echo -e "\e[33m ${data_path} \e[39m"
 echo -n " - nginx_server_file:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - nginx_server_template:  " ; echo -e "\e[33m ${nginx_server_file} \e[39m"
 echo -n " - docker_compose_template:  " ; echo -e "\e[33m ${docker_compose_template} \e[39m"
-echo -n " - content_server_storage:  " ; echo -e "\e[33m ${content_server_storage} \e[39m"
+echo -n " - SEGMENT_WRITE_KEY:  " ; echo -e "\e[33m ${SEGMENT_WRITE_KEY} \e[39m"
+echo -n " - DCL_API_URL:  " ; echo -e "\e[33m ${DCL_API_URL} \e[39m"
+echo -n " - ETH_NETWORK:  " ; echo -e "\e[33m ${ETH_NETWORK} \e[39m"
+echo -n " - ENS_OWNER_PROVIDER_URL:  " ; echo -e "\e[33m ${ENS_OWNER_PROVIDER_URL} \e[39m"
+
 echo ""
 echo "Starting in 5 seconds... " && sleep 5
 
@@ -170,26 +238,7 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-echo -n "## Setting up the docker-compose.yml file... "
-sed -i "s/\$content_server_address/${domains}/g" ${docker_compose_template} 
-
-matches=`cat ${docker_compose_template} | grep ${domains} | grep CONTENT_SERVER_ADDRESS | wc -l`
-if test $matches -eq 0; then
-  printMessage failed
-  echo "Failed to perform changes on docker-compose.yml." 
-  exit 1
-fi
-
-commit_hash=`git rev-parse HEAD`
-sed "s/\$commit_hash/${commit_hash}/g" ${docker_compose_template} > docker-compose.yml
-
-matches=`cat docker-compose.yml | grep COMMIT_HASH | grep -v rev | wc -l`
-if test $matches -eq 0; then
-  printMessage failed
-  echo "Failed to perform changes on docker-compose.yml." 
-  exit 1
-fi
-printMessage ok
+dockerComposeSetup
 
 docker-compose  stop 
 docker-compose rm -f -v
