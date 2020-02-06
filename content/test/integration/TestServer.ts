@@ -14,6 +14,7 @@ import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
 import { buildEntityTarget, BlacklistTarget, buildContentTarget } from "@katalyst/content/blacklist/BlacklistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
+import { assertResponseIsOkOrThrown } from "./E2EAssertions"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -135,7 +136,7 @@ export class TestServer extends Server {
         }
 
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
-        await this.assertResponseIsOkOrThrown(deployResponse)
+        await assertResponseIsOkOrThrown(deployResponse)
     }
 
     private async unblacklistTarget(target: BlacklistTarget, identity: Identity) {
@@ -143,19 +144,13 @@ export class TestServer extends Server {
         const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
         const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
-        await this.assertResponseIsOkOrThrown(deployResponse)
+        await assertResponseIsOkOrThrown(deployResponse)
     }
 
     private async makeRequest(url: string): Promise<any> {
         const response = await fetch(url)
         expect(response.ok).toBe(true, `The request to ${url} failed`)
         return response.json();
-    }
-
-    private async assertResponseIsOkOrThrown(response) {
-        if (!response.ok) {
-            throw new Error(await response.text())
-        }
     }
 
 }
