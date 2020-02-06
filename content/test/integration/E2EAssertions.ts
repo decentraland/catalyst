@@ -64,7 +64,7 @@ export async function assertFileIsOnServer(server: TestServer, hash: ContentFile
 }
 
 export async function assertFileIsNotOnServer(server: TestServer, hash: ContentFileHash) {
-    assertPromiseIsRejected(() => server.downloadContent(hash))
+    await assertPromiseIsRejected(() => server.downloadContent(hash))
 }
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {

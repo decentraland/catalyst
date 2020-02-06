@@ -23,8 +23,8 @@ export class Validations {
     }
 
     /** Make sure that the deployment actually failed, and that it can be re-deployed */
-    async validatePreviousDeploymentStatus(entity: Entity, validationContext: ValidationContext) {
-        if (validationContext.shouldValidate(Validation.PREVIOUS_DEPLOYMENT_STATUS)) {
+    async validateThatEntityFailedBefore(entity: Entity, validationContext: ValidationContext) {
+        if (validationContext.shouldValidate(Validation.MUST_HAVE_FAILED_BEFORE)) {
             const deploymentStatus: DeploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id);
             if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
                 this.errors.push(`You are trying to fix an entity that is not marked as failed`)
@@ -35,7 +35,7 @@ export class Validations {
     /** Validate if the entity can be re deployed or not */
     validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed: boolean, validationContext: ValidationContext) {
         if (validationContext.shouldValidate(Validation.NO_REDEPLOYS) && wasEntityAlreadyDeployed) {
-            this.errors.push(`This entity was already deployed, and you can't redeploy it`)
+            this.errors.push(`This entity was already deployed. You can't redeploy it`)
         }
     }
 

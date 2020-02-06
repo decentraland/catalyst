@@ -9,6 +9,7 @@ import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/syn
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { buildDeployData, deleteServerStorage, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
+import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 
 describe("End 2 end deploy test", () => {
 
@@ -30,6 +31,16 @@ describe("End 2 end deploy test", () => {
         deleteServerStorage(server)
     })
 
+    it('When a user tries to deploy the same entity twice, then an exception is thrown', async() => {
+        // Build data for deployment
+        const [deployData] = await buildDeployData(["0,0", "0,1"], "this is just some metadata")
+
+        // Execute first deploy
+        await server.deploy(deployData)
+
+        // Try to re deploy, and fail
+        await assertPromiseRejectionIs(() => server.deploy(deployData), "This entity was already deployed. You can't redeploy it")
+    })
 
     it(`Deploy and retrieve some content`, async () => {
         //------------------------------

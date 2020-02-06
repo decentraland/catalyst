@@ -125,7 +125,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(content1Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseIsRejected(() => decorator.getContent(content1.hash))
+        await assertPromiseIsRejected(() => decorator.getContent(content1.hash))
     })
 
     it(`When content is not blacklisted, then it can be returned correctly`, async () => {
@@ -141,7 +141,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(entity2Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseIsRejected(() => decorator.getContent(entity2.id))
+        await assertPromiseIsRejected(() => decorator.getContent(entity2.id))
     })
 
     it(`When an entity is not blacklisted, then it can be returned as content`, async () => {
@@ -230,7 +230,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(ethAddressTarget)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
+        await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow a deployment from address '${ethAddress}' since it was blacklisted.`)
     })
 
@@ -238,7 +238,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(P1Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
+        await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a blacklisted pointer.`)
     })
 
@@ -246,7 +246,7 @@ describe("BlacklistServiceDecorator", () => {
         const blacklist = blacklistWith(content1Target)
         const decorator = new BlacklistServiceDecorator(service, blacklist)
 
-        assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
+        await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a blacklisted content.`)
     })
 
