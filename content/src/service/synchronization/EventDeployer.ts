@@ -8,15 +8,15 @@ import { AuditInfo } from "../audit/Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
 import { EventStreamProcessor } from "./EventStreamProcessor";
+import { FailureReason } from "../errors/FailedDeploymentsManager";
 
 export class EventDeployer {
 
-    static readonly BLACKLISTED_ON_CLUSTER_METADATA: string = "This entity was blacklisted on all other servers on the cluster, so we couldn't retrieve it properly."
     private readonly eventProcessor: EventStreamProcessor
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: ClusterDeploymentsService) {
-            this.eventProcessor = new EventStreamProcessor((event, source) => this.prepareDeployment(event, source))
+            this.eventProcessor = new EventStreamProcessor((event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
         }
 
     deployHistories(histories: DeploymentHistory[]) {
@@ -34,10 +34,10 @@ export class EventDeployer {
     async deployHistory(history: DeploymentHistory, options?: HistoryDeploymentOptions) {
         // Determine whether I already know the entities
         const entitiesInHistory: EntityId[] = history.map(({ entityId }) => entityId)
-        const newEntities: EntityId[] = await this.filterOutKnownFiles(entitiesInHistory)
+        const newEntities: Set<EntityId> = new Set(await this.filterOutKnownFiles(entitiesInHistory))
 
         // Keep only new deployments
-        const newDeployments = history.filter(event => newEntities.includes(event.entityId));
+        const newDeployments = history.filter(event => newEntities.has(event.entityId));
 
         if (options?.logging) {
             console.log(`History had ${history.length} entities, only ${newDeployments.length} new.`)
@@ -48,21 +48,23 @@ export class EventDeployer {
     }
 
     /** Download and prepare everything necessary to deploy an entity */
-    private async prepareDeployment(deployment: DeploymentEvent, source?: ContentServerClient): Promise<() => Promise<void>> {
+    private async prepareDeployment(deployment: DeploymentEvent, source?: ContentServerClient): Promise<DeploymentExecution> {
         // Download the entity file
         const entityFile: ContentFile | undefined = await this.getEntityFile(deployment, source);
 
         // Get the audit info
-        const auditInfo = await this.getAuditInfo(deployment, source)
+        const auditInfo: AuditInfo | undefined = await this.getAuditInfo(deployment, source)
 
-        if (entityFile) {
-            // If entity file was retrieved, we know that the entity wasn't blacklisted
+        if (entityFile && auditInfo) {
             if (auditInfo.overwrittenBy) {
                 // Deploy the entity as overwritten
-                return () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName)
+                return this.buildDeploymentExecution(deployment, () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName))
             } else {
+                // Build entity
+                const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
+
                 // Download all entity's files
-                const files: (ContentFile | undefined)[] = await this.getContentFiles(deployment, entityFile, source)
+                const files: (ContentFile | undefined)[] = await this.getContentFiles(entity, source)
 
                 // Add the entity file to the list of files
                 files.unshift(entityFile)
@@ -70,57 +72,42 @@ export class EventDeployer {
                 // Keep only defined files
                 const definedFiles: ContentFile[] = files.filter((file): file is ContentFile => !!file)
 
-                if (definedFiles.length == files.length) {
-                    // Since there was no blacklisted files, deploy the new entity normally
-                    return () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
+                if (definedFiles.length === files.length) {
+                    // Since we could fetch all files, deploy the new entity normally
+                    return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName))
                 } else {
-                    // It looks like there was a blacklisted content
-                    return () => this.service.deployEntityWithBlacklistedContent(definedFiles, deployment.entityId, auditInfo, deployment.serverName)
+                    // Looks like there was a problem fetching one of the files
+                    await this.reportError(deployment, FailureReason.FETCH_PROBLEM)
+                    throw new Error('Failed to download some content')
                 }
             }
+        } else if (!auditInfo) {
+            await this.reportError(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+            throw new Error('Failed to fetch the audit info')
         } else {
-            // It looks like the entity was blacklisted
-            const entity: Entity = await this.getEntity(deployment, source);
-
-            const serializableEntity = {
-                id: entity.id,
-                type: entity.type,
-                pointers: entity.pointers,
-                timestamp: entity.timestamp,
-                metadata: EventDeployer.BLACKLISTED_ON_CLUSTER_METADATA,
-            }
-
-            // Build a new entity file, based on the sanitized entity
-            const entityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from(JSON.stringify(serializableEntity)) }
-
-            // Deploy the entity file
-            return () => this.service.deployEntityWithBlacklistedEntity(entityFile, deployment.entityId, auditInfo, deployment.serverName)
+            // It looks like we could fetch the audit info, but not the entity file
+            await this.reportError(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+            throw new Error('Failed to fetch the entity file')
         }
     }
 
     /**
      * Get all the files needed to deploy the new entity
      */
-    private async getContentFiles(deployment: DeploymentEvent, entityFile: ContentFile, source?: ContentServerClient): Promise<(ContentFile | undefined)[]> {
-        // Retrieve the entity from the server
-        const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
-
+    private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<(ContentFile | undefined)[]> {
         // Read the entity, and get all content file hashes
         const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
         // Download all content files that we don't currently have
         const filePromises: Promise<ContentFile | undefined>[] = (await this.filterOutKnownFiles(allFileHashes))
-            .map(fileHash => this.getContentFile(deployment, fileHash, source))
+            .map(fileHash => this.getFileOrUndefined(fileHash, source))
 
         // Return all the downloaded files
         return Promise.all(filePromises)
     }
 
     private async getEntityFile(deployment: DeploymentEvent, source?: ContentServerClient): Promise<ContentFile | undefined> {
-        const file: ContentFile | undefined = await this.getFileOrUndefinedIfBlacklisted(deployment,
-            deployment.entityId,
-            auditInfo => !!auditInfo.isBlacklisted,
-            source)
+        const file: ContentFile | undefined = await this.getFileOrUndefined(deployment.entityId, source)
 
         // If we could download the entity file, rename it
         if (file) {
@@ -129,41 +116,15 @@ export class EventDeployer {
         return file
     }
 
-    private getContentFile(deployment: DeploymentEvent, fileHash: ContentFileHash, source?: ContentServerClient): Promise<ContentFile | undefined> {
-        return this.getFileOrUndefinedIfBlacklisted(deployment,
-            fileHash,
-            auditInfo => !!auditInfo.blacklistedContent && auditInfo.blacklistedContent.includes(fileHash),
-            source)
-    }
-
     /**
-     * This method tries to get a file from the other servers on the DAO. If all the request fail, then it checks if the file is blacklisted.
-     * If it is, then it returns 'undefined'. If it isn;t, then it throws an exception.
+     * This method tries to get a file from the other servers on the DAO. If all the request fail, then it returns 'undefined'.
      */
-    private async getFileOrUndefinedIfBlacklisted(deployment: DeploymentEvent, fileHash: ContentFileHash, checkIfBlacklisted: (auditInfo: AuditInfo) => boolean, source?: ContentServerClient): Promise<ContentFile | undefined> {
-        try {
-            return await tryOnCluster(server => server.getContentFile(fileHash), this.cluster, { preferred: source })
-        } catch (error) {
-            // If we reach this point, then no other server on the DAO could give us the file we are looking for. Maybe it's been blacklisted?
-            const auditInfo: AuditInfo = await this.getAuditInfo(deployment, source)
-
-            // Check if the content is blacklisted
-            const isBlacklisted: boolean = checkIfBlacklisted(auditInfo)
-
-            if (!isBlacklisted) {
-                throw new Error(`Couldn't get file ${fileHash} from any other server on the DAO, but is isn't blacklisted`)
-            } else {
-                return undefined
-            }
-        }
+    private getFileOrUndefined(fileHash: ContentFileHash, source?: ContentServerClient): Promise<ContentFile | undefined> {
+        return this.tryOnClusterOrUndefined(server => server.getContentFile(fileHash), this.cluster, { preferred: source })
     }
 
-    private getEntity(deployment: DeploymentEvent, source: ContentServerClient | undefined): Promise<Entity> {
-        return tryOnCluster(server => server.getEntity(deployment.entityType, deployment.entityId), this.cluster, { preferred: source });
-    }
-
-    private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo> {
-        return tryOnCluster(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, { preferred: source })
+    private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo | undefined> {
+        return this.tryOnClusterOrUndefined(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, { preferred: source })
     }
 
     private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {
@@ -176,10 +137,53 @@ export class EventDeployer {
             .map(([fileHash, _]) => fileHash)
     }
 
+    private reportError(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
+        const { entityId, entityType, timestamp, serverName } = deployment
+        return this.service.reportErrorDuringSync(reason, entityType, entityId, timestamp, serverName)
+    }
+
+    private buildDeploymentExecution(deploymentEvent: DeploymentEvent, execution: () => Promise<void>): DeploymentExecution {
+        return {
+            metadata: {
+                deploymentEvent,
+            },
+            execution,
+        }
+    }
+
+     /** Wrap the deployment, so if it fails, we can take action */
+     private async wrapDeployment(deploymentPreparation: Promise<DeploymentExecution>): Promise<() => Promise<void>> {
+        const deploymentExecution = await deploymentPreparation
+        return async () => {
+            try {
+                await deploymentExecution.execution()
+            } catch (error) {
+                // The deployment failed, so we report it
+                await this.reportError(deploymentExecution.metadata.deploymentEvent, FailureReason.DEPLOYMENT_ERROR)
+                // Re throw the error
+                throw error
+            }
+        }
+    }
+
+    /** Execute an operation on the cluster, but return 'undefined' if it fails */
+    private async tryOnClusterOrUndefined<T>(execution: (server: ContentServerClient) => Promise<T>, cluster: ContentCluster, options?: { retries?: number, preferred?: ContentServerClient}): Promise<T | undefined> {
+        try {
+            return await tryOnCluster(execution, cluster, options)
+        } catch (error) {
+            return undefined
+        }
+    }
 }
 
-export type HistoryDeploymentOptions ={
+export type DeploymentExecution = {
+    metadata: {
+        deploymentEvent: DeploymentEvent
+    },
+    execution: () => Promise<void>,
+}
+
+export type HistoryDeploymentOptions = {
     logging?: boolean,
-    continueOnFailure?: boolean,
     preferredServer?: ContentServerClient
 }

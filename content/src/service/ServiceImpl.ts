@@ -1,7 +1,7 @@
 import { ContentFileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { MetaverseContentService, ENTITY_FILE_NAME, ContentFile, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
-import { Timestamp } from "./time/TimeSorting";
+import { Timestamp, happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
@@ -17,6 +17,7 @@ import { ValidationContext } from "./validations/ValidationContext";
 import { Lock } from "./locking/Lock";
 import { ContentAuthenticator } from "./auth/Authenticator";
 import { ContentItem } from "../storage/ContentStorage";
+import { FailedDeploymentsManager, FailureReason, NoFailure } from "./errors/FailedDeploymentsManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -32,6 +33,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private analytics: ContentAnalytics,
         private accessChecker: AccessChecker,
         private authenticator: ContentAuthenticator,
+        private failedDeploymentsManager: FailedDeploymentsManager,
         private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
@@ -46,10 +48,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         analytics: ContentAnalytics,
         accessChecker: AccessChecker,
         authenticator: ContentAuthenticator,
+        failedDeploymentsManager: FailedDeploymentsManager,
         ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
             const lastImmutableTime: Timestamp = await historyManager.getLastImmutableTime() ?? 0
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, accessChecker, authenticator, lastImmutableTime, ignoreValidationErrors)
+                analytics, accessChecker, authenticator, failedDeploymentsManager, lastImmutableTime, ignoreValidationErrors)
         }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -71,13 +74,23 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.pointerManager.getActivePointers(type)
     }
 
-    async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string = ''): Promise<Timestamp> {
-        return this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.ALL, origin)
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
+        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.LOCAL, origin)
     }
 
-    // TODO: Maybe move this somewhere else?
-    private async deployEntityWithServerAndTimestamp(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName, validationContext: ValidationContext, origin: string): Promise<Timestamp> {
-        const validation = new Validations(this.accessChecker, this.authenticator)
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
+        // It looks like we are changing the deployment's server name but, since we won't store it, it won't change
+        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin, true)
+    }
+
+    private async deployInternal(files: ContentFile[],
+        entityId: EntityId,
+        auditInfo: AuditInfo,
+        serverName: ServerName,
+        validationContext: ValidationContext,
+        origin: string,
+        fixAttempt: boolean = false): Promise<Timestamp> {
+        const validation = new Validations(this.accessChecker, this.authenticator, this.failedDeploymentsManager)
 
         // Find entity file and make sure its hash is the expected
         const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
@@ -92,6 +105,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
         // Validate entity
         validation.validateEntity(entity, validationContext)
+
+        // Validate that the entity is recent
+        validation.validateDeploymentIsRecent(entity, validationContext)
 
         const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
@@ -108,31 +124,33 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
         }
 
-        // Validate that the entity is "fresh"
-        await validation.validateFreshDeployment(entity, (type, pointers) => this.getEntitiesByPointers(type, pointers), validationContext)
-
         // Hash all files, and validate them
         const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
 
-        // If the entity was blacklisted across the whole cluster, then the entityFileHash will be different from the entity id
-        hashes.delete(entityFileHash)
-        hashes.set(entityId, entityFile)
-
+        // Check for if content is already stored
         const alreadyStoredContent: Map<ContentFileHash, Boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
 
+        // Validate the entity's content property
         validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
-        if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
-            throw new Error(validation.getErrors().join('\n'))
-        }
-
-        // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
         return this.lock.runExclusive(async () => {
             // Check if the entity had already been deployed previously
-            const wasEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId);
+            const wasEntityAlreadyDeployed: boolean = await this.isEntityAlreadyDeployed(entityId);
 
-            // Store the entity's content
-            await this.storeEntityContent(hashes, alreadyStoredContent)
+            // Validate if the entity can be re deployed
+            validation.validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed, validationContext)
+
+            // Validate that there are no newer entities on pointers
+            await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity), validationContext)
+
+            // Validate that if the entity was already deployed, the status it was left is what we expect
+            await validation.validateThatEntityFailedBefore(entity, validationContext)
+
+            if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
+                throw new Error(validation.getErrors().join('\n'))
+            }
+
+            // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
 
             // Calculate timestamp (if necessary)
             const newAuditInfo: AuditInfo = {
@@ -143,14 +161,23 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             }
 
             if (!wasEntityAlreadyDeployed) {
+                // Store the entity's content
+                await this.storeEntityContent(hashes, alreadyStoredContent)
+
                 // Save audit information
                 await this.auditManager.setAuditInfo(entityId, newAuditInfo)
 
                 // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
                 await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
 
-                // Add the new deployment to history
-                await this.historyManager.newEntityDeployment(serverName, entity, newAuditInfo.deployedTimestamp)
+                if (fixAttempt) {
+                    // Invalidate the cache and report the successful deployment
+                    this.entities.invalidate(entity.id)
+                    await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
+                } else {
+                    // Add the new deployment to history
+                    await this.historyManager.newEntityDeployment(serverName, entity.type, entityId, newAuditInfo.deployedTimestamp)
+                }
 
                 // Record deployment for analytics
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
@@ -158,6 +185,31 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
             return newAuditInfo.deployedTimestamp
         })
+    }
+
+    async reportErrorDuringSync(failureReason: FailureReason, entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName): Promise<void> {
+        // Before reporting the failure, we need to make sure that it hasn't been already reported. Otherwise, we might add the record to history many times
+        const currentFailureStatus = await this.failedDeploymentsManager.getDeploymentStatus(entityType, entityId);
+        if (currentFailureStatus === NoFailure.NOT_MARKED_AS_FAILED) {
+            // Add the new deployment to history
+            const historyStorage = this.historyManager.newEntityDeployment(serverName, entityType, entityId, deploymentTimestamp)
+
+            // Report failure
+            const failureReport = this.failedDeploymentsManager.reportFailure(entityType, entityId, deploymentTimestamp, serverName, failureReason)
+            await Promise.all([historyStorage, failureReport])
+        }
+    }
+
+    /** Check if there are newer entities on the given entity's pointers */
+    private async areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
+        // Validate that pointers aren't referring to an entity with a higher timestamp
+        const currentPointedEntities = await this.getEntitiesByPointers(entity.type, entity.pointers)
+        for (const currentEntity of currentPointedEntities) {
+            if (happenedBeforeEntities(entity, currentEntity)) {
+                return true
+            }
+        }
+        return false
     }
 
     private storeEntityContent(hashes: Map<ContentFileHash, ContentFile>, alreadyStoredHashes: Map<ContentFileHash, Boolean>): Promise<any> {
@@ -203,19 +255,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, serverName, ValidationContext.SYNCED, 'sync')
+        await this.deployInternal(files, entityId, auditInfo, serverName, ValidationContext.SYNCED, 'sync')
     }
 
     async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp([entityFile], entityId, auditInfo, serverName, ValidationContext.OVERWRITE, 'sync')
-    }
-
-    async deployEntityWithBlacklistedContent(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp(files, entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_CONTENT, 'sync')
-    }
-
-    async deployEntityWithBlacklistedEntity(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void> {
-        await this.deployEntityWithServerAndTimestamp([entityFile], entityId, auditInfo, serverName, ValidationContext.BLACKLISTED_ENTITY, 'sync')
+        await this.deployInternal([entityFile], entityId, auditInfo, serverName, ValidationContext.OVERWRITE, 'sync')
     }
 
     async setImmutableTime(immutableTime: number): Promise<void> {
@@ -227,7 +271,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     private async isEntityAlreadyDeployed(entityId: EntityId) {
         const entityIdDeployed = await this.isContentAvailable([entityId]);
-        return entityIdDeployed.get(entityId)
+        return !!entityIdDeployed.get(entityId)
     }
 
     getLastImmutableTime(): Timestamp {

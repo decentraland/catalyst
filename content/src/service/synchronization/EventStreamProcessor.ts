@@ -1,6 +1,6 @@
-import { pipeline, Stream } from "stream"
-import util from "util"
+import { Writable } from "stream"
 import parallelTransform from "parallel-transform"
+import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { sortFromOldestToNewest } from "../time/TimeSorting";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
@@ -21,22 +21,18 @@ export class EventStreamProcessor {
      */
     async deployHistory(history: DeploymentHistory, options?: HistoryDeploymentOptions) {
         const logging = options?.logging ?? false
-        const continueOnFailure = options?.continueOnFailure ?? false
 
         // Sort from oldest to newest
         const sortedHistory = sortFromOldestToNewest(history)
 
         // Create a readable stream with all the deployments
-        const deploymentsStream = this.prepareSourceStream(sortedHistory);
+        const deploymentsStream = streamFrom(sortedHistory.map((event, index) => [index, event]));
 
         // Build a transform stream that process the deployment info and prepares the deployment
-        const transform = this.prepareDeploymentBuilder(history.length, continueOnFailure, options?.preferredServer)
+        const transform = this.prepareDeploymentBuilder(history.length, options?.preferredServer)
 
         // Create writer stream that deploys the entity on this server
-        const deployerStream = this.prepareStreamDeployer(history.length, logging, continueOnFailure);
-
-        // Build pipeline than can be awaited
-        const awaitablePipeline = util.promisify(pipeline);
+        const deployerStream = this.prepareStreamDeployer(history.length, logging);
 
         // Build and execute the pipeline
         try {
@@ -46,38 +42,27 @@ export class EventStreamProcessor {
         }
     }
 
-    /** Build the source stream reader that provides the history */
-    private prepareSourceStream(deploymentHistory: DeploymentHistory) {
-        const readable = new Stream.Readable({ objectMode: true });
-        deploymentHistory.forEach((deployment, index) => readable.push([index, deployment]));
-        readable.push(null); // Mark the end of the stream
-        return readable;
-    }
-
     /**
      * Build a transform stream that takes the deployment information and downloads all files necessary to deploy it locally.
      * We will download everything in parallel, but it will be deployed in order
      */
-    private prepareDeploymentBuilder(historyLength: number, continueOnFailure: boolean, preferredServer: ContentServerClient | undefined) {
+    private prepareDeploymentBuilder(historyLength: number, preferredServer: ContentServerClient | undefined) {
         return parallelTransform(EventStreamProcessor.PARALLEL_DOWNLOAD_WORKERS, { objectMode: true }, async ([index, deploymentEvent], done) => {
             try {
                 const execution = await this.deploymentBuilder(deploymentEvent, preferredServer);
                 done(null, [index, deploymentEvent.entityId, execution]);
             } catch (error) {
                 console.log(`Failed preparing the deployment ${index + 1}/${historyLength}. Entity id is ${deploymentEvent.entityId}`);
-                if (continueOnFailure) {
-                    console.log(`Error was:\n${error}`)
-                    done();
-                } else {
-                    done(error);
-                }
+                console.log(`Error was:\n${error}`)
+                done();
+
             }
         });
     }
 
     /** Build the stream writer that will execute the deployment */
-    private prepareStreamDeployer(historyLength: number, logging: boolean, continueOnFailure: boolean) {
-        return new Stream.Writable({
+    private prepareStreamDeployer(historyLength: number, logging: boolean) {
+        return new Writable({
             objectMode: true,
             write: async ([index, entityId, performDeployment], _, done) => {
                 try {
@@ -88,12 +73,8 @@ export class EventStreamProcessor {
                     done();
                 } catch (error) {
                     console.log(`Failed when trying to deploy ${index + 1}/${historyLength}. Entity id is ${entityId}`);
-                    if (continueOnFailure) {
-                        console.log(`Error was:\n${error}`)
-                        done();
-                    } else {
-                        done(error);
-                    }
+                    console.log(`Error was:\n${error}`)
+                    done();
                 }
             },
         });

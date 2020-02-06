@@ -4,6 +4,7 @@ import { ServerName } from "./naming/NameKeeper";
 import { AuditInfo } from "./audit/Audit";
 import { Timestamp } from "./time/TimeSorting";
 import { ContentItem } from "../storage/ContentStorage";
+import { FailureReason } from "./errors/FailedDeploymentsManager";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -16,6 +17,7 @@ export interface MetaverseContentService {
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
     getActivePointers(type: EntityType): Promise<Pointer[]>;
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
@@ -27,10 +29,9 @@ export interface MetaverseContentService {
  * and that deployments can also happen on other servers.
  */
 export interface ClusterDeploymentsService {
+    reportErrorDuringSync(failureReason: FailureReason, entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName): Promise<void>;
     deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
-    deployEntityWithBlacklistedContent(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
     deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
-    deployEntityWithBlacklistedEntity(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
 }
 

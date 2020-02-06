@@ -1,6 +1,6 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { Environment } from "@katalyst/content/Environment"
@@ -64,7 +64,7 @@ describe("End 2 end - Node onboarding", function() {
         await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2)
         await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2)
         await assertFileIsOnServer(server1, entity1ContentHash)
-        await assertFileIsOnServer(server2, entity1ContentHash)
+        await assertFileIsNotOnServer(server2, entity1ContentHash)
         await assertEntityIsOverwrittenBy(server1, entity1, entity2)
         await assertEntityIsOverwrittenBy(server2, entity1, entity2)
 

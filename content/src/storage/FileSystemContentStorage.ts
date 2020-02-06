@@ -1,5 +1,5 @@
-import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
 import fs from 'fs';
+import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
 
 export class FileSystemContentStorage implements ContentStorage {
 
@@ -61,7 +61,6 @@ export class FileSystemContentStorage implements ContentStorage {
                 // Ignore these errors
             }
         }
-        return Promise.resolve();
     }
 
     private static async existPath(path: string): Promise<boolean> {

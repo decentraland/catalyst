@@ -23,6 +23,7 @@ import { EntityVersion } from "./service/audit/Audit";
 import { ContentAuthenticator } from "./service/auth/Authenticator";
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
+import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -78,6 +79,7 @@ export const enum Bean {
     EVENT_DEPLOYER,
     BLACKLIST,
     AUTHENTICATOR,
+    FAILED_DEPLOYMENTS_MANAGER,
 }
 
 export const enum EnvironmentConfig {
@@ -157,7 +159,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS !== 'false')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('20s'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS      , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
@@ -181,6 +183,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.BLACKLIST                   , () => BlacklistFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => FailedDeploymentsManagerFactory.create(env))
         const service = await ServiceFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))

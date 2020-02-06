@@ -4,7 +4,10 @@ export enum Validation {
     REQUEST_SIZE,
     ACCESS,
     ENTITY_STRUCTURE,
-    FRESHNESS,
+    NO_NEWER,
+    RECENT,
+    NO_REDEPLOYS,
+    MUST_HAVE_FAILED_BEFORE,
     LEGACY_ENTITY,
     CONTENT,
     ENTITY_HASH,
@@ -14,10 +17,10 @@ export enum Validation {
 export class ValidationContext {
 
     static readonly ALL: ValidationContext = new ValidationContext(Object.keys(Validation).map(key => Validation[key]))
-    static readonly SYNCED: ValidationContext = ValidationContext.ALL.without(Validation.FRESHNESS)
+    static readonly LOCAL: ValidationContext = ValidationContext.ALL.without(Validation.MUST_HAVE_FAILED_BEFORE)
+    static readonly SYNCED: ValidationContext = ValidationContext.LOCAL.without(Validation.NO_NEWER, Validation.RECENT, Validation.NO_REDEPLOYS)
     static readonly OVERWRITE: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
-    static readonly BLACKLISTED_CONTENT: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
-    static readonly BLACKLISTED_ENTITY: ValidationContext = ValidationContext.BLACKLISTED_CONTENT.without(Validation.ENTITY_HASH)
+    static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL
 
     private readonly toExecute: Set<Validation>;
     private constructor (toExecute: Validation[]) {

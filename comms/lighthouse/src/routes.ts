@@ -5,9 +5,11 @@ import { IRealm } from "peerjs-server";
 import { RequestError } from "./errors";
 import { PeerInfo, Layer } from "./types";
 
-export type RoutesOptions = Partial<{
-  env: any;
-}>;
+export type RoutesOptions = {
+  env?: any;
+  name: string;
+  version: string;
+};
 
 export type Services = {
   layersService: LayersService;
@@ -27,6 +29,8 @@ export function configureRoutes(app: express.Express, services: Services, option
 
   app.get("/status", (req, res, next) => {
     const status = {
+      name: options.name,
+      version: options.version,
       currenTime: Date.now(),
       env: options.env
     };
@@ -116,12 +120,12 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   });
 
-  function mapLayerToJson(layer: Layer) {
+  function mapLayerToJson(layer: Layer, includeUserParcels: boolean = false) {
     return {
       name: layer.id,
       usersCount: layer.users.length,
-      usersParcels: layer.users.map(it => it.parcel).filter(it => !!it),
-      maxUsers: layer.maxUsers
+      maxUsers: layer.maxUsers,
+      ...(includeUserParcels && { usersParcels: layer.users.map(it => it.parcel).filter(it => !!it) })
     };
   }
 

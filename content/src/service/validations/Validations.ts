@@ -8,15 +8,35 @@ import { ValidationContext, Validation } from "./ValidationContext";
 import { AuditInfo } from "../audit/Audit";
 import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
+import { DeploymentStatus, FailedDeploymentsManager, NoFailure } from "../errors/FailedDeploymentsManager";
 
 export class Validations {
 
     private errors: string[] = []
 
-    constructor(private accessChecker: AccessChecker, private authenticator: ContentAuthenticator) {}
+    constructor(private readonly accessChecker: AccessChecker,
+        private readonly authenticator: ContentAuthenticator,
+        private readonly failedDeploymentsManager: FailedDeploymentsManager) { }
 
     getErrors(): string[] {
         return this.errors
+    }
+
+    /** Make sure that the deployment actually failed, and that it can be re-deployed */
+    async validateThatEntityFailedBefore(entity: Entity, validationContext: ValidationContext) {
+        if (validationContext.shouldValidate(Validation.MUST_HAVE_FAILED_BEFORE)) {
+            const deploymentStatus: DeploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id);
+            if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
+                this.errors.push(`You are trying to fix an entity that is not marked as failed`)
+            }
+        }
+    }
+
+    /** Validate if the entity can be re deployed or not */
+    validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed: boolean, validationContext: ValidationContext) {
+        if (validationContext.shouldValidate(Validation.NO_REDEPLOYS) && wasEntityAlreadyDeployed) {
+            this.errors.push(`This entity was already deployed. You can't redeploy it`)
+        }
     }
 
     /** Validate that the address used was owned by Decentraland */
@@ -86,19 +106,26 @@ export class Validations {
         }
     }
 
-    /** Validate that the deployment is valid in terms of timing */
-    async validateFreshDeployment(entityToBeDeployed: Entity, entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>, validationContext: ValidationContext): Promise<void> {
-        if (validationContext.shouldValidate(Validation.FRESHNESS)) {
-            // Validate that pointers aren't referring to an entity with a higher timestamp
-            const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
-            currentPointedEntities.forEach(currentEntity => {
-                if (entityToBeDeployed.timestamp <= currentEntity.timestamp) {
-                    this.errors.push("There is a newer entity pointed by one or more of the pointers you provided.")
-                }
-            })
-
+    /** Validate that the deployment is recent */
+    // TODO: decide if we want to externalize this as a configuration
+    private static REQUEST_TTL = ms('5m') // 5 minutes
+    validateDeploymentIsRecent(entityToBeDeployed: Entity, validationContext: ValidationContext): void {
+        if (validationContext.shouldValidate(Validation.RECENT)) {
             // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
-            this.requestIsRecent(entityToBeDeployed)
+            const delta = Date.now() - entityToBeDeployed.timestamp
+            if (delta > Validations.REQUEST_TTL || delta < -ms('5s')) {
+                this.errors.push("The request is not recent, please submit it again with a new timestamp.")
+            }
+        }
+    }
+
+    /** Validate that there are no newer deployments on the entity's pointers */
+    async validateNoNewerEntitiesOnPointers(entityToBeDeployed: Entity, areThereNewerEntities: (entity: Entity) => Promise<boolean>, validationContext: ValidationContext): Promise<void> {
+        if (validationContext.shouldValidate(Validation.NO_NEWER)) {
+            // Validate that pointers aren't referring to an entity with a higher timestamp
+            if (await areThereNewerEntities(entityToBeDeployed)) {
+                this.errors.push("There is a newer entity pointed by one or more of the pointers you provided.")
+            }
         }
     }
 
@@ -124,15 +151,6 @@ export class Validations {
                     }
                 }
             })
-        }
-    }
-
-    // TODO: decide if we want to externalize this as a configuration
-    private static REQUEST_TTL = ms('5m') // 5 minutes
-    private requestIsRecent(entityToBeDeployed: Entity): void {
-        const delta = Date.now() - entityToBeDeployed.timestamp
-        if (delta > Validations.REQUEST_TTL || delta < -ms('5s')) {
-            this.errors.push("The request is not recent, please submit it again with a new timestamp.")
         }
     }
 

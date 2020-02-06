@@ -1,4 +1,5 @@
 import { setInterval, clearInterval } from "timers"
+import ms from "ms";
 import { TimeKeepingService } from "../Service";
 import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
@@ -8,6 +9,7 @@ import { EventDeployer } from "./EventDeployer";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
 import { Disposable } from "./events/ClusterEvent";
+import { sleep } from "./ClusterUtils";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -19,6 +21,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private syncWithNodesInterval: NodeJS.Timeout;
     private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
+    private processing: number = 0
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: TimeKeepingService,
@@ -33,7 +36,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         await this.cluster.connect(this.lastImmutableTime)
 
         // Register to listen to when a server is removed from the DAO
-        this.daoRemovalEventSubscription =  this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
+        this.daoRemovalEventSubscription = this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
 
         // Onboard into cluster
         await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime)
@@ -46,10 +49,13 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         clearInterval(this.syncWithNodesInterval)
         this.daoRemovalEventSubscription?.dispose()
         this.cluster.disconnect()
-        return Promise.resolve()
+        return this.waitUntilAllSyncingFinishes()
     }
 
     private async syncWithServers(): Promise<void> {
+        // Update counter
+        this.processing++;
+
         // Gather all servers
         const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
@@ -67,6 +73,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             this.cluster.setImmutableTime(minTimestamp)
             await this.service.setImmutableTime(minTimestamp)
         }
+
+        // Update counter
+        this.processing--;
     }
 
     /** Get all updates from one specific content server */
@@ -96,6 +105,15 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
         // Execute the request
         return request.execute()
+    }
+
+    private waitUntilAllSyncingFinishes(): Promise<void> {
+        return new Promise(async (resolve) => {
+            while (this.processing > 0) {
+                await sleep(ms('1s'))
+            }
+            resolve()
+        })
     }
 
 }

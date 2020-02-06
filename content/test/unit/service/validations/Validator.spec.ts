@@ -1,4 +1,5 @@
 import * as EthCrypto from "eth-crypto"
+import { mock, instance, when, anything } from "ts-mockito"
 import { Validations } from "../../../../src/service/validations/Validations"
 import { Entity, EntityType } from "../../../../src/service/Entity"
 import { MockedAccessChecker } from "../../../helpers/service/access/MockedAccessChecker"
@@ -6,6 +7,8 @@ import { ValidationContext } from "@katalyst/content/service/validations/Validat
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl"
 import {  AuthChain, AuthLinkType  } from "dcl-crypto"
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator"
+
+import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 describe("Validations", function () {
 
@@ -233,22 +236,19 @@ describe("Validations", function () {
     })
 
     it(`when a profile is created its access is checked`, async () => {
-        const authenticator = new ContentAuthenticator()
-        const validation = new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator)
+        const validation = getValidatorWithRealAccess()
         await validation.validateAccess(EntityType.PROFILE, ['some-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(0)
     })
 
     it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
-        const authenticator = new ContentAuthenticator()
-        const validation = new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator)
+        const validation = getValidatorWithRealAccess()
         await validation.validateAccess(EntityType.PROFILE, ['some-address', 'other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })
 
     it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
-        const authenticator = new ContentAuthenticator()
-        const validation = new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator)
+        const validation = getValidatorWithRealAccess()
         await validation.validateAccess(EntityType.PROFILE, ['other-address'], 'some-address', ValidationContext.ALL)
         expect(validation.getErrors().length).toBe(1)
     })
@@ -263,6 +263,17 @@ const notReferencedHashMessage = (hash) => {
     return `This hash was uploaded but is not referenced in the entity: ${hash}`
 }
 
+function getValidatorWithRealAccess() {
+    const authenticator = new ContentAuthenticator()
+    return new Validations(new AccessCheckerImpl(authenticator, 'unused_url'), authenticator, mockedFailedDeploymentsManager())
+}
+
 function getValidatorWithMockedAccess() {
-    return new Validations(new MockedAccessChecker(), new ContentAuthenticator())
+    return new Validations(new MockedAccessChecker(), new ContentAuthenticator(), mockedFailedDeploymentsManager())
+}
+
+function mockedFailedDeploymentsManager() {
+    let mockedManager: FailedDeploymentsManager = mock(FailedDeploymentsManager)
+    when(mockedManager.getDeploymentStatus(anything(), anything())).thenReturn(Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED))
+    return instance(mockedManager)
 }

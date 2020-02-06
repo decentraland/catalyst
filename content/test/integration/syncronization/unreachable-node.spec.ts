@@ -1,6 +1,6 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, sleep, buildBaseEnv, deleteServerStorage } from "../E2ETestUtils"
@@ -33,10 +33,10 @@ describe("End 2 end - Unreachable node", function() {
         server3 = await buildServer("Server3_", 8080, LONG_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
     })
 
-    afterEach(function() {
-        server1.stop()
-        server2.stop()
-        server3.stop()
+    afterEach(async function() {
+        await server1.stop()
+        await server2.stop()
+        await server3.stop()
         deleteServerStorage(server1, server2, server3)
     })
 

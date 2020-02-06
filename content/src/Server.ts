@@ -5,7 +5,7 @@ import morgan from "morgan";
 import multer from "multer";
 import http from "http";
 import { Controller } from "./controller/Controller";
-import { Metrics } from '../../commons/src/metrics';
+import { Metrics } from 'decentraland-katalyst-commons/src/metrics';
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 
@@ -46,6 +46,7 @@ export class Server {
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.addToBlacklist, HttpMethod.PUT);
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.removeFromBlacklist, HttpMethod.DELETE);
       this.registerRoute("/blacklist/:type/:id"  , controller, controller.isTargetBlacklisted, HttpMethod.HEAD);
+      this.registerRoute("/failedDeployments"    , controller, controller.getFailedDeployments);
 
       if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
         this.registerRoute("/legacy-entities"    , controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())

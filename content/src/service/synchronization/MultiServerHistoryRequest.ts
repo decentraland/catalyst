@@ -23,7 +23,6 @@ export class MultiServerHistoryRequest {
     async execute(): Promise<void> {
         const histories: DeploymentHistory[] = await Promise.all(this.recipients
             .map(recipient => this.executeRequestOn(recipient)))
-
         try {
             await this.deployer.deployHistories(histories)
         } catch (error) {

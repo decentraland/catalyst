@@ -40,14 +40,10 @@ export class Audit implements AuditOverwrite, AuditManager {
 export type AuditInfo = {
     version: EntityVersion,
     deployedTimestamp: Timestamp
-
     authChain: AuthChain,
-
     overwrittenBy?: EntityId,
-
     isBlacklisted?: boolean,
     blacklistedContent?: ContentFileHash[],
-
     originalMetadata?: { // This is used for migrations
         originalVersion: EntityVersion,
         data: any,

@@ -5,7 +5,7 @@ import { Pointer, EntityType } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing"
 import { ContentFile } from "@katalyst/content/service/Service"
-import { DAOClient } from "@katalyst/content/service/synchronization/clients/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { EnvironmentConfig, Bean, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
 import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
@@ -51,6 +51,10 @@ async function buildDeployDataInternal(pointers: Pointer[], metadata: any, conte
     return [deployData, entity]
 }
 
+export function parseEntityType(entity: ControllerEntity) {
+    return EntityType[entity.type.toUpperCase().trim()]
+}
+
 export function deleteServerStorage(...servers: TestServer[]) {
     servers.map(server => server.storageFolder)
         .forEach(storageFolder => deleteFolderRecursive(storageFolder))
@@ -66,7 +70,7 @@ export function createIdentity(): Identity {
     return EthCrypto.createIdentity()
 }
 
-function deleteFolderRecursive(pathToDelete: string) {
+export function deleteFolderRecursive(pathToDelete: string) {
     if (fs.existsSync(pathToDelete)) {
         fs.readdirSync(pathToDelete).forEach((file, index) => {
             const curPath = path.join(pathToDelete, file);

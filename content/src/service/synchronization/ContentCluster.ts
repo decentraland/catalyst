@@ -1,5 +1,5 @@
 import { setInterval, clearInterval } from "timers"
-import { DAOClient } from "./clients/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
 
@@ -9,7 +9,7 @@ import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
-import { EthAddress } from "dcl-crypto";
+import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
 
 export class ContentCluster {
 
@@ -90,19 +90,19 @@ export class ContentCluster {
                 .map(address => getServerName(address).then(name => ({ address, name }))))
 
             for (const { address, name: newName } of names) {
-                let newClient: ContentServerClient
+                let newClient: ContentServerClient | undefined
                 // Check if we already knew the server
                 const previousClient: ContentServerClient | undefined = this.serversInDAO.get(address);
-                if (previousClient && previousClient.getName() != UNREACHABLE) {
-                    if (newName == UNREACHABLE) {
+                if (previousClient && previousClient.getName() !== UNREACHABLE) {
+                    if (newName === UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
-                    } else {
+                    } else if (!previousClient.isActive()){
                         // Create new client
                         newClient = getClient(address, newName, previousClient.getLastKnownTimestamp())
                     }
                 } else {
-                    if (newName == UNREACHABLE) {
+                    if (newName === UNREACHABLE) {
                         // Create unreachable client
                         newClient = getUnreachableClient()
                     } else {
@@ -111,7 +111,9 @@ export class ContentCluster {
                         console.log(`Connected to new server ${newName} on ${address}`)
                     }
                 }
-                this.serversInDAO.set(address, newClient)
+                if (newClient) {
+                    this.serversInDAO.set(address, newClient)
+                }
             }
         } catch (error) {
             console.error(`Failed to sync with the DAO \n${error}`)
@@ -172,8 +174,3 @@ export class ContentCluster {
 
 }
 
-export type ServerMetadata = {
-    address: ServerAddress,
-    owner: EthAddress,
-    id: string
-}

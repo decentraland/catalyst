@@ -32,8 +32,8 @@ describe("Integration - Blacklist", () => {
         await server.start()
     })
 
-    afterEach(() => {
-        server.stop()
+    afterEach(async () => {
+        await server.stop()
         deleteServerStorage(server)
     })
 
@@ -126,7 +126,7 @@ describe("Integration - Blacklist", () => {
         await server.deploy(deployData)
 
         // Blacklist the entity
-        assertPromiseIsRejected(() => server.blacklistEntity(entityBeingDeployed, createIdentity()))
+        await assertPromiseIsRejected(() => server.blacklistEntity(entityBeingDeployed, createIdentity()))
     });
 
     it(`When random identity tries to blacklist some content, then an error is thrown`, async () => {
@@ -138,7 +138,7 @@ describe("Integration - Blacklist", () => {
         await server.deploy(deployData)
 
         // Blacklist the content
-        assertPromiseIsRejected(() => server.blacklistContent(contentHash, createIdentity()))
+        await assertPromiseIsRejected(() => server.blacklistContent(contentHash, createIdentity()))
     });
 
     it(`When cluster owner tries to blacklist content, then it is successful`, async () => {

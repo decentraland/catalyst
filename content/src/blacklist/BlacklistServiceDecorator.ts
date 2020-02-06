@@ -8,6 +8,7 @@ import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
 import { ContentItem } from "../storage/ContentStorage";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
+import { Timestamp } from "../service/time/TimeSorting";
 
 /**
  * This decorator takes a MetaverseContentService and adds blacklisting functionality to it
@@ -103,7 +104,23 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
     return this.service.getStatus();
   }
 
-  async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<number> {
+  async deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
+    // Validate the deployment
+    await this.validateDeployment(files, entityId, auditInfo)
+
+    // If all validations passed, then deploy the entity
+    return this.service.deployToFix(files, entityId, auditInfo, origin)
+  }
+
+  async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
+    // Validate the deployment
+    await this.validateDeployment(files, entityId, auditInfo)
+
+    // If all validations passed, then deploy the entity
+    return this.service.deployEntity(files, entityId, auditInfo, origin);
+  }
+
+  private async validateDeployment(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo) {
     // No deployments from blacklisted eth addresses are allowed
     const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo);
     if (await this.areBlacklisted(buildAddressTarget(ownerAddress))) {
@@ -127,9 +144,6 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
     if (await this.areBlacklisted(...pointerTargets)) {
       throw new Error(`Can't allow the deployment since the entity contains a blacklisted pointer.`);
     }
-
-    // If all validations passed, then deploy the entity
-    return this.service.deployEntity(files, entityId, auditInfo, origin);
   }
 
   /** When an entity is blacklisted, we don't want to show its content and metadata  */

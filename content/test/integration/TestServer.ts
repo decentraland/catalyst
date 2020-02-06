@@ -7,12 +7,14 @@ import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { DeployData, hashAndSignMessage, Identity } from "./E2ETestUtils"
+import { DeployData, hashAndSignMessage, Identity, parseEntityType } from "./E2ETestUtils"
 import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
 import { buildEntityTarget, BlacklistTarget, buildContentTarget } from "@katalyst/content/blacklist/BlacklistTarget"
+import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
+import { assertResponseIsOkOrThrown } from "./E2EAssertions"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -49,18 +51,25 @@ export class TestServer extends Server {
         }
     }
 
-    async deploy(deployData: DeployData): Promise<Timestamp> {
+    async deploy(deployData: DeployData, fix: boolean = false): Promise<Timestamp> {
         const form = new FormData();
         form.append('entityId'  , deployData.entityId)
         form.append('ethAddress', deployData.ethAddress)
         form.append('signature' , deployData.signature)
         deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
 
-        const deployResponse = await fetch(`${this.getAddress()}/entities`, { method: 'POST', body: form })
-        expect(deployResponse.ok).toBe(true)
+        const deployResponse = await fetch(`${this.getAddress()}/entities${fix ? '?fix=true' : ''}`, { method: 'POST', body: form })
+        if (deployResponse.ok) {
+            const { creationTimestamp } = await deployResponse.json()
+            return creationTimestamp
+        } else {
+            const errorMessage = await deployResponse.text()
+            throw new Error(errorMessage)
+        }
+    }
 
-        const { creationTimestamp } = await deployResponse.json()
-        return creationTimestamp
+    getFailedDeployments(): Promise<FailedDeployment[]> {
+        return this.makeRequest(`${this.getAddress()}/failedDeployments`)
     }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
@@ -94,11 +103,11 @@ export class TestServer extends Server {
             return await response.buffer();
         }
 
-        throw new Error(`Failed to fetch file with hash ${fileHash}`)
+        throw new Error(`Failed to fetch file with hash ${fileHash} on server ${this.namePrefix}`)
     }
 
-    async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
-        return this.client.getAuditInfo(type, id)
+    async getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
+        return this.client.getAuditInfo(parseEntityType(entity), entity.id)
     }
 
     blacklistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
@@ -127,7 +136,7 @@ export class TestServer extends Server {
         }
 
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
-        expect(deployResponse.ok).toBe(true)
+        await assertResponseIsOkOrThrown(deployResponse)
     }
 
     private async unblacklistTarget(target: BlacklistTarget, identity: Identity) {
@@ -135,12 +144,12 @@ export class TestServer extends Server {
         const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
         const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
         const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
-        expect(deployResponse.ok).toBe(true)
+        await assertResponseIsOkOrThrown(deployResponse)
     }
 
     private async makeRequest(url: string): Promise<any> {
         const response = await fetch(url)
-        expect(response.ok).toBe(true)
+        expect(response.ok).toBe(true, `The request to ${url} failed`)
         return response.json();
     }
 

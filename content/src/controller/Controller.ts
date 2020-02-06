@@ -12,12 +12,14 @@ import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { EthAddress, Signature, AuthLink } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
+import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
 
 export class Controller {
 
     constructor(private readonly service: MetaverseContentService,
         private readonly historyManager: HistoryManager,
-        private readonly blacklist: Blacklist) { }
+        private readonly blacklist: Blacklist,
+        private readonly failedDeploymentsManager: FailedDeploymentsManager) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -107,10 +109,13 @@ export class Controller {
         .then(t => res.send({
             creationTimestamp: t
         }))
-        .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
+        .catch(error => {
+            console.log(`Returning error '${error.message}'`)
+            res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+        })
     }
 
-    createEntity(req: express.Request, res: express.Response) {
+    async createEntity(req: express.Request, res: express.Response) {
         // Method: POST
         // Path: /entities
         // Body: JSON with entityId,ethAddress,signature; and a set of files
@@ -120,20 +125,32 @@ export class Controller {
         const signature:Signature   = req.body.signature;
         const files                 = req.files
         const origin                = req.header('x-upload-origin') ?? "unknown"
+        const fixAttempt: boolean   = req.query.fix === 'true'
 
         if (!authChain && ethAddress && signature) {
             authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
         }
-        let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
+
+        let deployFiles: ContentFile[] = []
         if (files instanceof Array) {
-            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
+            deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
         }
-        deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION}, origin))
-        .then(t => res.send({
-            creationTimestamp: t
-        }))
+
+        const auditInfo: AuditInfo = { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION }
+        let deployment: Promise<Timestamp>
+        if (fixAttempt) {
+            deployment = this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+        } else {
+            deployment = this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+        }
+        await deployment
+            .then(creationTimestamp => res.send({ creationTimestamp }))
+            .catch(error => {
+                console.log(`Returning error '${error.message}'`)
+                res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+            })
     }
+
     private async readFile(name: string, path: string): Promise<ContentFile> {
         return {
             name: name,
@@ -149,6 +166,8 @@ export class Controller {
         const data: ContentItem | undefined = await this.service.getContent(hashId);
         if (data) {
             res.contentType('application/octet-stream')
+            res.setHeader('ETag', hashId)
+            res.setHeader('Access-Control-Expose-Headers', '*')
             data.asStream().pipe(res)
         } else {
             res.status(404).send()
@@ -240,8 +259,9 @@ export class Controller {
         const id = req.params.id;
 
         const target = parseBlacklistTypeAndId(type, id)
-        this.blacklist.addTarget(target, { blocker, timestamp ,signature })
+        return this.blacklist.addTarget(target, { blocker, timestamp ,signature })
             .then(() => res.status(201).send())
+            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
     removeFromBlacklist(req: express.Request, res: express.Response) {
@@ -259,8 +279,9 @@ export class Controller {
         const target = parseBlacklistTypeAndId(type, id)
 
         // TODO: Based on the error, return 400 or 404
-        this.blacklist.removeTarget(target, { blocker, timestamp ,signature })
+        return this.blacklist.removeTarget(target, { blocker, timestamp ,signature })
             .then(() => res.status(200).send())
+            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
     async getAllBlacklistTargets(req: express.Request, res: express.Response) {
@@ -283,6 +304,14 @@ export class Controller {
         const target = parseBlacklistTypeAndId(type, id)
         this.blacklist.isTargetBlacklisted(target)
             .then(isBlacklisted => isBlacklisted ? res.status(200).send() : res.status(404).send())
+    }
+
+    async getFailedDeployments(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /failedDeployments
+
+        const failedDeployments = await this.failedDeploymentsManager.getAllFailedDeployments()
+        res.send(failedDeployments)
     }
 
 }
