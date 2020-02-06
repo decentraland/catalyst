@@ -152,11 +152,14 @@ function copySuccessResponse(responseFrom: NodeFetchResponse, responseTo: Respon
 }
 
 function copyHeaders(responseFrom: NodeFetchResponse, responseTo: Response) {
-    responseFrom.headers.forEach((headerValue, headerName) => {
-        responseTo.setHeader(headerName, headerValue)
-    })
+    responseTo.setHeader("Access-Control-Allow-Origin", "*")
+    responseTo.setHeader("Access-Control-Expose-Headers", "*")
+    responseTo.setHeader("Content-Type", "application/octet-stream")
+    responseTo.setHeader("ETag", responseFrom.headers.get("ETag")!)
+    // responseFrom.headers.forEach((headerValue, headerName) => {
+    //     responseTo.setHeader(headerName, headerValue)
+    // })
 }
-
 function findSceneJsonId(entity:V3ControllerEntity): string {
     let sceneJsonHash = ""
     try {
