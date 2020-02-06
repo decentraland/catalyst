@@ -28,17 +28,22 @@ export function configureRoutes(app: express.Express, services: Services, option
   };
 
   app.get("/status", (req, res, next) => {
-    const status = {
+    const status: any = {
       name: options.name,
       version: options.version,
       currenTime: Date.now(),
       env: options.env
     };
+
+    if (req.query.includeLayers === "true") {
+      status.layers = layersService.getLayers().map(it => mapLayerToJson(it, true));
+    }
+
     res.send(status);
   });
 
   app.get("/layers", (req, res, next) => {
-    res.send(layersService.getLayers().map(it => mapLayerToJson(it)));
+    res.send(layersService.getLayers().map(it => mapLayerToJson(it, req.query.usersParcels === "true")));
   });
 
   app.get("/layers/:layerId", validateLayerExists, (req, res, next) => {
