@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
+import { Response as NodeFetchResponse } from "node-fetch"
 import { Environment } from '../../../Environment'
 import { baseContentServerUrl } from '../../../EnvironmentUtils'
 
@@ -126,21 +127,15 @@ export async function getContents(env: Environment, req: Request, res: Response)
     const cid = req.params.cid;
 
     const v3Url = baseContentServerUrl(env) + `/contents/${cid}`
-    const response = await fetch(v3Url)
-    if (response.ok) {
-        res.contentType("application/octet-stream");
-        copyContentLength(response, res)
-        res.status(200);
-        response.body.pipe(res);
+    const contentServerResponse = await fetch(v3Url)
+    if (contentServerResponse.ok) {
+        copySuccessResponse(contentServerResponse, res)
     } else {
-        if (response.status===404) {
+        if (contentServerResponse.status===404) {
             // Let's try on the old content server
-            const responsev2 = await fetch(`https://content.decentraland.org/contents/${cid}`)
-            if (responsev2.ok) {
-                res.contentType('application/octet-stream')
-                copyContentLength(responsev2, res)
-                res.status(200);
-                responsev2.body.pipe(res);
+            const legacyContentServerResponse = await fetch(`https://content.decentraland.org/contents/${cid}`)
+            if (legacyContentServerResponse.ok) {
+                copySuccessResponse(legacyContentServerResponse, res)
             } else {
                 res.status(404).send()
             }
@@ -150,9 +145,16 @@ export async function getContents(env: Environment, req: Request, res: Response)
     }
 }
 
-function copyContentLength(response, res: Response) {
-    if (response.headers.get("Content-Length"))
-        res.setHeader("Content-Length", response.headers.get("Content-Length")!)
+function copySuccessResponse(responseFrom: NodeFetchResponse, responseTo: Response) {
+    copyHeaders(responseFrom, responseTo)
+    responseTo.status(200);
+    responseFrom.body.pipe(responseTo);
+}
+
+function copyHeaders(responseFrom: NodeFetchResponse, responseTo: Response) {
+    responseFrom.headers.forEach((headerValue, headerName) => {
+        responseTo.setHeader(headerName, headerValue)
+    })
 }
 
 function findSceneJsonId(entity:V3ControllerEntity): string {
