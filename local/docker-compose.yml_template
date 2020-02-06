@@ -45,7 +45,7 @@ services:
     environment:
       - METRICS=true
       - CONTENT_SERVER_ADDRESS=https://$content_server_address/content/
-      - COMMIT_HASH="$commit_hash"
+      - COMMIT_HASH=$commit_hash
       - ENS_OWNER_PROVIDER_URL=$ens_owner_providerl_url
     ports:
       - "7070:7070"
