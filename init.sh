@@ -1,5 +1,5 @@
 #!/bin/bash
-Source=".default_env"
+Source=".env"
 
 
 ####
