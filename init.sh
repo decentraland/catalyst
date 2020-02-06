@@ -194,8 +194,8 @@ dockerComposeSetup() {
   printMessage ok
 
   echo -n "## ENS_OWNER_PROVIDER_URL..."
-  sed "s#\$eth_network#${ENS_OWNER_PROVIDER_URL}#g" ${docker_compose_template} > docker-compose.yml
-  matches=`cat ${docker_compose_template} | grep ${ENS_OWNER_PROVIDER_URL} | grep -v owner | wc -l`
+  sed "s#\$ens_owner_providerl_url#${ENS_OWNER_PROVIDER_URL}#g" ${docker_compose_template} > docker-compose.yml
+  matches=`cat docker-compose.yml | grep ${ENS_OWNER_PROVIDER_URL} | grep -v owner | wc -l`
   if test $matches -eq 0; then
     printMessage failed
     echo "Failed to perform changes on docker-compose.yml." 
