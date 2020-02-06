@@ -1,15 +1,15 @@
 import { Address } from "web3x/address";
 import { Eth } from "web3x/eth";
 import { WebsocketProvider } from "web3x/providers";
-import { Katalyst } from "./Katalyst";
+import { Catalyst } from "./Catalyst";
 
 export const networks = {
   ropsten: {
     wss: "wss://ropsten.infura.io/ws",
     contracts: {
       katalyst: {
-        address: "0x89550d8fc174b2ca216f2bd1bc20128413a2ab9d",
-        class: Katalyst
+        address: "0xadd085f2318e9678bbb18b3e0711328f902b374b",
+        class: Catalyst
       }
     }
   },
@@ -17,8 +17,8 @@ export const networks = {
     wss: "wss://mainnet.infura.io/ws",
     contracts: {
       katalyst: {
-        address: "0x2a187453064356c898cae034eaed119e1663acb8",
-        class: Katalyst
+        address: "0x4a2f10076101650f40342885b99b6b101d83c486",
+        class: Catalyst
       }
     }
   }
