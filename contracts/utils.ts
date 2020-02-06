@@ -25,40 +25,23 @@ export const networks = {
 };
 
 export function handlerForNetwork(networkKey: string, contractKey: string) {
-    try {
-        const network = networks[networkKey]
-        const provider = new WebsocketProvider(network.wss);
-        const eth = new Eth(provider);
-        const contract = network.contracts[contractKey];
-        const address = Address.fromString(contract.address);
-        const contractInstance = new contract.class(eth, address);
+  try {
+    const network = networks[networkKey];
+    const provider = new WebsocketProvider(network.wss);
+    const eth = new Eth(provider);
+    const contract = network.contracts[contractKey];
+    const address = Address.fromString(contract.address);
+    const contractInstance = new contract.class(eth, address);
 
-        return {
-          provider,
-          network,
-          contract: contractInstance,
-          disconnect: () => {
-            provider.disconnect();
-          }
-        };
-    } catch (error) {
-        return undefined
-    }
+    return {
+      provider,
+      network,
+      contract: contractInstance,
+      disconnect: () => {
+        provider.disconnect();
+      }
+    };
+  } catch (error) {
+    return undefined;
+  }
 }
-
-// async function main() {
-//   const { contract, disconnect } = handlerForNetwork(networks.ropsten, "katalyst");
-
-//   contract.methods.katalystCount().call();
-
-//   const count = await contract.methods.katalystCount().call();
-//   console.log(`Katalyst nodes count: ${count}`);
-
-//   const ids = await contract.methods.katalystIds(0).call();
-//   console.log(`Katalyst node ids: ${ids}`);
-
-//   const url = await contract.methods.katalystById(ids).call();
-//   console.log(`Katalyst node URL: ${JSON.stringify(url)}`);
-
-//   disconnect();
-// }

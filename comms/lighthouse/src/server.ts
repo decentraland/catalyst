@@ -6,21 +6,24 @@ import { IConfig } from "peerjs-server/dist/src/config";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
-import { Metrics } from "../../../commons/src/metrics";
+import { Metrics } from "decentraland-katalyst-commons/src/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { IClient } from "peerjs-server/dist/src/models/client";
 import { MessageType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
 import { DEFAULT_LAYERS } from "./default_layers";
 import { Authenticator } from "dcl-crypto";
-import { getOrCheckName } from "./naming";
-import { patchLog } from "./loggin";
+import { pickName } from "./naming";
+import { patchLog } from "./logging";
+import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 
 const LIGHTHOUSE_VERSION = "0.1";
+const DEFAULT_ETH_NETWORK = "ropsten";
 
 (async function() {
-  const name = await getOrCheckName(process.env.LIGHTHOUSE_NAMES);
+  const daoClient = new DAOClient( process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
 
+  const name = await pickName(process.env.LIGHTHOUSE_NAMES, daoClient);
   console.info("Picked name: " + name);
 
   patchLog(name);
