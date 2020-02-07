@@ -108,7 +108,7 @@ export class Validations {
 
     /** Validate that the deployment is recent */
     // TODO: decide if we want to externalize this as a configuration
-    private static REQUEST_TTL = ms('5m') // 5 minutes
+    static REQUEST_TTL: number = ms('20m') // 20 minutes
     validateDeploymentIsRecent(entityToBeDeployed: Entity, validationContext: ValidationContext): void {
         if (validationContext.shouldValidate(Validation.RECENT)) {
             // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
