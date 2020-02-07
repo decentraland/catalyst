@@ -151,14 +151,17 @@ function copySuccessResponse(responseFrom: NodeFetchResponse, responseTo: Respon
     responseFrom.body.pipe(responseTo);
 }
 
-const KNOWN_HEADERS: string[] = ['Content-Type', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'ETag', 'X-Powered-By', 'Date', 'Transfer-Encoding', 'Content-Encoding', 'Connection']
-function fixHeaderNameCase(headerName: string): string {
-    return KNOWN_HEADERS.find(item => item.toLocaleLowerCase()===headerName.toLocaleLowerCase()) ?? headerName
+const KNOWN_HEADERS: string[] = ['Content-Type', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'ETag', 'Date']
+function fixHeaderNameCase(headerName: string): string | undefined {
+    return KNOWN_HEADERS.find(item => item.toLocaleLowerCase()===headerName.toLocaleLowerCase())
 }
 
 function copyHeaders(responseFrom: NodeFetchResponse, responseTo: Response) {
     responseFrom.headers.forEach((headerValue, headerName) => {
-        responseTo.setHeader(fixHeaderNameCase(headerName), headerValue)
+        const fixedHeader = fixHeaderNameCase(headerName);
+        if(fixedHeader) {
+            responseTo.setHeader(fixedHeader, headerValue)
+        }
     })
 }
 function findSceneJsonId(entity:V3ControllerEntity): string {
