@@ -19,14 +19,14 @@ upstream metrics {
 server {
     listen 80;
     server_name $katalyst_host;
-    
+
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
-    }   
+    }
 
     location / {
         return 301 https://$katalyst_host$request_uri;
-    } 
+    }
 }
 
 server {
@@ -36,9 +36,9 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     ssl_certificate /etc/letsencrypt/live/$katalyst_host/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$katalyst_host/privkey.pem;
-    client_max_body_size 128M;
+    client_max_body_size 256M;
 
-    
+
     location ~ ^/content(.*)$ {
         proxy_pass http://content-server$1$is_args$args;
         proxy_pass_request_headers  on;
@@ -47,26 +47,26 @@ server {
         proxy_read_timeout          600;
         send_timeout                600;
     }
-    
+
     location  ~ ^/comms(.*)$ {
-        proxy_pass http://comms-server$1$is_args$args; 
+        proxy_pass http://comms-server$1$is_args$args;
         proxy_pass_request_headers  on;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 	    proxy_set_header Upgrade $http_upgrade;
     	proxy_set_header Connection "Upgrade";
     }
-    
+
     location  ~ ^/lambdas(.*)$ {
         proxy_pass http://lambdas$1$is_args$args;
         proxy_pass_request_headers  on;
     }
-    
+
     location  ~ ^/metrics(.*)$ {
         proxy_pass http://metrics$1$is_args$args;
         proxy_pass_request_headers  on;
     }
 
     location / {
-        root /etc/nginx/html; 
+        root /etc/nginx/html;
     }
 }
