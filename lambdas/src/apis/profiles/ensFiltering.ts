@@ -22,7 +22,7 @@ export async function getOwnedENS(theGraphBaseUrl: string, ethAddress: string): 
         const response = await fetch(theGraphBaseUrl, opts(ethAddress))
         if (response.ok) {
             const jsonResponse: GraphResponse = await response.json()
-            return jsonResponse.data.nameRegistrations.map(registration => registration.subdomain)
+            return jsonResponse.data.enss.map(registration => registration.subdomain)
         }
     } catch (error) {
         console.log(`Could not retrieve ENS for address ${ethAddress}.`, error)
@@ -32,7 +32,7 @@ export async function getOwnedENS(theGraphBaseUrl: string, ethAddress: string): 
 
 type GraphResponse = {
     data: {
-        nameRegistrations: {subdomain: string}[]
+        enss: {subdomain: string}[]
     }
 }
 
