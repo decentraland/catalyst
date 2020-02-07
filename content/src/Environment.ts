@@ -31,6 +31,8 @@ const DEFAULT_SERVER_PORT = 6969
 const DEFAULT_DCL_API_URL = "https://api.decentraland.zone/v1"
 export const DEFAULT_ETH_NETWORK = "ropsten"
 
+export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
+
 export class Environment {
     private configs: Map<EnvironmentConfig, any> = new Map();
     private beans: Map<Bean,any> = new Map();
