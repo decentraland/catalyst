@@ -11,6 +11,7 @@ import { ContentServerClient, ServerAddress } from "./ContentServerClient";
 import { sleep } from "../../ClusterUtils";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
+import { Validations } from "@katalyst/content/service/validations/Validations";
 
 export function getClient(address: ServerAddress, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
     return new ActiveContentServerClient(address, name, lastKnownTimestamp)
@@ -29,7 +30,7 @@ class ActiveContentServerClient extends ContentServerClient {
      */
     async updateTimestamp(timestamp: number | undefined): Promise<void> {
         // If not set, then ask the server's for its current time
-        timestamp = timestamp ?? (await this.getCurrentTimestamp()) - ms('1m') // Subtract 1 min, as to avoid potential race conditions with a new deployment
+        timestamp = timestamp ?? (await this.getCurrentTimestamp()) - Validations.REQUEST_TTL // Subtract allowed TTL, as to avoid potential race conditions with a new deployment
 
         // Update the last known timestamp
         this.lastKnownTimestamp = Math.max(this.lastKnownTimestamp, timestamp);
