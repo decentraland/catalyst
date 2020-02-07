@@ -66,7 +66,7 @@ const DEFAULT_ETH_NETWORK = "ropsten";
       env: {
         relay,
         secure,
-        commitHash: process.env.commitHash
+        commitHash: process.env.COMMIT_HASH
       }
     }
   );
