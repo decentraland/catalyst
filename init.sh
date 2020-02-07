@@ -152,17 +152,6 @@ dockerComposeSetup() {
   fi
   printMessage ok
 
-  echo -n "## Commit hash..."
-  commit_hash=`git rev-parse HEAD`
-  sed -i "s/\$commit_hash/${commit_hash}/g" docker-compose.yml
-  matches=`cat docker-compose.yml | grep COMMIT_HASH | grep -v rev | wc -l`
-  if test $matches -eq 0; then
-    printMessage failed
-    echo "Failed to perform changes on docker-compose.yml." 
-    exit 1
-  fi
-  printMessage ok
-
   echo -n "## SEGMENT_WRITE_KEY..."
   sed -i "s/\$segment_write_key/${SEGMENT_WRITE_KEY}/g" docker-compose.yml
   matches=`cat docker-compose.yml | grep ${SEGMENT_WRITE_KEY} | grep -v write | wc -l`

@@ -11,7 +11,7 @@ import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
 import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Audit";
-import { CURRENT_CONTENT_VERSION } from "../Environment";
+import { CURRENT_CONTENT_VERSION, CURRENT_COMMIT_HASH } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
 import { Lock } from "./locking/Lock";
@@ -251,6 +251,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             currentTime: Date.now(),
             lastImmutableTime: this.getLastImmutableTime(),
             historySize: await this.historyManager.getHistorySize(),
+            commitHash: CURRENT_COMMIT_HASH
         }
     }
 
