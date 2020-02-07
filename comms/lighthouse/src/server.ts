@@ -65,7 +65,8 @@ const DEFAULT_ETH_NETWORK = "ropsten";
       version: LIGHTHOUSE_VERSION,
       env: {
         relay,
-        secure
+        secure,
+        commitHash: process.env.commitHash
       }
     }
   );
