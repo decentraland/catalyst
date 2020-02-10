@@ -5,6 +5,7 @@ import { Blacklist } from "../blacklist/Blacklist";
 import { MetaverseContentService } from "../service/Service";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
+import { ContentCluster } from "../service/synchronization/ContentCluster";
 
 export class ControllerFactory {
     static create(env: Environment): Controller {
@@ -12,6 +13,7 @@ export class ControllerFactory {
         const blacklist: Blacklist = env.getBean(Bean.BLACKLIST);
         const historyManager: HistoryManager = env.getBean(Bean.HISTORY_MANAGER);
         const failedDeploymentsManager: FailedDeploymentsManager = env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER);
-        return new Controller(new BlacklistServiceDecorator(service, blacklist), historyManager, blacklist, failedDeploymentsManager);
+        const contentCluster: ContentCluster = env.getBean(Bean.CONTENT_CLUSTER);
+        return new Controller(new BlacklistServiceDecorator(service, blacklist), historyManager, blacklist, failedDeploymentsManager, contentCluster);
     }
 }

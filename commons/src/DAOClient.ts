@@ -25,10 +25,7 @@ export class DAOClient {
   async getAllServers(): Promise<Set<ServerMetadata>> {
     const result: Set<ServerMetadata> = new Set();
 
-    let count = 0;
-    try {
-      count = parseInt(await this.contract.methods.catalystCount().call());
-    } catch (error) {}
+    const count = parseInt(await this.contract.methods.catalystCount().call());
 
     for (let i = 0; i < count; i++) {
       try {

@@ -72,17 +72,17 @@ export class EventDeployer {
                 const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
 
                 // Download all entity's files
-                const files: (ContentFile | undefined)[] = await this.getContentFiles(entity, source)
+                const files: ContentFile[] = await this.getContentFiles(entity, source)
 
-                // Add the entity file to the list of files
-                files.unshift(entityFile)
+                // Calculated expected number of files
+                const expectedNumberOfFiles = entity.content?.size ?? 0
 
-                // Keep only defined files
-                const definedFiles: ContentFile[] = files.filter((file): file is ContentFile => !!file)
+                if (expectedNumberOfFiles === files.length) {
+                    // Add the entity file to the list of files
+                    files.unshift(entityFile)
 
-                if (definedFiles.length === files.length) {
                     // Since we could fetch all files, deploy the new entity normally
-                    return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(definedFiles, deployment.entityId, auditInfo, deployment.serverName))
+                    return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo, deployment.serverName))
                 } else {
                     // Looks like there was a problem fetching one of the files
                     await this.reportError(deployment, FailureReason.FETCH_PROBLEM)
@@ -102,7 +102,7 @@ export class EventDeployer {
     /**
      * Get all the files needed to deploy the new entity
      */
-    private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<(ContentFile | undefined)[]> {
+    private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<ContentFile[]> {
         // Read the entity, and get all content file hashes
         const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
@@ -110,12 +110,12 @@ export class EventDeployer {
         const unknownFileHashes = await this.filterOutKnownFiles(allFileHashes)
 
         // Download all content files
-        const filePromises: (ContentFile | undefined)[] = []
+        const files: ContentFile[] = []
         for (let i = 0; i < unknownFileHashes.length; i++) {
             const fileHash = unknownFileHashes[i]
             const file = await this.getFileOrUndefined(fileHash, source);
             if (file) {
-                filePromises.push(file)
+                files.push(file)
                 EventDeployer.LOGGER.trace(`Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id})`)
             } else {
                 EventDeployer.LOGGER.trace(`Failed to download file '${fileHash} for entity (${entity.type}, ${entity.id}). Will cancel content download`)
@@ -123,7 +123,7 @@ export class EventDeployer {
             }
         }
 
-        return filePromises
+        return files
     }
 
     private async getEntityFile(deployment: DeploymentEvent, source?: ContentServerClient): Promise<ContentFile | undefined> {

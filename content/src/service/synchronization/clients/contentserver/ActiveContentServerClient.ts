@@ -7,7 +7,7 @@ import { ContentFileHash, Hashing } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
 import { AuditInfo } from "../../../audit/Audit";
-import { ContentServerClient, ServerAddress } from "./ContentServerClient";
+import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
 import { sleep } from "../../ClusterUtils";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
@@ -54,8 +54,8 @@ class ActiveContentServerClient extends ContentServerClient {
         return HistoryClient.consumeAllHistory(this.address, from, to, serverName)
     }
 
-    isActive(): boolean {
-        return true
+    getConnectionState(): ConnectionState {
+        return ConnectionState.CONNECTED;
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
