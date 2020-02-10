@@ -258,7 +258,7 @@ export class Peer implements IPeer {
 
     const roomUsers: MinPeerData[] = json;
 
-    room.users = roomUsers.map(it => it.peerId);
+    room.users = roomUsers.map(it => it.userId);
 
     this.updateKnownPeersWithRoom(room, roomUsers);
 
