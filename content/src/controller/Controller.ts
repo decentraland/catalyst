@@ -1,6 +1,7 @@
 import express from "express";
-import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
+import log4js from "log4js"
 import fs from "fs"
+import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
@@ -15,6 +16,8 @@ import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
 
 export class Controller {
+
+    private static readonly LOGGER = log4js.getLogger('Controller');
 
     constructor(private readonly service: MetaverseContentService,
         private readonly historyManager: HistoryManager,
@@ -110,7 +113,7 @@ export class Controller {
             creationTimestamp: t
         }))
         .catch(error => {
-            console.log(`Returning error '${error.message}'`)
+            Controller.LOGGER.warn(`Returning error '${error.message}'`)
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
         })
     }
@@ -146,7 +149,7 @@ export class Controller {
         await deployment
             .then(creationTimestamp => res.send({ creationTimestamp }))
             .catch(error => {
-                console.log(`Returning error '${error.message}'`)
+                Controller.LOGGER.warn(`Returning error '${error.message}'`)
                 res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
             })
     }

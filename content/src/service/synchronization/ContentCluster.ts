@@ -1,3 +1,4 @@
+import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
@@ -11,6 +12,8 @@ import { Listener, Disposable } from "./events/ClusterEvent";
 import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
 
 export class ContentCluster {
+
+    private static readonly LOGGER = log4js.getLogger('ContentCluster');
 
     // My own identity
     private myIdentity: ServerMetadata | undefined
@@ -67,6 +70,8 @@ export class ContentCluster {
     /** Update our data with the DAO's servers list */
     private async syncWithDAO() {
         try {
+            ContentCluster.LOGGER.debug(`Starting sync with DAO`)
+
             // Ask the DAO for all the servers
             const allServers: Set<ServerMetadata> = await this.dao.getAllContentServers()
 
@@ -93,8 +98,10 @@ export class ContentCluster {
                     if (newName === UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
+                        ContentCluster.LOGGER.info(`Can't connect to server ${newName} on ${address}`)
                     } else if (!previousClient.isActive()){
                         // Create new client
+                        ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
                         newClient = getClient(address, newName, previousClient.getLastKnownTimestamp())
                     }
                 } else {
@@ -104,7 +111,7 @@ export class ContentCluster {
                     } else {
                         // Create new client
                         newClient = getClient(address, newName, this.lastImmutableTime)
-                        console.log(`Connected to new server ${newName} on ${address}`)
+                        ContentCluster.LOGGER.info(`Connected to new server ${newName} on ${address}`)
                     }
                 }
                 if (newClient) {
@@ -112,10 +119,12 @@ export class ContentCluster {
                 }
             }
         } catch (error) {
-            console.error(`Failed to sync with the DAO \n${error}`)
+            ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
         } finally {
             // Set a timeout to stay in sync with the DAO
             this.syncTimeout = setTimeout(() => this.syncWithDAO(), this.timeBetweenSyncs)
+
+            ContentCluster.LOGGER.debug(`Finished sync with DAO`)
         }
     }
 
@@ -154,12 +163,12 @@ export class ContentCluster {
             const serversWithMyName = serverNames.filter(({ name }) => name == this.nameKeeper.getServerName())
 
             if (serversWithMyName.length > 1) {
-                console.log(`Expected to find only one server with my name '${this.nameKeeper.getServerName()}', but found ${serversWithMyName.length}`)
+                ContentCluster.LOGGER.warn(`Expected to find only one server with my name '${this.nameKeeper.getServerName()}', but found ${serversWithMyName.length}`)
             } else {
                 this.myIdentity = serversWithMyName[0]?.metadata
             }
         } catch (error) {
-            console.log(`Failed to connect with the DAO \n${error}`)
+            ContentCluster.LOGGER.error(`Failed to connect with the DAO \n${error}`)
         }
     }
 

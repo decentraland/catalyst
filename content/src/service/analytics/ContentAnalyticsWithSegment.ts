@@ -1,9 +1,12 @@
+import log4js from "log4js"
 import Analytics from "analytics-node"
 import { Entity } from "../Entity";
 import { ContentAnalytics } from "./ContentAnalytics";
 import { EthAddress } from "dcl-crypto";
 
 export class ContentAnalyticsWithSegment implements ContentAnalytics {
+
+    private static readonly LOGGER = log4js.getLogger('ContentAnalyticsWithSegment');
 
     private segmentClient: Analytics;
 
@@ -16,7 +19,7 @@ export class ContentAnalyticsWithSegment implements ContentAnalytics {
             ContentAnalyticsWithSegment.createRecordEvent(serverName, entity, ethAddress, origin),
             (err: Error, data: any) => {
                 if (err) {
-                    console.log("There was an error while reporting metrics: ", err)
+                    ContentAnalyticsWithSegment.LOGGER.warn(`There was an error while reporting metrics: ${err.message}`)
                 }
             })
 	}

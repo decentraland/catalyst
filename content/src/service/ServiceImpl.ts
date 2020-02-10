@@ -1,3 +1,4 @@
+import log4js from "log4js"
 import { ContentFileHash, Hashing } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { MetaverseContentService, ENTITY_FILE_NAME, ContentFile, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
@@ -20,6 +21,8 @@ import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason, NoFailure } from "./errors/FailedDeploymentsManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
+
+    private static readonly LOGGER = log4js.getLogger('ServiceImpl');
 
     private readonly lock: Lock
     private entities: Cache<EntityId, Entity | undefined>
@@ -196,6 +199,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
             // Report failure
             const failureReport = this.failedDeploymentsManager.reportFailure(entityType, entityId, deploymentTimestamp, serverName, failureReason)
+
+            ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${failureReason}'`)
             await Promise.all([historyStorage, failureReport])
         }
     }

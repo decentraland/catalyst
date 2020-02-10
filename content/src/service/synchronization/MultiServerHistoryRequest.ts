@@ -1,3 +1,4 @@
+import log4js from "log4js"
 import { ServerName } from "../naming/NameKeeper";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Timestamp } from "../time/TimeSorting";
@@ -8,6 +9,8 @@ import { EventDeployer } from "./EventDeployer";
  * On some occasions (such as server onboarding) a server might need to make a request to many other servers on the cluster.
  */
 export class MultiServerHistoryRequest {
+
+    private static readonly LOGGER = log4js.getLogger('MultiServerHistoryRequest');
 
     private readonly request: Request
 
@@ -26,7 +29,7 @@ export class MultiServerHistoryRequest {
         try {
             await this.deployer.deployHistories(histories, { logging: true })
         } catch (error) {
-            console.error(`Failed to deploy histories. Reason:\n${error}`)
+            MultiServerHistoryRequest.LOGGER.error(`Failed to deploy histories. Reason:\n${error}`)
         }
     }
 
@@ -35,7 +38,7 @@ export class MultiServerHistoryRequest {
         try {
             return await server.getHistory(this.request.from, this.request.serverName, this.request.to)
         } catch (error) {
-            console.error(`Failed to execute multi server request on ${server.getName()}. Reason:\n${error}`)
+            MultiServerHistoryRequest.LOGGER.error(`Failed to execute multi server request on ${server.getName()}. Reason:\n${error}`)
             return []
         }
     }

@@ -1,4 +1,5 @@
 import cors from "cors";
+import log4js from "log4js";
 import express, { RequestHandler } from "express";
 import compression from "compression";
 import morgan from "morgan";
@@ -10,12 +11,21 @@ import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 
 export class Server {
+
+    private static readonly LOGGER = log4js.getLogger('Server');
+
    private port: number;
    private app: express.Express;
    private httpServer: http.Server;
    private synchronizationManager: SynchronizationManager;
 
    constructor(env: Environment) {
+      // Set logger
+      log4js.configure({
+        appenders: { console: { type: 'console' } },
+        categories: { default: { appenders: [ 'console' ], level: 'debug' } }
+      });
+
       this.port = env.getConfig(EnvironmentConfig.SERVER_PORT);
 
       this.app = express();
@@ -79,7 +89,7 @@ export class Server {
 
    async start(): Promise<void> {
         this.httpServer = this.app.listen(this.port, () => {
-            console.info(`==> Content Server listening on port ${this.port}.`);
+            Server.LOGGER.info(`==> Content Server listening on port ${this.port}.`);
         });
         await this.synchronizationManager.start()
    }
@@ -88,7 +98,7 @@ export class Server {
         await this.synchronizationManager.stop()
         if (this.httpServer) {
             this.httpServer.close(() => {
-                console.info(`==> Content Server stopped.`);
+                Server.LOGGER.info(`==> Content Server stopped.`);
             })
         }
    }
