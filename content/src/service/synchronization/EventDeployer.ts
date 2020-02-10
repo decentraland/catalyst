@@ -19,7 +19,7 @@ export class EventDeployer {
             this.eventProcessor = new EventStreamProcessor((event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
         }
 
-    deployHistories(histories: DeploymentHistory[]) {
+    deployHistories(histories: DeploymentHistory[], options?: HistoryDeploymentOptions) {
         // Remove duplicates
         const map: Map<EntityId, DeploymentEvent> = new Map()
         histories.forEach(history => history.forEach(event => map.set(event.entityId, event)))
@@ -28,7 +28,7 @@ export class EventDeployer {
         const unifiedHistory = Array.from(map.values())
 
         // Deploy
-        return this.deployHistory(unifiedHistory)
+        return this.deployHistory(unifiedHistory, options)
     }
 
     async deployHistory(history: DeploymentHistory, options?: HistoryDeploymentOptions) {
