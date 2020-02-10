@@ -7,7 +7,7 @@ export const networks = {
   ropsten: {
     wss: "wss://ropsten.infura.io/ws",
     contracts: {
-      katalyst: {
+      catalyst: {
         address: "0xadd085f2318e9678bbb18b3e0711328f902b374b",
         class: Catalyst
       }
@@ -16,7 +16,7 @@ export const networks = {
   mainnet: {
     wss: "wss://mainnet.infura.io/ws",
     contracts: {
-      katalyst: {
+      catalyst: {
         address: "0x4a2f10076101650f40342885b99b6b101d83c486",
         class: Catalyst
       }
