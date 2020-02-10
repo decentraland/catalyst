@@ -1,3 +1,4 @@
+import log4js from "log4js"
 import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Entity, EntityId } from "../Entity";
@@ -11,6 +12,8 @@ import { EventStreamProcessor } from "./EventStreamProcessor";
 import { FailureReason } from "../errors/FailedDeploymentsManager";
 
 export class EventDeployer {
+
+    private static readonly LOGGER = log4js.getLogger('EventDeployer');
 
     private readonly eventProcessor: EventStreamProcessor
 
@@ -39,8 +42,11 @@ export class EventDeployer {
         // Keep only new deployments
         const newDeployments = history.filter(event => newEntities.has(event.entityId));
 
-        if (options?.logging) {
-            console.log(`History had ${history.length} entities, only ${newDeployments.length} new.`)
+        if (history.length > 0) {
+            EventDeployer.LOGGER.debug(`History had ${history.length} entities, only ${newDeployments.length} new.`)
+            if (newDeployments.length > 0) {
+                EventDeployer.LOGGER.debug(`Will start to deploy the ${newDeployments.length} new entities.`)
+            }
         }
 
         // Process history and deploy it
@@ -49,6 +55,8 @@ export class EventDeployer {
 
     /** Download and prepare everything necessary to deploy an entity */
     private async prepareDeployment(deployment: DeploymentEvent, source?: ContentServerClient): Promise<DeploymentExecution> {
+        EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
+
         // Download the entity file
         const entityFile: ContentFile | undefined = await this.getEntityFile(deployment, source);
 
@@ -98,12 +106,24 @@ export class EventDeployer {
         // Read the entity, and get all content file hashes
         const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
-        // Download all content files that we don't currently have
-        const filePromises: Promise<ContentFile | undefined>[] = (await this.filterOutKnownFiles(allFileHashes))
-            .map(fileHash => this.getFileOrUndefined(fileHash, source))
+        // Check which files we already have
+        const unknownFileHashes = await this.filterOutKnownFiles(allFileHashes)
 
-        // Return all the downloaded files
-        return Promise.all(filePromises)
+        // Download all content files
+        const filePromises: (ContentFile | undefined)[] = []
+        for (let i = 0; i < unknownFileHashes.length; i++) {
+            const fileHash = unknownFileHashes[i]
+            const file = await this.getFileOrUndefined(fileHash, source);
+            if (file) {
+                filePromises.push(file)
+                EventDeployer.LOGGER.trace(`Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id})`)
+            } else {
+                EventDeployer.LOGGER.trace(`Failed to download file '${fileHash} for entity (${entity.type}, ${entity.id}). Will cancel content download`)
+                break;
+            }
+        }
+
+        return filePromises
     }
 
     private async getEntityFile(deployment: DeploymentEvent, source?: ContentServerClient): Promise<ContentFile | undefined> {
