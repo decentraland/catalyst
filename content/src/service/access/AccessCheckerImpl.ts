@@ -1,3 +1,4 @@
+import log4js from "log4js"
 import { AccessChecker } from "./AccessChecker";
 import { EthAddress  } from "dcl-crypto";
 import { Pointer, EntityType } from "../Entity";
@@ -5,6 +6,8 @@ import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { ContentAuthenticator } from "../auth/Authenticator";
 
 export class AccessCheckerImpl implements AccessChecker {
+
+    private static readonly LOGGER = log4js.getLogger('AccessCheckerImpl');
 
     constructor(private readonly authenticator: ContentAuthenticator, private readonly dclApiBaseUrl: string) { }
 
@@ -54,7 +57,7 @@ export class AccessCheckerImpl implements AccessChecker {
             const responseJson = await FetchHelper.fetchJson(accessURL)
             return responseJson.data.isUpdateAuthorized
         } catch(e) {
-            console.error(e)
+            AccessCheckerImpl.LOGGER.warn(`Failed to check parcel access. Error was ${e.message}`)
         }
         return false
     }

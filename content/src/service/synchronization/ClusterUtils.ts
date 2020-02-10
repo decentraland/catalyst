@@ -1,7 +1,10 @@
 import ms from "ms"
+import log4js from "log4js"
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 
+
+const LOGGER = log4js.getLogger('ClusterUtils');
 
 /**
  * This method tries to execute a request on all cluster servers, until one responds successfully
@@ -24,7 +27,7 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
         retries--;
         if (retries >= 0) {
             await sleep(ms("1s"))
-            console.log("All calls to other servers failed. Going to retry.")
+            LOGGER.info("All calls to other servers failed. Going to retry.")
         }
     }
 
