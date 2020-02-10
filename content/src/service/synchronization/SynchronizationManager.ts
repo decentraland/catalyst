@@ -1,5 +1,6 @@
 import { setTimeout, clearTimeout } from "timers"
 import ms from "ms";
+import log4js from "log4js"
 import { TimeKeepingService } from "../Service";
 import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
@@ -18,6 +19,7 @@ export interface SynchronizationManager {
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
 
+    private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager');
     private syncWithNodesTimeout: NodeJS.Timeout;
     private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
@@ -56,6 +58,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         // Update flag
         this.processing = true;
 
+        ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
         try {
             // Gather all servers
             const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
@@ -69,7 +72,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
             if (minTimestamp > this.lastImmutableTime) {
                 // Set this new minimum timestamp as the latest immutable time
-                console.log(`Setting immutable time to ${minTimestamp}`)
+                ClusterSynchronizationManager.LOGGER.debug(`Setting immutable time to ${minTimestamp}`)
                 this.lastImmutableTime = minTimestamp
                 this.cluster.setImmutableTime(minTimestamp)
                 await this.service.setImmutableTime(minTimestamp)
@@ -80,6 +83,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
             // Set the timeout again
             this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
+
+            ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
         }
     }
 
@@ -95,7 +100,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             // Let the client know that the deployment was successful, and update the last known timestamp
             await contentServer.updateTimestamp(newDeployments[0]?.timestamp)
         } catch(error) {
-            console.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
+            ClusterSynchronizationManager.LOGGER.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
         }
     }
 
@@ -103,7 +108,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
      * When a node is removed from the DAO, we want to ask all other servers on the DAO if they knew something else about it
      */
     private handleServerRemoval({ serverRemoved, lastKnownTimestamp, remainingServers }): Promise<void> {
-        console.log(`Handling removal of ${serverRemoved}. It's last known timestamp is ${lastKnownTimestamp}`)
+        ClusterSynchronizationManager.LOGGER.info(`Handling removal of ${serverRemoved}. It's last known timestamp is ${lastKnownTimestamp}`)
 
         // Prepare request
         const request = new MultiServerHistoryRequest(remainingServers, this.deployer, lastKnownTimestamp, serverRemoved)

@@ -71,8 +71,8 @@ class ActiveContentServerClient extends ContentServerClient {
                 }
             } catch (error) {
                 await sleep(ms("0.5s"))
-                retries--;
             }
+            retries--;
         }
         if (retries >=0 && content) {
             return { name: fileHash, content: content }

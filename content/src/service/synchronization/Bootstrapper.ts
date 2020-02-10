@@ -1,3 +1,4 @@
+import log4js from "log4js"
 import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
@@ -7,6 +8,8 @@ import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { tryOnCluster } from "./ClusterUtils";
 
 export class Bootstrapper {
+
+    private static readonly LOGGER = log4js.getLogger('Bootstrapper');
 
     /**
      * Start an onboarding process into the cluster. This implies syncing all missing history with the cluster's servers
@@ -24,22 +27,27 @@ export class Bootstrapper {
             // Execute the request
             return request.execute()
         } else {
-            console.log(`Couldn't find servers to bootstrap with`)
+            Bootstrapper.LOGGER.warn(`Couldn't find servers to bootstrap with`)
         }
     }
 
     private static async onboardIntoClusterWithServer(myLastImmutableTime: Timestamp, cluster: ContentCluster, deployer: EventDeployer): Promise<Timestamp> {
-        // Get one (any) server's last immutable time and history
-        const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
+        try {
+            // Get one (any) server's last immutable time and history
+            const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
-        // Bootstrap
-        await deployer.deployHistory(history, { logging: true })
+            // Bootstrap
+            await deployer.deployHistory(history, { logging: true })
 
-        // Update the timestamp on the server
-        await server.updateTimestamp(immutableTime)
+            // Update the timestamp on the server
+            await server.updateTimestamp(immutableTime)
 
-        console.log("Finished bootstrapping")
-        return immutableTime
+            Bootstrapper.LOGGER.info("Finished bootstrapping")
+            return immutableTime
+        } catch (error) {
+            Bootstrapper.LOGGER.error(`An error happened failed during bootstrapping: ${error}`)
+            return -1
+        }
     }
 
     private static async getImmutableHistoryOnServerFrom(from: Timestamp, server: ContentServerClient): Promise<[Timestamp, ContentServerClient, DeploymentHistory]> {
