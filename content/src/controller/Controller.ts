@@ -14,6 +14,7 @@ import { EthAddress, Signature, AuthLink } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
+import { ContentCluster } from "../service/synchronization/ContentCluster";
 
 export class Controller {
 
@@ -22,7 +23,8 @@ export class Controller {
     constructor(private readonly service: MetaverseContentService,
         private readonly historyManager: HistoryManager,
         private readonly blacklist: Blacklist,
-        private readonly failedDeploymentsManager: FailedDeploymentsManager) { }
+        private readonly failedDeploymentsManager: FailedDeploymentsManager,
+        private readonly contentCluster: ContentCluster) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -241,12 +243,15 @@ export class Controller {
         return value ? parseInt(value) : undefined
     }
 
-    getStatus(req: express.Request, res: express.Response) {
+    async getStatus(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /status
 
-        this.service.getStatus()
-        .then(status => res.send(status))
+        const serverStatus = await this.service.getStatus();
+
+        const clusterStatus = this.contentCluster.getStatus()
+
+        res.send({ ...serverStatus, clusterStatus })
     }
 
     addToBlacklist(req: express.Request, res: express.Response) {

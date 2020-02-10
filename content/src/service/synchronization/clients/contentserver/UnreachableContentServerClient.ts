@@ -5,7 +5,7 @@ import { DeploymentHistory } from "../../../history/HistoryManager";
 import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { AuditInfo } from "../../../audit/Audit";
-import { ContentServerClient, UNREACHABLE } from "./ContentServerClient";
+import { ContentServerClient, UNREACHABLE, ConnectionState } from "./ContentServerClient";
 
 export function getUnreachableClient(): UnreachableContentServerClient {
     return new UnreachableContentServerClient()
@@ -42,8 +42,8 @@ class UnreachableContentServerClient extends ContentServerClient {
         return Promise.resolve([])
     }
 
-    isActive(): boolean {
-        return false
+    getConnectionState(): ConnectionState {
+        return ConnectionState.NEVER_REACHED;
     }
 
 }

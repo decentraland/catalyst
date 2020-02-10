@@ -1,7 +1,7 @@
 import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
-import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
+import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
 import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
@@ -26,6 +26,8 @@ export class ContentCluster {
     private lastImmutableTime: Timestamp = 0
     // An event triggered when a server is removed fro the DAO
     private removalEvent: DAORemovalEvent = new DAORemovalEvent()
+    // Time of last sync
+    private timeOfLastSync: Timestamp = 0
 
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
@@ -46,13 +48,20 @@ export class ContentCluster {
         this.dao.disconnect()
     }
 
+    getStatus() {
+        const otherServers = Array.from(this.serversInDAO.entries())
+            .map(([address, client]) => ( { address, connectionState: client.getConnectionState() } ))
+
+        return { otherServers, lastSync: this.timeOfLastSync }
+    }
+
     getAllServersInCluster(): ContentServerClient[] {
         return Array.from(this.serversInDAO.values())
     }
 
     getAllActiveServersInCluster(): ContentServerClient[] {
         return Array.from(this.serversInDAO.values())
-            .filter(client => client.isActive())
+            .filter(client => client.getConnectionState() === ConnectionState.CONNECTED)
     }
 
     setImmutableTime(immutableTime: Timestamp) {
@@ -99,7 +108,7 @@ export class ContentCluster {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
                         ContentCluster.LOGGER.info(`Can't connect to server ${newName} on ${address}`)
-                    } else if (!previousClient.isActive()){
+                    } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
                         newClient = getClient(address, newName, previousClient.getLastKnownTimestamp())
@@ -118,6 +127,9 @@ export class ContentCluster {
                     this.serversInDAO.set(address, newClient)
                 }
             }
+
+            // Update sync time
+            this.timeOfLastSync = Date.now()
         } catch (error) {
             ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
         } finally {

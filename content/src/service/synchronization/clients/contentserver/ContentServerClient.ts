@@ -28,13 +28,12 @@ export abstract class ContentServerClient {
 
     /** Update the last known timestamp */
     abstract updateTimestamp(timestamp: Timestamp | undefined): Promise<void>;
-    /** Return whether the server is actually active. It its not active, then we might use a redirect client for example */
-    abstract isActive(): boolean
     abstract getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity>;
     abstract getContentFile(fileHash: ContentFileHash): Promise<ContentFile>;
     abstract getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo>;
     abstract getStatus(): Promise<ServerStatus>;
     abstract getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory>;
+    abstract getConnectionState(): ConnectionState;
 }
 
 /** Return the server's name, or the text "UNREACHABLE" it it couldn't be reached */
@@ -45,6 +44,12 @@ export async function getServerName(address: ServerAddress): Promise<ServerName>
     } catch (error) {
         return UNREACHABLE
     }
+}
+
+export enum ConnectionState {
+    CONNECTED,
+    CONNECTION_LOST,
+    NEVER_REACHED,
 }
 
 export type ServerAddress = string

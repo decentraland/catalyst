@@ -4,7 +4,7 @@ import { EntityType, Entity } from "../../../Entity";
 import { DeploymentHistory } from "../../../history/HistoryManager";
 import { ServerName } from "../../../naming/NameKeeper";
 import { AuditInfo } from "../../../audit/Audit";
-import { ContentServerClient } from "./ContentServerClient";
+import { ContentServerClient, ConnectionState } from "./ContentServerClient";
 import { ContentCluster } from "../../ContentCluster";
 import { tryOnCluster } from "../../ClusterUtils";
 
@@ -56,8 +56,8 @@ class RedirectContentServerClient extends ContentServerClient {
         return Promise.resolve()
     }
 
-    isActive(): boolean {
-        return false
+    getConnectionState(): ConnectionState {
+        return ConnectionState.CONNECTION_LOST;
     }
 
     /** Redirect the call to one of the other servers. Will return the first result */
