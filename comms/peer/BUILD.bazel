@@ -36,6 +36,7 @@ rollup_bundle(
     entry_point = "src/index.ts",
     format = "esm",
     output_dir = False,
+    sourcemap = "false",
     deps = [
         ":peer",
         "@npm//@wessberg/rollup-plugin-ts",
