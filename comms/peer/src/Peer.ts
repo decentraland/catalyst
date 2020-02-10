@@ -182,7 +182,7 @@ export class Peer implements IPeer {
   }
 
   private buildTopologyInfo() {
-    return { connectedPeerIds: Object.keys(this.connectedPeers) };
+    return { connectedPeerIds: this.fullyConnectedPeerIds() };
   }
 
   private buildParcelInfo() {
@@ -361,6 +361,16 @@ export class Peer implements IPeer {
         toConnectCount = connectionResults.filter(([status]) => status === "rejected").length;
       }
 
+      const toDisconnect = this.connectedCount() - this.config.maxConnections!;
+
+      //If we are over connected, we disconnect
+      if (toDisconnect > 0) {
+        Object.keys(this.connectedPeers)
+          .sort((peer1, peer2) => this.connectedPeers[peer1].createTimestamp - this.connectedPeers[peer2].createTimestamp)
+          .slice(0, toDisconnect)
+          .forEach(peerId => this.disconnectFrom(peerId));
+      }
+
       this.updatingNetwork = false;
 
       resolve();
@@ -371,7 +381,7 @@ export class Peer implements IPeer {
     //Since there may be flows that leave connections that are actually lost, we check if relatively
     //old connections are not connected and discard them.
     Object.keys(this.connectedPeers).forEach(it => {
-      if (!this.isConnectedTo(it) && new Date().getTime() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
+      if (!this.isConnectedTo(it) && Date.now() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
         this.log(LogLevel.WARN, `The connection to ${it} is not in a sane state. Discarding it.`);
         this.disconnectFrom(it);
       }
@@ -379,7 +389,11 @@ export class Peer implements IPeer {
   }
 
   private connectedCount() {
-    return Object.keys(this.connectedPeers).length;
+    return this.fullyConnectedPeerIds().length;
+  }
+
+  private fullyConnectedPeerIds() {
+    return Object.keys(this.connectedPeers).filter(it => this.isConnectedTo(it));
   }
 
   async connectTo(known: KnownPeerData) {
@@ -735,6 +749,13 @@ export class Peer implements IPeer {
           if (this.checkForCrossOffers(peerId, payload.sessionId)) {
             break;
           }
+
+          //If we receive a candidate for a connection that we don't have, we ignore it
+          if (!this.hasConnectionsFor(peerId)) {
+            this.log(LogLevel.INFO, `Received candidate for unknown peer connection: ${peerId}. Ignoring.`);
+            break;
+          }
+
           const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
           signalMessage(peer, payload.connectionId, {
             candidate: payload.candidate
