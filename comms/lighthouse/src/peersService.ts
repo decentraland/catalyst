@@ -30,7 +30,7 @@ export class PeersService implements IPeersService {
   constructor(private realmProvider: () => IRealm, private lighthouseSecure: boolean, private lighthousePort: number) {}
 
   notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
-    console.log(`Sending ${type} notification to: `, peers);
+    console.log(`Sending ${type} notification to: `, peers.map(it => it.userId));
     peers.forEach($ => {
       const client = this.peerRealm!.getClientById($.peerId);
       if (client) {
