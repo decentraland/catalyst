@@ -1,8 +1,7 @@
-import { setInterval, clearInterval } from "timers"
+import { setTimeout, clearTimeout } from "timers"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper } from "../naming/NameKeeper";
-
 import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
@@ -15,19 +14,19 @@ export class ContentCluster {
 
     // My own identity
     private myIdentity: ServerMetadata | undefined
-    // Interval set to sync with DAO
-    private syncInterval: NodeJS.Timeout;
+    // Timeout set to sync with DAO
+    private syncTimeout: NodeJS.Timeout;
     // Servers that were reached at least once
     private serversInDAO: Map<ServerAddress, ContentServerClient> = new Map()
     // Last immutable time. This shouldn't be a responsibility of the cluster, but we can avoid doing really long calls
     // when creating a new client if we know this.
     private lastImmutableTime: Timestamp = 0
-
+    // An event triggered when a server is removed fro the DAO
     private removalEvent: DAORemovalEvent = new DAORemovalEvent()
 
-    constructor(private dao: DAOClient,
-        private updateFromDAOInterval: number,
-        private nameKeeper: NameKeeper) { }
+    constructor(private readonly dao: DAOClient,
+        private readonly timeBetweenSyncs: number,
+        private readonly nameKeeper: NameKeeper) { }
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
@@ -36,14 +35,11 @@ export class ContentCluster {
 
         // Perform first sync with the DAO
         await this.syncWithDAO()
-
-        // Set up continuous sync interval
-        this.syncInterval = setInterval(() => this.syncWithDAO(), this.updateFromDAOInterval)
     }
 
     /** Stop syncing with DAO */
     disconnect() {
-        clearInterval(this.syncInterval)
+        clearTimeout(this.syncTimeout)
         this.dao.disconnect()
     }
 
@@ -117,6 +113,9 @@ export class ContentCluster {
             }
         } catch (error) {
             console.error(`Failed to sync with the DAO \n${error}`)
+        } finally {
+            // Set a timeout to stay in sync with the DAO
+            this.syncTimeout = setTimeout(() => this.syncWithDAO(), this.timeBetweenSyncs)
         }
     }
 

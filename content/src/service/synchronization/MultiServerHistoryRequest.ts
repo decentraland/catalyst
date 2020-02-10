@@ -24,7 +24,7 @@ export class MultiServerHistoryRequest {
         const histories: DeploymentHistory[] = await Promise.all(this.recipients
             .map(recipient => this.executeRequestOn(recipient)))
         try {
-            await this.deployer.deployHistories(histories)
+            await this.deployer.deployHistories(histories, { logging: true })
         } catch (error) {
             console.error(`Failed to deploy histories. Reason:\n${error}`)
         }

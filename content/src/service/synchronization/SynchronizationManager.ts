@@ -1,4 +1,4 @@
-import { setInterval, clearInterval } from "timers"
+import { setTimeout, clearTimeout } from "timers"
 import ms from "ms";
 import { TimeKeepingService } from "../Service";
 import { Timestamp } from "../time/TimeSorting";
@@ -18,15 +18,15 @@ export interface SynchronizationManager {
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
 
-    private syncWithNodesInterval: NodeJS.Timeout;
+    private syncWithNodesTimeout: NodeJS.Timeout;
     private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
-    private processing: number = 0
+    private processing: boolean = false
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: TimeKeepingService,
         private readonly deployer: EventDeployer,
-        private readonly syncWithServersInterval: number) { }
+        private readonly timeBetweenSyncs: number) { }
 
     async start(): Promise<void> {
         // Read immutable time from the history I have
@@ -41,41 +41,46 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         // Onboard into cluster
         await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime)
 
-        // Set an interval to stay in sync with other servers
-        this.syncWithNodesInterval = setInterval(() => this.syncWithServers(), this.syncWithServersInterval)
+        // Set a timeout to stay in sync with other servers
+        this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
     }
 
     stop(): Promise<void> {
-        clearInterval(this.syncWithNodesInterval)
+        clearTimeout(this.syncWithNodesTimeout)
         this.daoRemovalEventSubscription?.dispose()
         this.cluster.disconnect()
-        return this.waitUntilAllSyncingFinishes()
+        return this.waitUntilSyncFinishes()
     }
 
     private async syncWithServers(): Promise<void> {
-        // Update counter
-        this.processing++;
+        // Update flag
+        this.processing = true;
 
-        // Gather all servers
-        const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
+        try {
+            // Gather all servers
+            const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
-        // Fetch and process new deployments
-        await Promise.all(contentServers.map(server => this.syncWithContentServer(server)))
+            // Fetch and process new deployments
+            await Promise.all(contentServers.map(server => this.syncWithContentServer(server)))
 
-        // Find the minimum timestamp between all servers
-        const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getLastKnownTimestamp())
-            .reduce((min, current) => Math.min(min, current), Date.now())
+            // Find the minimum timestamp between all servers
+            const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getLastKnownTimestamp())
+                .reduce((min, current) => Math.min(min, current), Date.now())
 
-        if (minTimestamp > this.lastImmutableTime) {
-            // Set this new minimum timestamp as the latest immutable time
-            console.log(`Setting immutable time to ${minTimestamp}`)
-            this.lastImmutableTime = minTimestamp
-            this.cluster.setImmutableTime(minTimestamp)
-            await this.service.setImmutableTime(minTimestamp)
+            if (minTimestamp > this.lastImmutableTime) {
+                // Set this new minimum timestamp as the latest immutable time
+                console.log(`Setting immutable time to ${minTimestamp}`)
+                this.lastImmutableTime = minTimestamp
+                this.cluster.setImmutableTime(minTimestamp)
+                await this.service.setImmutableTime(minTimestamp)
+            }
+        } finally {
+            // Update flag
+            this.processing = false;
+
+            // Set the timeout again
+            this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
         }
-
-        // Update counter
-        this.processing--;
     }
 
     /** Get all updates from one specific content server */
@@ -107,9 +112,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         return request.execute()
     }
 
-    private waitUntilAllSyncingFinishes(): Promise<void> {
+    private waitUntilSyncFinishes(): Promise<void> {
         return new Promise(async (resolve) => {
-            while (this.processing > 0) {
+            while (this.processing) {
                 await sleep(ms('1s'))
             }
             resolve()
