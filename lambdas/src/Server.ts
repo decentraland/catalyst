@@ -1,4 +1,5 @@
 import cors from "cors";
+import log4js from "log4js";
 import express, { RequestHandler } from "express";
 import morgan from "morgan";
 import compression from "compression";
@@ -14,6 +15,12 @@ export class Server {
    private httpServer: http.Server;
 
    constructor(env: Environment) {
+      // Set logger
+      log4js.configure({
+        appenders: { console: { type: 'console', layout: { type: 'basic' } } },
+        categories: { default: { appenders: [ 'console' ], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) } }
+      });
+
       this.port = env.getConfig(EnvironmentConfig.SERVER_PORT);
 
       this.app = express();
