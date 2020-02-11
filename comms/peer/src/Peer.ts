@@ -48,6 +48,7 @@ type PeerConfig = {
   peerConnectTimeout?: number;
   oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
+  logLevel?: keyof typeof LogLevel;
   authHandler?: (msg: string) => Promise<string>;
   parcelGetter?: () => [number, number];
 };
@@ -115,9 +116,14 @@ export class Peer implements IPeer {
 
   private stats = new GlobalStats();
 
-  private logLevel: keyof typeof LogLevel = "INFO";
+  public logLevel: keyof typeof LogLevel = "INFO";
 
   constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { authHandler: msg => Promise.resolve(msg) }) {
+    
+    if (this.config.logLevel) {
+      this.logLevel = this.config.logLevel;
+    }
+
     const url = new URL(lighthouseUrl);
 
     this.config.token = this.config.token ?? util.randomToken();
