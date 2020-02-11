@@ -98,6 +98,7 @@ export const enum EnvironmentConfig {
     DECENTRALAND_ADDRESS,
     DCL_API_URL,
     ETH_NETWORK,
+    LOG_LEVEL,
 }
 
 export class EnvironmentBuilder {
@@ -167,6 +168,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_API_URL               , () => process.env.DCL_API_URL ?? DEFAULT_DCL_API_URL)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK               , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL                 , () => process.env.LOG_LEVEL ?? "info")
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
