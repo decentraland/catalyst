@@ -16,7 +16,6 @@ import { Authenticator } from "dcl-crypto";
 import { pickName } from "./naming";
 import { patchLog } from "./logging";
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
-import { HttpProvider } from "web3x/providers";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 
 const LIGHTHOUSE_VERSION = "0.1";
