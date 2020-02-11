@@ -244,6 +244,9 @@ export class Peer implements IPeer {
     this.currentLayer = layer;
     this.currentRooms.length = 0;
     this.updateKnownPeers(json);
+
+    //@ts-ignore
+    const ignored = this.updateNetwork();
   }
 
   async joinRoom(roomId: string): Promise<any> {
@@ -347,38 +350,41 @@ export class Peer implements IPeer {
 
     this.updatingNetwork = true;
     return new Promise(async (resolve, reject) => {
-      this.checkConnectionsSanity();
+      try {
+        this.checkConnectionsSanity();
 
-      let toConnectCount = this.config.minConnections! - this.connectedCount();
-      let remaining = this.calculateConnectionCandidates();
-      let toConnect = [] as string[];
-      while (toConnectCount > 0 && remaining.length > 0) {
-        this.log(LogLevel.INFO, `Updating network. Trying to establish ${toConnectCount} connections with candidates`, remaining);
+        let toConnectCount = this.config.minConnections! - this.connectedCount();
+        let remaining = this.calculateConnectionCandidates();
+        let toConnect = [] as string[];
+        while (toConnectCount > 0 && remaining.length > 0) {
+          this.log(LogLevel.INFO, `Updating network. Trying to establish ${toConnectCount} connections with candidates`, remaining);
 
-        [toConnect, remaining] = pickRandom(remaining, toConnectCount);
+          [toConnect, remaining] = pickRandom(remaining, toConnectCount);
 
-        this.log(LogLevel.DEBUG, `Updating network. Picked ${toConnect}`);
+          this.log(LogLevel.DEBUG, `Updating network. Picked ${toConnect}`);
 
-        const connectionResults = await Promise.all(toConnect.map(candidate => noReject(this.connectTo(this.knownPeers[candidate]))));
+          const connectionResults = await Promise.all(toConnect.map(candidate => noReject(this.connectTo(this.knownPeers[candidate]))));
 
-        this.log(LogLevel.INFO, `Updating network. Connection result: `, connectionResults);
+          this.log(LogLevel.INFO, `Updating network. Connection result: `, connectionResults);
 
-        toConnectCount = connectionResults.filter(([status]) => status === "rejected").length;
+          toConnectCount = connectionResults.filter(([status]) => status === "rejected").length;
+        }
+
+        const toDisconnect = this.connectedCount() - this.config.maxConnections!;
+
+        //If we are over connected, we disconnect
+        if (toDisconnect > 0) {
+          Object.keys(this.connectedPeers)
+            .sort((peer1, peer2) => this.connectedPeers[peer1].createTimestamp - this.connectedPeers[peer2].createTimestamp)
+            .slice(0, toDisconnect)
+            .forEach(peerId => this.disconnectFrom(peerId));
+        }
+        resolve();
+      } catch (e) {
+        this.log(LogLevel.ERROR, "Error while updating network", e);
+      } finally {
+        this.updatingNetwork = false;
       }
-
-      const toDisconnect = this.connectedCount() - this.config.maxConnections!;
-
-      //If we are over connected, we disconnect
-      if (toDisconnect > 0) {
-        Object.keys(this.connectedPeers)
-          .sort((peer1, peer2) => this.connectedPeers[peer1].createTimestamp - this.connectedPeers[peer2].createTimestamp)
-          .slice(0, toDisconnect)
-          .forEach(peerId => this.disconnectFrom(peerId));
-      }
-
-      this.updatingNetwork = false;
-
-      resolve();
     });
   }
 
