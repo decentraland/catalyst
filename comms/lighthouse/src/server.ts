@@ -16,12 +16,15 @@ import { Authenticator } from "dcl-crypto";
 import { pickName } from "./naming";
 import { patchLog } from "./logging";
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 
 const LIGHTHOUSE_VERSION = "0.1";
 const DEFAULT_ETH_NETWORK = "ropsten";
 
+const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
+
 (async function() {
-  const daoClient = new DAOClient(process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK);
+  const daoClient = new DAOClient(CURRENT_ETH_NETWORK);
 
   const name = await pickName(process.env.LIGHTHOUSE_NAMES, daoClient);
   console.info("Picked name: " + name);
@@ -87,7 +90,8 @@ const DEFAULT_ETH_NETWORK = "ropsten";
         return false;
       }
       try {
-        const result = Authenticator.validateSignature(client.getMsg(), message.payload);
+        const provider = httpProviderForNetwork(CURRENT_ETH_NETWORK);
+        const result = Authenticator.validateSignature(client.getMsg(), message.payload, provider);
 
         return result;
       } catch (e) {
