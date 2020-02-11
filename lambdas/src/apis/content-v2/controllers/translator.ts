@@ -1,41 +1,88 @@
+import log4js from "log4js"
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Response as NodeFetchResponse } from "node-fetch"
 import { Environment } from '../../../Environment'
 import { baseContentServerUrl } from '../../../EnvironmentUtils'
 
+const LOGGER = log4js.getLogger('ContentTranslator');
+const MAX_SCENE_AREA: number = 100
 
-export function getScenes(env: Environment, req: Request, res: Response) {
+export async function getScenes(env: Environment, req: Request, res: Response) {
     // Method: GET
     // Path: /scenes
     // Query String: ?x1={number}&x2={number}&y1={number}&y2={number}
-    const x1:number = req.query.x1
-    const x2:number = req.query.x2
-    const y1:number = req.query.y1
-    const y2:number = req.query.y2
-    let pointers: string[] = []
-    for(let x=x1; x<=x2; x++) {
-        for(let y=y1; y<=y2; y++) {
-            pointers.push(`pointer=${x},${y}`)
+    const x1: number = parseInt(req.query.x1)
+    const x2: number = parseInt(req.query.x2)
+    const y1: number = parseInt(req.query.y1)
+    const y2: number = parseInt(req.query.y2)
+
+    // Make sure that all params are set, and that they are numbers
+    if (isNaN(x1) || isNaN(x2) || isNaN(y1) || isNaN(y2)) {
+        res.status(400).send(`Please make sure that all given parcels are set, and that they are numbers.`)
+        return;
+    }
+
+    // Calculate max and min for each coordinate
+    const minX = Math.min(x1, x2)
+    const maxX = Math.max(x1, x2)
+    const minY = Math.min(y1, y2)
+    const maxY = Math.max(y1, y2)
+
+    // Make sure that the specified rectangle meets the max size criteria
+    const size = (maxX - minX + 1) * (maxY - minY + 1)
+    if (size > MAX_SCENE_AREA) {
+        res.status(400).send(`Please make sure that the specified area contains ${MAX_SCENE_AREA} or less parcels.`)
+        return;
+    }
+
+    // Calculate all inner parcels and transform them into pointers
+    const pointers: string[] = []
+    for(let x = minX; x <= maxX; x++) {
+        for(let y = minY; y <= maxY; y++) {
+            pointers.push(`${x},${y}`)
         }
     }
-    const pointerParams = pointers.join('&')
+
+    // If there are no pointers, then there is no need to query the content server
+    if (pointers.length === 0) {
+        res.send({ data:[] })
+        return;
+    }
+
+    // Calculate the url
+    const pointerParams = 'pointer=' + pointers.join('&pointer=')
     const v3Url = baseContentServerUrl(env) + `/entities/scenes?${pointerParams}`
-    fetch(v3Url)
-    .then(response => response.json())
-    .then((entities:V3ControllerEntity[]) => {
-        let scenesResult: ScenesResult = {data:[]}
-        entities.forEach((entity: V3ControllerEntity) => {
-            entity.pointers.forEach(pointer => {
-                scenesResult.data.push({
-                    parcel_id: pointer,
-                    root_cid: entity.id,
-                    scene_cid: findSceneJsonId(entity),
-                })
+    LOGGER.trace(`Querying the content server for scenes. Url is ${v3Url}`)
+
+    // Perform the fetch
+    const response = await fetch(v3Url)
+
+    // If the request failed, then return the status code and text
+    if (!response.ok) {
+        const returnedText = await response.text()
+        res.status(response.status).send(returnedText)
+        LOGGER.warn(`Translation to content failed. Response status was ${response.status} and text was ${returnedText}`)
+        return;
+    }
+
+    const data: ScenesItem[] = []
+
+    // Read the response, and transform it
+    const entities: V3ControllerEntity[] = await response.json()
+    entities.forEach((entity: V3ControllerEntity) => {
+        entity.pointers.forEach(pointer => {
+            data.push({
+                parcel_id: pointer,
+                root_cid: entity.id,
+                scene_cid: findSceneJsonId(entity),
             })
         })
-        res.send(scenesResult)
     })
+
+    // Return the result
+    const scenesResult: ScenesResult = { data }
+    res.send(scenesResult)
 }
 
 interface V3ControllerEntity {

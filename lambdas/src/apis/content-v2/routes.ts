@@ -9,6 +9,6 @@ export function initializeContentV2Routes(router: Router, env: Environment): Rou
     return router
 }
 
-function createHandler(env: Environment, orignalHandler: (env: Environment, req: Request, res: Response)=>void): (req: Request, res: Response)=>void {
-    return (req: Request, res: Response) => orignalHandler(env, req, res)
+function createHandler(env: Environment, originalHandler: (env: Environment, req: Request, res: Response)=>void): (req: Request, res: Response)=>void {
+    return (req: Request, res: Response) => originalHandler(env, req, res)
 }
