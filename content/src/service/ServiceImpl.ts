@@ -38,7 +38,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private authenticator: ContentAuthenticator,
         private failedDeploymentsManager: FailedDeploymentsManager,
         private lastImmutableTime: Timestamp,
-        private ignoreValidationErrors: boolean) {
+        private ignoreValidationErrors: boolean,
+        private network: string) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
         this.lock = new Lock()
     }
@@ -52,10 +53,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         accessChecker: AccessChecker,
         authenticator: ContentAuthenticator,
         failedDeploymentsManager: FailedDeploymentsManager,
-        ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
+        ignoreValidationErrors: boolean = false,
+        network: string): Promise<ServiceImpl>{
             const lastImmutableTime: Timestamp = await historyManager.getLastImmutableTime() ?? 0
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, accessChecker, authenticator, failedDeploymentsManager, lastImmutableTime, ignoreValidationErrors)
+                analytics, accessChecker, authenticator, failedDeploymentsManager, lastImmutableTime, ignoreValidationErrors, network)
         }
 
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -93,7 +95,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         validationContext: ValidationContext,
         origin: string,
         fixAttempt: boolean = false): Promise<Timestamp> {
-        const validation = new Validations(this.accessChecker, this.authenticator, this.failedDeploymentsManager)
+        const validation = new Validations(this.accessChecker, this.authenticator, this.failedDeploymentsManager, this.network)
 
         // Find entity file and make sure its hash is the expected
         const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
