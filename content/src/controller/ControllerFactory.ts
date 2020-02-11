@@ -1,4 +1,4 @@
-import { Environment, Bean } from "../Environment";
+import { Environment, Bean, EnvironmentConfig } from "../Environment";
 import { Controller } from "./Controller";
 import { BlacklistServiceDecorator } from "../blacklist/BlacklistServiceDecorator";
 import { Blacklist } from "../blacklist/Blacklist";
@@ -14,6 +14,7 @@ export class ControllerFactory {
         const historyManager: HistoryManager = env.getBean(Bean.HISTORY_MANAGER);
         const failedDeploymentsManager: FailedDeploymentsManager = env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER);
         const contentCluster: ContentCluster = env.getBean(Bean.CONTENT_CLUSTER);
-        return new Controller(new BlacklistServiceDecorator(service, blacklist), historyManager, blacklist, failedDeploymentsManager, contentCluster);
+        const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK);
+        return new Controller(new BlacklistServiceDecorator(service, blacklist), historyManager, blacklist, failedDeploymentsManager, contentCluster, ethNetwork);
     }
 }

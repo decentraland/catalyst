@@ -1,4 +1,5 @@
 import { Authenticator, EthAddress, AuthChain } from "dcl-crypto";
+import { EthereumProvider } from "web3x/providers";
 
 export class ContentAuthenticator extends Authenticator {
   static DECENTRALAND_ADDRESS: EthAddress = "0x1337e0507eb4ab47e08a179573ed4533d9e22a7b";
@@ -13,7 +14,7 @@ export class ContentAuthenticator extends Authenticator {
   }
 
   /** Validate that the signature belongs to the Ethereum address */
-  async validateSignature(expectedFinalAuthority: string, authChain: AuthChain): Promise<boolean> {
-    return Authenticator.validateSignature(expectedFinalAuthority, authChain);
+  async validateSignature(expectedFinalAuthority: string, authChain: AuthChain, provider: EthereumProvider): Promise<boolean> {
+    return Authenticator.validateSignature(expectedFinalAuthority, authChain, provider);
   }
 }
