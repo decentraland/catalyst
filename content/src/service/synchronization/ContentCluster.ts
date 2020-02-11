@@ -52,7 +52,7 @@ export class ContentCluster {
         const otherServers = Array.from(this.serversInDAO.entries())
             .map(([address, client]) => ( { address, connectionState: client.getConnectionState() } ))
 
-        return { otherServers, lastSync: this.timeOfLastSync }
+        return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
     }
 
     getAllServersInCluster(): ContentServerClient[] {
