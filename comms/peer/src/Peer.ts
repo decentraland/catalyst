@@ -119,7 +119,6 @@ export class Peer implements IPeer {
   public logLevel: keyof typeof LogLevel = "INFO";
 
   constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { authHandler: msg => Promise.resolve(msg) }) {
-    
     if (this.config.logLevel) {
       this.logLevel = this.config.logLevel;
     }
@@ -663,7 +662,9 @@ export class Peer implements IPeer {
 
     const peersToSend = Object.keys(this.connectedPeers).filter(it => !packet.receivedBy.includes(it));
     if (packet.optimistic) {
-      packet.receivedBy = [...packet.receivedBy, ...peersToSend];
+      //We only add those connected peers that the connection actually informs as connected
+      const fullyConnectedToSend = peersToSend.filter(it => this.fullyConnectedPeerIds().includes(it));
+      packet.receivedBy = [...packet.receivedBy, ...fullyConnectedToSend];
     }
 
     peersToSend.forEach(peer => {
