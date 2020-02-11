@@ -123,8 +123,6 @@ export class Peer implements IPeer {
       this.logLevel = this.config.logLevel;
     }
 
-    const url = new URL(lighthouseUrl);
-
     this.config.token = this.config.token ?? util.randomToken();
 
     this.config.minConnections = this.config.minConnections ?? 4;
@@ -133,25 +131,9 @@ export class Peer implements IPeer {
     this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
 
-    const secure = url.protocol === "https:";
-
     this.instanceId = Math.floor(Math.random() * MAX_UINT32);
 
-    this.httpClient = new PeerHttpClient(lighthouseUrl, () => this.config.token!);
-
-    this.peerJsConnection = new PeerJSServerConnection(this, peerId, {
-      host: url.hostname,
-      port: url.port ? parseInt(url.port) : secure ? 443 : 80,
-      path: url.pathname,
-      secure,
-      token: this.config.token,
-      authHandler: config.authHandler,
-      heartbeatExtras: () => ({
-        ...this.buildTopologyInfo(),
-        ...this.buildParcelInfo()
-      }),
-      ...(config.socketBuilder ? { socketBuilder: config.socketBuilder } : {})
-    });
+    this.setLighthouseUrl(lighthouseUrl);
 
     this.wrtc = config.wrtc;
 
@@ -171,6 +153,31 @@ export class Peer implements IPeer {
       }, 1000);
 
     scheduleExpiration();
+  }
+
+  public setLighthouseUrl(lighthouseUrl: string) {
+    this.peerJsConnection?.disconnect();
+
+    this.cleanStateAndConnections();
+
+    this.currentLayer = undefined;
+
+    const url = new URL(lighthouseUrl);
+    const secure = url.protocol === "https:";
+    this.httpClient = new PeerHttpClient(lighthouseUrl, () => this.config.token!);
+    this.peerJsConnection = new PeerJSServerConnection(this, this.peerId, {
+      host: url.hostname,
+      port: url.port ? parseInt(url.port) : secure ? 443 : 80,
+      path: url.pathname,
+      secure,
+      token: this.config.token,
+      authHandler: this.config.authHandler,
+      heartbeatExtras: () => ({
+        ...this.buildTopologyInfo(),
+        ...this.buildParcelInfo()
+      }),
+      ...(this.config.socketBuilder ? { socketBuilder: this.config.socketBuilder } : {})
+    });
   }
 
   private expireMessages() {
@@ -242,11 +249,17 @@ export class Peer implements IPeer {
     });
 
     this.currentLayer = layer;
-    this.currentRooms.length = 0;
+    this.cleanStateAndConnections();
     this.updateKnownPeers(json);
 
     //@ts-ignore
     const ignored = this.updateNetwork();
+  }
+
+  private cleanStateAndConnections() {
+    Object.keys(this.connectedPeers).forEach(it => this.disconnectFrom(it));
+    this.currentRooms.length = 0;
+    this.knownPeers = {};
   }
 
   async joinRoom(roomId: string): Promise<any> {
@@ -843,5 +856,7 @@ export class Peer implements IPeer {
 
   async dispose() {
     clearTimeout(this.expireTimeoutId);
+    this.cleanStateAndConnections();
+    this.peerJsConnection?.disconnect();
   }
 }
