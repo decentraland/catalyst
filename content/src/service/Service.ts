@@ -54,7 +54,6 @@ export type ServerStatus = {
     currentTime: Timestamp
     lastImmutableTime: Timestamp
     historySize: number
-    commitHash: string
 }
 
 

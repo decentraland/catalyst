@@ -9,7 +9,7 @@ import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Blacklist } from "../blacklist/Blacklist";
 import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
 import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
-import { CURRENT_CONTENT_VERSION } from "../Environment";
+import { CURRENT_CONTENT_VERSION, CURRENT_COMMIT_HASH } from "../Environment";
 import { EthAddress, Signature, AuthLink } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
@@ -24,7 +24,8 @@ export class Controller {
         private readonly historyManager: HistoryManager,
         private readonly blacklist: Blacklist,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
-        private readonly contentCluster: ContentCluster) { }
+        private readonly contentCluster: ContentCluster,
+        private readonly ethNetwork: string) { }
 
     getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -251,7 +252,11 @@ export class Controller {
 
         const clusterStatus = this.contentCluster.getStatus()
 
-        res.send({ ...serverStatus, clusterStatus })
+        res.send({ ...serverStatus,
+            clusterStatus,
+            commitHash: CURRENT_COMMIT_HASH,
+            ethNetwork: this.ethNetwork,
+         })
     }
 
     addToBlacklist(req: express.Request, res: express.Response) {
