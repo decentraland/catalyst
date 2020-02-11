@@ -17,7 +17,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         currentTime: Date.now(),
         lastImmutableTime: 0,
         historySize: 0,
-        commitHash: "ababababa"
     }
 
     static readonly AUDIT_INFO: AuditInfo = {
