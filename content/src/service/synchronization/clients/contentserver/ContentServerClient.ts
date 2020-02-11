@@ -47,9 +47,9 @@ export async function getServerName(address: ServerAddress): Promise<ServerName>
 }
 
 export enum ConnectionState {
-    CONNECTED,
-    CONNECTION_LOST,
-    NEVER_REACHED,
+    CONNECTED = "Connected",
+    CONNECTION_LOST = "Connection lost",
+    NEVER_REACHED = "Could never be reached",
 }
 
 export type ServerAddress = string
