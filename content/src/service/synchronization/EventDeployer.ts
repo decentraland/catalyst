@@ -72,12 +72,9 @@ export class EventDeployer {
                 const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
 
                 // Download all entity's files
-                const files: ContentFile[] = await this.getContentFiles(entity, source)
+                const files: ContentFile[] | undefined = await this.getContentFiles(entity, source)
 
-                // Calculated expected number of files
-                const expectedNumberOfFiles = entity.content?.size ?? 0
-
-                if (expectedNumberOfFiles === files.length) {
+                if (files) {
                     // Add the entity file to the list of files
                     files.unshift(entityFile)
 
@@ -102,7 +99,7 @@ export class EventDeployer {
     /**
      * Get all the files needed to deploy the new entity
      */
-    private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<ContentFile[]> {
+    private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<ContentFile[] | undefined> {
         // Read the entity, and get all content file hashes
         const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
@@ -119,7 +116,7 @@ export class EventDeployer {
                 EventDeployer.LOGGER.trace(`Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id})`)
             } else {
                 EventDeployer.LOGGER.trace(`Failed to download file '${fileHash} for entity (${entity.type}, ${entity.id}). Will cancel content download`)
-                break;
+                return undefined
             }
         }
 
