@@ -63,6 +63,7 @@ ts_library(
     deps = [
         "//commons",
         "//comms/peer",
+        "//contracts",
         "@npm//@types",
         "@npm//cors",
         "@npm//dcl-crypto",
