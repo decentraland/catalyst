@@ -257,9 +257,9 @@ export class Peer implements IPeer {
   }
 
   private cleanStateAndConnections() {
-    Object.keys(this.connectedPeers).forEach(it => this.disconnectFrom(it));
     this.currentRooms.length = 0;
     this.knownPeers = {};
+    Object.keys(this.connectedPeers).forEach(it => this.disconnectFrom(it));
   }
 
   async joinRoom(roomId: string): Promise<any> {
@@ -857,6 +857,13 @@ export class Peer implements IPeer {
   async dispose() {
     clearTimeout(this.expireTimeoutId);
     this.cleanStateAndConnections();
-    this.peerJsConnection?.disconnect();
+    return new Promise<void>((resolve, reject) => {
+      if (this.peerJsConnection && !this.peerJsConnection.disconnected) {
+        this.peerJsConnection.once(PeerEventType.Disconnected, resolve);
+        this.peerJsConnection.disconnect();
+      } else {
+        resolve();
+      }
+    });
   }
 }
