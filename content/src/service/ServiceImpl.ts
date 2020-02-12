@@ -178,11 +178,13 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 if (fixAttempt) {
                     // Invalidate the cache and report the successful deployment
                     this.entities.invalidate(entity.id)
-                    await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
                 } else {
                     // Add the new deployment to history
                     await this.historyManager.newEntityDeployment(serverName, entity.type, entityId, newAuditInfo.deployedTimestamp)
                 }
+
+                // Mark deployment as successful
+                await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
 
                 // Record deployment for analytics
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
