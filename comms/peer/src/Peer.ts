@@ -412,7 +412,7 @@ export class Peer implements IPeer {
     });
   }
 
-  private connectedCount() {
+  public connectedCount() {
     return this.fullyConnectedPeerIds().length;
   }
 
@@ -524,38 +524,44 @@ export class Peer implements IPeer {
   }
 
   private handlePeerPacket(data: Uint8Array, peerId: string) {
-    const packet: Packet = Packet.decode(Reader.create(data));
-    // if (parsed.hasMessagedata()) {
+    try {
+      const packet = Packet.decode(Reader.create(data));
 
-    const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
+      // if (parsed.hasMessagedata()) {
 
-    this.ensureKnownPeer(packet);
+      const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
 
-    if (packet.discardOlderThan !== 0) {
-      //If discardOlderThan is zero, then we don't need to store the package.
-      //Same or older packages will be instantly discarded
-      this.markReceived(packet);
-    }
+      this.ensureKnownPeer(packet);
 
-    const expired = this.checkExpired(packet);
+      if (packet.discardOlderThan !== 0) {
+        //If discardOlderThan is zero, then we don't need to store the package.
+        //Same or older packages will be instantly discarded
+        this.markReceived(packet);
+      }
 
-    this.stats.countPacket(packet, data.length, alreadyReceived, expired);
+      const expired = this.checkExpired(packet);
 
-    if (!alreadyReceived && !expired) {
-      this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
+      this.stats.countPacket(packet, data.length, alreadyReceived, expired);
 
-      const messageData = packet.messageData;
-      if (messageData) {
-        if (this.isInRoom(messageData.room)) {
-          this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
+      if (!alreadyReceived && !expired) {
+        this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
+
+        const messageData = packet.messageData;
+        if (messageData) {
+          if (this.isInRoom(messageData.room)) {
+            this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
+          }
+        }
+
+        packet.hops += 1;
+
+        if (packet.hops < packet.ttl) {
+          this.sendPacket(packet);
         }
       }
-
-      packet.hops += 1;
-
-      if (packet.hops < packet.ttl) {
-        this.sendPacket(packet);
-      }
+    } catch (e) {
+      this.log(LogLevel.WARN, "Failed to process message from: " + peerId, e);
+      return;
     }
   }
 
