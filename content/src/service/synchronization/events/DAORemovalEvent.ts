@@ -7,6 +7,6 @@ export class DAORemovalEvent extends ClusterEvent<DAORemoval> { }
 
 export type DAORemoval = {
     serverRemoved: ServerName,
-    lastKnownTimestamp: Timestamp,
+    estimatedLocalImmutableTime: Timestamp,
     remainingServers: ContentServerClient[],
 }

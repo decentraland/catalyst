@@ -31,7 +31,7 @@ class RedirectContentServerClient extends ContentServerClient {
         const status = {
             name: this.name,
             version: "Unknown",
-            currentTime: this.lastKnownTimestamp,
+            currentTime: this.estimatedLocalImmutableTime,
             lastImmutableTime: -1,
             historySize: -1,
             commitHash: "Unknown"
@@ -51,7 +51,7 @@ class RedirectContentServerClient extends ContentServerClient {
         return this.redirectCall(server => server.getContentFile(fileHash))
     }
 
-    updateTimestamp(timestamp: number | undefined): Promise<void> {
+    updateEstimatedLocalImmutableTime(timestamp: number | undefined): Promise<void> {
         // We won't update the timestamp until we can connect to the server again
         return Promise.resolve()
     }
