@@ -527,8 +527,6 @@ export class Peer implements IPeer {
     try {
       const packet = Packet.decode(Reader.create(data));
 
-      // if (parsed.hasMessagedata()) {
-
       const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
 
       this.ensureKnownPeer(packet);
