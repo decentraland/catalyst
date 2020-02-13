@@ -85,7 +85,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
         // It looks like we are changing the deployment's server name but, since we won't store it, it won't change
-        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin, true)
+        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin)
     }
 
     private async deployInternal(files: ContentFile[],
@@ -93,8 +93,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         auditInfo: AuditInfo,
         serverName: ServerName,
         validationContext: ValidationContext,
-        origin: string,
-        fixAttempt: boolean = false): Promise<Timestamp> {
+        origin: string): Promise<Timestamp> {
         const validation = new Validations(this.accessChecker, this.authenticator, this.failedDeploymentsManager, this.network)
 
         // Find entity file and make sure its hash is the expected
@@ -175,16 +174,17 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
                 await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
 
-                if (fixAttempt) {
-                    // Invalidate the cache and report the successful deployment
-                    this.entities.invalidate(entity.id)
-                } else {
+                const deploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id)
+                if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
                     // Add the new deployment to history
                     await this.historyManager.newEntityDeployment(serverName, entity.type, entityId, newAuditInfo.deployedTimestamp)
-                }
+                } else {
+                    // Mark deployment as successful
+                    await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
 
-                // Mark deployment as successful
-                await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
+                    // Invalidate the cache and report the successful deployment
+                    this.entities.invalidate(entity.id)
+                }
 
                 // Record deployment for analytics
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
