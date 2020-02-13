@@ -5,7 +5,7 @@ interface PeerRequestInit extends RequestInit {
 }
 
 export class PeerHttpClient {
-  constructor(private lighthouseUrl: string, private tokenProvider: () => string) {}
+  constructor(public lighthouseUrl: string, private tokenProvider: () => string) {}
 
   async fetch(urlOrPath: string, init?: PeerRequestInit): Promise<{ response: Response; json: any }> {
     let actualUrl = urlOrPath;

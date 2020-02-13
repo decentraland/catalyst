@@ -33,6 +33,8 @@ enum LogLevel {
 
 const PeerSignals = { offer: "offer", answer: "answer" };
 
+const MUST_BE_IN_SAME_DOMAIN_AND_LAYER = "MUST_BE_IN_SAME_DOMAIN_AND_LAYER";
+
 function signalMessage(peer: PeerData, connectionId: string, signal: SignalData) {
   peer.connection.signal(signal);
 }
@@ -341,6 +343,11 @@ export class Peer implements IPeer {
     if (peerData) {
       peerData.rooms.forEach(room => this.removeUserFromRoom(room, userId));
     }
+  }
+
+  private removeKnownPeerByPeerId(peerId: string) {
+    const userId = Object.keys(this.knownPeers).find(key => this.knownPeers[key].peerId === peerId);
+    if (userId) this.removeKnownPeer(userId);
   }
 
   async roomConnectionHealthy(roomId: string) {
@@ -702,14 +709,36 @@ export class Peer implements IPeer {
     const connectionId = connectionIdFor(this.peerId, peerData.id, peerData.sessionId);
     return (data: SignalData) => {
       this.log(LogLevel.DEBUG, `Signal in peer connection ${connectionId}: ${data.type ?? "candidate"}`);
-      if (data.type === PeerSignals.offer) {
-        this.peerJsConnection.sendOffer(peerData, { sdp: data, sessionId: peerData.sessionId, connectionId, protocolVersion: PROTOCOL_VERSION });
-      } else if (data.type === PeerSignals.answer) {
-        this.peerJsConnection.sendAnswer(peerData, { sdp: data, sessionId: peerData.sessionId, connectionId, protocolVersion: PROTOCOL_VERSION });
-      } else if (data.candidate) {
-        this.peerJsConnection.sendCandidate(peerData, data, connectionId);
+      if (this.currentLayer) {
+        if (data.type === PeerSignals.offer) {
+          this.peerJsConnection.sendOffer(peerData, {
+            sdp: data,
+            sessionId: peerData.sessionId,
+            connectionId,
+            protocolVersion: PROTOCOL_VERSION,
+            lighthouseUrl: this.lighthouseUrl(),
+            layer: this.currentLayer
+          });
+        } else if (data.type === PeerSignals.answer) {
+          this.peerJsConnection.sendAnswer(peerData, {
+            sdp: data,
+            sessionId: peerData.sessionId,
+            connectionId,
+            protocolVersion: PROTOCOL_VERSION,
+            lighthouseUrl: this.lighthouseUrl(),
+            layer: this.currentLayer
+          });
+        } else if (data.candidate) {
+          this.peerJsConnection.sendCandidate(peerData, data, connectionId);
+        }
+      } else {
+        this.log(LogLevel.WARN, "Ignoring connection signal since the peer has not joined a layer yet")
       }
     };
+  }
+
+  private lighthouseUrl() {
+    return this.httpClient.lighthouseUrl;
   }
 
   private getOrCreatePeer(peerId: string, initiator: boolean = false, room: string, sessionId?: string) {
@@ -771,6 +800,11 @@ export class Peer implements IPeer {
             break;
           }
 
+          if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
+            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, MUST_BE_IN_SAME_DOMAIN_AND_LAYER);
+            break;
+          }
+
           const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
           signalMessage(peer, payload.connectionId, payload.sdp);
           break;
@@ -795,6 +829,10 @@ export class Peer implements IPeer {
         case ServerMessageType.Reject: {
           const peer = this.connectedPeers[peerId];
           peer?.connection?.destroy();
+          delete this.connectedPeers[peerId];
+          if (payload.reason === MUST_BE_IN_SAME_DOMAIN_AND_LAYER) {
+            this.removeKnownPeerByPeerId(peerId);
+          }
           break;
         }
         case ServerMessageType.PeerLeftRoom: {
