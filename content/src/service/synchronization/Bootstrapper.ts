@@ -40,7 +40,7 @@ export class Bootstrapper {
             await deployer.deployHistory(history, { logging: true })
 
             // Update the timestamp on the server
-            await server.updateTimestamp(immutableTime)
+            await server.updateEstimatedLocalImmutableTime(immutableTime)
 
             Bootstrapper.LOGGER.info("Finished bootstrapping")
             return immutableTime

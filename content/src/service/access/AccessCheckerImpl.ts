@@ -69,7 +69,13 @@ export class AccessCheckerImpl implements AccessChecker {
             errors.push(`Only one pointer is allowed when you create a Profile. Received: ${pointers}`)
         }
 
-        if (pointers[0].toLocaleLowerCase() !== ethAddress.toLocaleLowerCase()) {
+        const pointer: Pointer = pointers[0].toLocaleLowerCase()
+
+        if (pointer.startsWith("default")) {
+            if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
+                errors.push(`Only Decentraland can add or modify default profiles`)
+            }
+        } else if (pointer !== ethAddress.toLocaleLowerCase()) {
             errors.push(`You can only alter your own profile. The pointer address and the signer address are different.`)
         }
 
