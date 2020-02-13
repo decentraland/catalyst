@@ -11,7 +11,7 @@ import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
 
-const PROTOCOL_VERSION = 3;
+const PROTOCOL_VERSION = 4;
 
 const MAX_UINT32 = 4294967295;
 
