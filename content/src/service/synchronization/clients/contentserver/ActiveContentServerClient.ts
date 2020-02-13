@@ -20,20 +20,20 @@ export function getClient(address: ServerAddress, name: ServerName, lastKnownTim
 class ActiveContentServerClient extends ContentServerClient {
 
     constructor(private readonly address: ServerAddress,
-        name: ServerName, lastKnownTimestamp: Timestamp) {
-            super(name, lastKnownTimestamp)
+        name: ServerName, estimatedLocalImmutableTime: Timestamp) {
+            super(name, estimatedLocalImmutableTime)
         }
 
     /**
-     * After entities have been successfully deployed, we can update the last known timestamp.
+     * After entities have been successfully deployed, we can update the estimated immutable time.
      * If there were no entities to be deployed, then we ask the server for its current time
      */
-    async updateTimestamp(timestamp: number | undefined): Promise<void> {
+    async updateEstimatedLocalImmutableTime(timestamp: number | undefined): Promise<void> {
         // If not set, then ask the server's for its current time
         timestamp = timestamp ?? (await this.getCurrentTimestamp()) - Validations.REQUEST_TTL // Subtract allowed TTL, as to avoid potential race conditions with a new deployment
 
-        // Update the last known timestamp
-        this.lastKnownTimestamp = Math.max(this.lastKnownTimestamp, timestamp);
+        // Update the estimated immutable time
+        this.estimatedLocalImmutableTime = Math.max(this.estimatedLocalImmutableTime, timestamp);
     }
 
     async getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {

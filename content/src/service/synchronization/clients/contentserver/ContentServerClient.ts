@@ -12,22 +12,22 @@ export const UNREACHABLE: string = "UNREACHABLE"
 export abstract class ContentServerClient {
 
     constructor(protected readonly name: ServerName,
-        protected lastKnownTimestamp: Timestamp) { }
+        protected estimatedLocalImmutableTime: Timestamp) { }
 
     getNewDeployments(): Promise<DeploymentHistory> {
-        return this.getHistory(this.lastKnownTimestamp + 1, this.name)
+        return this.getHistory(this.estimatedLocalImmutableTime + 1, this.name)
     }
 
-    getLastKnownTimestamp(): Timestamp {
-        return this.lastKnownTimestamp
+    getEstimatedLocalImmutableTime(): Timestamp {
+        return this.estimatedLocalImmutableTime
     }
 
     getName(): ServerName {
         return this.name
     }
 
-    /** Update the last known timestamp */
-    abstract updateTimestamp(timestamp: Timestamp | undefined): Promise<void>;
+    /** Update the estimated immutable timestamp */
+    abstract updateEstimatedLocalImmutableTime(timestamp: Timestamp | undefined): Promise<void>;
     abstract getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity>;
     abstract getContentFile(fileHash: ContentFileHash): Promise<ContentFile>;
     abstract getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo>;

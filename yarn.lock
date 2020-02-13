@@ -1076,9 +1076,9 @@
     "@types/node" "*"
 
 "@types/node@*":
-  version "13.7.0"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.7.0.tgz#b417deda18cf8400f278733499ad5547ed1abec4"
-  integrity sha512-GnZbirvmqZUzMgkFn70c74OQpTTUcCzlhQliTzYjQMqg+hVKcDnxdL19Ne3UdYzdMA/+W3eb646FWn/ZaT1NfQ==
+  version "13.7.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.7.1.tgz#238eb34a66431b71d2aaddeaa7db166f25971a0d"
+  integrity sha512-Zq8gcQGmn4txQEJeiXo/KiLpon8TzAl0kmKH4zdWctPj05nWwp1ClMdAVEloqrQKfaC48PNLdgN/aVaLqUrluA==
 
 "@types/node@^10.1.0", "@types/node@^10.3.2":
   version "10.17.12"
@@ -2356,10 +2356,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-crypto@^1.4.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-1.7.0.tgz#d0a55be13ccf40d563a58815fbc24908c9049c89"
-  integrity sha512-qERmRW5sbkUkV4x4e/58w7dMDTCXjBBxYVDlLGGqBKhRpaiCP6n77I+jtSLZFORymCc1pCS2pz3eH+7JMCwI8Q==
+dcl-crypto@^1.8.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-1.9.0.tgz#14b0ff86bb8d63ff3cdbceb7d84fb01f790f9ebe"
+  integrity sha512-wHuzLGALYCjUNvoNsw4X5zoFbqsoubwG9qu76PhVOWo21YcQZMXesT/0afgo4jrmdN5ptw9mKBNaISHEwEUA6w==
   dependencies:
     eth-crypto "^1.5.1"
     web3x "^4.0.6"

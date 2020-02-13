@@ -26,7 +26,7 @@ export class ContentCluster {
     private lastImmutableTime: Timestamp = 0
     // An event triggered when a server is removed fro the DAO
     private removalEvent: DAORemovalEvent = new DAORemovalEvent()
-    // Time of last sync
+    // Time of last sync with the DAO
     private timeOfLastSync: Timestamp = 0
 
     constructor(private readonly dao: DAOClient,
@@ -50,7 +50,11 @@ export class ContentCluster {
 
     getStatus() {
         const otherServers = Array.from(this.serversInDAO.entries())
-            .map(([address, client]) => ( { address, connectionState: client.getConnectionState() } ))
+            .map(([address, client]) => ( {
+                address,
+                connectionState: client.getConnectionState(),
+                estimatedLocalImmutableTime: client.getEstimatedLocalImmutableTime(),
+            } ))
 
         return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
     }
@@ -106,12 +110,12 @@ export class ContentCluster {
                 if (previousClient && previousClient.getName() !== UNREACHABLE) {
                     if (newName === UNREACHABLE) {
                         // Create redirect client
-                        newClient = getRedirectClient(this, previousClient.getName(), previousClient.getLastKnownTimestamp())
+                        newClient = getRedirectClient(this, previousClient.getName(), previousClient.getEstimatedLocalImmutableTime())
                         ContentCluster.LOGGER.info(`Can't connect to server ${newName} on ${address}`)
                     } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
-                        newClient = getClient(address, newName, previousClient.getLastKnownTimestamp())
+                        newClient = getClient(address, newName, previousClient.getEstimatedLocalImmutableTime())
                     }
                 } else {
                     if (newName === UNREACHABLE) {
@@ -156,7 +160,7 @@ export class ContentCluster {
             .map(client => {
                 const daoRemoval = {
                     serverRemoved: client.getName(),
-                    lastKnownTimestamp: client.getLastKnownTimestamp(),
+                    estimatedLocalImmutableTime: client.getEstimatedLocalImmutableTime(),
                     remainingServers: remainingServersOnDAO,
                 }
                 return this.removalEvent.emit(daoRemoval);

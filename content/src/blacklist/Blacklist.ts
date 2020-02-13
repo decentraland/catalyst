@@ -66,7 +66,7 @@ export class Blacklist {
     private async validateSignature(target: BlacklistTarget, metadata: BlacklistMetadata) {
         const messageToSign = this.buildMessageToSign(target, metadata)
         const authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, metadata.blocker, metadata.signature)
-        if (!await this.authenticator.validateSignature(messageToSign, authChain, httpProviderForNetwork(this.network))) {
+        if (!await this.authenticator.validateSignature(messageToSign, authChain, httpProviderForNetwork(this.network), Date.now())) {
             throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }
     }
