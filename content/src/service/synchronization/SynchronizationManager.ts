@@ -11,6 +11,7 @@ import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
 import { Disposable } from "./events/ClusterEvent";
 import { sleep } from "./ClusterUtils";
+import { Validations } from "../validations/Validations";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -67,8 +68,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             await Promise.all(contentServers.map(server => this.syncWithContentServer(server)))
 
             // Find the minimum timestamp between all servers
-            const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getLastKnownTimestamp())
-                .reduce((min, current) => Math.min(min, current), Date.now())
+            const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getEstimatedLocalImmutableTime())
+                .reduce((min, current) => Math.min(min, current), Date.now() - Validations.REQUEST_TTL)
 
             if (minTimestamp > this.lastImmutableTime) {
                 // Set this new minimum timestamp as the latest immutable time
@@ -97,8 +98,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             // Process them
             await this.deployer.deployHistory(newDeployments, { preferredServer: contentServer })
 
-            // Let the client know that the deployment was successful, and update the last known timestamp
-            await contentServer.updateTimestamp(newDeployments[0]?.timestamp)
+            // Let the client know that the deployment was successful, and update the estimated immutable time
+            await contentServer.updateEstimatedLocalImmutableTime(newDeployments[0]?.timestamp)
         } catch(error) {
             ClusterSynchronizationManager.LOGGER.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
         }
@@ -107,11 +108,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     /**
      * When a node is removed from the DAO, we want to ask all other servers on the DAO if they knew something else about it
      */
-    private handleServerRemoval({ serverRemoved, lastKnownTimestamp, remainingServers }): Promise<void> {
-        ClusterSynchronizationManager.LOGGER.info(`Handling removal of ${serverRemoved}. It's last known timestamp is ${lastKnownTimestamp}`)
+    private handleServerRemoval({ serverRemoved, estimatedLocalImmutableTime, remainingServers }): Promise<void> {
+        ClusterSynchronizationManager.LOGGER.info(`Handling removal of ${serverRemoved}. It's estimated local immutable time is ${estimatedLocalImmutableTime}`)
 
         // Prepare request
-        const request = new MultiServerHistoryRequest(remainingServers, this.deployer, lastKnownTimestamp, serverRemoved)
+        const request = new MultiServerHistoryRequest(remainingServers, this.deployer, estimatedLocalImmutableTime, serverRemoved)
 
         // Execute the request
         return request.execute()

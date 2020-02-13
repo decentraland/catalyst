@@ -18,7 +18,7 @@ class UnreachableContentServerClient extends ContentServerClient {
         super(UNREACHABLE, -1)
     }
 
-    updateTimestamp(timestamp: number | undefined): Promise<void> {
+    updateEstimatedLocalImmutableTime(timestamp: number | undefined): Promise<void> {
         return Promise.resolve()
     }
 
