@@ -156,7 +156,7 @@ describe("Validations", function() {
 
   it(`when signature is invalid, it's reported`, async () => {
     const validation = getValidatorWithMockedAccess();
-    await validation.validateSignature("some-entity-id", ContentAuthenticator.createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL);
+    await validation.validateSignature("some-entity-id", Date.now(), ContentAuthenticator.createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL);
 
     expect(validation.getErrors().length).toBe(1);
     expect(validation.getErrors()[0]).toBe("The signature is invalid.");
@@ -168,6 +168,7 @@ describe("Validations", function() {
     const validation = getValidatorWithMockedAccess();
     await validation.validateSignature(
       entityId,
+      Date.now(),
       ContentAuthenticator.createSimpleAuthChain(entityId, identity.address, EthCrypto.sign(identity.privateKey, ContentAuthenticator.createEthereumMessageHash(entityId))),
       ValidationContext.ALL
     );
@@ -184,7 +185,7 @@ describe("Validations", function() {
     const authChain = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId);
 
     const validation = getValidatorWithMockedAccess();
-    await validation.validateSignature(entityId, authChain, ValidationContext.ALL);
+    await validation.validateSignature(entityId, Date.now(), authChain, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
@@ -198,7 +199,7 @@ describe("Validations", function() {
     signatures_second_is_invalid[2].signature = "invalid-signature";
 
     let validation = getValidatorWithMockedAccess();
-    await validation.validateSignature(entityId, signatures_second_is_invalid, ValidationContext.ALL);
+    await validation.validateSignature(entityId, Date.now(), signatures_second_is_invalid, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
     expect(validation.getErrors()[0]).toBe("The signature is invalid.");
 
@@ -206,7 +207,7 @@ describe("Validations", function() {
     signatures_first_is_invalid[1].signature = "invalid-signature";
 
     validation = getValidatorWithMockedAccess();
-    await validation.validateSignature(entityId, signatures_first_is_invalid, ValidationContext.ALL);
+    await validation.validateSignature(entityId, Date.now(), signatures_first_is_invalid, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
     expect(validation.getErrors()[0]).toBe("The signature is invalid.");
   });
@@ -214,7 +215,7 @@ describe("Validations", function() {
   it(`when no signature are provided, it's reported`, async () => {
     const validation = getValidatorWithMockedAccess();
     const invalidAuthChain: AuthChain = [];
-    await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL);
+    await validation.validateSignature("some-entity-id", Date.now(), invalidAuthChain, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
     expect(validation.getErrors()[0]).toBe("The signature is invalid.");
   });
@@ -223,7 +224,7 @@ describe("Validations", function() {
     const validation = getValidatorWithMockedAccess();
     const ownerIdentity = EthCrypto.createIdentity();
     const invalidAuthChain: AuthChain = [{ type: AuthLinkType.SIGNER, payload: ownerIdentity.address, signature: "" }];
-    await validation.validateSignature("some-entity-id", invalidAuthChain, ValidationContext.ALL);
+    await validation.validateSignature("some-entity-id", Date.now(), invalidAuthChain, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
     expect(validation.getErrors()[0]).toBe("The signature is invalid.");
   });

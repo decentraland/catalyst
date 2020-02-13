@@ -102,11 +102,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         const entityFileHash = await Hashing.calculateHash(entityFile);
         validation.validateEntityHash(entityId, entityFileHash, validationContext)
 
-        // Validate signature
-        await validation.validateSignature(entityId, auditInfo.authChain, validationContext)
-
         // Parse entity file into an Entity
         const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
+
+        // Validate signature
+        await validation.validateSignature(entityId, entity.timestamp, auditInfo.authChain, validationContext)
 
         // Validate entity
         validation.validateEntity(entity, validationContext)
