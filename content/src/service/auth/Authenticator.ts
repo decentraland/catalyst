@@ -15,6 +15,6 @@ export class ContentAuthenticator extends Authenticator {
 
   /** Validate that the signature belongs to the Ethereum address */
   async validateSignature(expectedFinalAuthority: string, authChain: AuthChain, provider: EthereumProvider, dateToValidateExpirationInMillis: number): Promise<boolean> {
-    return Authenticator.validateSignature(expectedFinalAuthority, authChain, provider);
+    return Authenticator.validateSignature(expectedFinalAuthority, authChain, provider, dateToValidateExpirationInMillis);
   }
 }
