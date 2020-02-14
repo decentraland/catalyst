@@ -13,10 +13,10 @@ const query = `
     }
   }`
 
-const opts = (ethAddress) => ({
+const opts = (ethAddress: string) => ({
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, variables: { beneficiary: ethAddress } })
+    body: JSON.stringify({ query, variables: { beneficiary: ethAddress.toLowerCase() } })
 })
 
 export async function getOwnedENS(theGraphBaseUrl: string, ethAddress: string): Promise<string[]> {
