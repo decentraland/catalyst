@@ -1,5 +1,6 @@
 import cors from "cors";
 import log4js from "log4js";
+import { once } from 'events';
 import express, { RequestHandler } from "express";
 import compression from "compression";
 import morgan from "morgan";
@@ -88,9 +89,9 @@ export class Server {
    }
 
    async start(): Promise<void> {
-        this.httpServer = this.app.listen(this.port, () => {
-            Server.LOGGER.info(`==> Content Server listening on port ${this.port}.`);
-        });
+        this.httpServer = this.app.listen(this.port)
+        await once(this.httpServer, 'listening');
+        Server.LOGGER.info(`Content Server listening on port ${this.port}.`);
         await this.synchronizationManager.start()
    }
 
@@ -98,7 +99,7 @@ export class Server {
         await this.synchronizationManager.stop()
         if (this.httpServer) {
             this.httpServer.close(() => {
-                Server.LOGGER.info(`==> Content Server stopped.`);
+                Server.LOGGER.info(`Content Server stopped.`);
             })
         }
    }

@@ -1,4 +1,4 @@
-import { Timestamp } from "../time/TimeSorting"
+import { Timestamp, sortFromNewestToOldest } from "../time/TimeSorting"
 import { HistoryStorage } from "./HistoryStorage"
 import { HistoryManager, DeploymentEvent, DeploymentHistory, PartialDeploymentHistory } from "./HistoryManager"
 import { EntityType, EntityId } from "../Entity"
@@ -17,7 +17,9 @@ export class HistoryManagerImpl implements HistoryManager {
     }
 
     static async build(storage: HistoryStorage): Promise<HistoryManager> {
-        const tempHistory = await storage.getTempHistory()
+        // We are adding an extra sort, because we might need to move all immutable history back to temp history externally.
+        // This should be extremely rare, but if it happens, we will sort the history to fix any potential mistakes.
+        const tempHistory = sortFromNewestToOldest(await storage.getTempHistory())
         return new HistoryManagerImpl(storage, tempHistory)
     }
 
