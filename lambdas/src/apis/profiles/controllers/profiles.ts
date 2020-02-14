@@ -28,13 +28,21 @@ export async function getProfileById(env: Environment, req: Request, res: Respon
  * We filter ENS to avoid send an ENS that is no longer owned by the user
  */
 async function filterNonOwnedNames(theGraphBaseUrl: string, profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
-    const ownedENS = await getOwnedENS(theGraphBaseUrl, profileId)
-    const avatars = await Promise.all(metadata.avatars.map(async profile => (
-        {
-            ...profile,
-            name: ownsENS(ownedENS, profile.name) ? profile.name : '',
-        })))
-    return { avatars }
+    const isThereAnAvatarWithAName: boolean = metadata.avatars.map(profile => profile.name)
+        .filter(name => name && name !== '')
+        .length > 0
+
+    if (isThereAnAvatarWithAName) {
+        const ownedENS = await getOwnedENS(theGraphBaseUrl, profileId)
+        const avatars = metadata.avatars.map(profile => (
+            {
+                ...profile,
+                name: ownsENS(ownedENS, profile.name) ? profile.name : '',
+            }))
+        return { avatars }
+    }
+
+    return metadata
 }
 
 function ownsENS(ownedENS: string[], ensToCheck: string): boolean {
