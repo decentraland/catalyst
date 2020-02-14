@@ -11,7 +11,7 @@ import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
 
-const PROTOCOL_VERSION = 3;
+const PROTOCOL_VERSION = 4;
 
 const MAX_UINT32 = 4294967295;
 
@@ -32,6 +32,8 @@ enum LogLevel {
 }
 
 const PeerSignals = { offer: "offer", answer: "answer" };
+
+const MUST_BE_IN_SAME_DOMAIN_AND_LAYER = "MUST_BE_IN_SAME_DOMAIN_AND_LAYER";
 
 function signalMessage(peer: PeerData, connectionId: string, signal: SignalData) {
   peer.connection.signal(signal);
@@ -115,6 +117,8 @@ export class Peer implements IPeer {
   private expireTimeoutId: any;
 
   private stats = new GlobalStats();
+
+  private disposed: boolean = false;
 
   public logLevel: keyof typeof LogLevel = "INFO";
 
@@ -243,6 +247,7 @@ export class Peer implements IPeer {
   }
 
   async setLayer(layer: string): Promise<void> {
+    if (this.disposed) return;
     const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
       method: "PUT",
       bodyObject: { userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
@@ -263,6 +268,7 @@ export class Peer implements IPeer {
   }
 
   async joinRoom(roomId: string): Promise<any> {
+    if (this.disposed) return;
     this.assertPeerInLayer();
 
     const room = {
@@ -343,6 +349,11 @@ export class Peer implements IPeer {
     }
   }
 
+  private removeKnownPeerByPeerId(peerId: string) {
+    const userId = Object.keys(this.knownPeers).find(key => this.knownPeers[key].peerId === peerId);
+    if (userId) this.removeKnownPeer(userId);
+  }
+
   async roomConnectionHealthy(roomId: string) {
     // - Send ping to each member of the room
     // - Await responses. Once responces amount reach a certain threshold, assume healthy
@@ -357,7 +368,7 @@ export class Peer implements IPeer {
   }
 
   async updateNetwork() {
-    if (this.updatingNetwork) {
+    if (this.updatingNetwork || this.disposed) {
       return;
     }
 
@@ -407,7 +418,7 @@ export class Peer implements IPeer {
     Object.keys(this.connectedPeers).forEach(it => {
       if (!this.isConnectedTo(it) && Date.now() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
         this.log(LogLevel.WARN, `The connection to ${it} is not in a sane state. Discarding it.`);
-        this.disconnectFrom(it);
+        this.disconnectFrom(it, false);
       }
     });
   }
@@ -425,7 +436,7 @@ export class Peer implements IPeer {
 
     return this.beConnectedTo(peer.id, this.config.peerConnectTimeout).catch(e => {
       // If we timeout, we want to abort the connection
-      this.disconnectFrom(known.peerId);
+      this.disconnectFrom(known.peerId, false);
       throw e;
     });
   }
@@ -467,9 +478,11 @@ export class Peer implements IPeer {
     });
   }
 
-  public disconnectFrom(peerId: string) {
+  public disconnectFrom(peerId: string, removeListener: boolean = true) {
     if (this.connectedPeers[peerId]) {
       this.log(LogLevel.INFO, "Disconnecting from " + peerId);
+      //We remove close listeners since we are going to destroy the connection anyway. No need to handle the events.
+      if (removeListener) this.connectedPeers[peerId].connection.removeAllListeners("close");
       this.connectedPeers[peerId].connection.destroy();
       delete this.connectedPeers[peerId];
     } else {
@@ -524,6 +537,7 @@ export class Peer implements IPeer {
   }
 
   private handlePeerPacket(data: Uint8Array, peerId: string) {
+    if (this.disposed) return;
     try {
       const packet = Packet.decode(Reader.create(data));
 
@@ -701,15 +715,39 @@ export class Peer implements IPeer {
   private handleSignal(peerData: PeerData) {
     const connectionId = connectionIdFor(this.peerId, peerData.id, peerData.sessionId);
     return (data: SignalData) => {
+      if (this.disposed) return;
+
       this.log(LogLevel.DEBUG, `Signal in peer connection ${connectionId}: ${data.type ?? "candidate"}`);
-      if (data.type === PeerSignals.offer) {
-        this.peerJsConnection.sendOffer(peerData, { sdp: data, sessionId: peerData.sessionId, connectionId, protocolVersion: PROTOCOL_VERSION });
-      } else if (data.type === PeerSignals.answer) {
-        this.peerJsConnection.sendAnswer(peerData, { sdp: data, sessionId: peerData.sessionId, connectionId, protocolVersion: PROTOCOL_VERSION });
-      } else if (data.candidate) {
-        this.peerJsConnection.sendCandidate(peerData, data, connectionId);
+      if (this.currentLayer) {
+        if (data.type === PeerSignals.offer) {
+          this.peerJsConnection.sendOffer(peerData, {
+            sdp: data,
+            sessionId: peerData.sessionId,
+            connectionId,
+            protocolVersion: PROTOCOL_VERSION,
+            lighthouseUrl: this.lighthouseUrl(),
+            layer: this.currentLayer
+          });
+        } else if (data.type === PeerSignals.answer) {
+          this.peerJsConnection.sendAnswer(peerData, {
+            sdp: data,
+            sessionId: peerData.sessionId,
+            connectionId,
+            protocolVersion: PROTOCOL_VERSION,
+            lighthouseUrl: this.lighthouseUrl(),
+            layer: this.currentLayer
+          });
+        } else if (data.candidate) {
+          this.peerJsConnection.sendCandidate(peerData, data, connectionId);
+        }
+      } else {
+        this.log(LogLevel.WARN, "Ignoring connection signal since the peer has not joined a layer yet", peerData, data);
       }
     };
+  }
+
+  private lighthouseUrl() {
+    return this.httpClient.lighthouseUrl;
   }
 
   private getOrCreatePeer(peerId: string, initiator: boolean = false, room: string, sessionId?: string) {
@@ -751,6 +789,7 @@ export class Peer implements IPeer {
 
   // handles ws messages from this peer's PeerJSServerConnection
   handleMessage(message: ServerMessage): void {
+    if (this.disposed) return;
     const { type, payload, src: peerId, dst } = message;
 
     if (dst === this.peerId) {
@@ -768,6 +807,11 @@ export class Peer implements IPeer {
         case ServerMessageType.Answer: {
           if (payload.protocolVersion !== PROTOCOL_VERSION) {
             this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
+            break;
+          }
+
+          if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
+            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, MUST_BE_IN_SAME_DOMAIN_AND_LAYER);
             break;
           }
 
@@ -795,6 +839,10 @@ export class Peer implements IPeer {
         case ServerMessageType.Reject: {
           const peer = this.connectedPeers[peerId];
           peer?.connection?.destroy();
+          delete this.connectedPeers[peerId];
+          if (payload.reason === MUST_BE_IN_SAME_DOMAIN_AND_LAYER) {
+            this.removeKnownPeerByPeerId(peerId);
+          }
           break;
         }
         case ServerMessageType.PeerLeftRoom: {
@@ -859,6 +907,7 @@ export class Peer implements IPeer {
   }
 
   async dispose() {
+    this.disposed = true;
     clearTimeout(this.expireTimeoutId);
     this.cleanStateAndConnections();
     return new Promise<void>((resolve, reject) => {
