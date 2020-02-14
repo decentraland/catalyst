@@ -118,6 +118,8 @@ export class Peer implements IPeer {
 
   private stats = new GlobalStats();
 
+  private disposed: boolean = false;
+
   public logLevel: keyof typeof LogLevel = "INFO";
 
   constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { authHandler: msg => Promise.resolve(msg) }) {
@@ -245,6 +247,7 @@ export class Peer implements IPeer {
   }
 
   async setLayer(layer: string): Promise<void> {
+    if (this.disposed) return;
     const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
       method: "PUT",
       bodyObject: { userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
@@ -265,6 +268,7 @@ export class Peer implements IPeer {
   }
 
   async joinRoom(roomId: string): Promise<any> {
+    if (this.disposed) return;
     this.assertPeerInLayer();
 
     const room = {
@@ -364,7 +368,7 @@ export class Peer implements IPeer {
   }
 
   async updateNetwork() {
-    if (this.updatingNetwork) {
+    if (this.updatingNetwork || this.disposed) {
       return;
     }
 
@@ -414,7 +418,7 @@ export class Peer implements IPeer {
     Object.keys(this.connectedPeers).forEach(it => {
       if (!this.isConnectedTo(it) && Date.now() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
         this.log(LogLevel.WARN, `The connection to ${it} is not in a sane state. Discarding it.`);
-        this.disconnectFrom(it);
+        this.disconnectFrom(it, false);
       }
     });
   }
@@ -432,7 +436,7 @@ export class Peer implements IPeer {
 
     return this.beConnectedTo(peer.id, this.config.peerConnectTimeout).catch(e => {
       // If we timeout, we want to abort the connection
-      this.disconnectFrom(known.peerId);
+      this.disconnectFrom(known.peerId, false);
       throw e;
     });
   }
@@ -474,9 +478,11 @@ export class Peer implements IPeer {
     });
   }
 
-  public disconnectFrom(peerId: string) {
+  public disconnectFrom(peerId: string, removeListener: boolean = true) {
     if (this.connectedPeers[peerId]) {
       this.log(LogLevel.INFO, "Disconnecting from " + peerId);
+      //We remove close listeners since we are going to destroy the connection anyway. No need to handle the events.
+      if (removeListener) this.connectedPeers[peerId].connection.removeAllListeners("close");
       this.connectedPeers[peerId].connection.destroy();
       delete this.connectedPeers[peerId];
     } else {
@@ -531,6 +537,7 @@ export class Peer implements IPeer {
   }
 
   private handlePeerPacket(data: Uint8Array, peerId: string) {
+    if (this.disposed) return;
     try {
       const packet = Packet.decode(Reader.create(data));
 
@@ -708,6 +715,8 @@ export class Peer implements IPeer {
   private handleSignal(peerData: PeerData) {
     const connectionId = connectionIdFor(this.peerId, peerData.id, peerData.sessionId);
     return (data: SignalData) => {
+      if (this.disposed) return;
+
       this.log(LogLevel.DEBUG, `Signal in peer connection ${connectionId}: ${data.type ?? "candidate"}`);
       if (this.currentLayer) {
         if (data.type === PeerSignals.offer) {
@@ -732,7 +741,7 @@ export class Peer implements IPeer {
           this.peerJsConnection.sendCandidate(peerData, data, connectionId);
         }
       } else {
-        this.log(LogLevel.WARN, "Ignoring connection signal since the peer has not joined a layer yet")
+        this.log(LogLevel.WARN, "Ignoring connection signal since the peer has not joined a layer yet", peerData, data);
       }
     };
   }
@@ -780,6 +789,7 @@ export class Peer implements IPeer {
 
   // handles ws messages from this peer's PeerJSServerConnection
   handleMessage(message: ServerMessage): void {
+    if (this.disposed) return;
     const { type, payload, src: peerId, dst } = message;
 
     if (dst === this.peerId) {
@@ -897,6 +907,7 @@ export class Peer implements IPeer {
   }
 
   async dispose() {
+    this.disposed = true;
     clearTimeout(this.expireTimeoutId);
     this.cleanStateAndConnections();
     return new Promise<void>((resolve, reject) => {

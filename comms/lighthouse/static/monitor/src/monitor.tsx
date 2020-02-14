@@ -68,7 +68,7 @@ function App() {
 
   useEffect(() => {
     (async () => {
-      const layersResponse = await fetch("/layers");
+      const layersResponse = await fetch("../layers");
       const layersList = await layersResponse.json();
 
       setLayers(layersList);

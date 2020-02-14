@@ -46,6 +46,7 @@ rollup_bundle(
     entry_point = "static/monitor/src/monitor.tsx",
     format = "umd",
     output_dir = False,
+    sourcemap = "false",
     deps = [
         ":monitor",
         "@npm//@rollup/plugin-commonjs",
