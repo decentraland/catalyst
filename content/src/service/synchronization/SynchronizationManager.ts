@@ -69,7 +69,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
             // Find the minimum timestamp between all servers
             const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getEstimatedLocalImmutableTime())
-                .reduce((min, current) => Math.min(min, current), Date.now() - Validations.REQUEST_TTL)
+                .reduce((min, current) => Math.min(min, current), Date.now() - Validations.REQUEST_TTL_BACKWARDS)
 
             if (minTimestamp > this.lastImmutableTime) {
                 // Set this new minimum timestamp as the latest immutable time

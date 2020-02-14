@@ -45,10 +45,12 @@ ts_library(
         "@npm//@types/faker",
         "@npm//@types/jasmine",
         "@npm//@types/node",
+        "@npm//@types/ms",
         "@npm//aws-sdk",
         "@npm//dcl-crypto",
         "@npm//eth-crypto",
         "@npm//faker",
+        "@npm//ms",
         "@npm//ts-mockito",
     ],
 )

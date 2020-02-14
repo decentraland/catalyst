@@ -9,6 +9,7 @@ import { AuthChain, AuthLinkType } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 
 import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager";
+import ms from "ms";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
@@ -27,6 +28,29 @@ describe("Validations", function() {
 
     expect(validation.getErrors().length).toBe(1);
     expect(validation.getErrors()[0]).toBe(notAvailableHashMessage("hash-2"));
+  });
+
+  it(`When an entity with a timestamp too far into the past is deployed, then an error is returned`, () => {
+    const entity = new Entity("id", EntityType.SCENE, [], Date.now() - ms('25m'));
+    const validation = getValidatorWithMockedAccess();
+    validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
+
+    expect(validation.getErrors()).toEqual(["The request is not recent enough, please submit it again with a new timestamp."]);
+  });
+
+  it(`When an entity with a timestamp too far into the future is deployed, then an error is returned`, () => {
+    const entity = new Entity("id", EntityType.SCENE, [], Date.now() + ms('10m'));
+    const validation = getValidatorWithMockedAccess();
+    validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
+
+    expect(validation.getErrors()).toEqual(["The request is too far in the future, please submit it again with a new timestamp."]);
+  });
+
+  it(`When an entity with the correct timestamp is deployed, then no error is returned`, () => {
+    const entity = new Entity("id", EntityType.SCENE, [], Date.now());
+    const validation = getValidatorWithMockedAccess();
+    validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
+    expect(validation.getErrors().length).toBe(0);
   });
 
   it(`When a non available hash is referenced, it is reported`, () => {

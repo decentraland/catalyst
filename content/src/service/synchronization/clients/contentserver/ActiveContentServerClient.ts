@@ -30,7 +30,7 @@ class ActiveContentServerClient extends ContentServerClient {
      */
     async updateEstimatedLocalImmutableTime(timestamp: number | undefined): Promise<void> {
         // If not set, then ask the server's for its current time
-        timestamp = timestamp ?? (await this.getCurrentTimestamp()) - Validations.REQUEST_TTL // Subtract allowed TTL, as to avoid potential race conditions with a new deployment
+        timestamp = timestamp ?? (await this.getCurrentTimestamp()) - Validations.REQUEST_TTL_BACKWARDS // Subtract allowed TTL, as to avoid potential race conditions with a new deployment
 
         // Update the estimated immutable time
         this.estimatedLocalImmutableTime = Math.max(this.estimatedLocalImmutableTime, timestamp);

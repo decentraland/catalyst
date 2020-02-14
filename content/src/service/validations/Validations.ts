@@ -111,13 +111,16 @@ export class Validations {
 
     /** Validate that the deployment is recent */
     // TODO: decide if we want to externalize this as a configuration
-    static REQUEST_TTL: number = ms('20m') // 20 minutes
+    static REQUEST_TTL_BACKWARDS: number = ms('20m') // 20 minutes
+    private static REQUEST_TTL_FORWARDS: number = ms('5m') // 5 minutes
     validateDeploymentIsRecent(entityToBeDeployed: Entity, validationContext: ValidationContext): void {
         if (validationContext.shouldValidate(Validation.RECENT)) {
             // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
             const delta = Date.now() - entityToBeDeployed.timestamp
-            if (delta > Validations.REQUEST_TTL || delta < -ms('5s')) {
-                this.errors.push("The request is not recent, please submit it again with a new timestamp.")
+            if (delta > Validations.REQUEST_TTL_BACKWARDS) {
+                this.errors.push("The request is not recent enough, please submit it again with a new timestamp.")
+            } else if(delta < -Validations.REQUEST_TTL_FORWARDS) {
+                this.errors.push("The request is too far in the future, please submit it again with a new timestamp.")
             }
         }
     }
