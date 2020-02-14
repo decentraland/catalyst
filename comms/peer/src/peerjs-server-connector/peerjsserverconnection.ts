@@ -31,6 +31,8 @@ type HandshakeData = {
   connectionId: string;
   protocolVersion: number;
   sessionId: string;
+  lighthouseUrl: string;
+  layer: string;
 };
 
 export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
