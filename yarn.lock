@@ -2357,9 +2357,9 @@ date-format@^3.0.0:
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
 dcl-crypto@^1.8.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-1.9.0.tgz#14b0ff86bb8d63ff3cdbceb7d84fb01f790f9ebe"
-  integrity sha512-wHuzLGALYCjUNvoNsw4X5zoFbqsoubwG9qu76PhVOWo21YcQZMXesT/0afgo4jrmdN5ptw9mKBNaISHEwEUA6w==
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-1.10.0.tgz#64252d34c77273e0406fea202e761770d94c78de"
+  integrity sha512-go6cBQJtYH0/DdiatfiylL2L+WdFFnkDbGPcxdZCI/trkBimX+PqO8tOwzwnkpqMqwJ+h7gJjEOd1C7v3cXGjQ==
   dependencies:
     eth-crypto "^1.5.1"
     web3x "^4.0.6"
