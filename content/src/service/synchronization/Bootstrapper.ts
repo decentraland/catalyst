@@ -54,8 +54,13 @@ export class Bootstrapper {
         // Get server's last immutable time
         const { lastImmutableTime: serversLastImmutableTime } = await server.getStatus()
 
+        Bootstrapper.LOGGER.info(`Trying to get all history from server with name ${server.getName()}`)
+
         // Get everything that happened between "from" and the server's immutable time
         const history = await server.getHistory(from, undefined, serversLastImmutableTime)
+
+        Bootstrapper.LOGGER.info(`Got all history (size was ${history.length}) from server with name ${server.getName()}`)
+
         return [serversLastImmutableTime, server, history]
     }
 }
