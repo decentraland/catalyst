@@ -1,55 +1,55 @@
 import { ContentStorage } from "../storage/ContentStorage";
-import { BlacklistTarget, parseBlacklistTargetString } from "./BlacklistTarget";
-import { BlacklistMetadata } from "./Blacklist";
+import { DenylistTarget, parseDenylistTargetString } from "./DenylistTarget";
+import { DenylistMetadata } from "./Denylist";
 
-export class BlacklistStorage {
+export class DenylistStorage {
 
-    private static BLACKLIST_CATEGORY: string = "blacklist"
+    private static DENYLIST_CATEGORY: string = "denylist"
     private static HISTORY_FILE_ID: string = "history.log"
 
     constructor(private readonly storage: ContentStorage) { }
 
-    addBlacklist(target: BlacklistTarget, metadata: BlacklistMetadata) {
-        return this.storage.store(BlacklistStorage.BLACKLIST_CATEGORY, target.asString(), Buffer.from(JSON.stringify(metadata)))
+    addDenylist(target: DenylistTarget, metadata: DenylistMetadata) {
+        return this.storage.store(DenylistStorage.DENYLIST_CATEGORY, target.asString(), Buffer.from(JSON.stringify(metadata)))
     }
 
-    async areTargetsBlacklisted(targets: BlacklistTarget[]): Promise<Map<BlacklistTarget, boolean>> {
-        const allTargetsAsId: string[] = await this.readAllBlacklists()
+    async areTargetsDenylisted(targets: DenylistTarget[]): Promise<Map<DenylistTarget, boolean>> {
+        const allTargetsAsId: string[] = await this.readAllDenylists()
         return new Map(targets.map(target => [target, allTargetsAsId.includes(target.asString())]))
     }
 
-    removeBlacklist(target: BlacklistTarget): Promise<void> {
-        return this.storage.delete(BlacklistStorage.BLACKLIST_CATEGORY, target.asString())
+    removeDenylist(target: DenylistTarget): Promise<void> {
+        return this.storage.delete(DenylistStorage.DENYLIST_CATEGORY, target.asString())
     }
 
-    async getAllBlacklists(): Promise<Map<BlacklistTarget, BlacklistMetadata>> {
+    async getAllDenylists(): Promise<Map<DenylistTarget, DenylistMetadata>> {
         // List all targets
-        const allTargetsAsId: string[] = await this.readAllBlacklists()
+        const allTargetsAsId: string[] = await this.readAllDenylists()
 
-        // Read each blacklist metadata
-        const blacklists: Promise<[string, BlacklistMetadata | undefined]>[] = allTargetsAsId.map(targetAsId => this.retrieveMetadata(targetAsId).then(metadata => [targetAsId, metadata]))
+        // Read each denylist metadata
+        const denylists: Promise<[string, DenylistMetadata | undefined]>[] = allTargetsAsId.map(targetAsId => this.retrieveMetadata(targetAsId).then(metadata => [targetAsId, metadata]))
 
         // Remove undefined metadata and parse targets
-        const entries: [BlacklistTarget, BlacklistMetadata][] = (await Promise.all(blacklists))
-            .filter((tuple): tuple is [string, BlacklistMetadata] => !!tuple[0])
-            .map(([targetAsId, metadata]) => [parseBlacklistTargetString(targetAsId), metadata])
+        const entries: [DenylistTarget, DenylistMetadata][] = (await Promise.all(denylists))
+            .filter((tuple): tuple is [string, DenylistMetadata] => !!tuple[0])
+            .map(([targetAsId, metadata]) => [parseDenylistTargetString(targetAsId), metadata])
 
         // Return as map
         return new Map(entries)
     }
 
-    addBlacklistToHistory(target: BlacklistTarget, metadata: BlacklistMetadata): Promise<void> {
-        const event = this.buildEvent(target, metadata, BlacklistAction.ADDITION)
+    addDenylistToHistory(target: DenylistTarget, metadata: DenylistMetadata): Promise<void> {
+        const event = this.buildEvent(target, metadata, DenylistAction.ADDITION)
         return this.appendEvent(event)
     }
 
-    addBlacklistRemovalToHistory(target: BlacklistTarget, metadata: BlacklistMetadata): Promise<void> {
-        const event = this.buildEvent(target, metadata, BlacklistAction.REMOVAL)
+    addDenylistRemovalToHistory(target: DenylistTarget, metadata: DenylistMetadata): Promise<void> {
+        const event = this.buildEvent(target, metadata, DenylistAction.REMOVAL)
         return this.appendEvent(event)
     }
 
-    private async retrieveMetadata(targetAsId: string): Promise<BlacklistMetadata | undefined> {
-        const contentItem = await this.storage.getContent(BlacklistStorage.BLACKLIST_CATEGORY, targetAsId);
+    private async retrieveMetadata(targetAsId: string): Promise<DenylistMetadata | undefined> {
+        const contentItem = await this.storage.getContent(DenylistStorage.DENYLIST_CATEGORY, targetAsId);
         if (contentItem) {
             return JSON.parse((await contentItem.asBuffer()).toString())
         } else {
@@ -57,22 +57,22 @@ export class BlacklistStorage {
         }
     }
 
-    private appendEvent(event: BlacklistEvent): Promise<void> {
-        return this.storage.store(BlacklistStorage.BLACKLIST_CATEGORY,
-            BlacklistStorage.HISTORY_FILE_ID,
+    private appendEvent(event: DenylistEvent): Promise<void> {
+        return this.storage.store(DenylistStorage.DENYLIST_CATEGORY,
+            DenylistStorage.HISTORY_FILE_ID,
             Buffer.from(JSON.stringify(event)),
             true)
     }
 
-    private async readAllBlacklists(): Promise<string[]> {
+    private async readAllDenylists(): Promise<string[]> {
         try {
-            return await this.storage.listIds(BlacklistStorage.BLACKLIST_CATEGORY);
+            return await this.storage.listIds(DenylistStorage.DENYLIST_CATEGORY);
         } catch (error) {
             return []
         }
     }
 
-    private buildEvent(target: BlacklistTarget, metadata: BlacklistMetadata, action: BlacklistAction): BlacklistEvent {
+    private buildEvent(target: DenylistTarget, metadata: DenylistMetadata, action: DenylistAction): DenylistEvent {
         return {
             target: target.asString(),
             metadata,
@@ -82,13 +82,13 @@ export class BlacklistStorage {
 
 }
 
-type BlacklistEvent = {
+type DenylistEvent = {
     target: string,
-    metadata: BlacklistMetadata,
-    action: BlacklistAction
+    metadata: DenylistMetadata,
+    action: DenylistAction
 }
 
-enum BlacklistAction {
+enum DenylistAction {
     ADDITION = "addition",
     REMOVAL = "removal",
 }

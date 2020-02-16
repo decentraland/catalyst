@@ -17,7 +17,7 @@ import { AccessChecker } from "./service/access/AccessChecker";
 import { AuditFactory } from "./service/audit/AuditFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
-import { BlacklistFactory } from "./blacklist/BlacklistFactory";
+import { DenylistFactory } from "./denylist/DenylistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
 import { EntityVersion } from "./service/audit/Audit";
 import { ContentAuthenticator } from "./service/auth/Authenticator";
@@ -80,7 +80,7 @@ export const enum Bean {
     AUDIT,
     CONTENT_CLUSTER,
     EVENT_DEPLOYER,
-    BLACKLIST,
+    DENYLIST,
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
 }
@@ -185,7 +185,7 @@ export class EnvironmentBuilder {
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
         this.registerBeanIfNotAlreadySet(env, Bean.AUDIT                       , () => AuditFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.BLACKLIST                   , () => BlacklistFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.DENYLIST                    , () => DenylistFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => FailedDeploymentsManagerFactory.create(env))

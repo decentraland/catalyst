@@ -12,7 +12,7 @@ import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
-import { buildEntityTarget, BlacklistTarget, buildContentTarget } from "@katalyst/content/blacklist/BlacklistTarget"
+import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { assertResponseIsOkOrThrown } from "./E2EAssertions"
 
@@ -110,22 +110,22 @@ export class TestServer extends Server {
         return this.client.getAuditInfo(parseEntityType(entity), entity.id)
     }
 
-    blacklistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
+    denylistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
         const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-        return this.blacklistTarget(entityTarget, identity)
+        return this.denylistTarget(entityTarget, identity)
     }
 
-    unblacklistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
+    undenylistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
         const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-        return this.unblacklistTarget(entityTarget, identity)
+        return this.undenylistTarget(entityTarget, identity)
     }
 
-    async blacklistContent(fileHash: ContentFileHash, identity: Identity): Promise<void> {
+    async denylistContent(fileHash: ContentFileHash, identity: Identity): Promise<void> {
         const contentTarget = buildContentTarget(fileHash)
-        return this.blacklistTarget(contentTarget, identity)
+        return this.denylistTarget(contentTarget, identity)
     }
 
-    private async blacklistTarget(target: BlacklistTarget, identity: Identity) {
+    private async denylistTarget(target: DenylistTarget, identity: Identity) {
         const timestamp = Date.now()
         const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
 
@@ -135,15 +135,15 @@ export class TestServer extends Server {
             "signature": signature
         }
 
-        const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
+        const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
         await assertResponseIsOkOrThrown(deployResponse)
     }
 
-    private async unblacklistTarget(target: BlacklistTarget, identity: Identity) {
+    private async undenylistTarget(target: DenylistTarget, identity: Identity) {
         const timestamp = Date.now()
         const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
         const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
-        const deployResponse = await fetch(`${this.getAddress()}/blacklist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
+        const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
         await assertResponseIsOkOrThrown(deployResponse)
     }
 

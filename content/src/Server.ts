@@ -53,10 +53,10 @@ export class Server {
       this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
       this.registerRoute("/history"              , controller, controller.getHistory);
       this.registerRoute("/status"               , controller, controller.getStatus);
-      this.registerRoute("/blacklist"            , controller, controller.getAllBlacklistTargets);
-      this.registerRoute("/blacklist/:type/:id"  , controller, controller.addToBlacklist, HttpMethod.PUT);
-      this.registerRoute("/blacklist/:type/:id"  , controller, controller.removeFromBlacklist, HttpMethod.DELETE);
-      this.registerRoute("/blacklist/:type/:id"  , controller, controller.isTargetBlacklisted, HttpMethod.HEAD);
+      this.registerRoute("/denylist"             , controller, controller.getAllDenylistTargets);
+      this.registerRoute("/denylist/:type/:id"   , controller, controller.addToDenylist, HttpMethod.PUT);
+      this.registerRoute("/denylist/:type/:id"   , controller, controller.removeFromDenylist, HttpMethod.DELETE);
+      this.registerRoute("/denylist/:type/:id"   , controller, controller.isTargetDenylisted, HttpMethod.HEAD);
       this.registerRoute("/failedDeployments"    , controller, controller.getFailedDeployments);
 
       if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {

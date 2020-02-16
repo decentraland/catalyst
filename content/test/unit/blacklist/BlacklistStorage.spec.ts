@@ -1,55 +1,55 @@
 import { random } from "faker"
 import { MockedStorage } from "../storage/MockedStorage";
-import { BlacklistStorage } from "@katalyst/content/blacklist/BlacklistStorage";
-import { buildContentTarget } from "@katalyst/content/blacklist/BlacklistTarget";
-import { BlacklistMetadata } from "@katalyst/content/blacklist/Blacklist";
+import { DenylistStorage } from "@katalyst/content/denylist/DenylistStorage";
+import { buildContentTarget } from "@katalyst/content/denylist/DenylistTarget";
+import { DenylistMetadata } from "@katalyst/content/denylist/Denylist";
 
-describe("BlacklistStorage", () => {
+describe("DenylistStorage", () => {
 
-    let storage: BlacklistStorage
+    let storage: DenylistStorage
 
     beforeEach(async () => {
-        storage = new BlacklistStorage(new MockedStorage())
+        storage = new DenylistStorage(new MockedStorage())
     })
 
-    it(`When target is blacklisted, then it is reported as blacklisted`, async () => {
+    it(`When target is denylisted, then it is reported as denylisted`, async () => {
         const target = buildContentTarget(random.alphaNumeric(10))
         const metadata = someMetadata();
 
-        let areBlacklisted = await storage.areTargetsBlacklisted([target]);
-        let blacklists = await storage.getAllBlacklists()
+        let areDenylisted = await storage.areTargetsDenylisted([target]);
+        let denylists = await storage.getAllDenylists()
 
-        expect(areBlacklisted.size).toBe(1)
-        expect(areBlacklisted.get(target)).toBe(false)
-        expect(blacklists.size).toBe(0)
+        expect(areDenylisted.size).toBe(1)
+        expect(areDenylisted.get(target)).toBe(false)
+        expect(denylists.size).toBe(0)
 
-        await storage.addBlacklist(target, metadata)
-        areBlacklisted = await storage.areTargetsBlacklisted([target]);
-        blacklists = await storage.getAllBlacklists()
+        await storage.addDenylist(target, metadata)
+        areDenylisted = await storage.areTargetsDenylisted([target]);
+        denylists = await storage.getAllDenylists()
 
-        expect(areBlacklisted.size).toBe(1)
-        expect(areBlacklisted.get(target)).toBe(true)
-        expect(blacklists.size).toBe(1)
-        expect(Array.from(blacklists.keys()).map(target => target.asString())).toContain(target.asString())
-        expect(Array.from(blacklists.values())).toContain(metadata)
+        expect(areDenylisted.size).toBe(1)
+        expect(areDenylisted.get(target)).toBe(true)
+        expect(denylists.size).toBe(1)
+        expect(Array.from(denylists.keys()).map(target => target.asString())).toContain(target.asString())
+        expect(Array.from(denylists.values())).toContain(metadata)
     })
 
-    it(`When target is un-blacklisted, then it is no longer reported as blacklisted`, async () => {
+    it(`When target is un-denylisted, then it is no longer reported as denylisted`, async () => {
         const target = buildContentTarget(random.alphaNumeric(10))
         const metadata = someMetadata();
 
-        await storage.addBlacklist(target, metadata)
-        await storage.removeBlacklist(target)
+        await storage.addDenylist(target, metadata)
+        await storage.removeDenylist(target)
 
-        let areBlacklisted = await storage.areTargetsBlacklisted([target]);
-        let blacklists = await storage.getAllBlacklists()
+        let areDenylisted = await storage.areTargetsDenylisted([target]);
+        let denylists = await storage.getAllDenylists()
 
-        expect(areBlacklisted.size).toBe(1)
-        expect(areBlacklisted.get(target)).toBe(false)
-        expect(blacklists.size).toBe(0)
+        expect(areDenylisted.size).toBe(1)
+        expect(areDenylisted.get(target)).toBe(false)
+        expect(denylists.size).toBe(0)
     })
 
-    function someMetadata(): BlacklistMetadata {
+    function someMetadata(): DenylistMetadata {
         return {
             blocker: random.alphaNumeric(20),
             timestamp: random.number(10),

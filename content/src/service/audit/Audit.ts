@@ -42,8 +42,8 @@ export type AuditInfo = {
     deployedTimestamp: Timestamp
     authChain: AuthChain,
     overwrittenBy?: EntityId,
-    isBlacklisted?: boolean,
-    blacklistedContent?: ContentFileHash[],
+    isDenylisted?: boolean,
+    denylistedContent?: ContentFileHash[],
     originalMetadata?: { // This is used for migrations
         originalVersion: EntityVersion,
         data: any,

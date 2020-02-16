@@ -79,24 +79,24 @@ export async function assertEntityIsNotOverwritten(server: TestServer, entity: C
 }
 
 
-export async function assertEntityIsNotBlacklisted(server: TestServer, entity: ControllerEntity) {
+export async function assertEntityIsNotDenylisted(server: TestServer, entity: ControllerEntity) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    expect(auditInfo.isBlacklisted).toBeUndefined()
+    expect(auditInfo.isDenylisted).toBeUndefined()
 }
 
-export async function assertEntityIsBlacklisted(server: TestServer, entity: ControllerEntity) {
+export async function assertEntityIsDenylisted(server: TestServer, entity: ControllerEntity) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    expect(auditInfo.isBlacklisted).toBeTruthy()
+    expect(auditInfo.isDenylisted).toBeTruthy()
 }
 
-export async function assertContentNotIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+export async function assertContentNotIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    expect(auditInfo.blacklistedContent).not.toContain(contentHash)
+    expect(auditInfo.denylistedContent).not.toContain(contentHash)
 }
 
-export async function assertContentIsBlacklisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+export async function assertContentIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    expect(auditInfo.blacklistedContent).toContain(contentHash)
+    expect(auditInfo.denylistedContent).toContain(contentHash)
 }
 
 export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): DeploymentEvent {

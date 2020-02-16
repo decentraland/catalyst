@@ -1,8 +1,8 @@
 import { MetaverseContentService, ContentFile, ServerStatus } from "../service/Service";
 import { Entity, EntityType, EntityId, Pointer } from "../service/Entity";
 import { ContentFileHash } from "../service/Hashing";
-import { Blacklist } from "./Blacklist";
-import { buildPointerTarget, buildEntityTarget, BlacklistTarget, buildContentTarget, buildAddressTarget } from "./BlacklistTarget";
+import { Denylist } from "./Denylist";
+import { buildPointerTarget, buildEntityTarget, DenylistTarget, buildContentTarget, buildAddressTarget } from "./DenylistTarget";
 import { AuditInfo } from "../service/audit/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
@@ -11,16 +11,16 @@ import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { Timestamp } from "../service/time/TimeSorting";
 
 /**
- * This decorator takes a MetaverseContentService and adds blacklisting functionality to it
+ * This decorator takes a MetaverseContentService and adds denylisting functionality to it
  */
-export class BlacklistServiceDecorator implements MetaverseContentService {
-  static BLACKLISTED_METADATA: string = "Blacklisted";
+export class DenylistServiceDecorator implements MetaverseContentService {
+  static DENYLISTED_METADATA: string = "Denylisted";
 
-  constructor(private readonly service: MetaverseContentService, private readonly blacklist: Blacklist) {}
+  constructor(private readonly service: MetaverseContentService, private readonly denylist: Denylist) {}
 
   async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
-    const nonBlacklistedPointers: EntityId[] = await this.filterBlacklisted(pointers, pointer => buildPointerTarget(type, pointer));
-    const entities: Entity[] = await this.service.getEntitiesByPointers(type, nonBlacklistedPointers);
+    const nonDenylistedPointers: EntityId[] = await this.filterDenylisted(pointers, pointer => buildPointerTarget(type, pointer));
+    const entities: Entity[] = await this.service.getEntitiesByPointers(type, nonDenylistedPointers);
     return this.sanitizeEntities(entities);
   }
 
@@ -31,28 +31,28 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
   async getActivePointers(type: EntityType): Promise<Pointer[]> {
     const activePointers: Pointer[] = await this.service.getActivePointers(type);
-    return this.filterBlacklisted(activePointers, pointer => buildPointerTarget(type, pointer));
+    return this.filterDenylisted(activePointers, pointer => buildPointerTarget(type, pointer));
   }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
-    const isBlacklisted = await this.isFileHashBlacklisted(fileHash);
-    if (isBlacklisted) {
+    const isDenylisted = await this.isFileHashDenylisted(fileHash);
+    if (isDenylisted) {
       return undefined;
     } else {
       return this.service.getContent(fileHash);
     }
   }
 
-  /** Is content is blacklisted, then we will return that it is not available */
+  /** Is content is denylisted, then we will return that it is not available */
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
     const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes);
-    const blacklistedEntries: Promise<[ContentFileHash, boolean]>[] = fileHashes.map(fileHash =>
-      this.isFileHashBlacklisted(fileHash).then(isBlacklisted => [fileHash, isBlacklisted])
+    const denylistedEntries: Promise<[ContentFileHash, boolean]>[] = fileHashes.map(fileHash =>
+      this.isFileHashDenylisted(fileHash).then(isDenylisted => [fileHash, isDenylisted])
     );
-    const blacklisted: Map<ContentFileHash, boolean> = new Map(await Promise.all(blacklistedEntries));
+    const denylisted: Map<ContentFileHash, boolean> = new Map(await Promise.all(denylistedEntries));
 
-    for (const [fileHash, isBlacklisted] of blacklisted) {
-      if (isBlacklisted) {
+    for (const [fileHash, isDenylisted] of denylisted) {
+      if (isDenylisted) {
         availability.set(fileHash, false);
       }
     }
@@ -71,29 +71,29 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
 
       // Build respective targets
       const entityTarget = buildEntityTarget(type, id);
-      const contentTargets: Map<ContentFileHash, BlacklistTarget> = new Map(Array.from(entity.content?.values() ?? []).map(fileHash => [fileHash, buildContentTarget(fileHash)]));
+      const contentTargets: Map<ContentFileHash, DenylistTarget> = new Map(Array.from(entity.content?.values() ?? []).map(fileHash => [fileHash, buildContentTarget(fileHash)]));
       const allTargets = [entityTarget, ...contentTargets.values()];
 
-      // Check if any of the targets are blacklisted
-      const blacklisted: Map<BlacklistTarget, boolean> = await this.blacklist.areTargetsBlacklisted(allTargets);
+      // Check if any of the targets are denylisted
+      const denylisted: Map<DenylistTarget, boolean> = await this.denylist.areTargetsDenylisted(allTargets);
 
       // Create new result
       let result: AuditInfo = {
         ...auditInfo
       };
 
-      // If entity is blacklisted, then mark it on the audit info
-      if (blacklisted.get(entityTarget)) {
-        result.isBlacklisted = true;
+      // If entity is denylisted, then mark it on the audit info
+      if (denylisted.get(entityTarget)) {
+        result.isDenylisted = true;
       }
 
-      // If any of the content is blacklisted, then add them to the audit info
-      const blacklistedContent: ContentFileHash[] = Array.from(contentTargets.entries())
-        .filter(([, target]) => blacklisted.get(target))
+      // If any of the content is denylisted, then add them to the audit info
+      const denylistedContent: ContentFileHash[] = Array.from(contentTargets.entries())
+        .filter(([, target]) => denylisted.get(target))
         .map(([fileHash]) => fileHash);
 
-      if (blacklistedContent.length > 0) {
-        result.blacklistedContent = blacklistedContent;
+      if (denylistedContent.length > 0) {
+        result.denylistedContent = denylistedContent;
       }
 
       return result;
@@ -121,10 +121,10 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
   }
 
   private async validateDeployment(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo) {
-    // No deployments from blacklisted eth addresses are allowed
+    // No deployments from denylisted eth addresses are allowed
     const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo);
-    if (await this.areBlacklisted(buildAddressTarget(ownerAddress))) {
-      throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was blacklisted.`);
+    if (await this.areDenylisted(buildAddressTarget(ownerAddress))) {
+      throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was denylisted.`);
     }
 
     // Find the entity file
@@ -133,31 +133,31 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
     // Parse entity file into an Entity
     const entity: Entity = EntityFactory.fromFile(entityFile, entityId);
 
-    // No deployments with blacklisted hash are allowed
-    const contentTargets: BlacklistTarget[] = Array.from(entity.content?.values() ?? []).map(fileHash => buildContentTarget(fileHash));
-    if (await this.areBlacklisted(...contentTargets)) {
-      throw new Error(`Can't allow the deployment since the entity contains a blacklisted content.`);
+    // No deployments with denylisted hash are allowed
+    const contentTargets: DenylistTarget[] = Array.from(entity.content?.values() ?? []).map(fileHash => buildContentTarget(fileHash));
+    if (await this.areDenylisted(...contentTargets)) {
+      throw new Error(`Can't allow the deployment since the entity contains a denylisted content.`);
     }
 
-    // No deployments on blacklisted pointers are allowed
-    const pointerTargets: BlacklistTarget[] = entity.pointers.map(pointer => buildPointerTarget(entity.type, pointer));
-    if (await this.areBlacklisted(...pointerTargets)) {
-      throw new Error(`Can't allow the deployment since the entity contains a blacklisted pointer.`);
+    // No deployments on denylisted pointers are allowed
+    const pointerTargets: DenylistTarget[] = entity.pointers.map(pointer => buildPointerTarget(entity.type, pointer));
+    if (await this.areDenylisted(...pointerTargets)) {
+      throw new Error(`Can't allow the deployment since the entity contains a denylisted pointer.`);
     }
   }
 
-  /** When an entity is blacklisted, we don't want to show its content and metadata  */
+  /** When an entity is denylisted, we don't want to show its content and metadata  */
   private async sanitizeEntities(entities: Entity[]): Promise<Entity[]> {
     // Build the target per entity
-    const entityToTarget: Map<Entity, BlacklistTarget> = new Map(entities.map(entity => [entity, buildEntityTarget(entity.type, entity.id)]));
+    const entityToTarget: Map<Entity, DenylistTarget> = new Map(entities.map(entity => [entity, buildEntityTarget(entity.type, entity.id)]));
 
-    // Check if targets are blacklisted
-    const isTargetBlacklisted: Map<BlacklistTarget, boolean> = await this.blacklist.areTargetsBlacklisted(Array.from(entityToTarget.values()));
+    // Check if targets are denylisted
+    const isTargetDenylisted: Map<DenylistTarget, boolean> = await this.denylist.areTargetsDenylisted(Array.from(entityToTarget.values()));
 
-    // Sanitize blacklisted entities
+    // Sanitize denylisted entities
     return entities.map(entity => {
-      if (isTargetBlacklisted.get(entityToTarget.get(entity) as BlacklistTarget)) {
-        return new Entity(entity.id, entity.type, entity.pointers, entity.timestamp, undefined, BlacklistServiceDecorator.BLACKLISTED_METADATA);
+      if (isTargetDenylisted.get(entityToTarget.get(entity) as DenylistTarget)) {
+        return new Entity(entity.id, entity.type, entity.pointers, entity.timestamp, undefined, DenylistServiceDecorator.DENYLISTED_METADATA);
       } else {
         return entity;
       }
@@ -165,8 +165,8 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
   }
 
   /** Since entity ids are also file hashes, we need to check for all possible targets */
-  private isFileHashBlacklisted(fileHash: string) {
-    return this.areBlacklisted(...this.getEntityTargets(fileHash), buildContentTarget(fileHash));
+  private isFileHashDenylisted(fileHash: string) {
+    return this.areDenylisted(...this.getEntityTargets(fileHash), buildContentTarget(fileHash));
   }
 
   /** Since we don't know the entity type, we need to check check against all types */
@@ -175,22 +175,22 @@ export class BlacklistServiceDecorator implements MetaverseContentService {
     return types.map(entityType => buildEntityTarget(entityType, entityId));
   }
 
-  /** Return true if any of the given targets is blacklisted */
-  private async areBlacklisted(...targets: BlacklistTarget[]): Promise<boolean> {
+  /** Return true if any of the given targets is denylisted */
+  private async areDenylisted(...targets: DenylistTarget[]): Promise<boolean> {
     if (targets.length == 0) {
       return false;
     } else {
-      const result = await this.blacklist.areTargetsBlacklisted(targets);
+      const result = await this.denylist.areTargetsDenylisted(targets);
       return Array.from(result.values()).reduce((accum, currentValue) => accum || currentValue);
     }
   }
 
-  /** Filter out blacklisted targets */
-  private async filterBlacklisted<T>(elements: T[], targetBuild: (element: T) => BlacklistTarget): Promise<T[]> {
-    const elementToTarget: Map<T, BlacklistTarget> = new Map(elements.map(element => [element, targetBuild(element)]));
-    const areBlacklisted = await this.blacklist.areTargetsBlacklisted(Array.from(elementToTarget.values()));
+  /** Filter out denylisted targets */
+  private async filterDenylisted<T>(elements: T[], targetBuild: (element: T) => DenylistTarget): Promise<T[]> {
+    const elementToTarget: Map<T, DenylistTarget> = new Map(elements.map(element => [element, targetBuild(element)]));
+    const areDenylisted = await this.denylist.areTargetsDenylisted(Array.from(elementToTarget.values()));
     return Array.from(elementToTarget.entries())
-      .filter(([, target]) => !areBlacklisted.get(target))
+      .filter(([, target]) => !areDenylisted.get(target))
       .map(([element]) => element);
   }
 }
