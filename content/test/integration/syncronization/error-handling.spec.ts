@@ -44,12 +44,12 @@ describe("End 2 end - Error handling", () => {
 
     it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
         await runTest(FailureReason.NO_ENTITY_OR_AUDIT,
-            entity => server1.blacklistEntity(entity, identity))
+            entity => server1.denylistEntity(entity, identity))
     });
 
     it(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
         await runTest(FailureReason.FETCH_PROBLEM,
-            entity => server1.blacklistContent((entity.content as ControllerEntityContent[])[0].hash, identity))
+            entity => server1.denylistContent((entity.content as ControllerEntityContent[])[0].hash, identity))
     });
 
     it(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {

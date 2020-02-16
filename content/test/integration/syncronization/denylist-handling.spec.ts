@@ -1,5 +1,5 @@
 import ms from "ms"
-import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotBlacklisted, assertContentNotIsBlacklisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed } from "../E2EAssertions"
+import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotDenylisted, assertContentNotIsDenylisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
@@ -10,7 +10,7 @@ import { TestServer } from "../TestServer"
 import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
 
 
-describe("End 2 end - Blacklist handling", () => {
+describe("End 2 end - Denylist handling", () => {
 
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
     const identity = createIdentity()
@@ -40,7 +40,7 @@ describe("End 2 end - Blacklist handling", () => {
         deleteServerStorage(server1, server2, onboardingServer)
     })
 
-    it(`When an entity is blacklisted across all nodes, then no entity is deployed`, async () => {
+    it(`When an entity is denylisted across all nodes, then no entity is deployed`, async () => {
         // Start server 1
         await server1.start()
 
@@ -52,7 +52,7 @@ describe("End 2 end - Blacklist handling", () => {
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Black list the entity
-        await server1.blacklistEntity(entityBeingDeployed, identity)
+        await server1.denylistEntity(entityBeingDeployed, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -67,7 +67,7 @@ describe("End 2 end - Blacklist handling", () => {
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
     });
 
-    it(`When content is blacklisted across all nodes, then no entity is deployed`, async () => {
+    it(`When content is denylisted across all nodes, then no entity is deployed`, async () => {
         // Start server 1
         await server1.start()
 
@@ -80,7 +80,7 @@ describe("End 2 end - Blacklist handling", () => {
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Black list the entity
-        await server1.blacklistContent(contentHash, identity)
+        await server1.denylistContent(contentHash, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -95,7 +95,7 @@ describe("End 2 end - Blacklist handling", () => {
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
     });
 
-    it(`When an entity is blacklisted in some nodes, then onboarding node can still get it`, async () => {
+    it(`When an entity is denylisted in some nodes, then onboarding node can still get it`, async () => {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 
@@ -110,7 +110,7 @@ describe("End 2 end - Blacklist handling", () => {
         await sleep(SYNC_INTERVAL * 2)
 
         // Black list the entity
-        await server1.blacklistEntity(entityBeingDeployed, identity)
+        await server1.denylistEntity(entityBeingDeployed, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -118,8 +118,8 @@ describe("End 2 end - Blacklist handling", () => {
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
-        // Assert entity is not blacklisted on onboarding server
-        await assertEntityIsNotBlacklisted(onboardingServer, entityBeingDeployed)
+        // Assert entity is not denylisted on onboarding server
+        await assertEntityIsNotDenylisted(onboardingServer, entityBeingDeployed)
 
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
@@ -133,7 +133,7 @@ describe("End 2 end - Blacklist handling", () => {
         assertFieldsOnEntitiesExceptIdsAreEqual(JSON.parse(fileContent.toString()), entityBeingDeployed)
     });
 
-    it(`When content is blacklisted in some nodes, then onboarding node can still get it`, async () => {
+    it(`When content is denylisted in some nodes, then onboarding node can still get it`, async () => {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 
@@ -149,7 +149,7 @@ describe("End 2 end - Blacklist handling", () => {
         await sleep(SYNC_INTERVAL * 2)
 
         // Black list the entity
-        await server1.blacklistContent(contentHash, identity)
+        await server1.denylistContent(contentHash, identity)
 
         // Start onboarding server
         await onboardingServer.start()
@@ -157,8 +157,8 @@ describe("End 2 end - Blacklist handling", () => {
         // Wait for servers to sync
         await sleep(SYNC_INTERVAL * 2)
 
-        // Assert content is not blacklisted on onboarding server
-        await assertContentNotIsBlacklisted(onboardingServer, entityBeingDeployed, contentHash)
+        // Assert content is not denylisted on onboarding server
+        await assertContentNotIsDenylisted(onboardingServer, entityBeingDeployed, contentHash)
 
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)

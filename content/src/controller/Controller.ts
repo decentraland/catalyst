@@ -6,8 +6,8 @@ import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
-import { Blacklist } from "../blacklist/Blacklist";
-import { parseBlacklistTypeAndId } from "../blacklist/BlacklistTarget";
+import { Denylist } from "../denylist/Denylist";
+import { parseDenylistTypeAndId } from "../denylist/DenylistTarget";
 import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
 import { CURRENT_CONTENT_VERSION, CURRENT_COMMIT_HASH } from "../Environment";
 import { EthAddress, Signature, AuthLink } from "dcl-crypto";
@@ -22,7 +22,7 @@ export class Controller {
 
     constructor(private readonly service: MetaverseContentService,
         private readonly historyManager: HistoryManager,
-        private readonly blacklist: Blacklist,
+        private readonly denylist: Denylist,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly contentCluster: ContentCluster,
         private readonly ethNetwork: string) { }
@@ -259,9 +259,9 @@ export class Controller {
          })
     }
 
-    addToBlacklist(req: express.Request, res: express.Response) {
+    addToDenylist(req: express.Request, res: express.Response) {
         // Method: PUT
-        // Path: /blacklist/{type}/{id}
+        // Path: /denylist/{type}/{id}
         // Body: JSON with ethAddress, signature and timestamp
 
         const blocker: EthAddress = req.body.blocker;
@@ -271,15 +271,15 @@ export class Controller {
         const type = req.params.type
         const id = req.params.id;
 
-        const target = parseBlacklistTypeAndId(type, id)
-        return this.blacklist.addTarget(target, { blocker, timestamp ,signature })
+        const target = parseDenylistTypeAndId(type, id)
+        return this.denylist.addTarget(target, { blocker, timestamp ,signature })
             .then(() => res.status(201).send())
             .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
-    removeFromBlacklist(req: express.Request, res: express.Response) {
+    removeFromDenylist(req: express.Request, res: express.Response) {
         // Method: DELETE
-        // Path: /blacklist/{type}/{id}
+        // Path: /denylist/{type}/{id}
         // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
 
         const blocker: EthAddress = req.query.blocker;
@@ -289,34 +289,34 @@ export class Controller {
         const type = req.params.type
         const id = req.params.id;
 
-        const target = parseBlacklistTypeAndId(type, id)
+        const target = parseDenylistTypeAndId(type, id)
 
         // TODO: Based on the error, return 400 or 404
-        return this.blacklist.removeTarget(target, { blocker, timestamp ,signature })
+        return this.denylist.removeTarget(target, { blocker, timestamp ,signature })
             .then(() => res.status(200).send())
             .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
     }
 
-    async getAllBlacklistTargets(req: express.Request, res: express.Response) {
+    async getAllDenylistTargets(req: express.Request, res: express.Response) {
         // Method: GET
-        // Path: /blacklist
+        // Path: /denylist
 
-        const blacklistTargets = await this.blacklist.getAllBlacklistedTargets();
-        const controllerTargets: ControllerBlacklistData[] = Array.from(blacklistTargets.entries())
+        const denylistTargets = await this.denylist.getAllDenylistedTargets();
+        const controllerTargets: ControllerDenylistData[] = Array.from(denylistTargets.entries())
             .map(([target, metadata]) => ({ target: target.asObject(), metadata: metadata }))
         res.send(controllerTargets)
     }
 
-    isTargetBlacklisted(req: express.Request, res: express.Response) {
+    isTargetDenylisted(req: express.Request, res: express.Response) {
         // Method: HEAD
-        // Path: /blacklist/{type}/{id}
+        // Path: /denylist/{type}/{id}
 
         const type = req.params.type
         const id = req.params.id;
 
-        const target = parseBlacklistTypeAndId(type, id)
-        this.blacklist.isTargetBlacklisted(target)
-            .then(isBlacklisted => isBlacklisted ? res.status(200).send() : res.status(404).send())
+        const target = parseDenylistTypeAndId(type, id)
+        this.denylist.isTargetDenylisted(target)
+            .then(isDenylisted => isDenylisted ? res.status(200).send() : res.status(404).send())
     }
 
     async getFailedDeployments(req: express.Request, res: express.Response) {
@@ -349,7 +349,7 @@ export enum EntityField {
     METADATA = "metadata",
 }
 
-type ControllerBlacklistData = {
+type ControllerDenylistData = {
     target: {
         type: string,
         id: string,
