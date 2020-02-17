@@ -14,7 +14,7 @@ import { EthAddress, Signature, AuthLink } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
-import { ContentCluster } from "../service/synchronization/ContentCluster";
+import { SynchronizationManager } from "../service/synchronization/SynchronizationManager";
 
 export class Controller {
 
@@ -24,7 +24,7 @@ export class Controller {
         private readonly historyManager: HistoryManager,
         private readonly denylist: Denylist,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
-        private readonly contentCluster: ContentCluster,
+        private readonly synchronizationManager: SynchronizationManager,
         private readonly ethNetwork: string) { }
 
     getEntities(req: express.Request, res: express.Response) {
@@ -250,10 +250,10 @@ export class Controller {
 
         const serverStatus = await this.service.getStatus();
 
-        const clusterStatus = this.contentCluster.getStatus()
+        const synchronizationStatus = this.synchronizationManager.getStatus()
 
         res.send({ ...serverStatus,
-            clusterStatus,
+            synchronizationStatus,
             commitHash: CURRENT_COMMIT_HASH,
             ethNetwork: this.ethNetwork,
          })

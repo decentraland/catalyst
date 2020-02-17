@@ -105,17 +105,19 @@ export class EventDeployer {
 
         // Check which files we already have
         const unknownFileHashes = await this.filterOutKnownFiles(allFileHashes)
+        EventDeployer.LOGGER.trace(`In total, will need to download ${unknownFileHashes.length} files for entity (${entity.type}, ${entity.id})`)
 
         // Download all content files
         const files: ContentFile[] = []
         for (let i = 0; i < unknownFileHashes.length; i++) {
             const fileHash = unknownFileHashes[i]
+            EventDeployer.LOGGER.trace(`Going to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id}). Hash is ${fileHash}`)
             const file = await this.getFileOrUndefined(fileHash, source);
             if (file) {
                 files.push(file)
-                EventDeployer.LOGGER.trace(`Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id})`)
+                EventDeployer.LOGGER.trace(`Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id}). Hash was ${fileHash}`)
             } else {
-                EventDeployer.LOGGER.trace(`Failed to download file '${fileHash} for entity (${entity.type}, ${entity.id}). Will cancel content download`)
+                EventDeployer.LOGGER.trace(`Failed to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id}). Hash was ${fileHash}. Will cancel content download`)
                 return undefined
             }
         }

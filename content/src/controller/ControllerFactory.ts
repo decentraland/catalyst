@@ -5,7 +5,7 @@ import { Denylist } from "../denylist/Denylist";
 import { MetaverseContentService } from "../service/Service";
 import { HistoryManager } from "../service/history/HistoryManager";
 import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
-import { ContentCluster } from "../service/synchronization/ContentCluster";
+import { SynchronizationManager } from "../service/synchronization/SynchronizationManager";
 
 export class ControllerFactory {
     static create(env: Environment): Controller {
@@ -13,8 +13,8 @@ export class ControllerFactory {
         const denylist: Denylist = env.getBean(Bean.DENYLIST);
         const historyManager: HistoryManager = env.getBean(Bean.HISTORY_MANAGER);
         const failedDeploymentsManager: FailedDeploymentsManager = env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER);
-        const contentCluster: ContentCluster = env.getBean(Bean.CONTENT_CLUSTER);
+        const synchronizationManager: SynchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
         const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK);
-        return new Controller(new DenylistServiceDecorator(service, denylist), historyManager, denylist, failedDeploymentsManager, contentCluster, ethNetwork);
+        return new Controller(new DenylistServiceDecorator(service, denylist), historyManager, denylist, failedDeploymentsManager, synchronizationManager, ethNetwork);
     }
 }

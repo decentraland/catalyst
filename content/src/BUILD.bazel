@@ -19,6 +19,7 @@ ts_library(
         "@npm//@types/node-fetch",
         "@npm//@types/parallel-transform",
         "@npm//@types/uuid",
+        "@npm//abort-controller",
         "@npm//analytics-node",
         "@npm//async-mutex",
         "@npm//aws-sdk",

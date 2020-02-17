@@ -16,6 +16,7 @@ import { Validations } from "../validations/Validations";
 export interface SynchronizationManager {
     start(): Promise<void>;
     stop(): Promise<void>;
+    getStatus();
 }
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
@@ -24,7 +25,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private syncWithNodesTimeout: NodeJS.Timeout;
     private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
-    private processing: boolean = false
+    private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: TimeKeepingService,
@@ -55,9 +56,17 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         return this.waitUntilSyncFinishes()
     }
 
+    getStatus() {
+        const clusterStatus = this.cluster.getStatus()
+        return {
+            ...clusterStatus,
+            synchronizationState: this.synchronizationState,
+        }
+    }
+
     private async syncWithServers(): Promise<void> {
         // Update flag
-        this.processing = true;
+        this.synchronizationState = SynchronizationState.SYNCING
 
         ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
         try {
@@ -78,14 +87,15 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
                 this.cluster.setImmutableTime(minTimestamp)
                 await this.service.setImmutableTime(minTimestamp)
             }
-        } finally {
-            // Update flag
-            this.processing = false;
 
+            this.synchronizationState = SynchronizationState.SYNCED;
+            ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
+        } catch(error) {
+            this.synchronizationState = SynchronizationState.FAILED_TO_SYNC;
+            ClusterSynchronizationManager.LOGGER.warn(`Failed to sync with servers. Reason:\n${error}`)
+        } finally {
             // Set the timeout again
             this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
-
-            ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
         }
     }
 
@@ -120,11 +130,18 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     private waitUntilSyncFinishes(): Promise<void> {
         return new Promise(async (resolve) => {
-            while (this.processing) {
+            while (this.synchronizationState === SynchronizationState.SYNCING) {
                 await sleep(ms('1s'))
             }
             resolve()
         })
     }
 
+}
+
+enum SynchronizationState {
+    BOOTSTRAPPING = "bootstrapping",
+    SYNCED = "synced",
+    SYNCING = "syncing",
+    FAILED_TO_SYNC = "failed to sync"
 }

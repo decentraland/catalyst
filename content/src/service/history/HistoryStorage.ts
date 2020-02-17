@@ -51,6 +51,7 @@ class EventSerializer {
         const serializedHistory: string = historyBuffer.toString().trimEnd()
         if (serializedHistory.includes(EventSerializer.ATTRIBUTES_SEPARATOR)) {
             return serializedHistory.split(EventSerializer.EVENT_SEPARATOR)
+                .filter(event => event !== '')
                 .map(EventSerializer.unserialize)
         } else {
             return []

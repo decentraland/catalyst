@@ -111,7 +111,7 @@ export class ContentCluster {
                     if (newName === UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getEstimatedLocalImmutableTime())
-                        ContentCluster.LOGGER.info(`Can't connect to server ${newName} on ${address}`)
+                        ContentCluster.LOGGER.info(`Can't connect to server ${previousClient.getName()} on ${address}`)
                     } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
@@ -134,13 +134,12 @@ export class ContentCluster {
 
             // Update sync time
             this.timeOfLastSync = Date.now()
+            ContentCluster.LOGGER.debug(`Finished sync with DAO`)
         } catch (error) {
             ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
         } finally {
             // Set a timeout to stay in sync with the DAO
             this.syncTimeout = setTimeout(() => this.syncWithDAO(), this.timeBetweenSyncs)
-
-            ContentCluster.LOGGER.debug(`Finished sync with DAO`)
         }
     }
 
@@ -156,7 +155,7 @@ export class ContentCluster {
         const remainingServersOnDAO: ContentServerClient[] = this.getAllActiveServersInCluster()
         const listenerReactions = serversRemovedFromDAO
             .map(([, client]) => client)
-            .filter(client => client.getName() != UNREACHABLE) // There is no point in letting listeners know that a server we could never reach is no longer on the DAO
+            .filter(client => client.getConnectionState() !== ConnectionState.NEVER_REACHED) // There is no point in letting listeners know that a server we could never reach is no longer on the DAO
             .map(client => {
                 const daoRemoval = {
                     serverRemoved: client.getName(),
