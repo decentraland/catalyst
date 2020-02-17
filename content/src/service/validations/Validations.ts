@@ -62,8 +62,9 @@ export class Validations {
     /** Validate that the signature belongs to the Ethereum address */
     async validateSignature(entityId: EntityId, entityTimestamp: Timestamp, authChain: AuthChain, validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.SIGNATURE)) {
-            if(!await this.authenticator.validateSignature(entityId, authChain, httpProviderForNetwork(this.network), entityTimestamp)) {
-                this.errors.push("The signature is invalid.")
+            const validationResult = await this.authenticator.validateSignature(entityId, authChain, httpProviderForNetwork(this.network), entityTimestamp)
+            if(!validationResult.ok) {
+                this.errors.push("The signature is invalid. " + validationResult.message)
             }
         }
     }
