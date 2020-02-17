@@ -1,8 +1,8 @@
 import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
-import { ServerAddress, getServerName, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
-import { NameKeeper } from "../naming/NameKeeper";
+import { ServerAddress, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
+import { NameKeeper, ServerName } from "../naming/NameKeeper";
 import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
@@ -10,6 +10,7 @@ import { getUnreachableClient } from "./clients/contentserver/UnreachableContent
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
 import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 export class ContentCluster {
 
@@ -31,7 +32,8 @@ export class ContentCluster {
 
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
-        private readonly nameKeeper: NameKeeper) { }
+        private readonly nameKeeper: NameKeeper,
+        private readonly fetchHelper: FetchHelper) { }
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
@@ -101,7 +103,7 @@ export class ContentCluster {
 
             // Get the server name for each address
             const names = await Promise.all(allAddresses
-                .map(address => getServerName(address).then(name => ({ address, name }))))
+                .map(address => this.getServerName(address).then(name => ({ address, name }))))
 
             for (const { address, name: newName } of names) {
                 let newClient: ContentServerClient | undefined
@@ -115,7 +117,7 @@ export class ContentCluster {
                     } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
-                        newClient = getClient(address, newName, previousClient.getEstimatedLocalImmutableTime())
+                        newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
                     }
                 } else {
                     if (newName === UNREACHABLE) {
@@ -123,7 +125,7 @@ export class ContentCluster {
                         newClient = getUnreachableClient()
                     } else {
                         // Create new client
-                        newClient = getClient(address, newName, this.lastImmutableTime)
+                        newClient = getClient(this.fetchHelper, address, newName, this.lastImmutableTime)
                         ContentCluster.LOGGER.info(`Connected to new server ${newName} on ${address}`)
                     }
                 }
@@ -172,7 +174,7 @@ export class ContentCluster {
         try {
             // Ask each server for their name
             const serverNames = await Promise.all(Array.from(servers)
-                .map(serverMetadata => getServerName(serverMetadata.address).then(name => ({ metadata: serverMetadata, name }))))
+                .map(serverMetadata => this.getServerName(serverMetadata.address).then(name => ({ metadata: serverMetadata, name }))))
 
             // Filter out other servers
             const serversWithMyName = serverNames.filter(({ name }) => name == this.nameKeeper.getServerName())
@@ -193,6 +195,16 @@ export class ContentCluster {
         return Array.from(allServers)
             .map(({ address }) => address)
             .filter(address => address !== this.myIdentity?.address)
+    }
+
+    /** Return the server's name, or the text "UNREACHABLE" it it couldn't be reached */
+    private async getServerName(address: ServerAddress): Promise<ServerName> {
+        try {
+            const { name } = await this.fetchHelper.fetchJson(`${address}/status`)
+            return name
+        } catch (error) {
+            return UNREACHABLE
+        }
     }
 
 }

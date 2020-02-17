@@ -1,40 +1,39 @@
 import ms from "ms";
+import log4js from "log4js"
 import { clearTimeout, setTimeout } from "timers"
 import fetch from "node-fetch";
 import AbortController from 'abort-controller';
 
 export class FetchHelper {
 
-    private static readonly DEFAULT_REQUEST_TIMEOUT: number = ms('1m');
+    private static readonly LOGGER = log4js.getLogger('FetchHelper');
 
-    static async fetchJson(url: string): Promise<any> {
-        const response = await FetchHelper.fetchInternal(url)
-        const json = await response.json()
-        console.log(`Opened json from ${url}`)
-        return json
+    constructor(private readonly jsonRequestTimeout: number = ms('30s'),
+        private readonly fileDownloadRequestTimeout: number = ms('1m')) { }
+
+    async fetchJson(url: string): Promise<any> {
+        return  FetchHelper.fetchInternal(url, response => response.json(), this.jsonRequestTimeout)
     }
 
-    static async fetchBuffer(url: string): Promise<Buffer> {
-        const response = await FetchHelper.fetchInternal(url)
-        const buffer = await response.buffer()
-        console.log(`Opened buffer from ${url}`)
-        return buffer
+    async fetchBuffer(url: string): Promise<Buffer> {
+        return  FetchHelper.fetchInternal(url, response => response.buffer(), this.fileDownloadRequestTimeout)
     }
 
-    private static async fetchInternal(url: string) {
+    private static async fetchInternal<T>(url: string, responseConsumer: (response) => Promise<T>, maxWaitingTime: number): Promise<T> {
         const controller = new AbortController();
-        const timeout = setTimeout(() => { controller.abort(); console.log("Aborted", url) }, FetchHelper.DEFAULT_REQUEST_TIMEOUT);
+        const timeout = setTimeout(() => {
+            controller.abort();
+            FetchHelper.LOGGER.warn(`Request to url ${url} exceeded the max waiting time. It took more than ${maxWaitingTime} millis.`);
+        }, maxWaitingTime);
+
         try {
-            console.log(`Going to fetch ${url}`)
             const response = await fetch(url, { signal: controller.signal });
             if (response.ok) {
-                console.log(`Fetched ${url}`)
-                return response
+                return responseConsumer(response)
             } else {
                 throw new Error(`Failed to fetch ${url}. Got status ${response.status}, ${response.statusText}`)
             }
         } catch (error) {
-            console.log(`Failed to fetch ${url}`)
             throw error
         } finally {
             clearTimeout(timeout)

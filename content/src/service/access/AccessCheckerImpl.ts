@@ -9,7 +9,9 @@ export class AccessCheckerImpl implements AccessChecker {
 
     private static readonly LOGGER = log4js.getLogger('AccessCheckerImpl');
 
-    constructor(private readonly authenticator: ContentAuthenticator, private readonly dclApiBaseUrl: string) { }
+    constructor(private readonly authenticator: ContentAuthenticator,
+        private readonly dclApiBaseUrl: string,
+        private readonly fetchHelper: FetchHelper) { }
 
     async hasAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         switch(entityType) {
@@ -54,7 +56,7 @@ export class AccessCheckerImpl implements AccessChecker {
     private async checkParcelAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean> {
         const accessURL = `${this.dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
         try {
-            const responseJson = await FetchHelper.fetchJson(accessURL)
+            const responseJson = await this.fetchHelper.fetchJson(accessURL)
             return responseJson.data.isUpdateAuthorized
         } catch(e) {
             AccessCheckerImpl.LOGGER.warn(`Failed to check parcel access. Error was ${e.message}`)

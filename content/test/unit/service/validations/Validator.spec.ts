@@ -10,6 +10,7 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 
 import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager";
 import ms from "ms";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
@@ -282,7 +283,7 @@ const notReferencedHashMessage = hash => {
 
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
-  return new Validations(new AccessCheckerImpl(authenticator, "unused_url"), authenticator, mockedFailedDeploymentsManager(), "ropsten");
+  return new Validations(new AccessCheckerImpl(authenticator, "unused_url", new FetchHelper()), authenticator, mockedFailedDeploymentsManager(), "ropsten");
 }
 
 function getValidatorWithMockedAccess() {

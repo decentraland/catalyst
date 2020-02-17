@@ -6,6 +6,7 @@ import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { deleteServerStorage, buildDeployData } from "../../E2ETestUtils"
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
 
 describe("Integration - History Client", function() {
 
@@ -49,7 +50,7 @@ describe("Integration - History Client", function() {
     async function validateHistoryThroughClient(server: TestServer, expectedEvents: DeploymentEvent[], batchSize?: number): Promise<void> {
         const executions: {url:string, res: PartialDeploymentHistory}[] = []
 
-        const events = await HistoryClient.consumeAllHistory(server.getAddress(), undefined, undefined, undefined, batchSize,
+        const events = await HistoryClient.consumeAllHistory(new FetchHelper(), server.getAddress(), undefined, undefined, undefined, batchSize,
         (url:string, res: PartialDeploymentHistory) => {
             executions.push({
                 url: url,

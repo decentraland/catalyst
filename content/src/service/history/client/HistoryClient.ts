@@ -7,6 +7,7 @@ import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
 export class HistoryClient {
 
     static async consumeAllHistory(
+        fetchHelper: FetchHelper,
         address: ServerAddress,
         from?: Timestamp,
         to?: Timestamp,
@@ -31,7 +32,7 @@ export class HistoryClient {
             if (limit) {
                 url += `&limit=${limit}`
             }
-            const partialHistory: PartialDeploymentHistory = await FetchHelper.fetchJson(url)
+            const partialHistory: PartialDeploymentHistory = await fetchHelper.fetchJson(url)
             if (partialCallback) {
                 partialCallback(url, partialHistory)
             }

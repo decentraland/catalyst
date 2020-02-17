@@ -24,6 +24,7 @@ import { ContentAuthenticator } from "./service/auth/Authenticator";
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
+import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -83,6 +84,7 @@ export const enum Bean {
     DENYLIST,
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
+    FETCH_HELPER,
 }
 
 export const enum EnvironmentConfig {
@@ -100,6 +102,8 @@ export const enum EnvironmentConfig {
     DCL_API_URL,
     ETH_NETWORK,
     LOG_LEVEL,
+    JSON_REQUEST_TIMEOUT,
+    FILE_DOWNLOAD_REQUEST_TIMEOUT,
 }
 
 export class EnvironmentBuilder {
@@ -170,10 +174,13 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_API_URL               , () => process.env.DCL_API_URL ?? DEFAULT_DCL_API_URL)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK               , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL                 , () => process.env.LOG_LEVEL ?? "info")
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT      , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
+        this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER              , () => FetchHelperFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))

@@ -9,4 +9,8 @@ export class MockedSynchronizationManager implements SynchronizationManager {
     stop(): Promise<void> {
         return Promise.resolve()
     }
+
+    getStatus(): any {
+        return { }
+    }
 }

@@ -7,7 +7,8 @@ export class ContentClusterFactory {
         return new ContentCluster(
             env.getBean(Bean.DAO_CLIENT),
             env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL),
-            env.getBean(Bean.NAME_KEEPER))
+            env.getBean(Bean.NAME_KEEPER),
+            env.getBean(Bean.FETCH_HELPER))
     }
 
 }

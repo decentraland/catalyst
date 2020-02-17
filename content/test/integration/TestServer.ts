@@ -15,6 +15,7 @@ import { getClient } from "@katalyst/content/service/synchronization/clients/con
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { assertResponseIsOkOrThrown } from "./E2EAssertions"
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -31,7 +32,7 @@ export class TestServer extends Server {
         this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
         this.namePrefix = env.getConfig(EnvironmentConfig.NAME_PREFIX)
         this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
-        this.client = getClient(this.getAddress(), this.namePrefix, 0)
+        this.client = getClient(new FetchHelper(), this.getAddress(), this.namePrefix, 0)
     }
 
     getAddress(): ServerAddress {
