@@ -4,6 +4,20 @@ interface PeerRequestInit extends RequestInit {
   bodyObject?: object;
 }
 
+async function safeJson(response: Response) {
+  try {
+    return await response.json();
+  } catch (e) {
+    return undefined;
+  }
+}
+
+export class ResponseError extends Error {
+  constructor(public request: RequestInfo, public response: Response, public init?: RequestInit, public responseJson?: any, message?: string) {
+    super(message ?? `Error performing request to ${JSON.stringify(request)} with method ${init?.method ?? "GET"}. Status: ${responseJson?.status ?? response.statusText}`);
+  }
+}
+
 export class PeerHttpClient {
   constructor(public lighthouseUrl: string, private tokenProvider: () => string) {}
 
@@ -33,9 +47,8 @@ export class PeerHttpClient {
 export async function fetchOrThrow(input: RequestInfo, init?: RequestInit): Promise<Response> {
   const response = await fetch(input, init);
 
-  if (response.status > 400) {
-    const responseJson = await response.json();
-    throw new Error(`Error performing request to ${JSON.stringify(input)} with method ${init?.method ?? "GET"}. Status: ${responseJson?.status}`);
+  if (response.status >= 400) {
+    throw new ResponseError(input, response, init, await safeJson(response));
   }
 
   return response;

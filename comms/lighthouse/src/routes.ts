@@ -144,7 +144,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     };
 
     if (err instanceof RequestError) {
-      res.status(err.status).send(JSON.stringify({ status: statusTexts[err.status] ?? "error", message: err.message }));
+      res.status(err.status).send(JSON.stringify({ status: err.statusMessage ?? (statusTexts[err.status] ?? "error"), message: err.message }));
     } else {
       next(err);
     }
