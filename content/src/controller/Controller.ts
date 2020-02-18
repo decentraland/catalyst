@@ -27,7 +27,7 @@ export class Controller {
         private readonly synchronizationManager: SynchronizationManager,
         private readonly ethNetwork: string) { }
 
-    getEntities(req: express.Request, res: express.Response) {
+    async getEntities(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
@@ -55,15 +55,14 @@ export class Controller {
         }
 
         // Calculate and mask entities
-        let entities: Promise<Entity[]>
+        let entities: Entity[]
         if (ids.length > 0) {
-            entities = this.service.getEntitiesByIds(type, ids)
+            entities = await this.service.getEntitiesByIds(type, ids)
         } else {
-            entities = this.service.getEntitiesByPointers(type, pointers)
+            entities = await this.service.getEntitiesByPointers(type, pointers)
         }
-        entities
-        .then(fullEntities => fullEntities.map(fullEntity => ControllerEntityFactory.maskEntity(fullEntity, enumFields)))
-        .then(maskedEntities => res.send(maskedEntities))
+        const maskedEntities: ControllerEntity[] = entities.map(fullEntity => ControllerEntityFactory.maskEntity(fullEntity, enumFields))
+        res.send(maskedEntities)
     }
 
     private parseEntityType(strType: string): EntityType {
@@ -85,7 +84,7 @@ export class Controller {
         return [elements]
     }
 
-    createLegacyEntity(req: express.Request, res: express.Response) {
+    async createLegacyEntity(req: express.Request, res: express.Response) {
         // Method: POST
         // Path: /legacy-entities
         // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
@@ -96,29 +95,29 @@ export class Controller {
         const migrationInformation  = JSON.parse(req.body.migration_data);
         const files                 = req.files
 
-        const auditInfo: AuditInfo = {
-            authChain: Authenticator.createSimpleAuthChain(entityId, ethAddress, signature),
-            deployedTimestamp: NO_TIMESTAMP,
-            version: CURRENT_CONTENT_VERSION,
-            originalMetadata: {
-                originalVersion,
-                data: migrationInformation
+        try {
+            const auditInfo: AuditInfo = {
+                authChain: Authenticator.createSimpleAuthChain(entityId, ethAddress, signature),
+                deployedTimestamp: NO_TIMESTAMP,
+                version: CURRENT_CONTENT_VERSION,
+                originalMetadata: {
+                    originalVersion,
+                    data: migrationInformation
+                }
             }
-        }
 
-        let deployFiles: Promise<ContentFile[]> = Promise.resolve([])
-        if (files instanceof Array) {
-            deployFiles = Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
-        }
-        deployFiles
-        .then(fileSet => this.service.deployEntity(fileSet, entityId, auditInfo, 'legacy'))
-        .then(t => res.send({
-            creationTimestamp: t
-        }))
-        .catch(error => {
+            let deployFiles: ContentFile[] = []
+            if (files instanceof Array) {
+                deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
+            }
+            const creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, 'legacy')
+            res.send({
+                creationTimestamp: creationTimestamp
+            })
+        } catch (error) {
             Controller.LOGGER.warn(`Returning error '${error.message}'`)
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
-        })
+        }
     }
 
     async createEntity(req: express.Request, res: express.Response) {
@@ -133,28 +132,28 @@ export class Controller {
         const origin                = req.header('x-upload-origin') ?? "unknown"
         const fixAttempt: boolean   = req.query.fix === 'true'
 
-        if (!authChain && ethAddress && signature) {
-            authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-        }
+        try {
+            if (!authChain && ethAddress && signature) {
+                authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
+            }
 
-        let deployFiles: ContentFile[] = []
-        if (files instanceof Array) {
-            deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
-        }
+            let deployFiles: ContentFile[] = []
+            if (files instanceof Array) {
+                deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
+            }
 
-        const auditInfo: AuditInfo = { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION }
-        let deployment: Promise<Timestamp>
-        if (fixAttempt) {
-            deployment = this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
-        } else {
-            deployment = this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+            const auditInfo: AuditInfo = { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION }
+            let creationTimestamp: Timestamp
+            if (fixAttempt) {
+                creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+            } else {
+                creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+            }
+            res.send({ creationTimestamp })
+        } catch (error) {
+            Controller.LOGGER.warn(`Returning error '${error.message}'`)
+            res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
         }
-        await deployment
-            .then(creationTimestamp => res.send({ creationTimestamp }))
-            .catch(error => {
-                Controller.LOGGER.warn(`Returning error '${error.message}'`)
-                res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
-            })
     }
 
     private async readFile(name: string, path: string): Promise<ContentFile> {
@@ -180,19 +179,17 @@ export class Controller {
         }
     }
 
-    getAvailableContent(req: express.Request, res: express.Response) {
+    async getAvailableContent(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /available-content
         // Query String: ?cid={hashId1}&cid={hashId2}
         const cids = this.asArray(req.query.cid)
 
-        this.service.isContentAvailable(cids)
-            .then(availableContent => res.send(
-                Array.from(availableContent.entries())
-                    .map(([fileHash, isAvailable]) => ({ cid: fileHash, available: isAvailable }))))
+        const availableContent = await this.service.isContentAvailable(cids)
+        res.send(Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({ cid: fileHash, available: isAvailable })))
     }
 
-    getPointers(req: express.Request, res: express.Response) {
+    async getPointers(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /pointers/:type
         const type:EntityType  = this.parseEntityType(req.params.type)
@@ -203,8 +200,8 @@ export class Controller {
             return
         }
 
-        this.service.getActivePointers(type)
-        .then(pointers => res.send(pointers))
+        const pointers = await this.service.getActivePointers(type)
+        res.send(pointers)
     }
 
     async getAudit(req: express.Request, res: express.Response) {
@@ -227,7 +224,7 @@ export class Controller {
         }
     }
 
-    getHistory(req: express.Request, res: express.Response) {
+    async getHistory(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /history
         // Query String: ?from={timestamp}&to={timestamp}&serverName={string}
@@ -237,8 +234,8 @@ export class Controller {
         const offset     = this.asInt(req.query.offset)
         const limit      = this.asInt(req.query.limit)
 
-        this.historyManager.getHistory(from, to, serverName, offset, limit)
-        .then(history => res.send(history))
+        const history = await this.historyManager.getHistory(from, to, serverName, offset, limit)
+        res.send(history)
     }
     private asInt(value: any): number | undefined {
         return value ? parseInt(value) : undefined
@@ -259,7 +256,7 @@ export class Controller {
          })
     }
 
-    addToDenylist(req: express.Request, res: express.Response) {
+    async addToDenylist(req: express.Request, res: express.Response) {
         // Method: PUT
         // Path: /denylist/{type}/{id}
         // Body: JSON with ethAddress, signature and timestamp
@@ -272,12 +269,15 @@ export class Controller {
         const id = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
-        return this.denylist.addTarget(target, { blocker, timestamp ,signature })
-            .then(() => res.status(201).send())
-            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
+        try {
+            await this.denylist.addTarget(target, { blocker, timestamp ,signature })
+            res.status(201).send()
+        } catch (error) {
+            res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+        }
     }
 
-    removeFromDenylist(req: express.Request, res: express.Response) {
+    async removeFromDenylist(req: express.Request, res: express.Response) {
         // Method: DELETE
         // Path: /denylist/{type}/{id}
         // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
@@ -292,9 +292,12 @@ export class Controller {
         const target = parseDenylistTypeAndId(type, id)
 
         // TODO: Based on the error, return 400 or 404
-        return this.denylist.removeTarget(target, { blocker, timestamp ,signature })
-            .then(() => res.status(200).send())
-            .catch(error => res.status(500).send(error.message)) // TODO: Improve and return 400 if necessary
+        try {
+            await this.denylist.removeTarget(target, { blocker, timestamp ,signature })
+            res.status(200).send()
+        } catch (error) {
+            res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+        }
     }
 
     async getAllDenylistTargets(req: express.Request, res: express.Response) {
@@ -307,7 +310,7 @@ export class Controller {
         res.send(controllerTargets)
     }
 
-    isTargetDenylisted(req: express.Request, res: express.Response) {
+    async isTargetDenylisted(req: express.Request, res: express.Response) {
         // Method: HEAD
         // Path: /denylist/{type}/{id}
 
@@ -315,8 +318,8 @@ export class Controller {
         const id = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
-        this.denylist.isTargetDenylisted(target)
-            .then(isDenylisted => isDenylisted ? res.status(200).send() : res.status(404).send())
+        const isDenylisted = await this.denylist.isTargetDenylisted(target)
+        res.status(isDenylisted ? 200 : 400).send()
     }
 
     async getFailedDeployments(req: express.Request, res: express.Response) {

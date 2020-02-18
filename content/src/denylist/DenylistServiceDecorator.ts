@@ -46,9 +46,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   /** Is content is denylisted, then we will return that it is not available */
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
     const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes);
-    const denylistedEntries: Promise<[ContentFileHash, boolean]>[] = fileHashes.map(fileHash =>
-      this.isFileHashDenylisted(fileHash).then(isDenylisted => [fileHash, isDenylisted])
-    );
+    const denylistedEntries: Promise<[ContentFileHash, boolean]>[] = fileHashes.map<Promise<[ContentFileHash, boolean]>>(async fileHash => [fileHash, await this.isFileHashDenylisted(fileHash)])
     const denylisted: Map<ContentFileHash, boolean> = new Map(await Promise.all(denylistedEntries));
 
     for (const [fileHash, isDenylisted] of denylisted) {

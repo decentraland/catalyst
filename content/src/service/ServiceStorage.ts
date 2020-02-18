@@ -19,8 +19,8 @@ export class ServiceStorage {
 
     async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         // TODO: Consider listing everything in dir
-        const contentsAvailableActions: Promise<[ContentFileHash, boolean]>[] = fileHashes.map((fileHash: ContentFileHash) =>
-            this.storage.exists(ServiceStorage.CONTENT_CATEGORY, fileHash).then(exists => [fileHash, exists]))
+        const contentsAvailableActions: Promise<[ContentFileHash, boolean]>[] = fileHashes.map<Promise<[ContentFileHash, boolean]>>(async (fileHash: ContentFileHash) =>
+            [fileHash, await this.storage.exists(ServiceStorage.CONTENT_CATEGORY, fileHash)])
 
         return new Map(await Promise.all(contentsAvailableActions));
     }
@@ -28,7 +28,9 @@ export class ServiceStorage {
     async getEntityById(id: EntityId): Promise<Entity | undefined> {
         const contentItem = await this.storage.getContent(ServiceStorage.CONTENT_CATEGORY, id)
         if (contentItem) {
-            return EntityFactory.fromBufferWithId(await contentItem.asBuffer(), id)
+            try {
+                return EntityFactory.fromBufferWithId(await contentItem.asBuffer(), id)
+            } catch {}
         }
         return undefined
     }
