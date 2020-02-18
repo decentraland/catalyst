@@ -11,6 +11,7 @@ export class Controller {
 
         this.service.getStatus()
         .then(status => res.send(status))
+        .catch(error => res.status(500).send(`There was an error while processing your request: ${error.message}`))
     }
 
 }
