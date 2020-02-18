@@ -7,9 +7,14 @@ import { Timestamp } from "../service/time/TimeSorting";
 
 const LOGGER = log4js.getLogger('ServerRunner');
 
-Environment.getInstance().then(async env => {
+Environment.getInstance()
+.then(async env => {
     await validateHistory(env)
     await new Server(env).start()
+})
+.catch(error => {
+    console.log("Can not start server. " + error)
+    process.exit(1)
 })
 
 async function validateHistory(env: Environment) {

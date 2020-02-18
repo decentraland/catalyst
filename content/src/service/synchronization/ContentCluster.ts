@@ -103,7 +103,7 @@ export class ContentCluster {
 
             // Get the server name for each address
             const names = await Promise.all(allAddresses
-                .map(address => this.getServerName(address).then(name => ({ address, name }))))
+                .map(async address => ({ address, name: await this.getServerName(address) })))
 
             for (const { address, name: newName } of names) {
                 let newClient: ContentServerClient | undefined
@@ -174,7 +174,7 @@ export class ContentCluster {
         try {
             // Ask each server for their name
             const serverNames = await Promise.all(Array.from(servers)
-                .map(serverMetadata => this.getServerName(serverMetadata.address).then(name => ({ metadata: serverMetadata, name }))))
+                .map(async serverMetadata => ({ metadata: serverMetadata, name: await this.getServerName(serverMetadata.address) })))
 
             // Filter out other servers
             const serversWithMyName = serverNames.filter(({ name }) => name == this.nameKeeper.getServerName())

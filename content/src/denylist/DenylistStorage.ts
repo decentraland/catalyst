@@ -27,7 +27,7 @@ export class DenylistStorage {
         const allTargetsAsId: string[] = await this.readAllDenylists()
 
         // Read each denylist metadata
-        const denylists: Promise<[string, DenylistMetadata | undefined]>[] = allTargetsAsId.map(targetAsId => this.retrieveMetadata(targetAsId).then(metadata => [targetAsId, metadata]))
+        const denylists = allTargetsAsId.map<Promise<[string, DenylistMetadata | undefined]>>(async targetAsId => [targetAsId, await this.retrieveMetadata(targetAsId)])
 
         // Remove undefined metadata and parse targets
         const entries: [DenylistTarget, DenylistMetadata][] = (await Promise.all(denylists))

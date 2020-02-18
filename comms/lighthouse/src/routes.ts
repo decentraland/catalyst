@@ -101,13 +101,13 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.delete("/layers/:layerId/rooms/:roomId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { roomId, userId, layerId } = req.params;
     const room = layersService.getRoomsService(layerId)?.removeUserFromRoom(roomId, userId);
-    res.send(mapUsersToJson(room?.users));
+    res.send(mapUsersToJson(room?.users ?? []));
   });
 
   app.delete("/layers/:layerId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { userId, layerId } = req.params;
     const layer = layersService.removeUserFromLayer(layerId, userId);
-    res.send(mapUsersToJson(layer?.users));
+    res.send(mapUsersToJson(layer?.users ?? []));
   });
 
   app.get("/layers/:layerId/topology", validateLayerExists, (req, res, next) => {
