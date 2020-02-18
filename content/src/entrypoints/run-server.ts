@@ -14,6 +14,7 @@ Environment.getInstance()
 })
 .catch(error => {
     console.log("Can not start server. " + error)
+    process.exit(1)
 })
 
 async function validateHistory(env: Environment) {
