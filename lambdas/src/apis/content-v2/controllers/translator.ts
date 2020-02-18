@@ -136,6 +136,10 @@ export function getInfo(env: Environment, req: Request, res: Response) {
         })
         res.send(parcelInfoResult)
     })
+    .catch(e => {
+        LOGGER.error(`Error getting info for ${req.path}`, e);
+        res.status(500).send(e.message ?? e.toString());
+    });
 }
 
 function asArray<T>(elements: T[]|T): T[] {

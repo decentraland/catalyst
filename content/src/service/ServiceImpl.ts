@@ -60,19 +60,20 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 analytics, accessChecker, authenticator, failedDeploymentsManager, lastImmutableTime, ignoreValidationErrors, network)
         }
 
-    getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
-        return Promise.all(pointers
+    async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
+        let entityIds: (EntityId|undefined)[] = await Promise.all(pointers
             .map((pointer: Pointer) => pointer.toLocaleLowerCase())
             .map((pointer: Pointer) => this.pointerManager.getEntityInPointer(type, pointer)))
-            .then((entityIds:(EntityId|undefined)[]) => entityIds.filter(entity => entity !== undefined))
-            .then(entityIds => this.getEntitiesByIds(type, entityIds as EntityId[]))
+        entityIds = entityIds.filter(entity => entity !== undefined)
+        return this.getEntitiesByIds(type, entityIds as EntityId[])
     }
 
-    getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
-        return Promise.all(ids
+    async getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
+        let entities:(Entity | undefined)[] = await Promise.all(ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
             .map((entityId: EntityId) => this.entities.get(entityId)))
-            .then((entities:(Entity | undefined)[]) => entities.filter(entity => entity !== undefined && entity.type===type)) as Promise<Entity[]>
+        entities = entities.filter(entity => entity !== undefined && entity.type===type)
+        return entities as Entity[]
     }
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
