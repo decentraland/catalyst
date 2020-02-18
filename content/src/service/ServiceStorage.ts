@@ -30,7 +30,9 @@ export class ServiceStorage {
         if (contentItem) {
             try {
                 return EntityFactory.fromBufferWithId(await contentItem.asBuffer(), id)
-            } catch {}
+            } catch {
+                console.warn(`Can not convert file with id ${id} to an Entity.`)
+            }
         }
         return undefined
     }

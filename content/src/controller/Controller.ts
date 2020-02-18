@@ -319,7 +319,7 @@ export class Controller {
 
         const target = parseDenylistTypeAndId(type, id)
         const isDenylisted = await this.denylist.isTargetDenylisted(target)
-        res.status(isDenylisted ? 200 : 400).send()
+        res.status(isDenylisted ? 200 : 404).send()
     }
 
     async getFailedDeployments(req: express.Request, res: express.Response) {
