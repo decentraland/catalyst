@@ -54,7 +54,8 @@
     "tree-kill": "^1.2.2",
     "ts-proto": "^1.8.0",
     "ts-protoc-gen": "^0.12.0",
-    "tslint": "^5.20.1",
+    "tslint": "^6.0.0",
+    "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.7.2",
     "web3x-codegen": "^4.0.6",
     "yargs": "^15.0.2"
@@ -66,7 +67,8 @@
     "startClient": "ibazel run comms/peer-react-app:devserver",
     "startServer": "yarn ibazel run comms/lighthouse:server",
     "startContentServer": "yarn ibazel run content:server",
-    "startLambdasServer": "yarn ibazel run lambdas:server"
+    "startLambdasServer": "yarn ibazel run lambdas:server",
+    "lint": "yarn tslint -c tslint.json --project tsconfig.json"
   },
   "dependencies": {
     "@types/log4js": "^2.3.5",

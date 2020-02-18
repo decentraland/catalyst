@@ -620,9 +620,9 @@ export class Peer implements IPeer {
       this.peerConnectionPromises[peerData.id].forEach(it => it.reject());
       delete this.peerConnectionPromises[peerData.id];
     }
-
+    // We don't need to handle this promise
+    // tslint:disable-next-line
     this.updateNetwork();
-    // TODO: Is there something else that we should do when someone disconnects? Maybe update the rooms and the known peers
   }
 
   private generateMessageId() {

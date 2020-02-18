@@ -127,4 +127,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   const _static = path.join(__dirname, "../static");
 
   app.use("/monitor", express.static(_static + "/monitor"));
-})();
+})().catch(e => {
+  console.error("Exiting process because of unhandled exception", e);
+  process.exit(1);
+});
