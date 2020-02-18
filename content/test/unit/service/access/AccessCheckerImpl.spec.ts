@@ -36,4 +36,12 @@ describe("AccessCheckerImpl", function () {
 
         expect(errors.length).toBe(0)
     })
+
+    it(`When an address without permissions tries to deploy it fails`, async () => {
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), 'unused_url', new FetchHelper());
+
+        const errors = await accessChecker.hasAccess(EntityType.SCENE, ["102,4"], "Some-address-without-permissions");
+
+        expect(errors.length).toBe(1)
+    })
 })
