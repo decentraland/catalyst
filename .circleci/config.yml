@@ -133,6 +133,22 @@ jobs:
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
               docker push "${DOCKER_IMAGE_NAME}:latest"
             fi
+  tag-latest-docker:
+    <<: *base_env
+    docker:
+      - image: circleci/node:10-browsers
+        environment: &ENVIRONMENT
+          DOCKER_IMAGE_NAME: decentraland/katalyst
+    steps:
+      - <<: *attach_root
+      - setup_remote_docker: { docker_layer_caching: true }  
+      - run:
+          name: Log into DockerHub
+          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+      - run:
+          name: Tag image
+          command: |
+            docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
 
 workflows:
   version: 2
@@ -181,3 +197,12 @@ workflows:
             - build-lighthouse
             - build-content
             - build-lambdas
+      - accept-tag-latest-docker:
+          <<: *master_and_tags
+          type: approval
+          requires:
+            - publish-docker
+      - tag-latest-docker:
+          <<: *master_and_tags
+          requires:
+            - accept-tag-latest-docker
