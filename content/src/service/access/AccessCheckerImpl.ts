@@ -27,8 +27,10 @@ export class AccessCheckerImpl implements AccessChecker {
     private async checkSceneAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         const errors: string[] = []
 
-        pointers.map(pointer => pointer.toLocaleLowerCase())
-            .forEach(async pointer => {
+        await Promise.all(
+            pointers
+            .map(pointer => pointer.toLocaleLowerCase())
+            .map(async pointer => {
                 if (pointer.startsWith("default")) {
                     if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
                         errors.push(`Only Decentraland can add or modify default scenes`)
@@ -48,12 +50,13 @@ export class AccessCheckerImpl implements AccessChecker {
                         errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
                     }
                 }
-            })
+            }))
 
         return errors
     }
 
     private async checkParcelAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean> {
+
         const accessURL = `${this.dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
         try {
             const responseJson = await this.fetchHelper.fetchJson(accessURL)

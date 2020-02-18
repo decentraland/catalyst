@@ -140,8 +140,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 }
 
 enum SynchronizationState {
-    BOOTSTRAPPING = "bootstrapping",
-    SYNCED = "synced",
-    SYNCING = "syncing",
-    FAILED_TO_SYNC = "failed to sync"
+    BOOTSTRAPPING = "Bootstrapping",
+    SYNCED = "Synced",
+    SYNCING = "Syncing",
+    FAILED_TO_SYNC = "Failed to sync"
 }

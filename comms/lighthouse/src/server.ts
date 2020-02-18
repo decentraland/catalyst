@@ -91,9 +91,9 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
       }
       try {
         const provider = httpProviderForNetwork(CURRENT_ETH_NETWORK);
-        const result = Authenticator.validateSignature(client.getMsg(), message.payload, provider);
+        const result = await Authenticator.validateSignature(client.getMsg(), message.payload, provider);
 
-        return result;
+        return result.ok;
       } catch (e) {
         console.log(`error while recovering address for client ${client.getId()}`, e);
         return false;

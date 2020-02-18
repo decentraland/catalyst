@@ -184,7 +184,7 @@ describe("Validations", function() {
     await validation.validateSignature("some-entity-id", Date.now(), ContentAuthenticator.createSimpleAuthChain("some-entity-id", "some-address", "some-signature"), ValidationContext.ALL);
 
     expect(validation.getErrors().length).toBe(1);
-    expect(validation.getErrors()[0]).toBe("The signature is invalid.");
+    expect(validation.getErrors()[0]).toMatch("The signature is invalid.*")
   });
 
   it(`when signature is valid, it's recognized`, async () => {
@@ -226,7 +226,7 @@ describe("Validations", function() {
     let validation = getValidatorWithMockedAccess();
     await validation.validateSignature(entityId, Date.now(), signatures_second_is_invalid, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
-    expect(validation.getErrors()[0]).toBe("The signature is invalid.");
+    expect(validation.getErrors()[0]).toMatch("The signature is invalid.*")
 
     const signatures_first_is_invalid = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId);
     signatures_first_is_invalid[1].signature = "invalid-signature";
@@ -234,7 +234,7 @@ describe("Validations", function() {
     validation = getValidatorWithMockedAccess();
     await validation.validateSignature(entityId, Date.now(), signatures_first_is_invalid, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
-    expect(validation.getErrors()[0]).toBe("The signature is invalid.");
+    expect(validation.getErrors()[0]).toMatch("The signature is invalid.*")
   });
 
   it(`when no signature are provided, it's reported`, async () => {
@@ -242,7 +242,7 @@ describe("Validations", function() {
     const invalidAuthChain: AuthChain = [];
     await validation.validateSignature("some-entity-id", Date.now(), invalidAuthChain, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
-    expect(validation.getErrors()[0]).toBe("The signature is invalid.");
+    expect(validation.getErrors()[0]).toMatch("The signature is invalid.*")
   });
 
   it(`when only signer link is provided, it's reported`, async () => {
@@ -251,7 +251,7 @@ describe("Validations", function() {
     const invalidAuthChain: AuthChain = [{ type: AuthLinkType.SIGNER, payload: ownerIdentity.address, signature: "" }];
     await validation.validateSignature("some-entity-id", Date.now(), invalidAuthChain, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
-    expect(validation.getErrors()[0]).toBe("The signature is invalid.");
+    expect(validation.getErrors()[0]).toMatch("The signature is invalid.*")
   });
 
   it(`when a profile is created its access is checked`, async () => {

@@ -52,7 +52,7 @@ export class EventStreamProcessor {
                 EventStreamProcessor.LOGGER.trace(`Preparing deployment for ${index + 1}/${historyLength}. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`)
                 const execution = await this.deploymentBuilder(deploymentEvent, options?.preferredServer);
                 EventStreamProcessor.LOGGER.trace(`Deployment prepared for ${index + 1}/${historyLength}. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`)
-                done(null, [index, deploymentEvent.entityId, execution]);
+                done(null, [index, deploymentEvent.entityType, deploymentEvent.entityId, execution]);
             } catch (error) {
                 EventStreamProcessor.LOGGER.debug(`Failed preparing the deployment ${index + 1}/${historyLength}. Entity is (${deploymentEvent.entityType}, ${deploymentEvent.entityId}). Error was:\n${error}`)
                 done();
@@ -64,17 +64,17 @@ export class EventStreamProcessor {
     private prepareStreamDeployer(historyLength: number, options?: HistoryDeploymentOptions) {
         return new Writable({
             objectMode: true,
-            write: async ([index, entityId, performDeployment], _, done) => {
+            write: async ([index, entityType, entityId, performDeployment], _, done) => {
                 try {
                     await performDeployment();
                     if (options?.logging) {
-                        EventStreamProcessor.LOGGER.info(`Deployed ${index + 1}/${historyLength}. Entity id is ${entityId}`);
+                        EventStreamProcessor.LOGGER.info(`Deployed ${index + 1}/${historyLength}. Entity is (${entityType}, ${entityId})`);
                     } else {
-                        EventStreamProcessor.LOGGER.trace(`Deployed ${index + 1}/${historyLength}. Entity id is ${entityId}`)
+                        EventStreamProcessor.LOGGER.trace(`Deployed ${index + 1}/${historyLength}. Entity is (${entityType}, ${entityId})`)
                     }
                     done();
                 } catch (error) {
-                    EventStreamProcessor.LOGGER.debug(`Failed when trying to deploy ${index + 1}/${historyLength}. Entity id is ${entityId}. Error was:\n${error}`)
+                    EventStreamProcessor.LOGGER.debug(`Failed when trying to deploy ${index + 1}/${historyLength}. Entity is (${entityType}, ${entityId}). Error was:\n${error}`)
                     done();
                 }
             },

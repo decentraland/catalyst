@@ -31,7 +31,6 @@ export class HistoryManagerImpl implements HistoryManager {
             timestamp,
         }
         this.addEventToTempHistory(event)
-        // TODO: Add mutex and avoid race conditions
         return this.storage.setTempHistory(this.tempHistory)
     }
 
@@ -50,7 +49,7 @@ export class HistoryManagerImpl implements HistoryManager {
     async getLastImmutableTime(): Promise<Timestamp | undefined> {
         // TODO: Avoid loading the whole file just for the last entry
         const immutableHistory: DeploymentHistory = await this.storage.getImmutableHistory()
-        return immutableHistory[0]?.timestamp
+        return immutableHistory[immutableHistory.length - 1]?.timestamp
     }
 
     private static MAX_HISTORY_LIMIT = 500
