@@ -7,7 +7,7 @@ export class Hashing {
 
     /** Given a set of files, return a map with their hash */
     static async calculateHashes(files: ContentFile[]): Promise<Map<ContentFileHash, ContentFile>> {
-        const entries: Promise<[ContentFileHash, ContentFile]>[] = Array.from(files)
+        const entries = Array.from(files)
             .map<Promise<[ContentFileHash, ContentFile]>>(async file => [await this.calculateHash(file), file])
         return new Map(await Promise.all(entries));
     }
