@@ -20,7 +20,7 @@ export class ValidationContext {
     static readonly LOCAL: ValidationContext = ValidationContext.ALL.without(Validation.MUST_HAVE_FAILED_BEFORE)
     static readonly SYNCED: ValidationContext = ValidationContext.LOCAL.without(Validation.NO_NEWER, Validation.RECENT, Validation.NO_REDEPLOYS, Validation.REQUEST_SIZE)
     static readonly OVERWRITE: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
-    static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL.without(Validation.REQUEST_SIZE)
+    static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL.without(Validation.REQUEST_SIZE, Validation.NO_NEWER, Validation.RECENT)
 
     private readonly toExecute: Set<Validation>;
     private constructor (toExecute: Validation[]) {
