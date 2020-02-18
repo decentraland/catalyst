@@ -70,7 +70,6 @@ export class Validations {
     }
 
     /** Validate that the full request size is within limits */
-    // TODO: decide if we want to externalize this as a configuration
     private static MAX_UPLOAD_SIZE_PER_POINTER_MB = 15
     private static MAX_UPLOAD_SIZE_PER_POINTER = Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB * 1024 * 1024
     validateRequestSize(files: ContentFile[], pointers: Pointer[], validationContext: ValidationContext): void {
@@ -111,7 +110,6 @@ export class Validations {
     }
 
     /** Validate that the deployment is recent */
-    // TODO: decide if we want to externalize this as a configuration
     static REQUEST_TTL_BACKWARDS: number = ms('20m') // 20 minutes
     private static REQUEST_TTL_FORWARDS: number = ms('5m') // 5 minutes
     validateDeploymentIsRecent(entityToBeDeployed: Entity, validationContext: ValidationContext): void {
