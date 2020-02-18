@@ -149,6 +149,7 @@ jobs:
           name: Tag image
           command: |
             docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
+            docker push "${DOCKER_IMAGE_NAME}:latest"
 
 workflows:
   version: 2
@@ -189,14 +190,18 @@ workflows:
             - accept-publish-peer
       
       # publish docker image
-      - publish-docker:
+      - accept-publish-docker:
           <<: *master_and_tags
+          type: approval
           requires:
-            - checkout
             - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas
+      - publish-docker:
+          <<: *master_and_tags
+          requires:
+            - accept-publish-docker
       - accept-tag-latest-docker:
           <<: *master_and_tags
           type: approval
