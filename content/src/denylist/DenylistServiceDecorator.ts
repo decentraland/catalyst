@@ -9,6 +9,7 @@ import { ServiceImpl } from "../service/ServiceImpl";
 import { ContentItem } from "../storage/ContentStorage";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { Timestamp } from "../service/time/TimeSorting";
+import { PointerHistory } from "../service/pointers/PointerManager";
 
 /**
  * This decorator takes a MetaverseContentService and adds denylisting functionality to it
@@ -32,6 +33,14 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   async getActivePointers(type: EntityType): Promise<Pointer[]> {
     const activePointers: Pointer[] = await this.service.getActivePointers(type);
     return this.filterDenylisted(activePointers, pointer => buildPointerTarget(type, pointer));
+  }
+
+  async getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
+      if (await this.areDenylisted(buildPointerTarget(type, pointer))) {
+        return []
+      } else {
+          return this.service.getPointerHistory(type, pointer)
+      }
   }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {

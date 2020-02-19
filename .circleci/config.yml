@@ -113,7 +113,7 @@ jobs:
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
       - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true }  
+      - setup_remote_docker: { docker_layer_caching: true }
       - run:
           name: Prepare to build Docker image
           command: ./prepare_for_docker_image.sh
@@ -141,7 +141,7 @@ jobs:
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
       - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true }  
+      - setup_remote_docker: { docker_layer_caching: true }
       - run:
           name: Log into DockerHub
           command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
@@ -188,10 +188,10 @@ workflows:
           <<: *master_and_tags
           requires:
             - accept-publish-peer
-      
+
       # publish docker image
       - accept-publish-docker:
-          <<: *master_and_tags
+          <<: *all_branches_and_tags
           type: approval
           requires:
             - build-peer
@@ -199,7 +199,7 @@ workflows:
             - build-content
             - build-lambdas
       - publish-docker:
-          <<: *master_and_tags
+          <<: *all_branches_and_tags
           requires:
             - accept-publish-docker
       - accept-tag-latest-docker:

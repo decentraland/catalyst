@@ -204,6 +204,22 @@ export class Controller {
         res.send(pointers)
     }
 
+    async getPointerHistory(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /pointers/:type/:pointer
+        const type:EntityType  = this.parseEntityType(req.params.type)
+        const pointer:Pointer  = req.params.pointer
+
+        // Validate type is valid
+        if (!type) {
+            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+            return
+        }
+
+        const pointerHistory = await this.service.getPointerHistory(type, pointer)
+        res.send(pointerHistory)
+    }
+
     async getAudit(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /audit/:type/:entityId

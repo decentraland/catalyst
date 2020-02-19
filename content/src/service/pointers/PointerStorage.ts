@@ -16,6 +16,7 @@ export class PointerStorage {
         }
     }
 
+    /** References are sorted from oldest to newest */
     async getPointerReferences(entityType: EntityType, pointer: Pointer): Promise<PointerReference[]> {
         const contentItem = await this.storage.getContent(this.resolveCategory(entityType), pointer.toLocaleLowerCase());
         if (contentItem) {

@@ -7,7 +7,7 @@ import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
-import { PointerManager } from "./pointers/PointerManager";
+import { PointerManager, PointerHistory } from "./pointers/PointerManager";
 import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
@@ -78,6 +78,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     getActivePointers(type: EntityType): Promise<Pointer[]> {
         return this.pointerManager.getActivePointers(type)
+    }
+
+    getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
+        return this.pointerManager.getPointerHistory(type, pointer)
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {

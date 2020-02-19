@@ -5,6 +5,7 @@ import { AuditInfo } from "./audit/Audit";
 import { Timestamp } from "./time/TimeSorting";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason } from "./errors/FailedDeploymentsManager";
+import { PointerHistory } from "./pointers/PointerManager";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -16,6 +17,7 @@ export interface MetaverseContentService {
     getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>;
     getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
     getActivePointers(type: EntityType): Promise<Pointer[]>;
+    getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory>;
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined>;

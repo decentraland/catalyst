@@ -8,6 +8,7 @@ import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
+import { PointerHistory } from "@katalyst/content/service/pointers/PointerManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 
@@ -46,6 +47,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
             .map(entity => entity.pointers)
             .reduce((accum, current) => accum.concat(current), [])
         return Promise.resolve(pointers)
+    }
+
+    getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
+        return Promise.resolve([])
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<Timestamp> {
