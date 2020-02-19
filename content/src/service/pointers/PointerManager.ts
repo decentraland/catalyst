@@ -29,6 +29,18 @@ export class PointerManager {
             .map(([pointer]) => pointer)
     }
 
+    /** Return a pointer's history */
+    async getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
+        const references = await this.storage.getPointerReferences(type, pointer)
+        return references.map(reference => {
+            if (reference.entityId === PointerManager.DELETED) {
+                return { deleted: true, timestamp: reference.timestamp }
+            } else {
+                return { ...reference }
+            }
+        })
+    }
+
     /** Returns the id of the entity being referenced by the given pointer (if any) */
     getEntityInPointer(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
         return this.getPointerMap(type).get(pointer)
@@ -167,6 +179,14 @@ export class PointerManager {
             return reference.entityId
         }
     }
+}
+
+export type PointerHistory = PointerEvent[]
+
+export type PointerEvent = {
+    deleted?: boolean,
+    entityId?: EntityId,
+    timestamp: Timestamp,
 }
 
 export type PointerReference = {
