@@ -199,7 +199,7 @@ workflows:
             - build-content
             - build-lambdas
       - publish-docker:
-          <<: *master_and_tags
+          <<: *all_branches_and_tags
           requires:
             - accept-publish-docker
       - accept-tag-latest-docker:
