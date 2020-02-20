@@ -7,20 +7,21 @@ import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest } from "../t
 
 export class HistoryManagerImpl implements HistoryManager {
 
-    /** This history is sorted from newest to oldest */
-    private tempHistory: DeploymentHistory
-
-    private immutableHistorySize: number | undefined
-
-    private constructor(private storage: HistoryStorage, tempHistory: DeploymentHistory) {
-        this.tempHistory = tempHistory
-    }
+    private constructor(private readonly storage: HistoryStorage,
+        private tempHistory: DeploymentHistory, // This history is sorted from newest to oldest
+        private immutableTime: Timestamp,
+        private immutableHistorySize: number) { }
 
     static async build(storage: HistoryStorage): Promise<HistoryManager> {
         // We are adding an extra sort, because we might need to move all immutable history back to temp history externally.
         // This should be extremely rare, but if it happens, we will sort the history to fix any potential mistakes.
         const tempHistory = sortFromNewestToOldest(await storage.getTempHistory())
-        return new HistoryManagerImpl(storage, tempHistory)
+
+        const immutableHistory: DeploymentHistory = await storage.getImmutableHistory()
+        const immutableTime: Timestamp = immutableHistory[immutableHistory.length - 1]?.timestamp ?? 0
+        const immutableHistorySize: number = immutableHistory.length
+
+        return new HistoryManagerImpl(storage, tempHistory, immutableTime, immutableHistorySize)
     }
 
     newEntityDeployment(serverName: ServerName, entityType: EntityType, entityId: EntityId, timestamp: Timestamp): Promise<void> {
@@ -40,16 +41,13 @@ export class HistoryManagerImpl implements HistoryManager {
             const nowImmutable: DeploymentHistory = sortFromOldestToNewest(this.tempHistory.splice(index, this.tempHistory.length - index))
             await this.storage.setTempHistory(this.tempHistory)
             await this.storage.appendToImmutableHistory(nowImmutable)
-            if (this.immutableHistorySize) {
-                this.immutableHistorySize = this.immutableHistorySize + nowImmutable.length
-            }
+            this.immutableHistorySize += nowImmutable.length
         }
+        this.immutableTime = immutableTime
     }
 
-    async getLastImmutableTime(): Promise<Timestamp | undefined> {
-        // TODO: Avoid loading the whole file just for the last entry
-        const immutableHistory: DeploymentHistory = await this.storage.getImmutableHistory()
-        return immutableHistory[immutableHistory.length - 1]?.timestamp
+    getLastImmutableTime(): Timestamp {
+        return this.immutableTime
     }
 
     private static MAX_HISTORY_LIMIT = 500
@@ -57,7 +55,7 @@ export class HistoryManagerImpl implements HistoryManager {
     /** Returns the history sorted from newest to oldest */
     async getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
         // TODO: We will need to find a better way to do this and avoid loading the entire file to then filter
-        const allHistory: DeploymentHistory = this.tempHistory.concat(await this.getImmutableHistory())
+        const allHistory: DeploymentHistory = await this.retrieveNecessaryHistory(from)
         const filteredHistory = this.filterHistory(allHistory, from, to, serverName)
         const curatedOffset = (offset && offset>=0) ? offset : 0
         const curatedLimit = (limit && limit>0 && limit<=HistoryManagerImpl.MAX_HISTORY_LIMIT) ? limit : HistoryManagerImpl.DEFAULT_HISTORY_LIMIT
@@ -77,18 +75,9 @@ export class HistoryManagerImpl implements HistoryManager {
         }
     }
 
-
     /** Returns the size for the entire history */
-    async getHistorySize(): Promise<number> {
-        return (await this.getImmutableHistorySize()) + this.tempHistory.length
-    }
-
-    private async getImmutableHistorySize(): Promise<number> {
-        if (!this.immutableHistorySize) {
-            const immutableHistory = await this.storage.getImmutableHistory()
-            this.immutableHistorySize = immutableHistory.length
-        }
-        return this.immutableHistorySize
+    getHistorySize(): number {
+        return this.immutableHistorySize + this.tempHistory.length
     }
 
     private filterHistory(history: DeploymentHistory, from: Timestamp | undefined, to: Timestamp | undefined, serverName: ServerName | undefined): DeploymentEvent[] {
@@ -102,10 +91,16 @@ export class HistoryManagerImpl implements HistoryManager {
         }
     }
 
-    private async getImmutableHistory(): Promise<DeploymentHistory> {
-        const immutableHistory = await this.storage.getImmutableHistory()
-        // Sort from newest to oldest
-        return immutableHistory.reverse()
+
+    /** Before loading the immutable history, we check if it is in fact necessary */
+    private async retrieveNecessaryHistory(from: Timestamp | undefined): Promise<DeploymentHistory> {
+        if (!from || from <= this.immutableTime) {
+            const immutableHistory = await this.storage.getImmutableHistory()
+            // Reverse is used because we need to sort immutable history from newest to oldest
+            return this.tempHistory.concat(immutableHistory.reverse())
+        } else {
+            return this.tempHistory
+        }
     }
 
     private addEventToTempHistory(newEvent: DeploymentEvent): void {

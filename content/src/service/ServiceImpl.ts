@@ -37,7 +37,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private accessChecker: AccessChecker,
         private authenticator: ContentAuthenticator,
         private failedDeploymentsManager: FailedDeploymentsManager,
-        private lastImmutableTime: Timestamp,
         private ignoreValidationErrors: boolean,
         private network: string) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
@@ -55,9 +54,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         failedDeploymentsManager: FailedDeploymentsManager,
         ignoreValidationErrors: boolean = false,
         network: string): Promise<ServiceImpl>{
-            const lastImmutableTime: Timestamp = await historyManager.getLastImmutableTime() ?? 0
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, accessChecker, authenticator, failedDeploymentsManager, lastImmutableTime, ignoreValidationErrors, network)
+                analytics, accessChecker, authenticator, failedDeploymentsManager, ignoreValidationErrors, network)
         }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -264,7 +262,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             version: CURRENT_CONTENT_VERSION,
             currentTime: Date.now(),
             lastImmutableTime: this.getLastImmutableTime(),
-            historySize: await this.historyManager.getHistorySize(),
+            historySize: this.historyManager.getHistorySize(),
         }
     }
 
@@ -277,7 +275,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     async setImmutableTime(immutableTime: number): Promise<void> {
-        this.lastImmutableTime = immutableTime
         return this.lock.runExclusive(async () => {
             await this.historyManager.setTimeAsImmutable(immutableTime)
         })
@@ -289,7 +286,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     getLastImmutableTime(): Timestamp {
-        return this.lastImmutableTime
+        return this.historyManager.getLastImmutableTime()
     }
 
 }
