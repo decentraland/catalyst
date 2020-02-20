@@ -104,6 +104,7 @@ export const enum EnvironmentConfig {
     LOG_LEVEL,
     JSON_REQUEST_TIMEOUT,
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
+    USE_COMPRESSION_MIDDLEWARE,
 }
 
 export class EnvironmentBuilder {
@@ -176,6 +177,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL                 , () => process.env.LOG_LEVEL ?? "info")
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT      , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
