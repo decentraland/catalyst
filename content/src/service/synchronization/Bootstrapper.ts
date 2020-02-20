@@ -6,6 +6,8 @@ import { EventDeployer } from "./EventDeployer";
 import { ContentCluster } from "./ContentCluster";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { tryOnCluster } from "./ClusterUtils";
+import { getClient } from "./clients/contentserver/ActiveContentServerClient";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 export class Bootstrapper {
 
@@ -37,7 +39,12 @@ export class Bootstrapper {
             const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
 
             // Bootstrap
-            await deployer.deployHistory(history, { logging: true })
+            if (process.env.PREFERRED_BOOTSTRAP_NODE) {
+                const client = getClient(new FetchHelper(), process.env.PREFERRED_BOOTSTRAP_NODE, "name", 0)
+                await deployer.deployHistory(history, { logging: true, preferredServer: client})
+            } else {
+                await deployer.deployHistory(history, { logging: true })
+            }
 
             // Update the timestamp on the server
             await server.updateEstimatedLocalImmutableTime(immutableTime)
