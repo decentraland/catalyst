@@ -7,7 +7,8 @@ import { happenedBeforeTime, happenedBefore, sortFromOldestToNewest } from "../t
 
 export class HistoryManagerImpl implements HistoryManager {
 
-    private constructor(private readonly storage: HistoryStorage,
+    private constructor(
+        private readonly storage: HistoryStorage,
         private tempHistory: DeploymentHistory, // This history is sorted from newest to oldest
         private immutableTime: Timestamp,
         private immutableHistorySize: number) { }
