@@ -38,6 +38,8 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
 export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: DeploymentEvent[]) {
     const deploymentHistory: DeploymentHistory = (await server.getHistory()).events
     expect(deploymentHistory.length).toEqual(expectedEvents.length, `Expected ${server.namePrefix} to have ${expectedEvents.length} deployments in history`)
+    const { historySize } = await server.getStatus()
+    expect(historySize).toEqual(expectedEvents.length, `Expected ${server.namePrefix} to report a history of size ${expectedEvents.length} on the status`)
     for (let i = 0; i < expectedEvents.length; i++) {
         const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
         const actualEvent: DeploymentEvent = deploymentHistory[i]

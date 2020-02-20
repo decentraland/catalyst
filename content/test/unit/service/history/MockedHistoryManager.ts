@@ -5,8 +5,8 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 
 export class MockedHistoryManager implements HistoryManager {
 
-    getLastImmutableTime(): Promise<number | undefined> {
-        return Promise.resolve(undefined)
+    getLastImmutableTime(): Timestamp {
+        return 0
     }
 
     newEntityDeployment(serverName: ServerName, entity: EntityType, entityId: EntityId, timestamp: Timestamp): Promise<void> {
@@ -21,7 +21,7 @@ export class MockedHistoryManager implements HistoryManager {
         throw new Error("Method not implemented.");
     }
 
-    getHistorySize(): Promise<number> {
+    getHistorySize(): number {
         throw new Error("Method not implemented.");
     }
 
