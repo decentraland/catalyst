@@ -9,20 +9,20 @@ export interface ContentStorage {
 }
 
 export interface ContentItem {
+    getLength(): number | undefined
     asBuffer(): Promise<Buffer>
     asStream(): Readable
 }
 
 export class SimpleContentItem implements ContentItem {
-
-    private constructor(private buffer?: Buffer, private stream?: Readable) { }
+    private constructor(private buffer?: Buffer, private stream?: Readable, private length?: number) { }
 
     static fromBuffer(buffer: Buffer): SimpleContentItem {
-        return new SimpleContentItem(buffer)
+        return new SimpleContentItem(buffer, undefined, buffer.length)
     }
 
-    static fromStream(stream: Readable): SimpleContentItem {
-        return new SimpleContentItem(undefined, stream)
+    static fromStream(stream: Readable, length?: number): SimpleContentItem {
+        return new SimpleContentItem(undefined, stream, length)
     }
 
     async asBuffer(): Promise<Buffer> {
@@ -39,6 +39,9 @@ export class SimpleContentItem implements ContentItem {
         return bufferToStream(this.buffer)
     }
 
+    getLength(): number | undefined {
+        return this.length;
+    }
 }
 
 export function bufferToStream(buffer): Readable {

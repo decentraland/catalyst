@@ -75,21 +75,21 @@ export class S3ContentStorage implements ContentStorage {
         }
         const content = await this.getContentFromS3(key, request)
         if (content) {
-            return new S3ContentItem(content)
+            return new S3ContentItem(content.readable, content.length)
         }
         return undefined
     }
 
-    private getContentFromS3(key: string, request: AWS.S3.Types.GetObjectRequest): Promise<Readable | undefined> {
+    private getContentFromS3(key: string, request: AWS.S3.Types.GetObjectRequest): Promise<{ readable: Readable, length?: number } | undefined> {
         return new Promise((resolve) => {
             this.s3Client.getObject(request, (error, data: AWS.S3.Types.GetObjectOutput) => {
                 if (error) {
                     console.error(`Error retrieving data from S3. Id: ${key}`, error);
                     return resolve(undefined)
                 }
-
+                
                 console.log(`Successfully retrieved data from S3. Id: ${key}`);
-                return resolve(data.Body as Readable)
+                return resolve({readable: data.Body as Readable, length: data.ContentLength})
             })
         })
     }
@@ -149,7 +149,7 @@ export class S3ContentStorage implements ContentStorage {
 
 class S3ContentItem implements ContentItem {
 
-    constructor(private readable: Readable) { }
+    constructor(private readable: Readable, private length?: number) { }
 
     asBuffer(): Promise<Buffer> {
         return streamToBuffer(this.readable)
@@ -159,4 +159,7 @@ class S3ContentItem implements ContentItem {
         return this.readable
     }
 
+    getLength(): number | undefined {
+        return this.length
+    }
 }

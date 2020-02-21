@@ -31,7 +31,9 @@ export class FileSystemContentStorage implements ContentStorage {
         try {
             const filePath = this.getFilePath(category, id)
             if (await FileSystemContentStorage.existPath(filePath)) {
-                return SimpleContentItem.fromStream(fs.createReadStream(filePath))
+                const stat = await fs.promises.stat(filePath)
+                
+                return SimpleContentItem.fromStream(fs.createReadStream(filePath), stat.size)
             }
         } catch (error) { }
         return undefined
