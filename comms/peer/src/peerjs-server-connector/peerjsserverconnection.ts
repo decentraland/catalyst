@@ -222,7 +222,6 @@ export class PeerJSServerConnection extends EventEmitter {
 
     this.socket.on(SocketEventType.Close, () => {
       // If we haven't explicitly disconnected, emit error.
-      console.log(`socket#close`);
       if (!this.disconnected) {
         this._abort(PeerErrorType.SocketClosed, "Underlying socket is already closed.");
       }
