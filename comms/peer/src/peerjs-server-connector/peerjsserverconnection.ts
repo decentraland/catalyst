@@ -54,7 +54,7 @@ export function createAnswerMessage(myId: string, peerData: PeerData, handshakeD
 export function createCandidateMessage(myId: string, peerData: PeerData, candidateData: any, connectionId: string) {
   const payload = {
     ...candidateData,
-    connectionId: connectionId,
+    connectionId,
     sessionId: peerData.sessionId
   };
   const candidate = {
@@ -70,7 +70,7 @@ function createMessage(myId: string, dst: string, type: ServerMessageType, paylo
   return {
     type,
     src: myId,
-    dst: dst,
+    dst,
     payload
   };
 }
@@ -130,7 +130,7 @@ export class PeerJSServerConnection extends EventEmitter {
     let userId: string | undefined;
 
     // Deal with overloading
-    if (id && id.constructor == Object) {
+    if (id && id.constructor === Object) {
       options = id as PeerOptions;
     } else if (id) {
       userId = id.toString();
@@ -185,7 +185,7 @@ export class PeerJSServerConnection extends EventEmitter {
     } else {
       this._api
         .retrieveId()
-        .then(id => this._initialize(id))
+        .then(uuid => this._initialize(uuid))
         .catch(error => this._abort(PeerErrorType.ServerError, error));
     }
   }
