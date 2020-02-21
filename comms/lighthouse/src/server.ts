@@ -62,7 +62,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   configureRoutes(
     app,
-    { layersService: layersService, realmProvider: getPeerJsRealm },
+    { layersService, realmProvider: getPeerJsRealm },
     {
       name,
       version: LIGHTHOUSE_VERSION,
