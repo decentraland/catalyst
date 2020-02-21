@@ -14,24 +14,38 @@ export class Bootstrapper {
     /**
      * Start an onboarding process into the cluster. This implies syncing all missing history with the cluster's servers
      */
-    static async onboardIntoCluster(cluster: ContentCluster, deployer: EventDeployer, myLastImmutableTime: Timestamp): Promise<void> {
+    static async onboardIntoCluster(cluster: ContentCluster, deployer: EventDeployer, myLastImmutableTime: Timestamp, multiServerOnboarding: boolean): Promise<void> {
         const servers: ContentServerClient[] = cluster.getAllActiveServersInCluster()
 
         if (servers.length > 0) {
             // Process all history, checking if the entities are already overwritten or not
-            const immutableTime = await Bootstrapper.onboardIntoClusterWithServer(myLastImmutableTime, cluster, deployer)
-
-            // Create a request for all servers to get everything from the last immutable time
-            const request = new MultiServerHistoryRequest(servers, deployer, immutableTime + 1)
-
-            // Execute the request
-            return request.execute()
+            if (multiServerOnboarding) {
+                return Bootstrapper.onboardIntoClusterWithManyServers(myLastImmutableTime, cluster, deployer)
+            } else {
+                return Bootstrapper.onboardIntoClusterWithServer(myLastImmutableTime, cluster, deployer)
+            }
         } else {
             Bootstrapper.LOGGER.warn(`Couldn't find servers to bootstrap with`)
         }
     }
 
-    private static async onboardIntoClusterWithServer(myLastImmutableTime: Timestamp, cluster: ContentCluster, deployer: EventDeployer): Promise<Timestamp> {
+    private static async onboardIntoClusterWithManyServers(myLastImmutableTime: Timestamp, cluster: ContentCluster, deployer: EventDeployer): Promise<void> {
+        Bootstrapper.LOGGER.info(`Will use many servers to bootstrap with`)
+        try {
+            // Create a request for all servers to get everything from my last immutable time
+            const request = new MultiServerHistoryRequest(cluster.getAllActiveServersInCluster(), deployer, myLastImmutableTime)
+
+            // Execute the request
+            await request.execute()
+
+            Bootstrapper.LOGGER.info("Finished bootstrapping")
+        } catch (error) {
+            Bootstrapper.LOGGER.error(`An error happened failed during bootstrapping: ${error}`)
+        }
+    }
+
+    private static async onboardIntoClusterWithServer(myLastImmutableTime: Timestamp, cluster: ContentCluster, deployer: EventDeployer): Promise<void> {
+        Bootstrapper.LOGGER.info(`Will use one server to bootstrap with`)
         try {
             // Get one (any) server's last immutable time and history
             const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
@@ -42,11 +56,15 @@ export class Bootstrapper {
             // Update the timestamp on the server
             await server.updateEstimatedLocalImmutableTime(immutableTime)
 
+            // Create a request for all servers to get everything from the last immutable time
+            const request = new MultiServerHistoryRequest(cluster.getAllActiveServersInCluster(), deployer, immutableTime + 1)
+
+            // Execute the request
+            await request.execute()
+
             Bootstrapper.LOGGER.info("Finished bootstrapping")
-            return immutableTime
         } catch (error) {
             Bootstrapper.LOGGER.error(`An error happened failed during bootstrapping: ${error}`)
-            return -1
         }
     }
 

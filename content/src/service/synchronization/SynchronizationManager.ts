@@ -30,7 +30,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     constructor(private readonly cluster: ContentCluster,
         private readonly service: TimeKeepingService,
         private readonly deployer: EventDeployer,
-        private readonly timeBetweenSyncs: number) { }
+        private readonly timeBetweenSyncs: number,
+        private readonly performMultiServerOnboarding: boolean) { }
 
     async start(): Promise<void> {
         // Read immutable time from the history I have
@@ -43,7 +44,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         this.daoRemovalEventSubscription = this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
 
         // Onboard into cluster
-        await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime)
+        await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime, this.performMultiServerOnboarding)
 
         // Set a timeout to stay in sync with other servers
         this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)

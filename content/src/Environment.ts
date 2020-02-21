@@ -105,6 +105,7 @@ export const enum EnvironmentConfig {
     JSON_REQUEST_TIMEOUT,
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
     USE_COMPRESSION_MIDDLEWARE,
+    PERFORM_MULTI_SERVER_ONBOARDING,
 }
 
 export class EnvironmentBuilder {
@@ -178,6 +179,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT      , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

@@ -168,15 +168,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             }
 
             if (!wasEntityAlreadyDeployed) {
-                // Store the entity's content
-                await this.storeEntityContent(hashes, alreadyStoredContent)
-
-                // Save audit information
-                await this.auditManager.setAuditInfo(entityId, newAuditInfo)
-
-                // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-                await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
-
                 const deploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id)
                 if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
                     // Add the new deployment to history
@@ -188,6 +179,15 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                     // Invalidate the cache and report the successful deployment
                     this.entities.invalidate(entity.id)
                 }
+
+                // Store the entity's content
+                await this.storeEntityContent(hashes, alreadyStoredContent)
+
+                // Save audit information
+                await this.auditManager.setAuditInfo(entityId, newAuditInfo)
+
+                // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
+                await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
 
                 // Record deployment for analytics
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
