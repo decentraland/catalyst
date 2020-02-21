@@ -144,7 +144,7 @@ export class Peer implements IPeer {
     this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
     this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? 10;
-    this.config.backoffMs = this.config.backoffMs ?? 1000;
+    this.config.backoffMs = this.config.backoffMs ?? 2000;
 
     this.instanceId = Math.floor(Math.random() * MAX_UINT32);
 
@@ -248,39 +248,45 @@ export class Peer implements IPeer {
         return result.reject(err);
       }
 
-      const layer = this.currentLayer;
-      const rooms = this.currentRooms.slice();
-
-      const { reconnectionAttempts = 5, backoffMs = 1000 } = this.config;
-
-      for (let i = 1; i <= reconnectionAttempts; ++i) {
-        this.log(LogLevel.INFO, `attempt `, i);
-        await delay(backoffMs);
-
-        try {
-          this.setLighthouseUrl(this.lighthouseUrl());
-          await this.awaitConnectionEstablished();
-
-          if (layer) {
-            await this.setLayer(layer);
-            for (const room of rooms) {
-              await this.joinRoom(room.id);
-            }
-          }
-          // successfully reconnected
-          break;
-        } catch (e) {
-          this.log(LogLevel.WARN, `Error while reconnecting (attempt ${i}) `, e);
-          if (i > reconnectionAttempts) {
-            this.log(LogLevel.ERROR, `Could not reconnect after ${reconnectionAttempts} failed attempts `, e);
-            this.config.statusHandler!("reconnection-error");
-          }
-        }
-      }
+      await this.retryConnection();
     });
+    
     this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
 
     return result;
+  }
+
+  private async retryConnection() {
+    const layer = this.currentLayer;
+    const rooms = this.currentRooms.slice();
+
+    const { reconnectionAttempts, backoffMs } = this.config;
+
+    for (let i = 1; i <= reconnectionAttempts!; ++i) {
+      this.log(LogLevel.INFO, `attempt `, i);
+      // To avoid synced retries, we use a random delay
+      await delay(backoffMs! + Math.floor(Math.random() * backoffMs!));
+
+      try {
+        this.setLighthouseUrl(this.lighthouseUrl());
+        await this.awaitConnectionEstablished();
+
+        if (layer) {
+          await this.setLayer(layer);
+          for (const room of rooms) {
+            await this.joinRoom(room.id);
+          }
+        }
+        // successfully reconnected
+        break;
+      } catch (e) {
+        this.log(LogLevel.WARN, `Error while reconnecting (attempt ${i}) `, e);
+        if (i > reconnectionAttempts!) {
+          this.log(LogLevel.ERROR, `Could not reconnect after ${reconnectionAttempts} failed attempts `, e);
+          this.config.statusHandler!("reconnection-error");
+        }
+      }
+    }
   }
 
   private log(level: LogLevel, ...entries: any[]) {
