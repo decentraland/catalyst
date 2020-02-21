@@ -173,6 +173,11 @@ export class Controller {
             res.contentType('application/octet-stream')
             res.setHeader('ETag', hashId)
             res.setHeader('Access-Control-Expose-Headers', '*')
+
+            if(data.getLength()) {
+                res.setHeader('Content-Length', data.getLength()!.toString())
+            }
+            
             data.asStream().pipe(res)
         } else {
             res.status(404).send()
