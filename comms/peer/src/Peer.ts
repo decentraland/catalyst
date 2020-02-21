@@ -2,7 +2,7 @@ import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverco
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import { connectionIdFor, util, pickRandom, noReject } from "./peerjs-server-connector/util";
+import { connectionIdFor, util, pickRandom, noReject, delay } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
@@ -51,8 +51,11 @@ type PeerConfig = {
   oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
   logLevel?: keyof typeof LogLevel;
+  reconnectionAttempts?: number;
+  backoffMs?: number;
   authHandler?: (msg: string) => Promise<string>;
   parcelGetter?: () => [number, number];
+  statusHandler?: (status: string) => void;
 };
 
 class Stats {
@@ -122,7 +125,12 @@ export class Peer implements IPeer {
 
   public logLevel: keyof typeof LogLevel = "INFO";
 
-  constructor(lighthouseUrl: string, public peerId: string, public callback: PacketCallback = () => {}, private config: PeerConfig = { authHandler: msg => Promise.resolve(msg) }) {
+  constructor(
+    lighthouseUrl: string,
+    public peerId: string,
+    public callback: PacketCallback = () => {},
+    private config: PeerConfig = { authHandler: msg => Promise.resolve(msg), statusHandler: () => {} }
+  ) {
     if (this.config.logLevel) {
       this.logLevel = this.config.logLevel;
     }
@@ -134,6 +142,8 @@ export class Peer implements IPeer {
     this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 2000;
     this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
+    this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? 10;
+    this.config.backoffMs = this.config.backoffMs ?? 1000;
 
     this.instanceId = Math.floor(Math.random() * MAX_UINT32);
 
@@ -160,7 +170,7 @@ export class Peer implements IPeer {
   }
 
   public setLighthouseUrl(lighthouseUrl: string) {
-    this.peerJsConnection?.disconnect();
+    this.peerJsConnection?.disconnect().catch(e => this.log(LogLevel.DEBUG, "Error while disconnecting ", e));
 
     this.cleanStateAndConnections();
 
@@ -232,7 +242,41 @@ export class Peer implements IPeer {
       result.isPending && result.reject(new Error(`[${this.peerId}] Awaiting connection to server timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
-    this.peerJsConnection.on(PeerEventType.Error, err => result.isPending && result.reject(err));
+    this.peerJsConnection.on(PeerEventType.Error, async err => {
+      if (result.isPending) {
+        return result.reject(err);
+      }
+
+      const layer = this.currentLayer;
+      const rooms = this.currentRooms.slice();
+
+      const { reconnectionAttempts = 5, backoffMs = 1000 } = this.config;
+
+      for (let i = 1; i <= reconnectionAttempts; ++i) {
+        this.log(LogLevel.INFO, `attempt `, i);
+        await delay(backoffMs);
+
+        try {
+          this.setLighthouseUrl(this.lighthouseUrl());
+          await this.awaitConnectionEstablished();
+
+          if (layer) {
+            await this.setLayer(layer);
+            for (const room of rooms) {
+              await this.joinRoom(room.id);
+            }
+          }
+          // successfully reconnected
+          break;
+        } catch (e) {
+          this.log(LogLevel.WARN, `Error while reconnecting (attempt ${i}) `, e);
+          if (i > reconnectionAttempts) {
+            this.log(LogLevel.ERROR, `Could not reconnect after ${reconnectionAttempts} failed attempts `, e);
+            this.config.statusHandler!("reconnection-error");
+          }
+        }
+      }
+    });
     this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
 
     return result;
@@ -648,7 +692,7 @@ export class Peer implements IPeer {
   }
 
   sendMessage(roomId: string, payload: any, type: PeerMessageType) {
-    const room = this.currentRooms.find(room => room.id === roomId);
+    const room = this.currentRooms.find(_room => _room.id === roomId);
     if (!room) {
       return Promise.reject(new Error(`cannot send a message in a room not joined (${roomId})`));
     }
@@ -672,7 +716,7 @@ export class Peer implements IPeer {
       discardOlderThan: type.discardOlderThan ?? -1,
       timestamp: new Date().getTime(),
       src: this.peerId,
-      messageData: messageData,
+      messageData,
       hops: 0,
       ttl: this.getTTL(sequenceId, type),
       receivedBy: [],
@@ -898,7 +942,7 @@ export class Peer implements IPeer {
   }
 
   private checkForCrossOffers(peerId: string, sessionId?: string) {
-    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) && (!sessionId || this.connectedPeers[peerId].sessionId != sessionId) && this.peerId < peerId;
+    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) && (!sessionId || this.connectedPeers[peerId].sessionId !== sessionId) && this.peerId < peerId;
     if (isCrossOfferToBeDiscarded) {
       this.log(LogLevel.WARN, "Received offer/candidate for already existing peer but it was discarded: " + peerId);
     }
@@ -913,7 +957,10 @@ export class Peer implements IPeer {
     return new Promise<void>((resolve, reject) => {
       if (this.peerJsConnection && !this.peerJsConnection.disconnected) {
         this.peerJsConnection.once(PeerEventType.Disconnected, resolve);
-        this.peerJsConnection.disconnect();
+        this.peerJsConnection
+          .disconnect()
+          .then(() => resolve())
+          .catch(e => reject(e));
       } else {
         resolve();
       }

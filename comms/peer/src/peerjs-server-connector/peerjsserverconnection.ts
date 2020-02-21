@@ -222,6 +222,7 @@ export class PeerJSServerConnection extends EventEmitter {
 
     this.socket.on(SocketEventType.Close, () => {
       // If we haven't explicitly disconnected, emit error.
+      console.log(`socket#close`);
       if (!this.disconnected) {
         this._abort(PeerErrorType.SocketClosed, "Underlying socket is already closed.");
       }
@@ -322,8 +323,8 @@ export class PeerJSServerConnection extends EventEmitter {
    * Warning: The peer can no longer create or accept connections after being
    *  disconnected. It also cannot reconnect to the server.
    */
-  disconnect(): void {
-    setTimeout(() => {
+  disconnect(): Promise<void> {
+    return new Promise((resolve, reject) => {
       if (!this.disconnected) {
         this._disconnected = true;
         this._open = false;
@@ -336,22 +337,26 @@ export class PeerJSServerConnection extends EventEmitter {
         this._lastServerId = this.id;
         this._id = null;
       }
-    }, 0);
+      resolve();
+    });
   }
 
   /** Attempts to reconnect with the same ID. */
-  reconnect(): void {
-    if (this.disconnected) {
-      logger.log("Attempting reconnection to server with ID " + this._lastServerId);
-      this._disconnected = false;
-      this._initializeServerConnection();
-      this._initialize(this._lastServerId);
-    } else if (!this.disconnected && !this.open) {
-      // Do nothing. We're still connecting the first time.
-      logger.error("In a hurry? We're still trying to make the initial connection!");
-    } else {
-      throw new Error("Peer " + this.id + " cannot reconnect because it is not disconnected from the server!");
-    }
+  reconnect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.disconnected) {
+        logger.log("Attempting reconnection to server with ID " + this._lastServerId);
+        this._disconnected = false;
+        this._initializeServerConnection();
+        this._initialize(this._lastServerId);
+        resolve();
+      } else if (!this.disconnected && !this.open) {
+        // Do nothing. We're still connecting the first time.
+        logger.error("In a hurry? We're still trying to make the initial connection!");
+      } else {
+        reject(new Error("Peer " + this.id + " cannot reconnect because it is not disconnected from the server!"));
+      }
+    });
   }
 
   sendOffer(peerData: PeerData, handshakeData: HandshakeData) {
