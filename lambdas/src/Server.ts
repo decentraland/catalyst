@@ -8,6 +8,7 @@ import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
+import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
 
 export class Server {
   private port: number;
@@ -29,7 +30,7 @@ export class Server {
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }));
     }
-    
+
     this.app.use(cors());
     this.app.use(express.json());
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
@@ -39,11 +40,13 @@ export class Server {
     // Base endpoints
     this.registerRoute("/status", controller, controller.getStatus);
 
+    const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
+
     // Backwards compatibility for older Content API
-    this.app.use("/contentv2", initializeContentV2Routes(express.Router(), env));
+    this.app.use("/contentv2", initializeContentV2Routes(express.Router(), fetcher));
 
     // Profile API implementation
-    this.app.use("/profile", initializeProfilesRoutes(express.Router(), env));
+    this.app.use("/profile", initializeProfilesRoutes(express.Router(), env, fetcher));
   }
 
   private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response) => void, isPost?: boolean, extraHandler?: RequestHandler) {

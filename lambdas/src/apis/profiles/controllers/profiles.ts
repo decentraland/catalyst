@@ -1,14 +1,14 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Environment, EnvironmentConfig } from '../../../Environment'
-import { baseContentServerUrl } from '../../../EnvironmentUtils'
 import { getOwnedENS } from '../ensFiltering'
+import { SmartContentServerFetcher } from 'lambdas/src/SmartContentServerFetcher'
 
-export async function getProfileById(env: Environment, req: Request, res: Response) {
+export async function getProfileById(env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
     // Path: /:id
     const profileId:string = req.params.id
-    const v3Url = baseContentServerUrl(env) + `/entities/profile?pointer=${profileId}`
+    const v3Url = fetcher.getContentServerUrl() + `/entities/profile?pointer=${profileId}`
     const response = await fetch(v3Url)
     let returnProfile: EntityMetadata = { avatars:[] }
     if (response.ok) {
@@ -18,7 +18,7 @@ export async function getProfileById(env: Environment, req: Request, res: Respon
             const profile = entities[0].metadata
             returnProfile = profile
             returnProfile = await filterNonOwnedNames(theGraphBaseUrl, profileId, returnProfile)
-            returnProfile = addBaseUrlToSnapshots(baseContentServerUrl(env), returnProfile)
+            returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
         }
     }
     res.send(returnProfile)
