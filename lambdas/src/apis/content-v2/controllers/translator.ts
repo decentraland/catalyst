@@ -2,13 +2,12 @@ import log4js from "log4js"
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Response as NodeFetchResponse } from "node-fetch"
-import { Environment } from '../../../Environment'
-import { baseContentServerUrl } from '../../../EnvironmentUtils'
+import { SmartContentServerFetcher } from "../../../SmartContentServerFetcher"
 
 const LOGGER = log4js.getLogger('ContentTranslator');
 const MAX_SCENE_AREA: number = 100
 
-export async function getScenes(env: Environment, req: Request, res: Response) {
+export async function getScenes(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
     // Path: /scenes
     // Query String: ?x1={number}&x2={number}&y1={number}&y2={number}
@@ -52,7 +51,7 @@ export async function getScenes(env: Environment, req: Request, res: Response) {
 
     // Calculate the url
     const pointerParams = 'pointer=' + pointers.join('&pointer=')
-    const v3Url = baseContentServerUrl(env) + `/entities/scenes?${pointerParams}`
+    const v3Url = (await fetcher.getContentServerUrl()) + `/entities/scenes?${pointerParams}`
     LOGGER.trace(`Querying the content server for scenes. Url is ${v3Url}`)
 
     // Perform the fetch
@@ -110,15 +109,15 @@ interface ScenesItem {
 }
 
 
-export function getInfo(env: Environment, req: Request, res: Response) {
+export async function getInfo(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
     // Path: /parcel_info
     // Query String: ?cids={id[]}
     const cids:string[] = asArray(req.query.cids)
     const ids = cids.map(cid => `id=${cid}`)
     const idParams = ids.join('&')
-    const v3Url = baseContentServerUrl(env) + `/entities/scenes?${idParams}`
-    fetch(v3Url)
+    const v3Url = (await fetcher.getContentServerUrl()) + `/entities/scenes?${idParams}`
+    await fetch(v3Url)
     .then(response => response.json())
     .then((entities:V3ControllerEntity[]) => {
         let parcelInfoResult: ParcelInfoResult = {data:[]}
@@ -172,12 +171,12 @@ interface ParcelInfoItem {
 
 }
 
-export async function getContents(env: Environment, req: Request, res: Response) {
+export async function getContents(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
     // Path: /contents/:cid
     const cid = req.params.cid;
 
-    const v3Url = baseContentServerUrl(env) + `/contents/${cid}`
+    const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`
     const contentServerResponse = await fetch(v3Url)
     if (contentServerResponse.ok) {
         copySuccessResponse(contentServerResponse, res)
