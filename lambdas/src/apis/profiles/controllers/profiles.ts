@@ -8,7 +8,7 @@ export async function getProfileById(env: Environment, fetcher: SmartContentServ
     // Method: GET
     // Path: /:id
     const profileId:string = req.params.id
-    const v3Url = fetcher.getContentServerUrl() + `/entities/profile?pointer=${profileId}`
+    const v3Url = (await fetcher.getContentServerUrl()) + `/entities/profile?pointer=${profileId}`
     const response = await fetch(v3Url)
     let returnProfile: EntityMetadata = { avatars:[] }
     if (response.ok) {

@@ -1,6 +1,6 @@
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
-import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
+import { SmartContentServerFetcherFactory } from "./SmartContentServerFetcherFactory";
 
 const DEFAULT_SERVER_PORT = 7070;
 export const DEFAULT_ENS_OWNER_PROVIDER_URL = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten";
@@ -83,8 +83,7 @@ export class EnvironmentBuilder {
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
 
-    const fetcher = await SmartContentServerFetcher.build(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_FETCHER, () => fetcher);
+    this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_FETCHER, () => SmartContentServerFetcherFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env));
 

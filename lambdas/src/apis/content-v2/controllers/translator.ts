@@ -51,7 +51,7 @@ export async function getScenes(fetcher: SmartContentServerFetcher, req: Request
 
     // Calculate the url
     const pointerParams = 'pointer=' + pointers.join('&pointer=')
-    const v3Url = fetcher.getContentServerUrl() + `/entities/scenes?${pointerParams}`
+    const v3Url = (await fetcher.getContentServerUrl()) + `/entities/scenes?${pointerParams}`
     LOGGER.trace(`Querying the content server for scenes. Url is ${v3Url}`)
 
     // Perform the fetch
@@ -109,15 +109,15 @@ interface ScenesItem {
 }
 
 
-export function getInfo(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function getInfo(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
     // Path: /parcel_info
     // Query String: ?cids={id[]}
     const cids:string[] = asArray(req.query.cids)
     const ids = cids.map(cid => `id=${cid}`)
     const idParams = ids.join('&')
-    const v3Url = fetcher.getContentServerUrl() + `/entities/scenes?${idParams}`
-    fetch(v3Url)
+    const v3Url = (await fetcher.getContentServerUrl()) + `/entities/scenes?${idParams}`
+    await fetch(v3Url)
     .then(response => response.json())
     .then((entities:V3ControllerEntity[]) => {
         let parcelInfoResult: ParcelInfoResult = {data:[]}
@@ -176,7 +176,7 @@ export async function getContents(fetcher: SmartContentServerFetcher, req: Reque
     // Path: /contents/:cid
     const cid = req.params.cid;
 
-    const v3Url = fetcher.getContentServerUrl() + `/contents/${cid}`
+    const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`
     const contentServerResponse = await fetch(v3Url)
     if (contentServerResponse.ok) {
         copySuccessResponse(contentServerResponse, res)
