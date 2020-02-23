@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Environment, EnvironmentConfig } from '../../../Environment'
 import { getOwnedENS } from '../ensFiltering'
-import { SmartContentServerFetcher } from 'lambdas/src/SmartContentServerFetcher'
+import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
 
 export async function getProfileById(env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET

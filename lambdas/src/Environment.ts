@@ -88,7 +88,6 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env));
 
-
     return env;
   }
 

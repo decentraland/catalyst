@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { getProfileById } from './controllers/profiles'
 import { Environment } from '../../Environment'
-import { SmartContentServerFetcher } from 'lambdas/src/SmartContentServerFetcher'
+import { SmartContentServerFetcher } from '../../SmartContentServerFetcher'
 
 export function initializeProfilesRoutes(router: Router, env: Environment, fetcher: SmartContentServerFetcher): Router {
     router.get("/:id", createHandler(env, fetcher, getProfileById))

@@ -2,7 +2,7 @@ import log4js from "log4js"
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Response as NodeFetchResponse } from "node-fetch"
-import { SmartContentServerFetcher } from "lambdas/src/SmartContentServerFetcher"
+import { SmartContentServerFetcher } from "../../../SmartContentServerFetcher"
 
 const LOGGER = log4js.getLogger('ContentTranslator');
 const MAX_SCENE_AREA: number = 100
