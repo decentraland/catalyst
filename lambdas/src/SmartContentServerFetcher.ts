@@ -1,5 +1,4 @@
 import fetch from "node-fetch"
-import log4js from "log4js"
 import { Environment, EnvironmentConfig } from "./Environment"
 
 /**
@@ -9,7 +8,6 @@ import { Environment, EnvironmentConfig } from "./Environment"
 export class SmartContentServerFetcher {
 
     private static INTERNAL_CONTENT_SERVER_URL: string = `http://content-server:6969`
-    private static LOGGER = log4js.getLogger('SmartContentServerFetcher');
 
     private constructor(
         private readonly contentServerUrl: string,
@@ -20,11 +18,11 @@ export class SmartContentServerFetcher {
         try {
             const response = await fetch(`${SmartContentServerFetcher.INTERNAL_CONTENT_SERVER_URL}/status`)
             if (response.ok) {
-                SmartContentServerFetcher.LOGGER.info("Will use the internal content server url")
+                console.log("Will use the internal content server url")
                 return new SmartContentServerFetcher(SmartContentServerFetcher.INTERNAL_CONTENT_SERVER_URL, externalUrl)
             }
         } catch { }
-        SmartContentServerFetcher.LOGGER.info("Will use the external content server url")
+        console.log("Will use the external content server url")
         return new SmartContentServerFetcher(externalUrl, externalUrl)
     }
 
