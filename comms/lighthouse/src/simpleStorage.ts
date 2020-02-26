@@ -2,11 +2,11 @@ import fs from "fs";
 import os from "os";
 
 export class SimpleStorage {
-  private _currentItems: object = {};
+  private _currentItems: object | undefined;
 
   constructor(private filePath: string) {}
 
-  async getCurrentItems() {
+  async getCurrentItems(): Promise<object> {
     if (!this._currentItems) {
       let itemsJson: string | null = null;
       try {
@@ -18,16 +18,16 @@ export class SimpleStorage {
       this._currentItems = itemsJson ? JSON.parse(itemsJson) : {};
     }
 
-    return this._currentItems;
+    return this._currentItems!;
   }
 
-  async getString(key: string) {
+  async getString(key: string): Promise<string | undefined> {
     const currentItems = await this.getCurrentItems();
 
     return currentItems[key] as string;
   }
 
-  async getOrSetString(key: string, value: string) {
+  async getOrSetString(key: string, value: string): Promise<string | undefined> {
     const currentItems = await this.getCurrentItems();
     if(typeof currentItems[key] === 'undefined') {
       currentItems[key] = value;
@@ -41,7 +41,7 @@ export class SimpleStorage {
   async setString(key: string, value: string) {
     const currentItems = await this.getCurrentItems();
 
-    currentItems[key];
+    currentItems[key] = value;
 
     //@ts-ignore We want to call flush but not await it
     const ignored = this.flush(currentItems);
