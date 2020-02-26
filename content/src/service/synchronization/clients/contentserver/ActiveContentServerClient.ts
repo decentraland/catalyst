@@ -82,8 +82,16 @@ class ActiveContentServerClient extends ContentServerClient {
         throw new Error(`Failed to fetch file with hash ${fileHash}`)
     }
 
+    /**
+     * Check the current time on the status and report it. However, if the name is not as expected, then
+     * we shouldn't update the estimated immutable time. On the next DAO sync, the name will be updated correctly
+     */
     private async getCurrentTimestamp(): Promise<Timestamp> {
-        const { currentTime } = await this.fetchHelper.fetchJson(`${this.address}/status`)
-        return currentTime;
+        const { currentTime, name } = await this.getStatus()
+        if (name === this.getName()) {
+            return currentTime;
+        } else {
+            return -1
+        }
     }
 }

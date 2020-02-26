@@ -109,7 +109,7 @@ export class ContentCluster {
                 let newClient: ContentServerClient | undefined
                 // Check if we already knew the server
                 const previousClient: ContentServerClient | undefined = this.serversInDAO.get(address);
-                if (previousClient && previousClient.getName() !== UNREACHABLE) {
+                if (previousClient && previousClient.getConnectionState() !== ConnectionState.NEVER_REACHED) {
                     if (newName === UNREACHABLE) {
                         // Create redirect client
                         newClient = getRedirectClient(this, previousClient.getName(), previousClient.getEstimatedLocalImmutableTime())
@@ -117,6 +117,10 @@ export class ContentCluster {
                     } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
+                        newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
+                    } else if (previousClient.getName() !== newName) {
+                        // Update known name to new one
+                        ContentCluster.LOGGER.warn(`Server's name changed on ${address}. It was ${previousClient.getName()} and know it is ${newName}.`)
                         newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
                     }
                 } else {
