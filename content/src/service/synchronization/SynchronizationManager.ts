@@ -10,8 +10,8 @@ import { EventDeployer } from "./EventDeployer";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
 import { Disposable } from "./events/ClusterEvent";
-import { sleep } from "./ClusterUtils";
 import { Validations } from "../validations/Validations";
+import { delay } from "decentraland-katalyst-commons/src/util";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -132,7 +132,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private waitUntilSyncFinishes(): Promise<void> {
         return new Promise(async (resolve) => {
             while (this.synchronizationState === SynchronizationState.SYNCING) {
-                await sleep(ms('1s'))
+                await delay(ms('1s'))
             }
             resolve()
         })

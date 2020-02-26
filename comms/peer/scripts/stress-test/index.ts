@@ -1,11 +1,6 @@
 import { Peer } from "../../src/Peer";
 import { util } from "../../src/peerjs-server-connector/util";
-
-function sleep(time: number) {
-  return new Promise<null>(resolve => {
-    setTimeout(resolve, time);
-  });
-}
+import { delay } from "decentraland-katalyst-commons/src/util";
 
 const urlParams = new URLSearchParams(location.search);
 
@@ -101,7 +96,7 @@ const sessionId = urlParams.get("sessionId") ?? util.randomToken();
       }
     };
 
-    await sleep(Math.floor(Math.random() * timeBetweenMessages));
+    await delay(Math.floor(Math.random() * timeBetweenMessages));
 
     send();
   }

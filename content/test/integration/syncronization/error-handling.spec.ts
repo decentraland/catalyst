@@ -6,10 +6,11 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntityContent, ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, sleep, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
+import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
+import { delay } from "decentraland-katalyst-commons/src/util";
 
 
 describe("End 2 end - Error handling", () => {
@@ -99,7 +100,7 @@ describe("End 2 end - Error handling", () => {
         await causeOfFailure(entityBeingDeployed)
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Assert deployment is marked as failed
         const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
