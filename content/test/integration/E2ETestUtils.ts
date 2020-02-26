@@ -84,6 +84,10 @@ export function deleteFolderRecursive(pathToDelete: string) {
     }
 }
 
+export async function stopServers(...servers: TestServer[]): Promise<void> {
+    await Promise.all(servers.map(server => server.stop()))
+}
+
 export function buildBaseEnv(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient): EnvironmentBuilder {
     return new EnvironmentBuilder()
         .withConfig(EnvironmentConfig.NAME_PREFIX, namePrefix)
@@ -93,6 +97,7 @@ export function buildBaseEnv(namePrefix: string, port: number, syncInterval: num
         .withConfig(EnvironmentConfig.LOG_REQUESTS, false)
         .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
         .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, syncInterval)
+        .withConfig(EnvironmentConfig.LOG_LEVEL, "debug")
         .withBean(Bean.DAO_CLIENT, daoClient)
         .withAnalytics(new MockedContentAnalytics())
         .withAccessChecker(new MockedAccessChecker())

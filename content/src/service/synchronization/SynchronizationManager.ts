@@ -26,6 +26,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private daoRemovalEventSubscription: Disposable
     private lastImmutableTime = 0
     private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
+    private stopping: boolean = false
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: TimeKeepingService,
@@ -34,6 +35,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         private readonly performMultiServerOnboarding: boolean) { }
 
     async start(): Promise<void> {
+        // Make sure the stopping flag is set to false
+        this.stopping = false
+
         // Read immutable time from the history I have
         this.lastImmutableTime = this.service.getLastImmutableTime()
 
@@ -51,6 +55,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
 
     stop(): Promise<void> {
+        this.stopping = true
         clearTimeout(this.syncWithNodesTimeout)
         this.daoRemovalEventSubscription?.dispose()
         this.cluster.disconnect()
@@ -95,8 +100,10 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             this.synchronizationState = SynchronizationState.FAILED_TO_SYNC;
             ClusterSynchronizationManager.LOGGER.warn(`Failed to sync with servers. Reason:\n${error}`)
         } finally {
-            // Set the timeout again
-            this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
+            if (!this.stopping) {
+                // Set the timeout again
+                this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
+            }
         }
     }
 
