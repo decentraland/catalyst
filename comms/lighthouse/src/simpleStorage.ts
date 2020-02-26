@@ -2,11 +2,18 @@ import fs from "fs";
 import os from "os";
 
 export class SimpleStorage {
-  private _currentItems: object = {};
+  private _currentItems: object | undefined;
 
   constructor(private filePath: string) {}
 
-  async getCurrentItems() {
+  async clear(): Promise<void> {
+    if (this._currentItems) {
+      this._currentItems = {};
+      await this.flush(this._currentItems);
+    }
+  }
+
+  async getCurrentItems(): Promise<object> {
     if (!this._currentItems) {
       let itemsJson: string | null = null;
       try {
@@ -18,21 +25,20 @@ export class SimpleStorage {
       this._currentItems = itemsJson ? JSON.parse(itemsJson) : {};
     }
 
-    return this._currentItems;
+    return this._currentItems!;
   }
 
-  async getString(key: string) {
+  async getString(key: string): Promise<string | undefined> {
     const currentItems = await this.getCurrentItems();
 
     return currentItems[key] as string;
   }
 
-  async getOrSetString(key: string, value: string) {
+  async getOrSetString(key: string, value: string): Promise<string | undefined> {
     const currentItems = await this.getCurrentItems();
-    if(typeof currentItems[key] === 'undefined') {
+    if (typeof currentItems[key] === "undefined") {
       currentItems[key] = value;
-      //@ts-ignore We want to call flush but not await it
-      const ignored = this.flush(currentItems);
+      await this.flush(currentItems);
     }
 
     return currentItems[key] as string;
@@ -41,29 +47,24 @@ export class SimpleStorage {
   async setString(key: string, value: string) {
     const currentItems = await this.getCurrentItems();
 
-    currentItems[key];
+    currentItems[key] = value;
 
-    //@ts-ignore We want to call flush but not await it
-    const ignored = this.flush(currentItems);
+    await this.flush(currentItems);
   }
 
   private async flush(items: object) {
     try {
-      await fs.promises.writeFile(
-        this.filePath,
-        JSON.stringify(items),
-        "utf-8"
-      );
+      await fs.promises.writeFile(this.filePath, JSON.stringify(items), "utf-8");
     } catch (err) {
       console.log("Error writing storage file " + this.filePath, err);
     }
   }
 }
 
-const localDir = `${os.homedir()}/.lighthouse`
+const localDir = process.env.LIGHTHOUSE_STORAGE_LOCATION ?? `${os.homedir()}/.lighthouse`;
 
-if (!fs.existsSync(localDir)){
+if (!fs.existsSync(localDir)) {
   fs.mkdirSync(localDir);
 }
 
-export const serverStorage = new SimpleStorage(localDir + "/serverStorage.json")
+export const lighthouseStorage = new SimpleStorage(localDir + "/serverStorage.json");
