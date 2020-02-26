@@ -3,9 +3,10 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, sleep, buildBaseEnv } from "../E2ETestUtils"
+import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { delay } from "decentraland-katalyst-commons/src/util"
 
 describe("End 2 end synchronization tests", function() {
 
@@ -57,7 +58,7 @@ describe("End 2 end synchronization tests", function() {
         await assertHistoryOnServerHasEvents(server1, deploymentEvent)
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Assert that the entity was synced from server 1 to server 2
         await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
@@ -74,7 +75,7 @@ describe("End 2 end synchronization tests", function() {
         const immutableTimeServer3 = await getImmutableTime(server3)
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Get new immutable time
         const newImmutableTimeServer1 = await getImmutableTime(server1)
@@ -96,7 +97,7 @@ describe("End 2 end synchronization tests", function() {
         expect(await getImmutableTime(server2)).toBe(0)
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Assert immutable time is still 0
         expect(await getImmutableTime(server1)).toBe(0)
@@ -108,7 +109,7 @@ describe("End 2 end synchronization tests", function() {
         await Promise.all([server1.start(), server2.start(), server3.start()])
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Assert immutable time advanced
         expect(await getImmutableTime(server1)).not.toBe(0)
@@ -119,14 +120,14 @@ describe("End 2 end synchronization tests", function() {
         await server3.stop()
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Store their immutable time
         const immutableTimeServer1 = await getImmutableTime(server1)
         const immutableTimeServer2 = await getImmutableTime(server2)
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Get new immutable time
         const newImmutableTimeServer1 = await getImmutableTime(server1)
@@ -173,7 +174,7 @@ describe("End 2 end synchronization tests", function() {
         const deploymentEvent3 = buildEvent(entity3, server3, deploymentTimestamp3)
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Make sure that both server 1 and 3 have entity 1 and 3 currently active
         await assertEntitiesAreActiveOnServer(server1, entity1, entity3)
@@ -185,7 +186,7 @@ describe("End 2 end synchronization tests", function() {
         await server2.start()
 
         // Wait for servers to sync
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Make assertions on Server 1
         await assertEntitiesAreActiveOnServer(server1, entity3)
