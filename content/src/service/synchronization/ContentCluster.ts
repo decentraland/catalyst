@@ -120,7 +120,7 @@ export class ContentCluster {
                         newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
                     } else if (previousClient.getName() !== newName) {
                         // Update known name to new one
-                        ContentCluster.LOGGER.warn(`Server's name changed on ${address}. It was ${previousClient.getName()} and know it is ${newName}.`)
+                        ContentCluster.LOGGER.warn(`Server's name changed on ${address}. It was ${previousClient.getName()} and now it is ${newName}.`)
                         newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
                     }
                 } else {

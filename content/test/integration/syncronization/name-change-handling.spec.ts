@@ -41,7 +41,7 @@ describe("End 2 end - Name change handling", function() {
         deleteServerStorage(server1, server2)
     })
 
-    it('When a node starts, it get all the previous history', async () => {
+    it('When a node\'s name changes, other nodes can handle it and continue to sync', async () => {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 
