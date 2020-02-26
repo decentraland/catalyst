@@ -8,10 +8,10 @@ import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
 import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
-import { sleep } from "../../ClusterUtils";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
 import { Validations } from "@katalyst/content/service/validations/Validations";
+import { delay } from "decentraland-katalyst-commons/src/util";
 
 export function getClient(fetchHelper: FetchHelper, address: ServerAddress, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
     return new ActiveContentServerClient(fetchHelper, address, name, lastKnownTimestamp)
@@ -72,7 +72,7 @@ class ActiveContentServerClient extends ContentServerClient {
                     break;
                 }
             } catch (error) {
-                await sleep(ms("0.5s"))
+                await delay(ms("0.5s"))
             }
             retries--;
         }

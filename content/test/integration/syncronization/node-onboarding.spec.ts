@@ -5,9 +5,10 @@ import { ControllerEntityContent } from "@katalyst/content/controller/Controller
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, sleep, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity } from "../E2ETestUtils"
+import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { delay } from "decentraland-katalyst-commons/src/util"
 
 
 describe("End 2 end - Node onboarding", function() {
@@ -58,7 +59,7 @@ describe("End 2 end - Node onboarding", function() {
         const deploymentEvent2 = buildEvent(entity2, server2, deploymentTimestamp2)
 
         // Wait for sync to happen
-        await sleep(SYNC_INTERVAL * 3)
+        await delay(SYNC_INTERVAL * 3)
 
         // Assert servers 1 and 2 are synced
         await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2)
@@ -72,7 +73,7 @@ describe("End 2 end - Node onboarding", function() {
         await server3.start()
 
         // Wait a little bit
-        await sleep(SYNC_INTERVAL * 3)
+        await delay(SYNC_INTERVAL * 3)
 
         // Assert server 3 has all the history
         await assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2)
@@ -94,7 +95,7 @@ describe("End 2 end - Node onboarding", function() {
         const deploymentEvent = buildEvent(entity, server1, deploymentTimestamp)
 
         // Wait for sync to happen
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Assert servers 1 and 2 are synced
         await assertHistoryOnServerHasEvents(server1, deploymentEvent)
@@ -109,7 +110,7 @@ describe("End 2 end - Node onboarding", function() {
         await server3.start()
 
         // Wait a little bit
-        await sleep(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 2)
 
         // Assert server 3 has all the history
         await assertHistoryOnServerHasEvents(server3, deploymentEvent)

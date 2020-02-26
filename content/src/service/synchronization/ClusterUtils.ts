@@ -2,6 +2,7 @@ import ms from "ms"
 import log4js from "log4js"
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
+import { delay } from "decentraland-katalyst-commons/src/util";
 
 
 const LOGGER = log4js.getLogger('ClusterUtils');
@@ -26,16 +27,12 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
         // Wait a little before retrying
         retries--;
         if (retries >= 0) {
-            await sleep(ms("1s"))
+            await delay(ms("1s"))
             LOGGER.info("All calls to other servers failed. Going to retry.")
         }
     }
 
     throw new Error(`Tried to execute request on all servers on the cluster, but they all failed`)
-}
-
-export function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 function reorderAccordingToPreference(activeServers: ContentServerClient[], preferred: ContentServerClient | undefined): ContentServerClient[] {

@@ -98,10 +98,6 @@ export function buildBaseEnv(namePrefix: string, port: number, syncInterval: num
         .withAccessChecker(new MockedAccessChecker())
 }
 
-export function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
-}
-
 export type DeployData = {
     entityId: string,
     ethAddress: string,
