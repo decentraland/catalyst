@@ -216,7 +216,9 @@ export class PeerJSServerConnection extends EventEmitter {
       // If we haven't explicitly disconnected, emit error and disconnect.
       if (!this.disconnected) {
         this.emitError(PeerErrorType.Network, "Lost connection to server.");
-        this.disconnect();
+        this.disconnect().catch(() => {
+          // do nothing
+        });
       }
     });
 
@@ -300,7 +302,9 @@ export class PeerJSServerConnection extends EventEmitter {
 
     this.emitError(type, message);
 
-    this.disconnect();
+    this.disconnect().catch(() => {
+      // do nothing
+    });
   }
 
   /** Emits a typed error message. */
@@ -352,6 +356,7 @@ export class PeerJSServerConnection extends EventEmitter {
       } else if (!this.disconnected && !this.open) {
         // Do nothing. We're still connecting the first time.
         logger.error("In a hurry? We're still trying to make the initial connection!");
+        reject(new Error("Still making initial connection"));
       } else {
         reject(new Error("Peer " + this.id + " cannot reconnect because it is not disconnected from the server!"));
       }
