@@ -263,7 +263,7 @@ export class Peer implements IPeer {
     const { reconnectionAttempts, backoffMs } = this.config;
 
     for (let i = 1; i <= reconnectionAttempts!; ++i) {
-      this.log(LogLevel.INFO, `attempt `, i);
+      this.log(LogLevel.DEBUG, `Connection attempt `, i);
       // To avoid synced retries, we use a random delay
       await delay(backoffMs! + Math.floor(Math.random() * backoffMs!));
 
