@@ -106,6 +106,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":lighthouse",
+        "//commons",
         "//comms/peer",
         "@npm//@types/jasmine",
     ],

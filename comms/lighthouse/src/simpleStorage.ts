@@ -6,6 +6,13 @@ export class SimpleStorage {
 
   constructor(private filePath: string) {}
 
+  async clear(): Promise<void> {
+    if (this._currentItems) {
+      this._currentItems = {};
+      await this.flush(this._currentItems);
+    }
+  }
+
   async getCurrentItems(): Promise<object> {
     if (!this._currentItems) {
       let itemsJson: string | null = null;
@@ -29,10 +36,9 @@ export class SimpleStorage {
 
   async getOrSetString(key: string, value: string): Promise<string | undefined> {
     const currentItems = await this.getCurrentItems();
-    if(typeof currentItems[key] === 'undefined') {
+    if (typeof currentItems[key] === "undefined") {
       currentItems[key] = value;
-      //@ts-ignore We want to call flush but not await it
-      const ignored = this.flush(currentItems);
+      await this.flush(currentItems);
     }
 
     return currentItems[key] as string;
@@ -43,27 +49,22 @@ export class SimpleStorage {
 
     currentItems[key] = value;
 
-    //@ts-ignore We want to call flush but not await it
-    const ignored = this.flush(currentItems);
+    await this.flush(currentItems);
   }
 
   private async flush(items: object) {
     try {
-      await fs.promises.writeFile(
-        this.filePath,
-        JSON.stringify(items),
-        "utf-8"
-      );
+      await fs.promises.writeFile(this.filePath, JSON.stringify(items), "utf-8");
     } catch (err) {
       console.log("Error writing storage file " + this.filePath, err);
     }
   }
 }
 
-const localDir = `${os.homedir()}/.lighthouse`
+const localDir = process.env.LIGHTHOUSE_STORAGE_LOCATION ?? `${os.homedir()}/.lighthouse`;
 
-if (!fs.existsSync(localDir)){
+if (!fs.existsSync(localDir)) {
   fs.mkdirSync(localDir);
 }
 
-export const serverStorage = new SimpleStorage(localDir + "/serverStorage.json")
+export const lighthouseStorage = new SimpleStorage(localDir + "/serverStorage.json");

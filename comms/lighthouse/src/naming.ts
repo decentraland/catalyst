@@ -1,19 +1,21 @@
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
 import { noReject } from "decentraland-katalyst-commons/src/util";
-import { serverStorage } from "./simpleStorage";
+import { lighthouseStorage } from "./simpleStorage";
 
-const defaultNames = ["zeus", "poseidon", "athena", "hera", "hephaestus", "aphrodite", "hades", "hermes", "artemis", "thor", "loki", "odin", "freyja", "fenrir", "heimdallr", "baldr"];
+export const defaultNames = ["zeus", "poseidon", "athena", "hera", "hephaestus", "aphrodite", "hades", "hermes", "artemis", "thor", "loki", "odin", "freyja", "fenrir", "heimdallr", "baldr"];
 
 export async function pickName(configuredNames: string | undefined, daoClient: DAOClient) {
-  const previousName = await serverStorage.getString("name");
-
   const existingNames: string[] = await getLighthousesNames(daoClient);
 
-  if (previousName && !existingNames.includes(previousName)) {
-    return previousName;
-  } else if (previousName) {
-    console.warn("Could not reuse previous name because another lighthouse in DAO already has it: " + previousName);
+  if (typeof configuredNames === "undefined") {
+    // We use the stored name only if no name has been configured
+    const previousName = await lighthouseStorage.getString("name");
+    if (previousName && !existingNames.includes(previousName)) {
+      return previousName;
+    } else if (previousName) {
+      console.warn("Could not reuse previous name because another lighthouse in DAO already has it: " + previousName);
+    }
   }
 
   const namesList = (configuredNames?.split(",")?.map(it => it.trim()) ?? defaultNames).filter(it => !existingNames.includes(it));
@@ -22,8 +24,7 @@ export async function pickName(configuredNames: string | undefined, daoClient: D
 
   const pickedName = namesList[Math.floor(Math.random() * namesList.length)];
 
-  // @ts-ignore this is non-critical, so we don't await it
-  const ignored = serverStorage.setString("name", pickedName);
+  await lighthouseStorage.setString("name", pickedName);
 
   return pickedName;
 }
