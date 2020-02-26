@@ -16,7 +16,7 @@ export class PointerManager {
         // Register type on global map. This way, we don't have to check on each reference
         Object.values(EntityType)
             .forEach((entityType: EntityType) => {
-                const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(entityType, pointer), 1000)
+                const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(entityType, pointer), 5000)
                 this.pointers.set(entityType, cache)
             })
     }

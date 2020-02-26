@@ -169,7 +169,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('2m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS      , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')

@@ -39,7 +39,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private failedDeploymentsManager: FailedDeploymentsManager,
         private ignoreValidationErrors: boolean,
         private network: string) {
-        this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
+        this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 5000)
         this.lock = new Lock()
     }
 
