@@ -49,8 +49,9 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(pointers)
     }
 
-    getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
-        return Promise.resolve([])
+    async getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
+        const entities = await this.getEntitiesByPointers(type, [pointer])
+        return entities.map(entity => ({ entityId: entity.id, timestamp: entity.timestamp }))
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<Timestamp> {

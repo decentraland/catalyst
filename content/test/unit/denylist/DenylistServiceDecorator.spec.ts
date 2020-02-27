@@ -10,7 +10,7 @@ import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/tes
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { Authenticator } from "dcl-crypto";
 
-describe("DenylistServiceDecorator", () => {
+fdescribe("DenylistServiceDecorator", () => {
 
     const P1: Pointer = "p1"
     const P2: Pointer = "p2"
@@ -66,6 +66,24 @@ describe("DenylistServiceDecorator", () => {
         const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers);
 
         expect(entities).toEqual([entity2])
+    })
+
+    it(`When a pointer is denylisted, then the history is empty`, async () => {
+        const denylist = denylistWith(P1Target)
+        const decorator = new DenylistServiceDecorator(service, denylist)
+
+        const entities = await decorator.getPointerHistory(entity1.type, P1);
+
+        expect(entities.length).toBe(0)
+    })
+
+    it(`When a pointer is not denylisted, then it reports the history correctly`, async () => {
+        const denylist = denylistWith()
+        const decorator = new DenylistServiceDecorator(service, denylist)
+
+        const history = await decorator.getPointerHistory(entity1.type, P1);
+
+        expect(history).toEqual([{ entityId: entity1.id, timestamp: entity1.timestamp }])
     })
 
     it(`When an entity is denylisted, then it is returned by pointers, but without content or metadata`, async () => {
