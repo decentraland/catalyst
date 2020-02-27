@@ -24,7 +24,8 @@ export async function pickName(configuredNames: string | undefined, daoClient: D
 
   const pickedName = namesList[Math.floor(Math.random() * namesList.length)];
 
-  await lighthouseStorage.setString("name", pickedName);
+  // @ts-ignore this is non-critical, so we don't await it
+  const ignored = lighthouseStorage.setString("name", pickedName);
 
   return pickedName;
 }
