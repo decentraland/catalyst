@@ -56,7 +56,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         failedDeploymentsManager: FailedDeploymentsManager,
         cacheManager: CacheManager,
         ignoreValidationErrors: boolean = false,
-        network: string,): Promise<ServiceImpl>{
+        network: string): Promise<ServiceImpl>{
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
                 analytics, accessChecker, authenticator, failedDeploymentsManager, cacheManager, ignoreValidationErrors, network)
         }

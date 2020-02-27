@@ -27,7 +27,7 @@ export class CacheManager {
 
 }
 
-class CacheConfig {
+export class CacheConfig {
 
     private readonly name: string
     private readonly defaultSizes: Map<EntityType, number> = new Map()
