@@ -69,6 +69,8 @@ ts_library(
         "@npm//cors",
         "@npm//dcl-crypto",
         "@npm//express",
+        "@npm//fp-future",
+        "@npm//fast-deep-equal",
         "@npm//isomorphic-fetch",
         "@npm//morgan",
         "@npm//peerjs-server",
@@ -106,6 +108,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":lighthouse",
+        "//commons",
         "//comms/peer",
         "@npm//@types/jasmine",
     ],

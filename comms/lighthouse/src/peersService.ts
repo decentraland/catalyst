@@ -1,6 +1,6 @@
 import { IRealm } from "peerjs-server";
 import { PeerInfo } from "./types";
-import { serverStorage } from "./simpleStorage";
+import { lighthouseStorage } from "./simpleStorage";
 import { StorageKeys } from "./storageKeys";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import * as wrtc from "wrtc";
@@ -14,7 +14,7 @@ export enum NotificationType {
 }
 
 async function getPeerToken(layerId: string) {
-  return await serverStorage.getOrSetString(`${StorageKeys.PEER_TOKEN}-${layerId}`, util.generateToken(64));
+  return await lighthouseStorage.getOrSetString(`${StorageKeys.PEER_TOKEN}-${layerId}`, util.generateToken(64));
 }
 
 require("isomorphic-fetch");

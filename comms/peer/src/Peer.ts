@@ -250,7 +250,7 @@ export class Peer implements IPeer {
 
       await this.retryConnection();
     });
-    
+
     this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
 
     return result;
@@ -262,7 +262,7 @@ export class Peer implements IPeer {
 
     const { reconnectionAttempts, backoffMs } = this.config;
 
-    for (let i = 1; i <= reconnectionAttempts!; ++i) {
+    for (let i = 1; ; ++i) {
       this.log(LogLevel.DEBUG, `Connection attempt `, i);
       // To avoid synced retries, we use a random delay
       await delay(backoffMs! + Math.floor(Math.random() * backoffMs!));
@@ -281,9 +281,10 @@ export class Peer implements IPeer {
         break;
       } catch (e) {
         this.log(LogLevel.WARN, `Error while reconnecting (attempt ${i}) `, e);
-        if (i > reconnectionAttempts!) {
+        if (i >= reconnectionAttempts!) {
           this.log(LogLevel.ERROR, `Could not reconnect after ${reconnectionAttempts} failed attempts `, e);
           this.config.statusHandler!("reconnection-error");
+          break;
         }
       }
     }
