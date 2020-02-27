@@ -1,70 +1,27 @@
 import log4js from "log4js"
 import { AccessChecker } from "./AccessChecker";
-import { EthAddress  } from "dcl-crypto";
+import { EthAddress } from "dcl-crypto";
 import { Pointer, EntityType } from "../Entity";
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { ContentAuthenticator } from "../auth/Authenticator";
+import { Timestamp } from "../time/TimeSorting";
 
 export class AccessCheckerImpl implements AccessChecker {
 
     private static readonly LOGGER = log4js.getLogger('AccessCheckerImpl');
 
-    constructor(private readonly authenticator: ContentAuthenticator,
-        private readonly dclApiBaseUrl: string,
-        private readonly fetchHelper: FetchHelper) { }
+    constructor(
+        private readonly authenticator: ContentAuthenticator,
+        private readonly dclParcelAccessUrl: string) { }
 
-    async hasAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
-        switch(entityType) {
+    async hasAccess(entityType: EntityType, pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
+        switch (entityType) {
             case EntityType.SCENE:
-                return this.checkSceneAccess(pointers, ethAddress)
+                return this.checkSceneAccess(pointers, timestamp, ethAddress)
             case EntityType.PROFILE:
                 return this.checkProfileAccess(pointers, ethAddress)
             default:
                 return ["Unknown type provided"]
         }
-    }
-
-    private async checkSceneAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
-        const errors: string[] = []
-
-        await Promise.all(
-            pointers
-            .map(pointer => pointer.toLocaleLowerCase())
-            .map(async pointer => {
-                if (pointer.startsWith("default")) {
-                    if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
-                        errors.push(`Only Decentraland can add or modify default scenes`)
-                    }
-                } else {
-                    const pointerParts: string[] = pointer.split(',')
-                    if (pointerParts.length === 2) {
-                        const x: number = parseInt(pointerParts[0], 10)
-                        const y: number = parseInt(pointerParts[1], 10)
-
-                        // Check that the address has access
-                        const hasAccess = await this.checkParcelAccess(x, y, ethAddress)
-                        if (!hasAccess) {
-                            errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
-                        }
-                    } else {
-                        errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
-                    }
-                }
-            }))
-
-        return errors
-    }
-
-    private async checkParcelAccess(x: number, y: number, ethAddress: EthAddress): Promise<boolean> {
-
-        const accessURL = `${this.dclApiBaseUrl}/parcels/${x}/${y}/${ethAddress}/authorizations`
-        try {
-            const responseJson = await this.fetchHelper.fetchJson(accessURL)
-            return responseJson.data.isUpdateAuthorized
-        } catch(e) {
-            AccessCheckerImpl.LOGGER.warn(`Failed to check parcel access. Error was ${e.message}`)
-        }
-        return false
     }
 
     private async checkProfileAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
@@ -87,4 +44,203 @@ export class AccessCheckerImpl implements AccessChecker {
         return errors
     }
 
+    private async checkSceneAccess(pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
+        const errors: string[] = []
+
+        await Promise.all(
+            pointers
+                .map(pointer => pointer.toLocaleLowerCase())
+                .map(async pointer => {
+                    if (pointer.startsWith("default")) {
+                        if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
+                            errors.push(`Only Decentraland can add or modify default scenes`)
+                        }
+                    } else {
+                        const pointerParts: string[] = pointer.split(',')
+                        if (pointerParts.length === 2) {
+                            const x: number = parseInt(pointerParts[0], 10)
+                            const y: number = parseInt(pointerParts[1], 10)
+
+                            // Check that the address has access
+                            const hasAccess = await this.checkParcelAccess(x, y, timestamp, ethAddress)
+                            if (!hasAccess) {
+                                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+                            }
+                        } else {
+                            errors.push(`Scene pointers should only contain two integers separated by a comma, for example (10,10) or (120,-45). Invalid pointer: ${pointer}`)
+                        }
+                    }
+                }))
+
+        return errors
+    }
+
+    private async checkParcelAccess(x: number, y: number, timestamp: Timestamp, ethAddress: EthAddress): Promise<boolean> {
+        try {
+            return await this.isUpdateAuthorized(x, y, timestamp, ethAddress)
+        } catch (error) {
+            AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress})`, error)
+        }
+        return false
+    }
+
+    /**
+     * Checks if the address had deployment access to that coordinate at the specified time.
+     */
+    private async isUpdateAuthorized(
+        x: number,
+        y: number,
+        timestamp: Timestamp,
+        ethAddress: EthAddress
+    ): Promise<boolean> {
+        /* You get direct access if you were the:
+         *   - owner
+         *   - operator
+         *   - update operator
+         * at that time
+         */
+        const parcel = await this.getParcel(x, y, timestamp)
+        const firstLevelAuthorities = [
+            ...parcel.owners,
+            ...parcel.operators,
+            ...parcel.updateOperators]
+            .filter(addressSnapshot => addressSnapshot.address)
+            .map(addressSnapshot => addressSnapshot.address.toLowerCase())
+
+        ethAddress = ethAddress.toLowerCase()
+        if (firstLevelAuthorities.includes(ethAddress)) {
+            return true
+        }
+
+        /* You also get access if you received:
+         *   - an auhtorization with isApproved and type Operator
+         *   - an auhtorization with isApproved and type ApprovalForAll
+         * at that time
+         */
+
+        const owner = parcel.owners[0].address.toLowerCase()
+
+        const authorizations = await this.getAuthorizations(owner, ethAddress, timestamp)
+
+        const firstOperatorAuthorization = authorizations.find(authorization => authorization.type === 'Operator')
+        const firstApprovalForAllAuthorization = authorizations.find(authorization => authorization.type === 'ApprovalForAll')
+
+        if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved) {
+            return true
+        }
+
+        return false
+    }
+
+    private async getParcel(x: number, y: number, timestamp: Timestamp): Promise<Parcel> {
+        /**
+         * You can use `owner`, `operator` and `updateOperator` to check the current value for that parcel.
+         * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
+         * For more information, you can use the query explorer at https://thegraph.com/explorer/subgraph/nicosantangelo/watchtower
+         */
+
+        const query = `
+            query GetParcel($x: Int!, $y: Int!, $timestamp: Int!) {
+                parcels(where:{ x: $x, y: $y }) {
+                    owners(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        address
+                    }
+                    operators(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        address
+                    }
+                    updateOperators(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        address
+                    }
+                }
+            }`
+
+        const variables = {
+            x, y,
+            timestamp: timestamp / 1000 // UNIX
+        }
+
+        try {
+            return await this.queryGraph(query, variables) as Promise<Parcel>
+        } catch (error) {
+            AccessCheckerImpl.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
+            throw error
+        }
+    }
+
+    private async getAuthorizations(owner: EthAddress, operator: EthAddress, timestamp: Timestamp) {
+        const query = `
+            query GetAuthorizations($owner: String!, $operator: String!, timestamp: String!) {
+                authorizations(
+                        where: {
+                            owner: $owner,
+                            operator: $operator,
+                            createdAt_lte: $createdAt
+                        },
+                        orderBy: createdAt,
+                        orderDirection: desc
+                    ) {
+                    type
+                    isApproved
+                }
+            }`
+
+        const variables = {
+            owner,
+            operator,
+            timestamp: timestamp / 1000 // UNIX
+        }
+
+        try {
+            return await this.queryGraph(query, variables) as Promise<Authorization[]>
+        } catch (error) {
+            AccessCheckerImpl.LOGGER.error(`Error fetching authorizations for ${owner}`, error)
+            throw error
+        }
+    }
+
+    private async queryGraph(query: string, variables: Record<string, any>) {
+        const opts = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, variables })
+        }
+        const res = await fetch(this.dclParcelAccessUrl, opts)
+        if (res.ok) {
+            return await res.json()
+        }
+        return Promise.reject(new Error(`Could not query graph. Reason: ${res.status}: ${res.statusText}`))
+    }
 }
+
+type AddressSnapshot = {
+    address: string
+}
+
+type Parcel = {
+    x: number
+    y: number
+    owners: AddressSnapshot[]
+    operators: AddressSnapshot[]
+    updateOperators: AddressSnapshot[]
+}
+
+type Authorization = {
+    type: 'Operator' | 'ApprovalForAll'
+    isApproved: boolean
+}
+

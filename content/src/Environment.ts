@@ -29,11 +29,10 @@ import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
-const DEFAULT_DCL_API_URL = "https://api.decentraland.zone/v1"
 export const DEFAULT_ETH_NETWORK = "ropsten"
+export const DEFAULT_DCL_PARCEL_ACCESS_URL = 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower'
 
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
-export const ETH_NETWORK = process.env.ETH_NETWORK ?? "Unknown"
 
 export class Environment {
     private configs: Map<EnvironmentConfig, any> = new Map();
@@ -99,11 +98,11 @@ export const enum EnvironmentConfig {
     IGNORE_VALIDATION_ERRORS,
     ALLOW_LEGACY_ENTITIES,
     DECENTRALAND_ADDRESS,
-    DCL_API_URL,
     ETH_NETWORK,
     LOG_LEVEL,
     JSON_REQUEST_TIMEOUT,
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
+    DCL_PARCEL_ACCESS_URL,
 }
 
 export class EnvironmentBuilder {
@@ -160,22 +159,23 @@ export class EnvironmentBuilder {
     async build(): Promise<Environment> {
         const env = new Environment()
 
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER       , () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT               , () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY         , () => process.env.SEGMENT_WRITE_KEY)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS                   , () => process.env.METRICS === 'true')
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS !== 'false')
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS      , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_API_URL               , () => process.env.DCL_API_URL ?? DEFAULT_DCL_API_URL)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK               , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL                 , () => process.env.LOG_LEVEL ?? "info")
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT      , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER          , () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT                  , () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY            , () => process.env.SEGMENT_WRITE_KEY)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS                      , () => process.env.METRICS === 'true')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS                 , () => process.env.LOG_REQUESTS !== 'false')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX                  , () => process.env.NAME_PREFIX ?? '')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL     , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL   , () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS     , () => false)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS         , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES        , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK                  , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL                    , () => process.env.LOG_LEVEL ?? "info")
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT         , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL        , () => process.env.DCL_PARCEL_ACCESS_URL ?? DEFAULT_DCL_PARCEL_ACCESS_URL)
+
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
