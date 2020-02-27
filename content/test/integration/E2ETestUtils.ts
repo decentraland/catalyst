@@ -21,7 +21,7 @@ export function buildDeployData(pointers: Pointer[], metadata: any, ...contentPa
     return buildDeployDataInternal(pointers, metadata, contentPaths, createIdentity())
 }
 
-export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: any, afterEntity?: ControllerEntity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
+export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: any, afterEntity: ControllerEntity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, createIdentity(), afterEntity)
 }
 

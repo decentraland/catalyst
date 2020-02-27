@@ -10,7 +10,7 @@ import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/tes
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { Authenticator } from "dcl-crypto";
 
-fdescribe("DenylistServiceDecorator", () => {
+describe("DenylistServiceDecorator", () => {
 
     const P1: Pointer = "p1"
     const P2: Pointer = "p2"

@@ -63,28 +63,28 @@ describe("End 2 end - Error handling", () => {
         await server1.start()
         await server2.start()
 
-        // Prepare entity to deploy
+        // Prepare entities to deploy
         const [deployData1, entityBeingDeployed1] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
         const entity1Content = entityBeingDeployed1.content!![0].hash
-        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2')
+        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
 
         // Deploy entity 1
         await server1.deploy(deployData1)
 
-        // Cause failure
+        // Cause sync failure
         await server1.denylistContent(entity1Content, identity)
 
         // Wait for servers to sync
         await delay(SYNC_INTERVAL * 2)
 
-        // Assert deployment is marked as failed
+        // Assert deployment is marked as failed on server 2
         const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(failedDeployments.length).toBe(1)
 
-        // Deploy entity 2
+        // Deploy entity 2 on server 2
         await server2.deploy(deployData2)
 
-        // Fix entity 1
+        // Fix entity 1 on server 2
         await server2.deploy(deployData1, true)
 
         // Assert there are no more failed deployments
@@ -94,7 +94,7 @@ describe("End 2 end - Error handling", () => {
         // Wait for servers to sync
         await delay(SYNC_INTERVAL * 2)
 
-        // Assert entity 2 is the active entity
+        // Assert entity 2 is the active entity on both servers
         await assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2)
         await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed2)
         await assertEntitiesAreDeployedButNotActive(server1, entityBeingDeployed1)
