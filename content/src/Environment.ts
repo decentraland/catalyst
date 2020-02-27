@@ -25,6 +25,7 @@ import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
 import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
+import { CacheManagerFactory } from "./service/caching/CacheManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -85,6 +86,7 @@ export const enum Bean {
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
     FETCH_HELPER,
+    CACHE_MANAGER,
 }
 
 export const enum EnvironmentConfig {
@@ -106,6 +108,7 @@ export const enum EnvironmentConfig {
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
     USE_COMPRESSION_MIDDLEWARE,
     PERFORM_MULTI_SERVER_ONBOARDING,
+    CACHE_SIZES,
 }
 
 export class EnvironmentBuilder {
@@ -180,11 +183,13 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES               , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
-        this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER              , () => FetchHelperFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER               , () => CacheManagerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER                , () => FetchHelperFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))

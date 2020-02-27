@@ -10,7 +10,7 @@ import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager, PointerHistory } from "./pointers/PointerManager";
 import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
-import { Cache } from "./caching/Cache"
+import { CacheByType } from "./caching/Cache"
 import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
@@ -19,13 +19,14 @@ import { Lock } from "./locking/Lock";
 import { ContentAuthenticator } from "./auth/Authenticator";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason, NoFailure } from "./errors/FailedDeploymentsManager";
+import { CacheManager, ENTITIES_CACHE_CONFIG } from "./caching/CacheManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
 
     private readonly lock: Lock
-    private entities: Cache<EntityId, Entity | undefined>
+    private entities: CacheByType<EntityId, Entity | undefined>
 
     private constructor(
         private storage: ServiceStorage,
@@ -37,9 +38,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private accessChecker: AccessChecker,
         private authenticator: ContentAuthenticator,
         private failedDeploymentsManager: FailedDeploymentsManager,
+        cacheManager: CacheManager,
         private ignoreValidationErrors: boolean,
         private network: string) {
-        this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 5000)
+        this.entities = cacheManager.buildEntityTypedCache(ENTITIES_CACHE_CONFIG, ([entityType, entityId]: [EntityType, EntityId]) => this.storage.getEntityById(entityId))
         this.lock = new Lock()
     }
 
@@ -52,10 +54,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         accessChecker: AccessChecker,
         authenticator: ContentAuthenticator,
         failedDeploymentsManager: FailedDeploymentsManager,
+        cacheManager: CacheManager,
         ignoreValidationErrors: boolean = false,
-        network: string): Promise<ServiceImpl>{
+        network: string,): Promise<ServiceImpl>{
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, accessChecker, authenticator, failedDeploymentsManager, ignoreValidationErrors, network)
+                analytics, accessChecker, authenticator, failedDeploymentsManager, cacheManager, ignoreValidationErrors, network)
         }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -69,7 +72,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     async getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
         let entities:(Entity | undefined)[] = await Promise.all(ids
             .filter((elem, pos, array) => array.indexOf(elem) == pos) // Removing duplicates. Quickest way to do so.
-            .map((entityId: EntityId) => this.entities.get(entityId)))
+            .map((entityId: EntityId) => this.entities.get(type, entityId)))
         entities = entities.filter(entity => entity !== undefined && entity.type===type)
         return entities as Entity[]
     }
@@ -177,7 +180,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                     await this.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
 
                     // Invalidate the cache and report the successful deployment
-                    this.entities.invalidate(entity.id)
+                    this.entities.invalidate(entity.type, entity.id)
                 }
 
                 // Store the entity's content
@@ -187,7 +190,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 await this.auditManager.setAuditInfo(entityId, newAuditInfo)
 
                 // Commit to pointers (this needs to go after audit store, since we might end up overwriting it)
-                await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entityId));
+                await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entity.type, entityId));
 
                 // Record deployment for analytics
                 this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)

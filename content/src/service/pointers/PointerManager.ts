@@ -1,8 +1,9 @@
-import { Cache } from "../caching/Cache"
+import { CacheByType } from "../caching/Cache"
 import { EntityType, Pointer, EntityId, Entity } from "../Entity";
 import { Timestamp, happenedBefore } from "../time/TimeSorting";
 import { PointerStorage } from "./PointerStorage";
 import { AuditOverwrite } from "../audit/Audit";
+import { CacheManager, POINTERS_CACHE_CONFIG } from "../caching/CacheManager";
 
 /**
  * Manage all pointer data
@@ -10,15 +11,12 @@ import { AuditOverwrite } from "../audit/Audit";
 export class PointerManager {
 
     static readonly DELETED: string = "deleted"
-    private readonly pointers: Map<EntityType, Cache<Pointer, EntityId | undefined>> = new Map()
+    private readonly pointers: CacheByType<Pointer, EntityId | undefined>
     constructor(private readonly storage: PointerStorage,
-        private readonly auditOverwrite: AuditOverwrite) {
+        private readonly auditOverwrite: AuditOverwrite,
+        cacheManager: CacheManager) {
         // Register type on global map. This way, we don't have to check on each reference
-        Object.values(EntityType)
-            .forEach((entityType: EntityType) => {
-                const cache: Cache<Pointer, EntityId | undefined> = Cache.withCalculation((pointer: Pointer) => this.getPointerFromDisk(entityType, pointer), 5000)
-                this.pointers.set(entityType, cache)
-            })
+        this.pointers = cacheManager.buildEntityTypedCache(POINTERS_CACHE_CONFIG, ([entityType, pointer]: [EntityType, Pointer]) => this.getPointerFromDisk(entityType, pointer))
     }
 
     /** Return all active pointers */
@@ -44,7 +42,7 @@ export class PointerManager {
 
     /** Returns the id of the entity being referenced by the given pointer (if any) */
     getEntityInPointer(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
-        return this.getPointerMap(type).get(pointer)
+        return this.pointers.get(type, pointer)
     }
 
     /**
@@ -94,7 +92,7 @@ export class PointerManager {
         const deletedByNewDeployment: PointerReference = { entityId: PointerManager.DELETED, timestamp: entityBeingDeployed.timestamp }
         overwrittenEntitiesPointers
             .forEach(pointer => {
-                this.invalidate(entityBeingDeployed.type, pointer)
+                this.pointers.invalidate(entityBeingDeployed.type, pointer)
                 this.addToArray(deletedByNewDeployment, references.get(pointer) as PointerReference[])
             })
 
@@ -145,7 +143,7 @@ export class PointerManager {
             .map(([pointer, array]) => this.storage.setPointerReferences(entityBeingDeployed.type, pointer, array))
 
         // Invalidate all pointers changed by the new deployment
-        entityBeingDeployed.pointers.forEach(pointer => this.invalidate(entityBeingDeployed.type, pointer))
+        entityBeingDeployed.pointers.forEach(pointer => this.pointers.invalidate(entityBeingDeployed.type, pointer))
 
         // Wait for everything to finish
         await Promise.all([...auditInfoUpdates, ...storageUpdates])
@@ -163,14 +161,6 @@ export class PointerManager {
         }
         references.splice(i + 1, 0, newReference)
         return i + 1
-    }
-
-    private invalidate(type: EntityType, pointer: string): void {
-        return this.getPointerMap(type).invalidate(pointer);
-    }
-
-    private getPointerMap(entityType: EntityType): Cache<Pointer, EntityId> {
-        return this.pointers.get(entityType) as Cache<Pointer, EntityId>
     }
 
     private async getPointerFromDisk(type: EntityType, pointer: Pointer): Promise<EntityId | undefined> {
