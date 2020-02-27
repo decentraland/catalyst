@@ -10,17 +10,17 @@ import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
-import { Validations } from "@katalyst/content/service/validations/Validations";
 import { delay } from "decentraland-katalyst-commons/src/util";
 
-export function getClient(fetchHelper: FetchHelper, address: ServerAddress, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
-    return new ActiveContentServerClient(fetchHelper, address, name, lastKnownTimestamp)
+export function getClient(fetchHelper: FetchHelper, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
+    return new ActiveContentServerClient(fetchHelper, address, requestTtlBackwards, name, lastKnownTimestamp)
 }
 
 class ActiveContentServerClient extends ContentServerClient {
 
     constructor(private readonly fetchHelper: FetchHelper,
         private readonly address: ServerAddress,
+        private readonly requestTtlBackwards: number,
         name: ServerName,
         estimatedLocalImmutableTime: Timestamp) {
             super(name, estimatedLocalImmutableTime)
@@ -32,7 +32,7 @@ class ActiveContentServerClient extends ContentServerClient {
      */
     async updateEstimatedLocalImmutableTime(timestamp: number | undefined): Promise<void> {
         // If not set, then ask the server's for its current time
-        timestamp = timestamp ?? (await this.getCurrentTimestamp()) - Validations.REQUEST_TTL_BACKWARDS // Subtract allowed TTL, as to avoid potential race conditions with a new deployment
+        timestamp = timestamp ?? (await this.getCurrentTimestamp()) - this.requestTtlBackwards // Subtract allowed TTL, as to avoid potential race conditions with a new deployment
 
         // Update the estimated immutable time
         this.estimatedLocalImmutableTime = Math.max(this.estimatedLocalImmutableTime, timestamp);

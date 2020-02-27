@@ -283,11 +283,20 @@ const notReferencedHashMessage = hash => {
 
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
-  return new Validations(new AccessCheckerImpl(authenticator, "unused_url", new FetchHelper()), authenticator, mockedFailedDeploymentsManager(), "ropsten");
+  return new Validations(new AccessCheckerImpl(authenticator, "unused_url",
+    new FetchHelper()),
+    authenticator,
+    mockedFailedDeploymentsManager(),
+    "ropsten",
+    ms('10m')).getInstance();
 }
 
 function getValidatorWithMockedAccess() {
-  return new Validations(new MockedAccessChecker(), new ContentAuthenticator(), mockedFailedDeploymentsManager(), "ropsten");
+  return new Validations(new MockedAccessChecker(),
+    new ContentAuthenticator(),
+    mockedFailedDeploymentsManager(),
+    "ropsten",
+    ms('10m')).getInstance();
 }
 
 function mockedFailedDeploymentsManager() {

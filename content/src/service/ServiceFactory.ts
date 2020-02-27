@@ -13,11 +13,9 @@ export class ServiceFactory {
             env.getBean(Bean.POINTER_MANAGER),
             env.getBean(Bean.NAME_KEEPER),
             env.getBean(Bean.ANALYTICS),
-            env.getBean(Bean.ACCESS_CHECKER),
-            env.getBean(Bean.AUTHENTICATOR),
             env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER),
-            env.getConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS),
-            env.getConfig(EnvironmentConfig.ETH_NETWORK));
+            env.getBean(Bean.VALIDATIONS),
+            env.getConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS));
     }
 }
 

@@ -58,15 +58,14 @@ describe("End 2 end - Error handling", () => {
             () => { accessChecker.stopReturningErrors(); return Promise.resolve() })
     });
 
-    it(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployer`, async () => {
+    it(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
         // Start servers
         await server1.start()
         await server2.start()
 
-        // Prepare entities to deploy
+        // Prepare entity to deploy
         const [deployData1, entityBeingDeployed1] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
         const entity1Content = entityBeingDeployed1.content!![0].hash
-        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
 
         // Deploy entity 1
         await server1.deploy(deployData1)
@@ -80,6 +79,9 @@ describe("End 2 end - Error handling", () => {
         // Assert deployment is marked as failed on server 2
         const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(failedDeployments.length).toBe(1)
+
+        // Prepare entity to deploy
+        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
 
         // Deploy entity 2 on server 2
         await server2.deploy(deployData2)
@@ -179,6 +181,7 @@ describe("End 2 end - Error handling", () => {
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
         const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
             .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+            .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
             .withAccessChecker(accessChecker)
             .build()
         return new TestServer(env)

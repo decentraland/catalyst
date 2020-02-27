@@ -14,12 +14,29 @@ import { Timestamp } from "../time/TimeSorting";
 
 export class Validations {
 
+    constructor(private readonly accessChecker: AccessChecker,
+        private readonly authenticator: ContentAuthenticator,
+        private readonly failedDeploymentsManager: FailedDeploymentsManager,
+        private readonly network: string,
+        private readonly requestTtlBackwards: number) { }
+
+    getInstance(): ValidatorInstance {
+        return new ValidatorInstance(this.accessChecker,
+            this.authenticator,
+            this.failedDeploymentsManager,
+            this.network,
+            this.requestTtlBackwards)
+    }
+}
+
+export class ValidatorInstance {
     private errors: string[] = []
 
     constructor(private readonly accessChecker: AccessChecker,
         private readonly authenticator: ContentAuthenticator,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
-        private readonly network: string) { }
+        private readonly network: string,
+        private readonly requestTtlBackwards: number) { }
 
     getErrors(): string[] {
         return this.errors
@@ -71,14 +88,14 @@ export class Validations {
 
     /** Validate that the full request size is within limits */
     private static MAX_UPLOAD_SIZE_PER_POINTER_MB = 15
-    private static MAX_UPLOAD_SIZE_PER_POINTER = Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB * 1024 * 1024
+    private static MAX_UPLOAD_SIZE_PER_POINTER = ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER_MB * 1024 * 1024
     validateRequestSize(files: ContentFile[], pointers: Pointer[], validationContext: ValidationContext): void {
         if (validationContext.shouldValidate(Validation.REQUEST_SIZE)) {
             var totalSize = 0
             files.forEach(file => totalSize += file.content.byteLength)
             const sizePerPointer = totalSize / pointers.length
-            if (sizePerPointer > Validations.MAX_UPLOAD_SIZE_PER_POINTER) {
-                this.errors.push(`The deployment is too big. The maximum allowed size per pointer is ${Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB} MB. You can upload up to ${pointers.length * Validations.MAX_UPLOAD_SIZE_PER_POINTER} bytes but you tried to upload ${totalSize}.`)
+            if (sizePerPointer > ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER) {
+                this.errors.push(`The deployment is too big. The maximum allowed size per pointer is ${ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER_MB} MB. You can upload up to ${pointers.length * ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER} bytes but you tried to upload ${totalSize}.`)
             }
         }
     }
@@ -110,15 +127,14 @@ export class Validations {
     }
 
     /** Validate that the deployment is recent */
-    static REQUEST_TTL_BACKWARDS: number = ms('20m') // 20 minutes
     private static REQUEST_TTL_FORWARDS: number = ms('5m') // 5 minutes
     validateDeploymentIsRecent(entityToBeDeployed: Entity, validationContext: ValidationContext): void {
         if (validationContext.shouldValidate(Validation.RECENT)) {
             // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
             const delta = Date.now() - entityToBeDeployed.timestamp
-            if (delta > Validations.REQUEST_TTL_BACKWARDS) {
+            if (delta > this.requestTtlBackwards) {
                 this.errors.push("The request is not recent enough, please submit it again with a new timestamp.")
-            } else if(delta < -Validations.REQUEST_TTL_FORWARDS) {
+            } else if(delta < -ValidatorInstance.REQUEST_TTL_FORWARDS) {
                 this.errors.push("The request is too far in the future, please submit it again with a new timestamp.")
             }
         }

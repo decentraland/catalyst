@@ -8,7 +8,6 @@ import { HistoryManager } from "./history/HistoryManager";
 import { NameKeeper, ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager, PointerHistory } from "./pointers/PointerManager";
-import { AccessChecker } from "./access/AccessChecker";
 import { ServiceStorage } from "./ServiceStorage";
 import { Cache } from "./caching/Cache"
 import { AuditManager, AuditInfo, NO_TIMESTAMP, EntityVersion } from "./audit/Audit";
@@ -34,11 +33,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private pointerManager: PointerManager,
         private nameKeeper: NameKeeper,
         private analytics: ContentAnalytics,
-        private accessChecker: AccessChecker,
-        private authenticator: ContentAuthenticator,
         private failedDeploymentsManager: FailedDeploymentsManager,
-        private ignoreValidationErrors: boolean,
-        private network: string) {
+        private validations: Validations,
+        private ignoreValidationErrors: boolean) {
         this.entities = Cache.withCalculation((entityId: EntityId) => this.storage.getEntityById(entityId), 1000)
         this.lock = new Lock()
     }
@@ -49,13 +46,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         pointerManager: PointerManager,
         nameKeeper: NameKeeper,
         analytics: ContentAnalytics,
-        accessChecker: AccessChecker,
-        authenticator: ContentAuthenticator,
         failedDeploymentsManager: FailedDeploymentsManager,
-        ignoreValidationErrors: boolean = false,
-        network: string): Promise<ServiceImpl>{
+        validations: Validations,
+        ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, accessChecker, authenticator, failedDeploymentsManager, ignoreValidationErrors, network)
+                analytics, failedDeploymentsManager, validations, ignoreValidationErrors)
         }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -97,7 +92,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         serverName: ServerName,
         validationContext: ValidationContext,
         origin: string): Promise<Timestamp> {
-        const validation = new Validations(this.accessChecker, this.authenticator, this.failedDeploymentsManager, this.network)
+        const validation = this.validations.getInstance()
 
         // Find entity file and make sure its hash is the expected
         const entityFile: ContentFile = ServiceImpl.findEntityFile(files)

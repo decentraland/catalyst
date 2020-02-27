@@ -25,6 +25,7 @@ import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
 import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
+import { ValidationsFactory } from "./service/validations/ValidationsFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -85,6 +86,7 @@ export const enum Bean {
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
     FETCH_HELPER,
+    VALIDATIONS,
 }
 
 export const enum EnvironmentConfig {
@@ -106,6 +108,7 @@ export const enum EnvironmentConfig {
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
     USE_COMPRESSION_MIDDLEWARE,
     PERFORM_MULTI_SERVER_ONBOARDING,
+    REQUEST_TTL_BACKWARDS,
 }
 
 export class EnvironmentBuilder {
@@ -180,6 +183,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS     , () => ms('20m'));
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
@@ -200,6 +204,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => FailedDeploymentsManagerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS                 , () => ValidationsFactory.create(env))
         const service = await ServiceFactory.create(env);
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))

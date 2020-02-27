@@ -35,7 +35,7 @@ async function buildDeployDataInternal(pointers: Pointer[], metadata: any, conte
     const [entity, entityFile] = await buildControllerEntityAndFile(
         EntityType.SCENE,
         pointers.map(pointer => pointer.toLocaleLowerCase()),
-        (afterEntity?.timestamp ?? Date.now()) + 1,
+        Math.max(Date.now(), afterEntity?.timestamp ?? 0 + 1),
         content,
         metadata)
 

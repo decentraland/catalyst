@@ -3,7 +3,7 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv } from "../E2ETestUtils"
+import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { delay } from "decentraland-katalyst-commons/src/util"
@@ -31,9 +31,7 @@ describe("End 2 end synchronization tests", function() {
     })
 
     afterEach(async function() {
-        await server1.stop()
-        await server2.stop()
-        await server3.stop()
+        await stopServers(server1, server2, server3)
         deleteServerStorage(server1, server2, server3)
     })
 

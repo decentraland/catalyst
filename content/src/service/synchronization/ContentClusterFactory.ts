@@ -8,7 +8,8 @@ export class ContentClusterFactory {
             env.getBean(Bean.DAO_CLIENT),
             env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL),
             env.getBean(Bean.NAME_KEEPER),
-            env.getBean(Bean.FETCH_HELPER))
+            env.getBean(Bean.FETCH_HELPER),
+            env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS))
     }
 
 }
