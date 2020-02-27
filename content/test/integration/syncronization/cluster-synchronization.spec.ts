@@ -138,6 +138,33 @@ describe("End 2 end synchronization tests", function() {
        expect(newImmutableTimeServer2).toBe(immutableTimeServer2)
     })
 
+    it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => {
+        // Start server 1 and 2
+        await Promise.all([server1.start(), server2.start()])
+
+        // Prepare data to be deployed
+        const [deployData1, entityBeingDeployed1] = await buildDeployData(["X1,Y1"], "metadata", 'content/test/integration/resources/some-binary-file.png')
+        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata", entityBeingDeployed1, 'content/test/integration/resources/some-binary-file.png')
+
+        // Deploy entity 1 on server 1
+        const deploymentTimestamp1 = await server1.deploy(deployData1)
+        const deploymentEvent1 = buildEvent(entityBeingDeployed1, server1, deploymentTimestamp1)
+
+        // Wait for servers to sync
+        await delay(SYNC_INTERVAL * 2)
+
+        // Deploy entity 2 on server 2
+        const deploymentTimestamp2 = await server2.deploy(deployData2)
+        const deploymentEvent2 = buildEvent(entityBeingDeployed2, server2, deploymentTimestamp2)
+
+        // Wait for servers to sync
+        await delay(SYNC_INTERVAL * 2)
+
+        // Assert that the entities were deployed on the servers
+        await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2)
+        await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2)
+    })
+
      /**
      * This test verifies a very corner case where:
      * A. An entity E1 is deployed first, with some pointers P1, P2
