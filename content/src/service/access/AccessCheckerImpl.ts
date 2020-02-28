@@ -77,7 +77,7 @@ export class AccessCheckerImpl implements AccessChecker {
 
     private async checkParcelAccess(x: number, y: number, timestamp: Timestamp, ethAddress: EthAddress): Promise<boolean> {
         try {
-            return await this.isUpdateAuthorized(x, y, timestamp, ethAddress)
+            return await this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress)
         } catch (error) {
             AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress})`, error)
         }
@@ -87,7 +87,7 @@ export class AccessCheckerImpl implements AccessChecker {
     /**
      * Checks if the address had deployment access to that coordinate at the specified time.
      */
-    private async isUpdateAuthorized(
+    private async isParcelUpdateAuthorized(
         x: number,
         y: number,
         timestamp: Timestamp,
@@ -100,6 +100,12 @@ export class AccessCheckerImpl implements AccessChecker {
          * at that time
          */
         const parcel = await this.getParcel(x, y, timestamp)
+
+        if (parcel.estates?.length > 0 && parcel.estates[0].estateId){
+            // The parcel belongs to an estate
+            return this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress)
+        }
+
         const firstLevelAuthorities = [
             ...parcel.owners,
             ...parcel.operators,
@@ -132,6 +138,46 @@ export class AccessCheckerImpl implements AccessChecker {
         return false
     }
 
+    private async isEstateUpdateAuthorized(
+        estateId: number,
+        timestamp: Timestamp,
+        ethAddress: EthAddress
+    ): Promise<boolean> {
+        const estate = await this.getEstate(estateId, timestamp)
+
+        const firstLevelAuthorities = [
+            ...estate.owners,
+            ...estate.operators,
+            ...estate.updateOperators]
+            .filter(addressSnapshot => addressSnapshot.address)
+            .map(addressSnapshot => addressSnapshot.address.toLowerCase())
+
+        ethAddress = ethAddress.toLowerCase()
+        if (firstLevelAuthorities.includes(ethAddress)) {
+            return true
+        }
+
+        /* You also get access if you received:
+         *   - an auhtorization with isApproved and type Operator
+         *   - an auhtorization with isApproved and type ApprovalForAll
+         * at that time
+         */
+
+        const owner = estate.owners[0].address.toLowerCase()
+
+        const authorizations = await this.getAuthorizations(owner, ethAddress, timestamp)
+
+        const firstOperatorAuthorization = authorizations.find(authorization => authorization.type === 'Operator')
+        const firstApprovalForAllAuthorization = authorizations.find(authorization => authorization.type === 'ApprovalForAll')
+
+        if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved) {
+            return true
+        }
+
+        return false
+    }
+
+
     private async getParcel(x: number, y: number, timestamp: Timestamp): Promise<Parcel> {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that parcel.
@@ -142,6 +188,14 @@ export class AccessCheckerImpl implements AccessChecker {
         const query = `
             query GetParcel($x: Int!, $y: Int!, $timestamp: Int!) {
                 parcels(where:{ x: $x, y: $y }) {
+                    estates(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        estateId
+                    }
                     owners(
                             where: { createdAt_lte: $timestamp },
                             orderBy: createdAt,
@@ -182,6 +236,56 @@ export class AccessCheckerImpl implements AccessChecker {
         }
     }
 
+    private async getEstate(estateId: number, timestamp: Timestamp): Promise<Parcel> {
+        /**
+         * You can use `owner`, `operator` and `updateOperator` to check the current value for that estate.
+         * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
+         * For more information, you can use the query explorer at https://thegraph.com/explorer/subgraph/nicosantangelo/watchtower
+         */
+
+        const query = `
+            query GetEstate($estateId: Int!, $timestamp: Int!) {
+                estates(where:{ id: $estateId }) {
+                    owners(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        address
+                    }
+                    operators(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        address
+                    }
+                    updateOperators(
+                            where: { createdAt_lte: $timestamp },
+                            orderBy: createdAt,
+                            orderDirection: desc,
+                            first: 1
+                        ) {
+                        address
+                    }
+                }
+            }`
+
+        const variables = {
+            estateId,
+            timestamp: timestamp / 1000 // UNIX
+        }
+
+        try {
+            return await this.queryGraph(query, variables) as Promise<Parcel>
+        } catch (error) {
+            AccessCheckerImpl.LOGGER.error(`Error fetching estate (${estateId})`, error)
+            throw error
+        }
+    }
+
     private async getAuthorizations(owner: EthAddress, operator: EthAddress, timestamp: Timestamp) {
         const query = `
             query GetAuthorizations($owner: String!, $operator: String!, timestamp: String!) {
@@ -213,6 +317,7 @@ export class AccessCheckerImpl implements AccessChecker {
         }
     }
 
+    // TODO: Move this to FetchHelper5
     private async queryGraph(query: string, variables: Record<string, any>) {
         const opts = {
             method: 'POST',
@@ -231,9 +336,14 @@ type AddressSnapshot = {
     address: string
 }
 
+type EstateSnapshot = {
+    estateId: number
+}
+
 type Parcel = {
     x: number
     y: number
+    estates: EstateSnapshot[]
     owners: AddressSnapshot[]
     operators: AddressSnapshot[]
     updateOperators: AddressSnapshot[]
