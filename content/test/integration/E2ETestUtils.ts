@@ -21,7 +21,7 @@ export function buildDeployData(pointers: Pointer[], metadata: any, ...contentPa
     return buildDeployDataInternal(pointers, metadata, contentPaths, createIdentity())
 }
 
-export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: any, afterEntity?: ControllerEntity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
+export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: any, afterEntity: ControllerEntity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, createIdentity(), afterEntity)
 }
 
@@ -35,7 +35,7 @@ async function buildDeployDataInternal(pointers: Pointer[], metadata: any, conte
     const [entity, entityFile] = await buildControllerEntityAndFile(
         EntityType.SCENE,
         pointers.map(pointer => pointer.toLocaleLowerCase()),
-        (afterEntity?.timestamp ?? Date.now()) + 1,
+        Math.max(Date.now(), afterEntity?.timestamp ?? 0 + 1),
         content,
         metadata)
 

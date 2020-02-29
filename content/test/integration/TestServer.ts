@@ -1,7 +1,7 @@
 import fetch from "node-fetch"
 import FormData from "form-data"
 import { Server } from "@katalyst/content/Server"
-import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
+import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
@@ -32,7 +32,9 @@ export class TestServer extends Server {
         this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
         this.namePrefix = env.getConfig(EnvironmentConfig.NAME_PREFIX)
         this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
-        this.client = getClient(new FetchHelper(), this.getAddress(), this.namePrefix, 0)
+        const fetchHelper: FetchHelper = env.getBean(Bean.FETCH_HELPER)
+        const requestTtlBackwards: number = env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+        this.client = getClient(fetchHelper, this.getAddress(), requestTtlBackwards, this.namePrefix, 0)
     }
 
     getAddress(): ServerAddress {

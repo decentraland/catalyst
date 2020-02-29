@@ -1,12 +1,12 @@
 import ms from "ms"
-import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents } from "../E2EAssertions"
+import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { ControllerEntityContent, ControllerEntity } from "@katalyst/content/controller/Controller"
+import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
+import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, buildDeployDataAfterEntity, stopServers } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
@@ -38,8 +38,7 @@ describe("End 2 end - Error handling", () => {
     })
 
     afterEach(async function() {
-        await server1.stop()
-        await server2.stop()
+        await stopServers(server1, server2)
         deleteServerStorage(server1, server2)
     })
 
@@ -50,13 +49,58 @@ describe("End 2 end - Error handling", () => {
 
     it(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
         await runTest(FailureReason.FETCH_PROBLEM,
-            entity => server1.denylistContent((entity.content as ControllerEntityContent[])[0].hash, identity))
+            entity => server1.denylistContent(entity.content!![0].hash, identity))
     });
 
     it(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
         await runTest(FailureReason.DEPLOYMENT_ERROR,
             _ => { accessChecker.startReturningErrors(); return Promise.resolve() },
             () => { accessChecker.stopReturningErrors(); return Promise.resolve() })
+    });
+
+    it(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
+        // Start servers
+        await server1.start()
+        await server2.start()
+
+        // Prepare entity to deploy
+        const [deployData1, entityBeingDeployed1] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
+        const entity1Content = entityBeingDeployed1.content!![0].hash
+
+        // Deploy entity 1
+        await server1.deploy(deployData1)
+
+        // Cause sync failure
+        await server1.denylistContent(entity1Content, identity)
+
+        // Wait for servers to sync
+        await delay(SYNC_INTERVAL * 2)
+
+        // Assert deployment is marked as failed on server 2
+        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
+        expect(failedDeployments.length).toBe(1)
+
+        // Prepare entity to deploy
+        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
+
+        // Deploy entity 2 on server 2
+        await server2.deploy(deployData2)
+
+        // Fix entity 1 on server 2
+        await server2.deploy(deployData1, true)
+
+        // Assert there are no more failed deployments
+        const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
+        expect(newFailedDeployments.length).toBe(0)
+
+        // Wait for servers to sync
+        await delay(SYNC_INTERVAL * 2)
+
+        // Assert entity 2 is the active entity on both servers
+        await assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2)
+        await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed2)
+        await assertEntitiesAreDeployedButNotActive(server1, entityBeingDeployed1)
+        await assertEntitiesAreDeployedButNotActive(server2, entityBeingDeployed1)
     });
 
     it(`When a user tries to fix an entity that didn't exist, then an error is thrown`, async () => {
@@ -137,6 +181,7 @@ describe("End 2 end - Error handling", () => {
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
         const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
             .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+            .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
             .withAccessChecker(accessChecker)
             .build()
         return new TestServer(env)
