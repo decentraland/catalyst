@@ -47,7 +47,6 @@ describe("End 2 end - Name change handling", function() {
 
         // Prepare data to be deployed
         const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata")
-        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata2", entity1)
 
         // Deploy entity1 on server 1
         const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
@@ -65,6 +64,9 @@ describe("End 2 end - Name change handling", function() {
         await server1.stop()
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, dao)
         await server1.start()
+
+        // Prepare data to be deployed
+        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata2", entity1)
 
         // Deploy entity2 on server 1
         const deploymentTimestamp2: Timestamp = await server1.deploy(deployData2)
@@ -85,6 +87,7 @@ describe("End 2 end - Name change handling", function() {
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
         const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
             .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, DAO_SYNC_INTERVAL)
+            .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
             .build()
         return new TestServer(env)
     }

@@ -10,7 +10,6 @@ import { EventDeployer } from "./EventDeployer";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
 import { Disposable } from "./events/ClusterEvent";
-import { Validations } from "../validations/Validations";
 import { delay } from "decentraland-katalyst-commons/src/util";
 
 export interface SynchronizationManager {
@@ -32,7 +31,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         private readonly service: TimeKeepingService,
         private readonly deployer: EventDeployer,
         private readonly timeBetweenSyncs: number,
-        private readonly performMultiServerOnboarding: boolean) { }
+        private readonly performMultiServerOnboarding: boolean,
+        private readonly requestTtlBackwards: number) { }
 
     async start(): Promise<void> {
         // Make sure the stopping flag is set to false
@@ -84,7 +84,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
             // Find the minimum timestamp between all servers
             const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getEstimatedLocalImmutableTime())
-                .reduce((min, current) => Math.min(min, current), Date.now() - Validations.REQUEST_TTL_BACKWARDS)
+                .reduce((min, current) => Math.min(min, current), Date.now() - this.requestTtlBackwards)
 
             if (minTimestamp > this.lastImmutableTime) {
                 // Set this new minimum timestamp as the latest immutable time

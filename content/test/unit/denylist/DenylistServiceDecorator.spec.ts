@@ -68,6 +68,24 @@ describe("DenylistServiceDecorator", () => {
         expect(entities).toEqual([entity2])
     })
 
+    it(`When a pointer is denylisted, then the history is empty`, async () => {
+        const denylist = denylistWith(P1Target)
+        const decorator = new DenylistServiceDecorator(service, denylist)
+
+        const entities = await decorator.getPointerHistory(entity1.type, P1);
+
+        expect(entities.length).toBe(0)
+    })
+
+    it(`When a pointer is not denylisted, then it reports the history correctly`, async () => {
+        const denylist = denylistWith()
+        const decorator = new DenylistServiceDecorator(service, denylist)
+
+        const history = await decorator.getPointerHistory(entity1.type, P1);
+
+        expect(history).toEqual([{ entityId: entity1.id, timestamp: entity1.timestamp }])
+    })
+
     it(`When an entity is denylisted, then it is returned by pointers, but without content or metadata`, async () => {
         const denylist = denylistWith(entity2Target)
         const decorator = new DenylistServiceDecorator(service, denylist)

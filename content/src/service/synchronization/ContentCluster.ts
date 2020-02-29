@@ -33,7 +33,8 @@ export class ContentCluster {
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
         private readonly nameKeeper: NameKeeper,
-        private readonly fetchHelper: FetchHelper) { }
+        private readonly fetchHelper: FetchHelper,
+        private readonly requestTtlBackwards: number) { }
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
@@ -117,11 +118,11 @@ export class ContentCluster {
                     } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
-                        newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
+                        newClient = getClient(this.fetchHelper, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
                     } else if (previousClient.getName() !== newName) {
                         // Update known name to new one
                         ContentCluster.LOGGER.warn(`Server's name changed on ${address}. It was ${previousClient.getName()} and now it is ${newName}.`)
-                        newClient = getClient(this.fetchHelper, address, newName, previousClient.getEstimatedLocalImmutableTime())
+                        newClient = getClient(this.fetchHelper, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
                     }
                 } else {
                     if (newName === UNREACHABLE) {
@@ -129,7 +130,7 @@ export class ContentCluster {
                         newClient = getUnreachableClient()
                     } else {
                         // Create new client
-                        newClient = getClient(this.fetchHelper, address, newName, this.lastImmutableTime)
+                        newClient = getClient(this.fetchHelper, address, this.requestTtlBackwards, newName, this.lastImmutableTime)
                         ContentCluster.LOGGER.info(`Connected to new server ${newName} on ${address}`)
                     }
                 }
