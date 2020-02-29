@@ -3,6 +3,7 @@ import { EntityType, Entity, Pointer, EntityId } from "@katalyst/content/service
 import { PointerManager, PointerReference } from "@katalyst/content/service/pointers/PointerManager";
 import { PointerStorage } from "@katalyst/content/service/pointers/PointerStorage";
 import { MockedStorage } from "../../storage/MockedStorage";
+import { CacheManager } from "@katalyst/content/service/caching/CacheManager";
 
 describe("PointerManager", () => {
 
@@ -34,7 +35,7 @@ describe("PointerManager", () => {
     beforeEach(() => {
         storage = new PointerStorage(new MockedStorage())
         audit = buildAudit()
-        manager = new PointerManager(storage, audit)
+        manager = new PointerManager(storage, audit, new CacheManager())
     })
 
     permutator(allEntities)

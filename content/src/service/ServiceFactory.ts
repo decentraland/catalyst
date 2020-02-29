@@ -14,6 +14,7 @@ export class ServiceFactory {
             env.getBean(Bean.NAME_KEEPER),
             env.getBean(Bean.ANALYTICS),
             env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER),
+            env.getBean(Bean.CACHE_MANAGER),
             env.getBean(Bean.VALIDATIONS),
             env.getConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS));
     }

@@ -25,6 +25,7 @@ import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
 import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
+import { CacheManagerFactory } from "./service/caching/CacheManagerFactory";
 import { ValidationsFactory } from "./service/validations/ValidationsFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
@@ -86,6 +87,7 @@ export const enum Bean {
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
     FETCH_HELPER,
+    CACHE_MANAGER,
     VALIDATIONS,
 }
 
@@ -108,6 +110,7 @@ export const enum EnvironmentConfig {
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
     USE_COMPRESSION_MIDDLEWARE,
     PERFORM_MULTI_SERVER_ONBOARDING,
+    CACHE_SIZES,
     REQUEST_TTL_BACKWARDS,
 }
 
@@ -172,7 +175,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS              , () => process.env.LOG_REQUESTS === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX               , () => process.env.NAME_PREFIX ?? '')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL  , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('2m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS  , () => false)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS      , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES     , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
@@ -183,12 +186,14 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT, () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES               , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS     , () => ms('20m'));
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
-        this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER              , () => FetchHelperFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER               , () => CacheManagerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER                , () => FetchHelperFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
