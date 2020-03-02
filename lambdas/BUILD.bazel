@@ -9,6 +9,7 @@ ts_library(
     module_name = "@katalyst/lambdas",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//commons",
         "@npm//@types",
         "@npm//@types/node",
         "@npm//@types/compression",
