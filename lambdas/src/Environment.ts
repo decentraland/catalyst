@@ -50,7 +50,8 @@ export const enum EnvironmentConfig {
   ENS_OWNER_PROVIDER_URL,
   COMMIT_HASH,
   USE_COMPRESSION_MIDDLEWARE,
-  LOG_LEVEL
+  LOG_LEVEL,
+  METRICS
 }
 
 export class EnvironmentBuilder {

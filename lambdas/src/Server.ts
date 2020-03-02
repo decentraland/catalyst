@@ -5,6 +5,7 @@ import morgan from "morgan";
 import compression from "compression";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
+import { Metrics } from "decentraland-katalyst-commons/src/metrics";
 import http from "http";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
@@ -36,6 +37,11 @@ export class Server {
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan("combined"));
     }
+
+    if (env.getConfig(EnvironmentConfig.METRICS)) {
+      Metrics.initialize(this.app);
+    }
+
 
     // Base endpoints
     this.registerRoute("/status", controller, controller.getStatus);
