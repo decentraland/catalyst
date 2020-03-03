@@ -27,7 +27,7 @@ export class AccessCheckerImpl implements AccessChecker {
     private async checkProfileAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
         const errors: string[] = []
 
-        if (pointers.length!=1) {
+        if (pointers.length != 1) {
             errors.push(`Only one pointer is allowed when you create a Profile. Received: ${pointers}`)
         }
 
@@ -101,9 +101,12 @@ export class AccessCheckerImpl implements AccessChecker {
          */
         const parcel = await this.getParcel(x, y, timestamp)
 
-        if (parcel.estates?.length > 0 && parcel.estates[0].estateId){
+        if (parcel.estates?.length > 0 && parcel.estates[0].estateId) {
             // The parcel belongs to an estate
-            return this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress)
+            return this.isEstateUpdateAuthorized(
+                parcel.estates[0].estateId,
+                timestamp,
+                ethAddress)
         }
 
         const firstLevelAuthorities = [
@@ -126,10 +129,15 @@ export class AccessCheckerImpl implements AccessChecker {
 
         const owner = parcel.owners[0].address.toLowerCase()
 
-        const authorizations = await this.getAuthorizations(owner, ethAddress, timestamp)
+        const authorizations = await this.getAuthorizations(
+            owner,
+            ethAddress,
+            timestamp)
 
-        const firstOperatorAuthorization = authorizations.find(authorization => authorization.type === 'Operator')
-        const firstApprovalForAllAuthorization = authorizations.find(authorization => authorization.type === 'ApprovalForAll')
+        const firstOperatorAuthorization = authorizations.find(
+            authorization => authorization.type === 'Operator')
+        const firstApprovalForAllAuthorization = authorizations.find(
+            authorization => authorization.type === 'ApprovalForAll')
 
         if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved) {
             return true
@@ -165,10 +173,15 @@ export class AccessCheckerImpl implements AccessChecker {
 
         const owner = estate.owners[0].address.toLowerCase()
 
-        const authorizations = await this.getAuthorizations(owner, ethAddress, timestamp)
+        const authorizations = await this.getAuthorizations(
+            owner,
+            ethAddress,
+            timestamp)
 
-        const firstOperatorAuthorization = authorizations.find(authorization => authorization.type === 'Operator')
-        const firstApprovalForAllAuthorization = authorizations.find(authorization => authorization.type === 'ApprovalForAll')
+        const firstOperatorAuthorization = authorizations.find(
+            authorization => authorization.type === 'Operator')
+        const firstApprovalForAllAuthorization = authorizations.find(
+            authorization => authorization.type === 'ApprovalForAll')
 
         if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved) {
             return true
@@ -225,18 +238,22 @@ export class AccessCheckerImpl implements AccessChecker {
 
         const variables = {
             x, y,
-            timestamp: timestamp / 1000 // UNIX
+            timestamp: Math.floor(timestamp / 1000) // UNIX
         }
 
         try {
-            return await this.queryGraph(query, variables) as Promise<Parcel>
+            const response = await this.queryGraph<{ parcels: Parcel[] }>(
+                query,
+                variables
+            )
+            return response.parcels[0]
         } catch (error) {
             AccessCheckerImpl.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
             throw error
         }
     }
 
-    private async getEstate(estateId: number, timestamp: Timestamp): Promise<Parcel> {
+    private async getEstate(estateId: number, timestamp: Timestamp): Promise<Estate> {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that estate.
          * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
@@ -275,18 +292,22 @@ export class AccessCheckerImpl implements AccessChecker {
 
         const variables = {
             estateId,
-            timestamp: timestamp / 1000 // UNIX
+            timestamp: Math.floor(timestamp / 1000) // UNIX
         }
 
         try {
-            return await this.queryGraph(query, variables) as Promise<Parcel>
+            const response = await this.queryGraph<{ estates: Estate[] }>(
+                query,
+                variables
+            )
+            return response.estates[0]
         } catch (error) {
             AccessCheckerImpl.LOGGER.error(`Error fetching estate (${estateId})`, error)
             throw error
         }
     }
 
-    private async getAuthorizations(owner: EthAddress, operator: EthAddress, timestamp: Timestamp) {
+    private async getAuthorizations(owner: EthAddress, operator: EthAddress, timestamp: Timestamp): Promise<Authorization[]> {
         const query = `
             query GetAuthorizations($owner: String!, $operator: String!, timestamp: String!) {
                 authorizations(
@@ -306,11 +327,14 @@ export class AccessCheckerImpl implements AccessChecker {
         const variables = {
             owner,
             operator,
-            timestamp: timestamp / 1000 // UNIX
+            timestamp: Math.floor(timestamp / 1000) // UNIX
         }
 
         try {
-            return await this.queryGraph(query, variables) as Promise<Authorization[]>
+            const response = await this.queryGraph<{
+                authorizations: Authorization[]
+            }>(query, variables)
+            return response.authorizations
         } catch (error) {
             AccessCheckerImpl.LOGGER.error(`Error fetching authorizations for ${owner}`, error)
             throw error
@@ -318,17 +342,30 @@ export class AccessCheckerImpl implements AccessChecker {
     }
 
     // TODO: Move this to FetchHelper5
-    private async queryGraph(query: string, variables: Record<string, any>) {
+    private async queryGraph<T = any>(
+        query: string,
+        variables: Record<string, any>
+    ): Promise<T> {
         const opts = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query, variables })
         }
+
         const res = await fetch(this.dclParcelAccessUrl, opts)
         if (res.ok) {
-            return await res.json()
+            const json = await res.json()
+            if (json.errors) {
+                throw new Error(
+                    `Error querying graph. Reasons: ${JSON.stringify(json.errors)}`
+                )
+            }
+            return json.data
         }
-        return Promise.reject(new Error(`Could not query graph. Reason: ${res.status}: ${res.statusText}`))
+
+        throw new Error(
+            `Could not query graph. Reason: ${res.status}: ${res.statusText}`
+        )
     }
 }
 
@@ -340,10 +377,17 @@ type EstateSnapshot = {
     estateId: number
 }
 
-type Parcel = {
+type Estate = AuthorizationHistory & {
+    id: number
+}
+
+type Parcel = AuthorizationHistory & {
     x: number
     y: number
     estates: EstateSnapshot[]
+}
+
+type AuthorizationHistory = {
     owners: AddressSnapshot[]
     operators: AddressSnapshot[]
     updateOperators: AddressSnapshot[]
