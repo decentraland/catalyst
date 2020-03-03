@@ -397,4 +397,3 @@ type Authorization = {
     type: 'Operator' | 'ApprovalForAll'
     isApproved: boolean
 }
-
