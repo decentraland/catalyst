@@ -103,15 +103,15 @@ describe("Peer Integration Test", function() {
     expect(peerRoom.users.includes(peer.peerId)).toBeTrue();
   }
 
-  function notify(peers: MinPeerData[], notificationKey: string, notification: ServerMessageType, peerData: MinPeerData, collectionId: string) {
-    console.log("Notifying peers", notification, peers, peerData, collectionId);
+  function notify(peers: MinPeerData[], notificationKey: string, notification: ServerMessageType, peerPair: MinPeerData, collectionId: string) {
+    console.log("Notifying peers", notification, peers, peerPair, collectionId);
     peers.forEach(it =>
-      sockets[it.id]?.onmessage({
+      sockets[it.userId]?.onmessage({
         data: JSON.stringify({
           type: notification,
           src: "__lighthouse_notification__",
-          dst: it.id,
-          payload: { ...peerData, [notificationKey]: collectionId }
+          dst: it.userId,
+          payload: { ...peerPair, [notificationKey]: collectionId }
         })
       })
     );
@@ -123,7 +123,7 @@ describe("Peer Integration Test", function() {
         collectionGetter()[collectionId] = [];
       }
 
-      if (collectionGetter()[collectionId].some($ => $.id === peerPair.id)) return Promise.resolve(new Response(JSON.stringify(collectionGetter()[collectionId])));
+      if (collectionGetter()[collectionId].some($ => $.userId === peerPair.userId)) return Promise.resolve(new Response(JSON.stringify(collectionGetter()[collectionId])));
 
       const toNotify = collectionGetter()[collectionId].slice();
 
@@ -136,13 +136,13 @@ describe("Peer Integration Test", function() {
   }
 
   function leaveCollection(collectionsGetter: () => Record<string, MinPeerData[]>, notificationKey: string, notification: ServerMessageType) {
-    return (peerId: string, collectionId: string) => {
+    return (userId: string, collectionId: string) => {
       const collection = collectionsGetter()[collectionId];
       if (!collection) {
         return Promise.resolve(new Response(JSON.stringify([])));
       }
 
-      const index = collection.findIndex(u => u.id === peerId);
+      const index = collection.findIndex(u => u.userId === userId);
       if (index === -1) {
         return Promise.resolve(new Response(JSON.stringify(collection)));
       }

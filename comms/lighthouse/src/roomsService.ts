@@ -1,14 +1,17 @@
+import { Peer } from "../../peer/src/Peer";
 import { IPeersService, NotificationType } from "./peersService";
 import { Room, PeerInfo } from "./types";
-import { removeUserAndNotify } from "./utils";
+import { getServerPeer, removeUserAndNotify } from "./utils";
 
 type RoomsFilter = Partial<{
-  peerId: string;
+  userId: string;
 }>;
 
-type RoomsServiceConfig = {
+type RoomsServiceConfig = Partial<{
+  serverPeerEnabled: boolean;
+  serverPeerProvider: () => Peer | undefined;
   peersService: IPeersService;
-};
+}>;
 
 function newRoom(roomId: string): Room {
   return { id: roomId, users: [] };
@@ -22,33 +25,39 @@ export class RoomsService {
   }
 
   getRoomIds(filter?: RoomsFilter): string[] {
-    const peerId = filter?.peerId;
+    const userId = filter?.userId;
 
-    return peerId
+    return userId
       ? Object.entries(this.rooms)
-          .filter(([, room]) => room.users.includes(peerId))
+          .filter(([, room]) => room.users.some(user => user.userId === userId))
           .map(([id]) => id)
       : Object.keys(this.rooms);
   }
 
   getUsers(roomId: string): PeerInfo[] {
-    return this.peersService.getPeersInfo(this.rooms[roomId]?.users);
+    return this.rooms[roomId]?.users;
   }
 
-  async addUserToRoom(roomId: string, peerId: string) {
+  async addUserToRoom(roomId: string, peer: PeerInfo) {
     let room = this.rooms[roomId];
+
+    const serverPeer = getServerPeer(this.config.serverPeerProvider);
 
     if (!room) {
       this.rooms[roomId] = room = newRoom(roomId);
+      // if relaying peer exists, add to room when it's created
+
+      if (this.config.serverPeerEnabled && serverPeer) {
+        await serverPeer.joinRoom(roomId);
+      }
     }
 
-    if (!room.users.includes(peerId)) {
+    if (!room.users.some($ => $.userId === peer.userId)) {
       const peersToNotify = room.users.slice();
-      room.users.push(peerId);
-      this.config.peersService?.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
-        id: peerId,
-        userId: peerId,
-        peerId: peerId,
+      room.users.push(peer);
+      this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
+        userId: peer.userId,
+        peerId: peer.peerId,
         roomId
       });
     }
@@ -56,11 +65,15 @@ export class RoomsService {
     return room;
   }
 
-  removeUserFromRoom(roomId: string, peerId: string) {
-    return removeUserAndNotify(this.rooms, roomId, peerId, NotificationType.PEER_LEFT_ROOM, "roomId", this.peersService);
+  removeUserFromRoom(roomId: string, userId: string) {
+    return removeUserAndNotify(this.rooms, roomId, userId, NotificationType.PEER_LEFT_ROOM, "roomId", this.peersService);
   }
 
-  removeUser(peerId: string) {
-    Object.keys(this.rooms).forEach(room => this.removeUserFromRoom(room, peerId));
+  removeUser(userId: string) {
+    Object.keys(this.rooms).forEach(room => this.removeUserFromRoom(room, userId));
+    const serverPeer = getServerPeer(this.config.serverPeerProvider);
+    if (serverPeer) {
+      serverPeer.disconnectFrom(userId);
+    }
   }
 }

@@ -23,13 +23,6 @@ export type PeerData = {
   connection: SimplePeer.Instance;
 };
 
-export type PositionConfig<PositionType> = {
-  selfPosition: () => PositionType;
-  distance: (l1: PositionType, l2: PositionType) => number;
-};
-
-type PeerResponse = { id?: string; userId?: string; peerId?: string };
-
 enum LogLevel {
   TRACE = 0,
   DEBUG = 1,
@@ -47,7 +40,7 @@ function signalMessage(peer: PeerData, connectionId: string, signal: SignalData)
   peer.connection.signal(signal);
 }
 
-type PeerConfig<PositionType> = {
+type PeerConfig = {
   connectionConfig?: any;
   wrtc?: any;
   socketBuilder?: SocketBuilder;
@@ -62,7 +55,7 @@ type PeerConfig<PositionType> = {
   reconnectionAttempts?: number;
   backoffMs?: number;
   authHandler?: (msg: string) => Promise<string>;
-  positionConfig?: PositionConfig<PositionType>;
+  parcelGetter?: () => [number, number];
   statusHandler?: (status: string) => void;
 };
 
@@ -104,13 +97,13 @@ class GlobalStats extends Stats {
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
-export class Peer<PositionType = [number, number, number]> implements IPeer<PositionType> {
+export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private connectedPeers: Record<string, PeerData> = {};
 
   private peerConnectionPromises: Record<string, { resolve: () => void; reject: () => void }[]> = {};
 
-  private knownPeers: Record<string, KnownPeerData<PositionType>> = {};
+  private knownPeers: Record<string, KnownPeerData> = {};
 
   private receivedPackets: Record<string, { timestamp: number; expirationTime: number }> = {};
 
@@ -137,7 +130,7 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     lighthouseUrl: string,
     public peerId: string,
     public callback: PacketCallback = () => {},
-    private config: PeerConfig<PositionType> = { authHandler: msg => Promise.resolve(msg), statusHandler: () => {} }
+    private config: PeerConfig = { authHandler: msg => Promise.resolve(msg), statusHandler: () => {} }
   ) {
     if (this.config.logLevel) {
       this.logLevel = this.config.logLevel;
@@ -196,7 +189,7 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
       authHandler: this.config.authHandler,
       heartbeatExtras: () => ({
         ...this.buildTopologyInfo(),
-        ...this.buildPositionInfo()
+        ...this.buildParcelInfo()
       }),
       ...(this.config.socketBuilder ? { socketBuilder: this.config.socketBuilder } : {})
     });
@@ -219,8 +212,8 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     return { connectedPeerIds: this.fullyConnectedPeerIds() };
   }
 
-  private buildPositionInfo() {
-    return this.config.positionConfig ? { parcel: this.config.positionConfig.selfPosition() } : {};
+  private buildParcelInfo() {
+    return this.config.parcelGetter ? { parcel: this.config.parcelGetter() } : {};
   }
 
   private markReceived(packet: Packet) {
@@ -309,15 +302,12 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     if (this.disposed) return;
     const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
       method: "PUT",
-      // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-      bodyObject: { id: this.peerId, userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
+      bodyObject: { userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
     });
-
-    const layerUsers: PeerResponse[] = json;
 
     this.currentLayer = layer;
     this.cleanStateAndConnections();
-    this.updateKnownPeers(layerUsers.map(it => ({ id: (it.id ?? it.userId)! })));
+    this.updateKnownPeers(json);
 
     //@ts-ignore
     const ignored = this.updateNetwork();
@@ -342,18 +332,14 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
 
     const { json } = await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}`, {
       method: "PUT",
-      // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-      bodyObject: { id: this.peerId, userId: this.peerId, peerId: this.peerId }
+      bodyObject: { userId: this.peerId, peerId: this.peerId }
     });
 
-    const roomUsers: PeerResponse[] = json;
+    const roomUsers: MinPeerData[] = json;
 
-    room.users = roomUsers.map(it => (it.id ?? it.userId)!);
+    room.users = roomUsers.map(it => it.userId);
 
-    this.updateKnownPeersWithRoom(
-      room,
-      roomUsers.map(it => ({ id: (it.id ?? it.userId)! }))
-    );
+    this.updateKnownPeersWithRoom(room, roomUsers);
 
     await this.updateNetwork();
     return await this.roomConnectionHealthy(roomId);
@@ -370,49 +356,54 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
 
     //We add the room to those known peers that are in the room
     roomPeersData
-      .filter(it => it.id !== this.peerId)
+      .filter(it => it.userId !== this.peerId)
       .forEach(it => {
-        if (!this.knownPeers[it.id] || typeof this.knownPeers[it.id].rooms === "undefined") {
-          this.knownPeers[it.id] = { ...it, rooms: [room.id], subtypeData: {} };
-        } else if (this.knownPeers[it.id].rooms.indexOf(room.id) < 0) {
-          this.knownPeers[it.id].rooms.push(room.id);
+        if (!this.knownPeers[it.userId] || typeof this.knownPeers[it.userId].rooms === "undefined") {
+          this.knownPeers[it.userId] = { ...it, rooms: [room.id], subtypeData: {} };
+        } else if (this.knownPeers[it.userId].rooms.indexOf(room.id) < 0) {
+          this.knownPeers[it.userId].rooms.push(room.id);
         }
       });
   }
 
   private updateKnownPeers(newPeers: MinPeerData[]) {
     //We remove those peers that are not in this newPeers list
-    Object.keys(this.knownPeers).forEach(peerId => {
-      if (!newPeers.some($ => $.id === peerId)) {
-        this.removeKnownPeer(peerId);
+    Object.keys(this.knownPeers).forEach(userId => {
+      if (!newPeers.some($ => $.userId === userId)) {
+        this.removeKnownPeer(userId);
       }
     });
 
     newPeers.forEach(peer => {
-      if (peer.id !== this.peerId) {
+      if (peer.userId !== this.peerId) {
         this.addKnownPeer(peer);
       }
     });
   }
 
   private addKnownPeer(peer: MinPeerData) {
-    if (!this.knownPeers[peer.id]) this.knownPeers[peer.id] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
   }
 
   private ensureKnownPeer(packet: Packet) {
-    this.addKnownPeer({ id: packet.src, rooms: packet.messageData?.room ? [packet.messageData?.room] : [] });
+    this.addKnownPeer({ peerId: packet.src, userId: packet.src, rooms: packet.messageData?.room ? [packet.messageData?.room] : [] });
 
     if (packet.messageData?.room && !this.knownPeers[packet.src].rooms.includes(packet.messageData?.room)) {
       this.knownPeers[packet.src].rooms.push(packet.messageData.room);
     }
   }
 
-  private removeKnownPeer(peerId: string) {
-    const peerData = this.knownPeers[peerId];
-    delete this.knownPeers[peerId];
+  private removeKnownPeer(userId: string) {
+    const peerData = this.knownPeers[userId];
+    delete this.knownPeers[userId];
     if (peerData) {
-      peerData.rooms.forEach(room => this.removeUserFromRoom(room, peerId));
+      peerData.rooms.forEach(room => this.removeUserFromRoom(room, userId));
     }
+  }
+
+  private removeKnownPeerByPeerId(peerId: string) {
+    const userId = Object.keys(this.knownPeers).find(key => this.knownPeers[key].peerId === peerId);
+    if (userId) this.removeKnownPeer(userId);
   }
 
   async roomConnectionHealthy(roomId: string) {
@@ -484,7 +475,7 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     });
   }
 
-  connectedCount() {
+  public connectedCount() {
     return this.fullyConnectedPeerIds().length;
   }
 
@@ -492,12 +483,12 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     return Object.keys(this.connectedPeers).filter(it => this.isConnectedTo(it));
   }
 
-  async connectTo(known: KnownPeerData<PositionType>) {
-    const peer = this.createPeerConnection(known.id, util.generateToken(16), true);
+  async connectTo(known: KnownPeerData) {
+    const peer = this.createPeer(known.peerId, util.generateToken(16), true);
 
     return this.beConnectedTo(peer.id, this.config.peerConnectTimeout).catch(e => {
       // If we timeout, we want to abort the connection
-      this.disconnectFrom(known.id, false);
+      this.disconnectFrom(known.peerId, false);
       throw e;
     });
   }
@@ -521,7 +512,7 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     this.currentRooms.splice(index, 1);
   }
 
-  beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
+  public beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
       const promisePair = { resolve, reject };
       if (this.isConnectedTo(peerId)) {
@@ -539,7 +530,7 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     });
   }
 
-  disconnectFrom(peerId: string, removeListener: boolean = true) {
+  public disconnectFrom(peerId: string, removeListener: boolean = true) {
     if (this.connectedPeers[peerId]) {
       this.log(LogLevel.INFO, "Disconnecting from " + peerId);
       //We remove close listeners since we are going to destroy the connection anyway. No need to handle the events.
@@ -548,12 +539,6 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
       delete this.connectedPeers[peerId];
     } else {
       this.log(LogLevel.INFO, "[PEER] Already not connected to peer " + peerId);
-    }
-  }
-
-  setPeerPosition(peerId: string, position: PositionType) {
-    if (this.knownPeers[peerId]) {
-      this.knownPeers[peerId].position = position;
     }
   }
 
@@ -821,19 +806,19 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     let peer = this.connectedPeers[peerId];
     if (!peer) {
       sessionId = sessionId ?? util.generateToken(16);
-      peer = this.createPeerConnection(peerId, sessionId!, initiator);
+      peer = this.createPeer(peerId, sessionId!, initiator);
     } else if (sessionId) {
       if (peer.sessionId !== sessionId) {
         this.log(LogLevel.INFO, `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`);
         peer.connection.removeAllListeners();
         peer.connection.destroy();
-        peer = this.createPeerConnection(peerId, sessionId, initiator);
+        peer = this.createPeer(peerId, sessionId, initiator);
       }
     }
     return peer;
   }
 
-  private createPeerConnection(peerId: string, sessionId: string, initiator: boolean): PeerData {
+  private createPeer(peerId: string, sessionId: string, initiator: boolean): PeerData {
     const peer = (this.connectedPeers[peerId] = {
       id: peerId,
       sessionId,
@@ -908,31 +893,31 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
           peer?.connection?.destroy();
           delete this.connectedPeers[peerId];
           if (payload.reason === MUST_BE_IN_SAME_DOMAIN_AND_LAYER) {
-            this.removeKnownPeer(peerId);
+            this.removeKnownPeerByPeerId(peerId);
           }
           break;
         }
         case ServerMessageType.PeerLeftRoom: {
-          const { roomId, userId, id } = payload;
-          this.removeUserFromRoom(roomId, id ?? userId);
+          const { roomId, userId } = payload;
+          this.removeUserFromRoom(roomId, userId);
           break;
         }
         case ServerMessageType.PeerLeftLayer: {
-          const { layerId, userId, id } = payload;
+          const { layerId, userId } = payload;
           if (this.currentLayer === layerId) {
-            this.removeKnownPeer(id ?? userId);
+            this.removeKnownPeer(userId);
           }
           break;
         }
         case ServerMessageType.PeerJoinedRoom: {
-          const { roomId, userId, id } = payload;
-          this.addUserToRoom(roomId, { id: id ?? userId });
+          const { roomId, userId, peerId } = payload;
+          this.addUserToRoom(roomId, { userId, peerId });
           break;
         }
         case ServerMessageType.PeerJoinedLayer: {
-          const { layerId, userId, id } = payload;
+          const { layerId, userId, peerId } = payload;
           if (this.currentLayer === layerId) {
-            this.addKnownPeer({ id: id ?? userId });
+            this.addKnownPeer({ userId, peerId });
           }
           break;
         }
@@ -940,10 +925,10 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     }
   }
 
-  private removeUserFromRoom(roomId: string, peerId: string) {
+  private removeUserFromRoom(roomId: string, userId: string) {
     const room = this.findRoom(roomId);
     if (room) {
-      const userIndex = room.users.indexOf(peerId);
+      const userIndex = room.users.indexOf(userId);
       if (userIndex >= 0) room.users.splice(userIndex, 1);
     }
   }
@@ -951,7 +936,7 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
   private addUserToRoom(roomId: string, peerData: MinPeerData) {
     peerData.rooms = [...(peerData.rooms ?? []), roomId];
 
-    const knownPeer = this.knownPeers[peerData.id];
+    const knownPeer = this.knownPeers[peerData.userId];
     if (!knownPeer) {
       this.addKnownPeer(peerData);
     } else if (!knownPeer.rooms.includes(roomId)) {
@@ -959,8 +944,8 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     }
 
     const room = this.findRoom(roomId);
-    if (room && !room.users.includes(peerData.id)) {
-      room.users.push(peerData.id);
+    if (room && !room.users.includes(peerData.userId)) {
+      room.users.push(peerData.userId);
     }
   }
 

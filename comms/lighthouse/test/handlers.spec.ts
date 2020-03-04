@@ -1,4 +1,4 @@
-import { requireAll, validatePeerToken, requireOneOf } from "../src/handlers";
+import { requireParameters, validatePeerToken } from "../src/handlers";
 
 describe("require parameters", () => {
   let request: any;
@@ -15,73 +15,41 @@ describe("require parameters", () => {
     next = jasmine.createSpy();
   });
 
-  describe("requireAll", () => {
-    it("should respond 400 when parameters are missing", () => {
-      const handler = requireAll(["name", "age"], (req, res) => req.body);
+  it("should respond 400 when parameters are missing", () => {
+    const handler = requireParameters(["name", "age"], (req, res) => req.body);
 
-      handler(request, response, next);
+    handler(request, response, next);
 
-      expectMissingParameters(response, "name, age", next);
-    });
-
-    it("should respond 400 when some parameters are missing", () => {
-      const handler = requireAll(["name", "age", "surname"], (req, res) => req.body);
-
-      request.body = { name: "pepe" };
-
-      handler(request, response, next);
-
-      expectMissingParameters(response, "age, surname", next);
-    });
-
-    it("should work when all parameters are provided", () => {
-      const handler = requireAll(["name", "age"], (req, res) => req.body);
-
-      request.body = { name: "pepe", age: 33 };
-
-      handler(request, response, next);
-
-      expect(next).toHaveBeenCalled();
-    });
-
-    function expectMissingParameters(response: any, parameters: string, next: any) {
-      expectBadRequest(response, `Missing required parameters: ${parameters}`, next);
-    }
+    expectMissingParameters(response, "name, age", next);
   });
 
-  describe("requireOneOf", () => {
-    it("should respond 400 when all parameters are missing", () => {
-      const handler = requireOneOf(["id", "userId"], (req, res) => req.body);
+  it("should respond 400 when some parameters are missing", () => {
+    const handler = requireParameters(["name", "age", "surname"], (req, res) => req.body);
 
-      handler(request, response, next);
+    request.body = { name: "pepe" };
 
-      expectRequireOneOf(response, "id, userId", next);
-    });
+    handler(request, response, next);
 
-    it("should respond ok when any of the parameters is included", () => {
-      const handler = requireOneOf(["id", "userId"], (req, res) => req.body);
-
-      request.body = { id: "id" };
-      handler(request, response, next);
-      expect(next).toHaveBeenCalled();
-
-      next = jasmine.createSpy();
-      request.body = { userId: "userId" };
-      handler(request, response, next);
-      expect(next).toHaveBeenCalled();
-    });
-
-    function expectRequireOneOf(response: any, parameters: string, next: any) {
-      expectBadRequest(response, `Missing required parameters: Must have at least one of ${parameters}`, next);
-    }
+    expectMissingParameters(response, "age, surname", next);
   });
 
-  function expectBadRequest(response: any, message: string, next: any) {
+  it("should work when all parameters are provided", () => {
+    const handler = requireParameters(["name", "age"], (req, res) => req.body);
+
+    request.body = { name: "pepe", age: 33 };
+
+    handler(request, response, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  function expectMissingParameters(response: any, parameters: string, next: any) {
     expect(response.statusCode).toBe(400);
     expect(response.sent).toEqual({
       status: "bad-request",
-      message
+      message: `Missing required parameters: ${parameters}`
     });
+
     expect(next).not.toHaveBeenCalled();
   }
 });

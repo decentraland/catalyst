@@ -1,15 +1,20 @@
+import { Peer } from "../../peer/src/Peer";
+import { PeerInfo } from "./types";
 import { NotificationType, IPeersService } from "./peersService";
-import { PeerRequest } from "./types";
+
+export function getServerPeer(peerProvider?: () => Peer | undefined) {
+  return peerProvider ? peerProvider() : undefined;
+}
 
 type UserContainer = {
-  users: string[];
+  users: PeerInfo[];
 };
 
 //This function seems to signal the need for an abstraction, but it may be added later in a refactor
 export function removeUserAndNotify<T extends UserContainer>(
   containers: Record<string, T>,
   containerId: string,
-  peerId: string,
+  userId: string,
   notificationType: NotificationType,
   containerKey: string,
   peersService?: IPeersService,
@@ -17,14 +22,13 @@ export function removeUserAndNotify<T extends UserContainer>(
 ): T {
   let container = containers[containerId];
   if (container) {
-    const index = container.users.indexOf(peerId);
+    const index = container.users.findIndex($ => $.userId === userId);
     if (index !== -1) {
-      container.users.splice(index, 1);
+      const [peerData] = container.users.splice(index, 1);
 
-      peersService?.notifyPeersById(container.users, notificationType, {
-        id: peerId,
-        userId: peerId,
-        peerId: peerId,
+      peersService?.notifyPeers(container.users, notificationType, {
+        userId: peerData.userId,
+        peerId: peerData.peerId,
         [containerKey]: containerId
       });
     }
@@ -35,8 +39,4 @@ export function removeUserAndNotify<T extends UserContainer>(
   }
 
   return container;
-}
-
-export function getPeerId(peer: PeerRequest): string {
-  return (peer.id ?? peer.peerId)!;
 }

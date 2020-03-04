@@ -1,10 +1,9 @@
 import express from "express";
-import { validatePeerToken, requireOneOf } from "./handlers";
+import { requireParameters, validatePeerToken } from "./handlers";
 import { LayersService } from "./layersService";
 import { IRealm } from "peerjs-server";
 import { RequestError } from "./errors";
 import { PeerInfo, Layer } from "./types";
-import { PeersService } from "./peersService";
 
 export type RoutesOptions = {
   env?: any;
@@ -15,11 +14,10 @@ export type RoutesOptions = {
 export type Services = {
   layersService: LayersService;
   realmProvider: () => IRealm;
-  peersService: PeersService;
 };
 
 export function configureRoutes(app: express.Express, services: Services, options: RoutesOptions) {
-  const { layersService, realmProvider: getPeerJsRealm, peersService } = services;
+  const { layersService, realmProvider: getPeerJsRealm } = services;
 
   const validateLayerExists = (req, res, next) => {
     if (layersService.exists(req.params.layerId)) {
@@ -57,7 +55,7 @@ export function configureRoutes(app: express.Express, services: Services, option
   });
 
   app.get("/layers/:layerId/rooms", validateLayerExists, (req, res, next) => {
-    res.send(layersService.getRoomsService(req.params.layerId)!.getRoomIds({ peerId: req.query.userId }));
+    res.send(layersService.getRoomsService(req.params.layerId)!.getRoomIds({ userId: req.query.userId }));
   });
 
   app.get("/layers/:layerId/rooms/:roomId", validateLayerExists, (req, res, next) => {
@@ -71,13 +69,13 @@ export function configureRoutes(app: express.Express, services: Services, option
 
   app.put(
     "/layers/:layerId",
-    requireOneOf(["id", "peerId"], (req, res) => req.body),
+    requireParameters(["userId", "peerId"], (req, res) => req.body),
     validatePeerToken(getPeerJsRealm),
     async (req, res, next) => {
       const { layerId } = req.params;
       try {
-        const layer = await layersService.setPeerLayer(layerId, req.body);
-        res.send(mapUsersToJson(peersService.getPeersInfo(layer.users)));
+        const layer = await layersService.setUserLayer(layerId, req.body);
+        res.send(mapUsersToJson(layer.users));
       } catch (err) {
         handleError(err, res, next);
       }
@@ -87,13 +85,13 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.put(
     "/layers/:layerId/rooms/:roomId",
     validateLayerExists,
-    requireOneOf(["id", "peerId"], (req, res) => req.body),
+    requireParameters(["userId", "peerId"], (req, res) => req.body),
     validatePeerToken(getPeerJsRealm),
     async (req, res, next) => {
       const { layerId, roomId } = req.params;
       try {
-        const room = await layersService.addPeerToRoom(layerId, roomId, req.body);
-        res.send(mapUsersToJson(peersService.getPeersInfo(room.users)));
+        const room = await layersService.addUserToRoom(layerId, roomId, req.body);
+        res.send(mapUsersToJson(room.users));
       } catch (err) {
         handleError(err, res, next);
       }
@@ -103,13 +101,13 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.delete("/layers/:layerId/rooms/:roomId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { roomId, userId, layerId } = req.params;
     const room = layersService.getRoomsService(layerId)?.removeUserFromRoom(roomId, userId);
-    res.send(mapUsersToJson(peersService.getPeersInfo(room?.users ?? [])));
+    res.send(mapUsersToJson(room?.users ?? []));
   });
 
   app.delete("/layers/:layerId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { userId, layerId } = req.params;
     const layer = layersService.removeUserFromLayer(layerId, userId);
-    res.send(mapUsersToJson(peersService.getPeersInfo(layer?.users ?? [])));
+    res.send(mapUsersToJson(layer?.users ?? []));
   });
 
   app.get("/layers/:layerId/topology", validateLayerExists, (req, res, next) => {
@@ -119,8 +117,8 @@ export function configureRoutes(app: express.Express, services: Services, option
       res.send(`
       strict digraph graphName {
         concentrate=true
-        ${topologyInfo.map(it => `"${it.id}"[label="${it.id}\\nconns:${it.connectedPeerIds?.length ?? 0}"];`).join("\n")}
-        ${topologyInfo.map(it => (it.connectedPeerIds?.length ? it.connectedPeerIds.map(connected => `"${it.id}"->"${connected}";`).join("\n") : `"${it.id}";`)).join("\n")}
+        ${topologyInfo.map(it => `"${it.peerId}"[label="${it.peerId}\\nconns:${it.connectedPeerIds?.length ?? 0}"];`).join("\n")}
+        ${topologyInfo.map(it => (it.connectedPeerIds?.length ? it.connectedPeerIds.map(connected => `"${it.peerId}"->"${connected}";`).join("\n") : `"${it.peerId}";`)).join("\n")}
       }`);
     } else {
       res.send(topologyInfo);
@@ -132,7 +130,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       name: layer.id,
       usersCount: layer.users.length,
       maxUsers: layer.maxUsers,
-      ...(includeUserParcels && { usersParcels: layer.users.map(it => peersService.getPeerInfo(it).parcel).filter(it => !!it) })
+      ...(includeUserParcels && { usersParcels: layer.users.map(it => it.parcel).filter(it => !!it) })
     };
   }
 
@@ -146,13 +144,15 @@ export function configureRoutes(app: express.Express, services: Services, option
     };
 
     if (err instanceof RequestError) {
-      res.status(err.status).send(JSON.stringify({ status: err.statusMessage ?? statusTexts[err.status] ?? "error", message: err.message }));
+      res.status(err.status).send(JSON.stringify({ status: err.statusMessage ?? (statusTexts[err.status] ?? "error"), message: err.message }));
     } else {
       next(err);
     }
   }
 
   function mapUsersToJson(user?: PeerInfo[]) {
-    return user?.map(it => ({ id: it.id, userId: it.id, protocolVersion: it.protocolVersion, peerId: it.id, parcel: it.parcel }));
+    //For now this returns everything the user has. Eventually it could return a different entity.
+    //For instance, we may want to avoid returning the position of each user for privacy concerns
+    return user?.map(it => ({ ...it }));
   }
 }
