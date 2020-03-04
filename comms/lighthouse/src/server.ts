@@ -31,7 +31,6 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   patchLog(name);
 
-  const relay = parseBoolean(process.env.RELAY ?? "false");
   const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
   const port = parseInt(process.env.PORT ?? "9000");
   const secure = parseBoolean(process.env.SECURE ?? "false");
@@ -50,7 +49,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     Metrics.initialize(app);
   }
 
-  const peersService = new PeersService(getPeerJsRealm, secure, port);
+  const peersService = new PeersService(getPeerJsRealm);
 
   app.use(cors());
   app.use(express.json());
@@ -58,16 +57,15 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     app.use(morgan("combined"));
   }
 
-  const layersService = new LayersService({ serverPeerEnabled: relay, peersService, maxUsersPerLayer, existingLayers, allowNewLayers });
+  const layersService = new LayersService({ peersService, maxUsersPerLayer, existingLayers, allowNewLayers });
 
   configureRoutes(
     app,
-    { layersService, realmProvider: getPeerJsRealm },
+    { layersService, realmProvider: getPeerJsRealm, peersService },
     {
       name,
       version: LIGHTHOUSE_VERSION,
       env: {
-        relay,
         secure,
         commitHash: process.env.COMMIT_HASH
       }
@@ -114,7 +112,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   peerServer.on("message", (client: IClient, message: IMessage) => {
     if (message.type === MessageType.HEARTBEAT) {
       peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
-      layersService.updateUserParcel(client.getId(), message.payload?.parcel);
+      peersService.updateUserParcel(client.getId(), message.payload?.parcel);
     }
   });
 

@@ -63,7 +63,6 @@ ts_library(
     module_name = "@katalyst/lighthouse",
     deps = [
         "//commons",
-        "//comms/peer",
         "//contracts",
         "@npm//@types",
         "@npm//cors",
@@ -109,7 +108,6 @@ ts_library(
     deps = [
         ":lighthouse",
         "//commons",
-        "//comms/peer",
         "@npm//@types/jasmine",
     ],
 )

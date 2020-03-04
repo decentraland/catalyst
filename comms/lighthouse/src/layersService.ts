@@ -1,22 +1,19 @@
-import { Peer } from "../../peer/src/Peer";
-import { PeerInfo, Layer } from "./types";
+import { PeerInfo, Layer, PeerRequest } from "./types";
 import { RoomsService } from "./roomsService";
 import { PeersService, NotificationType } from "./peersService";
-import { removeUserAndNotify } from "./utils";
-import { UserMustBeInLayerError, LayerIsFullError } from "./errors";
+import { removeUserAndNotify, getPeerId } from "./utils";
+import { UserMustBeInLayerError as PeerMustBeInLayerError, LayerIsFullError } from "./errors";
 
-type LayersServiceConfig = Partial<{
-  serverPeerEnabled: boolean;
+type LayersServiceConfig = {
   peersService: PeersService;
-  existingLayers: string[];
-  allowNewLayers: boolean;
-  maxUsersPerLayer: number;
-  layerCheckInterval: number; //In seconds
-}>;
+  existingLayers?: string[];
+  allowNewLayers?: boolean;
+  maxUsersPerLayer?: number;
+  layerCheckInterval?: number; //In seconds
+};
 
 export class LayersService {
   private layers: Record<string, Layer> = {};
-  private serverPeers: Record<string, Peer> = {};
 
   private layerChecker: LayerChecker = new LayerChecker(this, this.config.peersService);
 
@@ -28,6 +25,10 @@ export class LayersService {
     if (this.config.existingLayers) {
       this.config.existingLayers.forEach(layerId => this.createLayer(layerId));
     }
+  }
+
+  get peersService() {
+    return this.config.peersService!
   }
 
   getLayerIds(): string[] {
@@ -45,69 +46,64 @@ export class LayersService {
   getLayerUsers(layerId: string): PeerInfo[] {
     const layer = this.layers[layerId];
     if (layer) this.checkLayerPeersIfNeeded(layer);
-    return layer?.users;
+    return this.peersService.getPeersInfo(layer!.users);
   }
 
   getRoomsService(layerId: string) {
     if (!this.exists(layerId)) {
       return undefined;
     } else {
-      return new RoomsService(layerId, this.layers[layerId].rooms, { ...this.config, serverPeerProvider: () => this.getPeerForLayer(layerId) });
+      return new RoomsService(layerId, this.layers[layerId].rooms, { ...this.config });
     }
-  }
-
-  getPeerForLayer(layerId: string): Peer | undefined {
-    return this.serverPeers[layerId];
   }
 
   exists(layerId: string) {
     return this.layers.hasOwnProperty(layerId);
   }
 
-  private removeUserFromOtherLayers(layerId: string, peer: PeerInfo) {
+  private removePeerFromOtherLayers(layerId: string, peerId: string) {
     Object.keys(this.layers).forEach(otherLayerId => {
-      if (otherLayerId !== layerId && this.isUserInLayer(otherLayerId, peer)) {
-        this.removeUserFromLayer(otherLayerId, peer.userId);
+      if (otherLayerId !== layerId && this.isPeerInLayer(otherLayerId, peerId)) {
+        this.removeUserFromLayer(otherLayerId, peerId);
       }
     });
   }
 
-  removeUserFromLayer(layerId: string, userId: string) {
-    this.getRoomsService(layerId)?.removeUser(userId);
-    return removeUserAndNotify(this.layers, layerId, userId, NotificationType.PEER_LEFT_LAYER, "layerId", this.config.peersService, !this.isDefaultLayer(layerId));
+  removeUserFromLayer(layerId: string, peerId: string) {
+    this.getRoomsService(layerId)?.removeUser(peerId);
+    return removeUserAndNotify(this.layers, layerId, peerId, NotificationType.PEER_LEFT_LAYER, "layerId", this.config.peersService, !this.isDefaultLayer(layerId));
   }
 
   createLayer(layerId: string) {
     return (this.layers[layerId] = this.newLayer(layerId));
-    // if (this.config.serverPeerEnabled) {
-    //   // Clean up old peer?
-
-    //   this.serverPeers[layerId] = await this.config.peersService?.createServerPeer(layerId)!;
-
-    //   //await this.serverPeers[layerId].setLayer(layerId)
-    // }
   }
 
-  async setUserLayer(layerId: string, peer: PeerInfo) {
+  async setPeerLayer(layerId: string, peer: PeerRequest) {
     let layer = this.layers[layerId];
 
     if (!layer) {
       layer = this.createLayer(layerId);
     }
+    
+    const peerId = getPeerId(peer)
 
-    if (!this.isUserInLayer(layerId, peer)) {
+    if (!this.isPeerInLayer(layerId, peerId)) {
+      this.peersService.ensurePeerInfo(peer)
+
       this.checkLayerPeersIfNeeded(layer);
 
       if (layer.maxUsers && layer.users.length >= layer.maxUsers) {
-        throw new LayerIsFullError(layer, peer);
+        throw new LayerIsFullError(layer, peerId);
       }
 
-      this.removeUserFromOtherLayers(layerId, peer);
+      this.removePeerFromOtherLayers(layerId, peerId);
 
       const peersToNotify = layer.users.slice();
-      layer.users.push(peer);
-      this.config.peersService?.notifyPeers(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
-        ...peer,
+      layer.users.push(peerId);
+      this.config.peersService?.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
+        id: peerId,
+        userId: peerId,
+        peerId,
         layerId: layerId
       });
     }
@@ -126,20 +122,21 @@ export class LayersService {
     return this.config.layerCheckInterval ?? 180;
   }
 
-  private isUserInLayer(layerId: string, peer: PeerInfo) {
-    return this.layers[layerId].users.some($ => $.userId === peer.userId);
+  private isPeerInLayer(layerId: string, peerId: string) {
+    return this.layers[layerId].users.includes(peerId);
   }
 
   private isDefaultLayer(layerId: string) {
     return this.config.existingLayers?.includes(layerId);
   }
 
-  async addUserToRoom(layerId: string, roomId: string, peer: PeerInfo) {
-    if (!this.isUserInLayer(layerId, peer)) {
-      throw new UserMustBeInLayerError(layerId, peer);
+  async addPeerToRoom(layerId: string, roomId: string, peer: PeerRequest) {
+    const peerId = getPeerId(peer)
+    if (!this.isPeerInLayer(layerId, peerId)) {
+      throw new PeerMustBeInLayerError(layerId, peerId);
     }
 
-    return await this.getRoomsService(layerId)!.addUserToRoom(roomId, peer);
+    return await this.getRoomsService(layerId)!.addUserToRoom(roomId, peerId);
   }
 
   removeUser(userId: string) {
@@ -149,16 +146,7 @@ export class LayersService {
   }
 
   getLayerTopology(layerId: string) {
-    return this.layers[layerId].users.map(it => ({ ...it, connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
-  }
-
-  updateUserParcel(peerId: string, parcel?: [number, number]) {
-    Object.values(this.layers).forEach(layer => {
-      const user = layer.users.find(it => it.peerId === peerId);
-      if (user) {
-        user.parcel = parcel;
-      }
-    });
+    return this.layers[layerId].users.map(it => ({ ...this.peersService.getPeerInfo(it), connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
   }
 }
 
@@ -175,8 +163,8 @@ class LayerChecker {
       setTimeout(() => {
         layer.users.slice().forEach(it => {
           if (this.peersService && !this.peersService.peerExistsInRealm(it)) {
-            console.log(`Removing user ${it.userId} from layer ${layer.id} because it is not connected to Peer Network`);
-            this.layersService.removeUserFromLayer(layer.id, it.userId);
+            console.log(`Removing user ${it} from layer ${layer.id} because it is not connected to Peer Network`);
+            this.layersService.removeUserFromLayer(layer.id, it);
           }
         });
 
@@ -185,3 +173,4 @@ class LayerChecker {
     }
   }
 }
+
