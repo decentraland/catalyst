@@ -76,10 +76,13 @@ export class AccessCheckerImpl implements AccessChecker {
     }
 
     private async checkParcelAccess(x: number, y: number, timestamp: Timestamp, ethAddress: EthAddress): Promise<boolean> {
-        try {
-            return await this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress)
-        } catch (error) {
-            AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress})`, error)
+        const TOTAL_ATTEMPTS = 5
+        for(let attempt=0; attempt<TOTAL_ATTEMPTS; attempt++) {
+            try {
+                return await this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress)
+            } catch (error) {
+                AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress}). Attempt ${attempt+1} of ${TOTAL_ATTEMPTS}`, error)
+            }
         }
         return false
     }
@@ -151,7 +154,7 @@ export class AccessCheckerImpl implements AccessChecker {
         timestamp: Timestamp,
         ethAddress: EthAddress
     ): Promise<boolean> {
-        const estate = await this.getEstate(estateId, timestamp)
+        const estate = await this.getEstate(estateId.toString(), timestamp)
 
         const firstLevelAuthorities = [
             ...estate.owners,
@@ -253,7 +256,7 @@ export class AccessCheckerImpl implements AccessChecker {
         }
     }
 
-    private async getEstate(estateId: number, timestamp: Timestamp): Promise<Estate> {
+    private async getEstate(estateId: string, timestamp: Timestamp): Promise<Estate> {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that estate.
          * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
@@ -261,8 +264,9 @@ export class AccessCheckerImpl implements AccessChecker {
          */
 
         const query = `
-            query GetEstate($estateId: Int!, $timestamp: Int!) {
+            query GetEstate($estateId: String!, $timestamp: Int!) {
                 estates(where:{ id: $estateId }) {
+                    id
                     owners(
                             where: { createdAt_lte: $timestamp },
                             orderBy: createdAt,
@@ -309,12 +313,12 @@ export class AccessCheckerImpl implements AccessChecker {
 
     private async getAuthorizations(owner: EthAddress, operator: EthAddress, timestamp: Timestamp): Promise<Authorization[]> {
         const query = `
-            query GetAuthorizations($owner: String!, $operator: String!, timestamp: String!) {
+            query GetAuthorizations($owner: String!, $operator: String!, $timestamp: String!) {
                 authorizations(
                         where: {
                             owner: $owner,
                             operator: $operator,
-                            createdAt_lte: $createdAt
+                            createdAt_lte: $timestamp
                         },
                         orderBy: createdAt,
                         orderDirection: desc
