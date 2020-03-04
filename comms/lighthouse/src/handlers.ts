@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
 import { IRealm } from "peerjs-server";
-import { PeerHeaders } from "../../peer/src/peerjs-server-connector/enums";
+
+enum PeerHeaders {
+  PeerToken = "X-Peer-Token"
+}
 
 //Validations
-export function requireParameters(paramNames: string[], objectGetter: (req: Request, res: Response) => object): RequestHandler {
+export function requireAll(paramNames: string[], objectGetter: (req: Request, res: Response) => object): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
     const missing = paramNames.filter(param => typeof objectGetter(req, res)[param] === "undefined");
 
@@ -11,6 +14,21 @@ export function requireParameters(paramNames: string[], objectGetter: (req: Requ
       res.status(400).send({
         status: "bad-request",
         message: `Missing required parameters: ${missing.join(", ")}`
+      });
+    } else {
+      next();
+    }
+  };
+}
+
+export function requireOneOf(paramNames: string[], objectGetter: (req: Request, res: Response) => object): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const hasOne = paramNames.some(param => typeof objectGetter(req, res)[param] !== "undefined");
+
+    if (!hasOne) {
+      res.status(400).send({
+        status: "bad-request",
+        message: `Missing required parameters: Must have at least one of ${paramNames.join(", ")}`
       });
     } else {
       next();

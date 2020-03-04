@@ -5,11 +5,19 @@ type PacketSubtypeData = {
   lastSequenceId: number;
 };
 
-export type Room = { id: string; users: string[] };
-export type KnownPeerData = { userId: string; peerId: string; rooms: string[]; timestamp?: number; subtypeData: Record<string, PacketSubtypeData> };
-export type MinPeerData = { userId: string; peerId: string; rooms?: string[] };
+export type Position3D = [number, number, number]
 
-export interface IPeer {
+export type Room = { id: string; users: string[] };
+export type KnownPeerData<PositionType = Position3D> = {
+  id: string;
+  rooms: string[];
+  timestamp?: number;
+  subtypeData: Record<string, PacketSubtypeData>;
+  position?: PositionType;
+};
+export type MinPeerData = { id: string, rooms?: string[] };
+
+export interface IPeer<PositionType = Position3D> {
   peerId: string;
   currentRooms: Room[];
   callback: (sender: string, room: string, payload: any) => void;

@@ -1,18 +1,24 @@
 export type PeerInfo = {
-  userId: string;
-  peerId: string;
+  id: string;
   protocolVersion?: number;
   parcel?: [number, number];
 };
 
+export type PeerRequest = {
+  id?: string;
+  userId?: string;
+  protocolVersion?: number;
+  peerId?: string;
+}
+
 export type Room = {
   id: string;
-  users: PeerInfo[];
+  users: string[];
 };
 
 export type Layer = {
   id: string;
-  users: PeerInfo[];
+  users: string[];
   rooms: Record<string, Room>;
   maxUsers?: number;
   lastCheckTimestamp: number;
