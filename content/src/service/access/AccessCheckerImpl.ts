@@ -313,7 +313,7 @@ export class AccessCheckerImpl implements AccessChecker {
 
     private async getAuthorizations(owner: EthAddress, operator: EthAddress, timestamp: Timestamp): Promise<Authorization[]> {
         const query = `
-            query GetAuthorizations($owner: String!, $operator: String!, $timestamp: String!) {
+            query GetAuthorizations($owner: String!, $operator: String!, $timestamp: Int!) {
                 authorizations(
                         where: {
                             owner: $owner,
