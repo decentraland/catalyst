@@ -152,7 +152,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   }
 
-  function mapUsersToJson(user?: PeerInfo[]) {
-    return user?.map(it => ({ id: it.id, userId: it.id, protocolVersion: it.protocolVersion, peerId: it.id, parcel: it.parcel }));
+  function mapUsersToJson(user?: PeerInfo<any>[]) {
+    return user?.map(it => ({ id: it.id, userId: it.id, protocolVersion: it.protocolVersion, peerId: it.id, parcel: it.parcel, position: it.position }));
   }
 }

@@ -33,6 +33,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
   const port = parseInt(process.env.PORT ?? "9000");
+  const noAuth = parseBoolean(process.env.NO_AUTH ?? "false")
   const secure = parseBoolean(process.env.SECURE ?? "false");
   const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
   const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? "false");
@@ -79,6 +80,10 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   const options: Partial<IConfig> = {
     path: "/",
     authHandler: async (client, message) => {
+      if (noAuth) {
+        return true;
+      }
+
       if (!client) {
         // client not registered
         return false;
@@ -112,7 +117,18 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   peerServer.on("message", (client: IClient, message: IMessage) => {
     if (message.type === MessageType.HEARTBEAT) {
       peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
-      peersService.updateUserParcel(client.getId(), message.payload?.parcel);
+      peersService.updatePeerParcel(client.getId(), message.payload?.parcel);
+      peersService.updatePeerPosition(client.getId(), message.payload?.position)
+
+      if(message.payload?.optimizeNetwork) {
+        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections)
+        client.send({
+          type: "OPTIMAL_NETWORK_RESPONSE",
+          src: "__lighthouse_response__",
+          dst: client.getId(),
+          payload: optimalConnectionsResult
+        })
+      }
     }
   });
 

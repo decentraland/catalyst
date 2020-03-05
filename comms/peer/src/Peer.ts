@@ -4,7 +4,7 @@ import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enum
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, noReject, delay } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
+import { KnownPeerData, IPeer, Room, MinPeerData, Position3D } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
@@ -61,10 +61,18 @@ type PeerConfig<PositionType> = {
   logLevel?: keyof typeof LogLevel;
   reconnectionAttempts?: number;
   backoffMs?: number;
+  optimizeNetworkInterval?: number;
   authHandler?: (msg: string) => Promise<string>;
   positionConfig?: PositionConfig<PositionType>;
   statusHandler?: (status: string) => void;
 };
+
+// Try not to use this. It should be removed when lighthouses are updated
+function toParcel(position: any) {
+  if (position instanceof Array && position.length === 3) {
+    return [Math.floor(position[0] / 16), Math.floor(position[2] / 16)];
+  }
+}
 
 class Stats {
   public expired: number = 0;
@@ -104,7 +112,7 @@ class GlobalStats extends Stats {
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
-export class Peer<PositionType = [number, number, number]> implements IPeer<PositionType> {
+export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
   private peerJsConnection: PeerJSServerConnection;
   private connectedPeers: Record<string, PeerData> = {};
 
@@ -133,6 +141,8 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
 
   public logLevel: keyof typeof LogLevel = "INFO";
 
+  private timeToRequestOptimumNetwork: number = Number.MAX_SAFE_INTEGER;
+
   constructor(
     lighthouseUrl: string,
     public peerId: string,
@@ -152,6 +162,8 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
     this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? 10;
     this.config.backoffMs = this.config.backoffMs ?? 2000;
+
+    this.setUpTimeToRequestOptimumNetwork();
 
     this.instanceId = Math.floor(Math.random() * MAX_UINT32);
 
@@ -196,7 +208,8 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
       authHandler: this.config.authHandler,
       heartbeatExtras: () => ({
         ...this.buildTopologyInfo(),
-        ...this.buildPositionInfo()
+        ...this.buildPositionInfo(),
+        ...this.optimizeNetworkRequest()
       }),
       ...(this.config.socketBuilder ? { socketBuilder: this.config.socketBuilder } : {})
     });
@@ -220,7 +233,27 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
   }
 
   private buildPositionInfo() {
-    return this.config.positionConfig ? { parcel: this.config.positionConfig.selfPosition() } : {};
+    return this.config.positionConfig
+      ? {
+          position: this.config.positionConfig.selfPosition(),
+          // This is domain specific, but is kept here for retrocompatibility with old lighthouses. When all lighthouses are updated, we can remove it
+          parcel: toParcel(this.config.positionConfig.selfPosition())
+        }
+      : {};
+  }
+
+  private optimizeNetworkRequest() {
+    const shouldOptimize = Date.now() > this.timeToRequestOptimumNetwork;
+
+    if (shouldOptimize) {
+      this.setUpTimeToRequestOptimumNetwork();
+      return {
+        optimizeNetwork: true,
+        targetConnections: this.config.minConnections
+      };
+    } else {
+      return {};
+    }
   }
 
   private markReceived(packet: Packet) {
@@ -971,6 +1004,10 @@ export class Peer<PositionType = [number, number, number]> implements IPeer<Posi
     }
 
     return isCrossOfferToBeDiscarded;
+  }
+
+  private setUpTimeToRequestOptimumNetwork() {
+    this.timeToRequestOptimumNetwork = Date.now() + (this.config.optimizeNetworkInterval ?? 30000);
   }
 
   async dispose() {

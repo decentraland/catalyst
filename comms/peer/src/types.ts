@@ -28,3 +28,9 @@ export interface IPeer<PositionType = Position3D> {
   dispose(): Promise<void>;
   awaitConnectionEstablished(timeout?: number): Promise<void>;
 }
+
+export type PeerConnectionHint = {
+  id: string;
+  distance: number;
+  // Maybe add position here?
+}

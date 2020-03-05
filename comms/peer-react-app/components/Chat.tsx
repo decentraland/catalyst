@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { IPeer } from "../../peer/src/types";
 import { Button, Radio } from "decentraland-ui";
 import { PeerMessageTypes } from "../../peer/src/messageTypes";
+import { mouse } from "./Mouse";
 
 type Message = {
   sender: string;
@@ -37,20 +38,10 @@ function CursorComponent(props: { cursor: Cursor }) {
   );
 }
 
-const mouse = {
-  x: 0,
-  y: 0
-};
-
 type Cursor = {
   x: number;
   y: number;
   color: string;
-};
-
-const mouseListener = (ev: MouseEvent) => {
-  mouse.x = ev.pageX;
-  mouse.y = ev.pageY;
 };
 
 function randomColor() {
@@ -117,12 +108,6 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    document.addEventListener("mousemove", mouseListener);
-
-    return () => document.removeEventListener("mousemove", mouseListener);
-  }, []);
 
   useEffect(() => {
     window.clearInterval(intervalId);

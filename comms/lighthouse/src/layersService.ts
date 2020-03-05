@@ -28,7 +28,7 @@ export class LayersService {
   }
 
   get peersService() {
-    return this.config.peersService!
+    return this.config.peersService!;
   }
 
   getLayerIds(): string[] {
@@ -43,7 +43,7 @@ export class LayersService {
     return this.layers[layerId];
   }
 
-  getLayerUsers(layerId: string): PeerInfo[] {
+  getLayerUsers(layerId: string): PeerInfo<any>[] {
     const layer = this.layers[layerId];
     if (layer) this.checkLayerPeersIfNeeded(layer);
     return this.peersService.getPeersInfo(layer!.users);
@@ -84,11 +84,11 @@ export class LayersService {
     if (!layer) {
       layer = this.createLayer(layerId);
     }
-    
-    const peerId = getPeerId(peer)
+
+    const peerId = getPeerId(peer);
 
     if (!this.isPeerInLayer(layerId, peerId)) {
-      this.peersService.ensurePeerInfo(peer)
+      const peerInfo = this.peersService.ensurePeerInfo(peer);
 
       this.checkLayerPeersIfNeeded(layer);
 
@@ -97,6 +97,8 @@ export class LayersService {
       }
 
       this.removePeerFromOtherLayers(layerId, peerId);
+
+      peerInfo.layer = layerId;
 
       const peersToNotify = layer.users.slice();
       layer.users.push(peerId);
@@ -131,7 +133,7 @@ export class LayersService {
   }
 
   async addPeerToRoom(layerId: string, roomId: string, peer: PeerRequest) {
-    const peerId = getPeerId(peer)
+    const peerId = getPeerId(peer);
     if (!this.isPeerInLayer(layerId, peerId)) {
       throw new PeerMustBeInLayerError(layerId, peerId);
     }
@@ -147,6 +149,13 @@ export class LayersService {
 
   getLayerTopology(layerId: string) {
     return this.layers[layerId].users.map(it => ({ ...this.peersService.getPeerInfo(it), connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
+  }
+
+  getOptimalConnectionsFor(peerId: string, targetConnections: number) {
+    const peerInfo = this.peersService.getPeerInfo(peerId);
+    if (peerInfo.layer && peerInfo.position) {
+      return { layer: peerInfo.layer, optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections) };
+    }
   }
 }
 
@@ -173,4 +182,3 @@ class LayerChecker {
     }
   }
 }
-
