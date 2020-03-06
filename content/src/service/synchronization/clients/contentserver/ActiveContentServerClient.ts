@@ -10,7 +10,7 @@ import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { delay } from "decentraland-katalyst-utils/util";
 
 export function getClient(fetchHelper: FetchHelper, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
     return new ActiveContentServerClient(fetchHelper, address, requestTtlBackwards, name, lastKnownTimestamp)

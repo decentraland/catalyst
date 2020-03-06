@@ -1,14 +1,3 @@
-export type Position3D = [number, number, number];
-export type Position2D = [number, number];
-
-export function isPosition3D(position: any): position is Position3D {
-  return position instanceof Array && position.length === 3;
-}
-
-export function isPosition2D(position: any): position is Position2D {
-  return position instanceof Array && position.length === 2;
-}
-
 export type PeerInfo<PositionType> = {
   id: string;
   protocolVersion?: number;

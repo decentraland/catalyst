@@ -2,7 +2,7 @@ import ms from "ms"
 import log4js from "log4js"
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { delay } from "decentraland-katalyst-utils/util";
 
 
 const LOGGER = log4js.getLogger('ClusterUtils');

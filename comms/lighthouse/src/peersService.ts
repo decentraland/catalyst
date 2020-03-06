@@ -1,5 +1,6 @@
 import { IRealm } from "peerjs-server";
-import { PeerInfo, PeerRequest, Position3D, isPosition2D, isPosition3D, PeerConnectionHint } from "./types";
+import { PeerInfo, PeerRequest,PeerConnectionHint } from "./types";
+import { Position3D, discretizedPositionDistance } from "decentraland-katalyst-utils/Positions";
 
 export enum NotificationType {
   PEER_LEFT_ROOM = "PEER_LEFT_ROOM",
@@ -20,28 +21,11 @@ export interface IPeersService<PositionType = Position3D> {
   getOptimalConnectionsFor(peer: PeerInfo<PositionType>, otherPeers: PeerInfo<PositionType>[], targetConnections: number): PeerConnectionHint[];
 }
 
-function positionDistance<PositionType>(a: PositionType, b: PositionType) {
-  let dx = 0;
-  let dy = 0;
-  let dz = 0;
-
-  if (isPosition2D(a) || isPosition3D(a)) {
-    dx = a[0] - b[0];
-    dy = a[1] - b[1];
-  }
-
-  if (isPosition3D(a)) {
-    dz = a[2] - b[2];
-  }
-
-  return dx * dx + dy * dy + dz * dz;
-}
-
 export class PeersService<PositionType = Position3D> implements IPeersService<PositionType> {
   private peersTopology: Record<string, string[]> = {};
   private peers: Record<string, PeerInfo<PositionType>> = {};
 
-  constructor(private realmProvider: () => IRealm, private distanceFunction: (p1: PositionType, p2: PositionType) => number = positionDistance) {}
+  constructor(private realmProvider: () => IRealm, private distanceFunction: (p1: PositionType, p2: PositionType) => number = discretizedPositionDistance) {}
 
   notifyPeers(peers: PeerInfo<any>[], type: NotificationType, payload: object) {
     this.notifyPeersById(
@@ -129,6 +113,10 @@ export class PeersService<PositionType = Position3D> implements IPeersService<Po
       }
     });
 
-    return hints.sort((h1, h2) => h1.distance - h2.distance).slice(0, targetConnections);
+    return hints.sort((h1, h2) => {
+      const distanceDiff = h1.distance - h2.distance
+      // If the distance is the same, we randomize
+      return distanceDiff === 0 ? Math.random() : distanceDiff
+    }).slice(0, targetConnections);
   }
 }

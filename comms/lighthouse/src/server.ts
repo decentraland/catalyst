@@ -6,7 +6,7 @@ import { IConfig } from "peerjs-server/dist/src/config";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
-import { Metrics } from "decentraland-katalyst-commons/src/metrics";
+import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { IClient } from "peerjs-server/dist/src/models/client";
 import { MessageType } from "peerjs-server/dist/src/enums";
@@ -15,7 +15,7 @@ import { DEFAULT_LAYERS } from "./default_layers";
 import { Authenticator } from "dcl-crypto";
 import { pickName } from "./naming";
 import { patchLog } from "./logging";
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 
 const LIGHTHOUSE_VERSION = "0.1";

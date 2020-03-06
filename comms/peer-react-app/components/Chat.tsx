@@ -112,7 +112,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   useEffect(() => {
     window.clearInterval(intervalId);
     if (updatingCursors) {
-      intervalId = window.setInterval(() => sendCursorMessage(), 100);
+      intervalId = window.setInterval(() => sendCursorMessage(), 333);
     }
 
     return () => window.clearInterval(intervalId);

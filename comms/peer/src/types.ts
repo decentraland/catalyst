@@ -1,11 +1,10 @@
 import { PeerMessageType } from "./messageTypes";
+import { Position3D } from "decentraland-katalyst-utils/Positions";
 
 type PacketSubtypeData = {
   lastTimestamp: number;
   lastSequenceId: number;
 };
-
-export type Position3D = [number, number, number]
 
 export type Room = { id: string; users: string[] };
 export type KnownPeerData<PositionType = Position3D> = {

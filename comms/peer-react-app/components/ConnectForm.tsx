@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Field, Button } from "decentraland-ui";
 
-import { IPeer, Position3D } from "../../peer/src/types";
+import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
 import { Peer } from "../../peer/src";
 import { util } from "../../peer/src/peerjs-server-connector/util";
@@ -40,13 +40,7 @@ export function ConnectForm(props: {
       const peer = (window.peer = new props.peerClass(url, nickname, () => {}, {
         token: PeerToken.getToken(nickname),
         positionConfig: {
-          selfPosition: () => [mouse.x, mouse.y, 0],
-          distance: (p1: Position3D, p2: Position3D) => {
-            const dx = p1[0] - p2[0];
-            const dy = p1[1] - p2[1];
-
-            return dx * dx + dy * dy;
-          }
+          selfPosition: () => [mouse.x, mouse.y, 0]
         },
         connectionConfig: {
           iceServers: [

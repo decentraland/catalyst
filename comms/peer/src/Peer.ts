@@ -4,12 +4,13 @@ import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enum
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, noReject, delay } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { KnownPeerData, IPeer, Room, MinPeerData, Position3D } from "./types";
+import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
+import { Position3D } from "decentraland-katalyst-utils/Positions";
 
 const PROTOCOL_VERSION = 4;
 
@@ -25,7 +26,7 @@ export type PeerData = {
 
 export type PositionConfig<PositionType> = {
   selfPosition: () => PositionType;
-  distance: (l1: PositionType, l2: PositionType) => number;
+  distance?: (l1: PositionType, l2: PositionType) => number;
 };
 
 type PeerResponse = { id?: string; userId?: string; peerId?: string };

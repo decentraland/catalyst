@@ -1,14 +1,14 @@
 import ms from "ms"
 import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotDenylisted, assertContentNotIsDenylisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
 import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
-import { delay } from "decentraland-katalyst-commons/src/util"
+import { delay } from "decentraland-katalyst-utils/util"
 
 
 describe("End 2 end - Denylist handling", () => {

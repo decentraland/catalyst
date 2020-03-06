@@ -1,12 +1,12 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildBaseEnv, deleteServerStorage } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
-import { delay } from "decentraland-katalyst-commons/src/util"
+import { delay } from "decentraland-katalyst-utils/util"
 
 /**
  * We will be testing how servers handle an unreachable node

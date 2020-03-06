@@ -1,6 +1,6 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { Environment } from "@katalyst/content/Environment"
@@ -8,7 +8,7 @@ import { TestServer } from "../TestServer"
 import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
-import { delay } from "decentraland-katalyst-commons/src/util"
+import { delay } from "decentraland-katalyst-utils/util"
 
 
 describe("End 2 end - Node onboarding", function() {

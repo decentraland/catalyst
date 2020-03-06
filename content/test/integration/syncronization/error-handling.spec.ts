@@ -1,7 +1,7 @@
 import ms from "ms"
 import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
@@ -10,7 +10,7 @@ import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, bui
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { delay } from "decentraland-katalyst-utils/util";
 
 
 describe("End 2 end - Error handling", () => {
