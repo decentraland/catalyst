@@ -104,49 +104,11 @@ export class AccessCheckerImpl implements AccessChecker {
          */
         const parcel = await this.getParcel(x, y, timestamp)
 
-        if (parcel.estates?.length > 0 && parcel.estates[0].estateId) {
-            // The parcel belongs to an estate
-            return this.isEstateUpdateAuthorized(
-                parcel.estates[0].estateId,
-                timestamp,
-                ethAddress)
-        }
+        const belongsToEstate: boolean = parcel.estates!=undefined && parcel.estates.length > 0 && parcel.estates[0].estateId!=undefined
 
-        const firstLevelAuthorities = [
-            ...parcel.owners,
-            ...parcel.operators,
-            ...parcel.updateOperators]
-            .filter(addressSnapshot => addressSnapshot.address)
-            .map(addressSnapshot => addressSnapshot.address.toLowerCase())
-
-        ethAddress = ethAddress.toLowerCase()
-        if (firstLevelAuthorities.includes(ethAddress)) {
-            return true
-        }
-
-        /* You also get access if you received:
-         *   - an auhtorization with isApproved and type Operator
-         *   - an auhtorization with isApproved and type ApprovalForAll
-         * at that time
-         */
-
-        const owner = parcel.owners[0].address.toLowerCase()
-
-        const authorizations = await this.getAuthorizations(
-            owner,
-            ethAddress,
-            timestamp)
-
-        const firstOperatorAuthorization = authorizations.find(
-            authorization => authorization.type === 'Operator')
-        const firstApprovalForAllAuthorization = authorizations.find(
-            authorization => authorization.type === 'ApprovalForAll')
-
-        if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved) {
-            return true
-        }
-
-        return false
+        return await this.hasAccessThroughFirstLevelAuthorities(parcel, ethAddress)
+            || await this.hasAccessThroughAutorizations(parcel.owners[0].address, ethAddress, timestamp)
+            || (belongsToEstate && await this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress))
     }
 
     private async isEstateUpdateAuthorized(
@@ -155,44 +117,39 @@ export class AccessCheckerImpl implements AccessChecker {
         ethAddress: EthAddress
     ): Promise<boolean> {
         const estate = await this.getEstate(estateId.toString(), timestamp)
+        return await this.hasAccessThroughFirstLevelAuthorities(estate, ethAddress)
+            || await this.hasAccessThroughAutorizations(estate.owners[0].address, ethAddress, timestamp)
+    }
 
+    private async hasAccessThroughFirstLevelAuthorities(target: AuthorizationHistory, ethAddress: EthAddress): Promise<boolean> {
         const firstLevelAuthorities = [
-            ...estate.owners,
-            ...estate.operators,
-            ...estate.updateOperators]
+            ...target.owners,
+            ...target.operators,
+            ...target.updateOperators]
             .filter(addressSnapshot => addressSnapshot.address)
             .map(addressSnapshot => addressSnapshot.address.toLowerCase())
-
-        ethAddress = ethAddress.toLowerCase()
-        if (firstLevelAuthorities.includes(ethAddress)) {
-            return true
-        }
-
+        return firstLevelAuthorities.includes(ethAddress.toLowerCase())
+    }
+    private async hasAccessThroughAutorizations(owner: EthAddress, ethAddress: EthAddress, timestamp: Timestamp): Promise<boolean> {
         /* You also get access if you received:
-         *   - an auhtorization with isApproved and type Operator
-         *   - an auhtorization with isApproved and type ApprovalForAll
+         *   - an auhtorization with isApproved and type Operator, ApprovalForAll or UpdateManager
          * at that time
          */
-
-        const owner = estate.owners[0].address.toLowerCase()
-
         const authorizations = await this.getAuthorizations(
-            owner,
-            ethAddress,
+            owner.toLowerCase(),
+            ethAddress.toLowerCase(),
             timestamp)
 
-        const firstOperatorAuthorization = authorizations.find(
-            authorization => authorization.type === 'Operator')
-        const firstApprovalForAllAuthorization = authorizations.find(
-            authorization => authorization.type === 'ApprovalForAll')
+        const firstOperatorAuthorization       = authorizations.find(authorization => authorization.type === 'Operator')
+        const firstApprovalForAllAuthorization = authorizations.find(authorization => authorization.type === 'ApprovalForAll')
+        const firstUpdateManagerAuthorization  = authorizations.find(authorization => authorization.type === 'UpdateManager')
 
-        if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved) {
+        if (firstOperatorAuthorization?.isApproved || firstApprovalForAllAuthorization?.isApproved || firstUpdateManagerAuthorization?.isApproved) {
             return true
         }
 
         return false
     }
-
 
     private async getParcel(x: number, y: number, timestamp: Timestamp): Promise<Parcel> {
         /**
@@ -214,7 +171,7 @@ export class AccessCheckerImpl implements AccessChecker {
                     }
                     owners(
                             where: { createdAt_lte: $timestamp },
-                            orderBy: createdAt,
+                            orderBy: timestamp,
                             orderDirection: desc,
                             first: 1
                         ) {
@@ -222,7 +179,7 @@ export class AccessCheckerImpl implements AccessChecker {
                     }
                     operators(
                             where: { createdAt_lte: $timestamp },
-                            orderBy: createdAt,
+                            orderBy: timestamp,
                             orderDirection: desc,
                             first: 1
                         ) {
@@ -230,7 +187,7 @@ export class AccessCheckerImpl implements AccessChecker {
                     }
                     updateOperators(
                             where: { createdAt_lte: $timestamp },
-                            orderBy: createdAt,
+                            orderBy: timestamp,
                             orderDirection: desc,
                             first: 1
                         ) {
@@ -269,7 +226,7 @@ export class AccessCheckerImpl implements AccessChecker {
                     id
                     owners(
                             where: { createdAt_lte: $timestamp },
-                            orderBy: createdAt,
+                            orderBy: timestamp,
                             orderDirection: desc,
                             first: 1
                         ) {
@@ -277,7 +234,7 @@ export class AccessCheckerImpl implements AccessChecker {
                     }
                     operators(
                             where: { createdAt_lte: $timestamp },
-                            orderBy: createdAt,
+                            orderBy: timestamp,
                             orderDirection: desc,
                             first: 1
                         ) {
@@ -285,7 +242,7 @@ export class AccessCheckerImpl implements AccessChecker {
                     }
                     updateOperators(
                             where: { createdAt_lte: $timestamp },
-                            orderBy: createdAt,
+                            orderBy: timestamp,
                             orderDirection: desc,
                             first: 1
                         ) {
@@ -320,7 +277,7 @@ export class AccessCheckerImpl implements AccessChecker {
                             operator: $operator,
                             createdAt_lte: $timestamp
                         },
-                        orderBy: createdAt,
+                        orderBy: timestamp,
                         orderDirection: desc
                     ) {
                     type
@@ -398,6 +355,8 @@ type AuthorizationHistory = {
 }
 
 type Authorization = {
-    type: 'Operator' | 'ApprovalForAll'
+    type: 'Operator'
+        | 'ApprovalForAll'
+        | 'UpdateManager'
     isApproved: boolean
 }
