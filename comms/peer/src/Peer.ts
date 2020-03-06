@@ -10,7 +10,7 @@ import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
-import { Position3D } from "decentraland-katalyst-utils/Positions";
+import { Position, PeerConnectionHint, PeerConnectionHintWithTime, discretizedPositionDistance } from "decentraland-katalyst-utils/Positions";
 
 const PROTOCOL_VERSION = 4;
 
@@ -24,9 +24,9 @@ export type PeerData = {
   connection: SimplePeer.Instance;
 };
 
-export type PositionConfig<PositionType> = {
-  selfPosition: () => PositionType;
-  distance?: (l1: PositionType, l2: PositionType) => number;
+export type PositionConfig = {
+  selfPosition: () => Position;
+  distance?: (l1: Position, l2: Position) => number;
 };
 
 type PeerResponse = { id?: string; userId?: string; peerId?: string };
@@ -48,7 +48,7 @@ function signalMessage(peer: PeerData, connectionId: string, signal: SignalData)
   peer.connection.signal(signal);
 }
 
-type PeerConfig<PositionType> = {
+type PeerConfig = {
   connectionConfig?: any;
   wrtc?: any;
   socketBuilder?: SocketBuilder;
@@ -64,7 +64,7 @@ type PeerConfig<PositionType> = {
   backoffMs?: number;
   optimizeNetworkInterval?: number;
   authHandler?: (msg: string) => Promise<string>;
-  positionConfig?: PositionConfig<PositionType>;
+  positionConfig?: PositionConfig;
   statusHandler?: (status: string) => void;
 };
 
@@ -113,13 +113,15 @@ class GlobalStats extends Stats {
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
-export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
+export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private connectedPeers: Record<string, PeerData> = {};
 
   private peerConnectionPromises: Record<string, { resolve: () => void; reject: () => void }[]> = {};
 
-  private knownPeers: Record<string, KnownPeerData<PositionType>> = {};
+  private knownPeers: Record<string, KnownPeerData> = {};
+
+  private optimalConnections: PeerConnectionHintWithTime[] = [];
 
   private receivedPackets: Record<string, { timestamp: number; expirationTime: number }> = {};
 
@@ -148,7 +150,7 @@ export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
     lighthouseUrl: string,
     public peerId: string,
     public callback: PacketCallback = () => {},
-    private config: PeerConfig<PositionType> = { authHandler: msg => Promise.resolve(msg), statusHandler: () => {} }
+    private config: PeerConfig = { authHandler: msg => Promise.resolve(msg), statusHandler: () => {} }
   ) {
     if (this.config.logLevel) {
       this.logLevel = this.config.logLevel;
@@ -163,6 +165,10 @@ export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
     this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? 10;
     this.config.backoffMs = this.config.backoffMs ?? 2000;
+
+    if (this.config.positionConfig && !this.config.positionConfig.distance) {
+      this.config.positionConfig.distance = discretizedPositionDistance;
+    }
 
     this.setUpTimeToRequestOptimumNetwork();
 
@@ -526,7 +532,7 @@ export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
     return Object.keys(this.connectedPeers).filter(it => this.isConnectedTo(it));
   }
 
-  async connectTo(known: KnownPeerData<PositionType>) {
+  async connectTo(known: KnownPeerData) {
     const peer = this.createPeerConnection(known.id, util.generateToken(16), true);
 
     return this.beConnectedTo(peer.id, this.config.peerConnectTimeout).catch(e => {
@@ -585,7 +591,7 @@ export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
     }
   }
 
-  setPeerPosition(peerId: string, position: PositionType) {
+  setPeerPosition(peerId: string, position: Position) {
     if (this.knownPeers[peerId]) {
       this.knownPeers[peerId].position = position;
     }
@@ -970,8 +976,22 @@ export class Peer<PositionType = Position3D> implements IPeer<PositionType> {
           }
           break;
         }
+        case ServerMessageType.OptimalNetworkResponse: {
+          const { layerId, optimalConnections } = payload;
+
+          if (this.currentLayer === layerId) {
+            this.processOptimalConnectionsResponse(optimalConnections);
+          }
+          break;
+        }
       }
     }
+  }
+
+  private processOptimalConnectionsResponse(optimalConnections: PeerConnectionHint[]) {
+    const now = Date.now();
+    this.optimalConnections = optimalConnections.map(it => ({ ...it, timestamp: now }));
+    this.log(LogLevel.TRACE, this.optimalConnections)
   }
 
   private removeUserFromRoom(roomId: string, peerId: string) {

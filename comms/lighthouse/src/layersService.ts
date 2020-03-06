@@ -43,7 +43,7 @@ export class LayersService {
     return this.layers[layerId];
   }
 
-  getLayerUsers(layerId: string): PeerInfo<any>[] {
+  getLayerUsers(layerId: string): PeerInfo[] {
     const layer = this.layers[layerId];
     if (layer) this.checkLayerPeersIfNeeded(layer);
     return this.peersService.getPeersInfo(layer!.users);
@@ -154,7 +154,7 @@ export class LayersService {
   getOptimalConnectionsFor(peerId: string, targetConnections: number) {
     const peerInfo = this.peersService.getPeerInfo(peerId);
     if (peerInfo.layer && peerInfo.position) {
-      return { layer: peerInfo.layer, optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections) };
+      return { layerId: peerInfo.layer, optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections) };
     }
   }
 }

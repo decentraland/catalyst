@@ -1,8 +1,10 @@
-export type PeerInfo<PositionType> = {
+import { Position } from "decentraland-katalyst-utils/Positions";
+
+export type PeerInfo = {
   id: string;
   protocolVersion?: number;
   parcel?: [number, number];
-  position?: PositionType;
+  position?: Position;
   layer?: string;
 };
 
@@ -25,9 +27,3 @@ export type Layer = {
   maxUsers?: number;
   lastCheckTimestamp: number;
 };
-
-export type PeerConnectionHint = {
-  id: string;
-  distance: number;
-  // Maybe add position here?
-}

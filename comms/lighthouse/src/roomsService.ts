@@ -31,7 +31,7 @@ export class RoomsService {
       : Object.keys(this.rooms);
   }
 
-  getUsers(roomId: string): PeerInfo<any>[] {
+  getUsers(roomId: string): PeerInfo[] {
     return this.peersService.getPeersInfo(this.rooms[roomId]?.users);
   }
 

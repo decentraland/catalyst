@@ -1,5 +1,5 @@
 import { PeerMessageType } from "./messageTypes";
-import { Position3D } from "decentraland-katalyst-utils/Positions";
+import { Position } from "decentraland-katalyst-utils/Positions";
 
 type PacketSubtypeData = {
   lastTimestamp: number;
@@ -7,16 +7,16 @@ type PacketSubtypeData = {
 };
 
 export type Room = { id: string; users: string[] };
-export type KnownPeerData<PositionType = Position3D> = {
+export type KnownPeerData = {
   id: string;
   rooms: string[];
   timestamp?: number;
   subtypeData: Record<string, PacketSubtypeData>;
-  position?: PositionType;
+  position?: Position;
 };
-export type MinPeerData = { id: string, rooms?: string[] };
+export type MinPeerData = { id: string; rooms?: string[] };
 
-export interface IPeer<PositionType = Position3D> {
+export interface IPeer {
   peerId: string;
   currentRooms: Room[];
   callback: (sender: string, room: string, payload: any) => void;
@@ -26,10 +26,5 @@ export interface IPeer<PositionType = Position3D> {
   sendMessage(room: string, payload: any, type?: PeerMessageType): Promise<void>;
   dispose(): Promise<void>;
   awaitConnectionEstablished(timeout?: number): Promise<void>;
-}
-
-export type PeerConnectionHint = {
-  id: string;
-  distance: number;
-  // Maybe add position here?
+  setPeerPosition(peerId: string, position: Position): void;
 }
