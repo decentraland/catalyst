@@ -59,9 +59,10 @@ describe("Failed Deployments validations", () => {
     xit('Review particular', async () => {
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
         const accessSnapshot = {
-            pointers: ['-75,71'],
-            ethAddress: '0xa7c825bb8c2c4d18288af8efe38c8bf75a1aab51',
-            timestamp: 1583375184237
+            pointers: ['-110,30'],
+            ethAddress: '0xAB1089e114d3040D2D9C8651610E422c68b8e1d0',
+            timestamp: 1583434116232
+
         }
         const accessErrors: string[] = await accessChecker.hasAccess(EntityType.SCENE, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
         if (accessErrors.length===0) {
@@ -104,7 +105,7 @@ async function getAccessSnapshot(serverDomain: string, entityId: EntityId): Prom
         return {
             pointers: entity.pointers,
             ethAddress: audit.authChain[0].payload,
-            timestamp: audit.deployedTimestamp
+            timestamp: entity.timestamp
         }
     }
     return undefined

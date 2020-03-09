@@ -44,9 +44,12 @@ export class AccessCheckerImpl implements AccessChecker {
         return errors
     }
 
+    private SCENE_LOOKBACK_TIME = 5 * 60 * 1000;
     private async checkSceneAccess(pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
         const errors: string[] = []
 
+        // We check for access in the past to avoid sinchronization issues in the blockchain
+        timestamp -= this.SCENE_LOOKBACK_TIME;
         await Promise.all(
             pointers
                 .map(pointer => pointer.toLocaleLowerCase())
