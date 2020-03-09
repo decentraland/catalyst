@@ -2,7 +2,7 @@ import { Timestamp } from "../../time/TimeSorting"
 import { ServerName } from "../../naming/NameKeeper"
 import { DeploymentEvent, PartialDeploymentHistory } from "../HistoryManager"
 import { ServerAddress } from "../../synchronization/clients/contentserver/ContentServerClient"
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
+import { FetchHelper, retry } from "@katalyst/content/helpers/FetchHelper"
 
 export class HistoryClient {
 
@@ -32,7 +32,7 @@ export class HistoryClient {
             if (limit) {
                 url += `&limit=${limit}`
             }
-            const partialHistory: PartialDeploymentHistory = await fetchHelper.fetchJson(url)
+            const partialHistory: PartialDeploymentHistory = await retry(() => fetchHelper.fetchJson(url), 3, 'fetch history')
             if (partialCallback) {
                 partialCallback(url, partialHistory)
             }

@@ -3,10 +3,10 @@ import log4js from "log4js"
 import { clearTimeout, setTimeout } from "timers"
 import fetch from "node-fetch";
 import AbortController from 'abort-controller';
+import { delay } from "decentraland-katalyst-commons/src/util";
 
+const LOGGER = log4js.getLogger('FetchHelper');
 export class FetchHelper {
-
-    private static readonly LOGGER = log4js.getLogger('FetchHelper');
 
     constructor(private readonly jsonRequestTimeout: number = ms('30s'),
         private readonly fileDownloadRequestTimeout: number = ms('1m')) { }
@@ -22,7 +22,7 @@ export class FetchHelper {
     private static async fetchInternal<T>(url: string, responseConsumer: (response) => Promise<T>, maxWaitingTime: number): Promise<T> {
         const controller = new AbortController();
         const timeout = setTimeout(() => {
-            FetchHelper.LOGGER.warn(`Request to url ${url} exceeded the max waiting time. It took more than ${maxWaitingTime} millis.`);
+            LOGGER.warn(`Request to url ${url} exceeded the max waiting time. It took more than ${maxWaitingTime} millis.`);
             controller.abort();
         }, maxWaitingTime);
 
@@ -40,4 +40,18 @@ export class FetchHelper {
         }
     }
 
+}
+
+export async function retry<T>(execution: () => Promise<T>, attempts: number, description: string, waitTime: string = '1s'): Promise<T> {
+    while (attempts > 0) {
+        try {
+            return await execution()
+        } catch (error) { }
+        attempts--;
+        if (attempts > 0) {
+            await delay(ms(waitTime))
+            LOGGER.info(`Failed to '${description}'. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
+        }
+    }
+    throw new Error(`Failed to ${description} after ${attempts} attempts.`)
 }

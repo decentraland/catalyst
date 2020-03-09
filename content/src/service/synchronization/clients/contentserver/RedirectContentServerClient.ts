@@ -24,7 +24,7 @@ class RedirectContentServerClient extends ContentServerClient {
         }
 
     getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
-        return this.redirectCall(server => server.getHistory(from, serverName, to))
+        return this.redirectCall(server => server.getHistory(from, serverName, to), `get history from ${from}`)
     }
 
     getStatus(): Promise<ServerStatus> {
@@ -40,15 +40,15 @@ class RedirectContentServerClient extends ContentServerClient {
     }
 
     getAuditInfo(entityType: EntityType, entityId: string): Promise<AuditInfo> {
-        return this.redirectCall(server => server.getAuditInfo(entityType, entityId))
+        return this.redirectCall(server => server.getAuditInfo(entityType, entityId), `get audit info for (${entityType}, ${entityId})`)
     }
 
     getEntity(entityType: EntityType, entityId: string): Promise<Entity> {
-        return this.redirectCall(server => server.getEntity(entityType, entityId))
+        return this.redirectCall(server => server.getEntity(entityType, entityId), `get entity (${entityType}, ${entityId})`)
     }
 
     getContentFile(fileHash: string): Promise<ContentFile> {
-        return this.redirectCall(server => server.getContentFile(fileHash))
+        return this.redirectCall(server => server.getContentFile(fileHash), `get file with hash '${fileHash}'`)
     }
 
     updateEstimatedLocalImmutableTime(timestamp: number | undefined): Promise<void> {
@@ -61,7 +61,7 @@ class RedirectContentServerClient extends ContentServerClient {
     }
 
     /** Redirect the call to one of the other servers. Will return the first result */
-    private redirectCall<T>(call: (server: ContentServerClient) => Promise<T>) {
-        return tryOnCluster(call, this.cluster)
+    private redirectCall<T>(call: (server: ContentServerClient) => Promise<T>, description: string) {
+        return tryOnCluster(call, this.cluster, description)
     }
 }

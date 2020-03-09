@@ -48,7 +48,7 @@ export class Bootstrapper {
         Bootstrapper.LOGGER.info(`Will use one server to bootstrap with`)
         try {
             // Get one (any) server's last immutable time and history
-            const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster)
+            const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster, 'get immutable history')
 
             // Bootstrap
             await deployer.deployHistory(history, { logging: true })
