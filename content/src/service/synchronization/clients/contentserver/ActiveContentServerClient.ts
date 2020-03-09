@@ -65,7 +65,7 @@ class ActiveContentServerClient extends ContentServerClient {
             if (downloadedHash === fileHash) {
                 return { name: fileHash, content: content }
             }
-            throw new Error(`Failed to fetch file with hash ${fileHash}`)
+            throw new Error(`Failed to fetch file with hash ${fileHash} from ${this.address}`)
         }, 3, `get file with hash ${fileHash}`, '0.5s')
     }
 

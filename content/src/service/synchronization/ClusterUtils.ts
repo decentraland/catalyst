@@ -20,7 +20,7 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
             } catch (error) { }
         }
         throw new Error(`Tried to ${description} on all servers on the cluster, but they all failed`)
-    }, retries + 1, description, '1s');
+    }, retries + 1, `${description} on all servers on the cluster`, '1s');
 }
 
 function reorderAccordingToPreference(activeServers: ContentServerClient[], preferred: ContentServerClient | undefined): ContentServerClient[] {

@@ -24,7 +24,7 @@ class RedirectContentServerClient extends ContentServerClient {
         }
 
     getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
-        return this.redirectCall(server => server.getHistory(from, serverName, to), `get history from ${from}`)
+        return this.redirectCall(server => server.getHistory(from, serverName, to), `get history`)
     }
 
     getStatus(): Promise<ServerStatus> {

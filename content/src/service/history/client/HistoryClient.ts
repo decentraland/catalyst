@@ -32,7 +32,7 @@ export class HistoryClient {
             if (limit) {
                 url += `&limit=${limit}`
             }
-            const partialHistory: PartialDeploymentHistory = await retry(() => fetchHelper.fetchJson(url), 3, 'fetch history')
+            const partialHistory: PartialDeploymentHistory = await retry(() => fetchHelper.fetchJson(url), 3, `fetch history from ${address}`)
             if (partialCallback) {
                 partialCallback(url, partialHistory)
             }
