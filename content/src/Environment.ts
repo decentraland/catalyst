@@ -112,6 +112,7 @@ export const enum EnvironmentConfig {
     PERFORM_MULTI_SERVER_ONBOARDING,
     CACHE_SIZES,
     REQUEST_TTL_BACKWARDS,
+    WAIT_UNTIL_STATUS_IS_REPORTED,
 }
 
 export class EnvironmentBuilder {
@@ -188,6 +189,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES               , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS     , () => ms('20m'));
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.WAIT_UNTIL_STATUS_IS_REPORTED, () => true);
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

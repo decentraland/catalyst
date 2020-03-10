@@ -11,6 +11,8 @@ import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
 import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { delay } from "decentraland-katalyst-commons/src/util";
+import ms from "ms";
 
 export class ContentCluster {
 
@@ -34,12 +36,18 @@ export class ContentCluster {
         private readonly timeBetweenSyncs: number,
         private readonly nameKeeper: NameKeeper,
         private readonly fetchHelper: FetchHelper,
-        private readonly requestTtlBackwards: number) { }
+        private readonly requestTtlBackwards: number,
+        private readonly waitForStatus: boolean) { }
 
     /** Connect to the DAO for the first time */
     async connect(lastImmutableTime: Timestamp): Promise<void> {
         // Set the immutable time
         this.setImmutableTime(lastImmutableTime)
+
+        if (this.waitForStatus) {
+            // Make sure that status endpoint can be reached
+            await this.waitUntilStatusCanBeReported()
+        }
 
         // Perform first sync with the DAO
         await this.syncWithDAO()
@@ -209,6 +217,20 @@ export class ContentCluster {
             return name
         } catch (error) {
             return UNREACHABLE
+        }
+    }
+
+    /** Wait until the status endpoint can be reached */
+    private async waitUntilStatusCanBeReported(): Promise<void> {
+        let couldConnect = false
+
+        while (!couldConnect) {
+            try {
+                await this.fetchHelper.fetchJson('http://localhost/content/status')
+                couldConnect = true
+            } catch {
+                await delay(ms('5s'))
+            }
         }
     }
 
