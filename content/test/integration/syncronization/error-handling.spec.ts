@@ -13,7 +13,7 @@ import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertio
 import { delay } from "decentraland-katalyst-commons/src/util";
 
 
-describe("End 2 end - Error handling", () => {
+fdescribe("End 2 end - Error handling", () => {
 
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070')
     const identity = createIdentity()
@@ -74,7 +74,7 @@ describe("End 2 end - Error handling", () => {
         await server1.denylistContent(entity1Content, identity)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 3)
 
         // Assert deployment is marked as failed on server 2
         const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
@@ -94,7 +94,7 @@ describe("End 2 end - Error handling", () => {
         expect(newFailedDeployments.length).toBe(0)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 3)
 
         // Assert entity 2 is the active entity on both servers
         await assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2)
