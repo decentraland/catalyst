@@ -151,10 +151,10 @@ export class LayersService {
     return this.layers[layerId].users.map(it => ({ ...this.peersService.getPeerInfo(it), connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
   }
 
-  getOptimalConnectionsFor(peerId: string, targetConnections: number) {
+  getOptimalConnectionsFor(peerId: string, targetConnections: number, maxDistance: number) {
     const peerInfo = this.peersService.getPeerInfo(peerId);
     if (peerInfo.layer && peerInfo.position) {
-      return { layerId: peerInfo.layer, optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections) };
+      return { layerId: peerInfo.layer, optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections, maxDistance) };
     }
   }
 }

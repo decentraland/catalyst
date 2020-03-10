@@ -121,7 +121,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
       peersService.updatePeerPosition(client.getId(), message.payload?.position)
 
       if(message.payload?.optimizeNetwork) {
-        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections)
+        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections, message.payload.maxDistance)
         client.send({
           type: "OPTIMAL_NETWORK_RESPONSE",
           src: "__lighthouse_response__",

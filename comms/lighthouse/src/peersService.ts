@@ -18,7 +18,7 @@ export interface IPeersService {
   getPeersInfo(peerIds: string[]): PeerInfo[];
 
   ensurePeerInfo(peer: PeerRequest): PeerInfo;
-  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], targetConnections: number): PeerConnectionHint[];
+  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], targetConnections: number, maxDistance: number): PeerConnectionHint[];
 }
 
 export class PeersService implements IPeersService {
@@ -101,16 +101,19 @@ export class PeersService implements IPeersService {
     }
   }
 
-  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], targetConnections: number): PeerConnectionHint[] {
+  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], targetConnections: number, maxDistance: number): PeerConnectionHint[] {
     const hints: PeerConnectionHint[] = [];
 
     otherPeers.forEach(it => {
       if (it.id !== peer.id && it.position) {
-        hints.push({
-          id: it.id,
-          distance: this.distanceFunction(peer.position!, it.position),
-          position: it.position
-        });
+        const distance = this.distanceFunction(peer.position!, it.position);
+        if (distance <= maxDistance) {
+          hints.push({
+            id: it.id,
+            distance,
+            position: it.position
+          });
+        }
       }
     });
 
@@ -120,6 +123,7 @@ export class PeersService implements IPeersService {
         // If the distance is the same, we randomize
         return distanceDiff === 0 ? Math.random() : distanceDiff;
       })
-      .slice(0, targetConnections);
+      // We don't send more than 100 peer positions for now
+      .slice(0, 100);
   }
 }

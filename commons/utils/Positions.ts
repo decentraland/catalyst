@@ -1,4 +1,4 @@
-const DISCRETIZE_POSITION_INTERVAL = 50;
+export const DISCRETIZE_POSITION_INTERVAL = 50;
 
 export type Position3D = [number, number, number];
 export type Position2D = [number, number];
@@ -31,10 +31,5 @@ export function discretizedPositionDistance(a: Position, b: Position) {
 export type PeerConnectionHint = {
   id: string;
   distance: number;
-  // We may want to type this a stricter way, but that could be
-  position: any;
-};
-
-export type PeerConnectionHintWithTime = PeerConnectionHint & {
-  timestamp: number;
+  position: Position;
 };
