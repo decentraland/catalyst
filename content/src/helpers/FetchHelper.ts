@@ -50,7 +50,7 @@ export async function retry<T>(execution: () => Promise<T>, attempts: number, de
         attempts--;
         if (attempts > 0) {
             await delay(ms(waitTime))
-            LOGGER.info(`Failed to '${description}'. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
+            LOGGER.info(`Failed to ${description}. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
         }
     }
     throw new Error(`Failed to ${description} after ${attempts} attempts.`)
