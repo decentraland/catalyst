@@ -46,12 +46,16 @@ export async function retry<T>(execution: () => Promise<T>, attempts: number, de
     while (attempts > 0) {
         try {
             return await execution()
-        } catch (error) { }
-        attempts--;
-        if (attempts > 0) {
-            await delay(ms(waitTime))
-            LOGGER.info(`Failed to ${description}. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
+        } catch (error) {
+            attempts--;
+            if (attempts > 0) {
+                await delay(ms(waitTime))
+                LOGGER.info(`Failed to ${description}. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
+            } else {
+                LOGGER.warn(`Failed to ${description} after ${attempts} attempts. Error was ${error}`)
+                throw error
+            }
         }
     }
-    throw new Error(`Failed to ${description} after ${attempts} attempts.`)
+    throw new Error('Should never reach here')
 }

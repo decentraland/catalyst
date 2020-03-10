@@ -1,6 +1,9 @@
+import log4js from "log4js"
 import { retry } from "@katalyst/content/helpers/FetchHelper";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
+
+const LOGGER = log4js.getLogger('ClusterUtils');
 
 /**
  * This method tries to execute a request on all cluster servers, until one responds successfully
@@ -17,7 +20,9 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
         for (const server of servers) {
             try {
                 return await execution(server)
-            } catch (error) { }
+            } catch (error) {
+                LOGGER.debug(`Tried to ${description} on '${server.getName()}' but it failed because of: ${error}`)
+            }
         }
         throw new Error(`Tried to ${description} on all servers on the cluster, but they all failed`)
     }, retries + 1, `${description} on all servers on the cluster`, '1s');
