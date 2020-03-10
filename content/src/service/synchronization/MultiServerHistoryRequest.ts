@@ -4,6 +4,7 @@ import { ContentServerClient } from "./clients/contentserver/ContentServerClient
 import { Timestamp } from "../time/TimeSorting";
 import { DeploymentHistory } from "../history/HistoryManager";
 import { EventDeployer } from "./EventDeployer";
+import { retry } from "@katalyst/content/helpers/FetchHelper";
 
 /**
  * On some occasions (such as server onboarding) a server might need to make a request to many other servers on the cluster.
@@ -36,7 +37,7 @@ export class MultiServerHistoryRequest {
     /** Execute the request on one server */
     private async executeRequestOn(server: ContentServerClient): Promise<DeploymentHistory> {
         try {
-            return await server.getHistory(this.request.from, this.request.serverName, this.request.to)
+            return await retry(() => server.getHistory(this.request.from, this.request.serverName, this.request.to), 5, `fetch history from server ${server.getName()}`, '5s')
         } catch (error) {
             MultiServerHistoryRequest.LOGGER.error(`Failed to execute multi server request on ${server.getName()}. Reason:\n${error}`)
             return []

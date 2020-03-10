@@ -139,11 +139,11 @@ export class EventDeployer {
      * This method tries to get a file from the other servers on the DAO. If all the request fail, then it returns 'undefined'.
      */
     private getFileOrUndefined(fileHash: ContentFileHash, source?: ContentServerClient): Promise<ContentFile | undefined> {
-        return this.tryOnClusterOrUndefined(server => server.getContentFile(fileHash), this.cluster, { preferred: source })
+        return this.tryOnClusterOrUndefined(server => server.getContentFile(fileHash), this.cluster, `get file with hash '${fileHash}'`, { preferred: source })
     }
 
     private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo | undefined> {
-        return this.tryOnClusterOrUndefined(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, { preferred: source })
+        return this.tryOnClusterOrUndefined(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, `get audit info for (${deployment.entityType}, ${deployment.entityId})`, { preferred: source })
     }
 
     private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {
@@ -186,9 +186,9 @@ export class EventDeployer {
     }
 
     /** Execute an operation on the cluster, but return 'undefined' if it fails */
-    private async tryOnClusterOrUndefined<T>(execution: (server: ContentServerClient) => Promise<T>, cluster: ContentCluster, options?: { retries?: number, preferred?: ContentServerClient}): Promise<T | undefined> {
+    private async tryOnClusterOrUndefined<T>(execution: (server: ContentServerClient) => Promise<T>, cluster: ContentCluster, description: string, options?: { retries?: number, preferred?: ContentServerClient}): Promise<T | undefined> {
         try {
-            return await tryOnCluster(execution, cluster, options)
+            return await tryOnCluster(execution, cluster, description, options)
         } catch (error) {
             return undefined
         }

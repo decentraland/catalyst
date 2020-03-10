@@ -1,4 +1,3 @@
-import ms from "ms";
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
@@ -8,9 +7,8 @@ import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
 import { AuditInfo } from "../../../audit/Audit";
 import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { FetchHelper, retry } from "@katalyst/content/helpers/FetchHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
-import { delay } from "decentraland-katalyst-utils/util";
 
 export function getClient(fetchHelper: FetchHelper, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
     return new ActiveContentServerClient(fetchHelper, address, requestTtlBackwards, name, lastKnownTimestamp)
@@ -61,25 +59,14 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
-        let retries = 2
-        let content: Buffer | undefined = undefined
-
-        while (retries >= 0) {
-            try {
-                content = await this.fetchHelper.fetchBuffer(`${this.address}/contents/${fileHash}`);
-                const downloadedHash = await Hashing.calculateBufferHash(content)
-                if (downloadedHash == fileHash) {
-                    break;
-                }
-            } catch (error) {
-                await delay(ms("0.5s"))
+        return retry(async () => {
+            const content = await this.fetchHelper.fetchBuffer(`${this.address}/contents/${fileHash}`);
+            const downloadedHash = await Hashing.calculateBufferHash(content)
+            if (downloadedHash === fileHash) {
+                return { name: fileHash, content: content }
             }
-            retries--;
-        }
-        if (retries >=0 && content) {
-            return { name: fileHash, content: content }
-        }
-        throw new Error(`Failed to fetch file with hash ${fileHash}`)
+            throw new Error(`Failed to fetch file with hash ${fileHash} from ${this.address}`)
+        }, 3, `get file with hash ${fileHash}`, '0.5s')
     }
 
     /**
