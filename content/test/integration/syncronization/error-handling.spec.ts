@@ -13,7 +13,7 @@ import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertio
 import { delay } from "decentraland-katalyst-commons/src/util";
 
 
-fdescribe("End 2 end - Error handling", () => {
+describe("End 2 end - Error handling", () => {
 
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070')
     const identity = createIdentity()
