@@ -106,12 +106,14 @@ export class AccessCheckerImpl implements AccessChecker {
          * at that time
          */
         const parcel = await this.getParcel(x, y, timestamp)
+        if (parcel) {
+            const belongsToEstate: boolean = parcel.estates!=undefined && parcel.estates.length > 0 && parcel.estates[0].estateId!=undefined
 
-        const belongsToEstate: boolean = parcel.estates!=undefined && parcel.estates.length > 0 && parcel.estates[0].estateId!=undefined
-
-        return await this.hasAccessThroughFirstLevelAuthorities(parcel, ethAddress)
-            || await this.hasAccessThroughAutorizations(parcel.owners[0].address, ethAddress, timestamp)
-            || (belongsToEstate && await this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress))
+            return await this.hasAccessThroughFirstLevelAuthorities(parcel, ethAddress)
+                || await this.hasAccessThroughAutorizations(parcel.owners[0].address, ethAddress, timestamp)
+                || (belongsToEstate && await this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress))
+        }
+        return false
     }
 
     private async isEstateUpdateAuthorized(
@@ -120,8 +122,11 @@ export class AccessCheckerImpl implements AccessChecker {
         ethAddress: EthAddress
     ): Promise<boolean> {
         const estate = await this.getEstate(estateId.toString(), timestamp)
-        return await this.hasAccessThroughFirstLevelAuthorities(estate, ethAddress)
+        if (estate) {
+            return await this.hasAccessThroughFirstLevelAuthorities(estate, ethAddress)
             || await this.hasAccessThroughAutorizations(estate.owners[0].address, ethAddress, timestamp)
+        }
+        return false
     }
 
     private async hasAccessThroughFirstLevelAuthorities(target: AuthorizationHistory, ethAddress: EthAddress): Promise<boolean> {
@@ -135,7 +140,7 @@ export class AccessCheckerImpl implements AccessChecker {
     }
     private async hasAccessThroughAutorizations(owner: EthAddress, ethAddress: EthAddress, timestamp: Timestamp): Promise<boolean> {
         /* You also get access if you received:
-         *   - an auhtorization with isApproved and type Operator, ApprovalForAll or UpdateManager
+         *   - an authorization with isApproved and type Operator, ApprovalForAll or UpdateManager
          * at that time
          */
         const authorizations = await this.getAuthorizations(
@@ -154,7 +159,7 @@ export class AccessCheckerImpl implements AccessChecker {
         return false
     }
 
-    private async getParcel(x: number, y: number, timestamp: Timestamp): Promise<Parcel> {
+    private async getParcel(x: number, y: number, timestamp: Timestamp): Promise<Parcel|undefined> {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that parcel.
          * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
@@ -216,7 +221,7 @@ export class AccessCheckerImpl implements AccessChecker {
         }
     }
 
-    private async getEstate(estateId: string, timestamp: Timestamp): Promise<Estate> {
+    private async getEstate(estateId: string, timestamp: Timestamp): Promise<Estate|undefined> {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that estate.
          * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
@@ -305,7 +310,7 @@ export class AccessCheckerImpl implements AccessChecker {
         }
     }
 
-    // TODO: Move this to FetchHelper5
+    // TODO: Move this to FetchHelper
     private async queryGraph<T = any>(
         query: string,
         variables: Record<string, any>
