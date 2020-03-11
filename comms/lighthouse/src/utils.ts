@@ -24,7 +24,7 @@ export function removePeerAndNotify<T extends PeerContainer>(
       peersService?.notifyPeersById(container.peers, notificationType, {
         id: peerId,
         userId: peerId,
-        peerId: peerId,
+        peerId,
         [containerKey]: containerId
       });
     }

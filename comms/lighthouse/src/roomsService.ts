@@ -48,7 +48,7 @@ export class RoomsService {
       this.config.peersService?.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
         id: peerId,
         userId: peerId,
-        peerId: peerId,
+        peerId,
         roomId
       });
     }
