@@ -28,7 +28,7 @@ export class LayersService {
   }
 
   get peersService() {
-    return this.config.peersService!;
+    return this.config.peersService;
   }
 
   getLayerIds(): string[] {
