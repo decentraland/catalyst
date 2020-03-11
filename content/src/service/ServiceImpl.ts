@@ -126,7 +126,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             validation.validateRequestSize(files, entity.pointers, validationContext)
 
             // Validate ethAddress access
-            await validation.validateAccess(entity.type, entity.pointers, ownerAddress, validationContext)
+            await validation.validateAccess(entity.type, entity.pointers, entity.timestamp, ownerAddress, validationContext)
         }
 
         // Hash all files, and validate them
