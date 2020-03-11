@@ -445,7 +445,9 @@ export class Peer implements IPeer {
   }
 
   private addKnownPeerIfNotExists(peer: MinPeerData) {
-    if (!this.knownPeers[peer.id]) this.knownPeers[peer.id] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+    if (!this.knownPeers[peer.id]) {
+      this.knownPeers[peer.id] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+    }
 
     return this.knownPeers[peer.id];
   }
