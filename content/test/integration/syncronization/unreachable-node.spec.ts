@@ -3,10 +3,9 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, buildBaseEnv, deleteServerStorage } from "../E2ETestUtils"
+import { buildDeployData, buildBaseEnv, deleteServerStorage, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
-import { delay } from "decentraland-katalyst-commons/src/util"
 
 /**
  * We will be testing how servers handle an unreachable node
@@ -52,21 +51,17 @@ describe("End 2 end - Unreachable node", function() {
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
         const deploymentEvent = buildEvent(entity, server1, deploymentTimestamp)
 
-        // Wait for small sync interval
-        await delay(SMALL_SYNC_INTERVAL * 2)
+        // Wait until server 2 got the update
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
 
         // Stop server 1
         await server1.stop()
 
-        // Assert server 2 got the update, but server 3 didn't
-        await assertHistoryOnServerHasEvents(server2, deploymentEvent)
+        // Assert server 3 didn't get the update
         await assertHistoryOnServerHasEvents(server3, )
 
-        // Wait for long sync interval
-        await delay(LONG_SYNC_INTERVAL * 2)
-
         // Now, server 3 detected that server 1 is down, and asked for its updated to server 2
-        await assertHistoryOnServerHasEvents(server3, deploymentEvent)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent))
     })
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoInterval: number, daoClient: DAOClient) {

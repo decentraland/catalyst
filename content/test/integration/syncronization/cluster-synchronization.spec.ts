@@ -3,7 +3,7 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers } from "../E2ETestUtils"
+import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { delay } from "decentraland-katalyst-commons/src/util"
@@ -55,11 +55,8 @@ describe("End 2 end synchronization tests", function() {
         // Assert that the entity was deployed on server 1
         await assertHistoryOnServerHasEvents(server1, deploymentEvent)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
         // Assert that the entity was synced from server 1 to server 2
-        await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
+        await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entityBeingDeployed))
         await assertHistoryOnServerHasEvents(server2, deploymentEvent)
     })
 

@@ -4,10 +4,9 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity, stopServers } from "../E2ETestUtils"
+import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity, stopServers, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
-import { delay } from "decentraland-katalyst-commons/src/util"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
 import { EntityType } from "@katalyst/content/service/Entity"
@@ -52,11 +51,8 @@ describe("End 2 end - Name change handling", function() {
         const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
         const deploymentEvent1 = buildEvent(entity1, server1, deploymentTimestamp1)
 
-        // Wait for sync to happen
-        await delay(SYNC_INTERVAL * 2)
-
         // Assert servers 1 and 2 are synced
-        await assertHistoryOnServerHasEvents(server2, deploymentEvent1)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1))
 
         // Change name and do hard restart
         const newName = "newName"
@@ -72,11 +68,8 @@ describe("End 2 end - Name change handling", function() {
         const deploymentTimestamp2: Timestamp = await server1.deploy(deployData2)
         const deploymentEvent2 = buildEventWithName(entity2, newName, deploymentTimestamp2)
 
-        // Wait for sync with DAO to happen
-        await delay(DAO_SYNC_INTERVAL)
-
-        // Assert servers 1 and 2 are synced
-        await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2)
+        // Assert servers 1 and 2 are synced, since they sync with DAO to happen
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2))
     })
 
     function changeNameInStorage(server: TestServer, newName: string) {

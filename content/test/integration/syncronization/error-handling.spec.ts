@@ -6,11 +6,10 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, buildDeployDataAfterEntity, stopServers } from "../E2ETestUtils"
+import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, buildDeployDataAfterEntity, stopServers, awaitUntil } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
-import { delay } from "decentraland-katalyst-commons/src/util";
 
 
 describe("End 2 end - Error handling", () => {
@@ -73,12 +72,11 @@ describe("End 2 end - Error handling", () => {
         // Cause sync failure
         await server1.denylistContent(entity1Content, identity)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 3)
-
         // Assert deployment is marked as failed on server 2
-        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
-        expect(failedDeployments.length).toBe(1)
+        await awaitUntil(async () => {
+            const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
+            expect(failedDeployments.length).toBe(1)
+        })
 
         // Prepare entity to deploy
         const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
@@ -93,11 +91,8 @@ describe("End 2 end - Error handling", () => {
         const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(newFailedDeployments.length).toBe(0)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 3)
-
         // Assert entity 2 is the active entity on both servers
-        await assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2)
+        await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2))
         await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed2)
         await assertEntitiesAreDeployedButNotActive(server1, entityBeingDeployed1)
         await assertEntitiesAreDeployedButNotActive(server2, entityBeingDeployed1)
@@ -143,15 +138,14 @@ describe("End 2 end - Error handling", () => {
         // Cause failure
         await causeOfFailure(entityBeingDeployed)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
         // Assert deployment is marked as failed
-        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
-        expect(failedDeployments.length).toBe(1)
-        assertEqualsDeployment(failedDeployments[0].deployment, deploymentEvent)
-        expect(failedDeployments[0].reason).toEqual(errorType)
-        expect(failedDeployments[0].moment).toBeGreaterThan(entityBeingDeployed.timestamp)
+        await awaitUntil(async () => {
+            const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
+            expect(failedDeployments.length).toBe(1)
+            assertEqualsDeployment(failedDeployments[0].deployment, deploymentEvent)
+            expect(failedDeployments[0].reason).toEqual(errorType)
+            expect(failedDeployments[0].moment).toBeGreaterThan(entityBeingDeployed.timestamp)
+        })
 
         // Assert entity wasn't deployed
         await assertEntityWasNotDeployed(server2, entityBeingDeployed)
