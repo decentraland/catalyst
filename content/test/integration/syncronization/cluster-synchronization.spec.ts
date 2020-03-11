@@ -118,7 +118,7 @@ describe("End 2 end synchronization tests", function() {
         await server3.stop()
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await delay(SYNC_INTERVAL * 5)
 
         // Store their immutable time
         const immutableTimeServer1 = await getImmutableTime(server1)
