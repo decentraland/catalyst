@@ -53,7 +53,7 @@ export function configureRoutes(app: express.Express, services: Services, option
   });
 
   app.get("/layers/:layerId/users", validateLayerExists, (req, res, next) => {
-    res.send(mapUsersToJson(layersService.getLayerUsers(req.params.layerId)));
+    res.send(mapUsersToJson(layersService.getLayerPeers(req.params.layerId)));
   });
 
   app.get("/layers/:layerId/rooms", validateLayerExists, (req, res, next) => {
@@ -61,7 +61,7 @@ export function configureRoutes(app: express.Express, services: Services, option
   });
 
   app.get("/layers/:layerId/rooms/:roomId", validateLayerExists, (req, res, next) => {
-    const roomUsers = layersService.getRoomsService(req.params.layerId)!.getUsers(req.params.roomId);
+    const roomUsers = layersService.getRoomsService(req.params.layerId)!.getPeers(req.params.roomId);
     if (typeof roomUsers === "undefined") {
       res.status(404).send({ status: "room-not-found" });
     } else {
@@ -77,7 +77,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       const { layerId } = req.params;
       try {
         const layer = await layersService.setPeerLayer(layerId, req.body);
-        res.send(mapUsersToJson(peersService.getPeersInfo(layer.users)));
+        res.send(mapUsersToJson(peersService.getPeersInfo(layer.peers)));
       } catch (err) {
         handleError(err, res, next);
       }
@@ -93,7 +93,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       const { layerId, roomId } = req.params;
       try {
         const room = await layersService.addPeerToRoom(layerId, roomId, req.body);
-        res.send(mapUsersToJson(peersService.getPeersInfo(room.users)));
+        res.send(mapUsersToJson(peersService.getPeersInfo(room.peers)));
       } catch (err) {
         handleError(err, res, next);
       }
@@ -102,14 +102,14 @@ export function configureRoutes(app: express.Express, services: Services, option
 
   app.delete("/layers/:layerId/rooms/:roomId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { roomId, userId, layerId } = req.params;
-    const room = layersService.getRoomsService(layerId)?.removeUserFromRoom(roomId, userId);
-    res.send(mapUsersToJson(peersService.getPeersInfo(room?.users ?? [])));
+    const room = layersService.getRoomsService(layerId)?.removePeerFromRoom(roomId, userId);
+    res.send(mapUsersToJson(peersService.getPeersInfo(room?.peers ?? [])));
   });
 
   app.delete("/layers/:layerId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { userId, layerId } = req.params;
-    const layer = layersService.removeUserFromLayer(layerId, userId);
-    res.send(mapUsersToJson(peersService.getPeersInfo(layer?.users ?? [])));
+    const layer = layersService.removePeerFromLayer(layerId, userId);
+    res.send(mapUsersToJson(peersService.getPeersInfo(layer?.peers ?? [])));
   });
 
   app.get("/layers/:layerId/topology", validateLayerExists, (req, res, next) => {
@@ -130,9 +130,9 @@ export function configureRoutes(app: express.Express, services: Services, option
   function mapLayerToJson(layer: Layer, includeUserParcels: boolean = false) {
     return {
       name: layer.id,
-      usersCount: layer.users.length,
-      maxUsers: layer.maxUsers,
-      ...(includeUserParcels && { usersParcels: layer.users.map(it => peersService.getPeerInfo(it).parcel).filter(it => !!it) })
+      usersCount: layer.peers.length,
+      maxUsers: layer.maxPeers,
+      ...(includeUserParcels && { usersParcels: layer.peers.map(it => peersService.getPeerInfo(it).parcel).filter(it => !!it) })
     };
   }
 

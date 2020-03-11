@@ -37,54 +37,54 @@ describe("Rooms service", () => {
 
   it("should allow to add a user to an non-existing room and create it", async () => {
     const peerData = createPeer();
-    await roomsService.addUserToRoom("room", peerData.id);
-    expect(roomsService.getUsers("room")).toEqual([peerData]);
+    await roomsService.addPeerToRoom("room", peerData.id);
+    expect(roomsService.getPeers("room")).toEqual([peerData]);
   });
 
   it("should allow to add a user to an existing room", async () => {
     const peer1 = createPeer();
     const peer2 = createPeer();
 
-    await roomsService.addUserToRoom("room", peer1.id);
-    await roomsService.addUserToRoom("room", peer2.id);
+    await roomsService.addPeerToRoom("room", peer1.id);
+    await roomsService.addPeerToRoom("room", peer2.id);
 
-    expect(roomsService.getUsers("room")).toEqual(arrayWithExactContents([peer1, peer2]));
+    expect(roomsService.getPeers("room")).toEqual(arrayWithExactContents([peer1, peer2]));
   });
 
   it("should list all the rooms", async () => {
-    await roomsService.addUserToRoom("room1", createPeer().id);
-    await roomsService.addUserToRoom("room2", createPeer().id);
+    await roomsService.addPeerToRoom("room1", createPeer().id);
+    await roomsService.addPeerToRoom("room2", createPeer().id);
 
     expect(roomsService.getRoomIds()).toEqual(arrayWithExactContents(["room1", "room2"]));
   });
 
   it("should list all the rooms that a user is in", async () => {
-    await roomsService.addUserToRoom("room1", createPeer().id);
+    await roomsService.addPeerToRoom("room1", createPeer().id);
 
     const aPeer = createPeer();
-    await roomsService.addUserToRoom("room2", aPeer.id);
-    await roomsService.addUserToRoom("room3", aPeer.id);
+    await roomsService.addPeerToRoom("room2", aPeer.id);
+    await roomsService.addPeerToRoom("room3", aPeer.id);
 
     expect(roomsService.getRoomIds({ peerId: aPeer.id })).toEqual(arrayWithExactContents(["room2", "room3"]));
   });
 
   it("should allow removing a user from a room", async () => {
     const peer1 = createPeer();
-    await roomsService.addUserToRoom("room", peer1.id);
+    await roomsService.addPeerToRoom("room", peer1.id);
 
     const peer2 = createPeer();
-    await roomsService.addUserToRoom("room", peer2.id);
+    await roomsService.addPeerToRoom("room", peer2.id);
 
-    roomsService.removeUserFromRoom("room", peer2.id);
+    roomsService.removePeerFromRoom("room", peer2.id);
 
-    expect(roomsService.getUsers("room")).toEqual([peer1]);
+    expect(roomsService.getPeers("room")).toEqual([peer1]);
   });
 
   it("should delete a room if all users are removed", async () => {
     const peer1 = createPeer();
-    await roomsService.addUserToRoom("room", peer1.id);
+    await roomsService.addPeerToRoom("room", peer1.id);
 
-    roomsService.removeUserFromRoom("room", peer1.id);
+    roomsService.removePeerFromRoom("room", peer1.id);
 
     expect(roomsService.getRoomIds()).toEqual([]);
   });
@@ -93,25 +93,25 @@ describe("Rooms service", () => {
     const peer1 = createPeer();
     const peer2 = createPeer();
 
-    await roomsService.addUserToRoom("room1", peer1.id);
-    await roomsService.addUserToRoom("room2", peer1.id);
-    await roomsService.addUserToRoom("room1", peer2.id);
-    await roomsService.addUserToRoom("room2", peer2.id);
+    await roomsService.addPeerToRoom("room1", peer1.id);
+    await roomsService.addPeerToRoom("room2", peer1.id);
+    await roomsService.addPeerToRoom("room1", peer2.id);
+    await roomsService.addPeerToRoom("room2", peer2.id);
 
-    roomsService.removeUser(peer1.id);
+    roomsService.removePeer(peer1.id);
 
-    expect(roomsService.getUsers("room1")).toEqual([peer2]);
-    expect(roomsService.getUsers("room2")).toEqual([peer2]);
+    expect(roomsService.getPeers("room1")).toEqual([peer2]);
+    expect(roomsService.getPeers("room2")).toEqual([peer2]);
   });
 
   it("should notify when a user is removed from a room", async () => {
     const peer1 = createPeer();
     const peer2 = createPeer();
 
-    await roomsService.addUserToRoom("room1", peer1.id);
-    await roomsService.addUserToRoom("room1", peer2.id);
+    await roomsService.addPeerToRoom("room1", peer1.id);
+    await roomsService.addPeerToRoom("room1", peer2.id);
 
-    roomsService.removeUserFromRoom("room1", peer1.id);
+    roomsService.removePeerFromRoom("room1", peer1.id);
 
     const leftMessages = peerService.sentMessages.filter(([id, message]) => message.type === "PEER_LEFT_ROOM");
 

@@ -1,6 +1,6 @@
 import { IPeersService, NotificationType } from "./peersService";
 import { Room, PeerInfo } from "./types";
-import { removeUserAndNotify } from "./utils";
+import { removePeerAndNotify } from "./utils";
 
 type RoomsFilter = Partial<{
   peerId: string;
@@ -11,7 +11,7 @@ type RoomsServiceConfig = {
 };
 
 function newRoom(roomId: string): Room {
-  return { id: roomId, users: [] };
+  return { id: roomId, peers: [] };
 }
 
 export class RoomsService {
@@ -26,25 +26,25 @@ export class RoomsService {
 
     return peerId
       ? Object.entries(this.rooms)
-          .filter(([, room]) => room.users.includes(peerId))
+          .filter(([, room]) => room.peers.includes(peerId))
           .map(([id]) => id)
       : Object.keys(this.rooms);
   }
 
-  getUsers(roomId: string): PeerInfo[] {
-    return this.peersService.getPeersInfo(this.rooms[roomId]?.users);
+  getPeers(roomId: string): PeerInfo[] {
+    return this.peersService.getPeersInfo(this.rooms[roomId]?.peers);
   }
 
-  async addUserToRoom(roomId: string, peerId: string) {
+  async addPeerToRoom(roomId: string, peerId: string) {
     let room = this.rooms[roomId];
 
     if (!room) {
       this.rooms[roomId] = room = newRoom(roomId);
     }
 
-    if (!room.users.includes(peerId)) {
-      const peersToNotify = room.users.slice();
-      room.users.push(peerId);
+    if (!room.peers.includes(peerId)) {
+      const peersToNotify = room.peers.slice();
+      room.peers.push(peerId);
       this.config.peersService?.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
         id: peerId,
         userId: peerId,
@@ -56,11 +56,11 @@ export class RoomsService {
     return room;
   }
 
-  removeUserFromRoom(roomId: string, peerId: string) {
-    return removeUserAndNotify(this.rooms, roomId, peerId, NotificationType.PEER_LEFT_ROOM, "roomId", this.peersService);
+  removePeerFromRoom(roomId: string, peerId: string) {
+    return removePeerAndNotify(this.rooms, roomId, peerId, NotificationType.PEER_LEFT_ROOM, "roomId", this.peersService);
   }
 
-  removeUser(peerId: string) {
-    Object.keys(this.rooms).forEach(room => this.removeUserFromRoom(room, peerId));
+  removePeer(peerId: string) {
+    Object.keys(this.rooms).forEach(room => this.removePeerFromRoom(room, peerId));
   }
 }

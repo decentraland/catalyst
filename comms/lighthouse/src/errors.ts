@@ -14,6 +14,6 @@ export class UserMustBeInLayerError extends RequestError {
 
 export class LayerIsFullError extends RequestError {
   constructor(layer: Layer, peerId: string) {
-    super(`User '${peerId}' cannot join layer '${layer.id}' because it is full (max: ${layer.maxUsers})`, 'layer_is_full');
+    super(`User '${peerId}' cannot join layer '${layer.id}' because it is full (max: ${layer.maxPeers})`, 'layer_is_full');
   }
 }

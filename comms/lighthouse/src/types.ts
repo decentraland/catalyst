@@ -17,13 +17,13 @@ export type PeerRequest = {
 
 export type Room = {
   id: string;
-  users: string[];
+  peers: string[];
 };
 
 export type Layer = {
   id: string;
-  users: string[];
+  peers: string[];
   rooms: Record<string, Room>;
-  maxUsers?: number;
+  maxPeers?: number;
   lastCheckTimestamp: number;
 };

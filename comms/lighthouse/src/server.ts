@@ -58,7 +58,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     app.use(morgan("combined"));
   }
 
-  const layersService = new LayersService({ peersService, maxUsersPerLayer, existingLayers, allowNewLayers });
+  const layersService = new LayersService({ peersService, maxPeersPerLayer: maxUsersPerLayer, existingLayers, allowNewLayers });
 
   configureRoutes(
     app,
@@ -108,7 +108,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   peerServer.on("disconnect", (client: any) => {
     console.log("User disconnected from server socket. Removing from all rooms & layers: " + client.id);
-    layersService.removeUser(client.id);
+    layersService.removePeer(client.id);
   });
 
   peerServer.on("error", console.log);
