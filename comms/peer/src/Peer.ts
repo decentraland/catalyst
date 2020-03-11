@@ -486,29 +486,32 @@ export class Peer implements IPeer {
       return;
     }
 
-    this.updatingNetwork = true;
-    this.log(LogLevel.DEBUG, "Updating network...");
+    try {
+      this.updatingNetwork = true;
 
-    this.checkConnectionsSanity();
+      this.log(LogLevel.DEBUG, "Updating network...");
 
-    let operation: NetworkOperation | undefined;
+      this.checkConnectionsSanity();
 
-    let connectionCandidates = Object.values(this.knownPeers).filter(it => !this.isConnectedTo(it.id));
+      let operation: NetworkOperation | undefined;
 
-    if (connectionCandidates.length === 0) return;
+      let connectionCandidates = Object.values(this.knownPeers).filter(it => !this.isConnectedTo(it.id));
 
-    while (operation = this.calculateNextNetworkOperation(connectionCandidates)) {
-      try {
-        connectionCandidates = await operation();
-      } catch (e) {
-        // We may want to invalidate the operation or something to avoid repeating the same mistake
-        this.log(LogLevel.DEBUG, "Error performing operation", operation, e);
+      if (connectionCandidates.length > 0) {
+        while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
+          try {
+            connectionCandidates = await operation();
+          } catch (e) {
+            // We may want to invalidate the operation or something to avoid repeating the same mistake
+            this.log(LogLevel.DEBUG, "Error performing operation", operation, e);
+          }
+        }
       }
-    }
-    
-    this.log(LogLevel.DEBUG, "Network update finished");
+    } finally {
+      this.log(LogLevel.DEBUG, "Network update finished");
 
-    this.updatingNetwork = false;
+      this.updatingNetwork = false;
+    }
   }
 
   private checkConnectionsSanity() {
@@ -523,6 +526,8 @@ export class Peer implements IPeer {
   }
 
   private calculateNextNetworkOperation(connectionCandidates: KnownPeerData[]): NetworkOperation | undefined {
+    this.log(LogLevel.DEBUG, "Calculating network operation with candidates", connectionCandidates);
+
     const peerSortCriteria = (peer1: KnownPeerData, peer2: KnownPeerData) => {
       if (this.config.positionConfig) {
         // We prefer those peers that have position over those that don't
@@ -617,8 +622,9 @@ export class Peer implements IPeer {
   }
 
   private distanceTo(peerId: string) {
-    if (this.knownPeers[peerId].position) {
-      return this.config.positionConfig!.distance!(this.selfPosition()!, this.knownPeers[peerId].position!);
+    const position = this.selfPosition();
+    if (this.knownPeers[peerId]?.position && position) {
+      return this.config.positionConfig?.distance!(position, this.knownPeers[peerId].position!);
     }
   }
 
@@ -672,6 +678,8 @@ export class Peer implements IPeer {
         if (!this.isConnectedTo(peerId) && this.peerConnectionPromises[peerId]) {
           reject(new Error(`[${this.peerId}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`));
           this.peerConnectionPromises[peerId] = this.peerConnectionPromises[peerId].splice(this.peerConnectionPromises[peerId].indexOf(promisePair), 1);
+        } else {
+          resolve();
         }
       }, timeout);
     });
@@ -1114,7 +1122,7 @@ export class Peer implements IPeer {
       this.knownPeers[it.id].timestamp = now;
     });
 
-    this.updateNetwork().catch(e => this.log(LogLevel.WARN, "Error updating network for optimization", e));;
+    this.updateNetwork().catch(e => this.log(LogLevel.WARN, "Error updating network for optimization", e));
   }
 
   private removeUserFromRoom(roomId: string, peerId: string) {

@@ -43,6 +43,7 @@ export function ConnectForm(props: {
           selfPosition: () => [mouse.x, mouse.y, 0]
         },
         targetConnections: 2,
+        logLevel: "DEBUG",
         maxConnections: 4,
         connectionConfig: {
           iceServers: [

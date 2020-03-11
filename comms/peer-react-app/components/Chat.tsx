@@ -62,8 +62,6 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   const [newRoomName, setNewRoomName] = useState("");
   const messagesEndRef: any = useRef();
 
-  props.peer.logLevel = "DEBUG"
-
   document.title = props.peer.peerId
 
   props.peer.callback = (sender, room, payload) => {
