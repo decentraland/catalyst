@@ -2,7 +2,7 @@ import { PeerInfo, Layer, PeerRequest } from "./types";
 import { RoomsService } from "./roomsService";
 import { PeersService, NotificationType } from "./peersService";
 import { removeUserAndNotify, getPeerId } from "./utils";
-import { UserMustBeInLayerError as PeerMustBeInLayerError, LayerIsFullError } from "./errors";
+import { UserMustBeInLayerError as PeerMustBeInLayerError, LayerIsFullError, RequestError } from "./errors";
 
 type LayersServiceConfig = {
   peersService: PeersService;
@@ -45,8 +45,13 @@ export class LayersService {
 
   getLayerUsers(layerId: string): PeerInfo[] {
     const layer = this.layers[layerId];
-    if (layer) this.checkLayerPeersIfNeeded(layer);
-    return this.peersService.getPeersInfo(layer!.users);
+    
+    if (layer) {
+      this.checkLayerPeersIfNeeded(layer);
+      return this.peersService.getPeersInfo(layer.users);
+    } else {
+      throw new RequestError("Layer not found", "layer-not-found", 404)
+    }
   }
 
   getRoomsService(layerId: string) {
@@ -154,7 +159,10 @@ export class LayersService {
   getOptimalConnectionsFor(peerId: string, targetConnections: number, maxDistance: number) {
     const peerInfo = this.peersService.getPeerInfo(peerId);
     if (peerInfo.layer && peerInfo.position) {
-      return { layerId: peerInfo.layer, optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections, maxDistance) };
+      return {
+        layerId: peerInfo.layer,
+        optimalConnections: this.peersService.getOptimalConnectionsFor(peerInfo, this.getLayerUsers(peerInfo.layer), targetConnections, maxDistance)
+      };
     }
   }
 }
