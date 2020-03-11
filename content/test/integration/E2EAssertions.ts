@@ -26,7 +26,7 @@ export async function assertEntityWasNotDeployed(server: TestServer, entity: Con
     const content: ControllerEntityContent[] = (entity.content ?? [])
     await Promise.all(content.map(({ hash }) => assertFileIsNotOnServer(server, hash)))
     const entities = await server.getEntitiesByIds(entity.type, entity.id)
-    assert.deepStrictEqual(entities.length, 0)
+    assert.equal(entities.length, 0)
 }
 
 export async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
@@ -41,9 +41,9 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
 /** Please set the expected events from older to newer */
 export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: DeploymentEvent[]) {
     const deploymentHistory: DeploymentHistory = (await server.getHistory()).events
-    assert.deepStrictEqual(deploymentHistory.length, expectedEvents.length, `Expected to find ${expectedEvents.length} deployments in history on server ${server.getAddress()}. Instead, found ${deploymentHistory.length}.`)
+    assert.equal(deploymentHistory.length, expectedEvents.length, `Expected to find ${expectedEvents.length} deployments in history on server ${server.getAddress()}. Instead, found ${deploymentHistory.length}.`)
     const { historySize } = await server.getStatus()
-    assert.deepStrictEqual(historySize, expectedEvents.length, `Expected to find a history of size ${expectedEvents.length} on the status on ${server.getAddress()}. Instead, found ${historySize}.`)
+    assert.equal(historySize, expectedEvents.length, `Expected to find a history of size ${expectedEvents.length} on the status on ${server.getAddress()}. Instead, found ${historySize}.`)
     for (let i = 0; i < expectedEvents.length; i++) {
         const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
         const actualEvent: DeploymentEvent = deploymentHistory[i]
@@ -52,9 +52,9 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
 }
 
 export function assertEqualsDeployment(actualEvent: DeploymentEvent, expectedEvent: DeploymentEvent) {
-    assert.deepStrictEqual(actualEvent.entityId, expectedEvent.entityId)
-    assert.deepStrictEqual(actualEvent.entityType, expectedEvent.entityType)
-    assert.deepStrictEqual(actualEvent.timestamp, expectedEvent.timestamp)
+    assert.equal(actualEvent.entityId, expectedEvent.entityId)
+    assert.equal(actualEvent.entityType, expectedEvent.entityType)
+    assert.equal(actualEvent.timestamp, expectedEvent.timestamp)
     assert.ok(actualEvent.serverName.startsWith(expectedEvent.serverName))
 }
 
@@ -67,7 +67,7 @@ async function assertEntityIsOnServer(server: TestServer, entity: ControllerEnti
 export async function assertFileIsOnServer(server: TestServer, hash: ContentFileHash) {
     const content = await server.downloadContent(hash)
     const downloadedContentHash = await Hashing.calculateBufferHash(content)
-    assert.deepStrictEqual(downloadedContentHash, hash)
+    assert.equal(downloadedContentHash, hash)
 }
 
 export async function assertFileIsNotOnServer(server: TestServer, hash: ContentFileHash) {
@@ -76,18 +76,18 @@ export async function assertFileIsNotOnServer(server: TestServer, hash: ContentF
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    assert.deepStrictEqual(auditInfo.overwrittenBy, overwrittenBy.id)
+    assert.equal(auditInfo.overwrittenBy, overwrittenBy.id)
 }
 
 export async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    assert.deepStrictEqual(auditInfo.overwrittenBy, undefined)
+    assert.equal(auditInfo.overwrittenBy, undefined)
 }
 
 
 export async function assertEntityIsNotDenylisted(server: TestServer, entity: ControllerEntity) {
     const auditInfo: AuditInfo = await server.getAuditInfo(entity)
-    assert.deepStrictEqual(auditInfo.isDenylisted, undefined)
+    assert.equal(auditInfo.isDenylisted, undefined)
 }
 
 export async function assertEntityIsDenylisted(server: TestServer, entity: ControllerEntity) {
@@ -115,16 +115,16 @@ export function buildEvent(entity: ControllerEntity, server: TestServer, timesta
 }
 
 export function assertRequiredFieldsOnEntitiesAreEqual(entity1: ControllerEntity, entity2: ControllerEntity) {
-    assert.deepStrictEqual(entity1.id, entity2.id)
-    assert.deepStrictEqual(entity1.type, entity2.type)
+    assert.equal(entity1.id, entity2.id)
+    assert.equal(entity1.type, entity2.type)
     assert.deepStrictEqual(entity1.pointers, entity2.pointers)
-    assert.deepStrictEqual(entity1.timestamp, entity2.timestamp)
+    assert.equal(entity1.timestamp, entity2.timestamp)
 }
 
 export function assertFieldsOnEntitiesExceptIdsAreEqual(entity1: ControllerEntity, entity2: ControllerEntity) {
-    assert.deepStrictEqual(entity1.type, entity2.type)
+    assert.equal(entity1.type, entity2.type)
     assert.deepStrictEqual(entity1.pointers, entity2.pointers)
-    assert.deepStrictEqual(entity1.timestamp, entity2.timestamp)
+    assert.equal(entity1.timestamp, entity2.timestamp)
     assert.deepStrictEqual(entity1.content, entity2.content)
     assert.deepStrictEqual(entity1.metadata, entity2.metadata)
 }
