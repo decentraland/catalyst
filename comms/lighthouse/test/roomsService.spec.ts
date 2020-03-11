@@ -1,6 +1,7 @@
 import { RoomsService } from "../src/roomsService";
 import { IPeersService, NotificationType } from "../src/peersService";
-import { PeerRequest } from "../src/types";
+import { PeerRequest, PeerInfo } from "../src/types";
+import { PeerConnectionHint } from "decentraland-katalyst-utils/Positions";
 
 const { arrayWithExactContents } = jasmine;
 
@@ -29,7 +30,10 @@ describe("Rooms service", () => {
       ensurePeerInfo(peer: PeerRequest) {
         return { id: peer.peerId!, protocolVersion: 99 };
       },
-      sentMessages: []
+      sentMessages: [],
+      getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], targetConnections: number, maxDistance: number): PeerConnectionHint[] {
+        return [];
+      }
     };
 
     roomsService = new RoomsService(layerId, {}, { peersService: peerService });
