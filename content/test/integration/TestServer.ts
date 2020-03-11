@@ -14,7 +14,7 @@ import { AuditInfo } from "@katalyst/content/service/audit/Audit"
 import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
-import { assertResponseIsOkOrThrown } from "./E2EAssertions"
+import { assertResponseIsOkOrThrow } from "./E2EAssertions"
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
 
 /** A wrapper around a server that helps make tests more easily */
@@ -139,7 +139,7 @@ export class TestServer extends Server {
         }
 
         const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}`, { method: 'PUT', body: JSON.stringify(body), headers: {"Content-Type": "application/json"} })
-        await assertResponseIsOkOrThrown(deployResponse)
+        await assertResponseIsOkOrThrow(deployResponse)
     }
 
     private async undenylistTarget(target: DenylistTarget, identity: Identity) {
@@ -147,7 +147,7 @@ export class TestServer extends Server {
         const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
         const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
         const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}?${query}`, { method: 'DELETE', headers: {"Content-Type": "application/json"} })
-        await assertResponseIsOkOrThrown(deployResponse)
+        await assertResponseIsOkOrThrow(deployResponse)
     }
 
     private async makeRequest(url: string): Promise<any> {

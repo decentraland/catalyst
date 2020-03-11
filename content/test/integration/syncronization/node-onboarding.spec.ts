@@ -12,19 +12,9 @@ import { MockedDAOClient } from "./clients/MockedDAOClient"
 
 describe("End 2 end - Node onboarding", function() {
 
-    let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("1s")
     let server1: TestServer, server2: TestServer, server3: TestServer
     let dao
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         dao = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070')

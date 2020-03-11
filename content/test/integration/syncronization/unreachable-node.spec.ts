@@ -12,20 +12,10 @@ import { MockedDAOClient } from "./clients/MockedDAOClient"
  */
 describe("End 2 end - Unreachable node", function() {
 
-    let jasmine_default_timeout
     const SMALL_SYNC_INTERVAL: number = ms("1s")
     const LONG_SYNC_INTERVAL: number = ms('5s')
     let server1: TestServer, server2: TestServer, server3: TestServer
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)

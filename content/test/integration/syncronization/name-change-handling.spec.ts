@@ -16,18 +16,9 @@ describe("End 2 end - Name change handling", function() {
 
     const SYNC_INTERVAL: number = ms("1s")
     const DAO_SYNC_INTERVAL: number = ms("8s")
-    let jasmine_default_timeout
     let server1: TestServer, server2: TestServer
     let dao
 
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         dao = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070')

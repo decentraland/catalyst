@@ -14,18 +14,8 @@ describe("End 2 end - Denylist handling", () => {
 
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
     const identity = createIdentity()
-    let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("5s")
     let server1: TestServer, server2: TestServer, onboardingServer: TestServer
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
@@ -57,7 +47,7 @@ describe("End 2 end - Denylist handling", () => {
         // Start onboarding server
         await onboardingServer.start()
 
-        // Assert on onboarding server has all history
+        // Wait for servers to sync and assert on onboarding server has all history
         await awaitUntil(() => assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent))
 
         // Assert it wasn't deployed
@@ -82,7 +72,7 @@ describe("End 2 end - Denylist handling", () => {
         // Start onboarding server
         await onboardingServer.start()
 
-        // Assert on onboarding server has all history
+        // Wait for servers to sync and assert on onboarding server has all history
         await awaitUntil(() => assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent))
 
         // Assert it wasn't deployed

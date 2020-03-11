@@ -20,17 +20,6 @@ describe("End 2 end - Error handling", () => {
     let server1: TestServer, server2: TestServer
     let accessChecker = new MockedAccessChecker()
 
-    let jasmine_default_timeout
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
-
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
         server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, DAO)
@@ -67,16 +56,18 @@ describe("End 2 end - Error handling", () => {
         const entity1Content = entityBeingDeployed1.content!![0].hash
 
         // Deploy entity 1
-        await server1.deploy(deployData1)
+        const deploymentTimestamp = await server1.deploy(deployData1)
+        const deploymentEvent = buildEvent(entityBeingDeployed1, server1, deploymentTimestamp)
 
         // Cause sync failure
         await server1.denylistContent(entity1Content, identity)
 
+        // Wait for servers to sync
+        await awaitUntil(async () => await assertHistoryOnServerHasEvents(server2, deploymentEvent))
+
         // Assert deployment is marked as failed on server 2
-        await awaitUntil(async () => {
-            const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
-            expect(failedDeployments.length).toBe(1)
-        })
+        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
+        expect(failedDeployments.length).toBe(1)
 
         // Prepare entity to deploy
         const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
@@ -91,7 +82,7 @@ describe("End 2 end - Error handling", () => {
         const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(newFailedDeployments.length).toBe(0)
 
-        // Assert entity 2 is the active entity on both servers
+        // Wait for servers to sync and assert entity 2 is the active entity on both servers
         await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2))
         await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed2)
         await assertEntitiesAreDeployedButNotActive(server1, entityBeingDeployed1)
@@ -138,14 +129,15 @@ describe("End 2 end - Error handling", () => {
         // Cause failure
         await causeOfFailure(entityBeingDeployed)
 
+        // Wait for servers to sync
+        await awaitUntil(async () => await assertHistoryOnServerHasEvents(server2, deploymentEvent))
+
         // Assert deployment is marked as failed
-        await awaitUntil(async () => {
-            const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
-            expect(failedDeployments.length).toBe(1)
-            assertEqualsDeployment(failedDeployments[0].deployment, deploymentEvent)
-            expect(failedDeployments[0].reason).toEqual(errorType)
-            expect(failedDeployments[0].moment).toBeGreaterThan(entityBeingDeployed.timestamp)
-        })
+        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
+        expect(failedDeployments.length).toBe(1)
+        assertEqualsDeployment(failedDeployments[0].deployment, deploymentEvent)
+        expect(failedDeployments[0].reason).toEqual(errorType)
+        expect(failedDeployments[0].moment).toBeGreaterThan(entityBeingDeployed.timestamp)
 
         // Assert entity wasn't deployed
         await assertEntityWasNotDeployed(server2, entityBeingDeployed)
