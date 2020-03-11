@@ -1,3 +1,6 @@
+/**
+ * We will use this file to set global configs, such as test suit set up and tear down
+ */
 
 let jasmine_default_timeout
 
