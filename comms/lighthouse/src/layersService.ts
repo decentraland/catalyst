@@ -15,7 +15,7 @@ type LayersServiceConfig = {
 export class LayersService {
   private layers: Record<string, Layer> = {};
 
-  private layerChecker: LayerChecker = new LayerChecker(this, this.config.peersService);
+  private layerChecker: LayerChecker = new LayerChecker(this, this.peersService);
 
   private newLayer(layerId: string): Layer {
     return { id: layerId, peers: [], rooms: {}, maxPeers: this.config.maxPeersPerLayer, lastCheckTimestamp: Date.now() };
@@ -76,7 +76,7 @@ export class LayersService {
 
   removePeerFromLayer(layerId: string, peerId: string) {
     this.getRoomsService(layerId)?.removePeer(peerId);
-    return removePeerAndNotify(this.layers, layerId, peerId, NotificationType.PEER_LEFT_LAYER, "layerId", this.config.peersService, !this.isDefaultLayer(layerId));
+    return removePeerAndNotify(this.layers, layerId, peerId, NotificationType.PEER_LEFT_LAYER, "layerId", this.peersService, !this.isDefaultLayer(layerId));
   }
 
   createLayer(layerId: string) {
@@ -107,7 +107,7 @@ export class LayersService {
 
       const peersToNotify = layer.peers.slice();
       layer.peers.push(peerId);
-      this.config.peersService?.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
+      this.peersService.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
         id: peerId,
         userId: peerId,
         peerId,
@@ -153,7 +153,7 @@ export class LayersService {
   }
 
   getLayerTopology(layerId: string) {
-    return this.layers[layerId].peers.map(it => ({ ...this.peersService.getPeerInfo(it), connectedPeerIds: this.config.peersService!.getConnectedPeers(it) }));
+    return this.layers[layerId].peers.map(it => ({ ...this.peersService.getPeerInfo(it), connectedPeerIds: this.peersService.getConnectedPeers(it) }));
   }
 
   getOptimalConnectionsFor(peerId: string, targetConnections: number, maxDistance: number) {
