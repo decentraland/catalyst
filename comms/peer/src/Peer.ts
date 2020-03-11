@@ -1114,8 +1114,7 @@ export class Peer implements IPeer {
       this.knownPeers[it.id].timestamp = now;
     });
 
-    //@ts-ignore
-    const ignored = this.updateNetwork();
+    this.updateNetwork().catch(e => this.log(LogLevel.WARN, "Error updating network for optimization", e));;
   }
 
   private removeUserFromRoom(roomId: string, peerId: string) {
