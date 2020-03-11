@@ -10,7 +10,6 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 
 import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager";
 import ms from "ms";
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
@@ -256,19 +255,19 @@ describe("Validations", function() {
 
   it(`when a profile is created its access is checked`, async () => {
     const validation = getValidatorWithRealAccess();
-    await validation.validateAccess(EntityType.PROFILE, ["some-address"], "some-address", ValidationContext.ALL);
+    await validation.validateAccess(EntityType.PROFILE, ["some-address"], Date.now(), "some-address", ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
   it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
     const validation = getValidatorWithRealAccess();
-    await validation.validateAccess(EntityType.PROFILE, ["some-address", "other-address"], "some-address", ValidationContext.ALL);
+    await validation.validateAccess(EntityType.PROFILE, ["some-address", "other-address"], Date.now(), "some-address", ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
   });
 
   it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
     const validation = getValidatorWithRealAccess();
-    await validation.validateAccess(EntityType.PROFILE, ["other-address"], "some-address", ValidationContext.ALL);
+    await validation.validateAccess(EntityType.PROFILE, ["other-address"], Date.now(), "some-address", ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(1);
   });
 });
@@ -283,8 +282,7 @@ const notReferencedHashMessage = hash => {
 
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
-  return new Validations(new AccessCheckerImpl(authenticator, "unused_url",
-    new FetchHelper()),
+  return new Validations(new AccessCheckerImpl(authenticator, "unused_url"),
     authenticator,
     mockedFailedDeploymentsManager(),
     "ropsten",

@@ -65,6 +65,7 @@ ts_library(
         "//commons/utils",
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
+        "//contracts",
         "@npm//@types/faker",
         "@npm//@types/form-data",
         "@npm//@types/jasmine",
