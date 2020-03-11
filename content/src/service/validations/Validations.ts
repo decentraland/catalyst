@@ -119,9 +119,9 @@ export class ValidatorInstance {
     }
 
     /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
-    async validateAccess(entityType: EntityType, pointers: Pointer[], ethAddress: EthAddress, validationContext: ValidationContext): Promise<void> {
+    async validateAccess(entityType: EntityType, pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress, validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.ACCESS)) {
-            const errors = await this.accessChecker.hasAccess(entityType, pointers, ethAddress);
+            const errors = await this.accessChecker.hasAccess(entityType, pointers, timestamp, ethAddress);
             this.errors = this.errors.concat(errors)
         }
     }
