@@ -3,7 +3,7 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
 import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers } from "../E2ETestUtils"
+import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { delay } from "decentraland-katalyst-commons/src/util"
@@ -11,18 +11,8 @@ import { delay } from "decentraland-katalyst-commons/src/util"
 describe("End 2 end synchronization tests", function() {
 
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
-    let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("1s")
     let server1: TestServer, server2: TestServer, server3: TestServer
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
@@ -55,11 +45,8 @@ describe("End 2 end synchronization tests", function() {
         // Assert that the entity was deployed on server 1
         await assertHistoryOnServerHasEvents(server1, deploymentEvent)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
         // Assert that the entity was synced from server 1 to server 2
-        await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
+        await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entityBeingDeployed))
         await assertHistoryOnServerHasEvents(server2, deploymentEvent)
     })
 
@@ -149,17 +136,14 @@ describe("End 2 end synchronization tests", function() {
         const deploymentEvent1 = buildEvent(entityBeingDeployed1, server1, deploymentTimestamp1)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1))
 
         // Deploy entity 2 on server 2
         const deploymentTimestamp2 = await server2.deploy(deployData2)
         const deploymentEvent2 = buildEvent(entityBeingDeployed2, server2, deploymentTimestamp2)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
         // Assert that the entities were deployed on the servers
-        await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2))
         await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2)
     })
 
@@ -199,24 +183,24 @@ describe("End 2 end synchronization tests", function() {
         const deploymentEvent3 = buildEvent(entity3, server3, deploymentTimestamp3)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent3))
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent3))
 
         // Make sure that both server 1 and 3 have entity 1 and 3 currently active
         await assertEntitiesAreActiveOnServer(server1, entity1, entity3)
         await assertEntitiesAreActiveOnServer(server3, entity1, entity3)
-        await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent3)
-        await assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent3)
 
         // Restart server 2
         await server2.start()
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2, deploymentEvent3))
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2, deploymentEvent3))
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2, deploymentEvent3))
 
         // Make assertions on Server 1
         await assertEntitiesAreActiveOnServer(server1, entity3)
         await assertEntitiesAreDeployedButNotActive(server1, entity1, entity2)
-        await assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2, deploymentEvent3)
         await assertEntityIsOverwrittenBy(server1, entity1, entity2)
         await assertEntityIsOverwrittenBy(server1, entity2, entity3)
         await assertEntityIsNotOverwritten(server1, entity3)
@@ -224,7 +208,6 @@ describe("End 2 end synchronization tests", function() {
         // Make assertions on Server 2
         await assertEntitiesAreActiveOnServer(server2, entity3)
         await assertEntitiesAreDeployedButNotActive(server2, entity1, entity2)
-        await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2, deploymentEvent3)
         await assertEntityIsOverwrittenBy(server2, entity1, entity2)
         await assertEntityIsOverwrittenBy(server2, entity2, entity3)
         await assertEntityIsNotOverwritten(server2, entity3)
@@ -232,7 +215,6 @@ describe("End 2 end synchronization tests", function() {
         // Make assertions on Server 3
         await assertEntitiesAreActiveOnServer(server3, entity3)
         await assertEntitiesAreDeployedButNotActive(server3, entity1, entity2)
-        await assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2, deploymentEvent3)
         await assertEntityIsOverwrittenBy(server3, entity1, entity2)
         await assertEntityIsOverwrittenBy(server3, entity2, entity3)
         await assertEntityIsNotOverwritten(server3, entity3)
