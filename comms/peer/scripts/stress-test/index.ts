@@ -1,6 +1,6 @@
 import { Peer } from "../../src/Peer";
 import { util } from "../../src/peerjs-server-connector/util";
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { delay } from "decentraland-katalyst-utils/util";
 
 const urlParams = new URLSearchParams(location.search);
 

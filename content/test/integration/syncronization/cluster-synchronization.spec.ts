@@ -1,12 +1,12 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
-import { delay } from "decentraland-katalyst-commons/src/util"
+import { delay } from "decentraland-katalyst-utils/util"
 
 describe("End 2 end synchronization tests", function() {
 

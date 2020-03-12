@@ -2,14 +2,15 @@ import { PeerJSServerConnection } from "./peerjs-server-connector/peerjsserverco
 import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
-import { connectionIdFor, util, pickRandom, noReject, delay } from "./peerjs-server-connector/util";
+import { connectionIdFor, util, pickRandom, delay, pickBy } from "./peerjs-server-connector/util";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { KnownPeerData, IPeer, Room, MinPeerData } from "./types";
+import { KnownPeerData, IPeer, Room, MinPeerData, LogLevel } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
 import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
+import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVAL } from "../../../commons/utils/Positions";
 
 const PROTOCOL_VERSION = 4;
 
@@ -23,14 +24,13 @@ export type PeerData = {
   connection: SimplePeer.Instance;
 };
 
-enum LogLevel {
-  TRACE = 0,
-  DEBUG = 1,
-  INFO = 2,
-  WARN = 3,
-  ERROR = 4,
-  NONE = Number.MAX_SAFE_INTEGER
-}
+export type PositionConfig = {
+  selfPosition: () => Position | undefined;
+  distance?: (l1: Position, l2: Position) => number;
+  nearbyPeersDistance?: number;
+};
+
+type PeerResponse = { id?: string; userId?: string; peerId?: string };
 
 const PeerSignals = { offer: "offer", answer: "answer" };
 
@@ -46,7 +46,7 @@ type PeerConfig = {
   socketBuilder?: SocketBuilder;
   token?: string;
   sessionId?: string;
-  minConnections?: number;
+  targetConnections?: number;
   maxConnections?: number;
   peerConnectTimeout?: number;
   oldConnectionsTimeout?: number;
@@ -54,10 +54,18 @@ type PeerConfig = {
   logLevel?: keyof typeof LogLevel;
   reconnectionAttempts?: number;
   backoffMs?: number;
+  optimizeNetworkInterval?: number;
   authHandler?: (msg: string) => Promise<string>;
-  parcelGetter?: () => [number, number];
+  positionConfig?: PositionConfig;
   statusHandler?: (status: string) => void;
 };
+
+// Try not to use this. It should be removed when lighthouses are updated
+function toParcel(position: any) {
+  if (position instanceof Array && position.length === 3) {
+    return [Math.floor(position[0] / 16), Math.floor(position[2] / 16)];
+  }
+}
 
 class Stats {
   public expired: number = 0;
@@ -97,6 +105,8 @@ class GlobalStats extends Stats {
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
+type NetworkOperation = () => Promise<KnownPeerData[]>;
+
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private connectedPeers: Record<string, PeerData> = {};
@@ -126,6 +136,8 @@ export class Peer implements IPeer {
 
   public logLevel: keyof typeof LogLevel = "INFO";
 
+  private timeToRequestOptimumNetwork: number = Number.MAX_SAFE_INTEGER;
+
   constructor(
     lighthouseUrl: string,
     public peerId: string,
@@ -138,13 +150,20 @@ export class Peer implements IPeer {
 
     this.config.token = this.config.token ?? util.randomToken();
 
-    this.config.minConnections = this.config.minConnections ?? 4;
-    this.config.maxConnections = this.config.maxConnections ?? 8;
-    this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 2000;
+    this.config.targetConnections = this.config.targetConnections ?? 4;
+    this.config.maxConnections = this.config.maxConnections ?? 7;
+    this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 3500;
     this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
     this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
     this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? 10;
     this.config.backoffMs = this.config.backoffMs ?? 2000;
+
+    if (this.config.positionConfig) {
+      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance;
+      this.config.positionConfig.nearbyPeersDistance = this.config.positionConfig.nearbyPeersDistance ?? DISCRETIZE_POSITION_INTERVAL * 3;
+    }
+
+    this.setUpTimeToRequestOptimumNetwork();
 
     this.instanceId = Math.floor(Math.random() * MAX_UINT32);
 
@@ -160,12 +179,13 @@ export class Peer implements IPeer {
       setTimeout(() => {
         try {
           this.expireMessages();
+          this.expirePeers();
         } catch (e) {
           this.log(LogLevel.ERROR, "Couldn't expire messages", e);
         } finally {
           this.expireTimeoutId = scheduleExpiration();
         }
-      }, 1000);
+      }, 2000);
 
     scheduleExpiration();
   }
@@ -189,14 +209,15 @@ export class Peer implements IPeer {
       authHandler: this.config.authHandler,
       heartbeatExtras: () => ({
         ...this.buildTopologyInfo(),
-        ...this.buildParcelInfo()
+        ...this.buildPositionInfo(),
+        ...this.optimizeNetworkRequest()
       }),
       ...(this.config.socketBuilder ? { socketBuilder: this.config.socketBuilder } : {})
     });
   }
 
   private expireMessages() {
-    const currentTimestamp = new Date().getTime();
+    const currentTimestamp = Date.now();
 
     const keys = Object.keys(this.receivedPackets);
 
@@ -208,12 +229,47 @@ export class Peer implements IPeer {
     });
   }
 
+  private expirePeers() {
+    const currentTimestamp = Date.now();
+
+    Object.keys(this.knownPeers).forEach(id => {
+      const lastUpdate = this.knownPeers[id].timestamp;
+      if (lastUpdate && currentTimestamp - lastUpdate > 90000) {
+        if (this.isConnectedTo(id)) {
+          this.disconnectFrom(id);
+        }
+        delete this.knownPeers[id];
+      }
+    });
+  }
+
   private buildTopologyInfo() {
     return { connectedPeerIds: this.fullyConnectedPeerIds() };
   }
 
-  private buildParcelInfo() {
-    return this.config.parcelGetter ? { parcel: this.config.parcelGetter() } : {};
+  private buildPositionInfo() {
+    return this.config.positionConfig
+      ? {
+          position: this.config.positionConfig.selfPosition(),
+          // This is domain specific, but is kept here for retrocompatibility with old lighthouses. When all lighthouses are updated, we can remove it
+          parcel: toParcel(this.config.positionConfig.selfPosition())
+        }
+      : {};
+  }
+
+  private optimizeNetworkRequest() {
+    const shouldOptimize = Date.now() > this.timeToRequestOptimumNetwork;
+
+    if (shouldOptimize) {
+      this.setUpTimeToRequestOptimumNetwork();
+      return {
+        optimizeNetwork: true,
+        targetConnections: this.config.targetConnections,
+        maxDistance: this.config.positionConfig?.nearbyPeersDistance
+      };
+    } else {
+      return {};
+    }
   }
 
   private markReceived(packet: Packet) {
@@ -302,12 +358,15 @@ export class Peer implements IPeer {
     if (this.disposed) return;
     const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
       method: "PUT",
-      bodyObject: { userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
+      // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
+      bodyObject: { id: this.peerId, userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION }
     });
+
+    const layerUsers: PeerResponse[] = json;
 
     this.currentLayer = layer;
     this.cleanStateAndConnections();
-    this.updateKnownPeers(json);
+    this.updateKnownPeers(layerUsers.map(it => ({ id: (it.id ?? it.userId)! })));
 
     //@ts-ignore
     const ignored = this.updateNetwork();
@@ -332,14 +391,18 @@ export class Peer implements IPeer {
 
     const { json } = await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}`, {
       method: "PUT",
-      bodyObject: { userId: this.peerId, peerId: this.peerId }
+      // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
+      bodyObject: { id: this.peerId, userId: this.peerId, peerId: this.peerId }
     });
 
-    const roomUsers: MinPeerData[] = json;
+    const roomUsers: PeerResponse[] = json;
 
-    room.users = roomUsers.map(it => it.userId);
+    room.users = roomUsers.map(it => (it.id ?? it.userId)!);
 
-    this.updateKnownPeersWithRoom(room, roomUsers);
+    this.updateKnownPeersWithRoom(
+      room,
+      roomUsers.map(it => ({ id: (it.id ?? it.userId)! }))
+    );
 
     await this.updateNetwork();
     return await this.roomConnectionHealthy(roomId);
@@ -356,54 +419,53 @@ export class Peer implements IPeer {
 
     //We add the room to those known peers that are in the room
     roomPeersData
-      .filter(it => it.userId !== this.peerId)
+      .filter(it => it.id !== this.peerId)
       .forEach(it => {
-        if (!this.knownPeers[it.userId] || typeof this.knownPeers[it.userId].rooms === "undefined") {
-          this.knownPeers[it.userId] = { ...it, rooms: [room.id], subtypeData: {} };
-        } else if (this.knownPeers[it.userId].rooms.indexOf(room.id) < 0) {
-          this.knownPeers[it.userId].rooms.push(room.id);
+        if (!this.knownPeers[it.id] || typeof this.knownPeers[it.id].rooms === "undefined") {
+          this.knownPeers[it.id] = { ...it, rooms: [room.id], subtypeData: {} };
+        } else if (this.knownPeers[it.id].rooms.indexOf(room.id) < 0) {
+          this.knownPeers[it.id].rooms.push(room.id);
         }
       });
   }
 
   private updateKnownPeers(newPeers: MinPeerData[]) {
     //We remove those peers that are not in this newPeers list
-    Object.keys(this.knownPeers).forEach(userId => {
-      if (!newPeers.some($ => $.userId === userId)) {
-        this.removeKnownPeer(userId);
+    Object.keys(this.knownPeers).forEach(peerId => {
+      if (!newPeers.some($ => $.id === peerId)) {
+        this.removeKnownPeer(peerId);
       }
     });
 
     newPeers.forEach(peer => {
-      if (peer.userId !== this.peerId) {
-        this.addKnownPeer(peer);
+      if (peer.id !== this.peerId) {
+        this.addKnownPeerIfNotExists(peer);
       }
     });
   }
 
-  private addKnownPeer(peer: MinPeerData) {
-    if (!this.knownPeers[peer.userId]) this.knownPeers[peer.userId] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+  private addKnownPeerIfNotExists(peer: MinPeerData) {
+    if (!this.knownPeers[peer.id]) {
+      this.knownPeers[peer.id] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+    }
+
+    return this.knownPeers[peer.id];
   }
 
   private ensureKnownPeer(packet: Packet) {
-    this.addKnownPeer({ peerId: packet.src, userId: packet.src, rooms: packet.messageData?.room ? [packet.messageData?.room] : [] });
+    this.addKnownPeerIfNotExists({ id: packet.src, rooms: packet.messageData?.room ? [packet.messageData?.room] : [] });
 
     if (packet.messageData?.room && !this.knownPeers[packet.src].rooms.includes(packet.messageData?.room)) {
       this.knownPeers[packet.src].rooms.push(packet.messageData.room);
     }
   }
 
-  private removeKnownPeer(userId: string) {
-    const peerData = this.knownPeers[userId];
-    delete this.knownPeers[userId];
+  private removeKnownPeer(peerId: string) {
+    const peerData = this.knownPeers[peerId];
+    delete this.knownPeers[peerId];
     if (peerData) {
-      peerData.rooms.forEach(room => this.removeUserFromRoom(room, userId));
+      peerData.rooms.forEach(room => this.removeUserFromRoom(room, peerId));
     }
-  }
-
-  private removeKnownPeerByPeerId(peerId: string) {
-    const userId = Object.keys(this.knownPeers).find(key => this.knownPeers[key].peerId === peerId);
-    if (userId) this.removeKnownPeer(userId);
   }
 
   async roomConnectionHealthy(roomId: string) {
@@ -424,44 +486,32 @@ export class Peer implements IPeer {
       return;
     }
 
-    this.updatingNetwork = true;
-    return new Promise(async (resolve, reject) => {
-      try {
-        this.checkConnectionsSanity();
+    try {
+      this.updatingNetwork = true;
 
-        let toConnectCount = this.config.minConnections! - this.connectedCount();
-        let remaining = this.calculateConnectionCandidates();
-        let toConnect = [] as string[];
-        while (toConnectCount > 0 && remaining.length > 0) {
-          this.log(LogLevel.INFO, `Updating network. Trying to establish ${toConnectCount} connections with candidates`, remaining);
+      this.log(LogLevel.DEBUG, "Updating network...");
 
-          [toConnect, remaining] = pickRandom(remaining, toConnectCount);
+      this.checkConnectionsSanity();
 
-          this.log(LogLevel.DEBUG, `Updating network. Picked ${toConnect}`);
+      let operation: NetworkOperation | undefined;
 
-          const connectionResults = await Promise.all(toConnect.map(candidate => noReject(this.connectTo(this.knownPeers[candidate]))));
+      let connectionCandidates = Object.values(this.knownPeers).filter(it => !this.isConnectedTo(it.id));
 
-          this.log(LogLevel.INFO, `Updating network. Connection result: `, connectionResults);
-
-          toConnectCount = connectionResults.filter(([status]) => status === "rejected").length;
+      if (connectionCandidates.length > 0) {
+        while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
+          try {
+            connectionCandidates = await operation();
+          } catch (e) {
+            // We may want to invalidate the operation or something to avoid repeating the same mistake
+            this.log(LogLevel.DEBUG, "Error performing operation", operation, e);
+          }
         }
-
-        const toDisconnect = this.connectedCount() - this.config.maxConnections!;
-
-        //If we are over connected, we disconnect
-        if (toDisconnect > 0) {
-          Object.keys(this.connectedPeers)
-            .sort((peer1, peer2) => this.connectedPeers[peer1].createTimestamp - this.connectedPeers[peer2].createTimestamp)
-            .slice(0, toDisconnect)
-            .forEach(peerId => this.disconnectFrom(peerId));
-        }
-        resolve();
-      } catch (e) {
-        this.log(LogLevel.ERROR, "Error while updating network", e);
-      } finally {
-        this.updatingNetwork = false;
       }
-    });
+    } finally {
+      this.log(LogLevel.DEBUG, "Network update finished");
+
+      this.updatingNetwork = false;
+    }
   }
 
   private checkConnectionsSanity() {
@@ -475,7 +525,110 @@ export class Peer implements IPeer {
     });
   }
 
-  public connectedCount() {
+  private calculateNextNetworkOperation(connectionCandidates: KnownPeerData[]): NetworkOperation | undefined {
+    this.log(LogLevel.DEBUG, "Calculating network operation with candidates", connectionCandidates);
+
+    const peerSortCriteria = (peer1: KnownPeerData, peer2: KnownPeerData) => {
+      if (this.config.positionConfig) {
+        // We prefer those peers that have position over those that don't
+        if (peer1.position && !peer2.position) return -1;
+        if (peer2.position && !peer1.position) return 1;
+
+        if (peer1.position && peer2.position) {
+          const distanceDiff = this.distanceTo(peer1.id)! - this.distanceTo(peer2.id)!;
+          // If the distance is the same, we randomize
+          return distanceDiff === 0 ? 0.5 - Math.random() : distanceDiff;
+        }
+      }
+
+      // If none has position or if we don't, we randomize
+      return 0.5 - Math.random();
+    };
+
+    const pickCandidates = (count: number) => {
+      if (!this.config.positionConfig) return pickRandom(connectionCandidates, count);
+
+      // We are going to be calculating the distance to each of the candidates. This could be costly, but since the state could have changed after every operation,
+      // we need to ensure that the value is updated. If known peers is kept under maybe 2k elements, it should be no problem.
+      return pickBy(connectionCandidates, count, peerSortCriteria);
+    };
+
+    const neededConnections = this.config.targetConnections! - this.connectedCount();
+
+    // If we need to establish new connections because we are below the target, we do that
+    if (neededConnections > 0 && connectionCandidates.length > 0) {
+      this.log(LogLevel.DEBUG, "Establishing connections to reach target");
+      return async () => {
+        const [candidates, remaining] = pickCandidates(neededConnections);
+
+        this.log(LogLevel.DEBUG, "Picked connection candidates", candidates);
+
+        await Promise.all(candidates.map(candidate => this.connectTo(candidate).catch(e => this.log(LogLevel.DEBUG, "Error connecting to candidate", candidate, e))));
+        return remaining;
+      };
+    }
+
+    // If we are over the max amount of connections, we discard the "worst"
+    const toDisconnect = this.connectedCount() - this.config.maxConnections!;
+
+    if (toDisconnect > 0) {
+      this.log(LogLevel.DEBUG, "Too many connections. Need to disconnect from: " + toDisconnect);
+      return async () => {
+        Object.keys(this.connectedPeers)
+          // We sort the connected peer by the opposite criteria
+          .sort((peer1, peer2) => -peerSortCriteria(this.knownPeers[peer1], this.knownPeers[peer2]))
+          .slice(0, toDisconnect)
+          .forEach(peerId => this.disconnectFrom(peerId));
+        return connectionCandidates;
+      };
+    }
+
+    // If we have positionConfig, we try to find a better connection than any of the established
+    if (this.config.positionConfig && connectionCandidates.length > 0) {
+      // We find the worst distance of the current connections
+      const worstPeer = this.getWorstConnectedPeerByDistance();
+
+      const sortedCandidates = connectionCandidates.sort(peerSortCriteria);
+      // We find the best candidate
+      const bestCandidate = sortedCandidates.splice(0, 1)[0];
+
+      if (bestCandidate) {
+        const bestCandidateDistance = this.distanceTo(bestCandidate.id);
+
+        if (typeof bestCandidateDistance !== "undefined" && (!worstPeer || bestCandidateDistance < worstPeer[0])) {
+          // If the best candidate is better than the worst connection, we connect to that candidate.
+          // The next operation should handle the disconnection of the worst
+          this.log(LogLevel.DEBUG, "Found a better candidate for connection: ", { candiate: bestCandidate, distance: bestCandidateDistance, replacing: worstPeer });
+          return async () => {
+            await this.connectTo(bestCandidate);
+            return sortedCandidates;
+          };
+        }
+      }
+    }
+  }
+
+  private getWorstConnectedPeerByDistance(): [number, string] | undefined {
+    return Object.keys(this.connectedPeers).reduce<[number, string] | undefined>((currentWorst, peer) => {
+      const currentDistance = this.distanceTo(peer);
+      if (typeof currentDistance !== "undefined") {
+        return typeof currentWorst !== "undefined" && currentWorst[0] >= currentDistance ? currentWorst : [currentDistance, peer];
+      }
+    }, undefined);
+  }
+
+  private selfPosition() {
+    return this.config.positionConfig?.selfPosition();
+  }
+
+  private distanceTo(peerId: string) {
+    const position = this.selfPosition();
+    if (this.knownPeers[peerId]?.position && position) {
+      return this.config.positionConfig?.distance!(position, this.knownPeers[peerId].position!);
+    }
+  }
+
+  connectedCount() {
     return this.fullyConnectedPeerIds().length;
   }
 
@@ -484,11 +637,11 @@ export class Peer implements IPeer {
   }
 
   async connectTo(known: KnownPeerData) {
-    const peer = this.createPeer(known.peerId, util.generateToken(16), true);
+    const peer = this.createPeerConnection(known.id, util.generateToken(16), true);
 
     return this.beConnectedTo(peer.id, this.config.peerConnectTimeout).catch(e => {
       // If we timeout, we want to abort the connection
-      this.disconnectFrom(known.peerId, false);
+      this.disconnectFrom(known.id, false);
       throw e;
     });
   }
@@ -512,7 +665,7 @@ export class Peer implements IPeer {
     this.currentRooms.splice(index, 1);
   }
 
-  public beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
+  beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
       const promisePair = { resolve, reject };
       if (this.isConnectedTo(peerId)) {
@@ -525,12 +678,14 @@ export class Peer implements IPeer {
         if (!this.isConnectedTo(peerId) && this.peerConnectionPromises[peerId]) {
           reject(new Error(`[${this.peerId}] Awaiting connection to peer ${peerId} timed out after ${timeout}ms`));
           this.peerConnectionPromises[peerId] = this.peerConnectionPromises[peerId].splice(this.peerConnectionPromises[peerId].indexOf(promisePair), 1);
+        } else {
+          resolve();
         }
       }, timeout);
     });
   }
 
-  public disconnectFrom(peerId: string, removeListener: boolean = true) {
+  disconnectFrom(peerId: string, removeListener: boolean = true) {
     if (this.connectedPeers[peerId]) {
       this.log(LogLevel.INFO, "Disconnecting from " + peerId);
       //We remove close listeners since we are going to destroy the connection anyway. No need to handle the events.
@@ -542,6 +697,12 @@ export class Peer implements IPeer {
     }
   }
 
+  setPeerPosition(peerId: string, position: Position) {
+    if (this.knownPeers[peerId]) {
+      this.knownPeers[peerId].position = position;
+    }
+  }
+
   private hasConnectionsFor(peerId: string) {
     return !!this.connectedPeers[peerId];
   }
@@ -550,7 +711,7 @@ export class Peer implements IPeer {
     return this.hasConnectionsFor(peerId) && this.connectedPeers[peerId].initiator;
   }
 
-  private isConnectedTo(peerId: string): boolean {
+  public isConnectedTo(peerId: string): boolean {
     return (
       //@ts-ignore The `connected` property is not typed but it seems to be public
       this.connectedPeers[peerId] && this.connectedPeers[peerId].connection.connected
@@ -610,17 +771,17 @@ export class Peer implements IPeer {
       if (!alreadyReceived && !expired) {
         this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
 
+        packet.hops += 1;
+
+        if (packet.hops < packet.ttl) {
+          this.sendPacket(packet);
+        }
+
         const messageData = packet.messageData;
         if (messageData) {
           if (this.isInRoom(messageData.room)) {
             this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
           }
-        }
-
-        packet.hops += 1;
-
-        if (packet.hops < packet.ttl) {
-          this.sendPacket(packet);
         }
       }
     } catch (e) {
@@ -778,7 +939,8 @@ export class Peer implements IPeer {
             connectionId,
             protocolVersion: PROTOCOL_VERSION,
             lighthouseUrl: this.lighthouseUrl(),
-            layer: this.currentLayer
+            layer: this.currentLayer,
+            position: this.selfPosition()
           });
         } else if (data.type === PeerSignals.answer) {
           this.peerJsConnection.sendAnswer(peerData, {
@@ -787,7 +949,8 @@ export class Peer implements IPeer {
             connectionId,
             protocolVersion: PROTOCOL_VERSION,
             lighthouseUrl: this.lighthouseUrl(),
-            layer: this.currentLayer
+            layer: this.currentLayer,
+            position: this.selfPosition()
           });
         } else if (data.candidate) {
           this.peerJsConnection.sendCandidate(peerData, data, connectionId);
@@ -806,19 +969,19 @@ export class Peer implements IPeer {
     let peer = this.connectedPeers[peerId];
     if (!peer) {
       sessionId = sessionId ?? util.generateToken(16);
-      peer = this.createPeer(peerId, sessionId!, initiator);
+      peer = this.createPeerConnection(peerId, sessionId!, initiator);
     } else if (sessionId) {
       if (peer.sessionId !== sessionId) {
         this.log(LogLevel.INFO, `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`);
         peer.connection.removeAllListeners();
         peer.connection.destroy();
-        peer = this.createPeer(peerId, sessionId, initiator);
+        peer = this.createPeerConnection(peerId, sessionId, initiator);
       }
     }
     return peer;
   }
 
-  private createPeer(peerId: string, sessionId: string, initiator: boolean): PeerData {
+  private createPeerConnection(peerId: string, sessionId: string, initiator: boolean): PeerData {
     const peer = (this.connectedPeers[peerId] = {
       id: peerId,
       sessionId,
@@ -853,8 +1016,25 @@ export class Peer implements IPeer {
           }
 
           if (this.connectedCount() >= this.config.maxConnections!) {
-            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
-            break;
+            if (payload.position && this.selfPosition()) {
+              const knownPeer = this.addKnownPeerIfNotExists({ id: peerId });
+              knownPeer.timestamp = Date.now();
+              knownPeer.position = payload.position;
+
+              const worstPeer = this.getWorstConnectedPeerByDistance();
+              if (worstPeer && this.distanceTo(peerId)! > worstPeer[0]) {
+                // If the new peer distance is worse than the worst peer distance we have, we reject it
+                this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
+                break;
+              } else {
+                // We are going to be over connected so we trigger a delayed network update to ensure we keep below the max connections
+                setTimeout(() => this.updateNetwork(), 500);
+              }
+            } else {
+              // We also reject if there is no position configuration
+              this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
+              break;
+            }
           }
         case ServerMessageType.Answer: {
           if (payload.protocolVersion !== PROTOCOL_VERSION) {
@@ -893,31 +1073,41 @@ export class Peer implements IPeer {
           peer?.connection?.destroy();
           delete this.connectedPeers[peerId];
           if (payload.reason === MUST_BE_IN_SAME_DOMAIN_AND_LAYER) {
-            this.removeKnownPeerByPeerId(peerId);
+            this.removeKnownPeer(peerId);
           }
           break;
         }
         case ServerMessageType.PeerLeftRoom: {
-          const { roomId, userId } = payload;
-          this.removeUserFromRoom(roomId, userId);
+          const { roomId, userId, id } = payload;
+          this.removeUserFromRoom(roomId, id ?? userId);
           break;
         }
         case ServerMessageType.PeerLeftLayer: {
-          const { layerId, userId } = payload;
+          const { layerId, userId, id } = payload;
           if (this.currentLayer === layerId) {
-            this.removeKnownPeer(userId);
+            this.removeKnownPeer(id ?? userId);
           }
           break;
         }
         case ServerMessageType.PeerJoinedRoom: {
-          const { roomId, userId, peerId } = payload;
-          this.addUserToRoom(roomId, { userId, peerId });
+          const { roomId, userId, id } = payload;
+          this.addUserToRoom(roomId, { id: id ?? userId });
           break;
         }
         case ServerMessageType.PeerJoinedLayer: {
-          const { layerId, userId, peerId } = payload;
+          const { layerId, userId, id } = payload;
           if (this.currentLayer === layerId) {
-            this.addKnownPeer({ userId, peerId });
+            this.addKnownPeerIfNotExists({ id: id ?? userId });
+          }
+          break;
+        }
+        case ServerMessageType.OptimalNetworkResponse: {
+          if (payload) {
+            const { layerId, optimalConnections } = payload;
+
+            if (this.currentLayer === layerId) {
+              this.processOptimalConnectionsResponse(optimalConnections);
+            }
           }
           break;
         }
@@ -925,10 +1115,22 @@ export class Peer implements IPeer {
     }
   }
 
-  private removeUserFromRoom(roomId: string, userId: string) {
+  private processOptimalConnectionsResponse(optimalConnections: PeerConnectionHint[]) {
+    const now = Date.now();
+    optimalConnections.forEach(it => {
+      this.addKnownPeerIfNotExists(it);
+
+      this.knownPeers[it.id].position = it.position;
+      this.knownPeers[it.id].timestamp = now;
+    });
+
+    this.updateNetwork().catch(e => this.log(LogLevel.WARN, "Error updating network for optimization", e));
+  }
+
+  private removeUserFromRoom(roomId: string, peerId: string) {
     const room = this.findRoom(roomId);
     if (room) {
-      const userIndex = room.users.indexOf(userId);
+      const userIndex = room.users.indexOf(peerId);
       if (userIndex >= 0) room.users.splice(userIndex, 1);
     }
   }
@@ -936,16 +1138,16 @@ export class Peer implements IPeer {
   private addUserToRoom(roomId: string, peerData: MinPeerData) {
     peerData.rooms = [...(peerData.rooms ?? []), roomId];
 
-    const knownPeer = this.knownPeers[peerData.userId];
+    const knownPeer = this.knownPeers[peerData.id];
     if (!knownPeer) {
-      this.addKnownPeer(peerData);
+      this.addKnownPeerIfNotExists(peerData);
     } else if (!knownPeer.rooms.includes(roomId)) {
       knownPeer.rooms.push(roomId);
     }
 
     const room = this.findRoom(roomId);
-    if (room && !room.users.includes(peerData.userId)) {
-      room.users.push(peerData.userId);
+    if (room && !room.users.includes(peerData.id)) {
+      room.users.push(peerData.id);
     }
   }
 
@@ -956,6 +1158,10 @@ export class Peer implements IPeer {
     }
 
     return isCrossOfferToBeDiscarded;
+  }
+
+  private setUpTimeToRequestOptimumNetwork() {
+    this.timeToRequestOptimumNetwork = Date.now() + (this.config.optimizeNetworkInterval ?? 30000);
   }
 
   async dispose() {

@@ -21,6 +21,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//comms/peer",
+        "//commons/utils",
         "@npm//@types/react",
         "@npm//@types/react-dom",
         "@npm//decentraland-ui",

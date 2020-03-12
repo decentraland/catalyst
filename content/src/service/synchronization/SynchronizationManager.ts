@@ -10,7 +10,7 @@ import { EventDeployer } from "./EventDeployer";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
 import { Disposable } from "./events/ClusterEvent";
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { delay } from "decentraland-katalyst-utils/util";
 
 export interface SynchronizationManager {
     start(): Promise<void>;

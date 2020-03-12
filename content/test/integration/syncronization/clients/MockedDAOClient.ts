@@ -1,6 +1,6 @@
 import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
-import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
+import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { EthAddress } from 'dcl-crypto';
 import { DEFAULT_ETH_NETWORK } from "@katalyst/content/Environment";
 

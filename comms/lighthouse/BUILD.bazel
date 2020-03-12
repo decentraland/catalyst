@@ -62,8 +62,8 @@ ts_library(
     srcs = glob(["src/**/*.ts"]),
     module_name = "@katalyst/lighthouse",
     deps = [
-        "//commons",
-        "//comms/peer",
+        "//commons/servers",
+        "//commons/utils",
         "//contracts",
         "@npm//@types",
         "@npm//cors",
@@ -108,8 +108,8 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":lighthouse",
-        "//commons",
-        "//comms/peer",
+        "//commons/servers",
+        "//commons/utils",
         "@npm//@types/jasmine",
     ],
 )
