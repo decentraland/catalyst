@@ -7,26 +7,15 @@ import { ControllerEntityContent } from "@katalyst/content/controller/Controller
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity } from "../E2ETestUtils"
-import { delay } from "decentraland-katalyst-commons/src/util"
+import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, awaitUntil } from "../E2ETestUtils"
 
 
 describe("End 2 end - Denylist handling", () => {
 
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
     const identity = createIdentity()
-    let jasmine_default_timeout
     const SYNC_INTERVAL: number = ms("5s")
     let server1: TestServer, server2: TestServer, onboardingServer: TestServer
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
@@ -58,11 +47,8 @@ describe("End 2 end - Denylist handling", () => {
         // Start onboarding server
         await onboardingServer.start()
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Assert on onboarding server has all history
-        await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
+        // Wait for servers to sync and assert on onboarding server has all history
+        await awaitUntil(() => assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent))
 
         // Assert it wasn't deployed
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
@@ -86,11 +72,8 @@ describe("End 2 end - Denylist handling", () => {
         // Start onboarding server
         await onboardingServer.start()
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Assert on onboarding server has all history
-        await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
+        // Wait for servers to sync and assert on onboarding server has all history
+        await awaitUntil(() => assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent))
 
         // Assert it wasn't deployed
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
@@ -108,7 +91,7 @@ describe("End 2 end - Denylist handling", () => {
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
 
         // Black list the entity
         await server1.denylistEntity(entityBeingDeployed, identity)
@@ -116,11 +99,8 @@ describe("End 2 end - Denylist handling", () => {
         // Start onboarding server
         await onboardingServer.start()
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Assert entity is not denylisted on onboarding server
-        await assertEntityIsNotDenylisted(onboardingServer, entityBeingDeployed)
+        // Wait for servers to sync and assert entity is not denylisted on onboarding server
+        await awaitUntil(() => assertEntityIsNotDenylisted(onboardingServer, entityBeingDeployed))
 
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
@@ -147,7 +127,7 @@ describe("End 2 end - Denylist handling", () => {
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
 
         // Black list the entity
         await server1.denylistContent(contentHash, identity)
@@ -155,11 +135,8 @@ describe("End 2 end - Denylist handling", () => {
         // Start onboarding server
         await onboardingServer.start()
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Assert content is not denylisted on onboarding server
-        await assertContentNotIsDenylisted(onboardingServer, entityBeingDeployed, contentHash)
+        // Wait for servers to sync and assert content is not denylisted on onboarding server
+        await awaitUntil(() => assertContentNotIsDenylisted(onboardingServer, entityBeingDeployed, contentHash))
 
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)

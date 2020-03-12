@@ -12,6 +12,7 @@ import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { TestServer } from "./TestServer"
 import { Authenticator, EthAddress } from "dcl-crypto"
+import { retry } from "@katalyst/content/helpers/FetchHelper"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, identity)
@@ -86,6 +87,10 @@ export function deleteFolderRecursive(pathToDelete: string) {
 
 export async function stopServers(...servers: TestServer[]): Promise<void> {
     await Promise.all(servers.map(server => server.stop()))
+}
+
+export function awaitUntil(evaluation: () => Promise<void>, attempts: number = 10, waitBetweenAttempts: string = '1s'): Promise<void> {
+    return retry(evaluation, attempts, 'perform assertion', waitBetweenAttempts)
 }
 
 export function buildBaseEnv(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient): EnvironmentBuilder {
