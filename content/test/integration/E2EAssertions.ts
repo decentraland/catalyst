@@ -15,8 +15,8 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
     for (const entity of entities) {
         const entityType = parseEntityType(entity)
         const entities: ControllerEntity[] = await server.getEntitiesByPointers(entityType, entity.pointers)
-        const entityIds = entities.map(({ id }) => id)
-        assert.ok(!entityIds.includes(entity.id), `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers} on server '${server.getAddress()}.'`)
+        const unexpectedEntities = entities.filter(({ id }) => id === entity.id)
+        assert.equal(unexpectedEntities.length, 0, `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers} on server '${server.getAddress()}.'`)
         await assertEntityIsOnServer(server, entity)
     }
 }
