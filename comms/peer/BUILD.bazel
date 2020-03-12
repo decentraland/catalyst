@@ -51,6 +51,7 @@ npm_package(
     deps = [
         ":bundle.js",
         ":dpackage_gen_package_json",
+        "//commons/utils",
         ":peer",
     ],
 )

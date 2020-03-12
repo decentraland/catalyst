@@ -10,7 +10,7 @@ import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
-import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVAL } from "decentraland-katalyst-utils/Positions";
+import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVAL } from "../../../commons/utils/Positions";
 
 const PROTOCOL_VERSION = 4;
 
@@ -25,7 +25,7 @@ export type PeerData = {
 };
 
 export type PositionConfig = {
-  selfPosition: () => Position;
+  selfPosition: () => Position | undefined;
   distance?: (l1: Position, l2: Position) => number;
   nearbyPeersDistance?: number;
 };
@@ -1102,10 +1102,12 @@ export class Peer implements IPeer {
           break;
         }
         case ServerMessageType.OptimalNetworkResponse: {
-          const { layerId, optimalConnections } = payload;
+          if (payload) {
+            const { layerId, optimalConnections } = payload;
 
-          if (this.currentLayer === layerId) {
-            this.processOptimalConnectionsResponse(optimalConnections);
+            if (this.currentLayer === layerId) {
+              this.processOptimalConnectionsResponse(optimalConnections);
+            }
           }
           break;
         }
