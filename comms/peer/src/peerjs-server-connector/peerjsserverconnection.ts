@@ -6,6 +6,7 @@ import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import { PeerData } from "../Peer";
+import { Position } from "decentraland-katalyst-utils/Positions";
 
 export type MessageHandler = {
   handleMessage(messsage: ServerMessage): void;
@@ -33,6 +34,7 @@ type HandshakeData = {
   sessionId: string;
   lighthouseUrl: string;
   layer: string;
+  position?: Position;
 };
 
 export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {

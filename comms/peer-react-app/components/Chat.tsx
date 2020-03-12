@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { IPeer } from "../../peer/src/types";
 import { Button, Radio } from "decentraland-ui";
 import { PeerMessageTypes } from "../../peer/src/messageTypes";
+import { mouse } from "./Mouse";
 
 type Message = {
   sender: string;
@@ -24,23 +25,19 @@ function MessageBubble(props: { message: Message; own?: boolean }) {
   );
 }
 
-function CursorComponent(props: { cursor: Cursor }) {
+function CursorComponent(props: { cursor: Cursor, peerId: string }) {
   return (
     <div
       className="other-cursor"
       style={{
         left: props.cursor.x + "px",
         top: props.cursor.y + "px",
-        backgroundColor: props.cursor.color
+        backgroundColor: props.cursor.color,
+        paddingLeft: "10px"
       }}
-    />
+    >{props.peerId}</div>
   );
 }
-
-const mouse = {
-  x: 0,
-  y: 0
-};
 
 type Cursor = {
   x: number;
@@ -48,14 +45,9 @@ type Cursor = {
   color: string;
 };
 
-const mouseListener = (ev: MouseEvent) => {
-  mouse.x = ev.pageX;
-  mouse.y = ev.pageY;
-};
-
-function randomColor() {
-  return "hsl(" + Math.floor(Math.random() * 359) + ", 100%, 50%)";
-}
+// function randomColor() {
+//   return "hsl(" + Math.floor(Math.random() * 359) + ", 100%, 50%)";
+// }
 
 let intervalId: number | undefined = undefined;
 
@@ -69,6 +61,8 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms);
   const [newRoomName, setNewRoomName] = useState("");
   const messagesEndRef: any = useRef();
+
+  document.title = props.peer.peerId
 
   props.peer.callback = (sender, room, payload) => {
     if (!joinedRooms.some(joined => joined.id === room)) {
@@ -88,8 +82,10 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
 
   function setCursorPosition(sender: string, position: { x: number; y: number }) {
     if (updatingCursors) {
-      const cursorColor = cursors[sender]?.color ?? randomColor();
+      const cursorColor = props.peer.isConnectedTo(sender) ? "green" : "red"
 
+      props.peer.setPeerPosition(sender, [position.x, position.y, 0])
+      
       setCursors({
         ...cursors,
         [sender]: { color: cursorColor, x: position.x, y: position.y }
@@ -119,15 +115,9 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }, [messages]);
 
   useEffect(() => {
-    document.addEventListener("mousemove", mouseListener);
-
-    return () => document.removeEventListener("mousemove", mouseListener);
-  }, []);
-
-  useEffect(() => {
     window.clearInterval(intervalId);
     if (updatingCursors) {
-      intervalId = window.setInterval(() => sendCursorMessage(), 100);
+      intervalId = window.setInterval(() => sendCursorMessage(), 500);
     }
 
     return () => window.clearInterval(intervalId);
@@ -150,6 +140,14 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
       await props.peer.joinRoom(room);
       setAvailableRooms(availableRooms.filter(r => r !== room));
       setJoinedRooms(props.peer.currentRooms);
+
+      // @ts-ignore
+      Object.keys(props.peer.knownPeers).forEach(it => {
+        // @ts-ignore
+        const position = {x: props.peer.knownPeers[it].position[0], y: props.peer.knownPeers[it].position[1]}
+        setCursorPosition(it, position)
+      })
+
     } catch (e) {
       console.log(`error while joining room ${room}`, e);
     }
@@ -255,7 +253,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
           </div>
         </div>
       </div>
-      {updatingCursors && Object.values(cursors).map(it => <CursorComponent cursor={it} />)}
+      {updatingCursors && Object.keys(cursors).map(it => <CursorComponent cursor={cursors[it]} peerId={it} />)}
     </div>
   );
 }

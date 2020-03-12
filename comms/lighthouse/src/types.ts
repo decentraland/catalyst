@@ -1,19 +1,29 @@
+import { Position } from "decentraland-katalyst-utils/Positions";
+
 export type PeerInfo = {
-  userId: string;
-  peerId: string;
+  id: string;
   protocolVersion?: number;
   parcel?: [number, number];
+  position?: Position;
+  layer?: string;
+};
+
+export type PeerRequest = {
+  id?: string;
+  userId?: string;
+  protocolVersion?: number;
+  peerId?: string;
 };
 
 export type Room = {
   id: string;
-  users: PeerInfo[];
+  peers: string[];
 };
 
 export type Layer = {
   id: string;
-  users: PeerInfo[];
+  peers: string[];
   rooms: Record<string, Room>;
-  maxUsers?: number;
+  maxPeers?: number;
   lastCheckTimestamp: number;
 };

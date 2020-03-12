@@ -5,13 +5,14 @@ import { Pointer, EntityType } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing"
 import { ContentFile } from "@katalyst/content/service/Service"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { EnvironmentConfig, Bean, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
 import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { TestServer } from "./TestServer"
 import { Authenticator, EthAddress } from "dcl-crypto"
+import { retry } from "@katalyst/content/helpers/FetchHelper"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, identity)
@@ -86,6 +87,10 @@ export function deleteFolderRecursive(pathToDelete: string) {
 
 export async function stopServers(...servers: TestServer[]): Promise<void> {
     await Promise.all(servers.map(server => server.stop()))
+}
+
+export function awaitUntil(evaluation: () => Promise<void>, attempts: number = 10, waitBetweenAttempts: string = '1s'): Promise<void> {
+    return retry(evaluation, attempts, 'perform assertion', waitBetweenAttempts)
 }
 
 export function buildBaseEnv(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient): EnvironmentBuilder {

@@ -5,6 +5,7 @@ import { IPeer } from "../../peer/src/types";
 import { PeerToken } from "./PeerToken";
 import { Peer } from "../../peer/src";
 import { util } from "../../peer/src/peerjs-server-connector/util";
+import { mouse } from "./Mouse";
 
 function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return <Field label={label} onChange={ev => setter(ev.target.value)} value={value} />;
@@ -38,6 +39,12 @@ export function ConnectForm(props: {
       //@ts-ignore
       const peer = (window.peer = new props.peerClass(url, nickname, () => {}, {
         token: PeerToken.getToken(nickname),
+        positionConfig: {
+          selfPosition: () => [mouse.x, mouse.y, 0]
+        },
+        targetConnections: 2,
+        logLevel: "DEBUG",
+        maxConnections: 4,
         connectionConfig: {
           iceServers: [
             {

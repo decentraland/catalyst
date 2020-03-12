@@ -6,7 +6,7 @@ import { IConfig } from "peerjs-server/dist/src/config";
 import { PeersService } from "./peersService";
 import { configureRoutes } from "./routes";
 import { LayersService } from "./layersService";
-import { Metrics } from "decentraland-katalyst-commons/src/metrics";
+import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { IClient } from "peerjs-server/dist/src/models/client";
 import { MessageType } from "peerjs-server/dist/src/enums";
@@ -15,7 +15,7 @@ import { DEFAULT_LAYERS } from "./default_layers";
 import { Authenticator } from "dcl-crypto";
 import { pickName } from "./naming";
 import { patchLog } from "./logging";
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 
 const LIGHTHOUSE_VERSION = "0.1";
@@ -31,9 +31,9 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   patchLog(name);
 
-  const relay = parseBoolean(process.env.RELAY ?? "false");
   const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
   const port = parseInt(process.env.PORT ?? "9000");
+  const noAuth = parseBoolean(process.env.NO_AUTH ?? "false")
   const secure = parseBoolean(process.env.SECURE ?? "false");
   const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
   const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? "false");
@@ -50,7 +50,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     Metrics.initialize(app);
   }
 
-  const peersService = new PeersService(getPeerJsRealm, secure, port);
+  const peersService = new PeersService(getPeerJsRealm);
 
   app.use(cors());
   app.use(express.json());
@@ -58,16 +58,15 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     app.use(morgan("combined"));
   }
 
-  const layersService = new LayersService({ serverPeerEnabled: relay, peersService, maxUsersPerLayer, existingLayers, allowNewLayers });
+  const layersService = new LayersService({ peersService, maxPeersPerLayer: maxUsersPerLayer, existingLayers, allowNewLayers });
 
   configureRoutes(
     app,
-    { layersService, realmProvider: getPeerJsRealm },
+    { layersService, realmProvider: getPeerJsRealm, peersService },
     {
       name,
       version: LIGHTHOUSE_VERSION,
       env: {
-        relay,
         secure,
         commitHash: process.env.COMMIT_HASH
       }
@@ -81,6 +80,10 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   const options: Partial<IConfig> = {
     path: "/",
     authHandler: async (client, message) => {
+      if (noAuth) {
+        return true;
+      }
+
       if (!client) {
         // client not registered
         return false;
@@ -105,7 +108,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   peerServer.on("disconnect", (client: any) => {
     console.log("User disconnected from server socket. Removing from all rooms & layers: " + client.id);
-    layersService.removeUser(client.id);
+    layersService.removePeer(client.id);
   });
 
   peerServer.on("error", console.log);
@@ -114,7 +117,18 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   peerServer.on("message", (client: IClient, message: IMessage) => {
     if (message.type === MessageType.HEARTBEAT) {
       peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
-      layersService.updateUserParcel(client.getId(), message.payload?.parcel);
+      peersService.updatePeerParcel(client.getId(), message.payload?.parcel);
+      peersService.updatePeerPosition(client.getId(), message.payload?.position)
+
+      if(message.payload?.optimizeNetwork) {
+        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections, message.payload.maxDistance)
+        client.send({
+          type: "OPTIMAL_NETWORK_RESPONSE",
+          src: "__lighthouse_response__",
+          dst: client.getId(),
+          payload: optimalConnectionsResult
+        })
+      }
     }
   });
 
