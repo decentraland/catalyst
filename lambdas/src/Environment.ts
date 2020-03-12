@@ -73,13 +73,15 @@ export class EnvironmentBuilder {
   async build(): Promise<Environment> {
     const env = new Environment();
 
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT, () => process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT);
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== "false");
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SERVER_ADDRESS, () => process.env.CONTENT_SERVER_ADDRESS);
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENS_OWNER_PROVIDER_URL, () => process.env.ENS_OWNER_PROVIDER_URL ?? DEFAULT_ENS_OWNER_PROVIDER_URL);
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? "Unknown");
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT		, () => process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT);
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS		, () => process.env.LOG_REQUESTS !== "false");
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SERVER_ADDRESS	, () => process.env.CONTENT_SERVER_ADDRESS);
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENS_OWNER_PROVIDER_URL	, () => process.env.ENS_OWNER_PROVIDER_URL ?? DEFAULT_ENS_OWNER_PROVIDER_URL);
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH		, () => process.env.COMMIT_HASH ?? "Unknown");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? "info");
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL			, () => process.env.LOG_LEVEL ?? "info");
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS                   , () => process.env.METRICS === 'true');
+
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
