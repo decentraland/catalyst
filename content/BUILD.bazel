@@ -64,6 +64,31 @@ ts_library(
         "//commons",
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
+        "@npm//@types/faker",
+        "@npm//@types/form-data",
+        "@npm//@types/jasmine",
+        "@npm//@types/ms",
+        "@npm//@types/node",
+        "@npm//@types/node-fetch",
+        "@npm//dcl-crypto",
+        "@npm//eth-crypto",
+        "@npm//faker",
+        "@npm//form-data",
+        "@npm//ms",
+        "@npm//node-fetch",
+        "@npm//ts-mockito",
+    ],
+)
+
+ts_library(
+    name = "tests_manual",
+    testonly = 1,
+    srcs = glob(["test/manual/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        "//commons",
+        "//content/src:content",
+        "//content/test/helpers:tests_helpers",
         "//contracts",
         "@npm//@types/faker",
         "@npm//@types/form-data",
@@ -96,6 +121,15 @@ jasmine_node_test(
     deps = [
         ":test_resources",
         ":tests_integration",
+        "@npm//jasmine",
+    ],
+)
+
+jasmine_node_test(
+    name = "manual_test",
+    deps = [
+        ":test_resources",
+        ":tests_manual",
         "@npm//jasmine",
     ],
 )

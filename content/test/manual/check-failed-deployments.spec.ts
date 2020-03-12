@@ -12,117 +12,93 @@ import { httpProviderForNetwork } from "../../../contracts/utils"
 
 describe("Failed Deployments validations.", () => {
 
-    beforeAll(async () => {
-    })
-
-    afterAll(async () => {
-    })
-
     var MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1;
 
-    xit('LANDs.', async () => {
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
-
+    it('Deployment Errors.', async () => {
         const failedDeployments: FailedDeployment[] = await getFailedDeployments()
         const failedScenes = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.SCENE)
         const failedProfiles = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.PROFILE)
-        const servers = failedScenes.map(fd => fd.deployment.serverName).filter(onlyUnique)
+        const servers = failedProfiles.map(fd => fd.deployment.serverName).filter(onlyUnique)
 
         console.log(`Total Failed Deployments: ${failedDeployments.length}`)
         console.log(`Scenes  : ${failedScenes.length}`)
         console.log(`Profiles: ${failedProfiles.length}`)
         console.log('------------------------------')
-        console.log(`Servers:`)
-        servers.forEach(server => console.log(`  ${server}`))
-        console.log('------------------------------')
-        let solvedErrors = 0
-        for(let i=0; i < failedScenes.length; i++) {
-            const fd = failedScenes[i]
-            const accessSnapshot = await getAccessSnapshot(fd.deployment.serverName, fd.deployment.entityType, fd.deployment.entityId)
-            if (accessSnapshot) {
-                const accessErrors: string[] = await accessChecker.hasAccess(EntityType.SCENE, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
-                if (accessErrors.length===0) {
-                    console.log(`=> ${i+1} of ${failedScenes.length}: #Fixed#`, fd.deployment.entityId, accessSnapshot.ethAddress, accessSnapshot.timestamp, `[${accessSnapshot.pointers.join(',')}]`)
-                    solvedErrors++
-                } else {
-                    console.log(`=> ${i+1} of ${failedScenes.length}: Invalid`, fd.deployment.entityId, accessSnapshot.ethAddress, accessSnapshot.timestamp, `[${accessSnapshot.pointers.join(',')}]`)
-                    console.log(accessErrors)
-                }
-            } else {
-                console.log(`=> ${i+1} of ${failedScenes.length}: !!ERR!!`, fd.deployment.serverName, fd.deployment.entityId, fd.deployment.timestamp)
-            }
-        }
-        console.log('------------------------------')
-        console.log(`Solved Errors: ${solvedErrors}`)
-        console.log('------------------------------')
-    }, MAX_SAFE_TIMEOUT)
 
-    xit('PROFILEs.', async () => {
-        const failedDeployments: FailedDeployment[] = await getFailedDeployments()
-        const failedProfiles = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.PROFILE)
-        const servers = failedProfiles.map(fd => fd.deployment.serverName).filter(onlyUnique)
-
-        console.log(`Total Failed Deployments: ${failedDeployments.length}`)
-        console.log(`Profiles: ${failedProfiles.length}`)
-        console.log('------------------------------')
         console.log(`Servers:`)
         servers.forEach(server => console.log(`  ${server}`))
         console.log('------------------------------')
 
+        // Retrieve Access Snapshots
         let accessSnapshotsCount = 0
-        const accessSnapshots: AccessSnapshot[] = (await Promise.all(failedProfiles
+        const accessSnapshots: AccessSnapshot[] = (await Promise.all(failedDeployments
             .map(async fd => {
-                console.log(`=> ${(accessSnapshotsCount++)+1} of ${failedProfiles.length}`)
+                console.log(`=> ${(accessSnapshotsCount++)+1} of ${failedDeployments.length}`)
                 return await getAccessSnapshot(fd.deployment.serverName, fd.deployment.entityType, fd.deployment.entityId)
             })))
             .filter(notEmpty)
 
-        // Count by user
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
+
+        // Review Scene access errors
+        const sceneAccessSnapshots = accessSnapshots.filter(accessSnapshot => accessSnapshot.entityType===EntityType.SCENE)
+        let sceneSolvedErrors = 0
+        await Promise.all(sceneAccessSnapshots.map(async accessSnapshot => {
+            const accessErrors: string[] = await accessChecker.hasAccess(EntityType.SCENE, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
+            if (accessErrors.length===0) {
+                sceneSolvedErrors++
+            } else {
+                console.log(' => Invalid', accessSnapshot.entityId, accessSnapshot.ethAddress, accessSnapshot.timestamp, `[${accessSnapshot.pointers.join(',')}]`)
+                console.log(accessErrors)
+            }
+        }))
+        console.log(`Scene Solved Errors: ${sceneSolvedErrors}`)
         console.log('------------------------------')
-        const failedProfilesByUser: AssociativeArray<AccessSnapshot> = groupBy(accessSnapshots, 'ethAddress')
+
+        const profileAccessSnapshots = accessSnapshots.filter(accessSnapshot => accessSnapshot.entityType===EntityType.PROFILE)
+        // Count Profiles by user
+        console.log('------------------------------')
+        const failedProfilesByUser: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots, 'ethAddress')
         countAndSort(failedProfilesByUser).forEach(item => console.log(`  ${item.key}: ${item.count}`))
 
-        // Count by timestamp
+        // Count Profiles by timestamp
         console.log('------------------------------')
         const MILLIS_IN_DAY = 25 * 60 * 60 * 1000
-        const failedProfilesByTime: AssociativeArray<AccessSnapshot> = groupBy(accessSnapshots.map(s => roundTimestampInAccessSnapshot(s, MILLIS_IN_DAY)), 'timestamp')
+        const failedProfilesByTime: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots.map(s => roundTimestampInAccessSnapshot(s, MILLIS_IN_DAY)), 'timestamp')
         countAndSort(failedProfilesByTime).forEach(item => console.log(`  ${item.key} (${new Date(parseInt(item.key)).toISOString()}): ${item.count}`))
 
-        // Check Access
+        // Check Profiles Access
         console.log('------------------------------')
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
         let accessErrorsCount = 0
-        for(let i=0; i < accessSnapshots.length; i++) {
-            const snapshot: AccessSnapshot = accessSnapshots[i]
-            const accessErrors: string[] = await accessChecker.hasAccess(snapshot.entityType, snapshot.pointers, snapshot.timestamp, snapshot.ethAddress)
+        await Promise.all(profileAccessSnapshots.map(async accessSnapshot => {
+            const accessErrors: string[] = await accessChecker.hasAccess(accessSnapshot.entityType, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
             if (accessErrors.length > 0) {
-                console.log(` => ${snapshot.entityId}: Invalid`, snapshot.entityType, snapshot.ethAddress, snapshot.timestamp)
+                console.log(` => ${accessSnapshot.entityId}: Invalid`, accessSnapshot.entityType, accessSnapshot.ethAddress, accessSnapshot.timestamp)
                 console.log(accessErrors)
                 accessErrorsCount++
             }
-        }
+        }))
         console.log(`Access Errors Count: ${accessErrorsCount}`)
 
-        // Validate signature
+        // Validate Profiles signature
         console.log('------------------------------')
         const contentAuthenticator = new ContentAuthenticator()
         const httpProvider = httpProviderForNetwork("mainnet")
         let authErrorsCount = 0
-        for(let i=0; i < accessSnapshots.length; i++) {
-            const snapshot: AccessSnapshot = accessSnapshots[i]
+        await Promise.all(profileAccessSnapshots.map(async snapshot => {
             const validationResult: ValidationResult = await contentAuthenticator.validateSignature(snapshot.ethAddress, snapshot.authChain, httpProvider, snapshot.timestamp)
             if (!validationResult.ok) {
                 console.log(` => ${snapshot.entityId}: Invalid`, snapshot.ethAddress, snapshot.timestamp, validationResult.message)
                 authErrorsCount++
             }
-        }
+        }))
         console.log(`Auth Errors Count: ${authErrorsCount}`)
 
 
         console.log('------------------------------')
         }, MAX_SAFE_TIMEOUT)
 
-    xit('LAND particular review.', async () => {
+    it('LAND particular review.', async () => {
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
         const accessSnapshot = {
             pointers: ['-110,30'],
@@ -231,6 +207,7 @@ async function getAccessSnapshot(serverDomain: string, entityType: EntityType, e
         fs.writeFileSync(localCopyFile, JSON.stringify(accessSnapshot))
         return accessSnapshot
     }
+    console.log('ERROR: Can not retrieve Access Snapshop for:', serverDomain, entityType, entityId)
     return undefined
 }
 
