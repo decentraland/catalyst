@@ -5,7 +5,7 @@ import morgan from "morgan";
 import compression from "compression";
 import { Controller } from "./controller/Controller";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
-import { Metrics } from "decentraland-katalyst-commons/src/metrics";
+import { Metrics } from "decentraland-katalyst-commons/metrics";
 import http from "http";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
