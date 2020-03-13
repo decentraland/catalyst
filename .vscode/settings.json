@@ -1,12 +1,11 @@
 {
-    "files.exclude": {
-        "bazel*": true,
-        "node_modules": true,
-        "data*": true,
-        "dist/**/*": true
-    },
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "cSpell.words": [
-        "Ethereum"
-    ]
+  "files.exclude": {
+    "bazel*": true,
+    "node_modules": true,
+    "data*": true,
+    "dist/**/*": true
+  },
+  "editor.formatOnSave": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "cSpell.words": ["Ethereum"]
 }
