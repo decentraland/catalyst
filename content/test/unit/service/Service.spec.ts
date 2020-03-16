@@ -18,7 +18,6 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 
 describe("Service", function () {
 
-    const serverName = "NOT_IN_DAO"
     const auditInfo: AuditInfo = {
         authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:"signature", payload:"ethAddress"}],
         version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
@@ -40,27 +39,17 @@ describe("Service", function () {
 
     beforeEach(async () => {
         storage = new MockedStorage()
-
-        const env = await new EnvironmentBuilder()
-            .withStorage(storage)
-            .withHistoryManager(historyManager)
-            .withAccessChecker(new MockedAccessChecker())
-            .withBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
-            .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
-            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
-            .build()
-
-        service = await ServiceFactory.create(env)
+        service = await buildService();
     })
 
     it(`When no file called '${ENTITY_FILE_NAME}' is uploaded, then an exception is thrown`, async () => {
-        await assertPromiseRejectionIs(async () => await service.deployEntity([randomFile], randomFileHash, auditInfo, ''),
+        await assertPromiseRejectionIs(() => service.deployEntity([randomFile], randomFileHash, auditInfo, ''),
             `Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
     });
 
     it(`When two or more files called '${ENTITY_FILE_NAME}' are uploaded, then an exception is thrown`, async () => {
         const invalidEntityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from("Hello") }
-        await assertPromiseRejectionIs(async () => await service.deployEntity([entityFile, invalidEntityFile], "some-id", auditInfo, ''),
+        await assertPromiseRejectionIs(() => service.deployEntity([entityFile, invalidEntityFile], "some-id", auditInfo, ''),
             `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
     });
 
@@ -74,7 +63,7 @@ describe("Service", function () {
         expect(deltaMilliseconds).toBeLessThanOrEqual(10)
         expect(storageSpy).toHaveBeenCalledWith("contents", entity.id, entityFile.content)
         expect(storageSpy).toHaveBeenCalledWith("contents", randomFileHash, randomFile.content)
-        expect(historySpy).toHaveBeenCalledWith(serverName, entity.type, entity.id, timestamp)
+        expect(historySpy).toHaveBeenCalledWith("NOT_IN_DAO", entity.type, entity.id, timestamp)
         expect(await service.getEntitiesByIds(EntityType.SCENE, [entity.id])).toEqual([entity])
         expect(await service.getEntitiesByPointers(EntityType.SCENE, entity.pointers)).toEqual([entity])
         expect(await service.getActivePointers(EntityType.SCENE)).toEqual(entity.pointers)
@@ -102,5 +91,31 @@ describe("Service", function () {
         expect(storeSpy).toHaveBeenCalledWith("contents", entity.id, entityFile.content)
         expect(storeSpy).not.toHaveBeenCalledWith("contents", randomFileHash, randomFile.content)
     });
+
+    it(`When server is not in DAO, then deployments aren't allowed`, async () => {
+        const service = await buildService(false)
+
+        await assertPromiseRejectionIs(() => service.deployEntity([entityFile, randomFile], entity.id, auditInfo, ''),
+            'Deployments are not allow since server is not in DAO')
+    });
+
+    it(`When server is not in DAO, then fixes aren't allowed`, async () => {
+        const service = await buildService(false)
+
+        await assertPromiseRejectionIs(() => service.deployToFix([entityFile, randomFile], entity.id, auditInfo, ''),
+            'Deployments are not allow since server is not in DAO')
+    });
+
+    async function buildService(allowDeploymentsForTesting = true) {
+        const env = await new EnvironmentBuilder()
+            .withStorage(storage)
+            .withHistoryManager(historyManager)
+            .withAccessChecker(new MockedAccessChecker())
+            .withBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
+            .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
+            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, allowDeploymentsForTesting)
+            .build();
+        return await ServiceFactory.create(env);
+    }
 
 })
