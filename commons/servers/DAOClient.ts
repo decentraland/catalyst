@@ -32,6 +32,8 @@ export class DAOClient {
         const katalystId = await this.contract.methods.catalystIds(i).call();
         let { id, owner, domain } = await this.contract.methods.catalystById(katalystId).call();
 
+        domain = domain.trim()
+
         if (domain.startsWith("http://")) {
           console.warn(`Catalyst node domain using http protocol, skipping ${domain}`);
           continue;
@@ -41,7 +43,7 @@ export class DAOClient {
           domain = "https://" + domain;
         }
 
-        result.add({ address: domain.trim(), owner: owner.toJSON(), id });
+        result.add({ address: domain, owner: owner.toJSON(), id });
       } catch (error) {}
     }
 
