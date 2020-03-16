@@ -2363,10 +2363,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-crypto@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.0.0.tgz#c03c12f81d28215de9822fe13f8ab523092d015b"
-  integrity sha512-lcjBIfyLRMitWFPc7loNCv7tStnl8bMGjri5o/mhLYSmGa/iog0yAwABxut3Jkb6jWk9KCTth3d67D7ltJVWPg==
+dcl-crypto@2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.1.0.tgz#5182d1cbcaac59200a8a45d857f042099f097efa"
+  integrity sha512-j3u27s/MpLPi5ZrG0xucjBL+aUkMHkrejkxrWkJ1n6/KkLhEXlnMTgKd5TjJPatTw7wgrCQuJLMTc8ohfOYW9w==
   dependencies:
     eth-crypto "^1.5.1"
     web3x "^4.0.6"
