@@ -493,11 +493,10 @@ export class Peer implements IPeer {
 
       this.checkConnectionsSanity();
 
-      let operation: NetworkOperation | undefined;
-
       let connectionCandidates = Object.values(this.knownPeers).filter(it => !this.isConnectedTo(it.id));
 
       if (connectionCandidates.length > 0) {
+        let operation: NetworkOperation | undefined;
         while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
           try {
             connectionCandidates = await operation();
@@ -574,11 +573,12 @@ export class Peer implements IPeer {
     if (toDisconnect > 0) {
       this.log(LogLevel.DEBUG, "Too many connections. Need to disconnect from: " + toDisconnect);
       return async () => {
-        Object.keys(this.connectedPeers)
+        Object.values(this.knownPeers)
+          .filter(peer => this.isConnectedTo(peer.id))
           // We sort the connected peer by the opposite criteria
-          .sort((peer1, peer2) => -peerSortCriteria(this.knownPeers[peer1], this.knownPeers[peer2]))
+          .sort((peer1, peer2) => -peerSortCriteria(peer1, peer2))
           .slice(0, toDisconnect)
-          .forEach(peerId => this.disconnectFrom(peerId));
+          .forEach(peer => this.disconnectFrom(peer.id));
         return connectionCandidates;
       };
     }
@@ -598,7 +598,7 @@ export class Peer implements IPeer {
         if (typeof bestCandidateDistance !== "undefined" && (!worstPeer || bestCandidateDistance < worstPeer[0])) {
           // If the best candidate is better than the worst connection, we connect to that candidate.
           // The next operation should handle the disconnection of the worst
-          this.log(LogLevel.DEBUG, "Found a better candidate for connection: ", { candiate: bestCandidate, distance: bestCandidateDistance, replacing: worstPeer });
+          this.log(LogLevel.DEBUG, "Found a better candidate for connection: ", { candidate: bestCandidate, distance: bestCandidateDistance, replacing: worstPeer });
           return async () => {
             await this.connectTo(bestCandidate);
             return sortedCandidates;
