@@ -38,7 +38,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private failedDeploymentsManager: FailedDeploymentsManager,
         cacheManager: CacheManager,
         private validations: Validations,
-        private ignoreValidationErrors: boolean,
+        private readonly ignoreValidationErrors: boolean,
         private readonly allowDeploymentsWhenNotInDAO: boolean) {
         this.entities = cacheManager.buildEntityTypedCache(ENTITIES_CACHE_CONFIG, ([entityType, entityId]: [EntityType, EntityId]) => this.storage.getEntityById(entityId))
         this.lock = new Lock()

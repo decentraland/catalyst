@@ -1,10 +1,10 @@
 import ms from "ms";
 import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
+import { delay } from "decentraland-katalyst-utils/util";
 import { ServerAddress, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
-import { NameKeeper,ServerName } from "../naming/NameKeeper";
+import { NameKeeper, ServerName } from "../naming/NameKeeper";
 import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
@@ -188,24 +188,25 @@ export class ContentCluster implements IdentityProvider {
     /** Detect my own identity */
     async detectMyIdentity(attempts: number = 1): Promise<void> {
         try {
+            // Fetch server list from the DAO
             const allServers: Set<ServerMetadata> = await this.dao.getAllContentServers()
             const serversByAddresses: Map<ServerAddress, ServerMetadata> = new Map(Array.from(allServers).map(metadata => [metadata.address, metadata]))
-            const serversByChallenge: Map<ServerAddress, ChallengeText> = new Map()
+            const challengesByAddress: Map<ServerAddress, ChallengeText> = new Map()
 
-            while (attempts > 0 && serversByChallenge.size < allServers.size) {
+            while (attempts > 0 && challengesByAddress.size < allServers.size) {
                 // Prepare challenges for unknown servers
                 const challenges: Promise<{address: ServerAddress, challengeText: ChallengeText | undefined}>[] = Array.from(serversByAddresses.keys())
-                    .filter(address => !serversByChallenge.has(address))
+                    .filter(address => !challengesByAddress.has(address))
                     .map(async address => ({ address, challengeText: await this.getChallengeInServer(address) }))
 
                 // Store new challenge results
                 const challengeResults = await Promise.all(challenges)
                 challengeResults
                     .filter(({ challengeText }) => !!challengeText)
-                    .forEach(({ address, challengeText }) => serversByChallenge.set(address, challengeText!!))
+                    .forEach(({ address, challengeText }) => challengesByAddress.set(address, challengeText!!))
 
                 // Check if I was any of the servers who responded
-                const serversWithMyChallengeText = Array.from(serversByChallenge.entries())
+                const serversWithMyChallengeText = Array.from(challengesByAddress.entries())
                     .filter(([, challengeText]) => this.challengeSupervisor.isChallengeOk(challengeText))
 
                 if (serversWithMyChallengeText.length === 1){
