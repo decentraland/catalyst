@@ -15,6 +15,12 @@ describe("Failed Deployments validations.", () => {
     var MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1;
 
     it('Deployment Errors.', async () => {
+        const reviewSceneErrors = false
+        const countProfilesByUser = false
+        const countProfilesByTimestamp = false
+        const checkProfilesAccess = false
+        const validateProfilesSignatures = true
+
         const failedDeployments: FailedDeployment[] = await getFailedDeployments()
         const failedScenes = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.SCENE)
         const failedProfiles = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.PROFILE)
@@ -40,62 +46,98 @@ describe("Failed Deployments validations.", () => {
 
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
 
-        // Review Scene access errors
-        const sceneAccessSnapshots = accessSnapshots.filter(accessSnapshot => accessSnapshot.entityType===EntityType.SCENE)
-        let sceneSolvedErrors = 0
-        await Promise.all(sceneAccessSnapshots.map(async accessSnapshot => {
-            const accessErrors: string[] = await accessChecker.hasAccess(EntityType.SCENE, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
-            if (accessErrors.length===0) {
-                sceneSolvedErrors++
-            } else {
-                console.log(' => Invalid', accessSnapshot.entityId, accessSnapshot.ethAddress, accessSnapshot.timestamp, `[${accessSnapshot.pointers.join(',')}]`)
-                console.log(accessErrors)
-            }
-        }))
-        console.log(`Scene Solved Errors: ${sceneSolvedErrors}`)
-        console.log('------------------------------')
+        if (reviewSceneErrors) {
+            console.log('------------------------------')
+            console.log('Reviewing Scene Errors...')
+            console.log('------------------------------')
+            const sceneAccessSnapshots = accessSnapshots.filter(accessSnapshot => accessSnapshot.entityType===EntityType.SCENE)
+            let sceneSolvedErrors = 0
+            await Promise.all(sceneAccessSnapshots.map(async accessSnapshot => {
+                const accessErrors: string[] = await accessChecker.hasAccess(EntityType.SCENE, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
+                if (accessErrors.length===0) {
+                    sceneSolvedErrors++
+                } else {
+                    const overwriteEntity: Entity | undefined = accessSnapshot.overwrittenBy ? await fetchEntity('https://peer.decentraland.org/content', EntityType.SCENE, accessSnapshot.overwrittenBy) : undefined
+                    console.log(' => Invalid', accessSnapshot.entityId, accessSnapshot.ethAddress, accessSnapshot.timestamp, `[${accessSnapshot.pointers.join(',')}]`)
+                    console.log(accessErrors)
+                    if (overwriteEntity) {
+                        console.log(' * The entity was already overwritten by: ' + overwriteEntity.id)
+                        const overwritePointers: string[] = overwriteEntity ? overwriteEntity.pointers : []
+                        if (arraysEqual(overwritePointers, accessSnapshot.pointers)) {
+                            console.log(' * The Overwrite entity has the same pointers!!!')
+                        } else {
+                            console.log(' * The Overwrite entity has DIFFERENT pointers!!!')
+                            console.log('   # Original  :', accessSnapshot.pointers)
+                            console.log('   # Overwriter:', overwritePointers)
+                        }
+                    } else {
+                        console.log(' * The entity is STILL ACTIVE.')
+                    }
+
+                }
+            }))
+            console.log(`Scene Solved Errors: ${sceneSolvedErrors}`)
+            console.log('------------------------------\n')
+        }
 
         const profileAccessSnapshots = accessSnapshots.filter(accessSnapshot => accessSnapshot.entityType===EntityType.PROFILE)
-        // Count Profiles by user
-        console.log('------------------------------')
-        const failedProfilesByUser: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots, 'ethAddress')
-        countAndSort(failedProfilesByUser).forEach(item => console.log(`  ${item.key}: ${item.count}`))
 
-        // Count Profiles by timestamp
-        console.log('------------------------------')
-        const MILLIS_IN_DAY = 25 * 60 * 60 * 1000
-        const failedProfilesByTime: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots.map(s => roundTimestampInAccessSnapshot(s, MILLIS_IN_DAY)), 'timestamp')
-        countAndSort(failedProfilesByTime).forEach(item => console.log(`  ${item.key} (${new Date(parseInt(item.key)).toISOString()}): ${item.count}`))
+        if (countProfilesByUser) {
+            console.log('------------------------------')
+            console.log('Counting Profiles by user...')
+            console.log('------------------------------')
+            const failedProfilesByUser: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots, 'ethAddress')
+            countAndSort(failedProfilesByUser).forEach(item => console.log(`  ${item.key}: ${item.count}`))
+            console.log('------------------------------\n')
+        }
 
-        // Check Profiles Access
-        console.log('------------------------------')
-        let accessErrorsCount = 0
-        await Promise.all(profileAccessSnapshots.map(async accessSnapshot => {
-            const accessErrors: string[] = await accessChecker.hasAccess(accessSnapshot.entityType, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
-            if (accessErrors.length > 0) {
-                console.log(` => ${accessSnapshot.entityId}: Invalid`, accessSnapshot.entityType, accessSnapshot.ethAddress, accessSnapshot.timestamp)
-                console.log(accessErrors)
-                accessErrorsCount++
+        if (countProfilesByTimestamp) {
+            console.log('------------------------------')
+            console.log('Counting Profiles by timestamp...')
+            console.log('------------------------------')
+            const MILLIS_IN_DAY = 25 * 60 * 60 * 1000
+            const failedProfilesByTime: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots.map(s => roundTimestampInAccessSnapshot(s, MILLIS_IN_DAY)), 'timestamp')
+            countAndSort(failedProfilesByTime).forEach(item => console.log(`  ${item.key} (${new Date(parseInt(item.key)).toISOString()}): ${item.count}`))
+            console.log('------------------------------\n')
+        }
+
+        if (checkProfilesAccess) {
+            console.log('------------------------------')
+            console.log('Checking Profiles access...')
+            console.log('------------------------------')
+            let accessErrorsCount = 0
+            await Promise.all(profileAccessSnapshots.map(async accessSnapshot => {
+                const accessErrors: string[] = await accessChecker.hasAccess(accessSnapshot.entityType, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
+                if (accessErrors.length > 0) {
+                    console.log(` => ${accessSnapshot.entityId}: Invalid`, accessSnapshot.entityType, accessSnapshot.ethAddress, accessSnapshot.timestamp)
+                    console.log(accessErrors)
+                    accessErrorsCount++
+                }
+            }))
+            console.log(`Access Errors Count: ${accessErrorsCount}`)
+            console.log('------------------------------\n')
+        }
+
+        if (validateProfilesSignatures) {
+            console.log('------------------------------')
+            console.log('Validating Profiles signatures...')
+            console.log('------------------------------')
+            const contentAuthenticator = new ContentAuthenticator()
+            const httpProvider = httpProviderForNetwork("mainnet")
+            let authErrorsCount = 0
+            for(let i=0; i<profileAccessSnapshots.length; i++) {
+                const snapshot = profileAccessSnapshots[i]
+                console.log(` => ${snapshot.entityId}:`, snapshot.ethAddress, snapshot.timestamp)
+                const validationResult: ValidationResult = await contentAuthenticator.validateSignature(snapshot.entityId, snapshot.authChain, httpProvider, snapshot.timestamp)
+                if (!validationResult.ok) {
+                    console.log(`    => ${snapshot.entityId}: Invalid`, snapshot.ethAddress, snapshot.timestamp, validationResult.message)
+                    authErrorsCount++
+                }
             }
-        }))
-        console.log(`Access Errors Count: ${accessErrorsCount}`)
+            console.log(`Auth Errors Count: ${authErrorsCount}`)
+            console.log('------------------------------\n')
+        }
 
-        // Validate Profiles signature
-        console.log('------------------------------')
-        const contentAuthenticator = new ContentAuthenticator()
-        const httpProvider = httpProviderForNetwork("mainnet")
-        let authErrorsCount = 0
-        await Promise.all(profileAccessSnapshots.map(async snapshot => {
-            const validationResult: ValidationResult = await contentAuthenticator.validateSignature(snapshot.ethAddress, snapshot.authChain, httpProvider, snapshot.timestamp)
-            if (!validationResult.ok) {
-                console.log(` => ${snapshot.entityId}: Invalid`, snapshot.ethAddress, snapshot.timestamp, validationResult.message)
-                authErrorsCount++
-            }
-        }))
-        console.log(`Auth Errors Count: ${authErrorsCount}`)
-
-
-        console.log('------------------------------')
         }, MAX_SAFE_TIMEOUT)
 
     it('LAND particular review.', async () => {
@@ -181,6 +223,7 @@ type AccessSnapshot = {
     ethAddress: EthAddress,
     timestamp: Timestamp,
     authChain: AuthChain,
+    overwrittenBy: string | undefined,
 }
 
 const LOCAL_STORAGE_FOR_ACCESS_SNAPSHOTS = '/tmp/failed-deployments-access-snapshots'
@@ -190,8 +233,8 @@ async function getAccessSnapshot(serverDomain: string, entityType: EntityType, e
         return JSON.parse(fs.readFileSync(localCopyFile).toString())
     }
     const serverBaseUrl = getServerContentBaseUrl(serverDomain)
-    const entity: Entity | undefined = await fetchFirst(`${serverBaseUrl}/entities/${entityType}?id=${entityId}`)
-    const audit: AuditInfo | undefined = await fetchObject(`${serverBaseUrl}/audit/${entityType}/${entityId}`)
+    const entity: Entity | undefined = await fetchEntity(serverBaseUrl, entityType, entityId)
+    const audit: AuditInfo | undefined = await fetchAuditInfo(serverBaseUrl, entityType, entityId)
     if (entity && audit) {
         const accessSnapshot: AccessSnapshot = {
             entityType,
@@ -200,6 +243,7 @@ async function getAccessSnapshot(serverDomain: string, entityType: EntityType, e
             ethAddress: audit.authChain[0].payload,
             timestamp: entity.timestamp,
             authChain: audit.authChain,
+            overwrittenBy: audit.overwrittenBy,
         }
         if (!fs.existsSync(LOCAL_STORAGE_FOR_ACCESS_SNAPSHOTS)){
             fs.mkdirSync(LOCAL_STORAGE_FOR_ACCESS_SNAPSHOTS);
@@ -209,6 +253,14 @@ async function getAccessSnapshot(serverDomain: string, entityType: EntityType, e
     }
     console.log('ERROR: Can not retrieve Access Snapshop for:', serverDomain, entityType, entityId)
     return undefined
+}
+
+async function fetchEntity(serverBaseUrl: string, entityType: EntityType, entityId: EntityId): Promise<Entity | undefined> {
+    return await fetchFirst(`${serverBaseUrl}/entities/${entityType}?id=${entityId}`)
+}
+
+async function fetchAuditInfo(serverBaseUrl: string, entityType: EntityType, entityId: EntityId): Promise<AuditInfo | undefined> {
+    return await fetchObject(`${serverBaseUrl}/audit/${entityType}/${entityId}`)
 }
 
 function roundTimestamp(timestamp: Timestamp, millis: number): Timestamp {
@@ -237,4 +289,8 @@ async function fetchArray<T>(url: string): Promise<T[]> {
 async function fetchFirst<T>(url: string): Promise<T | undefined> {
     const data: T[] = await fetchArray(url)
     return data.length > 0 ? data[0] : undefined
+}
+
+function arraysEqual<T>(array1: T[], array2: T[]) {
+    return array1.length == array2.length && array1.every( function(item,i) { return item == array2[i] } )
 }
