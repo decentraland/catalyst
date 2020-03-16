@@ -69,7 +69,8 @@ export enum ServerMessageType {
   PeerLeftRoom = "PEER_LEFT_ROOM", // Another peer left a particular room.
   PeerJoinedRoom = "PEER_JOINED_ROOM", // Another peer joined a particular room.
   PeerLeftLayer = "PEER_LEFT_LAYER", // Another peer left the layer.
-  PeerJoinedLayer = "PEER_JOINED_LAYER" // Another peer joined the layer.
+  PeerJoinedLayer = "PEER_JOINED_LAYER", // Another peer joined the layer.
+  OptimalNetworkResponse = "OPTIMAL_NETWORK_RESPONSE" // Lighthouse response to network optimization request
 }
 
 export enum PeerHeaders {

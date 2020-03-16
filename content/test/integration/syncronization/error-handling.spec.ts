@@ -1,16 +1,15 @@
 import ms from "ms"
 import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive } from "../E2EAssertions"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, buildDeployDataAfterEntity, stopServers } from "../E2ETestUtils"
+import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, buildDeployDataAfterEntity, stopServers, awaitUntil } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
-import { delay } from "decentraland-katalyst-commons/src/util";
 
 
 describe("End 2 end - Error handling", () => {
@@ -20,17 +19,6 @@ describe("End 2 end - Error handling", () => {
     const SYNC_INTERVAL: number = ms("5s")
     let server1: TestServer, server2: TestServer
     let accessChecker = new MockedAccessChecker()
-
-    let jasmine_default_timeout
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
@@ -68,13 +56,14 @@ describe("End 2 end - Error handling", () => {
         const entity1Content = entityBeingDeployed1.content!![0].hash
 
         // Deploy entity 1
-        await server1.deploy(deployData1)
+        const deploymentTimestamp = await server1.deploy(deployData1)
+        const deploymentEvent = buildEvent(entityBeingDeployed1, server1, deploymentTimestamp)
 
         // Cause sync failure
         await server1.denylistContent(entity1Content, identity)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 3)
+        await awaitUntil(async () => await assertHistoryOnServerHasEvents(server2, deploymentEvent))
 
         // Assert deployment is marked as failed on server 2
         const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
@@ -93,11 +82,8 @@ describe("End 2 end - Error handling", () => {
         const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
         expect(newFailedDeployments.length).toBe(0)
 
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 3)
-
-        // Assert entity 2 is the active entity on both servers
-        await assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2)
+        // Wait for servers to sync and assert entity 2 is the active entity on both servers
+        await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entityBeingDeployed2))
         await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed2)
         await assertEntitiesAreDeployedButNotActive(server1, entityBeingDeployed1)
         await assertEntitiesAreDeployedButNotActive(server2, entityBeingDeployed1)
@@ -144,7 +130,7 @@ describe("End 2 end - Error handling", () => {
         await causeOfFailure(entityBeingDeployed)
 
         // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
+        await awaitUntil(async () => await assertHistoryOnServerHasEvents(server2, deploymentEvent))
 
         // Assert deployment is marked as failed
         const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()

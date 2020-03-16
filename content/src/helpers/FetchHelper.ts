@@ -3,7 +3,7 @@ import log4js from "log4js"
 import { clearTimeout, setTimeout } from "timers"
 import fetch from "node-fetch";
 import AbortController from 'abort-controller';
-import { delay } from "decentraland-katalyst-commons/src/util";
+import { delay } from "decentraland-katalyst-utils/util";
 
 const LOGGER = log4js.getLogger('FetchHelper');
 export class FetchHelper {

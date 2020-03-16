@@ -1,5 +1,5 @@
 import { Environment, EnvironmentConfig } from "../../../Environment";
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 
 export class DAOClientFactory {
 

@@ -7,7 +7,8 @@ ts_library(
     srcs = glob(["**/*.ts"]),
     module_name = "@katalyst/content",
     deps = [
-        "//commons",
+        "//commons/servers",
+        "//commons/utils",
         "//contracts",
         "@npm//@types",
         "@npm//@types/analytics-node",

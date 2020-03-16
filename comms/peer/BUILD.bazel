@@ -12,10 +12,11 @@ ts_library(
     module_name = "decentraland-katalyst-peer",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//commons/utils",
+        "@npm//@types",
         "@npm//eventemitter3",
         "@npm//fp-future",
         "@npm//long",
-        "@npm//@types/long",
         "@npm//protobufjs",
         "@npm//simple-peer",
     ],
@@ -39,6 +40,7 @@ rollup_bundle(
     sourcemap = "false",
     deps = [
         ":peer",
+        "//commons/utils",
         "@npm//@wessberg/rollup-plugin-ts",
         "@npm//rollup-plugin-json",
     ],
@@ -49,6 +51,7 @@ npm_package(
     deps = [
         ":bundle.js",
         ":dpackage_gen_package_json",
+        "//commons/utils",
         ":peer",
     ],
 )
@@ -87,8 +90,8 @@ karma_web_test_suite(
         ":tests",
         "@npm//eventemitter3:eventemitter3__umd",
         "@npm//fp-future:fp-future__umd",
-        "@npm//protobufjs:protobufjs__umd",
         "@npm//karma-mocha-reporter",
         "@npm//karma-spec-reporter",
+        "@npm//protobufjs:protobufjs__umd",
     ],
 )

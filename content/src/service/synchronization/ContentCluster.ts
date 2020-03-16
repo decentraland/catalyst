@@ -1,6 +1,6 @@
 import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { ServerAddress, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
 import { NameKeeper, ServerName } from "../naming/NameKeeper";
 import { Timestamp } from "../time/TimeSorting";
@@ -9,7 +9,7 @@ import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
-import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
+import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 
 export class ContentCluster {

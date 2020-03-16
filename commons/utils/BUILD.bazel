@@ -1,0 +1,31 @@
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
+load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "utils",
+    srcs = glob(["*.ts"]),
+    module_name = "decentraland-katalyst-utils",
+    tsconfig = "//:tsconfig.json",
+)
+
+
+ts_library(
+    name = "tests",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":utils",
+        "@npm//@types/jasmine",
+    ],
+)
+
+jasmine_node_test(
+    name = "unit_test",
+    deps = [
+        ":tests",
+        "@npm//jasmine",
+    ],
+)

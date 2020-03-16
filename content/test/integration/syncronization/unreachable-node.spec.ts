@@ -1,32 +1,21 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient"
+import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, buildBaseEnv, deleteServerStorage } from "../E2ETestUtils"
+import { buildDeployData, buildBaseEnv, deleteServerStorage, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "./clients/MockedDAOClient"
-import { delay } from "decentraland-katalyst-commons/src/util"
 
 /**
  * We will be testing how servers handle an unreachable node
  */
 describe("End 2 end - Unreachable node", function() {
 
-    let jasmine_default_timeout
     const SMALL_SYNC_INTERVAL: number = ms("1s")
     const LONG_SYNC_INTERVAL: number = ms('5s')
     let server1: TestServer, server2: TestServer, server3: TestServer
     const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
-
-    beforeAll(() => {
-        jasmine_default_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
-    })
-
-    afterAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = jasmine_default_timeout
-    })
 
     beforeEach(async () => {
         server1 = await buildServer("Server1_", 6060, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
@@ -52,21 +41,17 @@ describe("End 2 end - Unreachable node", function() {
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
         const deploymentEvent = buildEvent(entity, server1, deploymentTimestamp)
 
-        // Wait for small sync interval
-        await delay(SMALL_SYNC_INTERVAL * 2)
+        // Wait until server 2 got the update
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
 
         // Stop server 1
         await server1.stop()
 
-        // Assert server 2 got the update, but server 3 didn't
-        await assertHistoryOnServerHasEvents(server2, deploymentEvent)
+        // Assert server 3 didn't get the update
         await assertHistoryOnServerHasEvents(server3, )
 
-        // Wait for long sync interval
-        await delay(LONG_SYNC_INTERVAL * 2)
-
         // Now, server 3 detected that server 1 is down, and asked for its updated to server 2
-        await assertHistoryOnServerHasEvents(server3, deploymentEvent)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent))
     })
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoInterval: number, daoClient: DAOClient) {

@@ -7,7 +7,7 @@ import { TestServer } from "./TestServer"
 import { MockedContentAnalytics } from "../helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
-import { assertResponseIsOkOrThrown } from "./E2EAssertions"
+import { assertResponseIsOkOrThrow } from "./E2EAssertions"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 
 describe("End 2 end - Legacy Entities", () => {
@@ -77,5 +77,5 @@ async function deployLegacy(server: TestServer, deployData: DeployData) {
     deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
 
     const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
-    await assertResponseIsOkOrThrown(deployResponse)
+    await assertResponseIsOkOrThrow(deployResponse)
 }
