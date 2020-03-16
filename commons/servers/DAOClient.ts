@@ -41,7 +41,7 @@ export class DAOClient {
           domain = "https://" + domain;
         }
 
-        result.add({ address: domain, owner: owner.toJSON(), id });
+        result.add({ address: domain.trim(), owner: owner.toJSON(), id });
       } catch (error) {}
     }
 
