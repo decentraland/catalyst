@@ -7,7 +7,7 @@ import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
-import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "../../helpers/service/synchronization/clients/MockedDAOClient"
 
 
 describe("End 2 end - Node onboarding", function() {

@@ -32,11 +32,11 @@ export class Server {
     const upload = multer({ dest: "uploads/" });
     const controller: Controller = env.getBean(Bean.CONTROLLER);
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
-    
+
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }));
     }
-    
+
     this.app.use(cors());
     this.app.use(express.json());
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
@@ -61,6 +61,7 @@ export class Server {
     this.registerRoute("/denylist/:type/:id", controller, controller.removeFromDenylist, HttpMethod.DELETE);
     this.registerRoute("/denylist/:type/:id", controller, controller.isTargetDenylisted, HttpMethod.HEAD);
     this.registerRoute("/failedDeployments", controller, controller.getFailedDeployments);
+    this.registerRoute("/challenge", controller, controller.getChallenge);
 
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute("/legacy-entities", controller, controller.createLegacyEntity, HttpMethod.POST, upload.any());

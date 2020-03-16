@@ -21,6 +21,7 @@ describe("End 2 end deploy test", () => {
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withConfig(EnvironmentConfig.METRICS, false)
+            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
             .build()
         server = new TestServer(env)
         await server.start()

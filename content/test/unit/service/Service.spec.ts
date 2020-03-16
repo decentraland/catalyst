@@ -3,7 +3,6 @@ import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { EntityType, Entity } from "@katalyst/content/service/Entity";
 import { EnvironmentBuilder, EnvironmentConfig, Bean } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
-import { NameKeeper } from "@katalyst/content/service/naming/NameKeeper";
 import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
@@ -19,7 +18,7 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 
 describe("Service", function () {
 
-    const serverName = "A server Name"
+    const serverName = "NOT_IN_DAO"
     const auditInfo: AuditInfo = {
         authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:"signature", payload:"ethAddress"}],
         version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
@@ -46,9 +45,9 @@ describe("Service", function () {
             .withStorage(storage)
             .withHistoryManager(historyManager)
             .withAccessChecker(new MockedAccessChecker())
-            .withNameKeeper({ getServerName: () => serverName } as NameKeeper)
             .withBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
             .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
+            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
             .build()
 
         service = await ServiceFactory.create(env)

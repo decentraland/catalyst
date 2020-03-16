@@ -11,12 +11,13 @@ export class ServiceFactory {
             env.getBean(Bean.HISTORY_MANAGER),
             env.getBean(Bean.AUDIT),
             env.getBean(Bean.POINTER_MANAGER),
-            env.getBean(Bean.NAME_KEEPER),
+            env.getBean(Bean.CONTENT_CLUSTER),
             env.getBean(Bean.ANALYTICS),
             env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER),
             env.getBean(Bean.CACHE_MANAGER),
             env.getBean(Bean.VALIDATIONS),
-            env.getConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS));
+            env.getConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS),
+            env.getConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING));
     }
 }
 

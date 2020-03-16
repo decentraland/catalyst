@@ -5,7 +5,7 @@ import { MetaverseContentService, ENTITY_FILE_NAME, ContentFile, ServerStatus, T
 import { Timestamp, happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
-import { NameKeeper, ServerName } from "./naming/NameKeeper";
+import { ServerName } from "./naming/NameKeeper";
 import { ContentAnalytics } from "./analytics/ContentAnalytics";
 import { PointerManager, PointerHistory } from "./pointers/PointerManager";
 import { ServiceStorage } from "./ServiceStorage";
@@ -19,6 +19,7 @@ import { ContentAuthenticator } from "./auth/Authenticator";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason, NoFailure } from "./errors/FailedDeploymentsManager";
 import { CacheManager, ENTITIES_CACHE_CONFIG } from "./caching/CacheManager";
+import { IdentityProvider } from "./synchronization/ContentCluster";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -32,12 +33,13 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private historyManager: HistoryManager,
         private auditManager: AuditManager,
         private pointerManager: PointerManager,
-        private nameKeeper: NameKeeper,
+        private readonly identityProvider: IdentityProvider,
         private analytics: ContentAnalytics,
         private failedDeploymentsManager: FailedDeploymentsManager,
         cacheManager: CacheManager,
         private validations: Validations,
-        private ignoreValidationErrors: boolean) {
+        private ignoreValidationErrors: boolean,
+        private readonly allowDeploymentsWhenNotInDAO: boolean) {
         this.entities = cacheManager.buildEntityTypedCache(ENTITIES_CACHE_CONFIG, ([entityType, entityId]: [EntityType, EntityId]) => this.storage.getEntityById(entityId))
         this.lock = new Lock()
     }
@@ -46,14 +48,15 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         historyManager: HistoryManager,
         auditManager: AuditManager,
         pointerManager: PointerManager,
-        nameKeeper: NameKeeper,
+        identityProvider: IdentityProvider,
         analytics: ContentAnalytics,
         failedDeploymentsManager: FailedDeploymentsManager,
         cacheManager: CacheManager,
         validations: Validations,
-        ignoreValidationErrors: boolean = false): Promise<ServiceImpl>{
-            return new ServiceImpl(storage, historyManager, auditManager, pointerManager, nameKeeper,
-                analytics, failedDeploymentsManager, cacheManager, validations, ignoreValidationErrors)
+        ignoreValidationErrors: boolean = false,
+        allowDeploymentsWhenNotInDAO: boolean = false): Promise<ServiceImpl>{
+            return new ServiceImpl(storage, historyManager, auditManager, pointerManager, identityProvider,
+                analytics, failedDeploymentsManager, cacheManager, validations, ignoreValidationErrors, allowDeploymentsWhenNotInDAO)
         }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -81,12 +84,18 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
-        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.LOCAL, origin)
+        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getOwnIdentity()) {
+            throw new Error(`Deployments are not allow since server is not in DAO`)
+        }
+        return this.deployInternal(files, entityId, auditInfo, this.getOwnName(), ValidationContext.LOCAL, origin)
     }
 
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
+        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getOwnIdentity()) {
+            throw new Error(`Deployments are not allow since server is not in DAO`)
+        }
         // It looks like we are changing the deployment's server name but, since we won't store it, it won't change
-        return this.deployInternal(files, entityId, auditInfo, this.nameKeeper.getServerName(), ValidationContext.FIX_ATTEMPT, origin)
+        return this.deployInternal(files, entityId, auditInfo, this.getOwnName(), ValidationContext.FIX_ATTEMPT, origin)
     }
 
     private async deployInternal(files: ContentFile[],
@@ -188,7 +197,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entity.type, entityId));
 
                 // Record deployment for analytics
-                this.analytics.recordDeployment(this.nameKeeper.getServerName(), entity, ownerAddress, origin)
+                this.analytics.recordDeployment(this.getOwnName(), entity, ownerAddress, origin)
             }
 
             return newAuditInfo.deployedTimestamp
@@ -256,7 +265,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     async getStatus(): Promise<ServerStatus> {
         return {
-            name: this.nameKeeper.getServerName(),
+            name: this.getOwnName(),
             version: CURRENT_CONTENT_VERSION,
             currentTime: Date.now(),
             lastImmutableTime: this.getLastImmutableTime(),
@@ -281,6 +290,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     private async isEntityAlreadyDeployed(entityId: EntityId) {
         const entityIdDeployed = await this.isContentAvailable([entityId]);
         return !!entityIdDeployed.get(entityId)
+    }
+
+    private getOwnName(): ServerName {
+        return this.identityProvider.getOwnIdentity()?.name ?? "NOT_IN_DAO"
     }
 
     getLastImmutableTime(): Timestamp {

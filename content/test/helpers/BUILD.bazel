@@ -8,6 +8,7 @@ ts_library(
     module_name = "@katalyst/test-helpers",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//commons",
         "//content/src:content",
         "@npm//@types/faker",
         "@npm//@types/node",

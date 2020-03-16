@@ -1,8 +1,10 @@
+import ms from "ms";
 import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
 import { DAOClient } from "decentraland-katalyst-commons/src/DAOClient";
+import { delay } from "decentraland-katalyst-commons/src/util";
 import { ServerAddress, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
-import { NameKeeper, ServerName } from "../naming/NameKeeper";
+import { NameKeeper,ServerName } from "../naming/NameKeeper";
 import { Timestamp } from "../time/TimeSorting";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
@@ -11,13 +13,18 @@ import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
 import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
 
-export class ContentCluster {
+export interface IdentityProvider {
+    getOwnIdentity(): ServerIdentity | undefined;
+}
+
+export class ContentCluster implements IdentityProvider {
 
     private static readonly LOGGER = log4js.getLogger('ContentCluster');
 
     // My own identity
-    private myIdentity: ServerMetadata | undefined
+    private myIdentity: ServerIdentity | undefined
     // Timeout set to sync with DAO
     private syncTimeout: NodeJS.Timeout;
     // Servers that were reached at least once
@@ -33,6 +40,7 @@ export class ContentCluster {
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
         private readonly nameKeeper: NameKeeper,
+        private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly fetchHelper: FetchHelper,
         private readonly requestTtlBackwards: number) { }
 
@@ -40,6 +48,9 @@ export class ContentCluster {
     async connect(lastImmutableTime: Timestamp): Promise<void> {
         // Set the immutable time
         this.setImmutableTime(lastImmutableTime)
+
+        // Detect my own identity
+        await this.detectMyIdentity(10)
 
         // Perform first sync with the DAO
         await this.syncWithDAO()
@@ -79,7 +90,7 @@ export class ContentCluster {
         return this.removalEvent.on(listener)
     }
 
-    getOwnIdentity(): ServerMetadata | undefined {
+    getOwnIdentity(): ServerIdentity | undefined {
         return this.myIdentity
     }
 
@@ -88,12 +99,12 @@ export class ContentCluster {
         try {
             ContentCluster.LOGGER.debug(`Starting sync with DAO`)
 
+            if (!this.myIdentity) {
+                await this.detectMyIdentity()
+            }
+
             // Ask the DAO for all the servers
             const allServers: Set<ServerMetadata> = await this.dao.getAllContentServers()
-
-            if (!this.myIdentity) {
-                await this.detectMyIdentity(allServers)
-            }
 
             // Get all addresses in cluster (except for me)
             const allAddresses: ServerAddress[] = this.getAllOtherAddressesOnDAO(allServers)
@@ -175,22 +186,49 @@ export class ContentCluster {
     }
 
     /** Detect my own identity */
-    private async detectMyIdentity(servers: Set<ServerMetadata>): Promise<void> {
+    async detectMyIdentity(attempts: number = 1): Promise<void> {
         try {
-            // Ask each server for their name
-            const serverNames = await Promise.all(Array.from(servers)
-                .map(async serverMetadata => ({ metadata: serverMetadata, name: await this.getServerName(serverMetadata.address) })))
+            const allServers: Set<ServerMetadata> = await this.dao.getAllContentServers()
+            const serversByAddresses: Map<ServerAddress, ServerMetadata> = new Map(Array.from(allServers).map(metadata => [metadata.address, metadata]))
+            const serversByChallenge: Map<ServerAddress, ChallengeText> = new Map()
 
-            // Filter out other servers
-            const serversWithMyName = serverNames.filter(({ name }) => name == this.nameKeeper.getServerName())
+            while (attempts > 0 && serversByChallenge.size < allServers.size) {
+                // Prepare challenges for unknown servers
+                const challenges: Promise<{address: ServerAddress, challengeText: ChallengeText | undefined}>[] = Array.from(serversByAddresses.keys())
+                    .filter(address => !serversByChallenge.has(address))
+                    .map(async address => ({ address, challengeText: await this.getChallengeInServer(address) }))
 
-            if (serversWithMyName.length > 1) {
-                ContentCluster.LOGGER.warn(`Expected to find only one server with my name '${this.nameKeeper.getServerName()}', but found ${serversWithMyName.length}`)
-            } else {
-                this.myIdentity = serversWithMyName[0]?.metadata
+                // Store new challenge results
+                const challengeResults = await Promise.all(challenges)
+                challengeResults
+                    .filter(({ challengeText }) => !!challengeText)
+                    .forEach(({ address, challengeText }) => serversByChallenge.set(address, challengeText!!))
+
+                // Check if I was any of the servers who responded
+                const serversWithMyChallengeText = Array.from(serversByChallenge.entries())
+                    .filter(([, challengeText]) => this.challengeSupervisor.isChallengeOk(challengeText))
+
+                if (serversWithMyChallengeText.length === 1){
+                    const [ address ] = serversWithMyChallengeText[0]
+                    // TODO: In the future, calculate the name based on the address
+                    const name = this.nameKeeper.getServerName()
+                    this.myIdentity = {
+                        ...serversByAddresses.get(address)!!,
+                        name
+                    }
+                    ContentCluster.LOGGER.info(`Calculated my identity. My address is ${address} and my name is '${name}'`)
+                    break;
+                } else if (serversWithMyChallengeText.length > 1) {
+                    ContentCluster.LOGGER.warn(`Expected to find only one server with my challenge text '${this.challengeSupervisor.getChallengeText()}', but found ${serversWithMyChallengeText.length}`)
+                    break;
+                }
+                attempts--;
+                if (attempts > 0) {
+                    await delay(ms('30s'))
+                }
             }
         } catch (error) {
-            ContentCluster.LOGGER.error(`Failed to connect with the DAO \n${error}`)
+            ContentCluster.LOGGER.error(`Failed to detect my own identity \n${error}`)
         }
     }
 
@@ -202,7 +240,7 @@ export class ContentCluster {
             .filter(address => address !== this.myIdentity?.address)
     }
 
-    /** Return the server's name, or the text "UNREACHABLE" it it couldn't be reached */
+    /** Return the server's name, or the text "UNREACHABLE" if it couldn't be reached */
     private async getServerName(address: ServerAddress): Promise<ServerName> {
         try {
             const { name } = await this.fetchHelper.fetchJson(`${address}/status`)
@@ -212,5 +250,14 @@ export class ContentCluster {
         }
     }
 
+    /** Return the server's challenge text, or undefined if it couldn't be reached */
+    private async getChallengeInServer(address: ServerAddress): Promise<ChallengeText | undefined> {
+        try {
+            const { challengeText }: { challengeText: ChallengeText } = await this.fetchHelper.fetchJson(`${address}/challenge`)
+            return challengeText
+        } catch (error) { }
+    }
 }
+
+type ServerIdentity = ServerMetadata & { name: ServerName }
 

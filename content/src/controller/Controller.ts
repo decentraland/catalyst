@@ -15,6 +15,7 @@ import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
 import { SynchronizationManager } from "../service/synchronization/SynchronizationManager";
+import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 
 export class Controller {
 
@@ -25,6 +26,7 @@ export class Controller {
         private readonly denylist: Denylist,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly synchronizationManager: SynchronizationManager,
+        private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly ethNetwork: string) { }
 
     async getEntities(req: express.Request, res: express.Response) {
@@ -177,7 +179,7 @@ export class Controller {
             if(data.getLength()) {
                 res.setHeader('Content-Length', data.getLength()!.toString())
             }
-            
+
             data.asStream().pipe(res)
         } else {
             res.status(404).send()
@@ -349,6 +351,14 @@ export class Controller {
 
         const failedDeployments = await this.failedDeploymentsManager.getAllFailedDeployments()
         res.send(failedDeployments)
+    }
+
+    async getChallenge(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /challenge
+
+        const challengeText = this.challengeSupervisor.getChallengeText()
+        res.send({ challengeText })
     }
 
 }
