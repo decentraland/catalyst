@@ -7,7 +7,7 @@ import morgan from "morgan";
 import multer from "multer";
 import http from "http";
 import { Controller } from "./controller/Controller";
-import { Metrics } from "decentraland-katalyst-commons/src/metrics";
+import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 

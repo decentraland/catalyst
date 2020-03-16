@@ -11,7 +11,7 @@ import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
-import { ServerMetadata } from "decentraland-katalyst-commons/src/ServerMetadata";
+import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
 
