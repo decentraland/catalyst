@@ -50,7 +50,6 @@ export class AccessCheckerImpl implements AccessChecker {
     private async checkSceneAccess(pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
         const errors: string[] = []
 
-        // We check for access in the past to avoid synchronization issues in the blockchain
         await Promise.all(
             pointers
                 .map(pointer => pointer.toLocaleLowerCase())
@@ -65,7 +64,7 @@ export class AccessCheckerImpl implements AccessChecker {
                             const x: number = parseInt(pointerParts[0], 10)
                             const y: number = parseInt(pointerParts[1], 10)
 
-                            // Check that the address has access
+                            // Check that the address has access (we check both the present and the past to avoid synchronization issues in the blockchain)
                             const hasAccess = (await this.checkParcelAccess(x, y, timestamp - AccessCheckerImpl.SCENE_LOOKBACK_TIME, ethAddress)) ||
                                 (await this.checkParcelAccess(x, y, timestamp, ethAddress))
                             if (!hasAccess) {
