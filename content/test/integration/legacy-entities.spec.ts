@@ -24,6 +24,7 @@ describe("End 2 end - Legacy Entities", () => {
             .withConfig(EnvironmentConfig.METRICS, false)
             .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
             .withConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES, true)
+            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
             .build()
         server = new TestServer(env)
         await server.start()

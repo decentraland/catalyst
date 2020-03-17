@@ -5,7 +5,7 @@ import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildBaseEnv, deleteServerStorage, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
-import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 
 /**
  * We will be testing how servers handle an unreachable node
@@ -51,7 +51,7 @@ describe("End 2 end - Unreachable node", function() {
         await assertHistoryOnServerHasEvents(server3, )
 
         // Now, server 3 detected that server 1 is down, and asked for its updated to server 2
-        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent))
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent), 10, '3s')
     })
 
     async function buildServer(namePrefix: string, port: number, syncInterval: number, daoInterval: number, daoClient: DAOClient) {

@@ -56,7 +56,7 @@ export class Denylist {
 
     private validateBlocker(metadata: DenylistMetadata) {
         // Check if address belongs to Decentraland
-        const nodeOwner: EthAddress | undefined = this.cluster.getOwnIdentity()?.owner
+        const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
         const isBlockerTheNodeOwner: boolean = !!nodeOwner && nodeOwner === metadata.blocker
         if (!isBlockerTheNodeOwner && !this.authenticator.isAddressOwnedByDecentraland(metadata.blocker)) {
             throw new Error("Expected the denylister to be either Decentraland, or the node's owner")

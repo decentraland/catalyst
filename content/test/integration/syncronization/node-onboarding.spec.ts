@@ -7,7 +7,7 @@ import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
-import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 
 
 describe("End 2 end - Node onboarding", function() {
@@ -17,7 +17,7 @@ describe("End 2 end - Node onboarding", function() {
     let dao
 
     beforeEach(async () => {
-        dao = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070')
+        dao = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
         server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, dao)
         server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, dao)
         server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, dao)
@@ -30,7 +30,7 @@ describe("End 2 end - Node onboarding", function() {
         deleteServerStorage(server1, server2, server3)
     })
 
-    it('When a node starts, it get all the previous history', async () => {
+    it('When a node starts, it gets all the previous history', async () => {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 
@@ -51,7 +51,6 @@ describe("End 2 end - Node onboarding", function() {
         await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2))
         await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2))
         await assertFileIsOnServer(server1, entity1ContentHash)
-        await assertFileIsNotOnServer(server2, entity1ContentHash)
         await assertEntityIsOverwrittenBy(server1, entity1, entity2)
         await assertEntityIsOverwrittenBy(server2, entity1, entity2)
 
@@ -62,7 +61,7 @@ describe("End 2 end - Node onboarding", function() {
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2))
 
         // Make sure that is didn't download overwritten content
-        await assertFileIsNotOnServer(server1, entity1ContentHash)
+        await assertFileIsNotOnServer(server3, entity1ContentHash)
     })
 
     it('When a node starts, it even gets history for nodes that are no longer on the DAO', async () => {

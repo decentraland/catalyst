@@ -6,7 +6,7 @@ import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistSer
 import { ContentFile } from "@katalyst/content/service/Service";
 import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
-import { assertPromiseIsRejected, assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
+import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
 import { Authenticator } from "dcl-crypto";
 
@@ -143,7 +143,8 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(content1Target)
         const decorator = new DenylistServiceDecorator(service, denylist)
 
-        await assertPromiseIsRejected(() => decorator.getContent(content1.hash))
+        const content = await decorator.getContent(content1.hash);
+        expect(content).toBeUndefined()
     })
 
     it(`When content is not denylisted, then it can be returned correctly`, async () => {
@@ -159,7 +160,8 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = new DenylistServiceDecorator(service, denylist)
 
-        await assertPromiseIsRejected(() => decorator.getContent(entity2.id))
+        const content = await decorator.getContent(entity2.id);
+        expect(content).toBeUndefined()
     })
 
     it(`When an entity is not denylisted, then it can be returned as content`, async () => {

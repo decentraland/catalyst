@@ -5,7 +5,7 @@ import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
-import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 import { delay } from "decentraland-katalyst-utils/util"
 
 describe("End 2 end synchronization tests", function() {
