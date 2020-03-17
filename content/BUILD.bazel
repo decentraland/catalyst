@@ -87,7 +87,7 @@ ts_library(
     srcs = glob(["test/manual/**/*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
-        "//commons",
+        "//commons/servers",
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
         "//contracts",

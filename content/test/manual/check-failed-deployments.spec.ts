@@ -9,6 +9,7 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 import { DEFAULT_DCL_PARCEL_ACCESS_URL } from "@katalyst/content/Environment"
 import fs from 'fs';
 import { httpProviderForNetwork } from "../../../contracts/utils"
+import ms from "ms"
 
 describe("Failed Deployments validations.", () => {
 
@@ -95,7 +96,7 @@ describe("Failed Deployments validations.", () => {
             console.log('------------------------------')
             console.log('Counting Profiles by timestamp...')
             console.log('------------------------------')
-            const MILLIS_IN_DAY = 25 * 60 * 60 * 1000
+            const MILLIS_IN_DAY = ms('1d')
             const failedProfilesByTime: AssociativeArray<AccessSnapshot> = groupBy(profileAccessSnapshots.map(s => roundTimestampInAccessSnapshot(s, MILLIS_IN_DAY)), 'timestamp')
             countAndSort(failedProfilesByTime).forEach(item => console.log(`  ${item.key} (${new Date(parseInt(item.key)).toISOString()}): ${item.count}`))
             console.log('------------------------------\n')
@@ -140,15 +141,15 @@ describe("Failed Deployments validations.", () => {
 
         }, MAX_SAFE_TIMEOUT)
 
-    it('LAND particular review.', async () => {
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
+    fit('Entity access check', async () => {
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower');
         const accessSnapshot = {
-            pointers: ['-110,30'],
-            ethAddress: '0xAB1089e114d3040D2D9C8651610E422c68b8e1d0',
-            timestamp: 1583434116232
-
+            pointers: ["55,-132"],
+            ethAddress: '0xaabe0ecfaf9e028d63cf7ea7e772cf52d662691a',
+            timestamp: 1582392484732,
+            type: EntityType.SCENE
         }
-        const accessErrors: string[] = await accessChecker.hasAccess(EntityType.SCENE, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
+        const accessErrors: string[] = await accessChecker.hasAccess(accessSnapshot.type, accessSnapshot.pointers, accessSnapshot.timestamp, accessSnapshot.ethAddress)
         if (accessErrors.length===0) {
             console.log('OK')
         } else {
@@ -251,7 +252,7 @@ async function getAccessSnapshot(serverDomain: string, entityType: EntityType, e
         fs.writeFileSync(localCopyFile, JSON.stringify(accessSnapshot))
         return accessSnapshot
     }
-    console.log('ERROR: Can not retrieve Access Snapshop for:', serverDomain, entityType, entityId)
+    console.log('ERROR: Can not retrieve Access Snapshot for:', serverDomain, entityType, entityId)
     return undefined
 }
 

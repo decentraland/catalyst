@@ -1,9 +1,11 @@
 import log4js from "log4js"
+import ms from "ms";
 import { AccessChecker } from "./AccessChecker";
 import { EthAddress } from "dcl-crypto";
 import { Pointer, EntityType } from "../Entity";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { Timestamp } from "../time/TimeSorting";
+import { retry } from "@katalyst/content/helpers/FetchHelper";
 
 export class AccessCheckerImpl implements AccessChecker {
 
@@ -44,12 +46,11 @@ export class AccessCheckerImpl implements AccessChecker {
         return errors
     }
 
-    private SCENE_LOOKBACK_TIME = 5 * 60 * 1000;
+    private static readonly SCENE_LOOKBACK_TIME = ms('5m');
     private async checkSceneAccess(pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
         const errors: string[] = []
 
-        // We check for access in the past to avoid sinchronization issues in the blockchain
-        timestamp -= this.SCENE_LOOKBACK_TIME;
+        // We check for access in the past to avoid synchronization issues in the blockchain
         await Promise.all(
             pointers
                 .map(pointer => pointer.toLocaleLowerCase())
@@ -65,7 +66,8 @@ export class AccessCheckerImpl implements AccessChecker {
                             const y: number = parseInt(pointerParts[1], 10)
 
                             // Check that the address has access
-                            const hasAccess = await this.checkParcelAccess(x, y, timestamp, ethAddress)
+                            const hasAccess = (await this.checkParcelAccess(x, y, timestamp - AccessCheckerImpl.SCENE_LOOKBACK_TIME, ethAddress)) ||
+                                (await this.checkParcelAccess(x, y, timestamp, ethAddress))
                             if (!hasAccess) {
                                 errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
                             }
@@ -79,15 +81,12 @@ export class AccessCheckerImpl implements AccessChecker {
     }
 
     private async checkParcelAccess(x: number, y: number, timestamp: Timestamp, ethAddress: EthAddress): Promise<boolean> {
-        const TOTAL_ATTEMPTS = 5
-        for(let attempt=0; attempt<TOTAL_ATTEMPTS; attempt++) {
-            try {
-                return await this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress)
-            } catch (error) {
-                AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress}). Attempt ${attempt+1} of ${TOTAL_ATTEMPTS}`, error)
-            }
+        try {
+            return await retry(() => this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress), 5, `check parcel access (${x}, ${y}, ${timestamp}, ${ethAddress})`)
+        } catch (error) {
+            AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress}).`, error)
+            return false
         }
-        return false
     }
 
     /**
@@ -110,7 +109,7 @@ export class AccessCheckerImpl implements AccessChecker {
             const belongsToEstate: boolean = parcel.estates!=undefined && parcel.estates.length > 0 && parcel.estates[0].estateId!=undefined
 
             return await this.hasAccessThroughFirstLevelAuthorities(parcel, ethAddress)
-                || await this.hasAccessThroughAutorizations(parcel.owners[0].address, ethAddress, timestamp)
+                || await this.hasAccessThroughAuthorizations(parcel.owners[0].address, ethAddress, timestamp)
                 || (belongsToEstate && await this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress))
         }
         return false
@@ -124,7 +123,7 @@ export class AccessCheckerImpl implements AccessChecker {
         const estate = await this.getEstate(estateId.toString(), timestamp)
         if (estate) {
             return await this.hasAccessThroughFirstLevelAuthorities(estate, ethAddress)
-            || await this.hasAccessThroughAutorizations(estate.owners[0].address, ethAddress, timestamp)
+            || await this.hasAccessThroughAuthorizations(estate.owners[0].address, ethAddress, timestamp)
         }
         return false
     }
@@ -138,7 +137,7 @@ export class AccessCheckerImpl implements AccessChecker {
             .map(addressSnapshot => addressSnapshot.address.toLowerCase())
         return firstLevelAuthorities.includes(ethAddress.toLowerCase())
     }
-    private async hasAccessThroughAutorizations(owner: EthAddress, ethAddress: EthAddress, timestamp: Timestamp): Promise<boolean> {
+    private async hasAccessThroughAuthorizations(owner: EthAddress, ethAddress: EthAddress, timestamp: Timestamp): Promise<boolean> {
         /* You also get access if you received:
          *   - an authorization with isApproved and type Operator, ApprovalForAll or UpdateManager
          * at that time
