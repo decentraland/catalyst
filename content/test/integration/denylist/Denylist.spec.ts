@@ -174,6 +174,6 @@ describe("Integration - Denylist", () => {
 
 function mockedClusterWithIdentityAsOwn(identity: Identity) {
     let mockedCluster: ContentCluster = mock(ContentCluster)
-    when(mockedCluster.getOwnIdentity()).thenReturn({ owner: identity.address, address: "", id: "", name: "" })
+    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: identity.address, address: "", id: "", name: "" })
     return instance(mockedCluster)
 }

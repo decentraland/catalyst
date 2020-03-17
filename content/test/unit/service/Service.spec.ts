@@ -99,11 +99,10 @@ describe("Service", function () {
             'Deployments are not allow since server is not in DAO')
     });
 
-    it(`When server is not in DAO, then fixes aren't allowed`, async () => {
+    it(`When server is not in DAO, then fixes are still allowed`, async () => {
         const service = await buildService(false)
 
-        await assertPromiseRejectionIs(() => service.deployToFix([entityFile, randomFile], entity.id, auditInfo, ''),
-            'Deployments are not allow since server is not in DAO')
+        await service.deployToFix([entityFile, randomFile], entity.id, auditInfo, '')
     });
 
     async function buildService(allowDeploymentsForTesting = true) {

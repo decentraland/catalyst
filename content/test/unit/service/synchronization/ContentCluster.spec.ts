@@ -22,7 +22,7 @@ describe("ContentCluster", function () {
         await contentCluster.detectMyIdentity()
 
         // Check that no identity was detected
-        expect(contentCluster.getOwnIdentity()).toBeUndefined()
+        expect(contentCluster.getIdentityInDAO()).toBeUndefined()
     })
 
     it(`When I'm on the DAO, then I can determine my identity`, async () => {
@@ -34,7 +34,7 @@ describe("ContentCluster", function () {
         await contentCluster.detectMyIdentity()
 
         // Check that identity was detected
-        const identity = contentCluster.getOwnIdentity()!!;
+        const identity = contentCluster.getIdentityInDAO()!!;
         expect(identity.name).toEqual(name1)
         expect(identity.address).toEqual(address1)
     })
@@ -48,7 +48,7 @@ describe("ContentCluster", function () {
         await contentCluster.detectMyIdentity()
 
         // Check that no identity was detected
-        expect(contentCluster.getOwnIdentity()).toBeUndefined()
+        expect(contentCluster.getIdentityInDAO()).toBeUndefined()
     })
 
     it(`When other servers have the same challenge as myself, then no identity is assigned`, async () => {
@@ -61,7 +61,7 @@ describe("ContentCluster", function () {
         await contentCluster.detectMyIdentity()
 
         // Check that no identity was detected
-        expect(contentCluster.getOwnIdentity()).toBeUndefined()
+        expect(contentCluster.getIdentityInDAO()).toBeUndefined()
     })
 
 })

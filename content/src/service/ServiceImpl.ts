@@ -24,6 +24,7 @@ import { IdentityProvider } from "./synchronization/ContentCluster";
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
+    private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
 
     private readonly lock: Lock
     private entities: CacheByType<EntityId, Entity | undefined>
@@ -84,16 +85,13 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
-        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getOwnIdentity()) {
+        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getIdentityInDAO()) {
             throw new Error(`Deployments are not allow since server is not in DAO`)
         }
         return this.deployInternal(files, entityId, auditInfo, this.getOwnName(), ValidationContext.LOCAL, origin)
     }
 
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp> {
-        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getOwnIdentity()) {
-            throw new Error(`Deployments are not allow since server is not in DAO`)
-        }
         // It looks like we are changing the deployment's server name but, since we won't store it, it won't change
         return this.deployInternal(files, entityId, auditInfo, this.getOwnName(), ValidationContext.FIX_ATTEMPT, origin)
     }
@@ -293,7 +291,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     private getOwnName(): ServerName {
-        return this.identityProvider.getOwnIdentity()?.name ?? "NOT_IN_DAO"
+        return this.identityProvider.getIdentityInDAO()?.name ?? ServiceImpl.DEFAULT_SERVER_NAME
     }
 
     getLastImmutableTime(): Timestamp {
