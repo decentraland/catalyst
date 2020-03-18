@@ -4,14 +4,12 @@ import { Catalyst } from "decentraland-katalyst-contracts/Catalyst";
 
 export class DAOClient {
   private contract: Catalyst;
-  private triggerDisconnect;
 
   constructor(networkName: string) {
     const handler = handlerForNetwork(networkName, "catalyst");
     if (handler) {
-      const { contract, disconnect } = handler;
+      const { contract } = handler;
       this.contract = contract;
-      this.triggerDisconnect = disconnect;
     } else {
       throw new Error(`Can not find a network handler for Network="${networkName}`);
     }
@@ -50,7 +48,4 @@ export class DAOClient {
     return result;
   }
 
-  disconnect() {
-    this.triggerDisconnect();
-  }
 }
