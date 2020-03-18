@@ -28,10 +28,9 @@ export const networks = {
 
 export function handlerForNetwork(networkKey: string, contractKey: string) {
   try {
-    const network = networks[networkKey];
-    const url = network.http;
-    const provider = new HttpProvider(url);
+    const provider = httpProviderForNetwork(networkKey)
     const eth = new Eth(provider);
+    const network = networks[networkKey];
     const contract = network.contracts[contractKey];
     const address = Address.fromString(contract.address);
     const contractInstance = new contract.class(eth, address);
