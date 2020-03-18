@@ -19,6 +19,7 @@ describe("Integration - History Client", function() {
             .withAccessChecker(new MockedAccessChecker())
             .withConfig(EnvironmentConfig.SERVER_PORT, 8080)
             .withConfig(EnvironmentConfig.METRICS, false)
+            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
             .build()
 
         server = new TestServer(env)

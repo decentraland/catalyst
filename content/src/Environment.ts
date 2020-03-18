@@ -27,6 +27,7 @@ import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeployme
 import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
 import { CacheManagerFactory } from "./service/caching/CacheManagerFactory";
 import { ValidationsFactory } from "./service/validations/ValidationsFactory";
+import { ChallengeSupervisor } from "./service/synchronization/ChallengeSupervisor";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -88,6 +89,7 @@ export const enum Bean {
     FETCH_HELPER,
     CACHE_MANAGER,
     VALIDATIONS,
+    CHALLENGE_SUPERVISOR,
 }
 
 export const enum EnvironmentConfig {
@@ -111,6 +113,7 @@ export const enum EnvironmentConfig {
     CACHE_SIZES,
     REQUEST_TTL_BACKWARDS,
     DCL_PARCEL_ACCESS_URL,
+    ALLOW_DEPLOYMENTS_FOR_TESTING,
 }
 
 export class EnvironmentBuilder {
@@ -187,10 +190,12 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES                    , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? DEFAULT_DCL_PARCEL_ACCESS_URL)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING  , () => process.env.ALLOW_DEPLOYMENTS_FOR_TESTING === "true")
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
+        this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR        , () => new ChallengeSupervisor())
         this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER               , () => CacheManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER                , () => FetchHelperFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))

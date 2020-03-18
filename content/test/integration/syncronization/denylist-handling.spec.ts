@@ -5,7 +5,7 @@ import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { MockedDAOClient } from "./clients/MockedDAOClient"
+import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
 import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, awaitUntil } from "../E2ETestUtils"
 
