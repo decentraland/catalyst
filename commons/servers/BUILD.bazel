@@ -24,7 +24,6 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":servers",
-        "@npm//@types/faker",
         "@npm//@types/jasmine",
         "@npm//@types/node",
         "@npm//ts-mockito",

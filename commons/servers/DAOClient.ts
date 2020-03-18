@@ -31,24 +31,16 @@ export class DAOClient {
       // Create a new list
       const newServers: Map<CatalystId, ServerMetadata> = new Map()
 
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < count - 1; i++) {
         // Find id in index
         const id = await this.contract.getCatalystIdByIndex(i)
 
-        // Check if id is known
-        let metadata = this.servers.get(id)
-
-        // If it isn't, then calculate it
-        if (!metadata) {
-          const data = await this.contract.getServerData(id)
-          metadata = this.toMetadata(data)
-        }
-
-        // If metadata is defined, then store it
-        if (metadata) {
-          newServers.set(id, metadata)
-        }
+        // Add it to the new server list
+        await this.addCatalystToNewServerList(id, newServers)
       }
+
+      // Add the last catalyst also
+      await this.addCatalystToNewServerList(lastCatalystId, newServers)
 
       // Update server list
       this.servers = newServers
@@ -59,6 +51,22 @@ export class DAOClient {
     }
 
     return new Set(this.servers.values())
+  }
+
+  private async addCatalystToNewServerList(id: CatalystId, newServers: Map<CatalystId, ServerMetadata>): Promise<void> {
+    // Check if id is known
+    let metadata = this.servers.get(id)
+
+    // If it isn't, then calculate it
+    if (!metadata) {
+      const data = await this.contract.getServerData(id)
+      metadata = this.toMetadata(data)
+    }
+
+    // If metadata is defined, then store it
+    if (metadata) {
+      newServers.set(id, metadata)
+    }
   }
 
   private toMetadata(data: CatalystData): ServerMetadata | undefined {
