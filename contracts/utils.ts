@@ -1,6 +1,6 @@
 import { Address } from "web3x/address";
 import { Eth } from "web3x/eth";
-import { WebsocketProvider, HttpProvider } from "web3x/providers";
+import { HttpProvider } from "web3x/providers";
 import { Catalyst } from "./Catalyst";
 
 export const networks = {
@@ -28,9 +28,9 @@ export const networks = {
 
 export function handlerForNetwork(networkKey: string, contractKey: string) {
   try {
-    const network = networks[networkKey];
-    const provider = new WebsocketProvider(network.wss);
+    const provider = httpProviderForNetwork(networkKey)
     const eth = new Eth(provider);
+    const network = networks[networkKey];
     const contract = network.contracts[contractKey];
     const address = Address.fromString(contract.address);
     const contractInstance = new contract.class(eth, address);
@@ -39,9 +39,6 @@ export function handlerForNetwork(networkKey: string, contractKey: string) {
       provider,
       network,
       contract: contractInstance,
-      disconnect: () => {
-        provider.disconnect();
-      }
     };
   } catch (error) {
     return undefined;

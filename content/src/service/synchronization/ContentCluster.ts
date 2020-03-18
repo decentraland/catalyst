@@ -64,7 +64,6 @@ export class ContentCluster implements IdentityProvider {
     /** Stop syncing with DAO */
     disconnect() {
         clearTimeout(this.syncTimeout)
-        this.dao.disconnect()
     }
 
     getStatus() {
