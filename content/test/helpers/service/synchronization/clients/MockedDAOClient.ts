@@ -1,24 +1,25 @@
+import { mock, instance } from "ts-mockito";
 import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { EthAddress } from 'dcl-crypto';
-import { DEFAULT_ETH_NETWORK } from "@katalyst/content/Environment";
+import { DAOContract } from "decentraland-katalyst-commons/DAOContract";
 
 export class MockedDAOClient extends DAOClient {
 
-    private readonly servers: Map<string, ServerMetadata>
+    private readonly serversByAddress: Map<ServerAddress, ServerMetadata>
 
     private constructor(servers: {address: ServerAddress, owner: EthAddress}[]) {
-        super(DEFAULT_ETH_NETWORK)
-        this.servers = new Map(servers.map(server => [server.address, {...server, id: "Id"}]))
+        super(instance(mock(DAOContract)))
+        this.serversByAddress = new Map(servers.map(server => [server.address, {...server, id: "Id"}]))
     }
 
     async getAllContentServers(): Promise<Set<ServerMetadata>> {
-        return new Set(this.servers.values())
+        return new Set(this.serversByAddress.values())
     }
 
     remove(address: ServerAddress) {
-        this.servers.delete(address)
+        this.serversByAddress.delete(address)
     }
 
     static withAddresses(...addresses: ServerAddress[]): MockedDAOClient {

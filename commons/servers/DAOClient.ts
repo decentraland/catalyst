@@ -1,18 +1,16 @@
-import { handlerForNetwork } from "decentraland-katalyst-contracts/utils";
 import { ServerMetadata } from "./ServerMetadata";
-import { Catalyst } from "decentraland-katalyst-contracts/Catalyst";
+import { DAOContract, CatalystId, CatalystData } from "./DAOContract";
 
 export class DAOClient {
-  private contract: Catalyst;
+  // We will store the server metadata by id. Take into account that the id is unique, and even if we remove and re-add a domain, its id will change
+  private servers: Map<CatalystId, ServerMetadata>
+  private lastCount: number
+  private lastCatalystId: CatalystId
 
-  constructor(networkName: string) {
-    const handler = handlerForNetwork(networkName, "catalyst");
-    if (handler) {
-      const { contract } = handler;
-      this.contract = contract;
-    } else {
-      throw new Error(`Can not find a network handler for Network="${networkName}`);
-    }
+  constructor(private readonly contract: DAOContract, initialServerList?: Map<CatalystId, ServerMetadata>) {
+      this.servers = initialServerList ?? new Map()
+      this.lastCount = initialServerList?.size ?? 0
+      this.lastCatalystId = initialServerList ? Array.from(initialServerList.keys())[this.lastCount - 1] : ""
   }
 
   async getAllContentServers(): Promise<Set<ServerMetadata>> {
@@ -21,31 +19,63 @@ export class DAOClient {
   }
 
   async getAllServers(): Promise<Set<ServerMetadata>> {
-    const result: Set<ServerMetadata> = new Set();
+    // Check count and last catalyst on the list
+    const count = await this.contract.getCount()
+    const lastCatalystId = await this.contract.getCatalystIdByIndex(count - 1)
 
-    const count = parseInt(await this.contract.methods.catalystCount().call());
+    if (count !== this.lastCount || lastCatalystId !== this.lastCatalystId) {
+      // It is important to understand how the contract works in order to understand why we are doing this. Basically, we want an easy way to detect if there was a change to
+      // the server list. Imagine the list is ABCD. Now, if the B is removed from the list, then the last server (in this case D) will take its place, resulting in ADC.
+      // Now, if a new server is added, it will be added in the last place. Therefore, when a change happens, either the count is different, or the last server on the list will be different.
 
-    for (let i = 0; i < count; i++) {
-      try {
-        const katalystId = await this.contract.methods.catalystIds(i).call();
-        let { id, owner, domain } = await this.contract.methods.catalystById(katalystId).call();
+      // Create a new list
+      const newServers: Map<CatalystId, ServerMetadata> = new Map()
 
-        domain = domain.trim()
+      for (let i = 0; i < count; i++) {
+        // Find id in index
+        const id = await this.contract.getCatalystIdByIndex(i)
 
-        if (domain.startsWith("http://")) {
-          console.warn(`Catalyst node domain using http protocol, skipping ${domain}`);
-          continue;
+        // Check if id is known
+        let metadata = this.servers.get(id)
+
+        // If it isn't, then calculate it
+        if (!metadata) {
+          const data = await this.contract.getServerData(id)
+          metadata = this.toMetadata(data)
         }
 
-        if (!domain.startsWith("https://")) {
-          domain = "https://" + domain;
+        // If metadata is defined, then store it
+        if (metadata) {
+          newServers.set(id, metadata)
         }
+      }
 
-        result.add({ address: domain, owner: owner.toJSON(), id });
-      } catch (error) {}
+      // Update server list
+      this.servers = newServers
+
+      // Update the variables
+      this.lastCount = count
+      this.lastCatalystId = lastCatalystId
     }
 
-    return result;
+    return new Set(this.servers.values())
+  }
+
+  private toMetadata(data: CatalystData): ServerMetadata | undefined {
+    const { id, owner, domain } = data
+
+    let address = domain.trim()
+
+    if (address.startsWith("http://")) {
+      console.warn(`Catalyst node domain using http protocol, skipping ${address}`);
+      return undefined
+    }
+
+    if (!address.startsWith("https://")) {
+        address = "https://" + address;
+    }
+
+    return { address, owner, id };
   }
 
 }

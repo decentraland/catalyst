@@ -15,5 +15,6 @@ ts_library(
         "@npm//@types/node",
         "@npm//dcl-crypto",
         "@npm//faker",
+        "@npm//ts-mockito",
     ],
 )

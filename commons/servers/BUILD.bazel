@@ -16,3 +16,27 @@ ts_library(
         "@npm//response-time",
     ],
 )
+
+ts_library(
+    name = "tests_unit",
+    testonly = 1,
+    srcs = glob(["test/**/*.ts"]),
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        ":servers",
+        "@npm//@types/faker",
+        "@npm//@types/jasmine",
+        "@npm//@types/node",
+        "@npm//ts-mockito",
+    ],
+)
+
+load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+
+jasmine_node_test(
+    name = "unit_test",
+    deps = [
+        ":tests_unit",
+        "@npm//jasmine",
+    ],
+)
