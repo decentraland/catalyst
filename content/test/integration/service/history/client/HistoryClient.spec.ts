@@ -1,11 +1,11 @@
-import { TestServer } from "../../TestServer"
+import { TestServer } from "../../../TestServer"
 import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
 import { DeploymentEvent, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
-import { deleteServerStorage, buildDeployData } from "../../E2ETestUtils"
+import { deleteServerStorage, buildDeployData } from "../../../E2ETestUtils"
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
 
 describe("Integration - History Client", function() {

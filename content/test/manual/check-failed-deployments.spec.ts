@@ -141,7 +141,7 @@ describe("Failed Deployments validations.", () => {
 
         }, MAX_SAFE_TIMEOUT)
 
-    fit('Entity access check', async () => {
+    it('Entity access check', async () => {
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower');
         const accessSnapshot = {
             pointers: ["55,-132"],

@@ -64,9 +64,10 @@ export class AccessCheckerImpl implements AccessChecker {
                             const x: number = parseInt(pointerParts[0], 10)
                             const y: number = parseInt(pointerParts[1], 10)
 
-                            // Check that the address has access (we check both the present and the past to avoid synchronization issues in the blockchain)
-                            const hasAccess = (await this.checkParcelAccess(x, y, timestamp - AccessCheckerImpl.SCENE_LOOKBACK_TIME, ethAddress)) ||
-                                (await this.checkParcelAccess(x, y, timestamp, ethAddress))
+                            // Check that the address has access (we check both the present and the 5 min into the past to avoid synchronization issues in the blockchain)
+                            const hasAccess =
+                                (await this.checkParcelAccess(x, y, timestamp, ethAddress)) ||
+                                (await this.checkParcelAccess(x, y, timestamp - AccessCheckerImpl.SCENE_LOOKBACK_TIME, ethAddress))
                             if (!hasAccess) {
                                 errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
                             }
@@ -81,7 +82,7 @@ export class AccessCheckerImpl implements AccessChecker {
 
     private async checkParcelAccess(x: number, y: number, timestamp: Timestamp, ethAddress: EthAddress): Promise<boolean> {
         try {
-            return await retry(() => this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress), 5, `check parcel access (${x}, ${y}, ${timestamp}, ${ethAddress})`)
+            return await retry(() => this.isParcelUpdateAuthorized(x, y, timestamp, ethAddress), 5, `check parcel access (${x}, ${y}, ${timestamp}, ${ethAddress})`, '0.1s')
         } catch (error) {
             AccessCheckerImpl.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress}).`, error)
             return false
