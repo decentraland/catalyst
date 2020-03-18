@@ -2,9 +2,9 @@ import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessChecke
 import { EntityType } from "@katalyst/content/service/Entity";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 
-describe("AccessCheckerImpl", function () {
+describe("Integration - AccessCheckerImpl", function () {
 
-    it(`Integration - When access URL is wrong it reports an error`, async () => {
+    it(`When access URL is wrong it reports an error`, async () => {
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), "Wrong URL");
 
         const errors = await accessChecker.hasAccess(EntityType.SCENE, ["102,4"], Date.now(), "Some-address-without-permissions");
