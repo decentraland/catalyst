@@ -26,10 +26,6 @@ export function isPosition2D(position: any): position is Position2D {
  * - distance(a, b) = 99999 => 3
  * 
  * The @param intervals provided should be ordered from lower to greater
- * 
- * @param a 
- * @param b 
- * @param intervals 
  */
 export function discretizedPositionDistance(a: Position, b: Position, intervals: number[] = DISCRETIZE_POSITION_INTERVALS) {
   let dx = 0;
