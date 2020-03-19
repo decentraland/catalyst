@@ -93,6 +93,16 @@ jobs:
       - run:
           name: Run tests
           command: npx bazel test //lambdas:unit_test --test_output=all
+  build-commons:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Run servers tests
+          command: npx bazel test //commons/servers:unit_test --test_output=all
+      - run:
+          name: Run utils tests
+          command: npx bazel test //commons/utils:unit_test --test_output=all
 
   publish-peer:
     <<: *base_env
@@ -168,12 +178,16 @@ workflows:
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - build-commons
       - build-content:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - build-commons
       - build-lambdas:
+          <<: *all_branches_and_tags
+          requires:
+            - checkout
+      - build-commons:
           <<: *all_branches_and_tags
           requires:
             - checkout

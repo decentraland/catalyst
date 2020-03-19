@@ -1,10 +1,12 @@
 import { Environment, EnvironmentConfig } from "../../../Environment";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
+import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 
 export class DAOClientFactory {
 
     static create(env: Environment): DAOClient {
-        return new DAOClient(env.getConfig(EnvironmentConfig.ETH_NETWORK))
+        const contract = DAOContract.withNetwork(env.getConfig(EnvironmentConfig.ETH_NETWORK))
+        return new DAOClient(contract)
     }
 
 }

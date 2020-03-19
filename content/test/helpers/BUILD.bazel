@@ -8,6 +8,7 @@ ts_library(
     module_name = "@katalyst/test-helpers",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//contracts",
         "//commons/servers",
         "//commons/utils",
         "//content/src:content",
@@ -15,5 +16,6 @@ ts_library(
         "@npm//@types/node",
         "@npm//dcl-crypto",
         "@npm//faker",
+        "@npm//ts-mockito",
     ],
 )
