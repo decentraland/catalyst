@@ -42,6 +42,17 @@ describe("DAOClient", () => {
         expect(servers).toEqual(new Set([metadata1]))
     })
 
+    it(`When there are no servers on the list, then an empty set is returned`, async () => {
+        const [mock, contractInstance] = contractWith([])
+        const client = new DAOClient(contractInstance)
+
+        const servers = await client.getAllServers()
+
+        expect(servers.size).toEqual(0)
+        verify(mock.getCatalystIdByIndex(anyNumber())).never()
+        verify(mock.getServerData(anyString())).never()
+    })
+
     it(`When metadata is already known, then the contract isn't called`, async () => {
         const [mock, contractInstance] = contractWith([[id1, data1]])
         const client = new DAOClient(contractInstance, new Map([[id1, metadata1], [id2, metadata2]]))

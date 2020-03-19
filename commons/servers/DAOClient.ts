@@ -21,35 +21,43 @@ export class DAOClient {
   async getAllServers(): Promise<Set<ServerMetadata>> {
     // Check count and last catalyst on the list
     const count = await this.contract.getCount()
-    const lastCatalystId = await this.contract.getCatalystIdByIndex(count - 1)
 
-    if (count !== this.lastCount || lastCatalystId !== this.lastCatalystId) {
-      // It is important to understand how the contract works in order to understand why we are doing this. Basically, we want an easy way to detect if there was a change to
-      // the server list. Imagine the list is ABCD. Now, if the B is removed from the list, then the last server (in this case D) will take its place, resulting in ADC.
-      // Now, if a new server is added, it will be added in the last place. Therefore, when a change happens, either the count is different, or the last server on the list will be different.
-
-      // Create a new list
-      const newServers: Map<CatalystId, ServerMetadata> = new Map()
-
-      for (let i = 0; i < count - 1; i++) {
-        // Find id in index
-        const id = await this.contract.getCatalystIdByIndex(i)
-
-        // Add it to the new server list
-        await this.addCatalystToNewServerList(id, newServers)
-      }
-
-      // Add the last catalyst also
-      await this.addCatalystToNewServerList(lastCatalystId, newServers)
-
+    if (count === 0) {
       // Update server list
-      this.servers = newServers
+      this.servers = new Map()
 
-      // Update the variables
-      this.lastCount = count
-      this.lastCatalystId = lastCatalystId
+      // Update last catalyst id
+      this.lastCatalystId = ""
+    } else {
+      const lastCatalystId = await this.contract.getCatalystIdByIndex(count - 1)
+
+      if (count !== this.lastCount || lastCatalystId !== this.lastCatalystId) {
+        // It is important to understand how the contract works in order to understand why we are doing this. Basically, we want an easy way to detect if there was a change to
+        // the server list. Imagine the list is ABCD. Now, if the B is removed from the list, then the last server (in this case D) will take its place, resulting in ADC.
+        // Now, if a new server is added, it will be added in the last place. Therefore, when a change happens, either the count is different, or the last server on the list will be different.
+
+        // Create a new list
+        const newServers: Map<CatalystId, ServerMetadata> = new Map()
+
+        for (let i = 0; i < count - 1; i++) {
+          // Find id in index
+          const id = await this.contract.getCatalystIdByIndex(i)
+
+          // Add it to the new server list
+          await this.addCatalystToNewServerList(id, newServers)
+        }
+
+        // Add the last catalyst also
+        await this.addCatalystToNewServerList(lastCatalystId, newServers)
+
+        // Update server list
+        this.servers = newServers
+
+        // Update last catalyst id
+        this.lastCatalystId = lastCatalystId
+      }
     }
-
+    this.lastCount = count
     return new Set(this.servers.values())
   }
 
