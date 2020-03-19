@@ -25,7 +25,9 @@ export function discretizedPositionDistance(a: Position, b: Position, interval: 
     dz = a[2] - b[2];
   }
 
-  return Math.floor((dx * dx + dy * dy + dz * dz) / (interval * interval));
+  const distance = Math.sqrt((dx * dx + dy * dy + dz * dz))
+
+  return Math.floor(distance / interval);
 }
 
 export type PeerConnectionHint = {
