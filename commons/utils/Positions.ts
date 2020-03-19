@@ -39,7 +39,7 @@ export function discretizedPositionDistance(a: Position, b: Position, intervals:
     dz = a[2] - b[2];
   }
 
-  const squaredDistance = (dx * dx + dy * dy + dz * dz)
+  const squaredDistance = dx * dx + dy * dy + dz * dz
 
   const intervalIndex = intervals.findIndex(it => squaredDistance <= it * it)
 
