@@ -10,7 +10,7 @@ import { PeerMessageType } from "./messageTypes";
 import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future } from "fp-future";
-import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVAL } from "../../../commons/utils/Positions";
+import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVALS } from "../../../commons/utils/Positions";
 
 const PROTOCOL_VERSION = 4;
 
@@ -160,7 +160,7 @@ export class Peer implements IPeer {
 
     if (this.config.positionConfig) {
       this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance;
-      this.config.positionConfig.nearbyPeersDistance = this.config.positionConfig.nearbyPeersDistance ?? DISCRETIZE_POSITION_INTERVAL * 3;
+      this.config.positionConfig.nearbyPeersDistance = this.config.positionConfig.nearbyPeersDistance ?? DISCRETIZE_POSITION_INTERVALS[DISCRETIZE_POSITION_INTERVALS.length - 1];
     }
 
     this.setUpTimeToRequestOptimumNetwork();
