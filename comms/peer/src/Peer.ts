@@ -130,7 +130,7 @@ export class Peer implements IPeer {
 
   private expireTimeoutId: any;
 
-  private stats = new GlobalStats();
+  public stats = new GlobalStats();
 
   private disposed: boolean = false;
 
@@ -632,7 +632,7 @@ export class Peer implements IPeer {
     return this.fullyConnectedPeerIds().length;
   }
 
-  private fullyConnectedPeerIds() {
+  fullyConnectedPeerIds() {
     return Object.keys(this.connectedPeers).filter(it => this.isConnectedTo(it));
   }
 
