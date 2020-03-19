@@ -17,7 +17,7 @@ import { pickName } from "./naming";
 import { patchLog } from "./logging";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
-import { DAOContract } from "decentraland-katalyst-commons/DAOContract";
+import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 
 const LIGHTHOUSE_VERSION = "0.1";
 const DEFAULT_ETH_NETWORK = "ropsten";

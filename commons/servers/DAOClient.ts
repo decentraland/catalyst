@@ -1,5 +1,5 @@
 import { ServerMetadata } from "./ServerMetadata";
-import { DAOContract, CatalystId, CatalystData } from "./DAOContract";
+import { DAOContract, CatalystId, CatalystData } from "decentraland-katalyst-contracts/DAOContract";
 
 export class DAOClient {
   // We will store the server metadata by id. Take into account that the id is unique, and even if we remove and re-add a domain, its id will change

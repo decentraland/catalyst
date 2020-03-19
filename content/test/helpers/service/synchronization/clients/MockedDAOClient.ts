@@ -3,7 +3,7 @@ import { ServerAddress } from "@katalyst/content/service/synchronization/clients
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { EthAddress } from 'dcl-crypto';
-import { DAOContract } from "decentraland-katalyst-commons/DAOContract";
+import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 
 export class MockedDAOClient extends DAOClient {
 

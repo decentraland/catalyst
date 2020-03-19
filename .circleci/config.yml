@@ -175,11 +175,11 @@ workflows:
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - build-commons
       - build-content:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - build-commons
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:

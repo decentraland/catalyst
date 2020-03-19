@@ -1,6 +1,6 @@
 import { mock, when, anyNumber, anyString, instance, verify } from "ts-mockito"
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
-import { CatalystId, CatalystData, DAOContract } from "decentraland-katalyst-commons/DAOContract"
+import { CatalystId, CatalystData, DAOContract } from "decentraland-katalyst-contracts/DAOContract"
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata"
 
 describe("DAOClient", () => {
