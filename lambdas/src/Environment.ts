@@ -3,7 +3,8 @@ import { ControllerFactory } from "./controller/ControllerFactory";
 import { SmartContentServerFetcherFactory } from "./SmartContentServerFetcherFactory";
 
 const DEFAULT_SERVER_PORT = 7070;
-export const DEFAULT_ENS_OWNER_PROVIDER_URL = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten";
+export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten";
+const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace";
 
 export class Environment {
   private configs: Map<EnvironmentConfig, any> = new Map();
@@ -75,7 +76,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT, () => process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT);
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== "false");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CONTENT_SERVER_ADDRESS, () => process.env.CONTENT_SERVER_ADDRESS);
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENS_OWNER_PROVIDER_URL, () => process.env.ENS_OWNER_PROVIDER_URL ?? DEFAULT_ENS_OWNER_PROVIDER_URL);
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ENS_OWNER_PROVIDER_URL, () => process.env.ENS_OWNER_PROVIDER_URL ?? (process.env.ETH_NETWORK === 'mainnet' ? DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET : DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN))
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? "Unknown");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? "info");
