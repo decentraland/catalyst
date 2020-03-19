@@ -8,6 +8,7 @@ ts_library(
     srcs = ["index.ts"],
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//commons/utils",
         "//comms/peer",
     ],
 )
@@ -49,5 +50,7 @@ ts_devserver(
         "config.js",
         ":peer-stress-test-client",
         "@npm//eventemitter3:eventemitter3__umd",
+        "@npm//fp-future:fp-future__umd",
+        "@npm//protobufjs:protobufjs__umd",
     ],
 )
