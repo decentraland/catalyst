@@ -13,17 +13,6 @@ describe("DAOClient", () => {
     const data2: CatalystData = { id: id2, owner: "owner2", domain: 'domain.com' }
     const metadata2: ServerMetadata = { id: id2, owner: "owner2", address: 'https://domain.com' }
 
-    it(`When server count and last server are the same, then no changes are made`, async () => {
-        const [mock, contractInstance] = contractWith([[id1, data1], [id2, data2]])
-        const client = new DAOClient(contractInstance, new Map([[id1, metadata1], [id2, metadata2]]))
-
-        const servers = await client.getAllServers()
-
-        expect(servers).toEqual(new Set([metadata1, metadata2]))
-        verify(mock.getCount()).once()
-        verify(mock.getCatalystIdByIndex(1)).once()
-    })
-
     it(`When server was added, then changes are detected and reported`, async () => {
         const [, contractInstance] = contractWith([[id1, data1], [id2, data2]])
         const client = new DAOClient(contractInstance, new Map([[id1, metadata1]]))
