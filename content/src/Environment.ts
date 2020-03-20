@@ -187,7 +187,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT           , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT  , () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE     , () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING !== "false");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES                    , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
