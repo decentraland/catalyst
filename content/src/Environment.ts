@@ -1,4 +1,5 @@
 import ms from "ms"
+import log4js from "log4js"
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
@@ -39,6 +40,7 @@ const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraph
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
 
 export class Environment {
+    private static readonly LOGGER = log4js.getLogger("Environment");
     private configs: Map<EnvironmentConfig, any> = new Map();
     private beans: Map<Bean,any> = new Map();
 
@@ -58,6 +60,13 @@ export class Environment {
     registerBean<T>(type: Bean, bean: T): Environment {
         this.beans.set(type, bean);
         return this
+    }
+
+    logConfigValues() {
+        Environment.LOGGER.info("These are the configuration values:")
+        for (const [config, value] of this.configs.entries()) {
+            Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${JSON.stringify(value)}`)
+        }
     }
 
     private static instance: Environment;
@@ -93,7 +102,7 @@ export const enum Bean {
     CHALLENGE_SUPERVISOR,
 }
 
-export const enum EnvironmentConfig {
+export enum EnvironmentConfig {
     STORAGE_ROOT_FOLDER,
     SERVER_PORT,
     METRICS,
