@@ -104,6 +104,7 @@ export function buildBaseEnv(namePrefix: string, port: number, syncInterval: num
         .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, syncInterval)
         .withConfig(EnvironmentConfig.LOG_LEVEL, "debug")
         .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
+        .withConfig(EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, false)
         .withBean(Bean.DAO_CLIENT, daoClient)
         .withAnalytics(new MockedContentAnalytics())
         .withAccessChecker(new MockedAccessChecker())
