@@ -43,7 +43,7 @@ const browserCount = process.env.BROWSERS_COUNT ?? 1;
           const browser = await puppeteer.launch();
           browsers.push(browser);
           const page = await browser.newPage();
-          await page.goto(`http://localhost:7654?sessionId=${i}`);
+          await page.goto(`http://localhost:7654?sessionId=${i}&numberOfPeers=1`);
 
           page.on("console", async msg => {
             if (msg.type() === "error") {

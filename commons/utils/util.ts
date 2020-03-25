@@ -24,3 +24,9 @@ export function pickRandom<T>(array: T[], count: number): [T[], T[]] {
 
   return [selected, shuffled];
 }
+
+export const MAX_UINT32 = 4294967295;
+
+export function randomUint32(): number {
+  return Math.floor(Math.random() * MAX_UINT32);
+}

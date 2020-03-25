@@ -45,6 +45,8 @@ export function ConnectForm(props: {
         targetConnections: 2,
         logLevel: "DEBUG",
         maxConnections: 4,
+        pingTimeout: 5000,
+        pingInterval: 2000,
         connectionConfig: {
           iceServers: [
             {

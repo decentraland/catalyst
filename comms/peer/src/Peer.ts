@@ -3,18 +3,17 @@ import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, delay, pickBy } from "./peerjs-server-connector/util";
-import { SocketBuilder } from "./peerjs-server-connector/socket";
-import { KnownPeerData, IPeer, Room, MinPeerData, LogLevel } from "./types";
+import { KnownPeerData, IPeer, Room, MinPeerData, LogLevel, PingResult, PeerConfig, PacketCallback } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
-import { PeerMessageType } from "./messageTypes";
-import { Packet, PayloadEncoding, MessageData } from "./proto/peer_protobuf";
+import { PeerMessageType, PingMessageType, PongMessageType } from "./messageTypes";
+import { Packet, PayloadEncoding, MessageData, PingData, PongData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
-import { future } from "fp-future";
+import { future, IFuture } from "fp-future";
 import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVALS } from "../../../commons/utils/Positions";
+import { randomUint32 } from "decentraland-katalyst-utils/util";
+import { GlobalStats } from "./stats";
 
 const PROTOCOL_VERSION = 4;
-
-const MAX_UINT32 = 4294967295;
 
 export type PeerData = {
   id: string;
@@ -24,11 +23,7 @@ export type PeerData = {
   connection: SimplePeer.Instance;
 };
 
-export type PositionConfig = {
-  selfPosition: () => Position | undefined;
-  distance?: (l1: Position, l2: Position) => number;
-  nearbyPeersDistance?: number;
-};
+type PacketData = { messageData: MessageData } | { pingData: PingData } | { pongData: PongData };
 
 type PeerResponse = { id?: string; userId?: string; peerId?: string };
 
@@ -40,25 +35,7 @@ function signalMessage(peer: PeerData, connectionId: string, signal: SignalData)
   peer.connection.signal(signal);
 }
 
-type PeerConfig = {
-  connectionConfig?: any;
-  wrtc?: any;
-  socketBuilder?: SocketBuilder;
-  token?: string;
-  sessionId?: string;
-  targetConnections?: number;
-  maxConnections?: number;
-  peerConnectTimeout?: number;
-  oldConnectionsTimeout?: number;
-  messageExpirationTime?: number;
-  logLevel?: keyof typeof LogLevel;
-  reconnectionAttempts?: number;
-  backoffMs?: number;
-  optimizeNetworkInterval?: number;
-  authHandler?: (msg: string) => Promise<string>;
-  positionConfig?: PositionConfig;
-  statusHandler?: (status: string) => void;
-};
+type ActivePing = { results: PingResult[]; startTime?: number; future: IFuture<PingResult[]> };
 
 // Try not to use this. It should be removed when lighthouses are updated
 function toParcel(position: any) {
@@ -66,44 +43,6 @@ function toParcel(position: any) {
     return [Math.floor(position[0] / 16), Math.floor(position[2] / 16)];
   }
 }
-
-class Stats {
-  public expired: number = 0;
-  public expiredPercentage: number = 0;
-  public packetDuplicates: number = 0;
-  public duplicatePercentage: number = 0;
-  public averagePacketSize?: number = undefined;
-  public optimistic: number = 0;
-  public packets: number = 0;
-  public totalBytes: number = 0;
-
-  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
-    this.packets += 1;
-    if (duplicate) this.packetDuplicates += 1;
-
-    this.totalBytes += length;
-
-    this.averagePacketSize = this.totalBytes / this.packets;
-    this.duplicatePercentage = this.packetDuplicates / this.packets;
-    if (packet.optimistic) this.optimistic += 1;
-    if (expired) this.expired += 1;
-    this.expiredPercentage = this.expired / this.packets;
-  }
-}
-
-class GlobalStats extends Stats {
-  public statsByType: Record<string, Stats> = {};
-
-  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
-    super.countPacket(packet, length, duplicate, expired);
-    if (packet.subtype) {
-      const stats = (this.statsByType[packet.subtype] = this.statsByType[packet.subtype] ?? new Stats());
-      stats.countPacket(packet, length, duplicate, expired);
-    }
-  }
-}
-
-export type PacketCallback = (sender: string, room: string, payload: any) => void;
 
 type NetworkOperation = () => Promise<KnownPeerData[]>;
 
@@ -128,7 +67,8 @@ export class Peer implements IPeer {
   private currentMessageId: number = 0;
   private instanceId: number;
 
-  private expireTimeoutId: any;
+  private expireTimeoutId: NodeJS.Timeout | number;
+  private pingTimeoutId?: NodeJS.Timeout | number;
 
   public stats = new GlobalStats();
 
@@ -137,6 +77,8 @@ export class Peer implements IPeer {
   public logLevel: keyof typeof LogLevel = "INFO";
 
   private timeToRequestOptimumNetwork: number = Number.MAX_SAFE_INTEGER;
+
+  private activePings: Record<string, ActivePing> = {};
 
   constructor(
     lighthouseUrl: string,
@@ -165,7 +107,7 @@ export class Peer implements IPeer {
 
     this.setUpTimeToRequestOptimumNetwork();
 
-    this.instanceId = Math.floor(Math.random() * MAX_UINT32);
+    this.instanceId = randomUint32();
 
     this.setLighthouseUrl(lighthouseUrl);
 
@@ -187,7 +129,20 @@ export class Peer implements IPeer {
         }
       }, 2000);
 
-    scheduleExpiration();
+    this.expireTimeoutId = scheduleExpiration();
+
+    if (this.config.pingInterval) {
+      const schedulePing = () =>
+        setTimeout(async () => {
+          try {
+            await this.ping();
+          } finally {
+            this.pingTimeoutId = schedulePing();
+          }
+        }, this.config.pingInterval);
+
+      this.pingTimeoutId = schedulePing();
+    }
   }
 
   public setLighthouseUrl(lighthouseUrl: string) {
@@ -773,6 +728,8 @@ export class Peer implements IPeer {
 
         packet.hops += 1;
 
+        this.knownPeers[packet.src].hops = packet.hops;
+
         if (packet.hops < packet.ttl) {
           this.sendPacket(packet);
         }
@@ -783,6 +740,16 @@ export class Peer implements IPeer {
             this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
           }
         }
+
+        const pingData = packet.pingData;
+        if (pingData) {
+          this.respondPing(pingData.pingId);
+        }
+
+        const pongData = packet.pongData;
+        if (pongData) {
+          this.processPong(packet.src, pongData.pingId);
+        }
       }
     } catch (e) {
       this.log(LogLevel.WARN, "Failed to process message from: " + peerId, e);
@@ -790,7 +757,27 @@ export class Peer implements IPeer {
     }
   }
 
-  decodePayload(payload: Uint8Array, encoding: number): any {
+  private processPong(peerId: string, pingId: number) {
+    const now = performance.now();
+    const activePing = this.activePings[pingId];
+    if (activePing && activePing.startTime) {
+      const elapsed = now - activePing.startTime;
+
+      const knownPeer = this.addKnownPeerIfNotExists({ id: peerId });
+      knownPeer.latency = elapsed;
+
+      activePing.results.push({ peerId, latency: elapsed });
+    }
+  }
+
+  private respondPing(pingId: number) {
+    const pongData: PongData = { pingId };
+
+    // TODO: Maybe we should add a destination and handle this message as unicast
+    this.sendPacketWithData({ pongData }, PongMessageType, { expireTime: this.getPingTimeout() });
+  }
+
+  private decodePayload(payload: Uint8Array, encoding: number): any {
     switch (encoding) {
       case PayloadEncoding.BYTES:
         return payload as Uint8Array;
@@ -875,6 +862,10 @@ export class Peer implements IPeer {
       dst: []
     };
 
+    return this.sendPacketWithData({ messageData }, type);
+  }
+
+  private sendPacketWithData(data: PacketData, type: PeerMessageType, packetProperties: Partial<Packet> = {}) {
     const sequenceId = this.generateMessageId();
 
     const packet: Packet = {
@@ -885,18 +876,45 @@ export class Peer implements IPeer {
       discardOlderThan: type.discardOlderThan ?? -1,
       timestamp: new Date().getTime(),
       src: this.peerId,
-      messageData,
       hops: 0,
       ttl: this.getTTL(sequenceId, type),
       receivedBy: [],
       optimistic: this.getOptimistic(sequenceId, type),
       pingData: undefined,
-      pongData: undefined
+      pongData: undefined,
+      messageData: undefined,
+      ...data,
+      ...packetProperties
     };
 
     this.sendPacket(packet);
 
     return Promise.resolve();
+  }
+
+  async ping() {
+    const pingId = randomUint32();
+    const pingFuture = future<PingResult[]>();
+    this.activePings[pingId] = {
+      results: [],
+      future: pingFuture
+    };
+
+    await this.sendPacketWithData({ pingData: { pingId } }, PingMessageType, { expireTime: this.getPingTimeout() });
+
+    setTimeout(() => {
+      const activePing = this.activePings[pingId];
+      if (activePing) {
+        activePing.future.resolve(activePing.results);
+        delete this.activePings[pingId];
+      }
+    }, this.getPingTimeout());
+
+    return await pingFuture;
+  }
+
+  private getPingTimeout() {
+    return this.config.pingTimeout ?? 7000;
   }
 
   getTTL(index: number, type: PeerMessageType) {
@@ -917,10 +935,22 @@ export class Peer implements IPeer {
       packet.receivedBy = [...packet.receivedBy, ...fullyConnectedToSend];
     }
 
+    // This is a little specific also, but is here in order to make the measurement as accurate as possible
+    if (packet.pingData && packet.src === this.peerId) {
+      const activePing = this.activePings[packet.pingData.pingId];
+      if (activePing) {
+        activePing.startTime = performance.now();
+      }
+    }
+
     peersToSend.forEach(peer => {
       const conn = this.connectedPeers[peer].connection;
-      if (conn?.writable) {
-        conn.write(Packet.encode(packet).finish());
+      if (this.isConnectedTo(peer)) {
+        try {
+          conn.send(Packet.encode(packet).finish());
+        } catch (e) {
+          this.log(LogLevel.WARN, "Error sending data to peer " + peer, e);
+        }
       }
     });
   }
@@ -1166,7 +1196,8 @@ export class Peer implements IPeer {
 
   async dispose() {
     this.disposed = true;
-    clearTimeout(this.expireTimeoutId);
+    clearTimeout(this.expireTimeoutId as any);
+    clearTimeout(this.pingTimeoutId as any);
     this.cleanStateAndConnections();
     return new Promise<void>((resolve, reject) => {
       if (this.peerJsConnection && !this.peerJsConnection.disconnected) {
