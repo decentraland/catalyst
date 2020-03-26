@@ -49,3 +49,15 @@ export const PeerMessageTypes = {
     optimistic: true
   })
 };
+
+export const PingMessageType: PeerMessageType = {
+  name: "ping",
+  ttl: 10,
+  optimistic: true,
+  discardOlderThan: 0
+}
+
+export const PongMessageType: PeerMessageType = {
+  ...PingMessageType,
+  name: "pong"
+}

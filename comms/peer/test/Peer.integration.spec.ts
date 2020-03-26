@@ -1,5 +1,5 @@
-import { Peer, PacketCallback } from "../src/Peer";
-import { MinPeerData } from "../src/types";
+import { Peer } from "../src/Peer";
+import { MinPeerData, PacketCallback } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
 import { ServerMessageType } from "../src/peerjs-server-connector/enums";

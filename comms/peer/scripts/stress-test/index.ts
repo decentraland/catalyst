@@ -1,12 +1,13 @@
 import { Peer } from "../../src/Peer";
 import { util } from "../../src/peerjs-server-connector/util";
 import { delay } from "decentraland-katalyst-utils/util";
+import { PeerMessageTypes } from "../../src/messageTypes";
 
 const urlParams = new URLSearchParams(location.search);
 
-const numberOfPeers = parseInt(urlParams.get("numberOfPeers") ?? '5');
-const messageCount = parseInt(urlParams.get("messagesCount") ?? '200');
-const timeBetweenMessages = parseInt(urlParams.get("timeBetweenMessages") ?? '50');
+const numberOfPeers = parseInt(urlParams.get("numberOfPeers") ?? "5");
+const messageCount = parseInt(urlParams.get("messagesCount") ?? "200");
+const timeBetweenMessages = parseInt(urlParams.get("timeBetweenMessages") ?? "50");
 const lighthouseUrl = urlParams.get("lighthouseUrl") ?? "http://localhost:9000";
 
 const sessionId = urlParams.get("sessionId") ?? util.randomToken();
@@ -49,35 +50,38 @@ const sessionId = urlParams.get("sessionId") ?? util.randomToken();
       }
     };
 
-    const peer = new Peer(
-      lighthouseUrl,
-      `peer_${sessionId}_${i}`,
-      (sender, room, payload) => {
-        peerContainer.countReceived();
-        const { stamp } = payload;
-        const latency = new Date().getTime() - stamp;
-        globalStats.totalLatency += latency;
-        globalStats.averageLatency =
-          globalStats.totalLatency / globalStats.messagesReceived;
-      }
-    );
+    const peer = new Peer(lighthouseUrl, `peer_${sessionId}_${i}`, (sender, room, payload) => {
+      peerContainer.countReceived();
+      const { stamp } = payload;
+      const latency = new Date().getTime() - stamp;
+      globalStats.totalLatency += latency;
+      globalStats.averageLatency = globalStats.totalLatency / globalStats.messagesReceived;
+    });
 
     peerContainer.peer = peer;
 
     peers.push(peerContainer);
   }
 
-  await peers[0].peer?.joinRoom("room");
-
-  await Promise.all(peers.map(pc => pc.peer!.joinRoom("room")));
+  await Promise.all(
+    peers.map(async pc => {
+      await pc.peer!.awaitConnectionEstablished();
+      await pc.peer!.setLayer("blue");
+      await pc.peer!.joinRoom("room");
+    })
+  );
 
   function doSendMessage(container: PeerContainer) {
     const messageId = util.randomToken();
-    container.peer!.sendMessage("room", {
-      test: "this is a test",
-      messageId,
-      stamp: new Date().getTime()
-    });
+    container.peer!.sendMessage(
+      "room",
+      {
+        test: "this is a test",
+        messageId,
+        stamp: new Date().getTime()
+      },
+      PeerMessageTypes.unreliable("test")
+    );
     container.countSent();
   }
 
@@ -123,8 +127,7 @@ const sessionId = urlParams.get("sessionId") ?? util.randomToken();
     if (remainingPeers > 0) {
       const runtime = currentTime - globalStats.testStarted;
       globalStats.sentPerSecond = (globalStats.messagesSent * 1000) / runtime;
-      globalStats.receivedPerSecond =
-        (globalStats.messagesReceived * 1000) / runtime;
+      globalStats.receivedPerSecond = (globalStats.messagesReceived * 1000) / runtime;
 
       setText("sentpersecond", globalStats.sentPerSecond);
       setText("receivedpersecond", globalStats.receivedPerSecond);
