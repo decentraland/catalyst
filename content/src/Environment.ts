@@ -1,4 +1,5 @@
 import ms from "ms"
+import log4js from "log4js"
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
@@ -39,6 +40,7 @@ const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraph
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
 
 export class Environment {
+    private static readonly LOGGER = log4js.getLogger("Environment");
     private configs: Map<EnvironmentConfig, any> = new Map();
     private beans: Map<Bean,any> = new Map();
 
@@ -58,6 +60,13 @@ export class Environment {
     registerBean<T>(type: Bean, bean: T): Environment {
         this.beans.set(type, bean);
         return this
+    }
+
+    logConfigValues() {
+        Environment.LOGGER.info("These are the configuration values:")
+        for (const [config, value] of this.configs.entries()) {
+            Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${JSON.stringify(value)}`)
+        }
     }
 
     private static instance: Environment;
@@ -93,7 +102,7 @@ export const enum Bean {
     CHALLENGE_SUPERVISOR,
 }
 
-export const enum EnvironmentConfig {
+export enum EnvironmentConfig {
     STORAGE_ROOT_FOLDER,
     SERVER_PORT,
     METRICS,
@@ -187,7 +196,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT           , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT  , () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE     , () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING === "true");
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => process.env.PERFORM_MULTI_SERVER_ONBOARDING !== "false");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES                    , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))

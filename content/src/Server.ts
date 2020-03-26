@@ -26,6 +26,8 @@ export class Server {
       categories: { default: { appenders: ["console"], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) } }
     });
 
+    env.logConfigValues()
+
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT);
 
     this.app = express();
