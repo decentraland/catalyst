@@ -10,7 +10,7 @@ import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { DeploymentStatus, FailedDeploymentsManager, NoFailure } from "../errors/FailedDeploymentsManager";
 import { httpProviderForNetwork } from '../../../../contracts/utils';
-import { Timestamp } from "../time/TimeSorting";
+import { Timestamp, happenedBeforeEntities } from "../time/TimeSorting";
 
 export class Validations {
 
@@ -127,7 +127,7 @@ export class ValidatorInstance {
     }
 
     /** Validate that the deployment is recent */
-    private static REQUEST_TTL_FORWARDS: number = ms('5m') // 5 minutes
+    private static REQUEST_TTL_FORWARDS: number = ms('15m')
     validateDeploymentIsRecent(entityToBeDeployed: Entity, validationContext: ValidationContext): void {
         if (validationContext.shouldValidate(Validation.RECENT)) {
             // Verify that the timestamp is recent enough. We need to make sure that the definition of recent works with the synchronization mechanism
@@ -158,17 +158,20 @@ export class ValidatorInstance {
         validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
             const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
-            const currentAuditInfos = await Promise.all(currentPointedEntities.map(entity => auditInfoFetcher(entity.type, entity.id)))
-            currentAuditInfos
-                .filter((currentAuditInfo): currentAuditInfo is AuditInfo => !!currentAuditInfo)
-                .forEach((currentAuditInfo: AuditInfo) => {
-                if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
-                    this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
-                } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {
-                    if (!currentAuditInfo.originalMetadata) {
+            const currentAuditInfos: Map<Entity, AuditInfo | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, AuditInfo | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
+            Array.from(currentAuditInfos.entries())
+                .filter(([, currentAuditInfo]) => !!currentAuditInfo)
+                .map<[Entity, AuditInfo]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
+                .forEach(([currentEntity, currentAuditInfo]) => {
+                if (happenedBeforeEntities(currentEntity, entityToBeDeployed)) {
+                    if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
                         this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
-                    } else if (currentAuditInfo.originalMetadata.originalVersion > auditInfoBeingDeployed.originalMetadata.originalVersion) {
-                        this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                    } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {
+                        if (!currentAuditInfo.originalMetadata) {
+                            this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                        } else if (currentAuditInfo.originalMetadata.originalVersion > auditInfoBeingDeployed.originalMetadata.originalVersion) {
+                            this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                        }
                     }
                 }
             })
