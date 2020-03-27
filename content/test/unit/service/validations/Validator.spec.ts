@@ -10,8 +10,9 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 
 import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager";
 import ms from "ms";
+import { EntityVersion } from "@katalyst/content/service/audit/Audit";
 
-describe("Validations", function() {
+fdescribe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
     let entity = new Entity(
       "id",
@@ -39,7 +40,7 @@ describe("Validations", function() {
   });
 
   it(`When an entity with a timestamp too far into the future is deployed, then an error is returned`, () => {
-    const entity = new Entity("id", EntityType.SCENE, [], Date.now() + ms('10m'));
+    const entity = new Entity("id", EntityType.SCENE, [], Date.now() + ms('20m'));
     const validation = getValidatorWithMockedAccess();
     validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
 
@@ -50,6 +51,112 @@ describe("Validations", function() {
     const entity = new Entity("id", EntityType.SCENE, [], Date.now());
     const validation = getValidatorWithMockedAccess();
     validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
+    expect(validation.getErrors().length).toBe(0);
+  });
+
+  const LEGACY_AUDIT_INFO = {
+    version: EntityVersion.V3,
+    deployedTimestamp: 10,
+    authChain: [],
+    originalMetadata: { // This is used for migrations
+      originalVersion: EntityVersion.V2,
+      data: "data",
+    },
+  }
+
+  const LEGACY_ENTITY = new Entity("id", EntityType.SCENE, ["P1"], 1000);
+
+  it(`When a legacy entity is deployed and there is no entity, then no error is returned`, async () => {
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([]), () => Promise.resolve(undefined), ValidationContext.ALL);
+    expect(validation.getErrors().length).toBe(0);
+  });
+
+  it(`When a legacy entity is deployed and there is an entity without an audit info, then no error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 1001);
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(undefined), ValidationContext.ALL);
+    expect(validation.getErrors().length).toBe(0);
+  });
+
+  it(`When a legacy entity is deployed and there is an entity with a higher timestamp, then no error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 1001);
+    const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: [],
+      }
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    expect(validation.getErrors().length).toBe(0);
+  });
+
+  it(`When a legacy entity is deployed and there is a previous entity with a higher version, then an error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const legacyAuditInfo = { ...LEGACY_AUDIT_INFO, version: EntityVersion.V2 }
+    const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: []
+      }
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, legacyAuditInfo, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`]);
+  });
+
+  it(`When a legacy entity is deployed and there is a previous entity with a lower version, then no error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const auditInfo = {
+        version: EntityVersion.V2,
+        deployedTimestamp: 10,
+        authChain: []
+      }
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    expect(validation.getErrors().length).toBe(0);
+  });
+
+  it(`When a legacy entity is deployed and there is a previous entity without original metadata, then an error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: []
+      }
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`]);
+  });
+
+  it(`When a legacy entity is deployed and there is a previous entity with a higher original version, then an error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: [],
+        originalMetadata: {
+            originalVersion: EntityVersion.V3,
+            data: "data",
+        }
+      }
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`]);
+  });
+
+  it(`When a legacy entity is deployed and there is a previous entity with the same original version, then no error is returned`, async () => {
+    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: [],
+        originalMetadata: {
+            originalVersion: EntityVersion.V2,
+            data: "data",
+        }
+      }
+    const validation = getValidatorWithMockedAccess();
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
