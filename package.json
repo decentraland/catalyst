@@ -1,15 +1,12 @@
 {
   "name": "katalyst",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
+  "workspaces": [
+    "packages/**"
+  ],
   "devDependencies": {
-    "@bazel/bazel": "latest",
-    "@bazel/buildifier": "latest",
-    "@bazel/ibazel": "latest",
-    "@bazel/jasmine": "^0.42.3",
-    "@bazel/karma": "^0.42.3",
-    "@bazel/rollup": "0.42.3",
-    "@bazel/typescript": "^0.42.3",
     "@rollup/plugin-commonjs": "^11.0.1",
     "@rollup/plugin-node-resolve": "^7.0.0",
     "@types/analytics-node": "^3.1.2",
@@ -32,6 +29,8 @@
     "@types/web3": "^1.2.2",
     "@types/ws": "^6.0.4",
     "@types/yargs": "^13.0.3",
+    "@types/log4js": "^2.3.5",
+    "@types/parallel-transform": "^1.1.0",
     "@wessberg/rollup-plugin-ts": "^1.1.83",
     "jasmine": "^3.5.0",
     "jasmine-core": "^3.5.0",
@@ -65,6 +64,9 @@
     "printWidth": 180
   },
   "scripts": {
+    "build": "lerna run build",
+    "test": "lerna run test",
+    "diff": "lerna diff",
     "startClient": "ibazel run comms/peer-react-app:devserver",
     "startServer": "yarn ibazel run comms/lighthouse:server",
     "startContentServer": "yarn ibazel run content:server",
@@ -72,8 +74,6 @@
     "lint": "yarn tslint -c tslint.json --project tsconfig.json"
   },
   "dependencies": {
-    "@types/log4js": "^2.3.5",
-    "@types/parallel-transform": "^1.1.0",
     "abort-controller": "^3.0.0",
     "analytics-node": "^3.4.0-beta.1",
     "async-mutex": "^0.1.4",

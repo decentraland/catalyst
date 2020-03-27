@@ -1,0 +1,18 @@
+{
+  "name": "@catalyst/peer-demo",
+  "description": "Peer demo app",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^16.9.13",
+    "@types/react-dom": "^16.9.4"
+  },
+  "dependencies": {
+    "decentraland-katalyst-peer": "0.1.0",
+    "decentraland-katalyst-utils": "0.1.0",
+    "decentraland-ui": "^2.10.2",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  }
+}

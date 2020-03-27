@@ -10,35 +10,35 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "@npm//@types",
-        "@npm//@types/node",
         "@npm//@types/compression",
         "@npm//@types/log4js",
-        "@npm//cors",
-        "@npm//express",
+        "@npm//@types/multer",
+        "@npm//@types/node",
+        "@npm//@types/node-fetch",
+        "@npm//@types/web3",
+        "@npm//aws-sdk",
         "@npm//compression",
+        "@npm//cors",
+        "@npm//decentraland-commons",
+        "@npm//express",
         "@npm//log4js",
         "@npm//morgan",
         "@npm//multer",
-        "@npm//@types/multer",
         "@npm//node-fetch",
-        "@npm//@types/node-fetch",
-        "@npm//decentraland-commons",
         "@npm//web3",
-        "@npm//@types/web3",
-        "@npm//aws-sdk",
     ],
 )
 
 filegroup(
     name = "api_resources",
-    srcs = glob(["src/**/*.json"])
+    srcs = glob(["src/**/*.json"]),
 )
 
 nodejs_binary(
     name = "server",
     data = [
-        ":lambdas",
         ":api_resources",
+        ":lambdas",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
@@ -63,10 +63,10 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":lambdas",
-        "@npm//@types/node",
         "@npm//@types/jasmine",
-        "@npm//node-fetch",
+        "@npm//@types/node",
         "@npm//@types/node-fetch",
+        "@npm//node-fetch",
     ],
 )
 
@@ -79,4 +79,3 @@ jasmine_node_test(
         "@npm//jasmine",
     ],
 )
-

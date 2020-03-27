@@ -1,0 +1,30 @@
+{
+  "name": "@catalyst/lighthouse",
+  "description": "Lighthouse service",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/ws": "^6.0.4",
+    "@types/cors": "^2.8.6",
+    "@types/express": "^4.17.2",
+    "@types/isomorphic-fetch": "^0.0.35",
+    "@types/jasmine": "^3.5.0"
+  },
+  "dependencies": {
+    "decentraland-katalyst-commons": "0.1.0",
+    "decentraland-katalyst-utils": "0.1.0",
+    "decentraland-katalyst-contracts": "0.1.0",
+    "cors": "^2.8.5",
+    "dcl-crypto": "^2.0.0",
+    "express": "^4.17.1",
+    "fast-deep-equal": "^3.1.1",
+    "fp-future": "^1.0.1",
+    "isomorphic-fetch": "^2.2.1",
+    "morgan": "^1.9.1",
+    "peerjs-server": "https://github.com/decentraland/peerjs-server.git#9bb451a6247f66cbae6f17e6c643fffbec05540c",
+    "web3x": "^4.0.6",
+    "wrtc": "^0.4.2",
+    "ws": "^7.2.0"
+  }
+}
