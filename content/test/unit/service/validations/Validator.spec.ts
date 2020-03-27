@@ -12,7 +12,7 @@ import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/e
 import ms from "ms";
 import { EntityVersion } from "@katalyst/content/service/audit/Audit";
 
-fdescribe("Validations", function() {
+describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
     let entity = new Entity(
       "id",
