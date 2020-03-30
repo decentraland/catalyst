@@ -6,8 +6,8 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "es2017",
-    "rootDir": "src",
-    "outDir": "dist",
+    "baseUrl": "./src",
+    "outDir": "./dist",
     "diagnostics": false,
     "inlineSourceMap": false,
     "inlineSources": false,
@@ -30,14 +30,10 @@
         "name": "tslint-language-service"
       }
     ],
-    "baseUrl": ".",
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
     "paths": {
       "@katalyst/content/*": ["packages/content/src/*"],
       "@katalyst/test-helpers/*": ["packages/content/test/helpers/*"],
-      "decentraland-katalyst-contracts/*": ["packages/contracts/*"],
-      "decentraland-katalyst-commons/*": ["packages/commons/servers/*"],
-      "decentraland-katalyst-utils/*": ["packages/commons/utils/*"],
       "katalyst/comms/peer/proto/*": ["dist/bin/comms/peer/proto/*"]
     }
   },

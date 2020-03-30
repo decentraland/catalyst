@@ -33,7 +33,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
   const port = parseInt(process.env.PORT ?? "9000");
-  const noAuth = parseBoolean(process.env.NO_AUTH ?? "false")
+  const noAuth = parseBoolean(process.env.NO_AUTH ?? "false");
   const secure = parseBoolean(process.env.SECURE ?? "false");
   const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
   const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? "false");
@@ -118,16 +118,16 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     if (message.type === MessageType.HEARTBEAT) {
       peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
       peersService.updatePeerParcel(client.getId(), message.payload?.parcel);
-      peersService.updatePeerPosition(client.getId(), message.payload?.position)
+      peersService.updatePeerPosition(client.getId(), message.payload?.position);
 
-      if(message.payload?.optimizeNetwork) {
-        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections, message.payload.maxDistance)
+      if (message.payload?.optimizeNetwork) {
+        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections, message.payload.maxDistance);
         client.send({
           type: "OPTIMAL_NETWORK_RESPONSE",
           src: "__lighthouse_response__",
           dst: client.getId(),
           payload: optimalConnectionsResult
-        })
+        });
       }
     }
   });

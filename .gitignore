@@ -10,3 +10,4 @@ local/certbot/conf/**
 local/nginx/conf.d/00-katalyst.conf
 tmpbin
 lerna-debug.log
+**/.nyc_output

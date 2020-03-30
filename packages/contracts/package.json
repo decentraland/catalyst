@@ -1,8 +1,11 @@
 {
   "name": "decentraland-katalyst-contracts",
   "version": "0.1.0",
-  "main": "index.js",
   "license": "MIT",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "web3x": "^4.0.6"
   }
