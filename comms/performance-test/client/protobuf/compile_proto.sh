@@ -1,4 +1,4 @@
-protoc --plugin=../../../../../node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=. ./comms.proto
+protoc --plugin=../../../../node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=. ./comms.proto
 
 sed -i 's/global\.//g' comms.ts
 

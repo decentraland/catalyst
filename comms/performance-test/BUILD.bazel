@@ -1,0 +1,25 @@
+load("@npm_bazel_typescript//:index.bzl", "ts_library")
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_library(
+    name = "peer-performance-test",
+    srcs = ["run-test.ts"],
+    tsconfig = "//:tsconfig.json",
+    deps = [
+        "@npm//@types",
+        "@npm//puppeteer",
+        "@npm//tree-kill",
+    ],
+)
+
+nodejs_binary(
+    name = "run-test",
+    data = [
+        "peer-performance-test",
+        "@npm//@bazel/typescript",
+        "@npm//typescript",
+    ],
+    entry_point = "run-test.ts",
+)

@@ -1,10 +1,10 @@
-import { Peer } from "../../src/Peer";
+import { Peer } from "../../peer/src/Peer";
 import { randomBetween } from "decentraland-katalyst-utils/util";
-import { PeerMessageTypes } from "../../src/messageTypes";
+import { PeerMessageTypes } from "../../peer/src/messageTypes";
 import { Position3D, Quaternion } from "decentraland-katalyst-utils/Positions";
-import { PeerConfig } from "../../src";
+import { PeerConfig } from "../../peer/src";
 import { PositionData, CommsMessage } from "./protobuf/comms";
-import { util } from "../../src/peerjs-server-connector/util";
+import { util } from "../../peer/src/peerjs-server-connector/util";
 
 const urlParams = new URLSearchParams(location.search);
 
