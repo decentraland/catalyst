@@ -43,6 +43,7 @@ export class FetchHelper {
 }
 
 export async function retry<T>(execution: () => Promise<T>, attempts: number, description: string, waitTime: string = '1s'): Promise<T> {
+    const initialAttempts = attempts
     while (attempts > 0) {
         try {
             return await execution()
@@ -52,7 +53,7 @@ export async function retry<T>(execution: () => Promise<T>, attempts: number, de
                 await delay(ms(waitTime))
                 LOGGER.info(`Failed to ${description}. Still have ${attempts} attempt/s left. Will try again in ${waitTime}`)
             } else {
-                LOGGER.warn(`Failed to ${description} after ${attempts} attempts. Error was ${error}`)
+                LOGGER.warn(`Failed to ${description} after ${initialAttempts} attempts. Error was ${error}`)
                 throw error
             }
         }
