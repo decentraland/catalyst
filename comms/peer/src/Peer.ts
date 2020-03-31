@@ -143,6 +143,8 @@ export class Peer implements IPeer {
 
       this.pingTimeoutId = schedulePing();
     }
+
+    this.stats.startPeriod();
   }
 
   public setLighthouseUrl(lighthouseUrl: string) {
@@ -1198,6 +1200,7 @@ export class Peer implements IPeer {
     this.disposed = true;
     clearTimeout(this.expireTimeoutId as any);
     clearTimeout(this.pingTimeoutId as any);
+    this.stats.dispose();
     this.cleanStateAndConnections();
     return new Promise<void>((resolve, reject) => {
       if (this.peerJsConnection && !this.peerJsConnection.disconnected) {
