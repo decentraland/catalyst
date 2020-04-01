@@ -68,6 +68,7 @@ export type PeerConfig = {
   authHandler?: (msg: string) => Promise<string>;
   positionConfig?: PositionConfig;
   statusHandler?: (status: string) => void;
+  statsUpdateInterval?: number; 
   /**
    * If not set, the peer won't execute pings regularly.
    * Keep in mind that the peer won't execute two pings at the same time.

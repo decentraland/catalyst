@@ -3,6 +3,7 @@ import { Packet } from "./proto/peer_protobuf";
 type PeriodicValue = {
   accumulatedInPeriod: number;
   currentValue?: number;
+  lastAccumulatedValue?: number;
 };
 
 function newPeriodicValue() {
@@ -22,10 +23,10 @@ export class Stats {
   public lastPeriodUpdate: number = 0;
 
   // Periodic stats. Each of these need to accumulate during a period to calculate their values
-  private _bytesPerSecond: PeriodicValue = newPeriodicValue();
-  private _packetsPerSecond: PeriodicValue = newPeriodicValue();
-  private _expiredPerSecond: PeriodicValue = newPeriodicValue();
-  private _duplicatesPerSecond: PeriodicValue = newPeriodicValue();
+  public _bytesPerSecond: PeriodicValue = newPeriodicValue();
+  public _packetsPerSecond: PeriodicValue = newPeriodicValue();
+  public _expiredPerSecond: PeriodicValue = newPeriodicValue();
+  public _duplicatesPerSecond: PeriodicValue = newPeriodicValue();
 
   public get bytesPerSecond() {
     return this._bytesPerSecond.currentValue;
@@ -48,9 +49,10 @@ export class Stats {
 
     this._packetsPerSecond.accumulatedInPeriod += 1;
 
-    if (duplicate) this.packetDuplicates += 1;
-
-    this._duplicatesPerSecond.accumulatedInPeriod += 1;
+    if (duplicate) {
+      this.packetDuplicates += 1;
+      this._duplicatesPerSecond.accumulatedInPeriod += 1;
+    }
 
     this.totalBytes += length;
     this._bytesPerSecond.accumulatedInPeriod += length;
@@ -71,6 +73,7 @@ export class Stats {
       if (elapsed) {
         value.currentValue = (value.accumulatedInPeriod * 1000) / elapsed;
       }
+      value.lastAccumulatedValue = value.lastAccumulatedValue;
       value.accumulatedInPeriod = 0;
     };
 
@@ -83,13 +86,8 @@ export class Stats {
   }
 }
 
-export class GlobalStats extends Stats {
+export class TypedStats extends Stats {
   public statsByType: Record<string, Stats> = {};
-  private periodId?: number;
-
-  constructor(private periodLength: number = 1000) {
-    super();
-  }
 
   countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
     super.countPacket(packet, length, duplicate, expired);
@@ -103,10 +101,38 @@ export class GlobalStats extends Stats {
     super.onPeriod(timestamp);
     Object.values(this.statsByType).forEach(it => it.onPeriod(timestamp));
   }
+}
+
+type PacketOperationType = "sent" | "received" | "relayed";
+
+export class GlobalStats {
+  public sent: TypedStats = new TypedStats();
+  public received: TypedStats = new TypedStats();
+  public relayed: TypedStats = new TypedStats();
+  public all: TypedStats = new TypedStats();
+
+  private periodId?: number;
+
+  public onPeriodicStatsUpdated: (stats: GlobalStats) => void = _ => {};
+
+  constructor(public periodLength: number = 1000) {}
+
+  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false, operation: PacketOperationType) {
+    this.all.countPacket(packet, length, duplicate, expired);
+    this[operation].countPacket(packet, length, duplicate, expired);
+  }
+
+  onPeriod(timestamp: number) {
+    this.all.onPeriod(timestamp);
+    this.sent.onPeriod(timestamp);
+    this.received.onPeriod(timestamp);
+    this.relayed.onPeriod(timestamp);
+  }
 
   startPeriod() {
     const periodFunction = () => {
-      this.onPeriod(Date.now());
+      this.onPeriod(performance.now());
+      this.onPeriodicStatsUpdated(this);
       this.periodId = setTimeout(periodFunction, this.periodLength) as any;
     };
 
