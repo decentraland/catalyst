@@ -222,6 +222,9 @@ async function createPeer() {
         peers.forEach(it => it.routine(elapsed, delta, it));
       }
       setTimeout(tick, 16);
+    } else {
+      // TODO: Submit summary to server
+      console.log("Test finished");
     }
   }
 

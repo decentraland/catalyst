@@ -5,21 +5,22 @@ package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "peer-performance-test",
-    srcs = ["run-test.ts"],
+    srcs = glob(["*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
         "@npm//@types",
         "@npm//puppeteer",
+        "@npm//isomorphic-fetch",
         "@npm//tree-kill",
     ],
 )
 
 nodejs_binary(
-    name = "run-test",
+    name = "run-local-test",
     data = [
         "peer-performance-test",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "run-test.ts",
+    entry_point = "run-local-test.ts",
 )

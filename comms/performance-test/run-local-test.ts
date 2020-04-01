@@ -2,6 +2,8 @@ import { spawn, ChildProcess } from "child_process";
 import puppeteer, { Browser } from "puppeteer";
 import treekill from "tree-kill";
 
+require("isomorphic-fetch");
+
 function bazelExec(command: string, label: string, env: object = {}) {
   const child = spawn(`yarn`, ["bazel", "run", command], {
     cwd: process.env.BUILD_WORKSPACE_DIRECTORY,
@@ -13,7 +15,8 @@ function bazelExec(command: string, label: string, env: object = {}) {
   return child;
 }
 
-const devServer = bazelExec("//comms/peer/scripts/stress-test:devserver", "DEVSERVER");
+const devServer = bazelExec("//comms/performance-test/client:devserver", "DEVSERVER");
+const resultsServer = bazelExec("//comms/performance-test/server", "RESULTS_SERVER");
 const lighthouse = bazelExec("//comms/lighthouse:server", "LIGHTHOUSE", { NO_AUTH: "true" });
 
 function awaitOutput(process: ChildProcess, output: string) {
@@ -26,12 +29,19 @@ function awaitOutput(process: ChildProcess, output: string) {
   });
 }
 
-const browserCount = process.env.BROWSERS_COUNT ?? 1;
+const browserCount = process.env.BROWSERS_COUNT ?? 10;
 
 (async () => {
-  await Promise.all([awaitOutput(devServer, "Server listening on"), awaitOutput(lighthouse, "Lighthouse listening on")]);
+  await Promise.all([awaitOutput(devServer, "Server listening on"), awaitOutput(lighthouse, "Lighthouse listening on"), awaitOutput(resultsServer, "server listening on")]);
 
   console.log("Child process are listening");
+
+  const testResponse = await fetch("http://localhost:9904/test", { method: "POST" });
+  const testJson = await testResponse.json();
+
+  const testId = testJson.id;
+
+  console.log("Running test with id: " + testId);
 
   const promises: Promise<void>[] = [];
   const browsers: Browser[] = [];
@@ -43,7 +53,7 @@ const browserCount = process.env.BROWSERS_COUNT ?? 1;
           const browser = await puppeteer.launch();
           browsers.push(browser);
           const page = await browser.newPage();
-          await page.goto(`http://localhost:7654?sessionId=${i}&numberOfPeers=1`);
+          await page.goto(`http://localhost:7654?sessionId=${i}&numberOfPeers=1&testId=${testId}`);
 
           page.on("console", async msg => {
             if (msg.type() === "error") {
@@ -54,7 +64,7 @@ const browserCount = process.env.BROWSERS_COUNT ?? 1;
           });
 
           page.on("console", msg => {
-            if (msg.text() === "All peers finished") {
+            if (msg.text() === "Test finished") {
               resolve();
             }
 
@@ -90,11 +100,15 @@ const browserCount = process.env.BROWSERS_COUNT ?? 1;
   const killAllChildren = async () => {
     console.log("Test finished. Killing all processes");
     await Promise.all(browsers.map(it => it.close()));
-    await killProcesses(devServer.pid, lighthouse.pid);
+    await killProcesses(devServer.pid, lighthouse.pid, resultsServer.pid);
   };
 
   try {
     await Promise.all(promises);
+
+    await fetch(`http://localhost:9904/test/${testId}/finish`, { method: "PUT" });
+    console.log(`Test ${testId} finished`);
+
     await killAllChildren();
     process.exit(0);
   } catch (e) {
