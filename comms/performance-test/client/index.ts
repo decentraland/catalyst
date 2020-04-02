@@ -169,7 +169,9 @@ async function submitStats(peer: SimulatedPeer, stats: GlobalStats) {
     ...buildStatsFor("all"),
     duplicates: stats.received.packetDuplicates,
     duplicatesPerSecond: stats.received.duplicatesPerSecond,
-    duplicatesPercentage: stats.received.duplicatePercentage
+    duplicatesPercentage: stats.received.duplicatePercentage,
+    connectedPeers: peer.peer.fullyConnectedPeerIds(),
+    knownPeersCount: Object.keys(peer.peer.knownPeers).length
   };
 
   if (latencies.length > 0) {

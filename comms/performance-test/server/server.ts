@@ -31,11 +31,17 @@ type TestDataPoint = {
   metrics: Record<string, any>;
 };
 
+type TopologyDataPoint = {
+  timestamp: number;
+  topology: any;
+};
+
 type TestData = {
   id: string;
   dataPoints: TestDataPoint[];
   started?: number;
   finished?: number;
+  topologyDataPoints: TopologyDataPoint[];
   results: Record<string, any>;
 };
 
@@ -48,7 +54,8 @@ function createTest(testId: string, started?: number) {
     id: testId,
     dataPoints: [],
     started,
-    results: {}
+    results: {},
+    topologyDataPoints: []
   };
 
   return tests[testId];
@@ -139,15 +146,19 @@ function createTestAndRespond(testId: string, req: express.Request, res: express
 
 app.get("/test/:testId", validateTestExists, async (req, res, next) => {
   const { testId } = req.params;
-  const includeDataPoints = req.query.dataPoints === "true"
+  const includeDataPoints = req.query.dataPoints === "true";
 
   const test = await getTest(testId);
 
-  res.json(includeDataPoints? test : {
-    id: test.id,
-    started: test.started,
-    finsihed: test.finished,
-  });
+  res.json(
+    includeDataPoints
+      ? test
+      : {
+          id: test.id,
+          started: test.started,
+          finsihed: test.finished
+        }
+  );
 });
 
 app.put("/test/:testId/start", validateTestExists, async (req, res, next) => {
@@ -155,6 +166,17 @@ app.put("/test/:testId/start", validateTestExists, async (req, res, next) => {
 
   const test = await getTest(testId);
   test.started = Date.now();
+
+  res.json({ id: test.id, started: test.started });
+});
+
+app.put("/test/:testId/topology", validateTestExists, validateTestOngoing, async (req, res, next) => {
+  const { testId } = req.params;
+
+  const test = await getTest(testId);
+  const topology = req.body;
+
+  test.topologyDataPoints.push({ timestamp: Date.now(), topology });
 
   res.json({ id: test.id, started: test.started });
 });
