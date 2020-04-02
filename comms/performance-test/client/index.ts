@@ -68,6 +68,41 @@ function runLoops(startingPosition: Position3D, speed: number = 5): Routine {
   };
 }
 
+function testStarted() {
+  let started = false;
+  let timedout = false;
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (!started) {
+        timedout = true;
+        reject("Timed out waiting for test to start");
+      }
+    }, 300 * 1000);
+
+    const checkTestStarted = async () => {
+      try {
+        const testStartedResponse = await fetch(`${statsServerUrl}/test/${testId}`);
+        if (testStartedResponse.status === 200) {
+          const responseJson = await testStartedResponse.json();
+          if (responseJson.started) {
+            started = true;
+            resolve();
+          }
+        }
+      } catch (e) {
+        console.warn("Error checking if test started", e);
+      }
+
+      if (!started && !timedout) {
+        console.log("Awaiting for test to be started...");
+        setTimeout(checkTestStarted, 3000);
+      }
+    };
+
+    checkTestStarted();
+  });
+}
+
 type SimulatedPeer = {
   position: Position3D;
   rotation: Quaternion;
@@ -190,6 +225,8 @@ async function createPeer() {
 }
 
 (async () => {
+  if (testId) await testStarted();
+
   console.log("Creating " + numberOfPeers + " peers");
 
   const peers: SimulatedPeer[] = await Promise.all([...new Array(numberOfPeers).keys()].map(_ => createPeer()));

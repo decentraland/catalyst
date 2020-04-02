@@ -36,7 +36,7 @@ const browserCount = process.env.BROWSERS_COUNT ?? 10;
 
   console.log("Child process are listening");
 
-  const testResponse = await fetch("http://localhost:9904/test", { method: "POST" });
+  const testResponse = await fetch("http://localhost:9904/test", { method: "POST", body: JSON.stringify({ started: true }), headers: { "Content-Type": "application/json" } });
   const testJson = await testResponse.json();
 
   const testId = testJson.id;

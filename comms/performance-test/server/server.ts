@@ -34,7 +34,7 @@ type TestDataPoint = {
 type TestData = {
   id: string;
   dataPoints: TestDataPoint[];
-  started: number;
+  started?: number;
   finished?: number;
   results: Record<string, any>;
 };
@@ -43,11 +43,11 @@ type TestData = {
 
 const tests: Record<string, TestData> = {};
 
-function createTest(testId: string, started: number = Date.now()) {
+function createTest(testId: string, started?: number) {
   tests[testId] = {
     id: testId,
     dataPoints: [],
-    started: Date.now(),
+    started,
     results: {}
   };
 
@@ -120,38 +120,57 @@ const validateTestExists = async (req, res, next) => {
 // This handler assumes the test exists
 const validateTestOngoing = async (req, res, next) => {
   const test = await getTest(req.params.testId);
-  if (!test!.finished) {
+  if (!test.finished && test.started) {
     next();
   } else {
-    res.status(400).send({ status: "test-already-finished" });
+    res.status(400).send({ status: test.started ? "test-already-finished" : "test-not-started" });
   }
 };
 
 // ROUTES
 
+function createTestAndRespond(testId: string, req: express.Request, res: express.Response, timestamp: number = Date.now()) {
+  const started = req.body?.started;
+
+  const test = createTest(testId, started ? timestamp : undefined);
+
+  res.json({ id: test.id, started: test.started });
+}
+
 app.get("/test/:testId", validateTestExists, async (req, res, next) => {
   const { testId } = req.params;
+  const includeDataPoints = req.query.dataPoints === "true"
 
   const test = await getTest(testId);
 
-  res.json(test);
+  res.json(includeDataPoints? test : {
+    id: test.id,
+    started: test.started,
+    finsihed: test.finished,
+  });
+});
+
+app.put("/test/:testId/start", validateTestExists, async (req, res, next) => {
+  const { testId } = req.params;
+
+  const test = await getTest(testId);
+  test.started = Date.now();
+
+  res.json({ id: test.id, started: test.started });
 });
 
 app.post("/test", (req, res, next) => {
   const timestamp = Date.now();
+
   const testId = generateId(timestamp);
 
-  const test = createTest(testId);
-
-  res.json({ id: test.id, started: test.started });
+  createTestAndRespond(testId, req, res, timestamp);
 });
 
 app.post("/test/:testId", (req, res, next) => {
   const { testId } = req.params;
 
-  const test = createTest(testId);
-
-  res.json({ id: test.id, started: test.started });
+  createTestAndRespond(testId, req, res);
 });
 
 app.put("/test/:testId/peer/:peerId/metrics", validateTestExists, validateTestOngoing, async (req, res, next) => {
