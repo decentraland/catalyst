@@ -265,7 +265,8 @@ async function createPeer() {
     }
   }
 
-  setTimeout(tick, 16);
+  // We delay the first tick a random number to ensure the clients are not in sync
+  setTimeout(tick, Math.floor(Math.random() * 3000));
 
   function setText(id: string, text: any) {
     document.getElementById(id)!.innerText = text.toString();
