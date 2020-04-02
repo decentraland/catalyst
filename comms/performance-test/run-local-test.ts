@@ -71,7 +71,7 @@ const resultsServerAPI = new TestServerAPIClient("http://localhost:9904");
 
     console.log("Running test with id: " + testId);
 
-    browsers = await runClients(browserCount, testId, "http://localhost:9000", "http://localhost:7654");
+    browsers = await runClients(browserCount, testId);
 
     await fetch(`http://localhost:9904/test/${testId}/finish`, { method: "PUT" });
     console.log(`Test ${testId} finished`);

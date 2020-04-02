@@ -1,6 +1,13 @@
 import puppeteer, { Browser } from "puppeteer";
 
-export async function runClients(count: number, testId: string, lighthouseUrl: string = "http://localhost:9000", clientUrl: string = "http://localhost:7654") {
+export async function runClients(
+  count: number,
+  testId: string,
+  lighthouseUrl: string = "http://localhost:9000",
+  statsServerUrl: string = "http://localhost:9904/",
+  clientUrl: string = "http://localhost:7654",
+  testDuration: number = 180
+) {
   const promises: Promise<Browser>[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -9,7 +16,7 @@ export async function runClients(count: number, testId: string, lighthouseUrl: s
         try {
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
-          const url = `${clientUrl}?sessionId=${i}&numberOfPeers=1&testId=${testId}&lighthouseUrl=${lighthouseUrl}`;
+          const url = `${clientUrl}?sessionId=${i}&numberOfPeers=1&testId=${testId}&lighthouseUrl=${lighthouseUrl}&statsServerUrl=${statsServerUrl}&testDuration=${testDuration}`;
           console.log("Opening client with url: " + url);
           await page.goto(url);
 

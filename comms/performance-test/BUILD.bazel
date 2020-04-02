@@ -24,3 +24,13 @@ nodejs_binary(
     ],
     entry_point = "run-local-test.ts",
 )
+
+nodejs_binary(
+    name = "run-clients",
+    data = [
+        "peer-performance-test",
+        "@npm//@bazel/typescript",
+        "@npm//typescript",
+    ],
+    entry_point = "run-clients.ts",
+)
