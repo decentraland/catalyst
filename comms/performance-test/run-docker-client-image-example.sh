@@ -1,1 +1,1 @@
-docker run -it --init --rm --cap-add=SYS_ADMIN -e TEST_ID=myTest -e RESULTS_SERVER_URL=http://192.168.0.189:9904 -e LIGHTHOUSE_URL=http://192.168.0.189:9000 3951b35e3ede
+docker run -it --init --rm --cap-add=SYS_ADMIN -e TEST_ID=first-distributed-test -e RESULTS_SERVER_URL=https://bb8a842f.ngrok.io -e LIGHTHOUSE_URL=https://cfdd16a0.ngrok.io pablitar/peer-performance-test-client:latest

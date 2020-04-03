@@ -3,10 +3,18 @@ import { randomBetween } from "decentraland-katalyst-utils/util";
 import { PeerMessageTypes } from "../../peer/src/messageTypes";
 import { Position3D, Quaternion } from "decentraland-katalyst-utils/Positions";
 import { PeerConfig } from "../../peer/src";
-import { PositionData, CommsMessage } from "./protobuf/comms";
+import { PositionData, CommsMessage, ProfileData, ChatData } from "./protobuf/comms";
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { GlobalStats } from "../../peer/src/stats";
 import { Reader } from "protobufjs";
+
+function uuid(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+    let r = (Math.random() * 16) | 0;
+    let v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 const urlParams = new URLSearchParams(location.search);
 
@@ -24,6 +32,8 @@ if (!testId) {
 type Routine = (elapsed: number, delta: number, peer: SimulatedPeer) => void;
 
 const timeBetweenPositionMessages = 100;
+const timeBetweenProfileMessages = 1000;
+const timeBetweenChatMessages = 10000;
 
 let elapsed = 0;
 
@@ -44,27 +54,66 @@ function createPositionData(p: Position3D, q: Quaternion) {
   return positionData;
 }
 
-function createCommsMessage(data: PositionData) {
+function createProfileData(peerId: string) {
+  const positionData = ProfileData.fromPartial({
+    userId: peerId,
+    profileVersion: "1"
+  });
+  return positionData;
+}
+
+function createChatData(peerId: string) {
+  const positionData = ChatData.fromPartial({
+    messageId: uuid(),
+    text: util.generateToken(40)
+  });
+  return positionData;
+}
+
+function createAndEncodeCommsMessage(data: PositionData | ProfileData | ChatData, dataKey: keyof CommsMessage) {
   const commsMessage = CommsMessage.fromPartial({
     time: Date.now(),
-    positionData: data
+    [dataKey]: data
   });
 
-  return commsMessage;
+  return CommsMessage.encode(commsMessage).finish();
 }
 
 function average(numbers: number[]) {
   return numbers.reduce((a, b) => a + b, 0) / numbers.length;
 }
 
-function runLoops(startingPosition: Position3D, speed: number = 5): Routine {
-  let timeSinceLastPosition = 0;
-  return (elapsed, delta, peer) => {
-    timeSinceLastPosition += delta;
-    if (timeSinceLastPosition > timeBetweenPositionMessages) {
-      timeSinceLastPosition = 0;
-      peer.peer.sendMessage("room", createCommsMessage(createPositionData(peer.position, peer.rotation)), PeerMessageTypes.unreliable("position"));
+class PeriodicAction {
+  private elapsed: number = 0;
+  constructor(private period: number, private action: (elapsed, delta, peer) => void) {}
+
+  update(elapsed: number, delta: number, peer: SimulatedPeer) {
+    this.elapsed += delta;
+    if (this.elapsed > this.period) {
+      this.elapsed = 0;
+      this.action(elapsed, delta, peer);
     }
+  }
+}
+
+function runLoops(startingPosition: Position3D, speed: number = 5): Routine {
+  let periodicPosition = new PeriodicAction(timeBetweenPositionMessages, (a, b, peer) => {
+    peer.peer.sendMessage("room", createAndEncodeCommsMessage(createPositionData(peer.position, peer.rotation), "positionData"), PeerMessageTypes.unreliable("position"));
+  });
+
+  let periodicProfile = new PeriodicAction(timeBetweenProfileMessages, (a, b, peer) => {
+    peer.peer.sendMessage("room", createAndEncodeCommsMessage(createProfileData(peer.peer.peerId), "profileData"), PeerMessageTypes.unreliable("profile"));
+  });
+
+  let periodicChat = new PeriodicAction(timeBetweenChatMessages, (a, b, peer) => {
+    peer.peer.sendMessage("room", createAndEncodeCommsMessage(createChatData(peer), "chatData"), PeerMessageTypes.reliable("chat"));
+  });
+
+  return (elapsed, delta, peer) => {
+    //TODO: Move the peer
+    periodicPosition.update(elapsed, delta, peer);
+    periodicProfile.update(elapsed, delta, peer);
+    periodicChat.update(elapsed, delta, peer);
   };
 }
 
@@ -252,6 +301,9 @@ async function createPeer() {
   function tick() {
     const timestamp = performance.now();
     const delta = typeof lastTickStamp !== "undefined" ? timestamp - lastTickStamp : 0;
+
+    console.log(delta)
+
     elapsed += delta;
 
     lastTickStamp = timestamp;
