@@ -7,14 +7,7 @@ import { PositionData, CommsMessage, ProfileData, ChatData } from "./protobuf/co
 import { util } from "../../peer/src/peerjs-server-connector/util";
 import { GlobalStats } from "../../peer/src/stats";
 import { Reader } from "protobufjs";
-
-function uuid(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-    let r = (Math.random() * 16) | 0;
-    let v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
+import { v4 } from "uuid";
 
 const urlParams = new URLSearchParams(location.search);
 
@@ -64,7 +57,7 @@ function createProfileData(peerId: string) {
 
 function createChatData(peerId: string) {
   const positionData = ChatData.fromPartial({
-    messageId: uuid(),
+    messageId: v4(),
     text: util.generateToken(40)
   });
   return positionData;
@@ -282,27 +275,11 @@ async function createPeer() {
 
   const peers: SimulatedPeer[] = await Promise.all([...new Array(numberOfPeers).keys()].map(_ => createPeer()));
 
-  // function doSendMessage(container: SimulatedPeer) {
-  //   const messageId = util.randomToken();
-  //   container.peer!.sendMessage(
-  //     "room",
-  //     {
-  //       test: "this is a test",
-  //       messageId,
-  //       stamp: new Date().getTime()
-  //     },
-  //     PeerMessageTypes.unreliable("test")
-  //   );
-  //   container.countSent();
-  // }
-
   let lastTickStamp: number | undefined;
 
   function tick() {
     const timestamp = performance.now();
     const delta = typeof lastTickStamp !== "undefined" ? timestamp - lastTickStamp : 0;
-
-    console.log(delta)
 
     elapsed += delta;
 
