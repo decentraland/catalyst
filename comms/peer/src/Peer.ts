@@ -52,7 +52,7 @@ export class Peer implements IPeer {
 
   private peerConnectionPromises: Record<string, { resolve: () => void; reject: () => void }[]> = {};
 
-  private knownPeers: Record<string, KnownPeerData> = {};
+  public knownPeers: Record<string, KnownPeerData> = {};
 
   private receivedPackets: Record<string, { timestamp: number; expirationTime: number }> = {};
 
@@ -70,7 +70,7 @@ export class Peer implements IPeer {
   private expireTimeoutId: NodeJS.Timeout | number;
   private pingTimeoutId?: NodeJS.Timeout | number;
 
-  public stats = new GlobalStats();
+  public stats: GlobalStats;
 
   private disposed: boolean = false;
 
@@ -143,6 +143,10 @@ export class Peer implements IPeer {
 
       this.pingTimeoutId = schedulePing();
     }
+    
+    this.stats = new GlobalStats(this.config.statsUpdateInterval ?? 1000);
+
+    this.stats.startPeriod();
   }
 
   public setLighthouseUrl(lighthouseUrl: string) {
@@ -721,7 +725,7 @@ export class Peer implements IPeer {
 
       const expired = this.checkExpired(packet);
 
-      this.stats.countPacket(packet, data.length, alreadyReceived, expired);
+      this.stats.countPacket(packet, data.length, alreadyReceived, expired, "received");
 
       if (!alreadyReceived && !expired) {
         this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
@@ -947,7 +951,9 @@ export class Peer implements IPeer {
       const conn = this.connectedPeers[peer].connection;
       if (this.isConnectedTo(peer)) {
         try {
-          conn.send(Packet.encode(packet).finish());
+          const data = Packet.encode(packet).finish();
+          conn.send(data);
+          this.stats.countPacket(packet, data.length, false, false, packet.hops === 0 ? "sent" : "relayed");
         } catch (e) {
           this.log(LogLevel.WARN, "Error sending data to peer " + peer, e);
         }
@@ -1198,6 +1204,7 @@ export class Peer implements IPeer {
     this.disposed = true;
     clearTimeout(this.expireTimeoutId as any);
     clearTimeout(this.pingTimeoutId as any);
+    this.stats.dispose();
     this.cleanStateAndConnections();
     return new Promise<void>((resolve, reject) => {
       if (this.peerJsConnection && !this.peerJsConnection.disconnected) {

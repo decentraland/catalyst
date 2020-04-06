@@ -30,3 +30,7 @@ export const MAX_UINT32 = 4294967295;
 export function randomUint32(): number {
   return Math.floor(Math.random() * MAX_UINT32);
 }
+
+export function randomBetween(min: number, max: number) {
+  return Math.random() * (max - min) + min;
+}

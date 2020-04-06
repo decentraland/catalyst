@@ -1,42 +1,24 @@
 load("@npm_bazel_typescript//:index.bzl", "ts_devserver", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 
 package(default_visibility = ["//visibility:public"])
 
 ts_library(
-    name = "peer-stress-test-client",
-    srcs = ["index.ts"],
+    name = "peer-performance-test-client",
+    srcs = [
+        "index.ts",
+        "protobuf/comms.ts",
+    ],
     tsconfig = "//:tsconfig.json",
     deps = [
         "//commons/utils",
         "//comms/peer",
+        "@npm//protobufjs",
     ],
-)
-
-ts_library(
-    name = "peer-stress-test",
-    srcs = ["run-test.ts"],
-    tsconfig = "//:tsconfig.json",
-    deps = [
-        "@npm//@types",
-        "@npm//puppeteer",
-        "@npm//tree-kill",
-    ],
-)
-
-nodejs_binary(
-    name = "run-test",
-    data = [
-        "peer-stress-test",
-        "@npm//@bazel/typescript",
-        "@npm//typescript",
-    ],
-    entry_point = "run-test.ts",
 )
 
 ts_devserver(
     name = "devserver",
-    entry_module = "katalyst/comms/peer/scripts/stress-test/index",
+    entry_module = "katalyst/comms/performance-test/client/index",
     port = 7654,
     # This is the path we'll request from the browser, see index.html
     serving_path = "/bundle.js",
@@ -48,7 +30,7 @@ ts_devserver(
     ],
     deps = [
         "config.js",
-        ":peer-stress-test-client",
+        ":peer-performance-test-client",
         "@npm//eventemitter3:eventemitter3__umd",
         "@npm//fp-future:fp-future__umd",
         "@npm//protobufjs:protobufjs__umd",
