@@ -10,7 +10,7 @@ import { Packet, PayloadEncoding, MessageData, PingData, PongData } from "./prot
 import { Reader } from "protobufjs/minimal";
 import { future, IFuture } from "fp-future";
 import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVALS } from "../../../commons/utils/Positions";
-import { randomUint32 } from "decentraland-katalyst-utils/util";
+import { randomUint32 } from "../../../commons/utils/util";
 import { GlobalStats } from "./stats";
 
 const PROTOCOL_VERSION = 4;
