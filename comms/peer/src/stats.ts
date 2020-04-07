@@ -13,12 +13,7 @@ function newPeriodicValue() {
 }
 
 export class Stats {
-  public expired: number = 0;
-  public expiredPercentage: number = 0;
-  public packetDuplicates: number = 0;
-  public duplicatePercentage: number = 0;
   public averagePacketSize?: number = undefined;
-  public optimistic: number = 0;
   public packets: number = 0;
   public totalBytes: number = 0;
 
@@ -27,23 +22,13 @@ export class Stats {
   // Periodic stats. Each of these need to accumulate during a period to calculate their values
   public _bytesPerSecond: PeriodicValue = newPeriodicValue();
   public _packetsPerSecond: PeriodicValue = newPeriodicValue();
-  public _expiredPerSecond: PeriodicValue = newPeriodicValue();
-  public _duplicatesPerSecond: PeriodicValue = newPeriodicValue();
 
   public get bytesPerSecond() {
     return this._bytesPerSecond.currentValue;
   }
 
-  public get expiredPerSecond() {
-    return this._expiredPerSecond.currentValue;
-  }
-
   public get packetsPerSecond() {
     return this._packetsPerSecond.currentValue;
-  }
-
-  public get duplicatesPerSecond() {
-    return this._duplicatesPerSecond.currentValue;
   }
 
   countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
@@ -51,22 +36,10 @@ export class Stats {
 
     this._packetsPerSecond.accumulatedInPeriod += 1;
 
-    if (duplicate) {
-      this.packetDuplicates += 1;
-      this._duplicatesPerSecond.accumulatedInPeriod += 1;
-    }
-
     this.totalBytes += length;
     this._bytesPerSecond.accumulatedInPeriod += length;
 
     this.averagePacketSize = this.totalBytes / this.packets;
-    this.duplicatePercentage = this.packetDuplicates / this.packets;
-    if (packet.optimistic) this.optimistic += 1;
-    if (expired) {
-      this.expired += 1;
-      this._expiredPerSecond.accumulatedInPeriod += 1;
-    }
-    this.expiredPercentage = this.expired / this.packets;
   }
 
   onPeriod(timestamp: number) {
@@ -81,8 +54,6 @@ export class Stats {
 
     calculateAndReset(this._bytesPerSecond);
     calculateAndReset(this._packetsPerSecond);
-    calculateAndReset(this._expiredPerSecond);
-    calculateAndReset(this._duplicatesPerSecond);
 
     this.lastPeriodUpdate = timestamp;
   }
@@ -91,11 +62,11 @@ export class Stats {
 export class TypedStats extends Stats {
   public statsByType: Record<string, Stats> = {};
 
-  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
-    super.countPacket(packet, length, duplicate, expired);
+  countPacket(packet: Packet, length: number) {
+    super.countPacket(packet, length);
     if (packet.subtype) {
       const stats = (this.statsByType[packet.subtype] = this.statsByType[packet.subtype] ?? new Stats());
-      stats.countPacket(packet, length, duplicate, expired);
+      stats.countPacket(packet, length);
     }
   }
 
@@ -113,15 +84,24 @@ export class GlobalStats {
   public relayed: TypedStats = new TypedStats();
   public all: TypedStats = new TypedStats();
 
+  public tagged: Record<string, TypedStats> = {};
+
   private periodId?: number;
 
   public onPeriodicStatsUpdated: (stats: GlobalStats) => void = (_) => {};
 
   constructor(public periodLength: number = 1000) {}
 
-  countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false, operation: PacketOperationType) {
-    this.all.countPacket(packet, length, duplicate, expired);
-    this[operation].countPacket(packet, length, duplicate, expired);
+  countPacket(packet: Packet, length: number, operation: PacketOperationType, tags: string[] = []) {
+    this.all.countPacket(packet, length);
+    this[operation].countPacket(packet, length);
+    tags.forEach((tag) => {
+      if (!this.tagged[tag]) {
+        this.tagged[tag] = new TypedStats();
+      }
+
+      this.tagged[tag].countPacket(packet, length);
+    });
   }
 
   onPeriod(timestamp: number) {
@@ -129,6 +109,7 @@ export class GlobalStats {
     this.sent.onPeriod(timestamp);
     this.received.onPeriod(timestamp);
     this.relayed.onPeriod(timestamp);
+    Object.values(this.tagged).forEach((it) => it.onPeriod(timestamp));
   }
 
   startPeriod() {
@@ -144,6 +125,14 @@ export class GlobalStats {
   dispose() {
     clearTimeout(this.periodId);
   }
+
+  getStatsFor(statsKey: string): TypedStats | undefined {
+    if (this.hasOwnProperty(statsKey)) {
+      return this[statsKey];
+    } else {
+      return this.tagged[statsKey];
+    }
+  }
 }
 
 /**
@@ -155,11 +144,14 @@ export function buildCatalystPeerStatsData(catalystPeer: Peer) {
 
   function buildStatsFor(statsKey: string) {
     const result: Record<string, any> = {};
-    result[statsKey] = stats[statsKey].packets;
-    result[`${statsKey}PerSecond`] = stats[statsKey].packetsPerSecond;
-    result[`${statsKey}Bytes`] = stats[statsKey].totalBytes;
-    result[`${statsKey}BytesPerSecond`] = stats[statsKey].bytesPerSecond;
-    result[`${statsKey}AveragePacketSize`] = stats[statsKey].averagePacketSize;
+    const typedStats = stats.getStatsFor(statsKey);
+    if (typedStats) {
+      result[statsKey] = typedStats.packets;
+      result[`${statsKey}PerSecond`] = typedStats.packetsPerSecond;
+      result[`${statsKey}Bytes`] = typedStats.totalBytes;
+      result[`${statsKey}BytesPerSecond`] = typedStats.bytesPerSecond;
+      result[`${statsKey}AveragePacketSize`] = typedStats.averagePacketSize;
+    }
     return result;
   }
   const statsToSubmit = {
@@ -167,9 +159,8 @@ export function buildCatalystPeerStatsData(catalystPeer: Peer) {
     ...buildStatsFor("received"),
     ...buildStatsFor("relayed"),
     ...buildStatsFor("all"),
-    duplicates: stats.received.packetDuplicates,
-    duplicatesPerSecond: stats.received.duplicatesPerSecond,
-    duplicatesPercentage: stats.received.duplicatePercentage,
+    ...buildStatsFor("relevant"),
+    ...buildStatsFor("duplicate"),
     connectedPeers: catalystPeer.fullyConnectedPeerIds(),
     knownPeersCount: Object.keys(catalystPeer.knownPeers).length,
     position: catalystPeer.selfPosition(),

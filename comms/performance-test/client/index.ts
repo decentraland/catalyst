@@ -127,7 +127,7 @@ function testStarted() {
         timedout = true;
         reject("Timed out waiting for test to start");
       }
-    }, 300 * 1000);
+    }, 600 * 1000);
 
     const checkTestStarted = async () => {
       try {
