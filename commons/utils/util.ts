@@ -34,3 +34,7 @@ export function randomUint32(): number {
 export function randomBetween(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
+
+export function average(numbers: number[]) {
+  return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+}

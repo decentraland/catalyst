@@ -576,7 +576,7 @@ export class Peer implements IPeer {
     }, undefined);
   }
 
-  private selfPosition() {
+  public selfPosition() {
     return this.config.positionConfig?.selfPosition();
   }
 

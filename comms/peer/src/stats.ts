@@ -1,4 +1,6 @@
 import { Packet } from "./proto/peer_protobuf";
+import { Peer } from "./Peer";
+import { average } from "decentraland-katalyst-utils/util";
 
 type PeriodicValue = {
   accumulatedInPeriod: number;
@@ -99,7 +101,7 @@ export class TypedStats extends Stats {
 
   onPeriod(timestamp: number) {
     super.onPeriod(timestamp);
-    Object.values(this.statsByType).forEach(it => it.onPeriod(timestamp));
+    Object.values(this.statsByType).forEach((it) => it.onPeriod(timestamp));
   }
 }
 
@@ -113,7 +115,7 @@ export class GlobalStats {
 
   private periodId?: number;
 
-  public onPeriodicStatsUpdated: (stats: GlobalStats) => void = _ => {};
+  public onPeriodicStatsUpdated: (stats: GlobalStats) => void = (_) => {};
 
   constructor(public periodLength: number = 1000) {}
 
@@ -142,4 +144,44 @@ export class GlobalStats {
   dispose() {
     clearTimeout(this.periodId);
   }
+}
+
+/**
+ * Helper function to build a data objet to submit the stats for analytics
+ */
+
+export function buildCatalystPeerStatsData(catalystPeer: Peer) {
+  const stats = catalystPeer.stats;
+
+  function buildStatsFor(statsKey: string) {
+    const result: Record<string, any> = {};
+    result[statsKey] = stats[statsKey].packets;
+    result[`${statsKey}PerSecond`] = stats[statsKey].packetsPerSecond;
+    result[`${statsKey}Bytes`] = stats[statsKey].totalBytes;
+    result[`${statsKey}BytesPerSecond`] = stats[statsKey].bytesPerSecond;
+    result[`${statsKey}AveragePacketSize`] = stats[statsKey].averagePacketSize;
+    return result;
+  }
+  const statsToSubmit = {
+    ...buildStatsFor("sent"),
+    ...buildStatsFor("received"),
+    ...buildStatsFor("relayed"),
+    ...buildStatsFor("all"),
+    duplicates: stats.received.packetDuplicates,
+    duplicatesPerSecond: stats.received.duplicatesPerSecond,
+    duplicatesPercentage: stats.received.duplicatePercentage,
+    connectedPeers: catalystPeer.fullyConnectedPeerIds(),
+    knownPeersCount: Object.keys(catalystPeer.knownPeers).length,
+    position: catalystPeer.selfPosition(),
+  };
+
+  const latencies = Object.values(catalystPeer.knownPeers)
+    .map((kp) => kp.latency!)
+    .filter((it) => typeof it !== "undefined");
+
+  if (latencies.length > 0) {
+    statsToSubmit["averageLatency"] = average(latencies);
+  }
+
+  return statsToSubmit;
 }
