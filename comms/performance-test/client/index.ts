@@ -292,9 +292,9 @@ async function createPeer() {
   function updateStats() {
     setText("peers", peers.length);
     setText("elapsed", (elapsed / 1000).toFixed(2));
-    setText("sent", sumForAllPeers("sent", "packets"));
-    setText("received", sumForAllPeers("received", "packets"));
-    setText("relayed", sumForAllPeers("relayed", "packets"));
+    setText("sent", sumForAllPeers("sent", "totalPackets"));
+    setText("received", sumForAllPeers("received", "totalPackets"));
+    setText("relayed", sumForAllPeers("relayed", "totalPackets"));
     setText("receivedpersecond", avgForAllPeers("received", "packetsPerSecond"));
     setText("sentpersecond", avgForAllPeers("sent", "packetsPerSecond"));
     setText("relayedpersecond", sumForAllPeers("relayed", "packetsPerSecond"));

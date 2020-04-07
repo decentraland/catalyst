@@ -14,7 +14,7 @@ function newPeriodicValue() {
 
 export class Stats {
   public averagePacketSize?: number = undefined;
-  public packets: number = 0;
+  public totalPackets: number = 0;
   public totalBytes: number = 0;
 
   public lastPeriodUpdate: number = 0;
@@ -27,19 +27,27 @@ export class Stats {
     return this._bytesPerSecond.currentValue;
   }
 
+  public get periodBytes() {
+    return this._bytesPerSecond.lastAccumulatedValue;
+  }
+
   public get packetsPerSecond() {
     return this._packetsPerSecond.currentValue;
   }
 
+  public get periodPackets() {
+    return this._bytesPerSecond.lastAccumulatedValue;
+  }
+
   countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
-    this.packets += 1;
+    this.totalPackets += 1;
 
     this._packetsPerSecond.accumulatedInPeriod += 1;
 
     this.totalBytes += length;
     this._bytesPerSecond.accumulatedInPeriod += length;
 
-    this.averagePacketSize = this.totalBytes / this.packets;
+    this.averagePacketSize = this.totalBytes / this.totalPackets;
   }
 
   onPeriod(timestamp: number) {
@@ -136,9 +144,8 @@ export class GlobalStats {
 }
 
 /**
- * Helper function to build a data objet to submit the stats for analytics
+ * Helper function to build a data object to submit the stats for analytics
  */
-
 export function buildCatalystPeerStatsData(catalystPeer: Peer) {
   const stats = catalystPeer.stats;
 
@@ -146,9 +153,11 @@ export function buildCatalystPeerStatsData(catalystPeer: Peer) {
     const result: Record<string, any> = {};
     const typedStats = stats.getStatsFor(statsKey);
     if (typedStats) {
-      result[statsKey] = typedStats.packets;
+      result[statsKey] = typedStats.periodPackets;
+      result[`${statsKey}Total`] = typedStats.totalPackets;
       result[`${statsKey}PerSecond`] = typedStats.packetsPerSecond;
-      result[`${statsKey}Bytes`] = typedStats.totalBytes;
+      result[`${statsKey}Bytes`] = typedStats.periodBytes;
+      result[`${statsKey}TotalBytes`] = typedStats.totalBytes;
       result[`${statsKey}BytesPerSecond`] = typedStats.bytesPerSecond;
       result[`${statsKey}AveragePacketSize`] = typedStats.averagePacketSize;
     }
