@@ -121,7 +121,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         // Validate that the entity is recent
         validation.validateDeploymentIsRecent(entity, validationContext)
 
-        const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo)
+        const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo.authChain)
         if (auditInfo.originalMetadata && auditInfo.originalMetadata.originalVersion == EntityVersion.V2) {
             // Validate that Decentraland performed the deployment
             validation.validateDecentralandAddress(ownerAddress, validationContext)
