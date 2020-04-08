@@ -129,7 +129,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   private async validateDeployment(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo) {
     // No deployments from denylisted eth addresses are allowed
-    const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo);
+    const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo.authChain);
     if (await this.areDenylisted(buildAddressTarget(ownerAddress))) {
       throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was denylisted.`);
     }

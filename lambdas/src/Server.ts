@@ -9,6 +9,7 @@ import http from "http";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
 import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
+import { initializeCryptoRoutes } from "./apis/crypto/routes";
 
 export class Server {
   private port: number;
@@ -47,6 +48,10 @@ export class Server {
 
     // Profile API implementation
     this.app.use("/profile", initializeProfilesRoutes(express.Router(), env, fetcher));
+
+    // DCL-Crypto API implementation
+    this.app.use("/crypto", initializeCryptoRoutes(express.Router(), env));
+
   }
 
   private registerRoute(route: string, controller: Controller, action: (req: express.Request, res: express.Response) => void, isPost?: boolean, extraHandler?: RequestHandler) {

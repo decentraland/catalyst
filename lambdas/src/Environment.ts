@@ -3,6 +3,7 @@ import { ControllerFactory } from "./controller/ControllerFactory";
 import { SmartContentServerFetcherFactory } from "./SmartContentServerFetcherFactory";
 
 const DEFAULT_SERVER_PORT = 7070;
+export const DEFAULT_ETH_NETWORK = "ropsten"
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten";
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace";
 
@@ -51,7 +52,8 @@ export const enum EnvironmentConfig {
   ENS_OWNER_PROVIDER_URL,
   COMMIT_HASH,
   USE_COMPRESSION_MIDDLEWARE,
-  LOG_LEVEL
+  LOG_LEVEL,
+  ETH_NETWORK
 }
 
 export class EnvironmentBuilder {
@@ -80,6 +82,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? "Unknown");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? "info");
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK, () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before

@@ -22,7 +22,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     static readonly AUDIT_INFO: AuditInfo = {
         deployedTimestamp: Date.now(),
-        authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
+        authChain: [{type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
         version: CURRENT_CONTENT_VERSION,
     }
 
