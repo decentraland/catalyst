@@ -4,7 +4,7 @@ export async function runClients(
   count: number,
   testId: string,
   lighthouseUrl: string = "http://localhost:9000",
-  statsServerUrl: string = "http://localhost:9904/",
+  statsServerUrl: string = "http://localhost:9904",
   clientUrl: string = "http://localhost:7654",
   testDuration: number = 180
 ) {

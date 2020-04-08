@@ -5,9 +5,8 @@ import { Position3D, Quaternion } from "decentraland-katalyst-utils/Positions";
 import { PeerConfig } from "../../peer/src";
 import { PositionData, CommsMessage, ProfileData, ChatData } from "./protobuf/comms";
 import { util } from "../../peer/src/peerjs-server-connector/util";
-import { GlobalStats } from "../../peer/src/stats";
+import { GlobalStats, buildCatalystPeerStatsData } from "../../peer/src/stats";
 import { Reader } from "protobufjs";
-import { v4 } from "uuid";
 
 const urlParams = new URLSearchParams(location.search);
 
@@ -34,6 +33,15 @@ function testOngoing() {
   return elapsed <= testDuration;
 }
 
+function uuid(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    let r = (Math.random() * 16) | 0
+    let v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+
 function createPositionData(p: Position3D, q: Quaternion) {
   const positionData = PositionData.fromPartial({
     positionX: p[0],
@@ -42,7 +50,7 @@ function createPositionData(p: Position3D, q: Quaternion) {
     rotationX: q[0],
     rotationY: q[1],
     rotationZ: q[2],
-    rotationW: q[3]
+    rotationW: q[3],
   });
   return positionData;
 }
@@ -50,23 +58,23 @@ function createPositionData(p: Position3D, q: Quaternion) {
 function createProfileData(peerId: string) {
   const positionData = ProfileData.fromPartial({
     userId: peerId,
-    profileVersion: "1"
+    profileVersion: "1",
   });
   return positionData;
 }
 
 function createChatData(peerId: string) {
-  const positionData = ChatData.fromPartial({
-    messageId: v4(),
-    text: util.generateToken(40)
+  const chatData = ChatData.fromPartial({
+    messageId: uuid(),
+    text: util.generateToken(40),
   });
-  return positionData;
+  return chatData;
 }
 
 function createAndEncodeCommsMessage(data: PositionData | ProfileData | ChatData, dataKey: keyof CommsMessage) {
   const commsMessage = CommsMessage.fromPartial({
     time: Date.now(),
-    [dataKey]: data
+    [dataKey]: data,
   });
 
   return CommsMessage.encode(commsMessage).finish();
@@ -119,7 +127,7 @@ function testStarted() {
         timedout = true;
         reject("Timed out waiting for test to start");
       }
-    }, 300 * 1000);
+    }, 600 * 1000);
 
     const checkTestStarted = async () => {
       try {
@@ -158,27 +166,27 @@ const peerConfig: PeerConfig = {
   connectionConfig: {
     iceServers: [
       {
-        urls: "stun:stun.l.google.com:19302"
+        urls: "stun:stun.l.google.com:19302",
       },
       {
-        urls: "stun:stun2.l.google.com:19302"
+        urls: "stun:stun2.l.google.com:19302",
       },
       {
-        urls: "stun:stun3.l.google.com:19302"
+        urls: "stun:stun3.l.google.com:19302",
       },
       {
-        urls: "stun:stun4.l.google.com:19302"
+        urls: "stun:stun4.l.google.com:19302",
       },
       {
         urls: "turn:stun.decentraland.org:3478",
         credential: "passworddcl",
-        username: "usernamedcl"
-      }
-    ]
+        username: "usernamedcl",
+      },
+    ],
   },
   pingInterval: 3000,
-  authHandler: msg => Promise.resolve(msg),
-  logLevel: "NONE"
+  authHandler: (msg) => Promise.resolve(msg),
+  logLevel: "NONE",
 };
 
 function generatePosition(): Position3D {
@@ -188,43 +196,13 @@ function generatePosition(): Position3D {
 }
 
 async function submitStats(peer: SimulatedPeer, stats: GlobalStats) {
-  function buildStatsFor(statsKey: string) {
-    const result: Record<string, any> = {};
-
-    result[statsKey] = stats[statsKey].packets;
-    result[`${statsKey}PerSecond`] = stats[statsKey].packetsPerSecond;
-    result[`${statsKey}Bytes`] = stats[statsKey].totalBytes;
-    result[`${statsKey}BytesPerSecond`] = stats[statsKey].bytesPerSecond;
-    result[`${statsKey}AveragePacketSize`] = stats[statsKey].averagePacketSize;
-
-    return result;
-  }
-
-  const latencies = Object.values(peer.peer.knownPeers)
-    .map(kp => kp.latency!)
-    .filter(it => typeof it !== "undefined");
-
-  const statsToSubmit = {
-    ...buildStatsFor("sent"),
-    ...buildStatsFor("received"),
-    ...buildStatsFor("relayed"),
-    ...buildStatsFor("all"),
-    duplicates: stats.received.packetDuplicates,
-    duplicatesPerSecond: stats.received.duplicatesPerSecond,
-    duplicatesPercentage: stats.received.duplicatePercentage,
-    connectedPeers: peer.peer.fullyConnectedPeerIds(),
-    knownPeersCount: Object.keys(peer.peer.knownPeers).length
-  };
-
-  if (latencies.length > 0) {
-    statsToSubmit["averageLatency"] = average(latencies);
-  }
+  const statsToSubmit = buildCatalystPeerStatsData(peer.peer);
 
   if (statsServerUrl && testId) {
     await fetch(`${statsServerUrl}/test/${testId}/peer/${peer.peer.peerId}/metrics`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(statsToSubmit)
+      body: JSON.stringify(statsToSubmit),
     });
   }
 }
@@ -249,15 +227,15 @@ async function createPeer() {
         ...peerConfig,
         statsUpdateInterval: statsSubmitInterval,
         positionConfig: {
-          selfPosition: () => simulatedPeer.position
-        }
+          selfPosition: () => simulatedPeer.position,
+        },
       }
     ),
-    routine: runLoops(position)
+    routine: runLoops(position),
   };
 
-  simulatedPeer.peer.stats.onPeriodicStatsUpdated = stats => {
-    if (testOngoing()) submitStats(simulatedPeer, stats).catch(e => console.error("Error submiting stats to server", e));
+  simulatedPeer.peer.stats.onPeriodicStatsUpdated = (stats) => {
+    if (testOngoing()) submitStats(simulatedPeer, stats).catch((e) => console.error("Error submiting stats to server", e));
   };
 
   await simulatedPeer.peer.awaitConnectionEstablished();
@@ -273,7 +251,7 @@ async function createPeer() {
 
   console.log("Creating " + numberOfPeers + " peers");
 
-  const peers: SimulatedPeer[] = await Promise.all([...new Array(numberOfPeers).keys()].map(_ => createPeer()));
+  const peers: SimulatedPeer[] = await Promise.all([...new Array(numberOfPeers).keys()].map((_) => createPeer()));
 
   let lastTickStamp: number | undefined;
 
@@ -287,7 +265,7 @@ async function createPeer() {
 
     if (testOngoing()) {
       if (delta > 0) {
-        peers.forEach(it => it.routine(elapsed, delta, it));
+        peers.forEach((it) => it.routine(elapsed, delta, it));
       }
       setTimeout(tick, 16);
     } else {
@@ -314,18 +292,18 @@ async function createPeer() {
   function updateStats() {
     setText("peers", peers.length);
     setText("elapsed", (elapsed / 1000).toFixed(2));
-    setText("sent", sumForAllPeers("sent", "packets"));
-    setText("received", sumForAllPeers("received", "packets"));
-    setText("relayed", sumForAllPeers("relayed", "packets"));
+    setText("sent", sumForAllPeers("sent", "totalPackets"));
+    setText("received", sumForAllPeers("received", "totalPackets"));
+    setText("relayed", sumForAllPeers("relayed", "totalPackets"));
     setText("receivedpersecond", avgForAllPeers("received", "packetsPerSecond"));
     setText("sentpersecond", avgForAllPeers("sent", "packetsPerSecond"));
     setText("relayedpersecond", sumForAllPeers("relayed", "packetsPerSecond"));
 
-    setText("connected-peers", average(peers.map(it => it.peer.fullyConnectedPeerIds().length)));
+    setText("connected-peers", average(peers.map((it) => it.peer.fullyConnectedPeerIds().length)));
     // @ts-ignore
-    setText("known-peers", average(peers.map(it => Object.keys(it.peer.knownPeers).length)));
+    setText("known-peers", average(peers.map((it) => Object.keys(it.peer.knownPeers).length)));
     // @ts-ignore
-    setText("latency", average(peers.flatMap(it => Object.values(it.peer.knownPeers).map(kp => kp.latency))));
+    setText("latency", average(peers.flatMap((it) => Object.values(it.peer.knownPeers).map((kp) => kp.latency))));
 
     if (testOngoing()) {
       setTimeout(updateStats, 500);
@@ -333,6 +311,6 @@ async function createPeer() {
   }
 
   updateStats();
-})().catch(e => {
+})().catch((e) => {
   console.error("Error while running tests", e);
 });
