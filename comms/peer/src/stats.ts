@@ -36,7 +36,7 @@ export class Stats {
   }
 
   public get periodPackets() {
-    return this._bytesPerSecond.lastAccumulatedValue;
+    return this._packetsPerSecond.lastAccumulatedValue;
   }
 
   countPacket(packet: Packet, length: number, duplicate: boolean = false, expired: boolean = false) {
@@ -56,7 +56,7 @@ export class Stats {
       if (elapsed) {
         value.currentValue = (value.accumulatedInPeriod * 1000) / elapsed;
       }
-      value.lastAccumulatedValue = value.lastAccumulatedValue;
+      value.lastAccumulatedValue = value.accumulatedInPeriod;
       value.accumulatedInPeriod = 0;
     };
 

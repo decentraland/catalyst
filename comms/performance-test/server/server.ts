@@ -7,7 +7,7 @@ import fetch from "isomorphic-fetch";
 
 const port = parseInt(process.env.PORT ?? "9904");
 const localDir = process.env.TEST_RESULTS_LOCATION ?? `${os.homedir()}/peer-performance-tests`;
-const STATS_SERVER_URL = process.env.STATS_SERVER_URL ?? 'https://stats.eordano.com/'
+const STATS_SERVER_URL = process.env.STATS_SERVER_URL ?? "https://stats.eordano.com/";
 
 const app = express();
 
@@ -57,7 +57,7 @@ function createTest(testId: string, started?: number) {
     dataPoints: [],
     started,
     results: {},
-    topologyDataPoints: []
+    topologyDataPoints: [],
   };
 
   return tests[testId];
@@ -158,7 +158,7 @@ app.get("/test/:testId", validateTestExists, async (req, res, next) => {
       : {
           id: test.id,
           started: test.started,
-          finsihed: test.finished
+          finsihed: test.finished,
         }
   );
 });
@@ -207,31 +207,12 @@ app.put("/test/:testId/peer/:peerId/metrics", validateTestExists, validateTestOn
   const dataPoint = {
     peerId,
     timestamp,
-    metrics: req.body
+    metrics: req.body,
   };
-  const header = `test-${testId},peer=${peerId}`
-  const byteLines = ['sent', 'received', 'relayed', 'all', 'relevant', 'duplicate']
-    .map(_ => `${header} ${_}Count=${req.body[_]},${_+'Bytes'}=${req.body[_+'Bytes']} ${timestamp}`)
-  const line = `${
-    header
-  } x=${
-    req.body.position[0]
-  },y=${
-    req.body.position[2]
-  },knownPeers=${
-    req.body.knownPeers
-  } ${
-    timestamp
-  }`
-  fetch(`${STATS_SERVER_URL}write?db=comms&precision=ms`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'csv'
-    },
-    body: [...byteLines, line].join('\n')
-  }).catch(error => {
-    console.log(error)
-  })
+
+  if (STATS_SERVER_URL) {
+    pushDataPointToStatsServer(testId, peerId, req, timestamp);
+  }
 
   test.dataPoints.push(dataPoint);
 
@@ -247,7 +228,7 @@ app.put("/test/:testId/peer/:peerId/results", validateTestExists, validateTestOn
 
   test.results[peerId] = {
     ...req.body,
-    timestamp
+    timestamp,
   };
 
   res.json(test.results[peerId]);
@@ -266,3 +247,33 @@ app.put("/test/:testId/finish", validateTestExists, validateTestOngoing, async (
 
   res.json(test);
 });
+function pushDataPointToStatsServer(testId: string, peerId: string, req, timestamp: number) {
+  const header = `test-${testId},peer=${peerId}`;
+  const byteLines = ["sent", "received", "relayed", "all", "relevant", "duplicate"].map(
+    (_) => `${header} ${_}Count=${req.body[_]},${_ + "Bytes"}=${req.body[_ + "Bytes"]} ${timestamp}`
+  );
+  const line = `${header} x=${req.body.position[0]},y=${req.body.position[2]},knownPeers=${req.body.knownPeersCount} ${timestamp}`;
+
+  const url = `${STATS_SERVER_URL}write?db=comms&precision=ms`;
+  const body = [...byteLines, line].join("\n");
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "csv",
+    },
+    body,
+  })
+    .then(async (r) => {
+      if (r.status >= 400) {
+        const text = await r.text();
+        console.log("Error: Send stats response status " + r.status);
+        if (text) {
+          console.log("Response text: " + text);
+        }
+      }
+    })
+    .catch((error) => {
+      console.log("Error pushing to stats server: ", error);
+    });
+}
