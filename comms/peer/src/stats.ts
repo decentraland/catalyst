@@ -152,15 +152,13 @@ export function buildCatalystPeerStatsData(catalystPeer: Peer) {
   function buildStatsFor(statsKey: string) {
     const result: Record<string, any> = {};
     const typedStats = stats.getStatsFor(statsKey);
-    if (typedStats) {
-      result[statsKey] = typedStats.periodPackets;
-      result[`${statsKey}Total`] = typedStats.totalPackets;
-      result[`${statsKey}PerSecond`] = typedStats.packetsPerSecond;
-      result[`${statsKey}Bytes`] = typedStats.periodBytes;
-      result[`${statsKey}TotalBytes`] = typedStats.totalBytes;
-      result[`${statsKey}BytesPerSecond`] = typedStats.bytesPerSecond;
-      result[`${statsKey}AveragePacketSize`] = typedStats.averagePacketSize;
-    }
+    result[statsKey] = typedStats?.periodPackets ?? 0;
+    result[`${statsKey}Total`] = typedStats?.totalPackets ?? 0;
+    result[`${statsKey}PerSecond`] = typedStats?.packetsPerSecond ?? 0;
+    result[`${statsKey}Bytes`] = typedStats?.periodBytes ?? 0;
+    result[`${statsKey}TotalBytes`] = typedStats?.totalBytes ?? 0;
+    result[`${statsKey}BytesPerSecond`] = typedStats?.bytesPerSecond ?? 0;
+    result[`${statsKey}AveragePacketSize`] = typedStats?.averagePacketSize ?? 0;
     return result;
   }
   const statsToSubmit = {
