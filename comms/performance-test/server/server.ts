@@ -3,9 +3,11 @@ import express from "express";
 import morgan from "morgan";
 import fs from "fs";
 import os from "os";
+import fetch from "isomorphic-fetch";
 
 const port = parseInt(process.env.PORT ?? "9904");
 const localDir = process.env.TEST_RESULTS_LOCATION ?? `${os.homedir()}/peer-performance-tests`;
+const STATS_SERVER_URL = process.env.STATS_SERVER_URL ?? 'https://stats.eordano.com/'
 
 const app = express();
 
@@ -207,6 +209,29 @@ app.put("/test/:testId/peer/:peerId/metrics", validateTestExists, validateTestOn
     timestamp,
     metrics: req.body
   };
+  const header = `test-${testId},peer=${peerId}`
+  const byteLines = ['sent', 'received', 'relayed', 'all', 'relevant', 'duplicate']
+    .map(_ => `${header} ${_}Count=${req.body[_]},${_+'Bytes'}=${req.body[_+'Bytes']} ${timestamp}`)
+  const line = `${
+    header
+  } x=${
+    req.body.position[0]
+  },y=${
+    req.body.position[2]
+  },knownPeers=${
+    req.body.knownPeers
+  } ${
+    timestamp
+  }`
+  fetch(`${STATS_SERVER_URL}write?db=comms&precision=ms`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'csv'
+    },
+    body: [...byteLines, line].join('\n')
+  }).catch(error => {
+    console.log(error)
+  })
 
   test.dataPoints.push(dataPoint);
 
