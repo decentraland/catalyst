@@ -19,7 +19,7 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 describe("Service", function () {
 
     const auditInfo: AuditInfo = {
-        authChain: [{type: AuthLinkType.ECDSA_SIGNED_ENTITY, signature:"signature", payload:"ethAddress"}],
+        authChain: [{type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature:"signature", payload:"ethAddress"}],
         version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
 
     let randomFile: { name: string, content: Buffer }

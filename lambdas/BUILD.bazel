@@ -9,6 +9,7 @@ ts_library(
     module_name = "@katalyst/lambdas",
     tsconfig = "//:tsconfig.json",
     deps = [
+        "//contracts",
         "@npm//@types",
         "@npm//@types/node",
         "@npm//@types/compression",
@@ -26,6 +27,7 @@ ts_library(
         "@npm//web3",
         "@npm//@types/web3",
         "@npm//aws-sdk",
+        "@npm//dcl-crypto",
     ],
 )
 
