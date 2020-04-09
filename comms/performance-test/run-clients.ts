@@ -1,7 +1,8 @@
 import { runClients } from "./test-client";
+import { Browser } from "puppeteer";
 
 function requireParams(...names: string[]) {
-  const missingValues = names.filter(it => !process.env[it]);
+  const missingValues = names.filter((it) => !process.env[it]);
 
   if (missingValues.length > 0) {
     console.log("Missing values for environment variables: " + missingValues.join(", "));
@@ -20,11 +21,18 @@ const lighthouseUrl = process.env.LIGHTHOUSE_URL;
 const peersCount = parseInt(process.env.PEERS_COUNT ?? "10");
 const testDuration = parseInt(process.env.TEST_DURATION ?? "180");
 
-(async function() {
-  const browsers = await runClients(peersCount, testId!, lighthouseUrl, resultsServerUrl, clientUrl, testDuration);
+(async function () {
+  let browsers: Browser[] = [];
+  try {
+    browsers = await runClients(peersCount, testId!, lighthouseUrl, resultsServerUrl, clientUrl, testDuration);
 
-  console.log("All browsers finished. Killing the process.");
+    console.log("All browsers finished. Killing the process.");
 
-  await Promise.all(browsers.map(it => it.close()));
-  process.exit(0);
+    process.exit(0);
+  } catch (e) {
+    console.log("Error awaiting for clients to run", e);
+    process.exit(1);
+  } finally {
+    await Promise.all(browsers.map((it) => it.close()));
+  }
 })();

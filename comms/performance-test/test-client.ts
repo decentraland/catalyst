@@ -20,9 +20,9 @@ export async function runClients(
           console.log("Opening client with url: " + url);
           await page.goto(url);
 
-          page.on("console", async msg => {
+          page.on("console", msg => {
             if (msg.type() === "error") {
-              console.log(`\n[BROWSER-${i}]`, ...msg.args(), `[/BROWSER-${i}]\n`);
+              console.log(`\n[BROWSER-${i}]`, msg, `[/BROWSER-${i}]\n`);
             } else {
               console.log(`\n[BROWSER-${i}]`, msg.text(), `[/BROWSER-${i}]\n`);
             }
@@ -33,8 +33,8 @@ export async function runClients(
               resolve(browser);
             }
 
-            if (msg.type() === "error") {
-              reject(msg.args);
+            if (msg.text() === "Test aborted") {
+              reject(msg);
             }
           });
         } catch (e) {

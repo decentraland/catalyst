@@ -323,5 +323,5 @@ async function createPeer() {
 
   updateStats();
 })().catch((e) => {
-  console.error("Error while running tests", e);
+  console.error("Test aborted", e);
 });
