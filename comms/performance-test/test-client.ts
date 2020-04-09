@@ -14,7 +14,7 @@ export async function runClients(
     promises.push(
       new Promise(async (resolve, reject) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
           const page = await browser.newPage();
           const url = `${clientUrl}?sessionId=${i}&numberOfPeers=1&testId=${testId}&lighthouseUrl=${lighthouseUrl}&statsServerUrl=${statsServerUrl}&testDuration=${testDuration}`;
           console.log("Opening client with url: " + url);

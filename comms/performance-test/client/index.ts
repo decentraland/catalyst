@@ -34,13 +34,12 @@ function testOngoing() {
 }
 
 function uuid(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    let r = (Math.random() * 16) | 0
-    let v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    let r = (Math.random() * 16) | 0;
+    let v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
-
 
 function createPositionData(p: Position3D, q: Quaternion) {
   const positionData = PositionData.fromPartial({
@@ -207,6 +206,18 @@ async function submitStats(peer: SimulatedPeer, stats: GlobalStats) {
   }
 }
 
+async function retry(promiseCreator: () => Promise<any>, retries: number = 5, attempts: number = 0) {
+  try {
+    await promiseCreator();
+  } catch (e) {
+    if (attempts < retries) {
+      await retry(promiseCreator, retries, attempts + 1);
+    } else {
+      throw e;
+    }
+  }
+}
+
 async function createPeer() {
   const position = generatePosition();
 
@@ -234,14 +245,14 @@ async function createPeer() {
     routine: runLoops(position),
   };
 
+  await simulatedPeer.peer.awaitConnectionEstablished();
+
+  await retry (() => simulatedPeer.peer.setLayer("blue"))
+  await retry (() => simulatedPeer.peer.joinRoom("room"))
+
   simulatedPeer.peer.stats.onPeriodicStatsUpdated = (stats) => {
     if (testOngoing()) submitStats(simulatedPeer, stats).catch((e) => console.error("Error submiting stats to server", e));
   };
-
-  await simulatedPeer.peer.awaitConnectionEstablished();
-  await simulatedPeer.peer.setLayer("blue");
-  // TODO: Join multiple rooms?
-  await simulatedPeer.peer.joinRoom("room");
 
   return simulatedPeer;
 }
