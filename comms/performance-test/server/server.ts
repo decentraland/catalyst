@@ -158,7 +158,7 @@ app.get("/test/:testId", validateTestExists, async (req, res, next) => {
       : {
           id: test.id,
           started: test.started,
-          finsihed: test.finished,
+          finished: test.finished,
         }
   );
 });
