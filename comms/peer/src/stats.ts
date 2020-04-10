@@ -168,6 +168,7 @@ export function buildCatalystPeerStatsData(catalystPeer: Peer) {
     ...buildStatsFor("all"),
     ...buildStatsFor("relevant"),
     ...buildStatsFor("duplicate"),
+    ...buildStatsFor("expired"),
     connectedPeers: catalystPeer.fullyConnectedPeerIds(),
     knownPeersCount: Object.keys(catalystPeer.knownPeers).length,
     position: catalystPeer.selfPosition(),

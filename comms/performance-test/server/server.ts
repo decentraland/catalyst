@@ -249,7 +249,7 @@ app.put("/test/:testId/finish", validateTestExists, validateTestOngoing, async (
 });
 function pushDataPointToStatsServer(testId: string, peerId: string, req, timestamp: number) {
   const header = `test-${testId},peer=${peerId}`;
-  const byteLines = ["sent", "received", "relayed", "all", "relevant", "duplicate"].map(
+  const byteLines = ["sent", "received", "relayed", "all", "relevant", "duplicate", "expired"].map(
     (_) =>
       `${header} ${_}Count=${req.body[_]},${_ + "Bytes"}=${req.body[_ + "Bytes"]},${_}Total=${req.body[_ + "Total"]},${_ + "TotalBytes"}=${req.body[_ + "TotalBytes"]},${
         _ + "PerSecond"
