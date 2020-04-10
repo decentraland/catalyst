@@ -1,6 +1,6 @@
 import { Packet } from "./proto/peer_protobuf";
 import { Peer } from "./Peer";
-import { average } from "decentraland-katalyst-utils/util";
+import { average } from "../../../commons/utils/util";
 
 type PeriodicValue = {
   accumulatedInPeriod: number;
