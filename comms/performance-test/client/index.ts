@@ -16,6 +16,7 @@ const statsSubmitInterval = parseInt(urlParams.get("statsSubmitInterval") ?? "20
 const lighthouseUrl = urlParams.get("lighthouseUrl") ?? "http://localhost:9000";
 const statsServerUrl = urlParams.get("statsServerUrl") ?? "http://localhost:9904";
 const testId = urlParams.get("testId");
+const pingInterval = parseInt(urlParams.get("pingInterval") ?? "9")
 
 if (!testId) {
   console.error("Missing parameter testId! No results will be submited to stats server");
@@ -183,7 +184,7 @@ const peerConfig: PeerConfig = {
       },
     ],
   },
-  pingInterval: 3000,
+  pingInterval,
   authHandler: (msg) => Promise.resolve(msg),
   logLevel: "NONE",
 };

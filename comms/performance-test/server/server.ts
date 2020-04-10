@@ -250,9 +250,14 @@ app.put("/test/:testId/finish", validateTestExists, validateTestOngoing, async (
 function pushDataPointToStatsServer(testId: string, peerId: string, req, timestamp: number) {
   const header = `test-${testId},peer=${peerId}`;
   const byteLines = ["sent", "received", "relayed", "all", "relevant", "duplicate"].map(
-    (_) => `${header} ${_}Count=${req.body[_]},${_ + "Bytes"}=${req.body[_ + "Bytes"]} ${timestamp}`
+    (_) =>
+      `${header} ${_}Count=${req.body[_]},${_ + "Bytes"}=${req.body[_ + "Bytes"]},${_}Total=${req.body[_ + "Total"]},${_ + "TotalBytes"}=${req.body[_ + "TotalBytes"]},${
+        _ + "PerSecond"
+      }=${req.body[_ + "PerSecond"]},${_ + "BytesPerSecond"}=${req.body[_ + "BytesPerSecond"]} ${timestamp}`
   );
-  const line = `${header} x=${req.body.position[0]},y=${req.body.position[2]},knownPeers=${req.body.knownPeersCount} ${timestamp}`;
+  const line = `${header} x=${req.body.position[0]},y=${req.body.position[2]},knownPeers=${req.body.knownPeersCount}${
+    req.body.averageLatency ? `,latency=${req.body.averageLatency}` : ""
+  } ${timestamp}`;
 
   const url = `${STATS_SERVER_URL}write?db=comms&precision=ms`;
   const body = [...byteLines, line].join("\n");
