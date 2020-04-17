@@ -121,7 +121,7 @@ Once running, InfluxDB needs to be configured as a datasource for Graphana, and 
 
 ## Running the tests
 
-Since there is various components, there are several ways to run the tests. The minimum requirements to run a test are:
+Since there are various components, there are several ways to run the tests. The minimum requirements to run a test are:
 - A machine capable of running the clients, through its own browser or through puppeteer
 - A Test Results Server running somewhere accessible by the clients
 - A Lighthouse server running with `NO_AUTH=true` somewhere accessible by the clients
