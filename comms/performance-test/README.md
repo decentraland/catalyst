@@ -53,7 +53,7 @@ In order to run the client, there are two possibilities: [Running a local dev se
 
 Since the client is a browser application, it needs a browser to run. This can make it harder to run it in a distributed environment. In order to be able to run the client in CLIs, and in order to be able to easily spin up multiple browsers for the test, the client component uses [Puppeteer](https://github.com/puppeteer/puppeteer).
 
-There is a script that spins up the clients can be found in [run-clients.ts](run-clients.ts). By default it reads some parameters from the environments variables and spins 10 clients, passing those parameters to them. This script, along with the devserver, is the base for the [docker image](#docker-image)
+There is a script that spins up the clients can be found in [run-clients.ts](run-clients.ts). By default it reads some parameters from the environment variables and spins 10 clients, passing those parameters to them. This script, along with the devserver, is the base for the [docker image](#docker-image)
 
 #### Peer routines
 
