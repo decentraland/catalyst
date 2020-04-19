@@ -12,18 +12,23 @@
     "@types/node": "^12.0.0",
     "@types/react": "^16.9.0",
     "@types/react-dom": "^16.9.0",
+    "@walletconnect/web3-provider": "^1.0.0-beta.47",
     "dcl-catalyst-client": "^1.2.5",
     "dcl-catalyst-commons": "^1.2.4",
     "dcl-crypto": "^2.2.0",
     "decentraland-katalyst-peer": "^0.2.9",
     "decentraland-ui": "^2.17.0",
+    "evm-chains": "^0.1.1",
     "hookrouter": "^1.2.3",
     "moment": "^2.24.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
+    "react-use-web3": "^1.1.2",
     "swr": "^0.2.0",
     "typescript": "~3.7.2",
+    "web3": "^1.2.6",
+    "web3modal": "^1.5.0",
     "web3x": "^4.0.6"
   },
   "scripts": {
@@ -34,6 +39,11 @@
   },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "semi": false
   },
   "browserslist": {
     "production": [
