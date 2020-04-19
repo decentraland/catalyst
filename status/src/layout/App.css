@@ -24,6 +24,19 @@ body {
   padding-left: 36px;
   color: white;
 }
+.content {
+  padding-left: 20px;
+}
+.catalyst-header {
+  background-color: #222935;
+  color: white;
+  font-size: 18px;
+  padding: 18px 0px 20px 20px;
+  width: 100%;
+  min-width: 100%;
+  min-height: 20px;
+  max-height: 20px;
+}
 .sidebar li.active {
   cursor: pointer;
   background-color: #3a4354;
@@ -35,9 +48,9 @@ body {
 
 .main {
   min-height: 100vh;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding-left: 25px;
   align-items: flex-start;
   justify-content: flex-start;
   font-size: calc(10px + 2vmin);

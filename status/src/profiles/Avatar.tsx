@@ -29,6 +29,13 @@ export function Avatar(props: { userInfo: any; address: string; contentServer: s
       );
     }
   }
+  if (!props.position || !props.position.length) {
+    return (
+      <div>
+        <img width={50} alt="Default avatar" src={props.contentServer + "contents/QmeLTsRbiPpgW5ir1q1Ny3dG5znDGRSvWZCBuMgkxV7us9"} />
+      </div>
+    );
+  }
   return (
     <div>
       <img width={50} alt="Default avatar" src={props.contentServer + "contents/QmeLTsRbiPpgW5ir1q1Ny3dG5znDGRSvWZCBuMgkxV7us9"} />

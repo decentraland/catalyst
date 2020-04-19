@@ -4,10 +4,10 @@ export function Sidebar(props: { active: string; setActive: (path: string) => vo
   const areas: any[] = [
     ["/", "", "header link", "Catalyst Manager"],
     ["/comms", "comms", "link", "Comms"],
-    ["/dao", "dao", "link", "DAO"],
-    ["/denylist", "denylist", "link", "Denylist"],
     ["/scenes", "scenes", "link", "Scenes"],
     ["/profiles", "profiles", "link", "Profiles"],
+    ["/denylist", "denylist", "link", "Denylist"],
+    ["/dao", "dao", "link", "DAO"],
   ].map((_) => {
     const url = _[0];
     if (url === props.active) {
@@ -15,7 +15,6 @@ export function Sidebar(props: { active: string; setActive: (path: string) => vo
     }
     return _
   });
-  console.log(areas, 'sidebar')
   return (
     <div className="sidebar">
       <ul>
