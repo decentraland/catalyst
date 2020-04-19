@@ -4,10 +4,11 @@ import useSWR from "swr";
 import { Comms, commsServer } from "../comms/Comms";
 import { fetchJSON } from "../components/fetchJSON";
 import { Dashboard } from "../dashboard";
+import { Profiles } from "../profiles/Profiles";
+import { Scenes } from "../scenes/Scenes";
 import { server } from "../server";
 import "./App.css";
 import { Main } from "./Main";
-import { Scenes } from "../scenes/Scenes";
 import { Sidebar } from "./Sidebar";
 
 const root = "/";
@@ -23,13 +24,13 @@ const routes = {
   [root]: () => <Dashboard />,
   [comms]: () => <Comms />,
   [scenes]: () => <Scenes />,
-  [profiles]: () => <h1>profiles</h1>,
+  [profiles]: () => <Profiles />,
   [dao]: () => <h3>DAO</h3>,
   [denylist]: () => <h1>denylist</h1>,
 };
 
 function Header() {
-  const { data: comms, error: error1 } = useSWR(commsServer + "status", fetchJSON);
+  const { data: comms } = useSWR(commsServer + "status", fetchJSON);
   return (
     <div className="catalyst-header">
       {server}
