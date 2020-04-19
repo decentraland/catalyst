@@ -23,7 +23,8 @@
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
     "swr": "^0.2.0",
-    "typescript": "~3.7.2"
+    "typescript": "~3.7.2",
+    "web3x": "^4.0.6"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -45,5 +46,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "web3x-codegen": "^4.0.6"
   }
 }

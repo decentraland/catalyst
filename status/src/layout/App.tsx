@@ -10,9 +10,9 @@ import { server } from "../server";
 import "./App.css";
 import { Main } from "./Main";
 import { Sidebar } from "./Sidebar";
+import { Denylist } from "../denyList/Denylist";
 
 const root = "/";
-const dao = "/dao";
 const comms = "/comms";
 const denylist = "/denylist";
 const scenes = "/scenes";
@@ -25,8 +25,7 @@ const routes = {
   [comms]: () => <Comms />,
   [scenes]: () => <Scenes />,
   [profiles]: () => <Profiles />,
-  [dao]: () => <h3>DAO</h3>,
-  [denylist]: () => <h1>denylist</h1>,
+  [denylist]: () => <Denylist />,
 };
 
 function Header() {

@@ -37,6 +37,16 @@ body {
   min-height: 20px;
   max-height: 20px;
 }
+
+.input-denylist {
+  font-size: 18px;
+  border-radius: 5px;
+  padding: 5px 10px 5px 10px;
+  outline: none;
+  width: 300px;
+  margin: 0px;
+  border: 1px solid #999;
+}
 .sidebar li.active {
   cursor: pointer;
   background-color: #3a4354;
