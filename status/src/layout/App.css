@@ -1,0 +1,51 @@
+body {
+  background-color: white;
+}
+.App {
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding:0;
+  margin:0;
+}
+
+.sidebar li {
+  padding: 20px 0px 20px 20px;
+  color: white;
+}
+.sidebar li.link.header {
+  padding-left: 20px;
+}
+.sidebar li.link {
+  padding-left: 36px;
+  color: white;
+}
+.sidebar li.active {
+  cursor: pointer;
+  background-color: #3a4354;
+}
+.sidebar li.link:hover {
+  cursor: pointer;
+  background-color: #3c4b64;
+}
+
+.main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-left: 25px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  font-size: calc(10px + 2vmin);
+}
+
+.sidebar {
+  max-width: 200px;
+  min-width: 200px;
+  background-color: #222935;
+  flex-grow: 1;
+}
