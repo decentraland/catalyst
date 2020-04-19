@@ -66,7 +66,8 @@ export class DenylistStorage {
 
     private async readAllDenylists(): Promise<string[]> {
         try {
-            return await this.storage.listIds(DenylistStorage.DENYLIST_CATEGORY);
+            return (await this.storage.listIds(DenylistStorage.DENYLIST_CATEGORY))
+                .filter(_ => _ !== DenylistStorage.HISTORY_FILE_ID);
         } catch (error) {
             return []
         }
