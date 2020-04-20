@@ -1,1 +1,1 @@
-export const server = 'interconnected.online'
+export const server = 'peer.decentraland.org'
