@@ -4,7 +4,7 @@ import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
+import { ControllerEntity, ControllerDenylistData } from "@katalyst/content/controller/Controller"
 import { PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { DeployData, hashAndSignMessage, Identity, parseEntityType } from "./E2ETestUtils"
@@ -111,6 +111,10 @@ export class TestServer extends Server {
 
     async getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
         return this.client.getAuditInfo(parseEntityType(entity), entity.id)
+    }
+
+    getDenylistTargets(): Promise<ControllerDenylistData[]> {
+        return this.makeRequest(`${this.getAddress()}/denylist`)
     }
 
     denylistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
