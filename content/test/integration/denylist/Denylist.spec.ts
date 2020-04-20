@@ -1,16 +1,17 @@
 import { EnvironmentConfig, EnvironmentBuilder, Bean } from "@katalyst/content/Environment"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator"
-import { buildDeployData, deleteServerStorage, createIdentity, Identity } from "../E2ETestUtils"
+import { buildDeployData, deleteServerStorage, createIdentity, Identity, parseEntityType } from "../E2ETestUtils"
 import { TestServer } from "../TestServer"
 import { assertFileIsOnServer, assertEntityIsNotDenylisted, assertEntityIsDenylisted, assertFileIsNotOnServer, assertContentNotIsDenylisted, assertContentIsDenylisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
-import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
+import { ControllerEntityContent, ControllerDenylistData, ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
 import { mock, when, instance } from "ts-mockito"
 import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster"
+import { DenylistTargetType, buildEntityTarget } from "@katalyst/content/denylist/DenylistTarget"
 
 describe("Integration - Denylist", () => {
 
@@ -118,6 +119,51 @@ describe("Integration - Denylist", () => {
         await assertContentIsDenylisted(server, entityBeingDeployed, contentHash)
     });
 
+    it(`When an entity is denylisted, then it is reported as target`, async () => {
+        // Prepare entity to deploy
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+
+        // Deploy the entity
+        await server.deploy(deployData)
+
+        // Make sure that no target is currently reported
+        const targetsBeforeBlacklist: ControllerDenylistData[] = await server.getDenylistTargets()
+        expect(targetsBeforeBlacklist.length).toBe(0)
+
+        // Denylist the entity
+        await server.denylistEntity(entityBeingDeployed, decentralandIdentity)
+
+        // Assert that the entity is now reported as target
+        const targetsAfterBlacklist = await server.getDenylistTargets()
+        expect(targetsAfterBlacklist.length).toBe(1)
+
+        const [{ target }] = targetsAfterBlacklist
+        expect(target.type).toBe(DenylistTargetType.ENTITY)
+        expect(target.id).toBe(getTargetIdFromEntity(entityBeingDeployed))
+    });
+
+    it(`When an entity is undenylisted, then it is no longer reported as target`, async () => {
+        // Prepare entity to deploy
+        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+
+        // Deploy the entity
+        await server.deploy(deployData)
+
+        // Denylist the entity
+        await server.denylistEntity(entityBeingDeployed, decentralandIdentity)
+
+        // Make sure that the target is reported
+        const targetsBeforeUndenylist: ControllerDenylistData[] = await server.getDenylistTargets()
+        expect(targetsBeforeUndenylist.length).toBe(1)
+
+        // Undenylist the entity
+        await server.undenylistEntity(entityBeingDeployed, decentralandIdentity)
+
+        // Assert that the entity is no longer reported as target
+        const targetsAfterUndenylist = await server.getDenylistTargets()
+        expect(targetsAfterUndenylist.length).toBe(0)
+    });
+
     it(`When random identity tries to denylist an entity, then an error is thrown`, async () => {
         // Prepare entity to deploy
         const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
@@ -171,6 +217,10 @@ describe("Integration - Denylist", () => {
     })
 
 })
+
+function getTargetIdFromEntity(entity: ControllerEntity) {
+    return buildEntityTarget(parseEntityType(entity), entity.id).getId()
+}
 
 function mockedClusterWithIdentityAsOwn(identity: Identity) {
     let mockedCluster: ContentCluster = mock(ContentCluster)
