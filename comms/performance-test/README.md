@@ -47,7 +47,7 @@ It consists of a simple browser application that connects to a provided Lighthou
 
 Its source code can be found in the [client](client) folder.
 
-In order to run the client, there are two possibilities: [Running a local dev server](#using-the-dev-server-and-browser) and using any browser that supports WebRTC or running it through [docker](#using-docker-or-puppeteer).
+In order to run the client, there are two possibilities: [Running a local dev server](#using-the-devserver-and-browser-or-puppeteer) and using any browser that supports WebRTC or running it through [docker](#using-docker).
 
 #### Headless browser scripts
 
