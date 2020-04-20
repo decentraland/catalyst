@@ -65,7 +65,7 @@ function combineWithEntityType(entityType: EntityType, other: string) {
     return `${entityType}-${other}`
 }
 
-enum DenylistTargetType {
+export enum DenylistTargetType {
     ENTITY = "entity",
     POINTER = "pointer",
     CONTENT = "content",

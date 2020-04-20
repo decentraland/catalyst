@@ -383,7 +383,7 @@ export enum EntityField {
     METADATA = "metadata",
 }
 
-type ControllerDenylistData = {
+export type ControllerDenylistData = {
     target: {
         type: string,
         id: string,
