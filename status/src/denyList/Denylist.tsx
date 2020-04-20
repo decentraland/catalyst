@@ -1,18 +1,17 @@
-import { Authenticator, IdentityType, AuthLinkType, AuthChain, AuthIdentity } from 'dcl-crypto'
-import { create, fromPrivate } from 'web3x/eth-lib/account'
+import { Authenticator, AuthIdentity, IdentityType } from 'dcl-crypto'
 import React, { useCallback, useState } from 'react'
 import useSWR from 'swr'
-import { Account } from 'web3x/account'
-import { Eth } from 'web3x/eth'
 import Web3 from 'web3'
+import { Account } from 'web3x/account'
+import { Address } from 'web3x/address'
+import { Eth } from 'web3x/eth'
+import { create, fromPrivate } from 'web3x/eth-lib/account'
 import { bufferToHex } from 'web3x/utils'
-import { DisplayObject } from '../components/DisplayObject'
 import { fetchJSON } from '../components/fetchJSON'
 import { catalysts } from '../contracts/offline'
 import { contentServer } from '../layout/App'
 import { server } from '../server'
 import { onConnect } from '../web3/onConnect'
-import { Address } from 'web3x/address'
 
 export function getFromStorage(key: string): any {
   let raw = window.localStorage.getItem(key)
