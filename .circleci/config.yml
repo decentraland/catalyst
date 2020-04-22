@@ -85,6 +85,9 @@ jobs:
       - run:
           name: Run integration tests
           command: npx bazel test //content:integration_test --test_output=all
+          environment:
+            SQS_ACCESS_KEY_ID: ${SQS_ACCESS_KEY_ID}
+            SQS_SECRET_ACCESS_KEY: ${SQS_SECRET_ACCESS_KEY}
 
   build-lambdas:
     <<: *base_env
