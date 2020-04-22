@@ -3,7 +3,7 @@ import { Entity } from "../Entity";
 import { DeploymentReporter } from "./DeploymentReporter";
 import { EthAddress } from "dcl-crypto";
 import SQS, { SendMessageRequest } from "aws-sdk/clients/sqs";
-import { AWSError } from "aws-sdk";
+import { AWSError, Credentials } from "aws-sdk";
 
 export class SQSDeploymentReporter implements DeploymentReporter {
 
@@ -11,8 +11,15 @@ export class SQSDeploymentReporter implements DeploymentReporter {
 
     private sqsClient: SQS;
 
-    constructor(private readonly queueURL: string) {
-        this.sqsClient = new SQS()
+    constructor(
+        accessKeyId: string,
+        secretAccessKey,
+        private readonly queueURL: string,
+        private readonly callback?: (error?:string, messageId?:string) => void) {
+
+        this.sqsClient = new SQS({
+            region: "us-east-1",
+            credentials: new Credentials(accessKeyId, secretAccessKey)})
     }
 
     reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
@@ -30,6 +37,9 @@ export class SQSDeploymentReporter implements DeploymentReporter {
                     SQSDeploymentReporter.LOGGER.error("Error sending SQS message.", err)
                 } else {
                     SQSDeploymentReporter.LOGGER.debug("SQS message sent OK. MessageId: " + data.MessageId)
+                }
+                if (this.callback) {
+                    this.callback(err?.message, data?.MessageId)
                 }
             })
         } catch (error) {

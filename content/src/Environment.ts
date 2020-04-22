@@ -125,6 +125,8 @@ export enum EnvironmentConfig {
     DCL_PARCEL_ACCESS_URL,
     ALLOW_DEPLOYMENTS_FOR_TESTING,
     SQS_QUEUE_URL_REPORTING,
+    SQS_ACCESS_KEY_ID,
+    SQS_SECRET_ACCESS_KEY,
 }
 
 export class EnvironmentBuilder {
@@ -203,6 +205,8 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING  , () => process.env.ALLOW_DEPLOYMENTS_FOR_TESTING === "true")
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_QUEUE_URL_REPORTING        , () => process.env.SQS_QUEUE_URL_REPORTING)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_ACCESS_KEY_ID              , () => process.env.SQS_ACCESS_KEY_ID)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_SECRET_ACCESS_KEY          , () => process.env.SQS_SECRET_ACCESS_KEY)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
