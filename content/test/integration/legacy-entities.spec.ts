@@ -4,7 +4,7 @@ import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environ
 import { ContentFile } from "@katalyst/content/service/Service"
 import { deleteServerStorage, createIdentity, buildDeployDataWithIdentity, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
-import { MockedContentAnalytics } from "../helpers/service/analytics/MockedContentAnalytics"
+import { MockedDeploymentReporter } from "../helpers/service/reporters/MockedDeploymentReporter"
 import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
 import { assertResponseIsOkOrThrow } from "./E2EAssertions"
@@ -17,7 +17,7 @@ describe("End 2 end - Legacy Entities", () => {
 
     beforeEach(async () => {
         const env = await new EnvironmentBuilder()
-            .withAnalytics(new MockedContentAnalytics())
+            .withDeploymentReporter(new MockedDeploymentReporter())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withConfig(EnvironmentConfig.SERVER_PORT, 8080)

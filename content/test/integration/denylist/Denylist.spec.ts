@@ -5,7 +5,7 @@ import { buildDeployData, deleteServerStorage, createIdentity, Identity, parseEn
 import { TestServer } from "../TestServer"
 import { assertFileIsOnServer, assertEntityIsNotDenylisted, assertEntityIsDenylisted, assertFileIsNotOnServer, assertContentNotIsDenylisted, assertContentIsDenylisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
 import { ControllerEntityContent, ControllerDenylistData, ControllerEntity } from "@katalyst/content/controller/Controller"
-import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
+import { MockedDeploymentReporter } from "@katalyst/test-helpers/service/reporters/MockedDeploymentReporter"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
@@ -22,7 +22,7 @@ describe("Integration - Denylist", () => {
 
     beforeEach(async () => {
         const env = await new EnvironmentBuilder()
-            .withAnalytics(new MockedContentAnalytics())
+            .withDeploymentReporter(new MockedDeploymentReporter())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withBean(Bean.CONTENT_CLUSTER, mockedClusterWithIdentityAsOwn(ownerIdentity))

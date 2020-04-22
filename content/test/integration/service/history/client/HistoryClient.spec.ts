@@ -2,7 +2,7 @@ import { TestServer } from "../../../TestServer"
 import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
 import { DeploymentEvent, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
-import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
+import { MockedDeploymentReporter } from "@katalyst/test-helpers/service/reporters/MockedDeploymentReporter"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { deleteServerStorage, buildDeployData } from "../../../E2ETestUtils"
@@ -14,7 +14,7 @@ describe("Integration - History Client", function() {
 
     beforeEach(async () => {
         const env = await new EnvironmentBuilder()
-            .withAnalytics(new MockedContentAnalytics())
+            .withDeploymentReporter(new MockedDeploymentReporter())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withConfig(EnvironmentConfig.SERVER_PORT, 8080)
