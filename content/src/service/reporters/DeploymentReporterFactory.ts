@@ -10,11 +10,11 @@ export class DeploymentReporterFactory {
     static create(env: Environment): DeploymentReporter {
         let reporters: DeploymentReporter[] = []
 
-        if (env.getConfig(EnvironmentConfig.SQS_QUEUE_URL_REPORTING)) {
-            reporters.push(new SQSDeploymentReporter(
-                env.getConfig(EnvironmentConfig.SQS_ACCESS_KEY_ID),
-                env.getConfig(EnvironmentConfig.SQS_SECRET_ACCESS_KEY),
-                env.getConfig(EnvironmentConfig.SQS_QUEUE_URL_REPORTING)))
+        const sqsKey      : string = env.getConfig(EnvironmentConfig.SQS_ACCESS_KEY_ID)
+        const sqsSecret   : string = env.getConfig(EnvironmentConfig.SQS_SECRET_ACCESS_KEY)
+        const sqsQueueUrl : string = env.getConfig(EnvironmentConfig.SQS_QUEUE_URL_REPORTING)
+        if (sqsKey && sqsSecret && sqsQueueUrl) {
+            reporters.push(new SQSDeploymentReporter(sqsKey, sqsSecret, sqsQueueUrl))
         }
 
         if (env.getConfig(EnvironmentConfig.SEGMENT_WRITE_KEY)) {

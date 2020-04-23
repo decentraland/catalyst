@@ -8,11 +8,11 @@ import { ContentFile } from "@katalyst/content/service/Service"
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { EnvironmentConfig, Bean, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
-import { MockedDeploymentReporter } from "@katalyst/test-helpers/service/reporters/MockedDeploymentReporter"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { TestServer } from "./TestServer"
 import { Authenticator, EthAddress } from "dcl-crypto"
 import { retry } from "@katalyst/content/helpers/FetchHelper"
+import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, identity)
@@ -106,7 +106,7 @@ export function buildBaseEnv(namePrefix: string, port: number, syncInterval: num
         .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
         .withConfig(EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, false)
         .withBean(Bean.DAO_CLIENT, daoClient)
-        .withDeploymentReporter(new MockedDeploymentReporter())
+        .withDeploymentReporter(new NoOpDeploymentReporter())
         .withAccessChecker(new MockedAccessChecker())
 }
 

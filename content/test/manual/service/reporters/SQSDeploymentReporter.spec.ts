@@ -4,7 +4,7 @@ import { EnvironmentConfig, Environment } from "@katalyst/content/Environment";
 
 describe("SQS Deployment Reporter", () => {
 
-    fit(`Simple event reporting`, async () => {
+    it(`Simple event reporting`, async () => {
         const env: Environment = await Environment.getInstance()
         const result: {error?:string, messageId?:string} = await new Promise((resolve,) => {
             const sqsReporter = new SQSDeploymentReporter(

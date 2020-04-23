@@ -5,7 +5,7 @@ import { EthAddress } from "dcl-crypto";
 
 export class NoOpDeploymentReporter implements DeploymentReporter {
 
-    private static readonly LOGGER = log4js.getLogger('DummyContentAnalytics');
+    private static readonly LOGGER = log4js.getLogger('NoOpDeploymentReporter');
 
     reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
         NoOpDeploymentReporter.LOGGER.debug(this.createLogLine(entity, ethAddress, origin))
