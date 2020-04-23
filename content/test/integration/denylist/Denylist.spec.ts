@@ -5,13 +5,13 @@ import { buildDeployData, deleteServerStorage, createIdentity, Identity, parseEn
 import { TestServer } from "../TestServer"
 import { assertFileIsOnServer, assertEntityIsNotDenylisted, assertEntityIsDenylisted, assertFileIsNotOnServer, assertContentNotIsDenylisted, assertContentIsDenylisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
 import { ControllerEntityContent, ControllerDenylistData, ControllerEntity } from "@katalyst/content/controller/Controller"
-import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
 import { mock, when, instance } from "ts-mockito"
 import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster"
 import { DenylistTargetType, buildEntityTarget } from "@katalyst/content/denylist/DenylistTarget"
+import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
 
 describe("Integration - Denylist", () => {
 
@@ -22,7 +22,7 @@ describe("Integration - Denylist", () => {
 
     beforeEach(async () => {
         const env = await new EnvironmentBuilder()
-            .withAnalytics(new MockedContentAnalytics())
+            .withDeploymentReporter(new NoOpDeploymentReporter())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withBean(Bean.CONTENT_CLUSTER, mockedClusterWithIdentityAsOwn(ownerIdentity))

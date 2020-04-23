@@ -6,7 +6,7 @@ import { EthAddress, AuthChain, ValidationResult } from "dcl-crypto"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl"
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator"
-import { DEFAULT_DCL_PARCEL_ACCESS_URL } from "@katalyst/content/Environment"
+import { DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET } from "@katalyst/content/Environment"
 import fs from 'fs';
 import { httpProviderForNetwork } from "../../../contracts/utils"
 import ms from "ms"
@@ -45,7 +45,7 @@ describe("Failed Deployments validations.", () => {
             })))
             .filter(notEmpty)
 
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL);
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET);
 
         if (reviewSceneErrors) {
             console.log('------------------------------')

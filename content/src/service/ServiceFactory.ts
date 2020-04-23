@@ -12,7 +12,7 @@ export class ServiceFactory {
             env.getBean(Bean.AUDIT),
             env.getBean(Bean.POINTER_MANAGER),
             env.getBean(Bean.CONTENT_CLUSTER),
-            env.getBean(Bean.ANALYTICS),
+            env.getBean(Bean.DEPLOYMENT_REPORTER),
             env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER),
             env.getBean(Bean.CACHE_MANAGER),
             env.getBean(Bean.VALIDATIONS),

@@ -6,7 +6,7 @@ import { Timestamp, happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { ServerName } from "./naming/NameKeeper";
-import { ContentAnalytics } from "./analytics/ContentAnalytics";
+import { DeploymentReporter } from "./reporters/DeploymentReporter";
 import { PointerManager, PointerHistory } from "./pointers/PointerManager";
 import { ServiceStorage } from "./ServiceStorage";
 import { CacheByType } from "./caching/Cache"
@@ -35,7 +35,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private auditManager: AuditManager,
         private pointerManager: PointerManager,
         private readonly identityProvider: IdentityProvider,
-        private analytics: ContentAnalytics,
+        private deploymentReporter: DeploymentReporter,
         private failedDeploymentsManager: FailedDeploymentsManager,
         cacheManager: CacheManager,
         private validations: Validations,
@@ -50,14 +50,14 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         auditManager: AuditManager,
         pointerManager: PointerManager,
         identityProvider: IdentityProvider,
-        analytics: ContentAnalytics,
+        deploymentReporter: DeploymentReporter,
         failedDeploymentsManager: FailedDeploymentsManager,
         cacheManager: CacheManager,
         validations: Validations,
         ignoreValidationErrors: boolean = false,
         allowDeploymentsWhenNotInDAO: boolean = false): Promise<ServiceImpl>{
             return new ServiceImpl(storage, historyManager, auditManager, pointerManager, identityProvider,
-                analytics, failedDeploymentsManager, cacheManager, validations, ignoreValidationErrors, allowDeploymentsWhenNotInDAO)
+                deploymentReporter, failedDeploymentsManager, cacheManager, validations, ignoreValidationErrors, allowDeploymentsWhenNotInDAO)
         }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
@@ -195,7 +195,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 await this.pointerManager.commitEntity(entity, entityId => this.entities.get(entity.type, entityId));
 
                 // Record deployment for analytics
-                this.analytics.recordDeployment(this.getOwnName(), entity, ownerAddress, origin)
+                this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
             }
 
             return newAuditInfo.deployedTimestamp

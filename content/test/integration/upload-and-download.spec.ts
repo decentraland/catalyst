@@ -4,12 +4,12 @@ import { EntityType } from "@katalyst/content/service/Entity"
 import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFile } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { MockedContentAnalytics } from "@katalyst/test-helpers/service/analytics/MockedContentAnalytics"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { buildDeployData, deleteServerStorage, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
+import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
 
 describe("End 2 end deploy test", () => {
 
@@ -17,7 +17,7 @@ describe("End 2 end deploy test", () => {
 
     beforeAll(async () => {
         const env = await new EnvironmentBuilder()
-            .withAnalytics(new MockedContentAnalytics())
+            .withDeploymentReporter(new NoOpDeploymentReporter())
             .withSynchronizationManager(new MockedSynchronizationManager())
             .withAccessChecker(new MockedAccessChecker())
             .withConfig(EnvironmentConfig.METRICS, false)

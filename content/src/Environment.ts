@@ -9,8 +9,8 @@ import { ContentStorage } from "./storage/ContentStorage";
 import { MetaverseContentService } from "./service/Service";
 import { HistoryManager } from "./service/history/HistoryManager";
 import { NameKeeper } from "./service/naming/NameKeeper";
-import { ContentAnalyticsFactory } from "./service/analytics/ContentAnalyticsFactory";
-import { ContentAnalytics } from "./service/analytics/ContentAnalytics";
+import { DeploymentReporterFactory } from "./service/reporters/DeploymentReporterFactory";
+import { DeploymentReporter } from "./service/reporters/DeploymentReporter";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
@@ -35,7 +35,7 @@ const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 export const DEFAULT_ETH_NETWORK = "ropsten"
 export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN = 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower-ropsten'
-const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower'
+export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower'
 
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
 
@@ -86,7 +86,7 @@ export const enum Bean {
     HISTORY_MANAGER,
     POINTER_MANAGER,
     NAME_KEEPER,
-    ANALYTICS,
+    DEPLOYMENT_REPORTER,
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
     ACCESS_CHECKER,
@@ -124,6 +124,9 @@ export enum EnvironmentConfig {
     REQUEST_TTL_BACKWARDS,
     DCL_PARCEL_ACCESS_URL,
     ALLOW_DEPLOYMENTS_FOR_TESTING,
+    SQS_QUEUE_URL_REPORTING,
+    SQS_ACCESS_KEY_ID,
+    SQS_SECRET_ACCESS_KEY,
 }
 
 export class EnvironmentBuilder {
@@ -152,8 +155,8 @@ export class EnvironmentBuilder {
         return this
     }
 
-    withAnalytics(contentAnalytics: ContentAnalytics): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.ANALYTICS, contentAnalytics)
+    withDeploymentReporter(deploymentReporter: DeploymentReporter): EnvironmentBuilder {
+        this.baseEnv.registerBean(Bean.DEPLOYMENT_REPORTER, deploymentReporter)
         return this
     }
 
@@ -201,6 +204,9 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING  , () => process.env.ALLOW_DEPLOYMENTS_FOR_TESTING === "true")
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_QUEUE_URL_REPORTING        , () => process.env.SQS_QUEUE_URL_REPORTING)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_ACCESS_KEY_ID              , () => process.env.SQS_ACCESS_KEY_ID)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_SECRET_ACCESS_KEY          , () => process.env.SQS_SECRET_ACCESS_KEY)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
@@ -210,7 +216,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER                , () => FetchHelperFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.ANALYTICS                   , () => ContentAnalyticsFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_REPORTER                   , () => DeploymentReporterFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
         const nameKeeper = await NameKeeperFactory.create(env)
