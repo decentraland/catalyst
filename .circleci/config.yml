@@ -84,7 +84,7 @@ jobs:
           command: npx bazel test //content:unit_test --test_output=all
       - run:
           name: Run integration tests
-          command: echo 'Build number: $CIRCLE_BUILD_NUM - Access Key: $SQS_ACCESS_KEY_ID - Secret: $SQS_SECRET_ACCESS_KEY'
+          command: echo 'Build number $CIRCLE_BUILD_NUM - Access Key $SQS_ACCESS_KEY_ID - Secret $SQS_SECRET_ACCESS_KEY'
         #   echo 'export BS_BUILD="Build No. $CIRCLE_BUILD_NUM for CircleCI"' >> $BASH_ENV
         #   command: SQS_ACCESS_KEY_ID=$SQS_ACCESS_KEY_ID SQS_SECRET_ACCESS_KEY=$SQS_SECRET_ACCESS_KEY npx bazel test //content:integration_test --test_output=all
 
