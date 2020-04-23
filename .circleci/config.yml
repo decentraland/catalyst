@@ -84,8 +84,6 @@ jobs:
           command: npx bazel test //content:unit_test --test_output=all
       - run:
           name: Run integration tests
-          command: echo 'export SQS_ACCESS_KEY_ID=$SQS_ACCESS_KEY_ID' >> $BASH_ENV
-          command: echo 'export SQS_SECRET_ACCESS_KEY=$SQS_SECRET_ACCESS_KEY' >> $BASH_ENV
           command: npx bazel test //content:integration_test --test_output=all
 
   build-lambdas:
