@@ -11,12 +11,14 @@ export interface HistoryManager {
 }
 
 export type DeploymentEvent = {
-    /** The server where the user uploaded the entity */
-    serverName: ServerName,
     entityType: EntityType,
     entityId: EntityId,
-    /** The moment when the server validated and stored the entity */
-    timestamp: Timestamp,
+    /** The moment when this server validated and stored the entity */
+    localTimestamp: Timestamp,
+    /** The server where the user uploaded the entity */
+    origin: ServerName,
+    /** The moment when the original server validated and stored the entity */
+    originTimestamp: Timestamp,
 }
 
 export type DeploymentHistory = DeploymentEvent[]

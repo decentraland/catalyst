@@ -1,11 +1,10 @@
 import { Readable, Duplex } from "stream";
 
 export interface ContentStorage {
-    store(category: string, id: string, content: Buffer, append?: boolean): Promise<void>;
-    delete(category: string, id: string): Promise<void>;
-    getContent(category: string, id: string): Promise<ContentItem | undefined>;
-    listIds(category: string): Promise<string[]>;
-    exists(category: string, id: string): Promise<boolean>;
+    store(id: string, content: Buffer): Promise<void>;
+    delete(id: string): Promise<void>;
+    retrieve(id: string): Promise<ContentItem | undefined>;
+    exist(ids: string[]): Promise<Map<string, boolean>>;
 }
 
 export interface ContentItem {

@@ -1,0 +1,19 @@
+Task to implement DB for control data
+
+1) Split ContentStorage into 2 different interfaces
+   - One for Content Data storage, to store the files containing the content data managed by the Content Server
+   - One for Management Data storage, to store all the management and control data required to provide access to the former.
+
+2) Avoid using the ContentStorage in the following *Storage objects:
+   NamingStorage
+   HistoryStorage
+   PointerStorage
+   FailedDeploymentsStorage
+   AuditStorage
+   DenylistStorage
+
+3) Define what to do with:
+   ServiceStorage: Is it still required?
+   S3ContentStorage
+   FileSystemContentStorage
+
