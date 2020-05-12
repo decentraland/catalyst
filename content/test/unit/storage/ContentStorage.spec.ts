@@ -39,7 +39,7 @@ describe("ContentStorage", () => {
     it(`When content is stored, then we can check if it exists`, async function () {
         await storage.store(category, id, content)
 
-        const exists = await storage.exists(category, id)
+        const exists = await storage.exist(category, id)
 
         expect(exists).toBe(true)
     });
@@ -57,12 +57,12 @@ describe("ContentStorage", () => {
     it(`When content is deleted, then it is no longer available`, async function () {
         await storage.store(category, id, content)
 
-        var exists = await storage.exists(category, id)
+        var exists = await storage.exist(category, id)
         expect(exists).toBe(true)
 
         await storage.delete(category, id)
 
-        exists = await storage.exists(category, id)
+        exists = await storage.exist(category, id)
         expect(exists).toBe(false)
         const ids = await storage.listIds(category)
         expect(ids).toEqual([])

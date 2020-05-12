@@ -33,7 +33,7 @@ export class MockedStorage implements ContentStorage {
             .map(([, id]) => id)
         return Promise.resolve(ids)
     }
-    exists(category: string, id: string): Promise<boolean> {
+    exist(category: string, id: string): Promise<boolean> {
       return Promise.resolve(this.storage.has(this.getKey(category, id)))
     }
 

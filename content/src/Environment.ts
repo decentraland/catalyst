@@ -15,20 +15,22 @@ import { SynchronizationManager } from "./service/synchronization/Synchronizatio
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { AccessChecker } from "./service/access/AccessChecker";
-import { AuditFactory } from "./service/audit/AuditFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
 import { DenylistFactory } from "./denylist/DenylistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
-import { EntityVersion } from "./service/audit/Audit";
+import { EntityVersion } from "./service/Audit";
 import { ContentAuthenticator } from "./service/auth/Authenticator";
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
-import { FailedDeploymentsManagerFactory } from "./service/errors/FailedDeploymentsManagerFactory";
 import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
 import { CacheManagerFactory } from "./service/caching/CacheManagerFactory";
 import { ValidationsFactory } from "./service/validations/ValidationsFactory";
 import { ChallengeSupervisor } from "./service/synchronization/ChallengeSupervisor";
+import { DEFAULT_DATABASE_CONFIG } from "./entrypoints/run-local-database";
+import { RepositoryFactory } from "./storage/RepositoryFactory";
+import { FailedDeploymentsManager } from "./service/errors/FailedDeploymentsManager";
+import { DeploymentManagerFactory } from "./service/deployments/DeploymentManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -90,7 +92,7 @@ export const enum Bean {
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
     ACCESS_CHECKER,
-    AUDIT,
+    DEPLOYMENT_MANAGER,
     CONTENT_CLUSTER,
     EVENT_DEPLOYER,
     DENYLIST,
@@ -100,6 +102,7 @@ export const enum Bean {
     CACHE_MANAGER,
     VALIDATIONS,
     CHALLENGE_SUPERVISOR,
+    REPOSITORY,
 }
 
 export enum EnvironmentConfig {
@@ -127,6 +130,9 @@ export enum EnvironmentConfig {
     SQS_QUEUE_URL_REPORTING,
     SQS_ACCESS_KEY_ID,
     SQS_SECRET_ACCESS_KEY,
+    PSQL_PASSWORD,
+    PSQL_USER,
+    PSQL_DATABASE,
 }
 
 export class EnvironmentBuilder {
@@ -207,10 +213,15 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_QUEUE_URL_REPORTING        , () => process.env.SQS_QUEUE_URL_REPORTING)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_ACCESS_KEY_ID              , () => process.env.SQS_ACCESS_KEY_ID)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_SECRET_ACCESS_KEY          , () => process.env.SQS_SECRET_ACCESS_KEY)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_PASSWORD                  , () => process.env.POSTGRES_PASSWORD ?? DEFAULT_DATABASE_CONFIG.password)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_USER                      , () => process.env.POSTGRES_USER ?? DEFAULT_DATABASE_CONFIG.database)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_DATABASE                  , () => process.env.POSTGRES_DB ?? DEFAULT_DATABASE_CONFIG.database)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
 
+        const repository = await RepositoryFactory.create(env)
+        this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY                  , () => repository)
         this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR        , () => new ChallengeSupervisor())
         this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER               , () => CacheManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER                , () => FetchHelperFactory.create(env))
@@ -224,14 +235,13 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER             , () => ContentClusterFactory.create(env))
         const historyManager = await HistoryManagerFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => historyManager)
-        this.registerBeanIfNotAlreadySet(env, Bean.AUDIT                       , () => AuditFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER          , () => DeploymentManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DENYLIST                    , () => DenylistFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER              , () => AccessCheckerImplFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => FailedDeploymentsManagerFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => new FailedDeploymentsManager())
         this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS                 , () => ValidationsFactory.create(env))
-        const service = await ServiceFactory.create(env);
-        this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => service)
+        this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))

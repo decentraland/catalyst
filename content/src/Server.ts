@@ -53,8 +53,6 @@ export class Server {
     this.registerRoute("/entities", controller, controller.createEntity, HttpMethod.POST, upload.any());
     this.registerRoute("/contents/:hashId", controller, controller.getContent);
     this.registerRoute("/available-content", controller, controller.getAvailableContent);
-    //   this.registerRoute("/pointers/:type"       , controller, controller.getPointers);
-    this.registerRoute("/pointers/:type/:pointer", controller, controller.getPointerHistory);
     this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
     this.registerRoute("/history", controller, controller.getHistory);
     this.registerRoute("/status", controller, controller.getStatus);

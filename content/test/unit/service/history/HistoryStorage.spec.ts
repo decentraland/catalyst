@@ -1,7 +1,7 @@
 import { random } from "faker"
 import { HistoryStorage } from "@katalyst/content/service/history/HistoryStorage";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
-import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
+import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager";
 import { EntityType } from "@katalyst/content/service/Entity";
 import { MockedStorage } from "../../storage/MockedStorage";
 import { sortFromOldestToNewest } from "@katalyst/content/service/time/TimeSorting";
@@ -51,13 +51,13 @@ describe("HistoryStorage", () => {
     });
 
     /** Returns a DeploymentHistory, sorted from oldest to newest */
-    function getRandomEvents(amount: number): DeploymentHistory {
+    function getRandomEvents(amount: number): LegacyDeploymentHistory {
         return sortFromOldestToNewest(new Array(amount)
             .fill("")
             .map(createRandomEvent))
     }
 
-    function createRandomEvent(): DeploymentEvent {
+    function createRandomEvent(): LegacyDeploymentEvent {
         return {
             entityType: EntityType.SCENE,
             entityId: random.alphaNumeric(10),

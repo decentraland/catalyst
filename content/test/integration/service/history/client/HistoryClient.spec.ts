@@ -1,7 +1,7 @@
 import { TestServer } from "../../../TestServer"
 import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
-import { DeploymentEvent, PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent, PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { deleteServerStorage, buildDeployData } from "../../../E2ETestUtils"
@@ -48,11 +48,11 @@ describe("Integration - History Client", function() {
         await validateHistoryThroughClient(server, allEvents, 7)
     })
 
-    async function validateHistoryThroughClient(server: TestServer, expectedEvents: DeploymentEvent[], batchSize?: number): Promise<void> {
-        const executions: {url:string, res: PartialDeploymentHistory}[] = []
+    async function validateHistoryThroughClient(server: TestServer, expectedEvents: LegacyDeploymentEvent[], batchSize?: number): Promise<void> {
+        const executions: {url:string, res: PartialDeploymentLegacyHistory}[] = []
 
         const events = await HistoryClient.consumeAllHistory(new FetchHelper(), server.getAddress(), undefined, undefined, undefined, batchSize,
-        (url:string, res: PartialDeploymentHistory) => {
+        (url:string, res: PartialDeploymentLegacyHistory) => {
             executions.push({
                 url: url,
                 res: res

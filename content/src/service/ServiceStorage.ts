@@ -1,6 +1,4 @@
-import { EntityId, Entity } from "./Entity"
 import { ContentStorage, ContentItem } from "../storage/ContentStorage"
-import { EntityFactory } from "./EntityFactory"
 import { ContentFileHash } from "./Hashing"
 
 export class ServiceStorage {
@@ -17,17 +15,5 @@ export class ServiceStorage {
 
     async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         return this.storage.exist(fileHashes)
-    }
-
-    async getEntityById(id: EntityId): Promise<Entity | undefined> {
-        const contentItem = await this.storage.retrieve(id)
-        if (contentItem) {
-            try {
-                return EntityFactory.fromBufferWithId(await contentItem.asBuffer(), id)
-            } catch {
-                console.warn(`Can not convert file with id ${id} to an Entity.`)
-            }
-        }
-        return undefined
     }
 }

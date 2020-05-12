@@ -3,7 +3,7 @@ import { EnvironmentConfig, Environment, Bean } from "@katalyst/content/Environm
 import { FailedDeploymentsManager, FailureReason, FailedDeployment, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { ContentStorageFactory } from "@katalyst/content/storage/ContentStorageFactory"
 import { FailedDeploymentsManagerFactory } from "@katalyst/content/service/errors/FailedDeploymentsManagerFactory"
-import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { deleteFolderRecursive } from "../E2ETestUtils"
 
@@ -64,12 +64,12 @@ describe("Integration - Failed Deployments Manager", function() {
         expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
     })
 
-    function reportDeployment(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
+    function reportDeployment(deployment: LegacyDeploymentEvent, reason: FailureReason): Promise<void> {
         const { entityType, entityId, timestamp, serverName } = deployment
         return manager.reportFailure(entityType, entityId, timestamp, serverName, reason)
     }
 
-    function buildRandomDeployment(): DeploymentEvent {
+    function buildRandomDeployment(): LegacyDeploymentEvent {
         const timestamp = random.number()
         const serverName = random.alphaNumeric(20)
         const event =  {

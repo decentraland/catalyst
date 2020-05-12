@@ -1,7 +1,7 @@
 import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { EntityType } from "@katalyst/content/service/Entity"
-import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFile } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
@@ -66,7 +66,7 @@ describe("End 2 end deploy test", () => {
         const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, ["0,0"])
         await validateReceivedData(scenesByPointer, deployData)
 
-        const [deploymentEvent]: DeploymentHistory = (await server.getHistory()).events
+        const [deploymentEvent]: LegacyDeploymentHistory = (await server.getHistory()).events
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
     });
 
@@ -92,7 +92,7 @@ describe("End 2 end deploy test", () => {
 
 })
 
-function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
+function validateHistoryEvent(deploymentEvent: LegacyDeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
     expect(deploymentEvent.entityId).toBe(deployData.entityId)
     expect(deploymentEvent.entityType).toBe(entityBeingDeployed.type)
     expect(deploymentEvent.timestamp).toBe(creationTimestamp)

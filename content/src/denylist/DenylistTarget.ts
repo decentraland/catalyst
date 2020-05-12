@@ -71,4 +71,4 @@ export enum DenylistTargetType {
     CONTENT = "content",
     ADDRESS = "address",
 }
-type DenylistTargetId = string
+export type DenylistTargetId = string

@@ -77,6 +77,24 @@ export class ContentCluster implements IdentityProvider {
         return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
     }
 
+    getAddressForServerName(serverName: ServerName): ServerAddress | undefined {
+        if (this.myIdentity && this.myIdentity.name === serverName) {
+            return this.myIdentity.address
+        } else {
+            return Array.from(this.serverClients.entries())
+                .filter(([, client]) => client.getName() === serverName)
+                .map(([address]) => address)[0]
+        }
+    }
+
+    getServerNameForAddress(address: ServerAddress): ServerName | undefined {
+        if (this.myIdentity && this.myIdentity.address === address) {
+            return this.myIdentity.name
+        } else {
+            return this.serverClients.get(address)?.getName()
+        }
+    }
+
     getAllServersInCluster(): ContentServerClient[] {
         return Array.from(this.serverClients.values())
     }

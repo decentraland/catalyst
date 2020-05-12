@@ -10,7 +10,7 @@ import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticat
 
 import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager";
 import ms from "ms";
-import { EntityVersion } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion } from "@katalyst/content/service/Audit";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {

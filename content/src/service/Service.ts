@@ -1,11 +1,13 @@
 import { ContentFileHash } from "./Hashing";
 import { EntityType, Pointer, EntityId, Entity } from "./Entity";
 import { ServerName } from "./naming/NameKeeper";
-import { AuditInfo } from "./audit/Audit";
+import { AuditInfo, AuditInfoExternal, AuditInfoBase } from "./Audit";
 import { Timestamp } from "./time/TimeSorting";
 import { ContentItem } from "../storage/ContentStorage";
-import { FailureReason } from "./errors/FailedDeploymentsManager";
-import { PointerHistory } from "./pointers/PointerManager";
+import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
+import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
+import { PartialDeploymentLegacyHistory } from "./history/HistoryManager";
+import { RepositoryTask, Repository } from "../storage/Repository";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -14,16 +16,17 @@ export const ENTITY_FILE_NAME = 'entity.json';
  * were done directly to it, and it is not aware that the service lives inside a cluster.
  */
 export interface MetaverseContentService {
-    getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>;
-    getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]>;
-    getActivePointers(type: EntityType): Promise<Pointer[]>;
-    getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory>;
-    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
-    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, origin: string): Promise<Timestamp>;
-    getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined>;
+    getEntitiesByPointers(type: EntityType, pointers: Pointer[], repository?: RepositoryTask | Repository): Promise<Entity[]>;
+    getEntitiesByIds(type: EntityType, ids: EntityId[], repository?: RepositoryTask | Repository): Promise<Entity[]>;
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    deployLegacy(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
-    getStatus(): Promise<ServerStatus>;
+    getStatus(): ServerStatus;
+    getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory>;
+    getAllFailedDeployments(): Promise<FailedDeployment[]>;
 }
 
 /**
@@ -31,16 +34,16 @@ export interface MetaverseContentService {
  * and that deployments can also happen on other servers.
  */
 export interface ClusterDeploymentsService {
-    reportErrorDuringSync(failureReason: FailureReason, entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName): Promise<void>;
-    deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
-    deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo, serverName: ServerName): Promise<void>;
+    reportErrorDuringSync(entityType: EntityType, entityId: EntityId, originTimestamp: Timestamp, originServerUrl: ServerAddress, reason: FailureReason, errorDescription?: string): Promise<null>;
+    deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void>;
+    deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
+    areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>;
 }
 
 /** This version of the service can keep track of the immutable time */
 export interface TimeKeepingService {
-    setImmutableTime(immutableTime: Timestamp): Promise<void>;
-    getLastImmutableTime(): Timestamp;
+    setImmutableTime(immutableTime: Timestamp): void;
 }
 
 export type ContentFile = {

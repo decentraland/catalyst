@@ -9,7 +9,7 @@ export class CacheManager {
         this.cacheSizes = new Map(Array.from(cacheSizes.entries()).map(([name, size]) => [name.toUpperCase(), size]))
     }
 
-    buildEntityTypedCache<K, V>(cacheConfig: CacheConfig, calculation: (key: [EntityType, K]) => Promise<V>): CacheByType<K, V> {
+    buildEntityTypedCache<K, V>(cacheConfig: CacheConfig): CacheByType<K, V> {
         const cacheSizes: Map<EntityType, number> = new Map()
 
         Object.values(EntityType).forEach((entityType: EntityType) => {
@@ -18,7 +18,7 @@ export class CacheManager {
             cacheSizes.set(entityType, cacheSize)
         })
 
-        return CacheByType.withCalculation(calculation, cacheSizes)
+        return CacheByType.withCalculation(cacheSizes)
     }
 
     private getCacheName(cacheConfig: CacheConfig, type: EntityType) {

@@ -5,12 +5,12 @@ import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environm
 import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
 import { ControllerEntity, ControllerDenylistData } from "@katalyst/content/controller/Controller"
-import { PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { DeployData, hashAndSignMessage, Identity, parseEntityType } from "./E2ETestUtils"
 import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
+import { AuditInfo } from "@katalyst/content/service/Audit"
 import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
@@ -80,7 +80,7 @@ export class TestServer extends Server {
         return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
     }
 
-    getHistory(): Promise<PartialDeploymentHistory> {
+    getHistory(): Promise<PartialDeploymentLegacyHistory> {
         return this.makeRequest(`${this.getAddress()}/history`)
     }
 

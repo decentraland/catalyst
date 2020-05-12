@@ -1,9 +1,9 @@
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityType, Entity } from "../../../Entity";
-import { DeploymentHistory } from "../../../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
 import { ServerName } from "../../../naming/NameKeeper";
-import { AuditInfo } from "../../../audit/Audit";
+import { LegacyAuditInfo } from "../../../Audit";
 import { ContentServerClient, ConnectionState } from "./ContentServerClient";
 import { ContentCluster } from "../../ContentCluster";
 import { tryOnCluster } from "../../ClusterUtils";
@@ -23,7 +23,7 @@ class RedirectContentServerClient extends ContentServerClient {
             super(name, lastKnownTimestamp)
         }
 
-    getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
+    getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<LegacyDeploymentHistory> {
         return this.redirectCall(server => server.getHistory(from, serverName, to), `get history`)
     }
 
@@ -39,7 +39,7 @@ class RedirectContentServerClient extends ContentServerClient {
         return Promise.resolve(status)
     }
 
-    getAuditInfo(entityType: EntityType, entityId: string): Promise<AuditInfo> {
+    getAuditInfo(entityType: EntityType, entityId: string): Promise<LegacyAuditInfo> {
         return this.redirectCall(server => server.getAuditInfo(entityType, entityId), `get audit info for (${entityType}, ${entityId})`)
     }
 

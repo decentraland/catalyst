@@ -1,15 +1,15 @@
 import log4js from "log4js"
-import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Entity, EntityId } from "../Entity";
 import { ContentFileHash } from "../Hashing";
 import { ENTITY_FILE_NAME, ContentFile, ClusterDeploymentsService } from "../Service";
 import { ContentCluster } from "./ContentCluster";
-import { AuditInfo } from "../audit/Audit";
+import { LegacyAuditInfo, AuditInfoExternal } from "../Audit";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
 import { EventStreamProcessor } from "./EventStreamProcessor";
 import { FailureReason } from "../errors/FailedDeploymentsManager";
+import { DeploymentEventBase } from "../deployments/DeploymentManager";
 
 export class EventDeployer {
 
@@ -22,9 +22,9 @@ export class EventDeployer {
             this.eventProcessor = new EventStreamProcessor((event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
         }
 
-    deployHistories(histories: DeploymentHistory[], options?: HistoryDeploymentOptions) {
+    deployHistories(histories: DeploymentEventBase[][], options?: HistoryDeploymentOptions) {
         // Remove duplicates
-        const map: Map<EntityId, DeploymentEvent> = new Map()
+        const map: Map<EntityId, DeploymentEventBase> = new Map()
         histories.forEach(history => history.forEach(event => map.set(event.entityId, event)))
 
         // Unify
@@ -34,10 +34,13 @@ export class EventDeployer {
         return this.deployHistory(unifiedHistory, options)
     }
 
-    async deployHistory(history: DeploymentHistory, options?: HistoryDeploymentOptions) {
+    async deployHistory(history: DeploymentEventBase[], options?: HistoryDeploymentOptions) {
         // Determine whether I already know the entities
         const entitiesInHistory: EntityId[] = history.map(({ entityId }) => entityId)
-        const newEntities: Set<EntityId> = new Set(await this.filterOutKnownFiles(entitiesInHistory))
+        const deployInfo = await this.service.areEntitiesAlreadyDeployed(entitiesInHistory)
+        const newEntities: Set<EntityId> = new Set(Array.from(deployInfo.entries())
+            .filter(([, deployed]) => !deployed)
+            .map(([entityId]) => entityId))
 
         // Keep only new deployments
         const newDeployments = history.filter(event => newEntities.has(event.entityId));
@@ -54,19 +57,20 @@ export class EventDeployer {
     }
 
     /** Download and prepare everything necessary to deploy an entity */
-    private async prepareDeployment(deployment: DeploymentEvent, source?: ContentServerClient): Promise<DeploymentExecution> {
+    private async prepareDeployment(deployment: DeploymentEventBase, source?: ContentServerClient): Promise<DeploymentExecution> {
         EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
 
         // Download the entity file
         const entityFile: ContentFile | undefined = await this.getEntityFile(deployment, source);
 
         // Get the audit info
-        const auditInfo: AuditInfo | undefined = await this.getAuditInfo(deployment, source)
+        const legacyAuditInfo: LegacyAuditInfo | undefined = await this.getAuditInfo(deployment, source)
+        const auditInfo: AuditInfoExternal | undefined = !legacyAuditInfo ? undefined : { ...legacyAuditInfo, ...deployment }
 
         if (entityFile && auditInfo) {
             if (auditInfo.overwrittenBy) {
                 // Deploy the entity as overwritten
-                return this.buildDeploymentExecution(deployment, () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo, deployment.serverName))
+                return this.buildDeploymentExecution(deployment, () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo))
             } else {
                 // Build entity
                 const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
@@ -79,7 +83,7 @@ export class EventDeployer {
                     files.unshift(entityFile)
 
                     // Since we could fetch all files, deploy the new entity normally
-                    return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo, deployment.serverName))
+                    return this.buildDeploymentExecution(deployment, () => this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo))
                 } else {
                     // Looks like there was a problem fetching one of the files
                     await this.reportError(deployment, FailureReason.FETCH_PROBLEM)
@@ -125,7 +129,7 @@ export class EventDeployer {
         return files
     }
 
-    private async getEntityFile(deployment: DeploymentEvent, source?: ContentServerClient): Promise<ContentFile | undefined> {
+    private async getEntityFile(deployment: DeploymentEventBase, source?: ContentServerClient): Promise<ContentFile | undefined> {
         const file: ContentFile | undefined = await this.getFileOrUndefined(deployment.entityId, source)
 
         // If we could download the entity file, rename it
@@ -142,7 +146,7 @@ export class EventDeployer {
         return this.tryOnClusterOrUndefined(server => server.getContentFile(fileHash), this.cluster, `get file with hash '${fileHash}'`, { preferred: source })
     }
 
-    private getAuditInfo(deployment: DeploymentEvent, source?: ContentServerClient): Promise<AuditInfo | undefined> {
+    private getAuditInfo(deployment: DeploymentEventBase, source?: ContentServerClient): Promise<LegacyAuditInfo | undefined> {
         return this.tryOnClusterOrUndefined(server => server.getAuditInfo(deployment.entityType, deployment.entityId), this.cluster, `get audit info for (${deployment.entityType}, ${deployment.entityId})`, { preferred: source })
     }
 
@@ -156,12 +160,12 @@ export class EventDeployer {
             .map(([fileHash, _]) => fileHash)
     }
 
-    private reportError(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
-        const { entityId, entityType, timestamp, serverName } = deployment
-        return this.service.reportErrorDuringSync(reason, entityType, entityId, timestamp, serverName)
+    private reportError(deployment: DeploymentEventBase, reason: FailureReason, description?: string): Promise<null> {
+        const { entityType, entityId, originTimestamp, originServerUrl } = deployment
+        return this.service.reportErrorDuringSync(entityType, entityId, originTimestamp, originServerUrl, reason, description)
     }
 
-    private buildDeploymentExecution(deploymentEvent: DeploymentEvent, execution: () => Promise<void>): DeploymentExecution {
+    private buildDeploymentExecution(deploymentEvent: DeploymentEventBase, execution: () => Promise<void>): DeploymentExecution {
         return {
             metadata: {
                 deploymentEvent,
@@ -178,7 +182,7 @@ export class EventDeployer {
                 await deploymentExecution.execution()
             } catch (error) {
                 // The deployment failed, so we report it
-                await this.reportError(deploymentExecution.metadata.deploymentEvent, FailureReason.DEPLOYMENT_ERROR)
+                await this.reportError(deploymentExecution.metadata.deploymentEvent, FailureReason.DEPLOYMENT_ERROR, error.message)
                 // Re throw the error
                 throw error
             }
@@ -197,7 +201,7 @@ export class EventDeployer {
 
 export type DeploymentExecution = {
     metadata: {
-        deploymentEvent: DeploymentEvent
+        deploymentEvent: DeploymentEventBase
     },
     execution: () => Promise<void>,
 }

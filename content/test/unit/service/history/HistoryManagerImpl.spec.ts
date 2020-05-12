@@ -1,7 +1,7 @@
 import { random } from "faker"
 import { HistoryStorage } from "@katalyst/content/service/history/HistoryStorage";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
-import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager";
+import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager";
 import { EntityType, Entity } from "@katalyst/content/service/Entity";
 import { MockedStorage } from "../../storage/MockedStorage";
 import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
@@ -59,7 +59,7 @@ describe("HistoryManager", () => {
     type Deployment = {
         entity: Entity,
         timestamp: Timestamp,
-        event: DeploymentEvent
+        event: LegacyDeploymentEvent
     }
 
     /** Returns a list of deployments, sorted from oldest to newest */

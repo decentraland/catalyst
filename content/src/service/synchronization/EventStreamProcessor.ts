@@ -2,10 +2,10 @@ import { Writable } from "stream"
 import parallelTransform from "parallel-transform"
 import log4js from "log4js"
 import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
-import { DeploymentEvent, DeploymentHistory } from "../history/HistoryManager";
-import { sortFromOldestToNewest } from "../time/TimeSorting";
+import { sortNonComparableFromOldestToNewest } from "../time/TimeSorting";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { HistoryDeploymentOptions } from "./EventDeployer";
+import { DeploymentEventBase } from "../deployments/DeploymentManager";
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -21,9 +21,9 @@ export class EventStreamProcessor {
     /**
      * This method takes a history, goes through each event and tries to deploy them locally.
      */
-    async deployHistory(history: DeploymentHistory, options?: HistoryDeploymentOptions) {
+    async deployHistory(history: DeploymentEventBase[], options?: HistoryDeploymentOptions) {
         // Sort from oldest to newest
-        const sortedHistory = sortFromOldestToNewest(history)
+        const sortedHistory = sortNonComparableFromOldestToNewest(history, event => event.originTimestamp)
 
         // Create a readable stream with all the deployments
         const deploymentsStream = streamFrom(sortedHistory.map((event, index) => [index, event]));
@@ -82,5 +82,5 @@ export class EventStreamProcessor {
     }
 }
 
-type DeploymentPreparation = (event: DeploymentEvent, preferred?: ContentServerClient) => Promise<DeploymentExecution>
+type DeploymentPreparation = (event: DeploymentEventBase, preferred?: ContentServerClient) => Promise<DeploymentExecution>
 type DeploymentExecution = () => Promise<void>

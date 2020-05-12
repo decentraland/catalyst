@@ -7,7 +7,7 @@ import { ContentFile } from "@katalyst/content/service/Service";
 import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
-import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/Audit";
 import { Authenticator } from "dcl-crypto";
 
 describe("DenylistServiceDecorator", () => {
@@ -234,7 +234,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = new DenylistServiceDecorator(service, denylist)
 
-        const status = await decorator.getStatus();
+        const status = decorator.getStatus();
 
         expect(status).toEqual(MockedMetaverseContentService.STATUS)
     })

@@ -17,8 +17,9 @@ export enum Validation {
 export class ValidationContext {
 
     static readonly ALL: ValidationContext = new ValidationContext(Object.keys(Validation).map(key => Validation[key]))
-    static readonly LOCAL: ValidationContext = ValidationContext.ALL.without(Validation.MUST_HAVE_FAILED_BEFORE)
-    static readonly SYNCED: ValidationContext = ValidationContext.LOCAL.without(Validation.NO_NEWER, Validation.RECENT, Validation.NO_REDEPLOYS, Validation.REQUEST_SIZE)
+    static readonly LOCAL: ValidationContext = ValidationContext.ALL.without(Validation.MUST_HAVE_FAILED_BEFORE, Validation.DECENTRALAND_ADDRESS, Validation.LEGACY_ENTITY)
+    static readonly LEGACY_ENTITY: ValidationContext = ValidationContext.ALL.without(Validation.MUST_HAVE_FAILED_BEFORE, Validation.REQUEST_SIZE, Validation.ACCESS)
+    static readonly SYNCED: ValidationContext = ValidationContext.LOCAL.without(Validation.NO_NEWER, Validation.RECENT, Validation.REQUEST_SIZE)
     static readonly OVERWRITE: ValidationContext = ValidationContext.SYNCED.without(Validation.CONTENT)
     static readonly FIX_ATTEMPT: ValidationContext = ValidationContext.ALL.without(Validation.REQUEST_SIZE, Validation.NO_NEWER, Validation.RECENT)
 

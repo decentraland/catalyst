@@ -114,7 +114,7 @@ describe("PointerManager", () => {
             return Promise.resolve([entity1, entity2, entity3, entity4, entity5].find(entity => entity.id == entityId))
         }
         for (const entity of entities) {
-            await manager.commitEntity(entity, fetcher);
+            await manager.referenceEntityFromPointers(entity, fetcher);
         }
     }
 

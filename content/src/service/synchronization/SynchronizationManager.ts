@@ -3,7 +3,7 @@ import ms from "ms";
 import log4js from "log4js"
 import { TimeKeepingService } from "../Service";
 import { Timestamp } from "../time/TimeSorting";
-import { DeploymentHistory } from "../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";
@@ -11,6 +11,7 @@ import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
 import { Bootstrapper } from "./Bootstrapper";
 import { Disposable } from "./events/ClusterEvent";
 import { delay } from "decentraland-katalyst-utils/util";
+import { legacyDeploymentEventToDeploymentEventBase } from "./ClusterUtils";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -38,8 +39,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         // Make sure the stopping flag is set to false
         this.stopping = false
 
-        // Read immutable time from the history I have
-        this.lastImmutableTime = this.service.getLastImmutableTime()
+        // Start immutable time as 0, to get all history
+        this.lastImmutableTime = 0
 
         // Connect to the cluster
         await this.cluster.connect(this.lastImmutableTime)
@@ -91,7 +92,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
                 ClusterSynchronizationManager.LOGGER.debug(`Setting immutable time to ${minTimestamp}`)
                 this.lastImmutableTime = minTimestamp
                 this.cluster.setImmutableTime(minTimestamp)
-                await this.service.setImmutableTime(minTimestamp)
+                this.service.setImmutableTime(minTimestamp)
             }
 
             this.synchronizationState = SynchronizationState.SYNCED;
@@ -111,13 +112,16 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private async syncWithContentServer(contentServer: ContentServerClient): Promise<void> {
         try {
             // Get new deployments on a specific content server
-            const newDeployments: DeploymentHistory = await contentServer.getNewDeployments()
+            const newDeploymentsLegacy: LegacyDeploymentHistory = await contentServer.getNewDeployments()
+
+            // Map to the new deployment format
+            const newDeployments = newDeploymentsLegacy.map(event => legacyDeploymentEventToDeploymentEventBase(this.cluster, event))
 
             // Process them
             await this.deployer.deployHistory(newDeployments, { preferredServer: contentServer })
 
             // Let the client know that the deployment was successful, and update the estimated immutable time
-            await contentServer.updateEstimatedLocalImmutableTime(newDeployments[0]?.timestamp)
+            await contentServer.updateEstimatedLocalImmutableTime(newDeployments[0]?.originTimestamp)
         } catch(error) {
             ClusterSynchronizationManager.LOGGER.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
         }
@@ -130,7 +134,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         ClusterSynchronizationManager.LOGGER.info(`Handling removal of ${serverRemoved}. It's estimated local immutable time is ${estimatedLocalImmutableTime}`)
 
         // Prepare request
-        const request = new MultiServerHistoryRequest(remainingServers, this.deployer, estimatedLocalImmutableTime, serverRemoved)
+        const request = new MultiServerHistoryRequest(remainingServers, this.deployer, this.cluster, estimatedLocalImmutableTime, serverRemoved)
 
         // Execute the request
         return request.execute()

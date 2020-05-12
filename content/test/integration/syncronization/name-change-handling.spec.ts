@@ -8,7 +8,7 @@ import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfte
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
 import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
 import { EntityType } from "@katalyst/content/service/Entity"
 
 
@@ -76,7 +76,7 @@ describe("End 2 end - Name change handling", function() {
         return new TestServer(env)
     }
 
-    function buildEventWithName(entity: ControllerEntity, serverName: string, timestamp: Timestamp): DeploymentEvent {
+    function buildEventWithName(entity: ControllerEntity, serverName: string, timestamp: Timestamp): LegacyDeploymentEvent {
         return {
             serverName: serverName,
             entityId: entity.id,

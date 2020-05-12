@@ -4,27 +4,24 @@ import fs from "fs"
 import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
 import { MetaverseContentService, ContentFile } from "../service/Service";
 import { Timestamp } from "../service/time/TimeSorting";
-import { HistoryManager } from "../service/history/HistoryManager";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
 import { parseDenylistTypeAndId } from "../denylist/DenylistTarget";
-import { NO_TIMESTAMP, EntityVersion, AuditInfo } from "../service/audit/Audit";
+import { EntityVersion, AuditInfoBase } from "../service/Audit";
 import { CURRENT_CONTENT_VERSION, CURRENT_COMMIT_HASH } from "../Environment";
-import { EthAddress, Signature, AuthLink } from "dcl-crypto";
+import { EthAddress, Signature, AuthLink, AuthChain } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
 import { ContentItem } from "../storage/ContentStorage";
-import { FailedDeploymentsManager } from "../service/errors/FailedDeploymentsManager";
 import { SynchronizationManager } from "../service/synchronization/SynchronizationManager";
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
+import { ContentAuthenticator } from "../service/auth/Authenticator";
 
 export class Controller {
 
     private static readonly LOGGER = log4js.getLogger('Controller');
 
     constructor(private readonly service: MetaverseContentService,
-        private readonly historyManager: HistoryManager,
         private readonly denylist: Denylist,
-        private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly synchronizationManager: SynchronizationManager,
         private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly ethNetwork: string) { }
@@ -98,9 +95,8 @@ export class Controller {
         const files                 = req.files
 
         try {
-            const auditInfo: AuditInfo = {
+            const auditInfo: AuditInfoBase = {
                 authChain: Authenticator.createSimpleAuthChain(entityId, ethAddress, signature),
-                deployedTimestamp: NO_TIMESTAMP,
                 version: CURRENT_CONTENT_VERSION,
                 originalMetadata: {
                     originalVersion,
@@ -112,7 +108,7 @@ export class Controller {
             if (files instanceof Array) {
                 deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
             }
-            const creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, 'legacy')
+            const creationTimestamp = await this.service.deployLegacy(deployFiles, entityId, auditInfo)
             res.send({
                 creationTimestamp: creationTimestamp
             })
@@ -144,7 +140,7 @@ export class Controller {
                 deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
             }
 
-            const auditInfo: AuditInfo = { authChain, deployedTimestamp: NO_TIMESTAMP, version: CURRENT_CONTENT_VERSION }
+            const auditInfo: AuditInfoBase = { authChain, version: CURRENT_CONTENT_VERSION }
             let creationTimestamp: Timestamp
             if (fixAttempt) {
                 creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
@@ -196,37 +192,6 @@ export class Controller {
         res.send(Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({ cid: fileHash, available: isAvailable })))
     }
 
-    async getPointers(req: express.Request, res: express.Response) {
-        // Method: GET
-        // Path: /pointers/:type
-        const type:EntityType  = this.parseEntityType(req.params.type)
-
-        // Validate type is valid
-        if (!type) {
-            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
-            return
-        }
-
-        const pointers = await this.service.getActivePointers(type)
-        res.send(pointers)
-    }
-
-    async getPointerHistory(req: express.Request, res: express.Response) {
-        // Method: GET
-        // Path: /pointers/:type/:pointer
-        const type:EntityType  = this.parseEntityType(req.params.type)
-        const pointer:Pointer  = req.params.pointer
-
-        // Validate type is valid
-        if (!type) {
-            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
-            return
-        }
-
-        const pointerHistory = await this.service.getPointerHistory(type, pointer)
-        res.send(pointerHistory)
-    }
-
     async getAudit(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /audit/:type/:entityId
@@ -257,7 +222,7 @@ export class Controller {
         const offset     = this.asInt(req.query.offset)
         const limit      = this.asInt(req.query.limit)
 
-        const history = await this.historyManager.getHistory(from, to, serverName, offset, limit)
+        const history = await this.service.getLegacyHistory(from, to, serverName, offset, limit)
         res.send(history)
     }
     private asInt(value: any): number | undefined {
@@ -268,7 +233,7 @@ export class Controller {
         // Method: GET
         // Path: /status
 
-        const serverStatus = await this.service.getStatus();
+        const serverStatus = this.service.getStatus();
 
         const synchronizationStatus = this.synchronizationManager.getStatus()
 
@@ -287,13 +252,20 @@ export class Controller {
         const blocker: EthAddress = req.body.blocker;
         const timestamp: Timestamp = req.body.timestamp;
         const signature: Signature = req.body.signature;
+        let authChain: AuthChain = req.body.authChain
 
         const type = req.params.type
         const id = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
+
+        if (!authChain && blocker && signature) {
+            const messageToSign = Denylist.buildMessageToSign(target, timestamp)
+            authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
+        }
+
         try {
-            await this.denylist.addTarget(target, { blocker, timestamp ,signature })
+            await this.denylist.addTarget(target, { timestamp, authChain })
             res.status(201).send()
         } catch (error) {
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
@@ -308,15 +280,18 @@ export class Controller {
         const blocker: EthAddress = req.query.blocker;
         const timestamp: Timestamp = req.query.timestamp;
         const signature: Signature = req.query.signature;
+        let authChain: AuthChain;
 
         const type = req.params.type
         const id = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
+        const messageToSign = Denylist.buildMessageToSign(target, timestamp)
+        authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
 
         // TODO: Based on the error, return 400 or 404
         try {
-            await this.denylist.removeTarget(target, { blocker, timestamp ,signature })
+            await this.denylist.removeTarget(target, { timestamp, authChain })
             res.status(200).send()
         } catch (error) {
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
@@ -328,8 +303,8 @@ export class Controller {
         // Path: /denylist
 
         const denylistTargets = await this.denylist.getAllDenylistedTargets();
-        const controllerTargets: ControllerDenylistData[] = Array.from(denylistTargets.entries())
-            .map(([target, metadata]) => ({ target: target.asObject(), metadata: metadata }))
+        const controllerTargets: ControllerDenylistData[] = denylistTargets
+            .map(({ target, metadata }) => ({ target: target.asObject(), metadata }))
         res.send(controllerTargets)
     }
 
@@ -349,7 +324,7 @@ export class Controller {
         // Method: GET
         // Path: /failedDeployments
 
-        const failedDeployments = await this.failedDeploymentsManager.getAllFailedDeployments()
+        const failedDeployments = await this.service.getAllFailedDeployments()
         res.send(failedDeployments)
     }
 
@@ -389,9 +364,8 @@ export type ControllerDenylistData = {
         id: string,
     },
     metadata: {
-        blocker: EthAddress,
         timestamp: Timestamp,
-        signature: Signature,
+        authChain: AuthChain,
     }
 }
 

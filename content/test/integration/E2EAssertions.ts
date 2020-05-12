@@ -4,9 +4,9 @@ import { TestServer } from "./TestServer"
 import { ControllerEntity, ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
+import { AuditInfo } from "@katalyst/content/service/Audit"
 import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
 import { parseEntityType } from "./E2ETestUtils"
 
@@ -39,19 +39,19 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
 }
 
 /** Please set the expected events from older to newer */
-export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: DeploymentEvent[]) {
-    const deploymentHistory: DeploymentHistory = (await server.getHistory()).events
+export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: LegacyDeploymentEvent[]) {
+    const deploymentHistory: LegacyDeploymentHistory = (await server.getHistory()).events
     assert.equal(deploymentHistory.length, expectedEvents.length, `Expected to find ${expectedEvents.length} deployments in history on server ${server.getAddress()}. Instead, found ${deploymentHistory.length}.`)
     const { historySize } = await server.getStatus()
     assert.equal(historySize, expectedEvents.length, `Expected to find a history of size ${expectedEvents.length} on the status on ${server.getAddress()}. Instead, found ${historySize}.`)
     for (let i = 0; i < expectedEvents.length; i++) {
-        const expectedEvent: DeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
-        const actualEvent: DeploymentEvent = deploymentHistory[i]
+        const expectedEvent: LegacyDeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
+        const actualEvent: LegacyDeploymentEvent = deploymentHistory[i]
         assertEqualsDeployment(actualEvent, expectedEvent)
     }
 }
 
-export function assertEqualsDeployment(actualEvent: DeploymentEvent, expectedEvent: DeploymentEvent) {
+export function assertEqualsDeployment(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
     assert.equal(actualEvent.entityId, expectedEvent.entityId)
     assert.equal(actualEvent.entityType, expectedEvent.entityType)
     assert.equal(actualEvent.timestamp, expectedEvent.timestamp)
@@ -105,7 +105,7 @@ export async function assertContentIsDenylisted(server: TestServer, entity: Cont
     assert.ok(auditInfo.denylistedContent!!.includes(contentHash))
 }
 
-export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): DeploymentEvent {
+export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): LegacyDeploymentEvent {
     return {
         serverName: server.namePrefix,
         entityId: entity.id,
