@@ -20,7 +20,8 @@ export type KnownPeerData = {
 export type MinPeerData = { id: string; rooms?: string[] };
 
 export interface IPeer {
-  peerId: string;
+  peerId?: string;
+  peerIdOrFail(): string;
   currentRooms: Room[];
   logLevel: LogLevelString;
   callback: (sender: string, room: string, payload: any) => void;

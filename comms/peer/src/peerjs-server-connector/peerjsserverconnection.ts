@@ -45,7 +45,7 @@ export function createValidationMessage(myId: string, payload: string) {
   return {
     type: ServerMessageType.Validation,
     src: myId,
-    payload
+    payload,
   };
 }
 
@@ -57,13 +57,13 @@ export function createCandidateMessage(myId: string, peerData: PeerData, candida
   const payload = {
     ...candidateData,
     connectionId,
-    sessionId: peerData.sessionId
+    sessionId: peerData.sessionId,
   };
   const candidate = {
     type: ServerMessageType.Candidate,
     src: myId,
     dst: peerData.id,
-    payload
+    payload,
   };
   return candidate;
 }
@@ -73,7 +73,7 @@ function createMessage(myId: string, dst: string, type: ServerMessageType, paylo
     type,
     src: myId,
     dst,
-    payload
+    payload,
   };
 }
 
@@ -146,8 +146,8 @@ export class PeerJSServerConnection extends EventEmitter {
       path: "/",
       key: PeerJSServerConnection.DEFAULT_KEY,
       token: util.randomToken(),
-      socketBuilder: url => new WebSocket(url),
-      ...options
+      socketBuilder: (url) => new WebSocket(url),
+      ...options,
     };
 
     this._options = options;
@@ -182,14 +182,7 @@ export class PeerJSServerConnection extends EventEmitter {
     // Start the server connection
     this._initializeServerConnection();
 
-    if (userId) {
-      this._initialize(userId);
-    } else {
-      this._api
-        .retrieveId()
-        .then(uuid => this._initialize(uuid))
-        .catch(error => this._abort(PeerErrorType.ServerError, error));
-    }
+    this._initialize(userId ?? null);
   }
 
   // Initialize the 'socket' (which is actually a mix of XHR streaming and
@@ -206,11 +199,11 @@ export class PeerJSServerConnection extends EventEmitter {
       this._options.heartbeatExtras
     );
 
-    this.socket.on(SocketEventType.Message, data => {
+    this.socket.on(SocketEventType.Message, (data) => {
       this._handleMessage(data);
     });
 
-    this.socket.on(SocketEventType.Error, error => {
+    this.socket.on(SocketEventType.Error, (error) => {
       this._abort(PeerErrorType.SocketError, error);
     });
 
@@ -235,7 +228,7 @@ export class PeerJSServerConnection extends EventEmitter {
   /** Initialize a connection with the server. */
   private _initialize(id: string | null): void {
     this._id = id;
-    this.socket.start(this.id || "foo", this._options.token || "asd");
+    this.socket.start(this.id, this._options.token || "asd");
   }
 
   /** Handles messages from the server. */
@@ -246,14 +239,18 @@ export class PeerJSServerConnection extends EventEmitter {
     const peerId = message.src;
 
     switch (type) {
+      case ServerMessageType.AssignedId:
+        this._id = message.payload.id;
+        this.emit(PeerEventType.AssignedId, this.id)
+        break;
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
         this._open = true;
         const { authHandler } = this._options;
         if (authHandler && payload) {
           authHandler(payload)
-            .then(response => this.sendValidation(response))
-            .catch(e => {
+            .then((response) => this.sendValidation(response))
+            .catch((e) => {
               logger.error("error while trying to handle auth message");
               return "";
             });
@@ -394,7 +391,7 @@ export class PeerJSServerConnection extends EventEmitter {
   listAllPeers(cb = (_: any[]) => {}): void {
     this._api
       .listAllPeers()
-      .then(peers => cb(peers))
-      .catch(error => this._abort(PeerErrorType.ServerError, error));
+      .then((peers) => cb(peers))
+      .catch((error) => this._abort(PeerErrorType.ServerError, error));
   }
 }

@@ -19,7 +19,8 @@ export enum PeerEventType {
   Call = "call",
   Disconnected = "disconnected",
   Error = "error",
-  Valid = "valid"
+  Valid = "valid",
+  AssignedId = "assigned_id"
 }
 
 export enum PeerErrorType {
@@ -70,7 +71,8 @@ export enum ServerMessageType {
   PeerJoinedRoom = "PEER_JOINED_ROOM", // Another peer joined a particular room.
   PeerLeftLayer = "PEER_LEFT_LAYER", // Another peer left the layer.
   PeerJoinedLayer = "PEER_JOINED_LAYER", // Another peer joined the layer.
-  OptimalNetworkResponse = "OPTIMAL_NETWORK_RESPONSE" // Lighthouse response to network optimization request
+  OptimalNetworkResponse = "OPTIMAL_NETWORK_RESPONSE", // Lighthouse response to network optimization request
+  AssignedId = "ASSIGNED_ID"
 }
 
 export enum PeerHeaders {

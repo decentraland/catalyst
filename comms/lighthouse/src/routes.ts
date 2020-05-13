@@ -34,18 +34,18 @@ export function configureRoutes(app: express.Express, services: Services, option
       name: options.name,
       version: options.version,
       currenTime: Date.now(),
-      env: options.env
+      env: options.env,
     };
 
     if (req.query.includeLayers === "true") {
-      status.layers = layersService.getLayers().map(it => mapLayerToJson(it, true));
+      status.layers = layersService.getLayers().map((it) => mapLayerToJson(it, true));
     }
 
     res.send(status);
   });
 
   app.get("/layers", (req, res, next) => {
-    res.send(layersService.getLayers().map(it => mapLayerToJson(it, req.query.usersParcels === "true")));
+    res.send(layersService.getLayers().map((it) => mapLayerToJson(it, req.query.usersParcels === "true")));
   });
 
   app.get("/layers/:layerId", validateLayerExists, (req, res, next) => {
@@ -119,8 +119,8 @@ export function configureRoutes(app: express.Express, services: Services, option
       res.send(`
       strict digraph graphName {
         concentrate=true
-        ${topologyInfo.map(it => `"${it.id}"[label="${it.id}\\nconns:${it.connectedPeerIds?.length ?? 0}"];`).join("\n")}
-        ${topologyInfo.map(it => (it.connectedPeerIds?.length ? it.connectedPeerIds.map(connected => `"${it.id}"->"${connected}";`).join("\n") : `"${it.id}";`)).join("\n")}
+        ${topologyInfo.map((it) => `"${it.id}"[label="${it.id}\\nconns:${it.connectedPeerIds?.length ?? 0}"];`).join("\n")}
+        ${topologyInfo.map((it) => (it.connectedPeerIds?.length ? it.connectedPeerIds.map((connected) => `"${it.id}"->"${connected}";`).join("\n") : `"${it.id}";`)).join("\n")}
       }`);
     } else {
       res.send(topologyInfo);
@@ -132,7 +132,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       name: layer.id,
       usersCount: layer.peers.length,
       maxUsers: layer.maxPeers,
-      ...(includeUserParcels && { usersParcels: layer.peers.map(it => peersService.getPeerInfo(it).parcel).filter(it => !!it) })
+      ...(includeUserParcels && { usersParcels: layer.peers.map((it) => peersService.getPeerInfo(it).parcel).filter((it) => !!it) }),
     };
   }
 
@@ -142,7 +142,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       401: "unauthorized",
       402: "method-not-allowed",
       403: "forbidden",
-      404: "not-found"
+      404: "not-found",
     };
 
     if (err instanceof RequestError) {
@@ -153,6 +153,15 @@ export function configureRoutes(app: express.Express, services: Services, option
   }
 
   function mapUsersToJson(user?: PeerInfo[]) {
-    return user?.map(it => ({ id: it.id, userId: it.id, protocolVersion: it.protocolVersion, peerId: it.id, parcel: it.parcel, position: it.position }));
+    return user?.map((it) => ({
+      id: it.id,
+      userId: it.id,
+      protocolVersion: it.protocolVersion,
+      peerId: it.id,
+      parcel: it.parcel,
+      position: it.position,
+      lastPing: it.lastPing,
+      address: it.address,
+    }));
   }
 }
