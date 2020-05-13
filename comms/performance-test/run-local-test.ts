@@ -9,10 +9,10 @@ require("isomorphic-fetch");
 function bazelExec(command: string, label: string, env: object = {}) {
   const child = spawn(`yarn`, ["bazel", "run", command], {
     cwd: process.env.BUILD_WORKSPACE_DIRECTORY,
-    env: { PATH: process.env.PATH, ...env }
+    env: { PATH: process.env.PATH, ...env },
   });
 
-  child.stdout?.on("data", data => console.log(`\n[${label}]\n`, data.toString(), `[/${label}]\n`));
+  child.stdout?.on("data", (data) => console.log(`\n[${label}]\n`, data.toString(), `[/${label}]\n`));
 
   return child;
 }
@@ -20,9 +20,9 @@ function bazelExec(command: string, label: string, env: object = {}) {
 async function killProcesses(...pids: number[]) {
   return Promise.all(
     pids.map(
-      pid =>
+      (pid) =>
         new Promise((resolve, reject) => {
-          treekill(pid, err => {
+          treekill(pid, (err) => {
             if (err) {
               reject(err);
             } else {
@@ -36,7 +36,7 @@ async function killProcesses(...pids: number[]) {
 
 function awaitOutput(process: ChildProcess, output: string) {
   return new Promise((resolve, reject) => {
-    process.stdout?.on("data", data => {
+    process.stdout?.on("data", (data) => {
       if (data.toString().includes(output)) {
         resolve();
       }
@@ -50,11 +50,12 @@ const lighthouse = bazelExec("//comms/lighthouse:server", "LIGHTHOUSE", { NO_AUT
 
 const killAllChildren = async (browsers: puppeteer.Browser[]) => {
   console.log("Test finished. Killing all processes");
-  await Promise.all(browsers.map(it => it.close()));
+  await Promise.all(browsers.map((it) => it.close()));
   await killProcesses(devServer.pid, lighthouse.pid, resultsServer.pid);
 };
 
 const browserCount = parseInt(process.env.BROWSERS_COUNT ?? "10");
+const idLength = parseInt(process.env.PEER_ID_LENGTH ?? "42");
 
 const resultsServerAPI = new TestServerAPIClient("http://localhost:9904");
 
@@ -71,7 +72,7 @@ const resultsServerAPI = new TestServerAPIClient("http://localhost:9904");
 
     console.log("Running test with id: " + testId);
 
-    browsers = await runClients(browserCount, testId);
+    browsers = await runClients(browserCount, testId, idLength);
 
     await fetch(`http://localhost:9904/test/${testId}/finish`, { method: "PUT" });
     console.log(`Test ${testId} finished`);
