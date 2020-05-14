@@ -20,7 +20,7 @@ import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 import { IdService } from "./idService";
 
-const LIGHTHOUSE_VERSION = "0.1";
+const LIGHTHOUSE_VERSION = "0.2";
 const DEFAULT_ETH_NETWORK = "ropsten";
 
 const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
