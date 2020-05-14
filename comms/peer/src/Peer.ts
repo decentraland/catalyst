@@ -82,7 +82,7 @@ export class Peer implements IPeer {
 
   constructor(
     lighthouseUrl: string,
-    public peerId: string,
+    public peerId?: string,
     public callback: PacketCallback = () => {},
     private config: PeerConfig = { authHandler: (msg) => Promise.resolve(msg), statusHandler: () => {} }
   ) {
@@ -173,6 +173,16 @@ export class Peer implements IPeer {
       }),
       ...(this.config.socketBuilder ? { socketBuilder: this.config.socketBuilder } : {}),
     });
+
+    this.peerJsConnection.on(PeerEventType.AssignedId, id => this.peerId = id);
+  }
+
+  public peerIdOrFail(): string {
+    if(this.peerId) {
+      return this.peerId
+    } else {
+      throw new Error("This peer doesn't have an id yet")
+    }
   }
 
   private expireMessages() {
@@ -315,10 +325,11 @@ export class Peer implements IPeer {
 
   async setLayer(layer: string): Promise<void> {
     if (this.disposed) return;
+    const id = this.peerIdOrFail();
     const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
       method: "PUT",
       // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-      bodyObject: { id: this.peerId, userId: this.peerId, peerId: this.peerId, protocolVersion: PROTOCOL_VERSION },
+      bodyObject: { id, userId: id, peerId: id, protocolVersion: PROTOCOL_VERSION },
     });
 
     const layerUsers: PeerResponse[] = json;
@@ -348,10 +359,11 @@ export class Peer implements IPeer {
 
     this.currentRooms.push(room);
 
+    const id = this.peerIdOrFail();
     const { json } = await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}`, {
       method: "PUT",
       // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-      bodyObject: { id: this.peerId, userId: this.peerId, peerId: this.peerId },
+      bodyObject: { id, userId: id, peerId: id },
     });
 
     const roomUsers: PeerResponse[] = json;
@@ -612,7 +624,7 @@ export class Peer implements IPeer {
   async leaveRoom(roomId: string) {
     this.assertPeerInLayer();
 
-    await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}/users/${this.peerId}`, { method: "DELETE" });
+    await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}/users/${this.peerIdOrFail()}`, { method: "DELETE" });
 
     const index = this.currentRooms.findIndex((room) => room.id === roomId);
 
@@ -687,7 +699,7 @@ export class Peer implements IPeer {
     connection.on("connect", () => this.handleConnection(peerData));
 
     connection.on("error", (err) => {
-      this.log(LogLevel.ERROR, "error in peer connection " + connectionIdFor(this.peerId, peerData.id, peerData.sessionId), err);
+      this.log(LogLevel.ERROR, "error in peer connection " + connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId), err);
       connection.removeAllListeners();
       connection.destroy();
       this.handleDisconnection(peerData);
@@ -828,7 +840,7 @@ export class Peer implements IPeer {
   }
 
   private handleDisconnection(peerData: PeerData) {
-    this.log(LogLevel.INFO, "DISCONNECTED from " + peerData.id + " through " + connectionIdFor(this.peerId, peerData.id, peerData.sessionId));
+    this.log(LogLevel.INFO, "DISCONNECTED from " + peerData.id + " through " + connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId));
     // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
     if (this.connectedPeers[peerData.id]) {
       delete this.connectedPeers[peerData.id];
@@ -849,7 +861,7 @@ export class Peer implements IPeer {
   }
 
   private handleConnection(peerData: PeerData) {
-    this.log(LogLevel.INFO, "CONNECTED to " + peerData.id + " through " + connectionIdFor(this.peerId, peerData.id, peerData.sessionId));
+    this.log(LogLevel.INFO, "CONNECTED to " + peerData.id + " through " + connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId));
 
     this.peerConnectionPromises[peerData.id]?.forEach(($) => $.resolve());
     delete this.peerConnectionPromises[peerData.id];
@@ -893,7 +905,7 @@ export class Peer implements IPeer {
       expireTime: type.expirationTime ?? -1,
       discardOlderThan: type.discardOlderThan ?? -1,
       timestamp: new Date().getTime(),
-      src: this.peerId,
+      src: this.peerIdOrFail(),
       hops: 0,
       ttl: this.getTTL(sequenceId, type),
       receivedBy: [],
@@ -944,7 +956,9 @@ export class Peer implements IPeer {
   }
 
   private sendPacket(packet: Packet) {
-    if (!packet.receivedBy.includes(this.peerId)) packet.receivedBy.push(this.peerId);
+    const id = this.peerIdOrFail();
+
+    if (!packet.receivedBy.includes(id)) packet.receivedBy.push(this.peerIdOrFail());
 
     const peersToSend = Object.keys(this.connectedPeers).filter((it) => !packet.receivedBy.includes(it));
     if (packet.optimistic) {
@@ -976,7 +990,7 @@ export class Peer implements IPeer {
   }
 
   private handleSignal(peerData: PeerData) {
-    const connectionId = connectionIdFor(this.peerId, peerData.id, peerData.sessionId);
+    const connectionId = connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId);
     return (data: SignalData) => {
       if (this.disposed) return;
 
@@ -1041,7 +1055,7 @@ export class Peer implements IPeer {
         initiator,
         config: this.connectionConfig,
         channelConfig: {
-          label: connectionIdFor(this.peerId, peerId, sessionId),
+          label: connectionIdFor(this.peerIdOrFail(), peerId, sessionId),
         },
         wrtc: this.wrtc,
         objectMode: true,
@@ -1202,7 +1216,8 @@ export class Peer implements IPeer {
   }
 
   private checkForCrossOffers(peerId: string, sessionId?: string) {
-    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) && (!sessionId || this.connectedPeers[peerId].sessionId !== sessionId) && this.peerId < peerId;
+    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) &&
+      (!sessionId || this.connectedPeers[peerId].sessionId !== sessionId) && this.peerIdOrFail() < peerId;
     if (isCrossOfferToBeDiscarded) {
       this.log(LogLevel.WARN, "Received offer/candidate for already existing peer but it was discarded: " + peerId);
     }

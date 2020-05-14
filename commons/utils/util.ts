@@ -38,3 +38,5 @@ export function randomBetween(min: number, max: number) {
 export function average(numbers: number[]) {
   return numbers.reduce((a, b) => a + b, 0) / numbers.length;
 }
+
+export const DEFAULT_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-!#$%&/()<>{}[]+*=,.;:|"

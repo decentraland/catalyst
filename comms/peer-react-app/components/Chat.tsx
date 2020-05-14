@@ -62,7 +62,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   const [newRoomName, setNewRoomName] = useState("");
   const messagesEndRef: any = useRef();
 
-  document.title = props.peer.peerId
+  document.title = props.peer.peerIdOrFail()
 
   props.peer.callback = (sender, room, payload) => {
     if (!joinedRooms.some(joined => joined.id === room)) {
@@ -98,7 +98,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }
 
   function sendMessage() {
-    appendMessage(currentRoom, props.peer.peerId, message);
+    appendMessage(currentRoom, props.peer.peerIdOrFail(), message);
     props.peer.sendMessage(currentRoom, { type: "chat", message }, PeerMessageTypes.reliable("chat"));
     setMessage("");
   }

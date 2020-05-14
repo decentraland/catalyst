@@ -1,6 +1,7 @@
 import { EventEmitter } from "eventemitter3";
 import logger from "./logger";
 import { SocketEventType, ServerMessageType } from "./enums";
+import { ServerMessage } from "./servermessage";
 
 export type SocketType = {
   onmessage: any;
@@ -19,7 +20,7 @@ export type SocketBuilder = (url: string) => SocketType;
  */
 export class Socket extends EventEmitter {
   private _disconnected = false;
-  private _id?: string;
+  private _id: string | null = null;
   private _messagesQueue: Array<any> = [];
   private _wsUrl: string;
   private _socket: SocketType;
@@ -43,10 +44,14 @@ export class Socket extends EventEmitter {
   }
 
   /** Check in with ID or get one from server. */
-  start(id: string, token: string): void {
+  start(id: string | null, token: string): void {
     this._id = id;
 
-    this._wsUrl += "&id=" + id + "&token=" + token;
+    if (this._id) {
+      this._wsUrl += "&id=" + id;
+    }
+
+    this._wsUrl += "&token=" + token;
 
     this._startWebSocket();
   }
@@ -59,8 +64,8 @@ export class Socket extends EventEmitter {
 
     this._socket = this.socketBuilder(this._wsUrl);
 
-    this._socket.onmessage = event => {
-      let data;
+    this._socket.onmessage = (event) => {
+      let data: ServerMessage;
 
       try {
         data = JSON.parse(event.data);
@@ -70,10 +75,14 @@ export class Socket extends EventEmitter {
         return;
       }
 
+      if (data.type === ServerMessageType.AssignedId) {
+        this._id = data.payload.id;
+      }
+
       this.emit(SocketEventType.Message, data);
     };
 
-    this._socket.onclose = event => {
+    this._socket.onclose = (event) => {
       logger.log("Socket closed.", event);
 
       this._disconnected = true;

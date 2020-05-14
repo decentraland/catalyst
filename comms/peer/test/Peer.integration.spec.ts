@@ -31,7 +31,7 @@ class SocketMock implements SocketType {
   close(code?: number, reason?: string): void {}
 
   send(data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView): void {
-    this.destinations.forEach($ => $.onmessage({ data }));
+    this.destinations.forEach(($) => $.onmessage({ data }));
   }
 }
 
@@ -39,7 +39,7 @@ const messageHandler: PacketCallback = (sender, room, payload) => {
   // console.log(`Received message from ${sender} in ${room}`, payload);
 };
 
-describe("Peer Integration Test", function() {
+describe("Peer Integration Test", function () {
   let roomPeers: Record<string, MinPeerData[]>;
   let layerPeers: Record<string, MinPeerData[]>;
 
@@ -49,7 +49,7 @@ describe("Peer Integration Test", function() {
     const socket = new SocketMock(socketDestination);
 
     const peer = new Peer("http://notimportant:8888", peerId, callback, {
-      socketBuilder: () => socket
+      socketBuilder: () => socket,
     });
 
     sockets[peerId] = socket;
@@ -95,24 +95,24 @@ describe("Peer Integration Test", function() {
     expect(roomPeers[roomId]).toBeDefined();
     expect(roomPeers[roomId].length).toBe(1);
 
-    const peerRoom = peer.currentRooms.find(room => room.id === roomId)!;
+    const peerRoom = peer.currentRooms.find((room) => room.id === roomId)!;
     expect(peerRoom).toBeDefined();
 
     expect(peerRoom.id).toBe(roomId);
     expect(peerRoom.users.length).toBe(1);
-    expect(peerRoom.users.includes(peer.peerId)).toBeTrue();
+    expect(peerRoom.users.includes(peer.peerIdOrFail())).toBeTrue();
   }
 
   function notify(peers: MinPeerData[], notificationKey: string, notification: ServerMessageType, peerData: MinPeerData, collectionId: string) {
     console.log("Notifying peers", notification, peers, peerData, collectionId);
-    peers.forEach(it =>
+    peers.forEach((it) =>
       sockets[it.id]?.onmessage({
         data: JSON.stringify({
           type: notification,
           src: "__lighthouse_notification__",
           dst: it.id,
-          payload: { ...peerData, [notificationKey]: collectionId }
-        })
+          payload: { ...peerData, [notificationKey]: collectionId },
+        }),
       })
     );
   }
@@ -123,7 +123,7 @@ describe("Peer Integration Test", function() {
         collectionGetter()[collectionId] = [];
       }
 
-      if (collectionGetter()[collectionId].some($ => $.id === peerPair.id)) return Promise.resolve(new Response(JSON.stringify(collectionGetter()[collectionId])));
+      if (collectionGetter()[collectionId].some(($) => $.id === peerPair.id)) return Promise.resolve(new Response(JSON.stringify(collectionGetter()[collectionId])));
 
       const toNotify = collectionGetter()[collectionId].slice();
 
@@ -142,7 +142,7 @@ describe("Peer Integration Test", function() {
         return Promise.resolve(new Response(JSON.stringify([])));
       }
 
-      const index = collection.findIndex(u => u.id === peerId);
+      const index = collection.findIndex((u) => u.id === peerId);
       if (index === -1) {
         return Promise.resolve(new Response(JSON.stringify(collection)));
       }
@@ -235,7 +235,7 @@ describe("Peer Integration Test", function() {
   it("Sends and receives data", async () => {
     const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
 
-    const peer1MessagePromise = new Promise(resolve => {
+    const peer1MessagePromise = new Promise((resolve) => {
       peer1.callback = (sender, room, payload) => {
         resolve({ sender, room, payload });
       };
@@ -248,7 +248,7 @@ describe("Peer Integration Test", function() {
     expect(received).toEqual({
       sender: "peer2",
       room: "room",
-      payload: { hello: "world" }
+      payload: { hello: "world" },
     });
   });
 
@@ -277,7 +277,7 @@ describe("Peer Integration Test", function() {
     return peer
       .awaitConnectionEstablished()
       .then(() => new Error("Promise should not be resolved"))
-      .catch(e => {});
+      .catch((e) => {});
   });
 
   it("Does not see peers in other rooms", async () => {
@@ -318,7 +318,7 @@ describe("Peer Integration Test", function() {
     expect(received).toEqual({
       sender: "peer2",
       room: "room",
-      payload: { hello: "world" }
+      payload: { hello: "world" },
     });
     expectSinglePeerInRoom(peer3, "room3");
 
@@ -395,6 +395,18 @@ describe("Peer Integration Test", function() {
     expectPeerToHaveConnectionsWith(peer, mock2);
   });
 
+  it("sets its id once logged into the server", async () => {
+    const socket = new SocketMock([]);
+
+    const peer = new Peer("http://notimportant:8888", undefined, messageHandler, {
+      socketBuilder: () => socket,
+    });
+
+    socket.onmessage({data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id: "assigned" } })});
+
+    expect(peer.peerIdOrFail()).toBe("assigned");
+  });
+
   function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
     expectPeerToBeInRoomWith(peer, roomId, otherPeer);
     expectPeerToBeConnectedTo(peer, otherPeer);
@@ -408,13 +420,13 @@ describe("Peer Integration Test", function() {
   }
 
   function expectPeerToBeInRoomWith(peer: Peer, roomId: string, ...otherPeers: Peer[]) {
-    const peerRoom = peer.currentRooms.find(room => room.id === roomId)!;
+    const peerRoom = peer.currentRooms.find((room) => room.id === roomId)!;
     expect(peerRoom).toBeDefined();
     expect(peerRoom.id).toBe(roomId);
     expect(peerRoom.users.length).toBe(otherPeers.length + 1);
 
     for (const otherPeer of otherPeers) {
-      expect(peerRoom.users.includes(otherPeer.peerId)).toBeTrue();
+      expect(peerRoom.users.includes(otherPeer.peerIdOrFail())).toBeTrue();
     }
   }
 });

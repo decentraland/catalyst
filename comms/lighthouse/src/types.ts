@@ -2,10 +2,12 @@ import { Position } from "decentraland-katalyst-utils/Positions";
 
 export type PeerInfo = {
   id: string;
+  address?: string;
   protocolVersion?: number;
   parcel?: [number, number];
   position?: Position;
   layer?: string;
+  lastPing?: number;
 };
 
 export type PeerRequest = {
