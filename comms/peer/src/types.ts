@@ -1,5 +1,5 @@
 import { PeerMessageType } from "./messageTypes";
-import { Position } from "decentraland-katalyst-utils/Positions";
+import { Position } from "../../../commons/utils/Positions";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 
 type PacketSubtypeData = {

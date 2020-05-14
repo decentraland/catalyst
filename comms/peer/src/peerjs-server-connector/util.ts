@@ -1,4 +1,4 @@
-import { DEFAULT_ID_ALPHABET } from "decentraland-katalyst-utils/util";
+import { DEFAULT_ID_ALPHABET } from "../../../../commons/utils/util";
 
 // const DEFAULT_CONFIG = {
 //   iceServers: [

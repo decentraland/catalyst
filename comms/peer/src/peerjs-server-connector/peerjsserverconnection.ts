@@ -6,7 +6,7 @@ import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import { PeerData } from "../Peer";
-import { Position } from "decentraland-katalyst-utils/Positions";
+import { Position } from "../../../../commons/utils/Positions";
 
 export type MessageHandler = {
   handleMessage(messsage: ServerMessage): void;
