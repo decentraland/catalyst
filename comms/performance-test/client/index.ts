@@ -16,7 +16,9 @@ const statsSubmitInterval = parseInt(urlParams.get("statsSubmitInterval") ?? "20
 const lighthouseUrl = urlParams.get("lighthouseUrl") ?? "http://localhost:9000";
 const statsServerUrl = urlParams.get("statsServerUrl") ?? "http://localhost:9904";
 const testId = urlParams.get("testId");
-const pingInterval = parseInt(urlParams.get("pingInterval") ?? "9")
+const pingInterval = parseInt(urlParams.get("pingInterval") ?? "9");
+
+const peerIdLength = parseInt(urlParams.get("peerIdLength") ?? "42"); // We use a string of length 42 to emulate a ethereum address as per bandwidth
 
 if (!testId) {
   console.error("Missing parameter testId! No results will be submited to stats server");
@@ -227,7 +229,7 @@ async function createPeer() {
     rotation: [0, 0, 0, 0],
     peer: new Peer(
       lighthouseUrl,
-      util.generateToken(42), // We use a random string of length 42 to emulate a ethereum address as per bandwidth
+      util.generateToken(peerIdLength),
       (sender, room, payload: Uint8Array) => {
         const message = CommsMessage.decode(Reader.create(payload));
 
@@ -248,8 +250,8 @@ async function createPeer() {
 
   await simulatedPeer.peer.awaitConnectionEstablished();
 
-  await retry (() => simulatedPeer.peer.setLayer("blue"))
-  await retry (() => simulatedPeer.peer.joinRoom("room"))
+  await retry(() => simulatedPeer.peer.setLayer("blue"));
+  await retry(() => simulatedPeer.peer.joinRoom("room"));
 
   simulatedPeer.peer.stats.onPeriodicStatsUpdated = (stats) => {
     if (testOngoing()) submitStats(simulatedPeer, stats).catch((e) => console.error("Error submiting stats to server", e));
