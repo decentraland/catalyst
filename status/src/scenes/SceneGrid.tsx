@@ -4,10 +4,11 @@ import { DisplayError } from '../components/DisplayError'
 import { fetchJSON } from '../components/fetchJSON'
 import { ServerAware } from '../layout/ServerAware'
 import { DisplayScene } from './ScenesList'
+import { buildContentServerUrl } from '../buildServerUrl'
 
 export function SceneGrid(props: { scenes: string[] } & ServerAware) {
   const { server } = props
-  const contentServer = 'https://' + server + '/content/'
+  const contentServer = buildContentServerUrl(server)
   const { data, error } = useSWR(contentServer + 'entities/scenes?id=' + props.scenes.join('&id='), fetchJSON)
   return (
     <div>

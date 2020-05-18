@@ -1,11 +1,12 @@
 import moment from 'moment'
 import React from 'react'
+import { buildContentServerUrl } from '../buildServerUrl'
 import { shortenAddress } from '../comms/Comms'
 import { ServerAware } from '../layout/ServerAware'
 
 export function Profile(props: { profile: any } & ServerAware) {
   const { server } = props
-  const contentServer = 'https://' + server + '/content/'
+  const contentServer = buildContentServerUrl(server)
   const data = props.profile.metadata.avatars[0]
   return (
     <div>

@@ -1,5 +1,6 @@
 import React from "react";
 import useSWR from "swr";
+import { buildCommsServerUrl, buildContentServerUrl, buildLambdasServerUrl } from "../buildServerUrl";
 import { DisplayError } from "../components/DisplayError";
 import { DisplayObject } from "../components/DisplayObject";
 import { fetchJSON } from "../components/fetchJSON";
@@ -7,9 +8,12 @@ import { ServerAware } from "../layout/ServerAware";
 
 export function Dashboard(props: ServerAware) {
   const { server } = props
-  const { data, error } = useSWR("https://" + server + "/content/status", fetchJSON);
-  const { data: commsData, error: error2 } = useSWR("https://" + server + "/comms/status", fetchJSON);
-  const { data: lambdaData, error: error3 } = useSWR("https://" + server + "/lambdas/status", fetchJSON);
+  const contentServer = buildContentServerUrl(server)
+  const commsServer = buildCommsServerUrl(server)
+  const lambdaServer = buildLambdasServerUrl(server)
+  const { data, error } = useSWR(contentServer + "/status", fetchJSON);
+  const { data: commsData, error: error2 } = useSWR(commsServer + "/status", fetchJSON);
+  const { data: lambdaData, error: error3 } = useSWR(lambdaServer + "/status", fetchJSON);
   return (
     <div>
       <h2>Server status</h2>

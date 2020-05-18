@@ -7,6 +7,7 @@ import { Address } from 'web3x/address'
 import { Eth } from 'web3x/eth'
 import { create, fromPrivate } from 'web3x/eth-lib/account'
 import { bufferToHex } from 'web3x/utils'
+import { buildContentServerUrl } from '../buildServerUrl'
 import { fetchJSON } from '../components/fetchJSON'
 import { catalysts } from '../contracts/offline'
 import { ServerAware } from '../layout/ServerAware'
@@ -105,7 +106,7 @@ export function denyBy(type: string, provider: any, identity: AuthIdentity, cont
 
 export function Denylist(props: ServerAware) {
   const { server } = props
-  const contentServer = `https://${server}/content/`
+  const contentServer = buildContentServerUrl(server)
   const { data } = useSWR(contentServer + 'denylist', fetchJSON)
   const [provider, setProvider]: any = useState(null)
   const [identity, setIdentity]: any = useState(null)
@@ -134,8 +135,8 @@ export function Denylist(props: ServerAware) {
             ))}
         </ul>
       ) : (
-        <h5>Empty</h5>
-      )}
+          <h5>Empty</h5>
+        )}
       {provider ? (
         provider.selectedAddress.toLowerCase() === catalystOwner.toLowerCase() ? (
           <>
@@ -161,19 +162,19 @@ export function Denylist(props: ServerAware) {
             </form>
           </>
         ) : (
-          <>
-            <h4>Log in as the catalyst owner to access the denylist</h4>
-            <h5>The current address is {provider.selectedAddress}</h5>
-          </>
-        )
+            <>
+              <h4>Log in as the catalyst owner to access the denylist</h4>
+              <h5>The current address is {provider.selectedAddress}</h5>
+            </>
+          )
       ) : (
-        <>
-          <h4>Login to manage the denylists</h4>
-          <form onSubmit={connect}>
-            <button type="submit">Connect</button>
-          </form>
-        </>
-      )}
+          <>
+            <h4>Login to manage the denylists</h4>
+            <form onSubmit={connect}>
+              <button type="submit">Connect</button>
+            </form>
+          </>
+        )}
     </div>
   )
 }

@@ -5,11 +5,6 @@ const WalletConnectProvider = require('@walletconnect/web3-provider')
  * Setup the orchestra
  */
 export function init() {
-  console.log('Initializing example')
-  console.log('WalletConnectProvider is', WalletConnectProvider)
-  // Tell Web3modal what providers we have available.
-  // Built-in web browser provider (only one can exist as a time)
-  // like MetaMask, Brave or Opera is added automatically by Web3modal
   const providerOptions = {
     walletconnect: {
       package: WalletConnectProvider,

@@ -4,6 +4,7 @@ import { DisplayError } from '../components/DisplayError'
 import { fetchJSON } from '../components/fetchJSON'
 import { ServerAware } from '../layout/ServerAware'
 import { Profile } from './Profile'
+import { buildContentServerUrl } from '../buildServerUrl'
 
 export function ProfilesGrid(
   props: {
@@ -11,7 +12,7 @@ export function ProfilesGrid(
   } & ServerAware
 ) {
   const { server } = props
-  const contentServer = 'https://' + server + '/content/'
+  const contentServer = buildContentServerUrl(server)
   const { data, error } = useSWR(contentServer + 'entities/profiles?id=' + props.profiles.join('&id='), fetchJSON)
   return (
     <div>

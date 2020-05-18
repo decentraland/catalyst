@@ -1,5 +1,6 @@
 import React from 'react'
 import useSWR from 'swr'
+import { buildCommsServerUrl } from '../buildServerUrl'
 import { DisplayError } from '../components/DisplayError'
 import { fetchJSON } from '../components/fetchJSON'
 import { Loading } from '../components/Loading'
@@ -12,7 +13,7 @@ export const shortenAddress = (address: string) => [address.substr(0, 6), addres
 
 export function Comms(props: ServerAware) {
   const { server } = props
-  const commsServer = `https://${server}/comms/`
+  const commsServer = buildCommsServerUrl(server)
   const { data: comms, error: error1 } = useSWR(commsServer + 'status', fetchJSON)
   const { data, error } = useSWR(commsServer + 'layers', fetchJSON)
   const layers = data ? data.filter((_: any) => _.usersCount > 0) : []
