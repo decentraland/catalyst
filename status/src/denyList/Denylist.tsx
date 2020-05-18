@@ -156,7 +156,7 @@ export function Denylist(props: ServerAware) {
               <button type="submit">Submit</button>
             </form>
             <h5>Deny by parcel coordinate</h5>
-            <form onSubmit={denyBy('pointer', provider, identity, contentServer)}>
+            <form onSubmit={denyBy('scene', provider, identity, contentServer)}>
               <input className="input-denylist" name="pointer" id="deny-pointer"></input>
               <button type="submit">Submit</button>
             </form>

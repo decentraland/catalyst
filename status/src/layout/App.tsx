@@ -30,7 +30,7 @@ const routes = (props: ServerAware) => ({
 
 function App() {
   const [active, setActive] = useState('/' + window.location.pathname.split('/')[1])
-  const [server, setServer] = useState('peer.decentraland.org')
+  const [server, setServer] = useState(process.env['REACT_APP_CATALYST_URL'] ?? 'peer.decentraland.org')
   const RouteResult = useRoutes(routes({ server, setServer }))
   return (
     <div className="App">
