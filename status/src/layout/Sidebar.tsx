@@ -1,6 +1,7 @@
 import React from "react";
 import { navigate } from "hookrouter";
-export function Sidebar(props: { active: string; setActive: (path: string) => void }) {
+import { ServerAware } from "./ServerAware";
+export function Sidebar(props: { active: string; setActive: (path: string) => void } & ServerAware) {
   const areas: any[] = [
     ["/", "", "header link", "Catalyst Manager"],
     ["/comms", "comms", "link", "Comms"],

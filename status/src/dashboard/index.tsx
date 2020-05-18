@@ -3,9 +3,10 @@ import useSWR from "swr";
 import { DisplayError } from "../components/DisplayError";
 import { DisplayObject } from "../components/DisplayObject";
 import { fetchJSON } from "../components/fetchJSON";
-import { server } from "../server";
+import { ServerAware } from "../layout/ServerAware";
 
-export function Dashboard() {
+export function Dashboard(props: ServerAware) {
+  const { server } = props
   const { data, error } = useSWR("https://" + server + "/content/status", fetchJSON);
   const { data: commsData, error: error2 } = useSWR("https://" + server + "/comms/status", fetchJSON);
   const { data: lambdaData, error: error3 } = useSWR("https://" + server + "/lambdas/status", fetchJSON);

@@ -9,8 +9,7 @@ import { create, fromPrivate } from 'web3x/eth-lib/account'
 import { bufferToHex } from 'web3x/utils'
 import { fetchJSON } from '../components/fetchJSON'
 import { catalysts } from '../contracts/offline'
-import { contentServer } from '../layout/App'
-import { server } from '../server'
+import { ServerAware } from '../layout/ServerAware'
 import { onConnect } from '../web3/onConnect'
 
 export function getFromStorage(key: string): any {
@@ -74,7 +73,7 @@ async function getIdentity(provider: any) {
   return getSignatureChain(provider, ephemeralIdentity)
 }
 
-export function denyBy(type: string, provider: any, identity: AuthIdentity) {
+export function denyBy(type: string, provider: any, identity: AuthIdentity, contentServer: string) {
   return (ev: any) => {
     const data = (document.getElementById('deny-' + type) as any).value
     const timestamp = new Date().getTime()
@@ -104,7 +103,9 @@ export function denyBy(type: string, provider: any, identity: AuthIdentity) {
   }
 }
 
-export function Denylist() {
+export function Denylist(props: ServerAware) {
+  const { server } = props
+  const contentServer = `https://${server}/content/`
   const { data } = useSWR(contentServer + 'denylist', fetchJSON)
   const [provider, setProvider]: any = useState(null)
   const [identity, setIdentity]: any = useState(null)
@@ -139,22 +140,22 @@ export function Denylist() {
         provider.selectedAddress.toLowerCase() === catalystOwner.toLowerCase() ? (
           <>
             <h5>Deny by deployer address</h5>
-            <form onSubmit={denyBy('address', provider, identity)}>
+            <form onSubmit={denyBy('address', provider, identity, contentServer)}>
               <input className="input-denylist" name="address" id="deny-address"></input>
               <button type="submit">Submit</button>
             </form>
             <h5>Deny by content hash</h5>
-            <form onSubmit={denyBy('content', provider, identity)}>
+            <form onSubmit={denyBy('content', provider, identity, contentServer)}>
               <input className="input-denylist" name="content" id="deny-content"></input>
               <button type="submit">Submit</button>
             </form>
             <h5>Deny by entity id</h5>
-            <form onSubmit={denyBy('entity', provider, identity)}>
+            <form onSubmit={denyBy('entity', provider, identity, contentServer)}>
               <input className="input-denylist" name="entity" id="deny-entity"></input>
               <button type="submit">Submit</button>
             </form>
             <h5>Deny by parcel coordinate</h5>
-            <form onSubmit={denyBy('pointer', provider, identity)}>
+            <form onSubmit={denyBy('pointer', provider, identity, contentServer)}>
               <input className="input-denylist" name="pointer" id="deny-pointer"></input>
               <button type="submit">Submit</button>
             </form>
