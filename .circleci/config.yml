@@ -22,12 +22,15 @@ references:
     attach_workspace:
       at: *workspace_root
 
+  .image_client: &image_client
+    image: circleci/node:10-browsers
+
   .working_directory_root: &working_directory_root
     working_directory: *workspace_root
 
   .base_env: &base_env
-    machine:
-      docker_layer_caching: true
+    docker:
+      - <<: *image_client
     working_directory: *workspace_root
 
   .all_branches_and_tags: &all_branches_and_tags
@@ -50,7 +53,6 @@ jobs:
 
     steps:
       - checkout
-      - update_node_version
 
       # Download and cache dependencies
       - restore_cache:
@@ -76,7 +78,6 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
-      - update_node_version
       - run:
           name: Run tests
           command: npx bazel test //comms/lighthouse:unit_test --test_output=all
@@ -85,13 +86,14 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
-      - update_node_version
       - run:
           name: Run tests
           command: npx bazel test //comms/peer:config_test --test_output=all
 
   build-content:
-    <<: *base_env
+    machine:
+      docker_layer_caching: true
+    working_directory: *workspace_root
     steps:
       - <<: *attach_root
       - update_node_version
@@ -106,7 +108,6 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
-      - update_node_version
       - run:
           name: Run tests
           command: npx bazel test //lambdas:unit_test --test_output=all
@@ -114,7 +115,6 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
-      - update_node_version
       - run:
           name: Run servers tests
           command: npx bazel test //commons/servers:unit_test --test_output=all
