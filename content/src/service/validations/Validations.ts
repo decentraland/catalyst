@@ -5,7 +5,7 @@ import { ContentFile } from '../Service';
 import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
-import { AuditInfo, EntityVersion, AuditInfoBase } from "../Audit";
+import { EntityVersion, AuditInfoBase } from "../Audit";
 import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { DeploymentStatus, NoFailure } from "../errors/FailedDeploymentsManager";
@@ -154,15 +154,15 @@ export class ValidatorInstance {
     async validateLegacyEntity(entityToBeDeployed: Entity,
         auditInfoBeingDeployed: AuditInfoBase,
         entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>,
-        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfo | undefined>,
+        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfoBase | undefined>,
         validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
             if (auditInfoBeingDeployed.originalMetadata && auditInfoBeingDeployed.originalMetadata.originalVersion === EntityVersion.V2) {
                 const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
-                const currentAuditInfos: Map<Entity, AuditInfo | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, AuditInfo | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
+                const currentAuditInfos: Map<Entity, AuditInfoBase | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, AuditInfoBase | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
                 Array.from(currentAuditInfos.entries())
                     .filter(([, currentAuditInfo]) => !!currentAuditInfo)
-                    .map<[Entity, AuditInfo]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
+                    .map<[Entity, AuditInfoBase]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
                     .forEach(([currentEntity, currentAuditInfo]) => {
                     if (happenedBeforeEntities(currentEntity, entityToBeDeployed)) {
                         if (currentAuditInfo.version > auditInfoBeingDeployed.version) {

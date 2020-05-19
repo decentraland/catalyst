@@ -16,7 +16,6 @@ export class ServiceFactory {
             env.getBean(Bean.DEPLOYMENT_MANAGER),
             env.getBean(Bean.VALIDATIONS),
             env.getBean(Bean.REPOSITORY),
-            env.getConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS),
             env.getConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING));
     }
 }

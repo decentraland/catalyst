@@ -36,7 +36,6 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private readonly deploymentManager: DeploymentManager,
         private readonly validations: Validations,
         private readonly repository: Repository,
-        private readonly ignoreValidationErrors: boolean = false,
         private readonly allowDeploymentsWhenNotInDAO: boolean = false) {
     }
 
@@ -131,7 +130,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             // Validate that if the entity was already deployed, the status it was left is what we expect
             await validation.validateThatEntityFailedBefore(entity, (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id), validationContext)
 
-            if (!this.ignoreValidationErrors && validation.getErrors().length > 0) {
+            if (validation.getErrors().length > 0) {
                 throw new Error(validation.getErrors().join('\n'))
             }
 

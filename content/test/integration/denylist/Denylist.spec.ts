@@ -11,6 +11,7 @@ import { mock, when, instance } from "ts-mockito"
 import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster"
 import { DenylistTargetType, buildEntityTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
+import { MockedContentCluster } from "@katalyst/test-helpers/service/synchronization/MockedContentCluster"
 
 describe("Integration - Denylist", () => {
 
@@ -23,7 +24,7 @@ describe("Integration - Denylist", () => {
     beforeEach(async () => {
         server = await testEnv.configServer()
             .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-            .withBean(Bean.CONTENT_CLUSTER, mockedClusterWithIdentityAsOwn(ownerIdentity))
+            .withBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withAddress(ownerIdentity.address))
             .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, decentralandIdentity.address)
             .andBuild()
 

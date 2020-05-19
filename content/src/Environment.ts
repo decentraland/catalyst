@@ -5,15 +5,9 @@ import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
 import { NameKeeperFactory } from "./service/naming/NameKeeperFactory";
-import { ContentStorage } from "./storage/ContentStorage";
-import { MetaverseContentService } from "./service/Service";
-import { HistoryManager } from "./service/history/HistoryManager";
 import { DeploymentReporterFactory } from "./service/reporters/DeploymentReporterFactory";
-import { DeploymentReporter } from "./service/reporters/DeploymentReporter";
-import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
-import { AccessChecker } from "./service/access/AccessChecker";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
 import { DenylistFactory } from "./denylist/DenylistFactory";
@@ -126,7 +120,6 @@ export enum EnvironmentConfig {
     SEGMENT_WRITE_KEY,
     UPDATE_FROM_DAO_INTERVAL,
     SYNC_WITH_SERVERS_INTERVAL,
-    IGNORE_VALIDATION_ERRORS,
     ALLOW_LEGACY_ENTITIES,
     DECENTRALAND_ADDRESS,
     ETH_NETWORK,
@@ -164,36 +157,6 @@ export class EnvironmentBuilder {
         }
     }
 
-    withStorage(storage: ContentStorage): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.STORAGE, storage)
-        return this
-    }
-
-    withService(service: MetaverseContentService): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.SERVICE, service)
-        return this
-    }
-
-    withHistoryManager(historyManager: HistoryManager): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.HISTORY_MANAGER, historyManager)
-        return this
-    }
-
-    withDeploymentReporter(deploymentReporter: DeploymentReporter): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.DEPLOYMENT_REPORTER, deploymentReporter)
-        return this
-    }
-
-    withSynchronizationManager(synchronizationManager: SynchronizationManager): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.SYNCHRONIZATION_MANAGER, synchronizationManager)
-        return this
-    }
-
-    withAccessChecker(accessChecker: AccessChecker): EnvironmentBuilder {
-        this.baseEnv.registerBean(Bean.ACCESS_CHECKER, accessChecker)
-        return this
-    }
-
     withBean(bean: Bean, value: any): EnvironmentBuilder {
         this.baseEnv.registerBean(bean, value)
         return this
@@ -215,7 +178,6 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.NAME_PREFIX                    , () => process.env.NAME_PREFIX ?? '')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL       , () => process.env.UPDATE_FROM_DAO_INTERVAL ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL     , () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.IGNORE_VALIDATION_ERRORS       , () => false)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS           , () => ContentAuthenticator.DECENTRALAND_ADDRESS)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES          , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK                    , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)

@@ -4,40 +4,19 @@ export class MockedStorage implements ContentStorage {
 
     private storage: Map<string, Buffer> = new Map()
 
-    store(category: string, id: string, content: Buffer, append?: boolean): Promise<void> {
-        const key = this.getKey(category, id)
-        if (append) {
-            const alreadyStoredContent: Buffer | undefined = this.storage.get(key)
-            if (alreadyStoredContent) {
-                this.storage.set(key, Buffer.concat([alreadyStoredContent, content]))
-            } else {
-                this.storage.set(key, content)
-            }
-        } else {
-            this.storage.set(key, content)
-        }
+    store(id: string, content: Buffer): Promise<void> {
+        this.storage.set(id, content)
         return Promise.resolve()
     }
-    delete(category: string, id: string): Promise<void> {
-        this.storage.delete(this.getKey(category, id))
+    delete(id: string): Promise<void> {
+        this.storage.delete(id)
         return Promise.resolve()
     }
-    getContent(category: string, id: string): Promise<ContentItem | undefined> {
-        const content = this.storage.get(this.getKey(category, id))
+    retrieve(id: string): Promise<ContentItem | undefined> {
+        const content = this.storage.get(id)
         return Promise.resolve(content ? SimpleContentItem.fromBuffer(content) : undefined)
     }
-    listIds(category: string): Promise<string[]> {
-        const ids = Array.from(this.storage.keys())
-            .map((key) => key.split("___"))
-            .filter(([cat, ]) => cat == category)
-            .map(([, id]) => id)
-        return Promise.resolve(ids)
-    }
-    exist(category: string, id: string): Promise<boolean> {
-      return Promise.resolve(this.storage.has(this.getKey(category, id)))
-    }
-
-    private getKey(category: string, id: string): string {
-        return `${category}___${id}`
+    exist(ids: string[]): Promise<Map<string, boolean>> {
+        return Promise.resolve(new Map(ids.map(id => [id, this.storage.has(id)])))
     }
 }

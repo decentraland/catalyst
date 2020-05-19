@@ -7,7 +7,6 @@ xdescribe("S3ContentStorage", () => {
     // TODO: Reuse ContentStorage.spec.ts but with a different configuration.
 
     let storage: ContentStorage
-    let category: string
     let id: string
     let content: Buffer
 
@@ -19,7 +18,6 @@ xdescribe("S3ContentStorage", () => {
         await deleteAllInsideBucket()
         storage = await S3ContentStorage.build(accessKeyId, secretAccessKey, bucket)
 
-        category = "some-category"
         id = "some-id"
         content = Buffer.from("123")
     })
@@ -68,50 +66,40 @@ xdescribe("S3ContentStorage", () => {
     }
 
     it(`When content is stored, then it can be retrieved`, async () => {
-        await storage.store(category, id, content)
+        await storage.store(id, content)
 
-        const retrievedContent = await storage.getContent(category, id)
+        const retrievedContent = await storage.retrieve(id)
         expect(await retrievedContent?.asBuffer()).toEqual(content);
     });
 
-    it(`When content is stored, then it can be listed`, async function () {
-        await storage.store(category, id, content)
-
-        const ids = await storage.listIds(category)
-
-        expect(ids).toEqual([id])
-    });
-
     it(`When content is stored, then we can check if it exists`, async function () {
-        await storage.store(category, id, content)
+        await storage.store(id, content)
 
-        const exists = await storage.exist(category, id)
+        const exists = await storage.exist([id])
 
-        expect(exists).toBe(true)
+        expect(exists.get(id)).toBe(true)
     });
 
     it(`When content is stored on already existing id, then it overwrites the previous content`, async function () {
         const newContent = Buffer.from("456")
 
-        await storage.store(category, id, content)
-        await storage.store(category, id, newContent)
+        await storage.store(id, content)
+        await storage.store(id, newContent)
 
-        const retrievedContent = await storage.getContent(category, id)
+        const retrievedContent = await storage.retrieve(id)
         expect(await retrievedContent?.asBuffer()).toEqual(newContent);
     });
 
     it(`When content is deleted, then it is no longer available`, async function () {
-        await storage.store(category, id, content)
+        await storage.store(id, content)
 
-        var exists = await storage.exist(category, id)
-        expect(exists).toBe(true)
+        var exists = await storage.exist([id])
+        expect(exists.get(id)).toBe(true)
 
-        await storage.delete(category, id)
+        await storage.delete(id)
 
-        exists = await storage.exist(category, id)
-        expect(exists).toBe(false)
-        const ids = await storage.listIds(category)
-        expect(ids).toEqual([])
+        exists = await storage.exist([id])
+        expect(exists.get(id)).toBe(false)
     });
 
 });
