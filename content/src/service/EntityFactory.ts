@@ -67,8 +67,7 @@ export class EntityFactory {
     }
 
     private static isPointerArray <T> (array: T[]): Boolean {
-        return array.map(this.isString)
-            .reduce((accum, value) => accum && value)
+        return array.every(this.isString)
     }
 
     private static isString(value: any): Boolean {

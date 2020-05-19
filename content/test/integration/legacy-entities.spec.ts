@@ -1,38 +1,27 @@
 import fetch from "node-fetch"
 import FormData from "form-data"
-import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environment"
+import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ContentFile } from "@katalyst/content/service/Service"
-import { deleteServerStorage, createIdentity, buildDeployDataWithIdentity, DeployData } from "./E2ETestUtils"
+import { createIdentity, buildDeployDataWithIdentity, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { MockedSynchronizationManager } from "../helpers/service/synchronization/MockedSynchronizationManager"
-import { MockedAccessChecker } from "../helpers/service/access/MockedAccessChecker"
 import { assertResponseIsOkOrThrow } from "./E2EAssertions"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
-import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
+import { loadTestEnvironment } from "./E2ETestEnvironment"
 
 describe("End 2 end - Legacy Entities", () => {
 
     const identity = createIdentity()
+    const testEnv = loadTestEnvironment()
     let server: TestServer
 
     beforeEach(async () => {
-        const env = await new EnvironmentBuilder()
-            .withDeploymentReporter(new NoOpDeploymentReporter())
-            .withSynchronizationManager(new MockedSynchronizationManager())
-            .withAccessChecker(new MockedAccessChecker())
-            .withConfig(EnvironmentConfig.SERVER_PORT, 8080)
-            .withConfig(EnvironmentConfig.METRICS, false)
+        server = await testEnv.configServer()
+            .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
             .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
             .withConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES, true)
-            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
-            .build()
-        server = new TestServer(env)
+            .andBuild()
         await server.start()
-    })
-
-    afterEach(async () => {
-        await server.stop()
-        deleteServerStorage(server)
     })
 
     it(`When a non-decentraland address tries to deploy a legacy entity, then an exception is thrown`, async () => {

@@ -1,3 +1,4 @@
+import log4js from 'log4js'
 import pgPromise, { IInitOptions, IMain } from 'pg-promise';
 import { Environment, EnvironmentConfig } from "../Environment";
 import { Repository, IExtensions } from './Repository';
@@ -8,8 +9,11 @@ import { PointerHistoryRepository } from './repositories/PointerHistoryRepositor
 import { LastDeployedPointersRepository } from './repositories/LastDeployedPointersRepository';
 import { DeploymentDeltasRepository } from './repositories/DeploymentDeltasRepository';
 import { DenylistRepository } from './repositories/DenylistRepository';
+import { FailedDeploymentsRepository } from './repositories/FailedDeploymentsRepository';
 
 export class RepositoryFactory {
+
+    private static readonly LOGGER = log4js.getLogger('Repository');
 
     static async create(env: Environment): Promise<Repository> {
         const initOptions: IInitOptions<IExtensions> = {
@@ -21,18 +25,24 @@ export class RepositoryFactory {
                 obj.pointerHistory = new PointerHistoryRepository(obj);
                 obj.lastDeployedPointers = new LastDeployedPointersRepository(obj);
                 obj.deploymentDeltas = new DeploymentDeltasRepository(obj);
+                obj.failedDeployments = new FailedDeploymentsRepository(obj);
                 obj.denylist = new DenylistRepository(obj);
+            },
+
+            error(err, e) {
+                RepositoryFactory.LOGGER.debug(`Failed to query database. Error was ${err}`)
+                RepositoryFactory.LOGGER.debug(`Query was ${e.query}`)
             }
         };
 
         const pgp: IMain = pgPromise(initOptions);
 
         const dbConfig = {
-            host: "localhost",
-            port: 5432,
-            database: env.getConfig(EnvironmentConfig.PSQL_DATABASE) as string,
-            user: env.getConfig(EnvironmentConfig.PSQL_USER) as string,
-            password: env.getConfig(EnvironmentConfig.PSQL_PASSWORD) as string,
+            port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+            host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+            database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+            user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
+            password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
         }
 
         // Build the database
@@ -40,7 +50,7 @@ export class RepositoryFactory {
 
         // Make sure we can connect to it
         const connection = await db.connect()
-        connection.done()
+        connection.done(true)
 
         return db
     }

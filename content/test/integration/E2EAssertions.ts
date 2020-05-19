@@ -6,9 +6,11 @@ import { EntityType } from "@katalyst/content/service/Entity"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
-import { AuditInfo } from "@katalyst/content/service/Audit"
+import { LegacyAuditInfo } from "@katalyst/content/service/Audit"
 import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
 import { parseEntityType } from "./E2ETestUtils"
+import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
+import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
@@ -51,7 +53,23 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
     }
 }
 
-export function assertEqualsDeployment(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
+export async function assertThereIsAFailedDeployment(server: TestServer): Promise<FailedDeployment> {
+    const failedDeployments: FailedDeployment[] = await server.getFailedDeployments()
+    assert.equal(failedDeployments.length, 1)
+    return failedDeployments[0]
+}
+
+export async function assertDeploymentFailed(server: TestServer, reason: FailureReason, entity: ControllerEntity, originTimestamp: Timestamp, originServerUrl: ServerAddress) {
+    const failedDeployment = await assertThereIsAFailedDeployment(server)
+    assert.equal(failedDeployment.entityType, entity.type)
+    assert.equal(failedDeployment.entityId, entity.id)
+    assert.equal(failedDeployment.originTimestamp, originTimestamp)
+    assert.equal(failedDeployment.originServerUrl, originServerUrl)
+    assert.equal(failedDeployment.reason, reason)
+    assert.ok(failedDeployment.failureTimestamp > originTimestamp)
+}
+
+function assertEqualsDeployment(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
     assert.equal(actualEvent.entityId, expectedEvent.entityId)
     assert.equal(actualEvent.entityType, expectedEvent.entityType)
     assert.equal(actualEvent.timestamp, expectedEvent.timestamp)
@@ -75,39 +93,43 @@ export async function assertFileIsNotOnServer(server: TestServer, hash: ContentF
 }
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.overwrittenBy, overwrittenBy.id)
 }
 
 export async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.overwrittenBy, undefined)
 }
 
 
 export async function assertEntityIsNotDenylisted(server: TestServer, entity: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.isDenylisted, undefined)
 }
 
 export async function assertEntityIsDenylisted(server: TestServer, entity: ControllerEntity) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(auditInfo.isDenylisted)
 }
 
 export async function assertContentNotIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(!auditInfo.denylistedContent || !auditInfo.denylistedContent.includes(contentHash))
 }
 
 export async function assertContentIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(auditInfo.denylistedContent!!.includes(contentHash))
 }
 
 export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): LegacyDeploymentEvent {
+    return buildEventWithName(entity, server.namePrefix, timestamp)
+}
+
+export function buildEventWithName(entity: ControllerEntity, name: string, timestamp: Timestamp): LegacyDeploymentEvent {
     return {
-        serverName: server.namePrefix,
+        serverName: name,
         entityId: entity.id,
         entityType: EntityType[entity.type.toUpperCase().trim()],
         timestamp,

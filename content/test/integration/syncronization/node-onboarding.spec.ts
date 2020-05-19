@@ -1,33 +1,21 @@
-import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, buildBaseEnv, deleteServerStorage, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
-import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy } from "../E2EAssertions"
-import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
+import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
+import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy, buildEventWithName } from "../E2EAssertions"
+import { loadTestEnvironment } from "../E2ETestEnvironment"
+import { HistoryManagerImpl } from "@katalyst/content/service/history/HistoryManagerImpl"
 
 
 describe("End 2 end - Node onboarding", function() {
 
-    const SYNC_INTERVAL: number = ms("1s")
+    const testEnv = loadTestEnvironment()
     let server1: TestServer, server2: TestServer, server3: TestServer
-    let dao
 
     beforeEach(async () => {
-        dao = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
-        server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, dao)
-        server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, dao)
-        server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, dao)
-    })
-
-    afterEach(async () => {
-        await server1.stop()
-        await server2.stop()
-        await server3.stop()
-        deleteServerStorage(server1, server2, server3)
+        [ server1, server2, server3 ] = await testEnv.configServer('1s')
+            .andBuildMany(3)
     })
 
     it('When a node starts, it gets all the previous history', async () => {
@@ -83,22 +71,17 @@ describe("End 2 end - Node onboarding", function() {
         await assertFileIsOnServer(server2, entityContentHash)
 
         // Remove server 1 from the dAO
-        dao.remove(server1.getAddress())
+        testEnv.removeFromDAO(server1.getAddress())
 
         // Start server 3
         await server3.start()
 
-        // Assert server 3 has all the history
-        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent))
+        // Assert server 3 has all the history, but since the server is not available anymore, them name is unknown
+        const deploymentEventWithoutName = buildEventWithName(entity, HistoryManagerImpl.UNKNOWN_NAME, deploymentTimestamp)
+        await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEventWithoutName))
 
         // Make sure that even the content is properly propagated
         await assertFileIsOnServer(server1, entityContentHash)
     })
-
-
-    async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
-        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient).build()
-        return new TestServer(env)
-    }
 
 })

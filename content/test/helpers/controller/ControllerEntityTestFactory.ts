@@ -10,5 +10,9 @@ import { buildEntityAndFile } from "../service/EntityTestFactory";
 export async function buildControllerEntityAndFile(type: EntityType, pointers: Pointer[], timestamp: Timestamp,
     content?: Map<string, ContentFileHash>, metadata?: any): Promise<[ControllerEntity, ContentFile]> {
     const [entity, file]: [Entity, ContentFile] = await buildEntityAndFile(type, pointers, timestamp, content, metadata)
-    return [ControllerEntityFactory.maskEntity(entity), file]
+    const controllerEntity = ControllerEntityFactory.maskEntity(entity);
+    if (!controllerEntity.content || controllerEntity.content.length === 0) {
+        delete controllerEntity.content
+    }
+    return [controllerEntity, file]
 }

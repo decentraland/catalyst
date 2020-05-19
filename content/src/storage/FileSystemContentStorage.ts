@@ -14,7 +14,7 @@ export class FileSystemContentStorage implements ContentStorage {
         return new FileSystemContentStorage(root)
     }
 
-    async store(id: string, content: Buffer): Promise<void> {
+    store(id: string, content: Buffer): Promise<void> {
         return fs.promises.writeFile(this.getFilePath(id), content)
     }
 
@@ -48,7 +48,7 @@ export class FileSystemContentStorage implements ContentStorage {
         const alreadyExist = await FileSystemContentStorage.existPath(directory)
         if (!alreadyExist) {
             try {
-                await fs.promises.mkdir(directory);
+                await fs.promises.mkdir(directory, { recursive: true });
             } catch (error) {
                 // Ignore these errors
             }

@@ -1,34 +1,22 @@
 import { TestServer } from "../../../TestServer"
-import { EnvironmentBuilder, EnvironmentConfig } from "@katalyst/content/Environment"
+import { Bean } from "@katalyst/content/Environment"
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient"
 import { LegacyDeploymentEvent, PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
-import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
-import { deleteServerStorage, buildDeployData } from "../../../E2ETestUtils"
+import { buildDeployData } from "../../../E2ETestUtils"
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
-import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
+import { loadTestEnvironment } from "../../../E2ETestEnvironment"
 
 describe("Integration - History Client", function() {
 
+    const testEnv = loadTestEnvironment()
     let server: TestServer
 
     beforeEach(async () => {
-        const env = await new EnvironmentBuilder()
-            .withDeploymentReporter(new NoOpDeploymentReporter())
-            .withSynchronizationManager(new MockedSynchronizationManager())
-            .withAccessChecker(new MockedAccessChecker())
-            .withConfig(EnvironmentConfig.SERVER_PORT, 8080)
-            .withConfig(EnvironmentConfig.METRICS, false)
-            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
-            .build()
-
-        server = new TestServer(env)
+        server = await testEnv.configServer()
+            .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
+            .andBuild()
         await server.start()
-    })
-
-    afterEach(async () => {
-        await server.stop()
-        deleteServerStorage(server)
     })
 
     it(`When history is consumed entirely, all the events are retrieved`, async () => {

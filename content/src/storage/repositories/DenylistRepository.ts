@@ -16,10 +16,10 @@ export class DenylistRepository {
 
     async getAllDenylistedTargets(): Promise<{ target: DenylistTarget, metadata: DenylistMetadata }[]> {
         const result = await this.db.any(`
-            SELECT DISTINCT ON (denylist.target_type, denylist.target_id) denylist.target_type, denylist.target_id, denylist_history.timestamp, denylist_history.auth_chain
+            SELECT DISTINCT ON (denylist.target_type, denylist.target_id) denylist.target_type, denylist.target_id, date_part('epoch', denylist_history.timestamp) * 1000 AS timestamp, denylist_history.auth_chain
             FROM denylist
             LEFT JOIN denylist_history ON denylist.target_type = denylist_history.target_type AND denylist.target_id = denylist_history.target_id
-            ORDER BY denylist_history,timestamp DESC`)
+            ORDER BY denylist.target_type, denylist.target_id, denylist_history.timestamp DESC`)
         return result.map(row => ({
             target: parseDenylistTypeAndId(row.target_type, row.target_id),
             metadata: {
@@ -39,13 +39,22 @@ export class DenylistRepository {
         // Group targets by type
         const grouped: Map<DenylistTargetType, DenylistTargetId[]> = groupBy(targets, target => target.getType(), target => target.getId())
 
+        let idx = 1
+        const values: any[] = []
+        const orClause: string[] = []
+
         // Build where clause
-        const whereClause = Array.from(grouped.entries())
-            .map(([type, ids]) => `(target_type = '${type}' AND target_id IN (${ids.join(',')}))`)
-            .join(' OR ')
+        Array.from(grouped.entries())
+            .forEach(([type, ids]) => {
+                const typeId = `${idx++}`
+                const idsId = `${idx++}`
+                values.push(type)
+                values.push(ids)
+                orClause.push(`(target_type = $${typeId} AND target_id IN ($${idsId}:list))`)
+            })
 
         // Perform the query
-        const queryResult = await this.db.any(`SELECT target_type, target_id FROM denylist WHERE ${whereClause}}`)
+        const queryResult = await this.db.any(`SELECT target_type, target_id FROM denylist WHERE ${orClause.join(' OR ')}`, values)
 
         // Group all denylisted targets
         return groupBy(queryResult, row => row.target_type, row => row.target_id)
@@ -55,7 +64,7 @@ export class DenylistRepository {
         return this.db.none(`
             INSERT INTO denylist_history
             (target_type, target_id, timestamp, auth_chain, action)
-            VALUES ($(targetType), $(targetId), $(timestamp), $(authChain), $(action))`,
+            VALUES ($(targetType), $(targetId), to_timestamp($(timestamp) / 1000.0), $(authChain:json), $(action))`,
             { targetType: target.getType(), targetId: target.getId(), ...metadata, action })
     }
 

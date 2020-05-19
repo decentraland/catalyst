@@ -57,6 +57,9 @@ export class ContentCluster implements IdentityProvider {
         // Detect my own identity
         await this.detectMyIdentity(10)
 
+        // TODO: Remove when syncing with /deployments instead of /history
+        await delay(1000)
+
         // Perform first sync with the DAO
         await this.syncWithDAO()
     }

@@ -60,7 +60,11 @@ export class Denylist {
     }
 
     async areTargetsDenylisted(denylistRepo: DenylistRepository, targets: DenylistTarget[]): Promise<Map<DenylistTargetType, Map<DenylistTargetId, boolean>>> {
-        // Get only blacklisted
+        if (targets.length === 0) {
+            return new Map()
+        }
+
+        // Get only denylisted
         const denylisted = await denylistRepo.getDenylistedTargets(targets);
 
         // Build result

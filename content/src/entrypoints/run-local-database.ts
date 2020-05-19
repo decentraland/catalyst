@@ -1,14 +1,17 @@
 import { exec } from 'child_process';
+import { DEFAULT_DATABASE_CONFIG } from '../Environment';
 
-export const DEFAULT_DATABASE_CONFIG = {
-    password: '12345678',
-    user: 'postgres',
-    database: 'content',
-}
-
-exec(`docker run
-    --name postgres
-    -e POSTGRES_PASSWORD=${DEFAULT_DATABASE_CONFIG.password}
-    -e POSTGRES_USER=${DEFAULT_DATABASE_CONFIG.user}
-    -e POSTGRES_DB=${DEFAULT_DATABASE_CONFIG.database}
-    -d postgres`)
+exec(`
+    docker rm -f postgres && \
+    docker run \
+    --name postgres \
+    -e POSTGRES_PASSWORD=${DEFAULT_DATABASE_CONFIG.password} \
+    -e POSTGRES_USER=${DEFAULT_DATABASE_CONFIG.user} \
+    -e POSTGRES_DB=${DEFAULT_DATABASE_CONFIG.database} \
+    -p 5432:5432 \
+    -d postgres`,
+    (error, stdout, stderr) => {
+        console.log("ERROR", error)
+        console.log("STDOUT", stdout)
+        console.log("STDERR", stderr)
+    })

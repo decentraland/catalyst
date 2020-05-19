@@ -10,6 +10,6 @@ export class MigrationDataRepository {
     }
 
     getMigrationData(deploymentId: DeploymentId): Promise<any | null> {
-        return this.db.oneOrNone('SELECT original_metadata FROM migration_data WHERE deployment=$1', [deploymentId])
+        return this.db.oneOrNone('SELECT original_metadata FROM migration_data WHERE deployment = $1', [deploymentId])
     }
 }

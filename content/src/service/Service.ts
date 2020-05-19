@@ -8,6 +8,7 @@ import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManag
 import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
 import { PartialDeploymentLegacyHistory } from "./history/HistoryManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
+import { PartialDeploymentHistory } from "./deployments/DeploymentManager";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -19,13 +20,14 @@ export interface MetaverseContentService {
     getEntitiesByPointers(type: EntityType, pointers: Pointer[], repository?: RepositoryTask | Repository): Promise<Entity[]>;
     getEntitiesByIds(type: EntityType, ids: EntityId[], repository?: RepositoryTask | Repository): Promise<Entity[]>;
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
-    deployLegacy(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    deployLocalLegacy(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, repository?: RepositoryTask | Repository): Promise<Timestamp>;
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
     getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
     getStatus(): ServerStatus;
     getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory>;
+    getDeployments(from?: Timestamp, to?: Timestamp, offset?: number, limit?: number): Promise<PartialDeploymentHistory>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
 }
 

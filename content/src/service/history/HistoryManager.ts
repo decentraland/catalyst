@@ -4,7 +4,7 @@ import { ServerName } from "../naming/NameKeeper"
 import { DeploymentsRepository } from "@katalyst/content/storage/repositories/DeploymentsRepository"
 
 export interface HistoryManager {
-    reportDeployment(): void;
+    reportDeployment(deploymentsRepository: DeploymentsRepository): Promise<void>;
     setTimeAsImmutable(immutableTime: Timestamp): void;
     getLastImmutableTime(): Timestamp;
     getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory>;

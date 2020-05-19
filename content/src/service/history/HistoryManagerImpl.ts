@@ -1,7 +1,6 @@
 import { Timestamp } from "../time/TimeSorting"
 import { HistoryManager, PartialDeploymentLegacyHistory, LegacyDeploymentEvent } from "./HistoryManager"
 import { ServerName } from "../naming/NameKeeper"
-import { Repository } from "@katalyst/content/storage/Repository"
 import { ContentCluster } from "../synchronization/ContentCluster"
 import { ServerAddress } from "../synchronization/clients/contentserver/ContentServerClient"
 import { DeploymentsRepository } from "@katalyst/content/storage/repositories/DeploymentsRepository"
@@ -9,23 +8,23 @@ import { DeploymentEvent } from "../deployments/DeploymentManager"
 
 export class HistoryManagerImpl implements HistoryManager {
 
+    static UNKNOWN_NAME = 'UNKNOWN_NAME'
     private immutableTime: Timestamp = 0
+    private historySize: number | undefined
 
-    private constructor(
-        private readonly cluster: ContentCluster,
-        private historySize: number) { }
+    constructor(private readonly cluster: ContentCluster) { }
 
-    static async build(cluster: ContentCluster, repository: Repository): Promise<HistoryManager> {
-        const historySize = await repository.deployments.getAmountOfDeployments()
-        return new HistoryManagerImpl(cluster, historySize)
-    }
-
-    reportDeployment() {
-        this.historySize++;
+    async reportDeployment(deploymentsRepo: DeploymentsRepository): Promise<void> {
+        if (!this.historySize) {
+            // Since this is called after the deployment is added to the table, there is no need to add one
+            this.historySize = await deploymentsRepo.getAmountOfDeployments()
+        } else {
+            this.historySize++
+        }
     }
 
     getHistorySize(): number {
-        return this.historySize
+        return this.historySize ?? 0
     }
 
     setTimeAsImmutable(immutableTime: number): void {

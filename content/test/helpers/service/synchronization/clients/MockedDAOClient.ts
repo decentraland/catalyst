@@ -18,6 +18,10 @@ export class MockedDAOClient extends DAOClient {
         return new Set(this.serversByAddress.values())
     }
 
+    add(address: ServerAddress) {
+        this.serversByAddress.set(address, { address, owner: "0x...", id: "Id"} )
+    }
+
     remove(address: ServerAddress) {
         this.serversByAddress.delete(address)
     }

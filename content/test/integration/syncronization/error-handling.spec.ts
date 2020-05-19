@@ -1,33 +1,29 @@
 import ms from "ms"
-import { buildEvent, assertEqualsDeployment, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive } from "../E2EAssertions"
-import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
-import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
+import { buildEvent, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive, assertDeploymentFailed, assertThereIsAFailedDeployment } from "../E2EAssertions"
+import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 import { TestServer } from "../TestServer"
-import { buildBaseEnv, buildDeployData, deleteServerStorage, createIdentity, buildDeployDataAfterEntity, stopServers, awaitUntil } from "../E2ETestUtils"
+import { buildDeployData, createIdentity, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
+import { loadTestEnvironment } from "../E2ETestEnvironment";
 
 
 describe("End 2 end - Error handling", () => {
 
-    const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070')
     const identity = createIdentity()
-    const SYNC_INTERVAL: number = ms("5s")
+    const testEnv = loadTestEnvironment()
     let server1: TestServer, server2: TestServer
     let accessChecker = new MockedAccessChecker()
 
     beforeEach(async () => {
-        server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
-        server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, DAO)
-    })
-
-    afterEach(async function() {
-        await stopServers(server1, server2)
-        deleteServerStorage(server1, server2)
+        [server1, server2] = await testEnv.configServer('5s')
+            .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+            .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
+            .withBean(Bean.ACCESS_CHECKER, accessChecker)
+            .andBuildMany(2)
     })
 
     it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
@@ -48,26 +44,20 @@ describe("End 2 end - Error handling", () => {
 
     it(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
         // Start servers
-        await server1.start()
-        await server2.start()
+        await Promise.all([server1.start(), server2.start()])
 
         // Prepare entity to deploy
         const [deployData1, entityBeingDeployed1] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
         const entity1Content = entityBeingDeployed1.content!![0].hash
 
         // Deploy entity 1
-        const deploymentTimestamp = await server1.deploy(deployData1)
-        const deploymentEvent = buildEvent(entityBeingDeployed1, server1, deploymentTimestamp)
+        await server1.deploy(deployData1)
 
         // Cause sync failure
         await server1.denylistContent(entity1Content, identity)
 
-        // Wait for servers to sync
-        await awaitUntil(async () => await assertHistoryOnServerHasEvents(server2, deploymentEvent))
-
         // Assert deployment is marked as failed on server 2
-        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
-        expect(failedDeployments.length).toBe(1)
+        await awaitUntil(() => assertThereIsAFailedDeployment(server2))
 
         // Prepare entity to deploy
         const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["0,1"], 'metadata2', entityBeingDeployed1)
@@ -116,8 +106,7 @@ describe("End 2 end - Error handling", () => {
 
     async function runTest(errorType: FailureReason, causeOfFailure: (entity: ControllerEntity) => Promise<void>, removeCauseOfFailure?: () => Promise<void>, ) {
         // Start servers
-        await server1.start()
-        await server2.start()
+        await Promise.all([server1.start(), server2.start()])
 
         // Prepare entity to deploy
         const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
@@ -129,21 +118,14 @@ describe("End 2 end - Error handling", () => {
         // Cause failure
         await causeOfFailure(entityBeingDeployed)
 
-        // Wait for servers to sync
-        await awaitUntil(async () => await assertHistoryOnServerHasEvents(server2, deploymentEvent))
-
         // Assert deployment is marked as failed
-        const failedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
-        expect(failedDeployments.length).toBe(1)
-        assertEqualsDeployment(failedDeployments[0].deployment, deploymentEvent)
-        expect(failedDeployments[0].reason).toEqual(errorType)
-        expect(failedDeployments[0].moment).toBeGreaterThan(entityBeingDeployed.timestamp)
+        await awaitUntil(() => assertDeploymentFailed(server2, errorType, entityBeingDeployed, deploymentTimestamp, server1.getAddress()))
 
         // Assert entity wasn't deployed
         await assertEntityWasNotDeployed(server2, entityBeingDeployed)
 
-        // Assert history was still modified
-        await assertHistoryOnServerHasEvents(server2, deploymentEvent)
+        // Assert history was not modified
+        await assertHistoryOnServerHasEvents(server2, )
 
         // Assert immutable time is more recent than the entity
         const immutableTime = await server2.getStatus().then(status => status.lastImmutableTime)
@@ -162,14 +144,9 @@ describe("End 2 end - Error handling", () => {
 
         // Assert entity is there
         await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
+
+        // Assert history was modified
+        await assertHistoryOnServerHasEvents(server2, deploymentEvent)
     }
 
-    async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
-        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
-            .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-            .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
-            .withAccessChecker(accessChecker)
-            .build()
-        return new TestServer(env)
-    }
 })

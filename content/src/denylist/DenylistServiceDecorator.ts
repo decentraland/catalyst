@@ -129,19 +129,23 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-  async deployLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase): Promise<Timestamp> {
+  async deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase): Promise<Timestamp> {
     return this.repository.task(async task => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
       // If all validations passed, then deploy the entity
-      return this.service.deployLegacy(files, entityId, auditInfo, task);
+      return this.service.deployLocalLegacy(files, entityId, auditInfo, task);
     })
   }
 
 
-  getLegacyHistory(from?: number | undefined, to?: number | undefined, serverName?: string | undefined, offset?: number | undefined, limit?: number | undefined) {
+  getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number | undefined) {
     return this.service.getLegacyHistory(from, to, serverName, offset, limit)
+  }
+
+  getDeployments(from?: number, to?: number, offset?: number, limit?: number) {
+    return this.service.getDeployments(from, to, offset, limit)
   }
 
   getAllFailedDeployments() {
@@ -211,14 +215,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   /** Return true if any of the given targets is denylisted */
   private async areDenylisted(denylistRepo: DenylistRepository, ...targets: DenylistTarget[]): Promise<boolean> {
-    if (targets.length == 0) {
-      return false;
-    } else {
-      const result = await this.denylist.areTargetsDenylisted(denylistRepo, targets);
-      return Array.from(result.values())
-        .map(subMap => Array.from(subMap.values()))
-        .reduce((prev, current) => prev || current.some(denylisted => denylisted), false)
-    }
+    const result = await this.denylist.areTargetsDenylisted(denylistRepo, targets);
+    return Array.from(result.values())
+      .map(subMap => Array.from(subMap.values()))
+      .reduce((prev, current) => prev || current.some(denylisted => denylisted), false)
   }
 
   /** Filter out denylisted targets */

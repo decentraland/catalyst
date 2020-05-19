@@ -27,12 +27,26 @@ export class PointerManager {
         // Fetch last deployments on pointers
         const lastDeployments = await lastDeployedPointersRepo.getLastDeploymentsOnPointers(entity.type, entity.pointers)
 
+        // Add a made up deployments for the pointers where there was no deployment yet
+        const pointersWithDeployments = lastDeployments.map(deployment => deployment.pointers)
+            .reduce((accum, curr) => accum.concat(curr), [])
+        const pointersWithoutDeployments = diff(entity.pointers, pointersWithDeployments)
+        if (pointersWithoutDeployments.size > 0) {
+            lastDeployments.push({
+                entityId: 'NOT_GONNA_BE_USED',
+                deployment: 0,
+                timestamp: -1,
+                pointers: Array.from(pointersWithoutDeployments.values()),
+                deleted: true,
+            })
+        }
+
         // Determine if the entity being deployed will become active
         const entityBeingDeployed = { entityId: entity.id, timestamp: entity.timestamp }
         const willDeploymentBecomeActive = lastDeployments.every(lastDeployment => happenedBefore(lastDeployment, entityBeingDeployed))
 
         // Prepare variables
-        const result: Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }> = new Map()
+        const result: DeploymentResult = new Map()
         const overwrite: Set<Pointer> = new Set()
 
         lastDeployments.forEach(lastDeployment => {
@@ -43,8 +57,8 @@ export class PointerManager {
                 intersection.forEach(pointer => {
                     // If this deployment happened before, then the intersected pointers will point either to the new entity, or to nothing
                     result.set(pointer, {
-                        before: !lastDeployment.deleted ? lastDeployment.entityId : undefined,
-                        after: willDeploymentBecomeActive ? entity.id : undefined
+                        before: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
+                        after: willDeploymentBecomeActive ? deploymentId : undefined
                     })
 
                     // All pointers on the intersection will need to be overwritten
@@ -54,19 +68,23 @@ export class PointerManager {
                 // If the last deployment wasn't already deleted, then the pointers not pointing to the new entity, will point to nothing
                 if (!lastDeployment.deleted) {
                     const onlyOnLastDeployed: Set<Pointer> = diff(lastDeployment.pointers, entity.pointers)
-                    onlyOnLastDeployed.forEach(pointer => result.set(pointer, { before: lastDeployment.entityId, after: undefined }))
+                    onlyOnLastDeployed.forEach(pointer => result.set(pointer, { before: lastDeployment.deployment, after: undefined }))
                 }
             } else {
                 // If the new entity happened before the current last deployment, then the intersected pointers will continue pointing to whatever they were pointing to
                 intersection.forEach(pointer => result.set(pointer, {
-                    before: !lastDeployment.deleted ? lastDeployment.entityId : undefined,
-                    after: !lastDeployment.deleted ? lastDeployment.entityId : undefined,
+                    before: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
+                    after: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
                 }))
             }
         })
 
-        // Calculate which of the currently active entities will de deleted
+        // Overwrite the currently last entities that need to be overwritten
         await lastDeployedPointersRepo.setAsLastDeployedOnPointers(deploymentId, entity.type, Array.from(overwrite.values()))
+
+        // Invalidate the pointers
+        Array.from(result.keys())
+            .forEach(pointer => this.pointers.invalidate(entity.type, pointer))
 
         return result
     }
@@ -80,7 +98,7 @@ export class PointerManager {
     }
 }
 
-export type DeploymentResult = Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }>
+export type DeploymentResult = Map<Pointer, { before: DeploymentId | undefined, after: DeploymentId | undefined }>
 
 function intersect(pointers1: Pointer[], pointers2: Pointer[]): Set<Pointer> {
     return new Set(pointers1.filter(pointer => pointers2.includes(pointer)))

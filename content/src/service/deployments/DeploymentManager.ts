@@ -27,10 +27,10 @@ export class DeploymentManager {
 
     getEntitiesByIds(deploymentRepository: DeploymentsRepository, contentFilesRepository: ContentFilesRepository, entityType: EntityType, entityIds: EntityId[]): Promise<Entity[]> {
         return this.entities.get(entityType, entityIds, async (type, ids) => {
-            const deployments = await deploymentRepository.getEntitiesByIds(entityType, entityIds)
+            const deployments = await deploymentRepository.getEntitiesByIds(type, ids)
             const deploymentIds = deployments.map(row => row.id);
             const contents = await contentFilesRepository.getContentFiles(deploymentIds)
-            return new Map(deployments.map(row => [row.entity_id, new Entity(row.entity_id, row.entity_type, row.entity_pointers, row.entity_timestamp, contents.get(row.id), row.entity_metadata)]))
+            return new Map(deployments.map(row => [row.entityId, new Entity(row.entityId, row.entityType, row.pointers, row.timestamp, contents.get(row.id), row.metadata)]))
         })
     }
 
@@ -61,7 +61,6 @@ export class DeploymentManager {
         auditInfo: AuditInfo,
         overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
             const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
-
             if (auditInfo.originalMetadata) {
                 await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.originalMetadata)
             }
@@ -80,16 +79,11 @@ export class DeploymentManager {
         if (!deploymentResult) {
             return undefined
         }
-        const migrationResult = await migrationDataRepository.getMigrationData(deploymentResult.id)
+        const migrationResult = await migrationDataRepository.getMigrationData(deploymentResult.deploymentId)
 
         const auditInfo: AuditInfo = {
-            version: deploymentResult.version,
-            deployedTimestamp: deploymentResult.origin_timestamp,
-            originTimestamp: deploymentResult.origin_timestamp,
-            localTimestamp: deploymentResult.local_timestamp,
-            originServerUrl: deploymentResult.origin_server_url,
-            authChain: deploymentResult.auth_chain,
-            overwrittenBy: deploymentResult.overwritten_by,
+            ...deploymentResult.auditInfo,
+            deployedTimestamp: deploymentResult.auditInfo.originTimestamp,
             originalMetadata: migrationResult,
         }
 

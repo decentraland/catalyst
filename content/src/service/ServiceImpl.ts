@@ -19,7 +19,7 @@ import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeployme
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
-import { DeploymentManager } from "./deployments/DeploymentManager";
+import { DeploymentManager, PartialDeploymentHistory } from "./deployments/DeploymentManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -64,11 +64,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, origin, repository, true)
     }
 
-    deployLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase, repository: RepositoryTask | Repository = this.repository): Promise<number> {
+    deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase, repository: RepositoryTask | Repository = this.repository): Promise<number> {
         if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getIdentityInDAO()) {
             throw new Error(`Deployments are not allow since server is not in DAO`)
         }
-        return this.deployInternal(files, entityId, auditInfo, ValidationContext.LEGACY_ENTITY, 'legacy', repository)
+        return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, 'legacy', repository)
     }
 
     private async deployInternal(files: ContentFile[],
@@ -173,7 +173,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
 
             // Set who overwrote who
-            await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, new Set(overwrote.values()), deploymentId)
+            await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
 
             // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
             await this.failedDeploymentsManager.reportSuccessfulDeployment(transaction.failedDeployments, entity.type, entity.id)
@@ -182,7 +182,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             await this.storeEntityContent(hashes, alreadyStoredContent)
 
             // Since we are still reporting the history size, add one to it
-            this.historyManager.reportDeployment()
+            await this.historyManager.reportDeployment(transaction.deployments)
 
             // Record deployment for analytics
             this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
@@ -257,12 +257,14 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         }
     }
 
-    async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfoBase: AuditInfoExternal): Promise<void> {
-        await this.deployInternal(files, entityId, auditInfoBase, ValidationContext.SYNCED, 'sync')
+    async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void> {
+        const legacy = !!auditInfo.originalMetadata
+        await this.deployInternal(files, entityId, auditInfo, legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED, 'sync')
     }
 
-    async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfoBase: AuditInfoExternal): Promise<void> {
-        await this.deployInternal([entityFile], entityId, auditInfoBase, ValidationContext.OVERWRITE, 'sync')
+    async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void> {
+        const legacy = !!auditInfo.originalMetadata
+        await this.deployInternal([entityFile], entityId, auditInfo, legacy ? ValidationContext.OVERWRITTEN_LEGACY_ENTITY : ValidationContext.OVERWRITTEN, 'sync')
     }
 
     setImmutableTime(immutableTime: number): void {
@@ -270,11 +272,15 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     areEntitiesAlreadyDeployed(entityIds: EntityId[], repository: RepositoryTask | Repository = this.repository): Promise<Map<EntityId, boolean>> {
-        return repository.taskIf(task => this.deploymentManager.areEntitiesDeployed(task.deployments, entityIds))
+        return this.deploymentManager.areEntitiesDeployed(repository.deployments, entityIds)
     }
 
     getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number) {
         return this.historyManager.getHistory(this.repository.deployments, from, to, serverName, offset, limit)
+    }
+
+    getDeployments(from?: number, to?: number, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory> {
+        return this.deploymentManager.getDeployments(repository.deployments, from, to, offset, limit)
     }
 
     getAllFailedDeployments() {

@@ -114,7 +114,7 @@ describe("Service", function () {
             .withConfig(EnvironmentConfig.IGNORE_VALIDATION_ERRORS, true)
             .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, allowDeploymentsForTesting)
             .build();
-        return await ServiceFactory.create(env);
+        return ServiceFactory.create(env);
     }
 
 })

@@ -14,7 +14,7 @@ nodejs_binary(
 )
 
 nodejs_binary(
-    name = "database",
+    name = "db",
     data = [
         "//content/src:content",
         "@npm//@bazel/typescript",
@@ -87,6 +87,7 @@ ts_library(
         "@npm//form-data",
         "@npm//ms",
         "@npm//node-fetch",
+        "@npm//testcontainers",
         "@npm//ts-mockito",
     ],
 )

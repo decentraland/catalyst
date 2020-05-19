@@ -7,6 +7,9 @@ export class ContentFilesRepository {
     constructor(private readonly db: Repository) { }
 
     async getContentFiles(deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, Map<string, ContentFileHash>>> {
+        if (deploymentIds.length === 0) {
+            return new Map()
+        }
         const queryResult = await this.db.any('SELECT deployment, name, content_hash FROM content_files WHERE deployment IN ($1:list)', [deploymentIds])
         const result: Map<DeploymentId, Map<string, ContentFileHash>> = new Map()
         queryResult.forEach(row => {

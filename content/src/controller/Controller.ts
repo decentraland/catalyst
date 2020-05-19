@@ -108,7 +108,7 @@ export class Controller {
             if (files instanceof Array) {
                 deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
             }
-            const creationTimestamp = await this.service.deployLegacy(deployFiles, entityId, auditInfo)
+            const creationTimestamp = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
             res.send({
                 creationTimestamp: creationTimestamp
             })
@@ -175,7 +175,6 @@ export class Controller {
             if(data.getLength()) {
                 res.setHeader('Content-Length', data.getLength()!.toString())
             }
-
             data.asStream().pipe(res)
         } else {
             res.status(404).send()
@@ -280,14 +279,13 @@ export class Controller {
         const blocker: EthAddress = req.query.blocker;
         const timestamp: Timestamp = req.query.timestamp;
         const signature: Signature = req.query.signature;
-        let authChain: AuthChain;
 
         const type = req.params.type
         const id = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
         const messageToSign = Denylist.buildMessageToSign(target, timestamp)
-        authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
+        const authChain: AuthChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
 
         // TODO: Based on the error, return 400 or 404
         try {

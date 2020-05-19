@@ -15,6 +15,10 @@ export class ControllerFactory {
         const synchronizationManager: SynchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
         const challengeSupervisor: ChallengeSupervisor = env.getBean(Bean.CHALLENGE_SUPERVISOR);
         const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK);
-        return new Controller(new DenylistServiceDecorator(service, denylist, repository), denylist, synchronizationManager, challengeSupervisor, ethNetwork);
+        if (denylist && repository) {
+            return new Controller(new DenylistServiceDecorator(service, denylist, repository), denylist, synchronizationManager, challengeSupervisor, ethNetwork);
+        } else {
+            return new Controller(service, denylist, synchronizationManager, challengeSupervisor, ethNetwork);
+        }
     }
 }
