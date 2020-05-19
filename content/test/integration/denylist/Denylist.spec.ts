@@ -1,14 +1,12 @@
 import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator"
-import { buildDeployData, createIdentity, Identity, parseEntityType } from "../E2ETestUtils"
+import { buildDeployData, createIdentity, parseEntityType } from "../E2ETestUtils"
 import { TestServer } from "../TestServer"
 import { assertFileIsOnServer, assertEntityIsNotDenylisted, assertEntityIsDenylisted, assertFileIsNotOnServer, assertContentNotIsDenylisted, assertContentIsDenylisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
 import { ControllerEntityContent, ControllerDenylistData, ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
-import { mock, when, instance } from "ts-mockito"
-import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster"
 import { DenylistTargetType, buildEntityTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
 import { MockedContentCluster } from "@katalyst/test-helpers/service/synchronization/MockedContentCluster"
@@ -213,10 +211,4 @@ describe("Integration - Denylist", () => {
 
 function getTargetIdFromEntity(entity: ControllerEntity) {
     return buildEntityTarget(parseEntityType(entity), entity.id).getId()
-}
-
-function mockedClusterWithIdentityAsOwn(identity: Identity) {
-    let mockedCluster: ContentCluster = mock(ContentCluster)
-    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: identity.address, address: "", id: "", name: "" })
-    return instance(mockedCluster)
 }
