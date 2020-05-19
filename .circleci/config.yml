@@ -1,4 +1,19 @@
-version: 2.0
+version: 2.1
+
+commands:
+  update_node_version:
+    description: "A very simple command to update the node version"
+    steps:
+      - run:
+          name: Link nvm
+          command: |
+            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+            echo ' [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+      - run:
+          name: Update node version
+          command: |
+            nvm install v10.17.0
+            nvm alias default v10.17.0
 
 references:
   .workspace_root: &workspace_root /tmp/repo
@@ -7,15 +22,12 @@ references:
     attach_workspace:
       at: *workspace_root
 
-  .image_client: &image_client
-    image: circleci/node:10-browsers
-
   .working_directory_root: &working_directory_root
     working_directory: *workspace_root
 
   .base_env: &base_env
-    docker:
-      - <<: *image_client
+    machine:
+      docker_layer_caching: true
     working_directory: *workspace_root
 
   .all_branches_and_tags: &all_branches_and_tags
@@ -38,6 +50,7 @@ jobs:
 
     steps:
       - checkout
+      - update_node_version
 
       # Download and cache dependencies
       - restore_cache:
@@ -63,6 +76,7 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
+      - update_node_version
       - run:
           name: Run tests
           command: npx bazel test //comms/lighthouse:unit_test --test_output=all
@@ -71,6 +85,7 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
+      - update_node_version
       - run:
           name: Run tests
           command: npx bazel test //comms/peer:config_test --test_output=all
@@ -79,6 +94,7 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
+      - update_node_version
       - run:
           name: Run unit tests
           command: npx bazel test //content:unit_test --test_output=all
@@ -90,6 +106,7 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
+      - update_node_version
       - run:
           name: Run tests
           command: npx bazel test //lambdas:unit_test --test_output=all
@@ -97,6 +114,7 @@ jobs:
     <<: *base_env
     steps:
       - <<: *attach_root
+      - update_node_version
       - run:
           name: Run servers tests
           command: npx bazel test //commons/servers:unit_test --test_output=all
