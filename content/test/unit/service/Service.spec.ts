@@ -14,7 +14,6 @@ import { EntityVersion, AuditInfoBase } from "@katalyst/content/service/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { Authenticator } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
-import { NoOpValidations } from "./validations/NoOpValidations";
 import { MockedRepository } from "../storage/MockedRepository";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { MockedContentCluster } from "@katalyst/test-helpers/service/synchronization/MockedContentCluster";
@@ -22,6 +21,7 @@ import { NoOpFailedDeploymentsManager } from "./errors/NoOpFailedDeploymentsMana
 import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter";
 import { NoOpPointerManager } from "./pointers/NoOpPointerManager";
 import { NoOpDeploymentManager } from "./deployments/NoOpDeploymentManager";
+import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
 
 describe("Service", function () {
 

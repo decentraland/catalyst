@@ -141,7 +141,7 @@ export class DeploymentsRepository {
                         localTimestamp: row.local_timestamp,
                         originServerUrl: row.origin_server_url,
                         authChain: row.auth_chain,
-                        overwrittenBy: row.overwritten_by,
+                        overwrittenBy: row.overwritten_by ?? undefined,
                     }
                 }))
     }
