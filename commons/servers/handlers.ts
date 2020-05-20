@@ -14,7 +14,7 @@ export const VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS = 10 * 1000 * 60;
  * @param authorizedSignerPredicate Predicate to check if the signer is authorized to perform this operation. By default it is always authorized
  * @param networkOrProvider Parameter to use to create the EthereumProvider to validate the signature. If it is a string, it is interpreted as the network name and an HTTP Provider is used.
  */
-export function validateSignature(
+export function validateSignatureHandler(
   messageToSignBuilder: (body: any) => string,
   networkOrProvider: string | EthereumProvider,
   authorizedSignerPredicate: (signer: EthAddress | undefined, body: any) => boolean = (_, __) => true,
@@ -22,47 +22,14 @@ export function validateSignature(
 ): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
     const signerData = signerDataBuilder(req.body);
-    if (!signerData.authChain && !signerData.simpleSignature) {
-      unauthorized(res, "This operation requires a signed payload");
-    } else if (!validSignatureInterval(signerData.timestamp)) {
-      unauthorized(res, "The signature is to old or to far in the future");
-    } else if (!authorizedSignerPredicate(getSigner(signerData), req.body)) {
-      unauthorized(res, "The signer is not authorized to perform this operation");
-    } else {
-      const expected = `${messageToSignBuilder(req.body)}${signerData.timestamp}`;
 
-      const authChain = signerData.authChain ?? Authenticator.createSimpleAuthChain(expected, signerData.simpleSignature!.signer, signerData.simpleSignature!.signature);
-
-      const provider = typeof networkOrProvider === "string" ? httpProviderForNetwork(networkOrProvider) : networkOrProvider;
-      
-      const valid = await Authenticator.validateSignature(expected, authChain, provider, Date.now())
-
-      console.log("Valid: " + JSON.stringify(valid));
-
-      if (!valid.ok) {
-        unauthorized(res, "Invalid signature: " + valid.message);
-      } else {
-        next();
-      }
-    }
+    await validateSignature(signerData,
+      `${messageToSignBuilder(req.body)}${signerData.timestamp}`, 
+      next, 
+      (message: string) => res.status(401).send({ status: "unauthorized", message }),
+      signer => authorizedSignerPredicate(signer, req.body),
+      networkOrProvider);
   };
-
-  function getSigner(signerData: SignerData) {
-    if (signerData.authChain) {
-      return signerData.authChain.find((it) => it.type === AuthLinkType.SIGNER)?.payload;
-    } else {
-      return signerData.simpleSignature?.signer;
-    }
-  }
-
-  function validSignatureInterval(timestamp: number) {
-    const currentTime = Date.now();
-    return timestamp > currentTime - VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS && timestamp < currentTime + VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS;
-  }
-
-  function unauthorized(res: Response<any>, message: string) {
-    res.status(401).send({ status: "unauthorized", message });
-  }
 }
 
 export type SimpleSignature = {
@@ -75,3 +42,45 @@ export type SignerData = {
   simpleSignature?: SimpleSignature;
   timestamp: number;
 };
+
+function getSigner(signerData: SignerData) {
+  if (signerData.authChain) {
+    return signerData.authChain.find((it) => it.type === AuthLinkType.SIGNER)?.payload;
+  } else {
+    return signerData.simpleSignature?.signer;
+  }
+}
+
+function validSignatureInterval(timestamp: number) {
+  const currentTime = Date.now();
+  return timestamp > currentTime - VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS && timestamp < currentTime + VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS;
+}
+
+async function validateSignature(
+  signerData: SignerData,
+  expectedPayload: string,
+  onAuthorized: () => any,
+  onNotAuthorized: (message: string) => void,
+  signerIsAuthorizedPredicate: (signer: string | undefined) => boolean,
+  networkOrProvider: string | EthereumProvider
+) {
+  if (!signerData.authChain && !signerData.simpleSignature) {
+    onNotAuthorized("This operation requires a signed payload");
+  } else if (!validSignatureInterval(signerData.timestamp)) {
+    onNotAuthorized("The signature is to old or to far in the future");
+  } else if (!signerIsAuthorizedPredicate(getSigner(signerData))) {
+    onNotAuthorized("The signer is not authorized to perform this operation");
+  } else {
+    
+    const authChain = signerData.authChain ?? Authenticator.createSimpleAuthChain(expectedPayload, signerData.simpleSignature!.signer, signerData.simpleSignature!.signature);
+    const provider = typeof networkOrProvider === "string" ? httpProviderForNetwork(networkOrProvider) : networkOrProvider;
+    const valid = await Authenticator.validateSignature(expectedPayload, authChain, provider, Date.now());
+
+    console.log("Valid: " + JSON.stringify(valid));
+    if (!valid.ok) {
+      onNotAuthorized("Invalid signature: " + valid.message);
+    } else {
+      onAuthorized();
+    }
+  }
+}

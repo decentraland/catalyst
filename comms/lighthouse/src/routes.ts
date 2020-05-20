@@ -5,7 +5,7 @@ import { IRealm } from "peerjs-server";
 import { RequestError } from "./errors";
 import { PeerInfo, Layer } from "./types";
 import { PeersService } from "./peersService";
-import { validateSignature } from "decentraland-katalyst-commons/handlers";
+import { validateSignatureHandler } from "decentraland-katalyst-commons/handlers";
 import { ConfigService } from "./configService";
 
 export type RoutesOptions = {
@@ -139,7 +139,7 @@ export function configureRoutes(app: express.Express, services: Services, option
   app.put(
     "/config",
     requireAll(["config"], (req) => req.body),
-    validateSignature(
+    validateSignatureHandler(
       body => JSON.stringify(body.config),
       options.ethNetwork,
       signer => signer?.toLowerCase() == options.restrictedAccessSigner.toLowerCase()
