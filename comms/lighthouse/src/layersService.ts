@@ -3,13 +3,14 @@ import { RoomsService } from "./roomsService";
 import { PeersService, NotificationType } from "./peersService";
 import { removePeerAndNotify, getPeerId } from "./utils";
 import { UserMustBeInLayerError as PeerMustBeInLayerError, LayerIsFullError, RequestError } from "./errors";
+import { ConfigService } from "./configService";
 
 type LayersServiceConfig = {
   peersService: PeersService;
   existingLayers?: string[];
   allowNewLayers?: boolean;
-  maxPeersPerLayer?: number;
   layerCheckInterval?: number; //In seconds
+  configService: ConfigService;
 };
 
 export class LayersService {
@@ -18,7 +19,7 @@ export class LayersService {
   private layerChecker: LayerChecker = new LayerChecker(this, this.peersService);
 
   private newLayer(layerId: string): Layer {
-    return { id: layerId, peers: [], rooms: {}, maxPeers: this.config.maxPeersPerLayer, lastCheckTimestamp: Date.now() };
+    return { id: layerId, peers: [], rooms: {}, lastCheckTimestamp: Date.now() };
   }
 
   constructor(private config: LayersServiceConfig) {
@@ -97,7 +98,9 @@ export class LayersService {
 
       this.checkLayerPeersIfNeeded(layer);
 
-      if (layer.maxPeers && layer.peers.length >= layer.maxPeers) {
+      const maxPeers = await this.getMaxPeersFor(layer)
+
+      if (maxPeers && layer.peers.length >= maxPeers) {
         throw new LayerIsFullError(layer, peerId);
       }
 
@@ -116,6 +119,10 @@ export class LayersService {
     }
 
     return layer;
+  }
+
+  async getMaxPeersFor(layer: Layer) {
+    return layer.maxPeers ?? await this.config.configService.getMaxPeersPerLayer();
   }
 
   checkLayerPeersIfNeeded(layer: Layer) {
