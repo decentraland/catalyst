@@ -96,11 +96,11 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         {
             deployment: { type: 'integer', references: 'deployments', notNull: true },
             content_hash: { type: 'text', notNull: true },
-            name: { type: 'text', notNull: true },
+            key: { type: 'text', notNull: true },
         },
         {
             constraints: {
-                unique: ['deployment', 'name']
+                unique: ['deployment', 'key']
             }
         })
     pgm.addIndex('content_files', 'content_hash')

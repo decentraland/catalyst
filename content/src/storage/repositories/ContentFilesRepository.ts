@@ -10,7 +10,7 @@ export class ContentFilesRepository {
         if (deploymentIds.length === 0) {
             return new Map()
         }
-        const queryResult = await this.db.any('SELECT deployment, name, content_hash FROM content_files WHERE deployment IN ($1:list)', [deploymentIds])
+        const queryResult = await this.db.any('SELECT deployment, key, content_hash FROM content_files WHERE deployment IN ($1:list)', [deploymentIds])
         const result: Map<DeploymentId, Map<string, ContentFileHash>> = new Map()
         queryResult.forEach(row => {
             if (!result.has(row.deployment)) {
@@ -24,7 +24,7 @@ export class ContentFilesRepository {
     async saveContentFiles(deploymentId: DeploymentId, content: Map<string, ContentFileHash>): Promise<void> {
         await this.db.txIf(transaction => {
             const contentPromises = Array.from(content.entries())
-                .map(([name, hash]) => transaction.none('INSERT INTO content_files (deployment, name, content_hash) VALUES ($1, $2, $3)', [deploymentId, name, hash]))
+                .map(([name, hash]) => transaction.none('INSERT INTO content_files (deployment, key, content_hash) VALUES ($1, $2, $3)', [deploymentId, name, hash]))
             return transaction.batch(contentPromises)
         })
     }
