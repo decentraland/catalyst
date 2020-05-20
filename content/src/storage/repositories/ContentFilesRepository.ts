@@ -16,7 +16,7 @@ export class ContentFilesRepository {
             if (!result.has(row.deployment)) {
                 result.set(row.deployment, new Map())
             }
-            result.get(row.deployment)!!.set(row.name, row.content_hash)
+            result.get(row.deployment)!!.set(row.key, row.content_hash)
         })
         return result
     }
