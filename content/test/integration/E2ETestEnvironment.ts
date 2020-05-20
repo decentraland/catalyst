@@ -9,6 +9,8 @@ import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/
 import { NoOpDeploymentReporter } from '@katalyst/content/service/reporters/NoOpDeploymentReporter'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { ServerAddress } from '@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient'
+import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
+import { Container } from 'testcontainers/dist/container'
 
 export class E2ETestEnvironment {
 
@@ -26,6 +28,7 @@ export class E2ETestEnvironment {
             .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
             .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
             .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
+            .withWaitStrategy(new PostgresWaitStrategy())
             .start();
 
         const mappedPort = this.postgresContainer.getMappedPort(E2ETestEnvironment.POSTGRES_PORT)
@@ -167,6 +170,42 @@ export class ServerBuilder {
         return servers
     }
 
+}
+
+/** During startup, the db is restarted, so we need to wait for the log message twice */
+export class PostgresWaitStrategy extends LogWaitStrategy {
+
+    private static LOG = 'database system is ready to accept connections'
+    constructor() {
+      super(PostgresWaitStrategy.LOG);
+    }
+
+    public async waitUntilReady(container: Container): Promise<void> {
+        let counter = 0
+        return new Promise(async (resolve, reject) => {
+            const stream = await container.logs();
+            stream
+                .on("data", line => {
+                    if (line.toString().includes(PostgresWaitStrategy.LOG)) {
+                        counter++
+                        if (counter === 2) {
+                            resolve();
+                        }
+                    }
+                })
+                .on("err", line => {
+                    if (line.toString().includes(PostgresWaitStrategy.LOG)) {
+                        counter++
+                        if (counter === 2) {
+                            resolve();
+                        }
+                    }
+                })
+                .on("end", () => {
+                    reject();
+                });
+        });
+    }
 }
 
 /**

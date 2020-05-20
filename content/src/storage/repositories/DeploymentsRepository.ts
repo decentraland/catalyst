@@ -32,7 +32,7 @@ export class DeploymentsRepository {
                 entityId: row.entity_id,
                 timestamp: row.entity_timestamp,
                 pointers: row.entity_pointers,
-                metadata: row.entity_metadata,
+                metadata: row.entity_metadata.v,
             }))
     }
 
@@ -112,7 +112,7 @@ export class DeploymentsRepository {
                 $(entity.id),
                 to_timestamp($(entity.timestamp) / 1000.0),
                 $(entity.pointers),
-                $(entity.metadata),
+                $(metadata),
                 $(auditInfo.originServerUrl),
                 to_timestamp($(auditInfo.originTimestamp) / 1000.0),
                 to_timestamp($(auditInfo.localTimestamp) / 1000.0),
@@ -121,29 +121,37 @@ export class DeploymentsRepository {
             ) RETURNING id`, {
                 entity,
                 auditInfo,
+                metadata: { v: entity.metadata }, // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
                 deployer: Authenticator.ownerAddress(auditInfo.authChain),
                 overwrittenBy,
             }, deployment => deployment.id)
     }
 
     getAuditInfo(type: EntityType, id: EntityId) {
-       return this.db.oneOrNone(`
-                SELECT dep.id, dep.version, date_part('epoch', dep.origin_timestamp) * 1000 AS origin_timestamp, date_part('epoch', dep.local_timestamp) * 1000 AS local_timestamp, dep.origin_server_url, dep.auth_chain, dep2.entity_id AS overwritten_by
-                FROM deployments AS dep
-                LEFT JOIN deployments AS dep2 ON dep.deleter_deployment = dep2.id
-                WHERE dep.entity_id=$1 AND dep.entity_type=$2`,
-                [id, type],
-                row => ({
-                    deploymentId: row.id,
-                    auditInfo: {
-                        version: row.version,
-                        originTimestamp: row.origin_timestamp,
-                        localTimestamp: row.local_timestamp,
-                        originServerUrl: row.origin_server_url,
-                        authChain: row.auth_chain,
-                        overwrittenBy: row.overwritten_by ?? undefined,
-                    }
-                }))
+        return this.db.oneOrNone(`
+            SELECT
+                dep.id,
+                dep.version,
+                date_part('epoch', dep.origin_timestamp) * 1000 AS origin_timestamp,
+                date_part('epoch', dep.local_timestamp) * 1000 AS local_timestamp,
+                dep.origin_server_url,
+                dep.auth_chain,
+                dep2.entity_id AS overwritten_by
+            FROM deployments AS dep
+            LEFT JOIN deployments AS dep2 ON dep.deleter_deployment = dep2.id
+            WHERE dep.entity_id=$1 AND dep.entity_type=$2`,
+            [id, type],
+            row => ({
+                deploymentId: row.id,
+                auditInfo: {
+                    version: row.version,
+                    originTimestamp: row.origin_timestamp,
+                    localTimestamp: row.local_timestamp,
+                    originServerUrl: row.origin_server_url,
+                    authChain: row.auth_chain,
+                    overwrittenBy: row.overwritten_by ?? undefined,
+                }
+            }))
     }
 
     async setEntitiesAsOverwritten(allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {

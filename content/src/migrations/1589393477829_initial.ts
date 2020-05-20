@@ -13,7 +13,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             version: { type: 'text', notNull: true },
             entity_type: { type: 'text', notNull: true },
             entity_id: { type: 'text', notNull: true },
-            entity_metadata: { type: 'text', notNull: false },
+            entity_metadata: { type: 'json', notNull: false },
             entity_timestamp: { type: 'timestamp', notNull: true },
             entity_pointers: { type: 'text[]', notNull: true },
             origin_server_url: { type: 'text', notNull: true },
