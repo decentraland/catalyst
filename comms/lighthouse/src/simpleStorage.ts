@@ -2,6 +2,11 @@ import fs from "fs";
 import os from "os";
 import { future, IFuture } from "fp-future";
 import equal from "fast-deep-equal";
+import v8 from 'v8';
+
+const deepCopy = (obj: any) => {
+  return v8.deserialize(v8.serialize(obj));
+};
 
 export class SimpleStorage {
   private _currentItems: object | undefined;
@@ -34,7 +39,7 @@ export class SimpleStorage {
 
   async getAll() {
     const items = await this.getCurrentItems();
-    return {...items}
+    return deepCopy(items)
   }
 
   async getString(key: string): Promise<string | undefined> {

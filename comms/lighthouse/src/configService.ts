@@ -13,15 +13,14 @@ export class ConfigService {
   }
 
   async updateConfigs(configs: ConfigKeyValue[]) {
-    await Promise.all(
-      configs.map(async (it) => {
-        if (typeof it.value !== "undefined") {
-          await this.storage.setString(it.key, JSON.stringify(it.value));
-        } else {
-          await this.storage.deleteKey(it.key);
-        }
-      })
-    );
+    for(const it of configs) {
+      if (typeof it.value !== "undefined") {
+        await this.storage.setString(it.key, JSON.stringify(it.value));
+      } else {
+        await this.storage.deleteKey(it.key);
+      }
+    }
+    
     return await this.getConfig();
   }
 
