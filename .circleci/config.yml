@@ -102,7 +102,7 @@ jobs:
           command: npx bazel test //content:unit_test --test_output=all
       - run:
           name: Run integration tests
-          command: npx bazel test //content:integration_test --test_output=all
+          command: npx bazel test //content:integration_test --test_output=all --test_timeout 600
 
   build-lambdas:
     <<: *base_env
