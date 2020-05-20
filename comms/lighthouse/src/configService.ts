@@ -33,7 +33,7 @@ export class ConfigService {
 
   async get(key: string, ifNotPresent: () => any): Promise<any> {
     const item = await this.storage.getString(key);
-    return typeof item !== "undefined" ? JSON.parse(item) : undefined;
+    return typeof item !== "undefined" ? JSON.parse(item) : ifNotPresent();
   }
 
   async getMaxPeersPerLayer(): Promise<number | undefined> {
