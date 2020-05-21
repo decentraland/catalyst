@@ -1,4 +1,4 @@
-import { EthAddress, Signature, AuthChain, Authenticator, AuthLinkType, ValidationResult } from "dcl-crypto";
+import { EthAddress, Signature, AuthChain, Authenticator, ValidationResult } from "dcl-crypto";
 import { EthereumProvider } from "web3x/providers";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 
@@ -19,7 +19,8 @@ export type SignerData = {
 
 function getSigner(signerData: SignerData) {
   if (signerData.authChain) {
-    return signerData.authChain.find((it) => it.type === AuthLinkType.SIGNER)?.payload;
+    const ownerAddress = Authenticator.ownerAddress(signerData.authChain);
+    return ownerAddress === "Invalid-Owner-Address" ? undefined : ownerAddress;
   } else {
     return signerData.simpleSignature?.signer;
   }
