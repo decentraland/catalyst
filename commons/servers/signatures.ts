@@ -35,7 +35,7 @@ export type SignatureValidator = (
   authChain: AuthChain,
   provider: EthereumProvider,
   dateToValidateExpirationInMillis?: number
-) => Promise<ValidationResult>
+) => Promise<ValidationResult>;
 
 export async function validateSignature(
   signerData: SignerData,
@@ -44,12 +44,12 @@ export async function validateSignature(
   onNotAuthorized: (message: string) => void,
   signerIsAuthorizedPredicate: (signer: string | undefined) => boolean,
   networkOrProvider: string | EthereumProvider,
-  validator: SignatureValidator  = Authenticator.validateSignature
+  validator: SignatureValidator = Authenticator.validateSignature
 ) {
   if (!signerData.authChain && !signerData.simpleSignature) {
     onNotAuthorized("This operation requires a signed payload");
   } else if (!validSignatureInterval(signerData.timestamp)) {
-    onNotAuthorized("The signature is to old or to far in the future");
+    onNotAuthorized("The signature is too old or too far in the future");
   } else if (!signerIsAuthorizedPredicate(getSigner(signerData))) {
     onNotAuthorized("The signer is not authorized to perform this operation");
   } else {
