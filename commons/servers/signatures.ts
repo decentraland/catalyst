@@ -4,7 +4,7 @@ import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 
 // We want all signatures to be "current". We consider "current" to be the current time,
 // with a 10 minute tolerance to account for network delays and possibly unsynched clocks
-export const VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS = 10 * 1000 * 60;
+export const VALID_SIGNATURE_TOLERANCE_INTERVAL_MS = 10 * 1000 * 60;
 
 export type SimpleSignature = {
   signer: EthAddress;
@@ -28,7 +28,7 @@ function getSigner(signerData: SignerData) {
 
 function validSignatureInterval(timestamp: number) {
   const currentTime = Date.now();
-  return timestamp > currentTime - VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS && timestamp < currentTime + VALID_SIGNATURE_TOLERANCE_INTERVAL_MILLIS;
+  return timestamp > currentTime - VALID_SIGNATURE_TOLERANCE_INTERVAL_MS && timestamp < currentTime + VALID_SIGNATURE_TOLERANCE_INTERVAL_MS;
 }
 
 export type SignatureValidator = (
