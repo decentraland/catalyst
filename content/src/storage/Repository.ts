@@ -1,4 +1,3 @@
-import log4js from 'log4js'
 import pgPromise, { IDatabase, ITask, IInitOptions, IMain } from 'pg-promise';
 import { DeploymentsRepository } from './repositories/DeploymentsRepository';
 import { MigrationDataRepository } from './repositories/MigrationDataRepository';
@@ -24,8 +23,6 @@ export interface IExtensions {
     denylist: DenylistRepository,
 }
 
-const LOGGER = log4js.getLogger('Repository');
-
 export type DBConnection = {
     host: string,
     port: number,
@@ -45,9 +42,10 @@ export async function build(connection: DBConnection, contentCredentials: DBCred
         return await connectTo(connection, contentCredentials)
     } catch (error) {
         if (rootCredentials) {
+            console.log('Trying to create database...')
             // Probably the content database doesn't exist. So we try to create it
             const rootRepo = await connectTo(connection, rootCredentials)
-            await rootRepo.query(`CREATE USER ${contentCredentials.user} WITH PASSWORD ${contentCredentials.password}`)
+            await rootRepo.query(`CREATE USER ${contentCredentials.user} WITH PASSWORD $1`, [contentCredentials.password])
             await rootRepo.query(`CREATE DATABASE ${contentCredentials.database}`)
             await rootRepo.query(`GRANT ALL PRIVILEGES ON DATABASE ${contentCredentials.database} TO ${contentCredentials.user}`)
 
@@ -73,8 +71,8 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
         },
 
         error(err, e) {
-            LOGGER.debug(`Failed to query database. Error was ${err}`)
-            LOGGER.debug(`Query was ${e.query}`)
+            console.log(`Failed to query database. Error was ${err}`)
+            console.log(`Query was ${e.query}`)
         }
     };
 
