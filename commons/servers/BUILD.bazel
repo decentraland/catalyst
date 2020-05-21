@@ -14,6 +14,7 @@ ts_library(
         "@npm//express",
         "@npm//prom-client",
         "@npm//response-time",
+        "@npm//web3x",
     ],
 )
 

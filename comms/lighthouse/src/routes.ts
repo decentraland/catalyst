@@ -1,25 +1,30 @@
 import express from "express";
-import { validatePeerToken, requireOneOf } from "./handlers";
+import { validatePeerToken, requireOneOf, requireAll } from "./handlers";
 import { LayersService } from "./layersService";
 import { IRealm } from "peerjs-server";
 import { RequestError } from "./errors";
 import { PeerInfo, Layer } from "./types";
 import { PeersService } from "./peersService";
+import { validateSignatureHandler } from "decentraland-katalyst-commons/handlers";
+import { ConfigService } from "./configService";
 
 export type RoutesOptions = {
   env?: any;
   name: string;
+  ethNetwork: string;
   version: string;
+  restrictedAccessSigner: string;
 };
 
 export type Services = {
   layersService: LayersService;
   realmProvider: () => IRealm;
   peersService: PeersService;
+  configService: ConfigService;
 };
 
 export function configureRoutes(app: express.Express, services: Services, options: RoutesOptions) {
-  const { layersService, realmProvider: getPeerJsRealm, peersService } = services;
+  const { layersService, realmProvider: getPeerJsRealm, peersService, configService } = services;
 
   const validateLayerExists = (req, res, next) => {
     if (layersService.exists(req.params.layerId)) {
@@ -29,7 +34,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   };
 
-  app.get("/status", (req, res, next) => {
+  app.get("/status", async (req, res, next) => {
     const status: any = {
       name: options.name,
       version: options.version,
@@ -37,19 +42,23 @@ export function configureRoutes(app: express.Express, services: Services, option
       env: options.env,
     };
 
+    const globalMaxPerLayer = await configService.getMaxPeersPerLayer();
+
     if (req.query.includeLayers === "true") {
-      status.layers = layersService.getLayers().map((it) => mapLayerToJson(it, true));
+      status.layers = layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, true));
     }
 
     res.send(status);
   });
 
-  app.get("/layers", (req, res, next) => {
-    res.send(layersService.getLayers().map((it) => mapLayerToJson(it, req.query.usersParcels === "true")));
+  app.get("/layers", async (req, res, next) => {
+    const globalMaxPerLayer = await configService.getMaxPeersPerLayer();
+    res.send(layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, req.query.usersParcels === "true")));
   });
 
-  app.get("/layers/:layerId", validateLayerExists, (req, res, next) => {
-    res.send(mapLayerToJson(layersService.getLayer(req.params.layerId)!));
+  app.get("/layers/:layerId", validateLayerExists, async (req, res, next) => {
+    const globalMaxPerLayer = await configService.getMaxPeersPerLayer();
+    res.send(mapLayerToJson(layersService.getLayer(req.params.layerId)!, globalMaxPerLayer));
   });
 
   app.get("/layers/:layerId/users", validateLayerExists, (req, res, next) => {
@@ -127,11 +136,30 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   });
 
-  function mapLayerToJson(layer: Layer, includeUserParcels: boolean = false) {
+  app.put(
+    "/config",
+    requireAll(["config"], (req) => req.body),
+    validateSignatureHandler(
+      body => JSON.stringify(body.config),
+      options.ethNetwork,
+      signer => signer?.toLowerCase() == options.restrictedAccessSigner.toLowerCase()
+    ),
+    async (req, res, next) => {
+      const configKeyValues = req.body.config;
+      if (!Array.isArray(configKeyValues) || configKeyValues.some((it) => !it.key)) {
+        res.status(400).send(JSON.stringify({ status: "bad-request", message: "Expected array body with {key: string, value?: string} elements" }));
+      } else {
+        const config = await configService.updateConfigs(configKeyValues);
+        res.send(config);
+      }
+    }
+  );
+
+  function mapLayerToJson(layer: Layer, globalMaxPerLayer: number | undefined, includeUserParcels: boolean = false) {
     return {
       name: layer.id,
       usersCount: layer.peers.length,
-      maxUsers: layer.maxPeers,
+      maxUsers: layer.maxPeers ?? globalMaxPerLayer,
       ...(includeUserParcels && { usersParcels: layer.peers.map((it) => peersService.getPeerInfo(it).parcel).filter((it) => !!it) }),
     };
   }
