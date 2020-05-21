@@ -113,7 +113,7 @@ describe("validate signature handler", () => {
 
     await handler(request, response, next);
 
-    expectUnauthorized(response, "The signature is to old or to far in the future", next);
+    expectUnauthorized(response, "The signature is too old or too far in the future", next);
   }
 
   function expectUnauthorized(response: any, message: string, next: any) {
