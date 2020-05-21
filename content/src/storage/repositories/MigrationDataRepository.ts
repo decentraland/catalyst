@@ -9,7 +9,7 @@ export class MigrationDataRepository {
         return this.db.none('INSERT INTO migration_data (deployment, original_metadata) VALUES ($1, $2)', [deploymentId, originalMetadata])
     }
 
-    getMigrationData(deploymentId: DeploymentId): Promise<any | null> {
-        return this.db.oneOrNone('SELECT original_metadata FROM migration_data WHERE deployment = $1', [deploymentId])
+    getMigrationData(deploymentId: DeploymentId): Promise<any | undefined> {
+        return this.db.oneOrNone('SELECT original_metadata FROM migration_data WHERE deployment = $1', [deploymentId], metadata => metadata ?? undefined)
     }
 }
