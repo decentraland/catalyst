@@ -13,6 +13,17 @@ import { DeploymentEventBase } from "../deployments/DeploymentManager";
 
 export class EventDeployer {
 
+    private static readonly ILLEGAL_ENTITIES: Set<EntityId> = new Set([
+        "QmNn2oVpyXxNzhM8nZa4jsUu76e8EXbYDs7NaPjb8aFuxj",
+        "QmbTsE4NJ1Mg82YF2xVbfkFRWkxzSJfVFgQw5eiaGNk3TH",
+        "QmPJ4Ct9A3a2tVB1Cse56xxUa4MmfvLQntLeNbcvLmZgMc",
+        "Qmd7fJe4qWMfzXjgqX65GPa6tDfhMuGP2npyf1brtrUPv5",
+        "QmeCfwXhvXyuXcWx9eM3FCkdd5PxQ3shZtmnhWaWsAeeft",
+        "QmRUp4RoTa32PLj4VC5bwfmwDc3SMBVUdsk6rzKpPLzgzf",
+        "QmcvfmuW3n29pXzYNobH4FiXKBycjA79wV49JtAr8At619",
+        "QmYE3oq6J59J3hEnNWYds5dn1BXa3uMFFroMTN7ZaRFVKt",
+        "QmRmN36qtANL8M7x7s69ndyMe3oWKk9bViePJJNp3SKS8f",
+    ])
     private static readonly LOGGER = log4js.getLogger('EventDeployer');
 
     private readonly eventProcessor: EventStreamProcessor
@@ -40,7 +51,8 @@ export class EventDeployer {
         const deployInfo = await this.service.areEntitiesAlreadyDeployed(entitiesInHistory)
         const newEntities: Set<EntityId> = new Set(Array.from(deployInfo.entries())
             .filter(([, deployed]) => !deployed)
-            .map(([entityId]) => entityId))
+            .map(([entityId]) => entityId)
+            .filter(entityId => !EventDeployer.ILLEGAL_ENTITIES.has(entityId)))
 
         // Keep only new deployments
         const newDeployments = history.filter(event => newEntities.has(event.entityId));
