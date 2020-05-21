@@ -156,7 +156,7 @@ describe("End 2 end synchronization tests", function() {
 
         // Prepare data to be deployed
         const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata")
-        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2", "X3,Y3"], "metadata2", entity1)
+        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2", "X3,Y3"], { metadata: "metadata2" }, entity1)
         const [deployData3, entity3] = await buildDeployDataAfterEntity(["X3,Y3", "X4,Y4"], "metadata3", entity2)
 
 

@@ -10,6 +10,7 @@ import { LastDeployedPointersRepository } from './repositories/LastDeployedPoint
 import { DeploymentDeltasRepository } from './repositories/DeploymentDeltasRepository';
 import { DenylistRepository } from './repositories/DenylistRepository';
 import { FailedDeploymentsRepository } from './repositories/FailedDeploymentsRepository';
+import { retry } from '../helpers/RetryHelper';
 
 export class RepositoryFactory {
 
@@ -49,8 +50,10 @@ export class RepositoryFactory {
         const db: Repository = pgp(dbConfig);
 
         // Make sure we can connect to it
-        const connection = await db.connect()
-        connection.done(true)
+        await retry(async () => {
+            const connection = await db.connect()
+            connection.done(true)
+        }, 6, 'connect to the database', '10s')
 
         return db
     }

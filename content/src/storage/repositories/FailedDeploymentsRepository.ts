@@ -49,7 +49,7 @@ export class FailedDeploymentsRepository {
                 originServerUrl: row.origin_server_url,
                 failureTimestamp: row.failure_timestamp,
                 reason: row.reason,
-                errorDescription: row.error_description,
+                errorDescription: row.error_description ?? undefined,
             }))
     }
 

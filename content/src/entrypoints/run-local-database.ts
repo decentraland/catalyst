@@ -8,7 +8,7 @@ exec(`
     -e POSTGRES_PASSWORD=${DEFAULT_DATABASE_CONFIG.password} \
     -e POSTGRES_USER=${DEFAULT_DATABASE_CONFIG.user} \
     -e POSTGRES_DB=${DEFAULT_DATABASE_CONFIG.database} \
-    -p 5432:5432 \
+    -p ${DEFAULT_DATABASE_CONFIG.port}:5432 \
     -d postgres`,
     (error, stdout, stderr) => {
         console.log("ERROR", error)

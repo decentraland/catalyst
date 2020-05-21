@@ -7,7 +7,7 @@ export class MigrationManager {
     private readonly options: RunnerOption
 
     constructor(databaseConfig: ClientConfig) {
-        const migrationsFolder = join(__dirname, 'migrations')
+        const migrationsFolder = join(__dirname, 'scripts')
 
         this.options = {
             migrationsTable: 'migrations',

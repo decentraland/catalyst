@@ -1,4 +1,4 @@
-import { MigrationManager } from "@katalyst/content/MigrationManager";
+import { MigrationManager } from "@katalyst/content/migrations/MigrationManager";
 
 export class NoOpMigrationManager extends MigrationManager {
 

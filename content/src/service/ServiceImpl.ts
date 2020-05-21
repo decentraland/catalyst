@@ -42,7 +42,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[], repository: RepositoryTask | Repository = this.repository): Promise<Entity[]> {
         const lowerCase = pointers.map((pointer: Pointer) => pointer.toLocaleLowerCase())
         return repository.taskIf(async task => {
-            const entityIds = await this.pointerManager.getActivePointers(task.lastDeployedPointers, type, lowerCase);
+            const entityIds = await this.pointerManager.getActiveEntitiesInPointers(task.lastDeployedPointers, type, lowerCase);
             return this.getEntitiesByIds(type, entityIds, task)
         })
     }
@@ -232,14 +232,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
     }
 
     async getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<AuditInfo | undefined> {
-        let auditInfo = await repository.taskIf(task => this.deploymentManager.getAuditInfo(task.deployments, task.migrationData, type, id))
-        if (auditInfo) {
-            auditInfo = {
-                ...auditInfo,
-                deployedTimestamp: auditInfo.originTimestamp,
-            }
-        }
-        return auditInfo
+        return repository.taskIf(task => this.deploymentManager.getAuditInfo(task.deployments, task.migrationData, type, id))
     }
 
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {

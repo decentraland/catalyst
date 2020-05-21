@@ -16,7 +16,11 @@ export class DenylistRepository {
 
     async getAllDenylistedTargets(): Promise<{ target: DenylistTarget, metadata: DenylistMetadata }[]> {
         const result = await this.db.any(`
-            SELECT DISTINCT ON (denylist.target_type, denylist.target_id) denylist.target_type, denylist.target_id, date_part('epoch', denylist_history.timestamp) * 1000 AS timestamp, denylist_history.auth_chain
+            SELECT DISTINCT ON (denylist.target_type, denylist.target_id)
+                denylist.target_type,
+                denylist.target_id,
+                date_part('epoch', denylist_history.timestamp) * 1000 AS timestamp,
+                denylist_history.auth_chain
             FROM denylist
             LEFT JOIN denylist_history ON denylist.target_type = denylist_history.target_type AND denylist.target_id = denylist_history.target_id
             ORDER BY denylist.target_type, denylist.target_id, denylist_history.timestamp DESC`)

@@ -86,7 +86,7 @@ export class Denylist {
         // Check if address belongs to Decentraland
         const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
         const blocker: EthAddress = Authenticator.ownerAddress(metadata.authChain)
-        const isBlockerTheNodeOwner: boolean = !!nodeOwner && nodeOwner === blocker
+        const isBlockerTheNodeOwner: boolean = nodeOwner === blocker
         if (!isBlockerTheNodeOwner && !this.authenticator.isAddressOwnedByDecentraland(blocker)) {
             throw new Error("Expected the denylister to be either Decentraland, or the node's owner")
         }
@@ -94,7 +94,8 @@ export class Denylist {
 
     private async validateSignature(target: DenylistTarget, metadata: DenylistMetadata) {
         const messageToSign = Denylist.buildMessageToSign(target, metadata.timestamp)
-        if (!await this.authenticator.validateSignature(messageToSign, metadata.authChain, httpProviderForNetwork(this.network), Date.now())) {
+        const validationResult = await this.authenticator.validateSignature(messageToSign, metadata.authChain, httpProviderForNetwork(this.network), Date.now());
+        if (!validationResult.ok) {
             throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
         }
     }

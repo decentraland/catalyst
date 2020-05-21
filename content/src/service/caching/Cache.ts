@@ -60,7 +60,7 @@ export class CacheByType<Key, Value> {
         this.cachesByType.get(type)!!.invalidate(key)
     }
 
-    static withCalculation<K, V>(sizes: Map<EntityType, number>): CacheByType<K, V> {
+    static withSizes<K, V>(sizes: Map<EntityType, number>): CacheByType<K, V> {
         const cachesByType: Map<EntityType, Cache<K, V>> = new Map()
 
         Object.values(EntityType).forEach((entityType: EntityType) => {

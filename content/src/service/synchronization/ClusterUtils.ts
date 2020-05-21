@@ -1,5 +1,5 @@
 import log4js from "log4js"
-import { retry } from "@katalyst/content/helpers/FetchHelper";
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager";

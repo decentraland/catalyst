@@ -70,7 +70,7 @@
     "startContentServer": "yarn ibazel run content:server",
     "startLambdasServer": "yarn ibazel run lambdas:server",
     "lint": "yarn tslint -c tslint.json --project tsconfig.json",
-    "migrate": "node-pg-migrate -m content/src/migrations -j ts"
+    "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "dependencies": {
     "@types/log4js": "^2.3.5",
@@ -78,7 +78,6 @@
     "@types/node-pg-migrate": "^2.3.1",
     "@types/parallel-transform": "^1.1.0",
     "@types/pg-promise": "^5.4.3",
-    "@types/umzug": "^2.2.3",
     "abort-controller": "^3.0.0",
     "analytics-node": "^3.4.0-beta.1",
     "aws-sdk": "^2.596.0",
@@ -108,7 +107,6 @@
     "node-pg-migrate": "^5.0.0",
     "parallel-transform": "^1.2.0",
     "peerjs-server": "https://github.com/decentraland/peerjs-server.git#9bb451a6247f66cbae6f17e6c643fffbec05540c",
-    "pg": "^8.2.1",
     "pg-promise": "^10.5.2",
     "prom-client": "^11.5.2",
     "react": "^16.12.0",
@@ -116,7 +114,6 @@
     "response-time": "^2.3.2",
     "simple-peer": "^9.6.2",
     "ts-mockito": "^2.5.0",
-    "umzug": "^3.0.0-beta.4",
     "uuid": "^3.3.3",
     "viz.js": "^2.1.2",
     "web3": "^1.2.4",

@@ -173,7 +173,7 @@ export class ServerBuilder {
 }
 
 /** During startup, the db is restarted, so we need to wait for the log message twice */
-export class PostgresWaitStrategy extends LogWaitStrategy {
+class PostgresWaitStrategy extends LogWaitStrategy {
 
     private static LOG = 'database system is ready to accept connections'
     constructor() {

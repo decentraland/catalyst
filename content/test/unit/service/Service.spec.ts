@@ -46,6 +46,7 @@ describe("Service", function () {
 
     beforeEach(async () => {
         storage = new MockedStorage()
+        historyManager = new MockedHistoryManager()
         service = await buildService();
     })
 
@@ -98,8 +99,6 @@ describe("Service", function () {
     });
 
     async function buildService(allowDeploymentsForTesting = true) {
-        historyManager = new MockedHistoryManager()
-
         const env = new Environment()
             .registerBean(Bean.STORAGE, storage)
             .registerBean(Bean.HISTORY_MANAGER, historyManager)
@@ -114,8 +113,6 @@ describe("Service", function () {
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
             .setConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, allowDeploymentsForTesting)
 
-            // Deployment manager
-            // Pointer manager
         return ServiceFactory.create(env);
     }
 

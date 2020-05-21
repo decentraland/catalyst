@@ -10,7 +10,7 @@ import { Controller } from "./controller/Controller";
 import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
-import { MigrationManager } from "./MigrationManager";
+import { MigrationManager } from "./migrations/MigrationManager";
 import { MetaverseContentService } from "./service/Service";
 
 export class Server {
@@ -130,7 +130,6 @@ export class Server {
     }
   }
 
-  // TODO: Change call for service when available
   private async validateHistory() {
     // Validate last history entry is before Date.now()
     const lastEvents = await this.service.getDeployments(undefined, undefined, 0, 1)

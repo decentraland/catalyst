@@ -7,7 +7,7 @@ import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing"
 import { ContentFile } from "@katalyst/content/service/Service"
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
 import { Authenticator, EthAddress } from "dcl-crypto"
-import { retry } from "@katalyst/content/helpers/FetchHelper"
+import { retry } from "@katalyst/content/helpers/RetryHelper"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, identity)

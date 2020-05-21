@@ -18,7 +18,7 @@ export class CacheManager {
             cacheSizes.set(entityType, cacheSize)
         })
 
-        return CacheByType.withCalculation(cacheSizes)
+        return CacheByType.withSizes(cacheSizes)
     }
 
     private getCacheName(cacheConfig: CacheConfig, type: EntityType) {

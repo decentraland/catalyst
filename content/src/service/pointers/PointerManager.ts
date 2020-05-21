@@ -16,7 +16,7 @@ export class PointerManager {
         this.pointers = cacheManager.buildEntityTypedCache(POINTERS_CACHE_CONFIG)
     }
 
-    getActivePointers(lastDeployedPointersRepo: LastDeployedPointersRepository, entityType: EntityType, pointers: Pointer[]): Promise<EntityId[]> {
+    getActiveEntitiesInPointers(lastDeployedPointersRepo: LastDeployedPointersRepository, entityType: EntityType, pointers: Pointer[]): Promise<EntityId[]> {
         return this.pointers.get(entityType, pointers, (entityType, pointers) => lastDeployedPointersRepo.getActiveDeploymentsOnPointers(entityType, pointers))
     }
 
@@ -55,7 +55,7 @@ export class PointerManager {
 
             if (happenedBefore(lastDeployment, entityBeingDeployed)) {
                 intersection.forEach(pointer => {
-                    // If this deployment happened before, then the intersected pointers will point either to the new entity, or to nothing
+                    // If the last deployment happened before, then the intersected pointers will point either to the new entity, or to nothing
                     result.set(pointer, {
                         before: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
                         after: willDeploymentBecomeActive ? deploymentId : undefined

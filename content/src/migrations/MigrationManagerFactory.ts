@@ -1,4 +1,4 @@
-import { Environment, EnvironmentConfig } from './Environment';
+import { Environment, EnvironmentConfig } from '../Environment';
 import { MigrationManager } from "./MigrationManager";
 
 export class MigrationManagerFactory {

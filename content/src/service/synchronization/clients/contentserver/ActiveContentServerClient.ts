@@ -7,7 +7,8 @@ import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
 import { LegacyAuditInfo } from "../../../Audit";
 import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
-import { FetchHelper, retry } from "@katalyst/content/helpers/FetchHelper";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
 
 export function getClient(fetchHelper: FetchHelper, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {

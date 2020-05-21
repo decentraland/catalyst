@@ -4,7 +4,7 @@ import { ContentServerClient } from "./clients/contentserver/ContentServerClient
 import { Timestamp } from "../time/TimeSorting";
 import { LegacyDeploymentHistory } from "../history/HistoryManager";
 import { EventDeployer } from "./EventDeployer";
-import { retry } from "@katalyst/content/helpers/FetchHelper";
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 import { legacyDeploymentEventToDeploymentEventBase } from "./ClusterUtils";
 import { ContentCluster } from "./ContentCluster";
 

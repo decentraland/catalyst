@@ -2,7 +2,8 @@ import { Timestamp } from "../../time/TimeSorting"
 import { ServerName } from "../../naming/NameKeeper"
 import { LegacyDeploymentEvent, PartialDeploymentLegacyHistory } from "../HistoryManager"
 import { ServerAddress } from "../../synchronization/clients/contentserver/ContentServerClient"
-import { FetchHelper, retry } from "@katalyst/content/helpers/FetchHelper"
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 
 export class HistoryClient {
 

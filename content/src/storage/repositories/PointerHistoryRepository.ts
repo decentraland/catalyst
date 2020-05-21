@@ -6,7 +6,6 @@ export class PointerHistoryRepository {
 
     constructor(private readonly db: Repository) { }
 
-    /** Return a map from overwritten to overwriter  */
     async calculateOverwrites(entity: Entity): Promise<{ overwrote: Set<DeploymentId>, overwrittenBy: DeploymentId | null}> {
         return this.db.taskIf(async task => {
             const overwrote: DeploymentId[] = await task.map(`

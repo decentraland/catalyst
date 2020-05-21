@@ -23,7 +23,7 @@ import { ChallengeSupervisor } from "./service/synchronization/ChallengeSupervis
 import { RepositoryFactory } from "./storage/RepositoryFactory";
 import { FailedDeploymentsManager } from "./service/errors/FailedDeploymentsManager";
 import { DeploymentManagerFactory } from "./service/deployments/DeploymentManagerFactory";
-import { MigrationManagerFactory } from "./MigrationManagerFactory";
+import { MigrationManagerFactory } from "./migrations/MigrationManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
