@@ -37,7 +37,7 @@ export function ConnectForm(props: {
     setLoading(true);
     try {
       //@ts-ignore
-      const peer = (window.peer = new props.peerClass(url, nickname, () => {}, {
+      const peer = (window.peer = new props.peerClass(url, undefined, () => {}, {
         token: PeerToken.getToken(nickname),
         positionConfig: {
           selfPosition: () => [mouse.x, mouse.y, 0]

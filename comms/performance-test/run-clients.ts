@@ -20,11 +20,12 @@ const clientUrl = process.env.CLIENT_URL;
 const lighthouseUrl = process.env.LIGHTHOUSE_URL;
 const peersCount = parseInt(process.env.PEERS_COUNT ?? "10");
 const testDuration = parseInt(process.env.TEST_DURATION ?? "180");
+const idLength = parseInt(process.env.PEER_ID_LENGTH ?? "42");
 
 (async function () {
   let browsers: Browser[] = [];
   try {
-    browsers = await runClients(peersCount, testId!, lighthouseUrl, resultsServerUrl, clientUrl, testDuration);
+    browsers = await runClients(peersCount, testId!, idLength, lighthouseUrl, resultsServerUrl, clientUrl, testDuration);
 
     console.log("All browsers finished. Killing the process.");
 

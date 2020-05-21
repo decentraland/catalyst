@@ -9,7 +9,7 @@ import { LayersService } from "./layersService";
 import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { IMessage } from "peerjs-server/dist/src/models/message";
 import { IClient } from "peerjs-server/dist/src/models/client";
-import { MessageType } from "peerjs-server/dist/src/enums";
+import { MessageType, IdType } from "peerjs-server/dist/src/enums";
 import * as path from "path";
 import { DEFAULT_LAYERS } from "./default_layers";
 import { Authenticator } from "dcl-crypto";
@@ -18,13 +18,17 @@ import { patchLog } from "./logging";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
+import { IdService } from "./idService";
+import { ConfigService } from "./configService";
+import { lighthouseConfigStorage } from "./simpleStorage";
+import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 
-const LIGHTHOUSE_VERSION = "0.1";
+const LIGHTHOUSE_VERSION = "0.2";
 const DEFAULT_ETH_NETWORK = "ropsten";
 
 const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
-(async function() {
+(async function () {
   const daoClient = new DAOClient(DAOContract.withNetwork(CURRENT_ETH_NETWORK));
 
   const name = await pickName(process.env.LIGHTHOUSE_NAMES, daoClient);
@@ -34,12 +38,14 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   const accessLogs = parseBoolean(process.env.ACCESS ?? "false");
   const port = parseInt(process.env.PORT ?? "9000");
-  const noAuth = parseBoolean(process.env.NO_AUTH ?? "false")
+  const noAuth = parseBoolean(process.env.NO_AUTH ?? "false");
   const secure = parseBoolean(process.env.SECURE ?? "false");
   const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
   const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? "false");
-  const maxUsersPerLayer = parseInt(process.env.MAX_PER_LAYER ?? "50");
-  const existingLayers = process.env.DEFAULT_LAYERS?.split(",").map(it => it.trim()) ?? DEFAULT_LAYERS;
+  const existingLayers = process.env.DEFAULT_LAYERS?.split(",").map((it) => it.trim()) ?? DEFAULT_LAYERS;
+  const idAlphabet = process.env.ID_ALPHABET ? process.env.ID_ALPHABET : undefined;
+  const idLength = process.env.ID_LENGTH ? parseInt(process.env.ID_LENGTH) : undefined;
+  const restrictedAccessAddress = process.env.RESTRICTED_ACCESS_ADDRESS ?? DECENTRALAND_ADDRESS;
 
   function parseBoolean(string: string) {
     return string.toLowerCase() === "true";
@@ -59,18 +65,24 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     app.use(morgan("combined"));
   }
 
-  const layersService = new LayersService({ peersService, maxPeersPerLayer: maxUsersPerLayer, existingLayers, allowNewLayers });
+  const configService = new ConfigService(lighthouseConfigStorage)
+
+  const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService });
+
+  const idService = new IdService({ alphabet: idAlphabet, idLength });
 
   configureRoutes(
     app,
-    { layersService, realmProvider: getPeerJsRealm, peersService },
+    { layersService, realmProvider: getPeerJsRealm, peersService, configService},
     {
       name,
       version: LIGHTHOUSE_VERSION,
+      ethNetwork: CURRENT_ETH_NETWORK,
+      restrictedAccessSigner: restrictedAccessAddress,
       env: {
         secure,
-        commitHash: process.env.COMMIT_HASH
-      }
+        commitHash: process.env.COMMIT_HASH,
+      },
     }
   );
 
@@ -80,6 +92,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   const options: Partial<IConfig> = {
     path: "/",
+    idGenerator: () => idService.nextId(),
     authHandler: async (client, message) => {
       if (noAuth) {
         return true;
@@ -89,7 +102,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
         // client not registered
         return false;
       }
-      if (client.getId().toLocaleLowerCase() !== message.payload[0]?.payload?.toLocaleLowerCase()) {
+      if (client.getIdType() === IdType.SELF_ASSIGNED && client.getId().toLocaleLowerCase() !== message.payload[0]?.payload?.toLocaleLowerCase()) {
         // client id mistmaches with auth signer
         return false;
       }
@@ -97,12 +110,14 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
         const provider = httpProviderForNetwork(CURRENT_ETH_NETWORK);
         const result = await Authenticator.validateSignature(client.getMsg(), message.payload, provider);
 
+        peersService.setPeerAddress(client.getId(), message.payload[0].payload)
+
         return result.ok;
       } catch (e) {
         console.log(`error while recovering address for client ${client.getId()}`, e);
         return false;
       }
-    }
+    },
   };
 
   const peerServer = ExpressPeerServer(server, options);
@@ -116,19 +131,19 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   //@ts-ignore
   peerServer.on("message", (client: IClient, message: IMessage) => {
-    if (message.type === MessageType.HEARTBEAT) {
+    if (message.type === MessageType.HEARTBEAT && client.isAuthenticated()) {
       peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds);
       peersService.updatePeerParcel(client.getId(), message.payload?.parcel);
-      peersService.updatePeerPosition(client.getId(), message.payload?.position)
+      peersService.updatePeerPosition(client.getId(), message.payload?.position);
 
-      if(message.payload?.optimizeNetwork) {
-        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections, message.payload.maxDistance)
+      if (message.payload?.optimizeNetwork) {
+        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(client.getId(), message.payload.targetConnections, message.payload.maxDistance);
         client.send({
           type: "OPTIMAL_NETWORK_RESPONSE",
           src: "__lighthouse_response__",
           dst: client.getId(),
-          payload: optimalConnectionsResult
-        })
+          payload: optimalConnectionsResult,
+        });
       }
     }
   });
@@ -142,7 +157,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   const _static = path.join(__dirname, "../static");
 
   app.use("/monitor", express.static(_static + "/monitor"));
-})().catch(e => {
+})().catch((e) => {
   console.error("Exiting process because of unhandled exception", e);
   process.exit(1);
 });

@@ -6,7 +6,7 @@ export enum NotificationType {
   PEER_LEFT_ROOM = "PEER_LEFT_ROOM",
   PEER_LEFT_LAYER = "PEER_LEFT_LAYER",
   PEER_JOINED_LAYER = "PEER_JOINED_LAYER",
-  PEER_JOINED_ROOM = "PEER_JOINED_ROOM"
+  PEER_JOINED_ROOM = "PEER_JOINED_ROOM",
 }
 
 require("isomorphic-fetch");
@@ -29,7 +29,7 @@ export class PeersService implements IPeersService {
 
   notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
     this.notifyPeersById(
-      peers.map(it => it.id),
+      peers.map((it) => it.id),
       type,
       payload
     );
@@ -37,14 +37,14 @@ export class PeersService implements IPeersService {
 
   notifyPeersById(peerIds: string[], type: NotificationType, payload: object) {
     console.log(`Sending ${type} notification to: `, peerIds);
-    peerIds.forEach(id => {
+    peerIds.forEach((id) => {
       const client = this.peerRealm!.getClientById(id);
       if (client) {
         client.send({
           type,
           src: "__lighthouse_notification__",
           dst: id,
-          payload
+          payload,
         });
       }
     });
@@ -62,16 +62,28 @@ export class PeersService implements IPeersService {
     return this.peersTopology[peerId];
   }
 
+  setPeerAddress(peerId: string, address: string) {
+    const peerInfo = this.ensurePeerInfo({ id: peerId });
+    peerInfo.address = address;
+  }
+
   peerExistsInRealm(peerId: string) {
     return !!this.peerRealm.getClientById(peerId);
   }
 
   getPeerInfo(peerId: string): PeerInfo {
-    return this.peers[peerId] ?? { id: peerId };
+    const client = this.peerRealm.getClientById(peerId);
+    const peer = this.peers[peerId] ?? { id: peerId };
+
+    if (client) {
+      peer.lastPing = client.getLastPing();
+    }
+
+    return peer;
   }
 
   getPeersInfo(peerIds: string[]): PeerInfo[] {
-    return peerIds.map(id => this.getPeerInfo(id));
+    return peerIds.map((id) => this.getPeerInfo(id));
   }
 
   ensurePeerInfo(peer: PeerRequest): PeerInfo {
@@ -79,7 +91,7 @@ export class PeersService implements IPeersService {
     const existing = this.peers[peerId];
 
     if (existing) {
-      if (existing.protocolVersion) {
+      if (peer.protocolVersion) {
         existing.protocolVersion = peer.protocolVersion;
       }
       return existing;
@@ -104,26 +116,28 @@ export class PeersService implements IPeersService {
   getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], targetConnections: number, maxDistance: number): PeerConnectionHint[] {
     const hints: PeerConnectionHint[] = [];
 
-    otherPeers.forEach(it => {
+    otherPeers.forEach((it) => {
       if (it.id !== peer.id && it.position) {
         const distance = this.distanceFunction(peer.position!, it.position);
         if (distance <= maxDistance) {
           hints.push({
             id: it.id,
             distance,
-            position: it.position
+            position: it.position,
           });
         }
       }
     });
 
-    return hints
-      .sort((h1, h2) => {
-        const distanceDiff = h1.distance - h2.distance;
-        // If the distance is the same, we randomize
-        return distanceDiff === 0 ? Math.random() : distanceDiff;
-      })
-      // We don't send more than 100 peer positions for now
-      .slice(0, 100);
+    return (
+      hints
+        .sort((h1, h2) => {
+          const distanceDiff = h1.distance - h2.distance;
+          // If the distance is the same, we randomize
+          return distanceDiff === 0 ? Math.random() : distanceDiff;
+        })
+        // We don't send more than 100 peer positions for now
+        .slice(0, 100)
+    );
   }
 }

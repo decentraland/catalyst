@@ -5433,9 +5433,9 @@ pbkdf2@^3.0.17, pbkdf2@^3.0.3, pbkdf2@^3.0.9:
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
 
-"peerjs-server@https://github.com/decentraland/peerjs-server.git#9bb451a6247f66cbae6f17e6c643fffbec05540c":
+"peerjs-server@https://github.com/decentraland/peerjs-server.git#ed5f4f978cddba907ba3c75f422f4f959848cd20":
   version "0.3.0"
-  resolved "https://github.com/decentraland/peerjs-server.git#9bb451a6247f66cbae6f17e6c643fffbec05540c"
+  resolved "https://github.com/decentraland/peerjs-server.git#ed5f4f978cddba907ba3c75f422f4f959848cd20"
   dependencies:
     "@types/cors" "2.8.6"
     "@types/express" "4.17.1"

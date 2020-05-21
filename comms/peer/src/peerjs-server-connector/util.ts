@@ -1,3 +1,5 @@
+import { DEFAULT_ID_ALPHABET } from "../../../../commons/utils/util";
+
 // const DEFAULT_CONFIG = {
 //   iceServers: [
 //     { urls: "stun:stun.l.google.com:19302" },
@@ -16,10 +18,10 @@ export const util = new (class {
   readonly CLOUD_HOST = "0.peerjs.com";
   readonly CLOUD_PORT = 443;
 
-  // Ensure alphanumeric ids
+  // Ensure supported ids
   validateId(id: string): boolean {
     // Allow empty ids
-    return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
+    return !id || Array.from(id).every(it => DEFAULT_ID_ALPHABET.includes(it));
   }
 
   randomToken(): string {
