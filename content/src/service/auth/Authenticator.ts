@@ -1,10 +1,9 @@
 import { Authenticator, EthAddress, AuthChain, ValidationResult } from "dcl-crypto";
 import { EthereumProvider } from "web3x/providers";
+import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 
 export class ContentAuthenticator extends Authenticator {
-  static DECENTRALAND_ADDRESS: EthAddress = "0x1337e0507eb4ab47e08a179573ed4533d9e22a7b";
-
-  constructor(private readonly decentralandAddress: EthAddress = ContentAuthenticator.DECENTRALAND_ADDRESS) {
+  constructor(private readonly decentralandAddress: EthAddress = DECENTRALAND_ADDRESS) {
     super();
   }
 

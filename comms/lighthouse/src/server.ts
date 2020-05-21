@@ -19,6 +19,9 @@ import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 import { IdService } from "./idService";
+import { ConfigService } from "./configService";
+import { lighthouseConfigStorage } from "./simpleStorage";
+import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 
 const LIGHTHOUSE_VERSION = "0.2";
 const DEFAULT_ETH_NETWORK = "ropsten";
@@ -39,10 +42,10 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   const secure = parseBoolean(process.env.SECURE ?? "false");
   const enableMetrics = parseBoolean(process.env.METRICS ?? "false");
   const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? "false");
-  const maxUsersPerLayer = parseInt(process.env.MAX_PER_LAYER ?? "50");
   const existingLayers = process.env.DEFAULT_LAYERS?.split(",").map((it) => it.trim()) ?? DEFAULT_LAYERS;
   const idAlphabet = process.env.ID_ALPHABET ? process.env.ID_ALPHABET : undefined;
   const idLength = process.env.ID_LENGTH ? parseInt(process.env.ID_LENGTH) : undefined;
+  const restrictedAccessAddress = process.env.RESTRICTED_ACCESS_ADDRESS ?? DECENTRALAND_ADDRESS;
 
   function parseBoolean(string: string) {
     return string.toLowerCase() === "true";
@@ -62,16 +65,20 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     app.use(morgan("combined"));
   }
 
-  const layersService = new LayersService({ peersService, maxPeersPerLayer: maxUsersPerLayer, existingLayers, allowNewLayers });
+  const configService = new ConfigService(lighthouseConfigStorage)
+
+  const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService });
 
   const idService = new IdService({ alphabet: idAlphabet, idLength });
 
   configureRoutes(
     app,
-    { layersService, realmProvider: getPeerJsRealm, peersService },
+    { layersService, realmProvider: getPeerJsRealm, peersService, configService},
     {
       name,
       version: LIGHTHOUSE_VERSION,
+      ethNetwork: CURRENT_ETH_NETWORK,
+      restrictedAccessSigner: restrictedAccessAddress,
       env: {
         secure,
         commitHash: process.env.COMMIT_HASH,

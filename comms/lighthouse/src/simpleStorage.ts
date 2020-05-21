@@ -2,6 +2,11 @@ import fs from "fs";
 import os from "os";
 import { future, IFuture } from "fp-future";
 import equal from "fast-deep-equal";
+import v8 from "v8";
+
+const deepCopy = (obj: any) => {
+  return v8.deserialize(v8.serialize(obj));
+};
 
 export class SimpleStorage {
   private _currentItems: object | undefined;
@@ -17,19 +22,24 @@ export class SimpleStorage {
     await this.flush();
   }
 
-  async getCurrentItems(): Promise<object> {
+  private async getCurrentItems(): Promise<object> {
     if (!this._currentItems) {
       let itemsJson: string | null = null;
       try {
         itemsJson = await fs.promises.readFile(this.filePath, "utf-8");
       } catch (err) {
-        console.log("No server storage could be opened. Starting new one.");
+        console.log(`No server storage could be opened in ${this.filePath}. Starting new one.`);
       }
 
       this._currentItems = itemsJson ? JSON.parse(itemsJson) : {};
     }
 
     return this._currentItems!;
+  }
+
+  async getAll() {
+    const items = await this.getCurrentItems();
+    return deepCopy(items);
   }
 
   async getString(key: string): Promise<string | undefined> {
@@ -52,6 +62,14 @@ export class SimpleStorage {
     const currentItems = await this.getCurrentItems();
 
     currentItems[key] = value;
+
+    await this.flush();
+  }
+
+  async deleteKey(key: string) {
+    const currentItems = await this.getCurrentItems();
+
+    delete currentItems[key];
 
     await this.flush();
   }
@@ -98,3 +116,4 @@ if (!fs.existsSync(localDir)) {
 }
 
 export const lighthouseStorage = new SimpleStorage(localDir + "/serverStorage.json");
+export const lighthouseConfigStorage = new SimpleStorage(localDir + "/config.json");
