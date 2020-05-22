@@ -168,7 +168,7 @@ export class EnvironmentBuilder {
     }
 
     async build(): Promise<Environment> {
-        const env = this.baseEnv
+        const env = new Environment()
 
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.STORAGE_ROOT_FOLDER            , () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SERVER_PORT                    , () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT)
@@ -233,10 +233,10 @@ export class EnvironmentBuilder {
     }
 
     private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {
-        env.setConfig(key, env.getConfig(key) ?? valueProvider())
+        env.setConfig(key, this.baseEnv.getConfig(key) ?? valueProvider())
     }
 
     private registerBeanIfNotAlreadySet(env: Environment, key: Bean, valueProvider: ()=>any): void {
-        env.registerBean(key, env.getBean(key) ?? valueProvider())
+        env.registerBean(key, this.baseEnv.getBean(key) ?? valueProvider())
     }
 }

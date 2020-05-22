@@ -24,7 +24,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         },
         {
             constraints: {
-                unique: ['entity_type', 'entity_id']
+                unique: ['entity_id', 'entity_type']
             }
         })
 
@@ -33,12 +33,14 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.sql(`CREATE INDEX ON deployments ( local_timestamp DESC )`) // Using plain SQL since lib doesn't expose DESC
 
     /** Deployment Deltas */
+    pgm.createType('delta_pointer_result', [ 'set', 'cleared' ])
+
     pgm.createTable('deployment_deltas',
         {
             deployment: { type: 'integer', references: 'deployments', notNull: true },
             pointer: { type: 'text', notNull: true },
             before: { type: 'integer', references: 'deployments', notNull: false },
-            after: { type: 'integer', references: 'deployments', notNull: false },
+            after: { type: 'delta_pointer_result', notNull: true },
         },
         {
             constraints: {
@@ -59,7 +61,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         },
         {
             constraints: {
-                unique: ['entity_type', 'entity_id']
+                unique: ['entity_id', 'entity_type']
             }
         })
     pgm.sql(`CREATE INDEX ON failed_deployments ( failure_timestamp DESC )`) // Using plain SQL since lib doesn't expose DESC
@@ -125,7 +127,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         },
         {
             constraints: {
-                unique: ['target_type', 'target_id']
+                unique: ['target_id', 'target_type']
             }
         })
 
@@ -140,14 +142,13 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         },
         {
             constraints: {
-                unique: ['target_type', 'target_id', 'timestamp']
+                unique: ['target_id', 'target_type', 'timestamp']
             }
         })
 
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
-    pgm.dropTable('deployments')
     pgm.dropTable('deployment_deltas')
     pgm.dropTable('failed_deployments')
     pgm.dropTable('last_deployed_pointers')
@@ -156,4 +157,5 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
     pgm.dropTable('migration_data')
     pgm.dropTable('denylist')
     pgm.dropTable('denylist_history')
+    pgm.dropTable('deployments')
 }

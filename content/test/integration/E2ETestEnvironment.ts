@@ -121,19 +121,19 @@ type TestEnvCalls = {
 
 export class ServerBuilder {
 
-    private readonly sharedBuilder: EnvironmentBuilder
+    private readonly builder: EnvironmentBuilder
 
     constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment) {
-        this.sharedBuilder = new EnvironmentBuilder(env)
+        this.builder = new EnvironmentBuilder(env)
     }
 
     withBean(bean: Bean, value: any): ServerBuilder {
-        this.sharedBuilder.withBean(bean, value)
+        this.builder.withBean(bean, value)
         return this
     }
 
     withConfig(config: EnvironmentConfig, value: any): ServerBuilder {
-        this.sharedBuilder.withConfig(config, value)
+        this.builder.withConfig(config, value)
         return this
     }
 
@@ -152,16 +152,15 @@ export class ServerBuilder {
 
         const servers: TestServer[] = []
         for (let i = 0; i < ports.length; i++) {
-            const serverEnvBuilder = new EnvironmentBuilder(this.sharedBuilder)
             const port = ports[i]
             const address = `http://localhost:${port}`
             this.testEnvCalls.addToDAO(address)
-            serverEnvBuilder
+            const env = await this.builder
                 .withConfig(EnvironmentConfig.NAME_PREFIX, `Server${i + 1}_`)
                 .withConfig(EnvironmentConfig.SERVER_PORT, port)
                 .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
                 .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
-            const env = await serverEnvBuilder.build()
+                .build()
             servers[i] = new TestServer(env)
         }
 

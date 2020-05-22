@@ -56,10 +56,12 @@ export class PointerManager {
             if (happenedBefore(lastDeployment, entityBeingDeployed)) {
                 intersection.forEach(pointer => {
                     // If the last deployment happened before, then the intersected pointers will point either to the new entity, or to nothing
-                    result.set(pointer, {
-                        before: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
-                        after: willDeploymentBecomeActive ? deploymentId : undefined
-                    })
+                    if (!lastDeployment.deleted || willDeploymentBecomeActive) {
+                        result.set(pointer, {
+                            before: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
+                            after: willDeploymentBecomeActive ? DELTA_POINTER_RESULT.SET : DELTA_POINTER_RESULT.CLEARED
+                        })
+                    }
 
                     // All pointers on the intersection will need to be overwritten
                     overwrite.add(pointer)
@@ -68,14 +70,8 @@ export class PointerManager {
                 // If the last deployment wasn't already deleted, then the pointers not pointing to the new entity, will point to nothing
                 if (!lastDeployment.deleted) {
                     const onlyOnLastDeployed: Set<Pointer> = diff(lastDeployment.pointers, entity.pointers)
-                    onlyOnLastDeployed.forEach(pointer => result.set(pointer, { before: lastDeployment.deployment, after: undefined }))
+                    onlyOnLastDeployed.forEach(pointer => result.set(pointer, { before: lastDeployment.deployment, after: DELTA_POINTER_RESULT.CLEARED }))
                 }
-            } else {
-                // If the new entity happened before the current last deployment, then the intersected pointers will continue pointing to whatever they were pointing to
-                intersection.forEach(pointer => result.set(pointer, {
-                    before: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
-                    after: !lastDeployment.deleted ? lastDeployment.deployment : undefined,
-                }))
             }
         })
 
@@ -98,7 +94,12 @@ export class PointerManager {
     }
 }
 
-export type DeploymentResult = Map<Pointer, { before: DeploymentId | undefined, after: DeploymentId | undefined }>
+export type DeploymentResult = Map<Pointer, { before: DeploymentId | undefined, after: DELTA_POINTER_RESULT }>
+
+enum DELTA_POINTER_RESULT {
+    SET = 'set',
+    CLEARED = 'cleared',
+}
 
 function intersect(pointers1: Pointer[], pointers2: Pointer[]): Set<Pointer> {
     return new Set(pointers1.filter(pointer => pointers2.includes(pointer)))
