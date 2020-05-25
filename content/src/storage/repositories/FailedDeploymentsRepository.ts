@@ -74,7 +74,7 @@ export class FailedDeploymentsRepository {
                     reason,
                     error_description
                 ) VALUES ($1, $2, to_timestamp($3 / 1000.0), $4, to_timestamp($5 / 1000.0), $6, $7)
-                ON CONFLICT ON CONSTRAINT failed_deployments_uniq_entity_type_entity_id
+                ON CONFLICT ON CONSTRAINT failed_deployments_uniq_entity_id_entity_type
                 DO UPDATE SET origin_timestamp = to_timestamp($3 / 1000.0), origin_server_url = $4, failure_timestamp = to_timestamp($5 / 1000.0), reason = $6, error_description = $7`,
                 [entityType, entityId, originTimestamp, originServerUrl, failureTimestamp, reason, errorDescription]);
     }
