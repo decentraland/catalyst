@@ -11,6 +11,7 @@ import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { Timestamp } from "../service/time/TimeSorting";
 import { Repository } from "../storage/Repository";
 import { DenylistRepository } from "../storage/repositories/DenylistRepository";
+import { DeploymentFilters, PartialDeploymentHistory } from "../service/deployments/DeploymentManager";
 
 /**
  * This decorator takes a MetaverseContentService and adds denylisting functionality to it
@@ -140,12 +141,63 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 
 
-  getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number | undefined) {
+  getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: string, offset?: number, limit?: number | undefined) {
     return this.service.getLegacyHistory(from, to, serverName, offset, limit)
   }
 
-  getDeployments(from?: number, to?: number, offset?: number, limit?: number) {
-    return this.service.getDeployments(from, to, offset, limit)
+  async getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
+    return this.repository.task(async task => {
+      // TODO: Filter denylisted pointers from filters, when added
+      const deploymentHistory = await this.service.getDeployments(filters, offset, limit, task)
+
+      // Prepare holders
+      const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
+      const contentTargetsByEntity: Map<EntityId, Map<ContentFileHash, DenylistTarget>> = new Map()
+      const allTargets: DenylistTarget[] = []
+
+      // Calculate and group targets by entity
+      deploymentHistory.deployments.forEach(({ entityId, entityType, content }) => {
+        const entityTarget = buildEntityTarget(entityType, entityId);
+        const hashTargets: Map<ContentFileHash, DenylistTarget> = !content ? new Map() : new Map(Array.from(content.entries())
+          .map(([, hash]) => [hash, buildContentTarget(hash)]))
+        entityTargetsByEntity.set(entityId, entityTarget);
+        contentTargetsByEntity.set(entityId, hashTargets);
+        allTargets.push(entityTarget, ...hashTargets.values())
+      })
+
+      // Check which targets are denylisted
+      const queryResult = await this.denylist.areTargetsDenylisted(task.denylist, allTargets)
+
+      // Perform sanitization
+      const sanitizedDeployments = deploymentHistory.deployments.map(deployment => {
+        const { entityId } = deployment
+        const entityTarget = entityTargetsByEntity.get(entityId)!!
+        const contentTargets = contentTargetsByEntity.get(entityId)!!
+
+        const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
+        const denylistedContent = Array.from(contentTargets.entries())
+            .map(([ hash, target ]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
+            .filter(({ isDenylisted }) => isDenylisted)
+            .map(({ hash }) => hash)
+
+        const { auditInfo } = deployment
+        return {
+            ...deployment,
+            content: isEntityDenylisted ? undefined : deployment.content,
+            metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
+            auditInfo: {
+                ...auditInfo,
+                denylistedContent: denylistedContent.length > 0 ? denylistedContent : undefined,
+                isDenylisted: isEntityDenylisted ? true : undefined,
+            },
+        }
+      })
+
+      return {
+        ...deploymentHistory,
+        deployments: sanitizedDeployments,
+      }
+    })
   }
 
   getAllFailedDeployments() {

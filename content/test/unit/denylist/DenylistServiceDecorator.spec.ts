@@ -10,6 +10,7 @@ import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertio
 import { EntityVersion, AuditInfo, AuditInfoBase  } from "@katalyst/content/service/Audit";
 import { Authenticator } from "dcl-crypto";
 import { MockedRepository } from "../storage/MockedRepository";
+import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
 
 describe("DenylistServiceDecorator", () => {
 
@@ -81,6 +82,44 @@ describe("DenylistServiceDecorator", () => {
         entitiesEqualNonSanitizableProperties(returnedEntity, entity2)
         expect(returnedEntity.metadata).toEqual(DenylistServiceDecorator.DENYLISTED_METADATA)
         expect(returnedEntity.content).toBeUndefined()
+    })
+
+    it(`When an entity is denylisted, then it is returned on deployments, but without content or metadata`, async () => {
+        const denylist = denylistWith(entity2Target)
+        const decorator = getDecorator(denylist)
+
+        const { deployments } = await decorator.getDeployments();
+
+        expect(deployments.length).toBe(2)
+        const [ deployment1, deployment2 ] = deployments
+
+        // Assert deployment 1 is not denylisted
+        deploymentEquals(entity1, deployment1)
+        expect(deployment1.auditInfo.isDenylisted).toBeUndefined()
+
+        // Assert deployment 2 is denylisted
+        deploymentEqualsNonSanitizableProperties(entity2, deployment2)
+        expect(deployment2.metadata).toEqual(DenylistServiceDecorator.DENYLISTED_METADATA)
+        expect(deployment2.content).toBeUndefined()
+        expect(deployment2.auditInfo.isDenylisted).toBeTruthy()
+    })
+
+    it(`When content is denylisted, then it is marked as so on the deployment`, async () => {
+        const denylist = denylistWith(content1Target)
+        const decorator = getDecorator(denylist)
+
+        const { deployments } = await decorator.getDeployments();
+
+        expect(deployments.length).toBe(2)
+        const [ deployment1, deployment2 ] = deployments
+
+        // Assert content is marked as denylisted
+        deploymentEquals(entity1, deployment1)
+        expect(deployment1.auditInfo.denylistedContent).toEqual([content1.hash])
+
+        // Assert no content is marked as denylisted
+        deploymentEquals(entity2, deployment2)
+        expect(deployment2.auditInfo.denylistedContent).toBeUndefined
     })
 
     it(`When an entity is not denylisted, then it is returned by pointers correctly`, async () => {
@@ -250,6 +289,22 @@ describe("DenylistServiceDecorator", () => {
         expect(entity1.type).toEqual(entity2.type)
         expect(entity1.pointers).toEqual(entity2.pointers)
         expect(entity1.timestamp).toEqual(entity2.timestamp)
+    }
+
+    function deploymentEqualsNonSanitizableProperties(entity: Entity, deployment: Deployment) {
+        expect(entity.id).toEqual(deployment.entityId)
+        expect(entity.type).toEqual(deployment.entityType)
+        expect(entity.pointers).toEqual(deployment.pointers)
+        expect(entity.timestamp).toEqual(deployment.entityTimestamp)
+    }
+
+    function deploymentEquals(entity: Entity, deployment: Deployment) {
+        expect(entity.id).toEqual(deployment.entityId)
+        expect(entity.type).toEqual(deployment.entityType)
+        expect(entity.pointers).toEqual(deployment.pointers)
+        expect(entity.timestamp).toEqual(deployment.entityTimestamp)
+        expect(entity.content).toEqual(deployment.content)
+        expect(entity.metadata).toEqual(deployment.metadata)
     }
 
     function denylistWith(...denylistedTargets: DenylistTarget[]): Denylist {

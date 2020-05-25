@@ -9,7 +9,11 @@ export class MigrationDataRepository {
         return this.db.none('INSERT INTO migration_data (deployment, original_metadata) VALUES ($1, $2)', [deploymentId, originalMetadata])
     }
 
-    getMigrationData(deploymentId: DeploymentId): Promise<any | undefined> {
-        return this.db.oneOrNone('SELECT original_metadata FROM migration_data WHERE deployment = $1', [deploymentId], metadata => metadata ?? undefined)
+    async getMigrationData(deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, any>> {
+        if (deploymentIds.length === 0) {
+            return new Map()
+        }
+        const queryResult = await this.db.any('SELECT deployment, original_metadata FROM migration_data WHERE deployment IN ($1:list)', [deploymentIds])
+        return new Map(queryResult.map(row => [ row.deployment, row.original_metadata ]))
     }
 }

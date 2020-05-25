@@ -1,14 +1,13 @@
 import { Bean } from "@katalyst/content/Environment"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { EntityType } from "@katalyst/content/service/Entity"
-import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFile } from "@katalyst/content/service/Service"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 import { loadTestEnvironment } from "./E2ETestEnvironment"
+import { assertHistoryOnServerHasEvents, buildEventWithName, assertDeploymentsAreReported, buildDeployment } from "./E2EAssertions"
 
 describe("End 2 end deploy test", () => {
 
@@ -40,6 +39,9 @@ describe("End 2 end deploy test", () => {
         const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], "this is just some metadata", 'content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt')
 
         const creationTimestamp = await server.deploy(deployData)
+        const deploymentEvent = buildEventWithName(entityBeingDeployed, 'UNKNOWN_NAME', creationTimestamp)
+        const deployment = buildDeployment(deployData, entityBeingDeployed, server, creationTimestamp)
+        deployment.auditInfo.originServerUrl = 'https://peer.decentraland.org/content'
         const deltaTimestamp = Date.now() - creationTimestamp
         expect(deltaTimestamp).toBeLessThanOrEqual(100)
         expect(deltaTimestamp).toBeGreaterThanOrEqual(0)
@@ -56,8 +58,8 @@ describe("End 2 end deploy test", () => {
         const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, ["0,0"])
         await validateReceivedData(scenesByPointer, deployData)
 
-        const [deploymentEvent]: LegacyDeploymentHistory = (await server.getHistory()).events
-        validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
+        await assertHistoryOnServerHasEvents(server, deploymentEvent)
+        await assertDeploymentsAreReported(server, deployment)
     });
 
     async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeployData) {
@@ -82,12 +84,6 @@ describe("End 2 end deploy test", () => {
     }
 
 })
-
-function validateHistoryEvent(deploymentEvent: LegacyDeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
-    expect(deploymentEvent.entityId).toBe(deployData.entityId)
-    expect(deploymentEvent.entityType).toBe(entityBeingDeployed.type)
-    expect(deploymentEvent.timestamp).toBe(creationTimestamp)
-}
 
 function findInArray<T extends { file: string }>(elements: T[] | undefined, key: string): T | undefined {
     return elements?.find(e => e.file === key);

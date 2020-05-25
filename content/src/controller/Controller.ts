@@ -15,6 +15,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { SynchronizationManager } from "../service/synchronization/SynchronizationManager";
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
+import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
 
 export class Controller {
 
@@ -224,6 +225,21 @@ export class Controller {
         const history = await this.service.getLegacyHistory(from, to, serverName, offset, limit)
         res.send(history)
     }
+
+    async getDeployments(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /deployments
+        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}
+        const fromLocalTimestamp = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp   = this.asInt(req.query.toLocalTimestamp)
+        const offset             = this.asInt(req.query.offset)
+        const limit              = this.asInt(req.query.limit)
+
+        const { deployments, filters, pagination } = await this.service.getDeployments({ fromLocalTimestamp, toLocalTimestamp }, offset, limit)
+        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.maskEntity(deployment))
+        res.send( { deployments: controllerDeployments, filters, pagination })
+    }
+
     private asInt(value: any): number | undefined {
         return value ? parseInt(value) : undefined
     }
@@ -345,8 +361,34 @@ export interface ControllerEntity {
     metadata?: any
 }
 
+export interface ControllerDeployment {
+    entityType: string,
+    entityId: string,
+    pointers: string[],
+    entityTimestamp: number,
+    content?: ControllerDeploymentContent[],
+    metadata?: any,
+    deployedBy: string,
+    auditInfo: {
+        version: string,
+        authChain: AuthChain,
+        originServerUrl: string,
+        originTimestamp: number,
+        localTimestamp: number ,
+        overwrittenBy?: string,
+        migrationData?: any,
+        isDenylisted?: boolean,
+        denylistedContent?: string[],
+    }
+}
+
 export type ControllerEntityContent = {
     file: string,
+    hash: string,
+}
+
+export type ControllerDeploymentContent = {
+    key: string,
     hash: string,
 }
 

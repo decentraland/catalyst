@@ -4,7 +4,6 @@ import { AuditInfo } from '@katalyst/content/service/Audit';
 import { Repository } from '@katalyst/content/storage/Repository';
 import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
 import { ServerAddress } from '@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient';
-import { DeploymentEvent } from '@katalyst/content/service/deployments/DeploymentManager';
 
 export class DeploymentsRepository {
 
@@ -32,7 +31,7 @@ export class DeploymentsRepository {
                 entityId: row.entity_id,
                 timestamp: row.entity_timestamp,
                 pointers: row.entity_pointers,
-                metadata: row.entity_metadata.v,
+                metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
             }))
     }
 
@@ -40,16 +39,33 @@ export class DeploymentsRepository {
         return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], row => parseInt(row.count));
     }
 
-    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress): Promise<DeploymentEvent[]> {
+    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress) {
         return this.getDeploymentsBy('origin_timestamp', offset, limit, from, to, serverUrl)
     }
 
-    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress): Promise<DeploymentEvent[]> {
+    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress) {
         return this.getDeploymentsBy('local_timestamp', offset, limit, from, to, serverUrl)
     }
 
-    private getDeploymentsBy(timestampField: string, offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress): Promise<DeploymentEvent[]> {
-        let query = `SELECT entity_type, entity_id, date_part('epoch', origin_timestamp) * 1000 AS origin_timestamp, origin_server_url, date_part('epoch', local_timestamp) * 1000 AS local_timestamp, deployer_address FROM deployments`
+    private getDeploymentsBy(timestampField: string, offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress) {
+        let query = `
+            SELECT
+                dep1.id,
+                dep1.entity_type,
+                dep1.entity_id,
+                dep1.entity_pointers,
+                date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+                dep1.entity_metadata,
+                dep1.deployer_address,
+                dep1.version,
+                dep1.auth_chain,
+                dep1.origin_server_url,
+                date_part('epoch', dep1.origin_timestamp) * 1000 AS origin_timestamp,
+                date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
+                dep2.entity_id AS overwritten_by
+            FROM deployments AS dep1
+            LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
+
         let whereClause: string[] = []
 
         const values: any = {
@@ -60,17 +76,17 @@ export class DeploymentsRepository {
 
         if (from) {
             values.from = from
-            whereClause.push(`${timestampField} >= to_timestamp($(from) / 1000.0)`)
+            whereClause.push(`dep1.${timestampField} >= to_timestamp($(from) / 1000.0)`)
         }
 
         if (to) {
             values.to = to
-            whereClause.push(`${timestampField} <= to_timestamp($(to) / 1000.0)`)
+            whereClause.push(`dep1.${timestampField} <= to_timestamp($(to) / 1000.0)`)
         }
 
         if (serverUrl) {
             values.serverUrl = serverUrl
-            whereClause.push(`origin_server_url = $(serverUrl)`)
+            whereClause.push(`dep1.origin_server_url = $(serverUrl)`)
         }
 
         const where = whereClause.length > 0 ?
@@ -78,15 +94,22 @@ export class DeploymentsRepository {
             ''
 
         query += where
-        query += ` ORDER BY ${timestampField} DESC LIMIT $(limit) OFFSET $(offset)`
+        query += ` ORDER BY dep1.${timestampField} DESC LIMIT $(limit) OFFSET $(offset)`
 
         return this.db.map(query, values, row => ({
+            deploymentId: row.id,
             entityType: row.entity_type,
             entityId: row.entity_id,
-            originTimestamp: row.origin_timestamp,
+            pointers: row.entity_pointers,
+            entityTimestamp: row.entity_timestamp,
+            metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+            deployerAddress: row.deployer_address,
+            version: row.version,
+            authChain: row.auth_chain,
             originServerUrl: row.origin_server_url,
+            originTimestamp: row.origin_timestamp,
             localTimestamp: row.local_timestamp,
-            deployer: row.deployer_address,
+            overwrittenBy: row.overwritten_by ?? undefined
         }))
     }
 
@@ -121,7 +144,7 @@ export class DeploymentsRepository {
             ) RETURNING id`, {
                 entity,
                 auditInfo,
-                metadata: { v: entity.metadata }, // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
+                metadata: entity.metadata ? { v: entity.metadata } : null, // We want to be able to store whatever we want, but psql is heavily typed. So we will wrap the metadata with an object
                 deployer: Authenticator.ownerAddress(auditInfo.authChain),
                 overwrittenBy,
             }, deployment => deployment.id)
@@ -141,7 +164,7 @@ export class DeploymentsRepository {
             LEFT JOIN deployments AS dep2 ON dep.deleter_deployment = dep2.id
             WHERE dep.entity_id=$1 AND dep.entity_type=$2`,
             [id, type],
-            row => ({
+            row => row && ({
                 deploymentId: row.id,
                 auditInfo: {
                     version: row.version,
