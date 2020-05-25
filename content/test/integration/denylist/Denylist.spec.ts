@@ -1,41 +1,32 @@
-import { EnvironmentConfig, EnvironmentBuilder, Bean } from "@katalyst/content/Environment"
+import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { EntityType } from "@katalyst/content/service/Entity"
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator"
-import { buildDeployData, deleteServerStorage, createIdentity, Identity, parseEntityType } from "../E2ETestUtils"
+import { buildDeployData, createIdentity, parseEntityType } from "../E2ETestUtils"
 import { TestServer } from "../TestServer"
 import { assertFileIsOnServer, assertEntityIsNotDenylisted, assertEntityIsDenylisted, assertFileIsNotOnServer, assertContentNotIsDenylisted, assertContentIsDenylisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
 import { ControllerEntityContent, ControllerDenylistData, ControllerEntity } from "@katalyst/content/controller/Controller"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
-import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
-import { mock, when, instance } from "ts-mockito"
-import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster"
 import { DenylistTargetType, buildEntityTarget } from "@katalyst/content/denylist/DenylistTarget"
-import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
+import { loadTestEnvironment } from "../E2ETestEnvironment"
+import { MockedContentCluster } from "@katalyst/test-helpers/service/synchronization/MockedContentCluster"
 
 describe("Integration - Denylist", () => {
 
     const metadata: string = "Some metadata"
     const decentralandIdentity = createIdentity()
     const ownerIdentity = createIdentity()
+    const testEnv = loadTestEnvironment()
     let server: TestServer
 
     beforeEach(async () => {
-        const env = await new EnvironmentBuilder()
-            .withDeploymentReporter(new NoOpDeploymentReporter())
-            .withSynchronizationManager(new MockedSynchronizationManager())
-            .withAccessChecker(new MockedAccessChecker())
-            .withBean(Bean.CONTENT_CLUSTER, mockedClusterWithIdentityAsOwn(ownerIdentity))
-            .withConfig(EnvironmentConfig.METRICS, false)
+        server = await testEnv.configServer()
+            .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
+            .withBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withAddress(ownerIdentity.address))
             .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, decentralandIdentity.address)
-            .build()
-        server = new TestServer(env)
-        await server.start()
-    })
+            .andBuild()
 
-    afterEach(async () => {
-        await server.stop()
-        deleteServerStorage(server)
+        await server.start()
     })
 
     it(`When an entity is denylisted, then the metadata and content are hidden`, async () => {
@@ -220,10 +211,4 @@ describe("Integration - Denylist", () => {
 
 function getTargetIdFromEntity(entity: ControllerEntity) {
     return buildEntityTarget(parseEntityType(entity), entity.id).getId()
-}
-
-function mockedClusterWithIdentityAsOwn(identity: Identity) {
-    let mockedCluster: ContentCluster = mock(ContentCluster)
-    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: identity.address, address: "", id: "", name: "" })
-    return instance(mockedCluster)
 }

@@ -1,5 +1,4 @@
 import * as EthCrypto from "eth-crypto";
-import { mock, instance, when, anything } from "ts-mockito";
 import { Validations } from "../../../../src/service/validations/Validations";
 import { Entity, EntityType } from "../../../../src/service/Entity";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
@@ -7,10 +6,8 @@ import { ValidationContext } from "@katalyst/content/service/validations/Validat
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl";
 import { AuthChain, AuthLinkType } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
-
-import { FailedDeploymentsManager, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager";
 import ms from "ms";
-import { EntityVersion } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion } from "@katalyst/content/service/Audit";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
@@ -120,7 +117,6 @@ describe("Validations", function() {
     const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
     const auditInfo = {
         version: EntityVersion.V3,
-        deployedTimestamp: 10,
         authChain: []
       }
     const validation = getValidatorWithMockedAccess();
@@ -391,7 +387,6 @@ function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
   return new Validations(new AccessCheckerImpl(authenticator, "unused_url"),
     authenticator,
-    mockedFailedDeploymentsManager(),
     "ropsten",
     ms('10m')).getInstance();
 }
@@ -399,13 +394,6 @@ function getValidatorWithRealAccess() {
 function getValidatorWithMockedAccess() {
   return new Validations(new MockedAccessChecker(),
     new ContentAuthenticator(),
-    mockedFailedDeploymentsManager(),
     "ropsten",
     ms('10m')).getInstance();
-}
-
-function mockedFailedDeploymentsManager() {
-  let mockedManager: FailedDeploymentsManager = mock(FailedDeploymentsManager);
-  when(mockedManager.getDeploymentStatus(anything(), anything())).thenReturn(Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED));
-  return instance(mockedManager);
 }

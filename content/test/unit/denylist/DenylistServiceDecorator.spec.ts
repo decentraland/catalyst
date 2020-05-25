@@ -1,14 +1,15 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget } from "@katalyst/content/denylist/DenylistTarget";
+import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
 import { ContentFile } from "@katalyst/content/service/Service";
 import { Pointer, Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
-import { EntityVersion, AuditInfo, NO_TIMESTAMP } from "@katalyst/content/service/audit/Audit";
+import { EntityVersion, AuditInfo, AuditInfoBase  } from "@katalyst/content/service/Audit";
 import { Authenticator } from "dcl-crypto";
+import { MockedRepository } from "../storage/MockedRepository";
 
 describe("DenylistServiceDecorator", () => {
 
@@ -17,9 +18,10 @@ describe("DenylistServiceDecorator", () => {
     const content1 = buildRandomContent()
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
-    const auditInfo: AuditInfo = {
+    const auditInfo: AuditInfoBase = {
         authChain: Authenticator.createSimpleAuthChain('', ethAddress, random.alphaNumeric(10)),
-        version: EntityVersion.V3, deployedTimestamp: NO_TIMESTAMP}
+        version: EntityVersion.V3
+    }
 
 
     let entity1: Entity;
@@ -52,7 +54,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When a pointer is denylisted, then no entities are reported on it`, async () => {
         const denylist = denylistWith(P1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const entities = await decorator.getEntitiesByPointers(entity1.type, [P1]);
 
@@ -61,34 +63,16 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When a pointer is not denylisted, then it reports the entity correctly`, async () => {
         const denylist = denylistWith(P1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers);
 
         expect(entities).toEqual([entity2])
     })
 
-    it(`When a pointer is denylisted, then the history is empty`, async () => {
-        const denylist = denylistWith(P1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
-
-        const entities = await decorator.getPointerHistory(entity1.type, P1);
-
-        expect(entities.length).toBe(0)
-    })
-
-    it(`When a pointer is not denylisted, then it reports the history correctly`, async () => {
-        const denylist = denylistWith()
-        const decorator = new DenylistServiceDecorator(service, denylist)
-
-        const history = await decorator.getPointerHistory(entity1.type, P1);
-
-        expect(history).toEqual([{ entityId: entity1.id, timestamp: entity1.timestamp }])
-    })
-
     it(`When an entity is denylisted, then it is returned by pointers, but without content or metadata`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers);
 
@@ -101,7 +85,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is not denylisted, then it is returned by pointers correctly`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const entities = await decorator.getEntitiesByPointers(entity1.type, entity1.pointers);
 
@@ -110,7 +94,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is denylisted, then it is returned by id, but without content or metadata`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const entities = await decorator.getEntitiesByIds(entity2.type, [entity2.id]);
 
@@ -123,25 +107,16 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is not denylisted, then it is returned by id correctly`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const entities = await decorator.getEntitiesByIds(entity1.type, [entity1.id]);
 
         expect(entities).toEqual([entity1])
     })
 
-    it(`When a pointer is denylisted, then it is not reported as active`, async () => {
-        const denylist = denylistWith(P1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
-
-        const pointers = await decorator.getActivePointers(entity1.type);
-
-        expect(pointers).toEqual([P2])
-    })
-
     it(`When content is denylisted, then it can't be returned`, async () => {
         const denylist = denylistWith(content1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const content = await decorator.getContent(content1.hash);
         expect(content).toBeUndefined()
@@ -149,7 +124,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When content is not denylisted, then it can be returned correctly`, async () => {
         const denylist = denylistWith(content1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const buffer = await (await decorator.getContent(content2.hash))?.asBuffer()
 
@@ -158,7 +133,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is denylisted, then it can't be returned as content`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const content = await decorator.getContent(entity2.id);
         expect(content).toBeUndefined()
@@ -166,7 +141,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is not denylisted, then it can be returned as content`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const buffer = await (await decorator.getContent(entity1.id))?.asBuffer()
 
@@ -175,7 +150,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When content is denylisted, then it is not available`, async () => {
         const denylist = denylistWith(content1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const available = await decorator.isContentAvailable([content1.hash, content2.hash]);
 
@@ -185,7 +160,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is denylisted, then it is not available as content`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const available = await decorator.isContentAvailable([entity1.id, entity2.id]);
 
@@ -195,7 +170,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is denylisted, then it is marked as so on the audit info`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id) as AuditInfo
 
@@ -209,7 +184,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When content is denylisted, then it is marked as so on the audit info`, async () => {
         const denylist = denylistWith(content1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id) as AuditInfo
 
@@ -223,7 +198,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When an entity is not denylisted, then the audit info is not modified`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id);
 
@@ -232,23 +207,23 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When status is requested, then it is not modified`, async () => {
         const denylist = denylistWith(entity2Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
-        const status = await decorator.getStatus();
+        const status = decorator.getStatus();
 
         expect(status).toEqual(MockedMetaverseContentService.STATUS)
     })
 
     it(`When no denylist matches, then entities can be deployed`, async () => {
         const denylist = denylistWith()
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         await decorator.deployEntity([entityFile1], entity1.id, auditInfo, '');
     })
 
     it(`When address is denylisted, then it can't deploy entities`, async () => {
         const denylist = denylistWith(ethAddressTarget)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow a deployment from address '${ethAddress}' since it was denylisted.`)
@@ -256,7 +231,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When pointer is denylisted, then entities can't be deployed on it`, async () => {
         const denylist = denylistWith(P1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a denylisted pointer.`)
@@ -264,7 +239,7 @@ describe("DenylistServiceDecorator", () => {
 
     it(`When content is denylisted, then entities can't be deployed with it`, async () => {
         const denylist = denylistWith(content1Target)
-        const decorator = new DenylistServiceDecorator(service, denylist)
+        const decorator = getDecorator(denylist)
 
         await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a denylisted content.`)
@@ -278,12 +253,27 @@ describe("DenylistServiceDecorator", () => {
     }
 
     function denylistWith(...denylistedTargets: DenylistTarget[]): Denylist {
-        const targetIds: Set<string> = new Set(denylistedTargets.map(target => target.asString()))
+        const denylistedTargetsAsMap: Map<DenylistTargetId, DenylistTargetType> = new Map(denylistedTargets.map(target => [target.getId(), target.getType()]))
         let mockedDenylist: Denylist = mock(Denylist)
-        when(mockedDenylist.areTargetsDenylisted(anything())).thenCall(
-            (targets: DenylistTarget[]) => Promise.resolve(new Map(targets.map(target => [target, targetIds.has(target.asString())]))))
+        when(mockedDenylist.areTargetsDenylisted(anything(), anything())).thenCall(
+            (_, targets: DenylistTarget[]) => {
+                const result: Map<DenylistTargetType, Map<DenylistTargetId, boolean>> = new Map()
+                targets.forEach(target => {
+                    if (!result.has(target.getType())) {
+                        result.set(target.getType(), new Map())
+                    }
+                    const isDenylisted = denylistedTargetsAsMap.get(target.getId()) === target.getType()
+                    result.get(target.getType())!!.set(target.getId(), isDenylisted)
+                })
+                return Promise.resolve(result)
+            })
 
         return instance(mockedDenylist)
     }
 
+    function getDecorator(denylist: Denylist) {
+        return new DenylistServiceDecorator(service, denylist, MockedRepository.build());
+    }
+
 })
+

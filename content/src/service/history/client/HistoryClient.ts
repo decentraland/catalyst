@@ -1,8 +1,9 @@
 import { Timestamp } from "../../time/TimeSorting"
 import { ServerName } from "../../naming/NameKeeper"
-import { DeploymentEvent, PartialDeploymentHistory } from "../HistoryManager"
+import { LegacyDeploymentEvent, PartialDeploymentLegacyHistory } from "../HistoryManager"
 import { ServerAddress } from "../../synchronization/clients/contentserver/ContentServerClient"
-import { FetchHelper, retry } from "@katalyst/content/helpers/FetchHelper"
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 
 export class HistoryClient {
 
@@ -13,9 +14,9 @@ export class HistoryClient {
         to?: Timestamp,
         serverName?: ServerName,
         limit?: number,
-        partialCallback?: (url: string, res:PartialDeploymentHistory) => void )
-        : Promise<DeploymentEvent[]> {
-        let events: DeploymentEvent[] = []
+        partialCallback?: (url: string, res:PartialDeploymentLegacyHistory) => void )
+        : Promise<LegacyDeploymentEvent[]> {
+        let events: LegacyDeploymentEvent[] = []
         let offset = 0
         let keepRetrievingHistory = true
         while(keepRetrievingHistory) {
@@ -32,7 +33,7 @@ export class HistoryClient {
             if (limit) {
                 url += `&limit=${limit}`
             }
-            const partialHistory: PartialDeploymentHistory = await retry(() => fetchHelper.fetchJson(url), 3, `fetch history from ${address}`)
+            const partialHistory: PartialDeploymentLegacyHistory = await retry(() => fetchHelper.fetchJson(url), 3, `fetch history from ${address}`)
             if (partialCallback) {
                 partialCallback(url, partialHistory)
             }

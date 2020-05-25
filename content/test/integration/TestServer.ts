@@ -5,12 +5,12 @@ import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environm
 import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
 import { ControllerEntity, ControllerDenylistData } from "@katalyst/content/controller/Controller"
-import { PartialDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { DeployData, hashAndSignMessage, Identity, parseEntityType } from "./E2ETestUtils"
+import { DeployData, hashAndSignMessage, Identity, parseEntityType, deleteFolderRecursive } from "./E2ETestUtils"
 import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
+import { LegacyAuditInfo } from "@katalyst/content/service/Audit"
 import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
@@ -20,10 +20,10 @@ import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
 
-    private serverPort: number
-    private started: boolean = false
     public readonly namePrefix: string
-    public readonly storageFolder: string
+    private readonly serverPort: number
+    private readonly storageFolder: string
+    private started: boolean = false
 
     private readonly client: ContentServerClient
 
@@ -46,11 +46,13 @@ export class TestServer extends Server {
         return super.start()
     }
 
-    stop(): Promise<void> {
+    async stop(options: { deleteStorage: boolean } = { deleteStorage: true }): Promise<void> {
         if (this.started) {
-            return super.stop()
-        } else {
-            return Promise.resolve()
+            this.started = false
+            await super.stop()
+        }
+        if (options.deleteStorage) {
+            deleteFolderRecursive(this.storageFolder)
         }
     }
 
@@ -80,7 +82,7 @@ export class TestServer extends Server {
         return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
     }
 
-    getHistory(): Promise<PartialDeploymentHistory> {
+    getHistory(): Promise<PartialDeploymentLegacyHistory> {
         return this.makeRequest(`${this.getAddress()}/history`)
     }
 
@@ -109,7 +111,7 @@ export class TestServer extends Server {
         throw new Error(`Failed to fetch file with hash ${fileHash} on server ${this.namePrefix}`)
     }
 
-    async getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
+    async getAuditInfo(entity: ControllerEntity): Promise<LegacyAuditInfo> {
         return this.client.getAuditInfo(parseEntityType(entity), entity.id)
     }
 

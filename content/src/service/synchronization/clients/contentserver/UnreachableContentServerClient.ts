@@ -1,10 +1,10 @@
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
-import { DeploymentHistory } from "../../../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
 import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
-import { AuditInfo } from "../../../audit/Audit";
+import { LegacyAuditInfo } from "../../../Audit";
 import { ContentServerClient, UNREACHABLE, ConnectionState } from "./ContentServerClient";
 
 export function getUnreachableClient(): UnreachableContentServerClient {
@@ -26,7 +26,7 @@ class UnreachableContentServerClient extends ContentServerClient {
         throw new Error(`Server is unreachable`)
     }
 
-    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
+    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<LegacyAuditInfo> {
         throw new Error(`Server is unreachable`)
     }
 
@@ -38,7 +38,7 @@ class UnreachableContentServerClient extends ContentServerClient {
         throw new Error(`Server is unreachable`)
     }
 
-    getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
+    getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<LegacyDeploymentHistory> {
         return Promise.resolve([])
     }
 

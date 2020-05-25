@@ -5,10 +5,10 @@ import { ContentFile } from '../Service';
 import { ContentFileHash } from "../Hashing";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
-import { AuditInfo } from "../audit/Audit";
+import { EntityVersion, AuditInfoBase } from "../Audit";
 import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
-import { DeploymentStatus, FailedDeploymentsManager, NoFailure } from "../errors/FailedDeploymentsManager";
+import { DeploymentStatus, NoFailure } from "../errors/FailedDeploymentsManager";
 import { httpProviderForNetwork } from '../../../../contracts/utils';
 import { Timestamp, happenedBeforeEntities } from "../time/TimeSorting";
 
@@ -16,14 +16,12 @@ export class Validations {
 
     constructor(private readonly accessChecker: AccessChecker,
         private readonly authenticator: ContentAuthenticator,
-        private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly network: string,
         private readonly requestTtlBackwards: number) { }
 
     getInstance(): ValidatorInstance {
         return new ValidatorInstance(this.accessChecker,
             this.authenticator,
-            this.failedDeploymentsManager,
             this.network,
             this.requestTtlBackwards)
     }
@@ -34,7 +32,6 @@ export class ValidatorInstance {
 
     constructor(private readonly accessChecker: AccessChecker,
         private readonly authenticator: ContentAuthenticator,
-        private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly network: string,
         private readonly requestTtlBackwards: number) { }
 
@@ -43,9 +40,9 @@ export class ValidatorInstance {
     }
 
     /** Make sure that the deployment actually failed, and that it can be re-deployed */
-    async validateThatEntityFailedBefore(entity: Entity, validationContext: ValidationContext) {
+    async validateThatEntityFailedBefore(entity: Entity, deploymentStatusCheck: (entityType: EntityType, entityId: EntityId) => Promise<DeploymentStatus>, validationContext: ValidationContext) {
         if (validationContext.shouldValidate(Validation.MUST_HAVE_FAILED_BEFORE)) {
-            const deploymentStatus: DeploymentStatus = await this.failedDeploymentsManager.getDeploymentStatus(entity.type, entity.id);
+            const deploymentStatus: DeploymentStatus = await deploymentStatusCheck(entity.type, entity.id);
             if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
                 this.errors.push(`You are trying to fix an entity that is not marked as failed`)
             }
@@ -53,9 +50,12 @@ export class ValidatorInstance {
     }
 
     /** Validate if the entity can be re deployed or not */
-    validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed: boolean, validationContext: ValidationContext) {
-        if (validationContext.shouldValidate(Validation.NO_REDEPLOYS) && wasEntityAlreadyDeployed) {
-            this.errors.push(`This entity was already deployed. You can't redeploy it`)
+    async validateThatEntityCanBeRedeployed(entity: Entity, deploymentCheck: (entityId: EntityId) => Promise<boolean>, validationContext: ValidationContext) {
+        if (validationContext.shouldValidate(Validation.NO_REDEPLOYS)) {
+            const wasEntityAlreadyDeployed = await deploymentCheck(entity.id)
+            if (wasEntityAlreadyDeployed) {
+                this.errors.push(`This entity was already deployed. You can't redeploy it`)
+            }
         }
     }
 
@@ -152,29 +152,33 @@ export class ValidatorInstance {
 
     /** Validate that there is no entity with a higher version already deployed that the legacy entity is trying to overwrite */
     async validateLegacyEntity(entityToBeDeployed: Entity,
-        auditInfoBeingDeployed: AuditInfo,
+        auditInfoBeingDeployed: AuditInfoBase,
         entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>,
-        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfo | undefined>,
+        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfoBase | undefined>,
         validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
-            const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
-            const currentAuditInfos: Map<Entity, AuditInfo | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, AuditInfo | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
-            Array.from(currentAuditInfos.entries())
-                .filter(([, currentAuditInfo]) => !!currentAuditInfo)
-                .map<[Entity, AuditInfo]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
-                .forEach(([currentEntity, currentAuditInfo]) => {
-                if (happenedBeforeEntities(currentEntity, entityToBeDeployed)) {
-                    if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
-                        this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
-                    } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {
-                        if (!currentAuditInfo.originalMetadata) {
+            if (auditInfoBeingDeployed.originalMetadata && auditInfoBeingDeployed.originalMetadata.originalVersion === EntityVersion.V2) {
+                const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
+                const currentAuditInfos: Map<Entity, AuditInfoBase | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, AuditInfoBase | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
+                Array.from(currentAuditInfos.entries())
+                    .filter(([, currentAuditInfo]) => !!currentAuditInfo)
+                    .map<[Entity, AuditInfoBase]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
+                    .forEach(([currentEntity, currentAuditInfo]) => {
+                    if (happenedBeforeEntities(currentEntity, entityToBeDeployed)) {
+                        if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
                             this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
-                        } else if (currentAuditInfo.originalMetadata.originalVersion > auditInfoBeingDeployed.originalMetadata.originalVersion) {
-                            this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                        } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {
+                            if (!currentAuditInfo.originalMetadata) {
+                                this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                            } else if (currentAuditInfo.originalMetadata.originalVersion > auditInfoBeingDeployed.originalMetadata.originalVersion) {
+                                this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
+                            }
                         }
                     }
-                }
-            })
+                })
+            } else {
+                this.errors.push(`Found a legacy entity without original metadata or the original version might not be considered legacy.`)
+            }
         }
     }
 

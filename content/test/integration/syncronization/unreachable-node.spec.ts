@@ -1,11 +1,10 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
-import { Environment, EnvironmentConfig } from "@katalyst/content/Environment"
+import { EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, buildBaseEnv, deleteServerStorage, awaitUntil } from "../E2ETestUtils"
+import { buildDeployData, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent } from "../E2EAssertions"
-import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
+import { loadTestEnvironment } from "../E2ETestEnvironment"
 
 /**
  * We will be testing how servers handle an unreachable node
@@ -14,20 +13,20 @@ describe("End 2 end - Unreachable node", function() {
 
     const SMALL_SYNC_INTERVAL: number = ms("1s")
     const LONG_SYNC_INTERVAL: number = ms('5s')
-    let server1: TestServer, server2: TestServer, server3: TestServer
-    const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
+    const testEnv = loadTestEnvironment()
+    let server1 : TestServer, server2: TestServer, server3: TestServer
 
     beforeEach(async () => {
-        server1 = await buildServer("Server1_", 6060, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
-        server2 = await buildServer("Server2_", 7070, SMALL_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
-        server3 = await buildServer("Server3_", 8080, LONG_SYNC_INTERVAL, LONG_SYNC_INTERVAL, DAO)
-    })
+        const config = testEnv.configServer()
+            .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, LONG_SYNC_INTERVAL);
 
-    afterEach(async function() {
-        await server1.stop()
-        await server2.stop()
-        await server3.stop()
-        deleteServerStorage(server1, server2, server3)
+        [ server1, server2 ] = await config
+            .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, SMALL_SYNC_INTERVAL)
+            .andBuildOnPorts([ 6060, 7070 ]);
+
+        [ server3 ] = await config
+            .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, LONG_SYNC_INTERVAL)
+            .andBuildOnPorts([ 8080 ])
     })
 
     it('When a node is unreachable, remaining nodes ask each others for the unreachable node\'s updates', async () => {
@@ -53,12 +52,5 @@ describe("End 2 end - Unreachable node", function() {
         // Now, server 3 detected that server 1 is down, and asked for its updated to server 2
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent), 10, '3s')
     })
-
-    async function buildServer(namePrefix: string, port: number, syncInterval: number, daoInterval: number, daoClient: DAOClient) {
-        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient)
-            .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, daoInterval)
-            .build()
-        return new TestServer(env)
-    }
 
 })

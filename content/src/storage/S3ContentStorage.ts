@@ -18,62 +18,49 @@ export class S3ContentStorage implements ContentStorage {
     }
 
 
-    async store(category: string, id: string, content: Buffer, append?: boolean | undefined): Promise<void> {
-        const key: string = this.createKey(category, id)
-
-        if (append) {
-            // TODO: This is extremely inefficient but S3 does not provide an append operation. Can we find a better approach?
-            const contentItem = await this.getContent(category, id)
-            if (contentItem) {
-                const currentContent = await contentItem.asBuffer()
-                content = Buffer.concat([currentContent, content])
-            }
-        }
-
+    async store(id: string, content: Buffer): Promise<void> {
         const request: AWS.S3.Types.PutObjectRequest = {
             Bucket: this.bucket,
-            Key: key,
+            Key: id,
             Body: content,
         }
 
         return new Promise((resolve, reject) => {
             this.s3Client.upload(request, (error, data) => {
                 if (error) {
-                    console.error(`Error uploading data to S3. Id: ${key}`, error);
+                    console.error(`Error uploading data to S3. Id: ${id}`, error);
                     return reject(error)
                 }
-                console.log(`Successfully uploaded data to S3. Id: ${key}`);
+                console.log(`Successfully uploaded data to S3. Id: ${id}`);
                 return resolve()
             })
         })
     }
 
-    delete(category: string, id: string): Promise<void> {
-        const key: string = this.createKey(category, id)
+    delete(id: string): Promise<void> {
         const request: AWS.S3.Types.DeleteObjectRequest = {
             Bucket: this.bucket,
-            Key: key,
+            Key: id,
         }
 
         return new Promise((resolve, reject) => {
             this.s3Client.deleteObject(request, (error, data) => {
                 if (error) {
-                    console.error(`Error deleting data from S3. Id: ${key}`, error);
+                    console.error(`Error deleting data from S3. Id: ${id}`, error);
                     return reject(error)
                 }
-                console.log(`Successfully deleted data from S3. Id: ${key}`);
+                console.log(`Successfully deleted data from S3. Id: ${id}`);
                 return resolve()
             })
         })
     }
 
-    async getContent(category: string, id: string): Promise<ContentItem | undefined> {
-        const key: string = this.createKey(category, id)
+    async retrieve(id: string): Promise<ContentItem | undefined> {
         const request: AWS.S3.Types.GetObjectRequest = {
             Bucket: this.bucket,
-            Key: key,
+            Key: id,
         }
-        const content = await this.getContentFromS3(key, request)
+        const content = await this.getContentFromS3(id, request)
         if (content) {
             return new S3ContentItem(content.readable, content.length)
         }
@@ -87,62 +74,31 @@ export class S3ContentStorage implements ContentStorage {
                     console.error(`Error retrieving data from S3. Id: ${key}`, error);
                     return resolve(undefined)
                 }
-                
+
                 console.log(`Successfully retrieved data from S3. Id: ${key}`);
                 return resolve({readable: data.Body as Readable, length: data.ContentLength})
             })
         })
     }
 
-    listIds(category: string): Promise<string[]> {
-        const key: string = this.createKey(category)
-        const request: AWS.S3.Types.ListObjectsRequest = {
-            Bucket: this.bucket,
-            Prefix: key,
-        }
+    exist(ids: string[]): Promise<Map<string, boolean>> {
+        throw new Error('Not implemented')
+        // const request: AWS.S3.Types.HeadObjectRequest = {
+        //     Bucket: this.bucket,
+        //     Key: id,
+        // }
 
-        return new Promise((resolve, reject) => {
-            this.s3Client.listObjects(request, (error, data: AWS.S3.Types.ListObjectsOutput) => {
-                if (error) {
-                    console.error(`Error listing data from S3. Id: ${key}`, error);
-                    return reject(error)
-                }
+        // return new Promise((resolve, reject) => {
+        //     this.s3Client.headObject(request, (error, data: AWS.S3.Types.HeadObjectOutput) => {
+        //         if (error && error.code!=="NotFound") {
+        //             console.error(`Error checking data from S3. Id: ${id}`, error);
+        //             return reject(error)
+        //         }
 
-                console.log(`Successfully listed data from S3. Id: ${key}`);
-                return resolve(data.Contents?.map(element => this.removeCategory(category, element.Key)))
-            })
-        })
-    }
-
-    private removeCategory(category: string, objectKey: string|undefined): string {
-        return objectKey?.substring(category.length+1) ?? ""
-    }
-
-    exists(category: string, id: string): Promise<boolean> {
-        const key: string = this.createKey(category, id)
-        const request: AWS.S3.Types.HeadObjectRequest = {
-            Bucket: this.bucket,
-            Key: key,
-        }
-
-        return new Promise((resolve, reject) => {
-            this.s3Client.headObject(request, (error, data: AWS.S3.Types.HeadObjectOutput) => {
-                if (error && error.code!=="NotFound") {
-                    console.error(`Error checking data from S3. Id: ${key}`, error);
-                    return reject(error)
-                }
-
-                console.log(`Successfully checked data from S3. Id: ${key}`);
-                return resolve(!error)
-            })
-        })
-    }
-
-    private createKey(category: string, id?: string): string {
-        if (id) {
-            return category + '/' + id
-        }
-        return category + '/'
+        //         console.log(`Successfully checked data from S3. Id: ${id}`);
+        //         return resolve(!error)
+        //     })
+        // })
     }
 
 }

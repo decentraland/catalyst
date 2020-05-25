@@ -1,28 +1,20 @@
 import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
-import { Environment } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
-import { buildDeployData, deleteServerStorage, buildDeployDataAfterEntity, buildBaseEnv, stopServers, awaitUntil } from "../E2ETestUtils"
+import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
-import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient"
 import { delay } from "decentraland-katalyst-utils/util"
+import { loadTestEnvironment } from "../E2ETestEnvironment"
 
 describe("End 2 end synchronization tests", function() {
 
-    const DAO = MockedDAOClient.withAddresses('http://localhost:6060', 'http://localhost:7070', 'http://localhost:8080')
     const SYNC_INTERVAL: number = ms("1s")
+    const testEnv = loadTestEnvironment()
     let server1: TestServer, server2: TestServer, server3: TestServer
 
     beforeEach(async () => {
-        server1 = await buildServer("Server1_", 6060, SYNC_INTERVAL, DAO)
-        server2 = await buildServer("Server2_", 7070, SYNC_INTERVAL, DAO)
-        server3 = await buildServer("Server3_", 8080, SYNC_INTERVAL, DAO)
-    })
-
-    afterEach(async function() {
-        await stopServers(server1, server2, server3)
-        deleteServerStorage(server1, server2, server3)
+        [server1, server2, server3] = await testEnv.configServer(SYNC_INTERVAL)
+            .andBuildMany(3)
     })
 
     it(`When a server gets some content uploaded, then the other servers download it`, async () => {
@@ -164,7 +156,7 @@ describe("End 2 end synchronization tests", function() {
 
         // Prepare data to be deployed
         const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata")
-        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2", "X3,Y3"], "metadata2", entity1)
+        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2", "X3,Y3"], { metadata: "metadata2" }, entity1)
         const [deployData3, entity3] = await buildDeployDataAfterEntity(["X3,Y3", "X4,Y4"], "metadata3", entity2)
 
 
@@ -176,7 +168,7 @@ describe("End 2 end synchronization tests", function() {
         const deploymentEvent2 = buildEvent(entity2, server2, deploymentTimestamp2)
 
         // Stop server 2
-        await server2.stop()
+        await server2.stop({ deleteStorage: false })
 
         // Deploy entity 3
         const deploymentTimestamp3: Timestamp = await server3.deploy(deployData3)
@@ -222,11 +214,6 @@ describe("End 2 end synchronization tests", function() {
 
     function getImmutableTime(server: TestServer): Promise<Timestamp> {
         return server.getStatus().then(({ lastImmutableTime }) => lastImmutableTime)
-    }
-
-    async function buildServer(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient) {
-        const env: Environment = await buildBaseEnv(namePrefix, port, syncInterval, daoClient).build()
-        return new TestServer(env)
     }
 
 })

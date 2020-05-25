@@ -1,11 +1,11 @@
 import log4js from "log4js"
 import { Timestamp } from "../time/TimeSorting";
-import { DeploymentHistory } from "../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { EventDeployer } from "./EventDeployer";
 import { ContentCluster } from "./ContentCluster";
 import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
-import { tryOnCluster } from "./ClusterUtils";
+import { tryOnCluster, legacyDeploymentEventToDeploymentEventBase } from "./ClusterUtils";
 
 export class Bootstrapper {
 
@@ -33,7 +33,7 @@ export class Bootstrapper {
         Bootstrapper.LOGGER.info(`Will use many servers to bootstrap with`)
         try {
             // Create a request for all servers to get everything from my last immutable time
-            const request = new MultiServerHistoryRequest(cluster.getAllActiveServersInCluster(), deployer, myLastImmutableTime)
+            const request = new MultiServerHistoryRequest(cluster.getAllActiveServersInCluster(), deployer, cluster, myLastImmutableTime)
 
             // Execute the request
             await request.execute()
@@ -48,7 +48,9 @@ export class Bootstrapper {
         Bootstrapper.LOGGER.info(`Will use one server to bootstrap with`)
         try {
             // Get one (any) server's last immutable time and history
-            const [immutableTime, server, history] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster, 'get immutable history')
+            const [immutableTime, server, legacyHistory] = await tryOnCluster(server => Bootstrapper.getImmutableHistoryOnServerFrom(myLastImmutableTime, server), cluster, 'get immutable history')
+
+            const history = legacyHistory.map(event => legacyDeploymentEventToDeploymentEventBase(cluster, event))
 
             // Bootstrap
             await deployer.deployHistory(history, { logging: true })
@@ -57,7 +59,7 @@ export class Bootstrapper {
             await server.updateEstimatedLocalImmutableTime(immutableTime)
 
             // Create a request for all servers to get everything from the last immutable time
-            const request = new MultiServerHistoryRequest(cluster.getAllActiveServersInCluster(), deployer, immutableTime + 1)
+            const request = new MultiServerHistoryRequest(cluster.getAllActiveServersInCluster(), deployer, cluster, immutableTime + 1)
 
             // Execute the request
             await request.execute()
@@ -68,7 +70,7 @@ export class Bootstrapper {
         }
     }
 
-    private static async getImmutableHistoryOnServerFrom(from: Timestamp, server: ContentServerClient): Promise<[Timestamp, ContentServerClient, DeploymentHistory]> {
+    private static async getImmutableHistoryOnServerFrom(from: Timestamp, server: ContentServerClient): Promise<[Timestamp, ContentServerClient, LegacyDeploymentHistory]> {
         // Get server's last immutable time
         const { lastImmutableTime: serversLastImmutableTime } = await server.getStatus()
 

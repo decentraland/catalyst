@@ -5,14 +5,9 @@ import { Pointer, EntityType } from "@katalyst/content/service/Entity"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing"
 import { ContentFile } from "@katalyst/content/service/Service"
-import { DAOClient } from "decentraland-katalyst-commons/DAOClient"
-import { EnvironmentConfig, Bean, EnvironmentBuilder } from "@katalyst/content/Environment"
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
-import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
-import { TestServer } from "./TestServer"
 import { Authenticator, EthAddress } from "dcl-crypto"
-import { retry } from "@katalyst/content/helpers/FetchHelper"
-import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
+import { retry } from "@katalyst/content/helpers/RetryHelper"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
     return buildDeployDataInternal(pointers, metadata, contentPaths, identity)
@@ -37,7 +32,7 @@ async function buildDeployDataInternal(pointers: Pointer[], metadata: any, conte
         EntityType.SCENE,
         pointers.map(pointer => pointer.toLocaleLowerCase()),
         Math.max(Date.now(), afterEntity?.timestamp ?? 0 + 1),
-        content,
+        content.size > 0 ? content : undefined,
         metadata)
 
     const [address, signature] = hashAndSignMessage(entity.id, identity)
@@ -56,11 +51,6 @@ export function parseEntityType(entity: ControllerEntity) {
     return EntityType[entity.type.toUpperCase().trim()]
 }
 
-export function deleteServerStorage(...servers: TestServer[]) {
-    servers.map(server => server.storageFolder)
-        .forEach(storageFolder => deleteFolderRecursive(storageFolder))
-}
-
 export function hashAndSignMessage(message: string, identity: Identity = createIdentity()) {
     const messageHash = Authenticator.createEthereumMessageHash(message)
     const signature = EthCrypto.sign(identity.privateKey, messageHash)
@@ -73,7 +63,7 @@ export function createIdentity(): Identity {
 
 export function deleteFolderRecursive(pathToDelete: string) {
     if (fs.existsSync(pathToDelete)) {
-        fs.readdirSync(pathToDelete).forEach((file, index) => {
+        fs.readdirSync(pathToDelete).forEach((file) => {
             const curPath = path.join(pathToDelete, file);
             if (fs.lstatSync(curPath).isDirectory()) { // recurse
                 deleteFolderRecursive(curPath);
@@ -85,29 +75,8 @@ export function deleteFolderRecursive(pathToDelete: string) {
     }
 }
 
-export async function stopServers(...servers: TestServer[]): Promise<void> {
-    await Promise.all(servers.map(server => server.stop()))
-}
-
-export function awaitUntil(evaluation: () => Promise<void>, attempts: number = 10, waitBetweenAttempts: string = '1s'): Promise<void> {
+export function awaitUntil(evaluation: () => Promise<any>, attempts: number = 10, waitBetweenAttempts: string = '1s'): Promise<void> {
     return retry(evaluation, attempts, 'perform assertion', waitBetweenAttempts)
-}
-
-export function buildBaseEnv(namePrefix: string, port: number, syncInterval: number, daoClient: DAOClient): EnvironmentBuilder {
-    return new EnvironmentBuilder()
-        .withConfig(EnvironmentConfig.NAME_PREFIX, namePrefix)
-        .withConfig(EnvironmentConfig.SERVER_PORT, port)
-        .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, "storage_" + namePrefix)
-        .withConfig(EnvironmentConfig.METRICS, false)
-        .withConfig(EnvironmentConfig.LOG_REQUESTS, false)
-        .withConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL, syncInterval)
-        .withConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, syncInterval)
-        .withConfig(EnvironmentConfig.LOG_LEVEL, "debug")
-        .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
-        .withConfig(EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, false)
-        .withBean(Bean.DAO_CLIENT, daoClient)
-        .withDeploymentReporter(new NoOpDeploymentReporter())
-        .withAccessChecker(new MockedAccessChecker())
 }
 
 export type DeployData = {

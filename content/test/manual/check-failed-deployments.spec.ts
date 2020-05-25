@@ -1,7 +1,7 @@
 import fetch, { Response } from "node-fetch"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { EntityType, EntityId, Entity, Pointer } from "@katalyst/content/service/Entity"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
+import { AuditInfo } from "@katalyst/content/service/Audit"
 import { EthAddress, AuthChain, ValidationResult } from "dcl-crypto"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl"

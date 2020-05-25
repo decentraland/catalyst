@@ -2,9 +2,11 @@ import log4js from "log4js"
 import { ServerName } from "../naming/NameKeeper";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { Timestamp } from "../time/TimeSorting";
-import { DeploymentHistory } from "../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../history/HistoryManager";
 import { EventDeployer } from "./EventDeployer";
-import { retry } from "@katalyst/content/helpers/FetchHelper";
+import { retry } from "@katalyst/content/helpers/RetryHelper";
+import { legacyDeploymentEventToDeploymentEventBase } from "./ClusterUtils";
+import { ContentCluster } from "./ContentCluster";
 
 /**
  * On some occasions (such as server onboarding) a server might need to make a request to many other servers on the cluster.
@@ -17,6 +19,7 @@ export class MultiServerHistoryRequest {
 
     constructor(private readonly recipients: ContentServerClient[],
                 private readonly deployer: EventDeployer,
+                private readonly cluster: ContentCluster,
                 from: Timestamp,
                 serverName?: ServerName,
                 to?: Timestamp) {
@@ -25,8 +28,11 @@ export class MultiServerHistoryRequest {
 
     /** Execute the request */
     async execute(): Promise<void> {
-        const histories: DeploymentHistory[] = await Promise.all(this.recipients
+        const legacyHistories: LegacyDeploymentHistory[] = await Promise.all(this.recipients
             .map(recipient => this.executeRequestOn(recipient)))
+
+        const histories = legacyHistories.map(history => history.map(event => legacyDeploymentEventToDeploymentEventBase(this.cluster, event)))
+
         try {
             await this.deployer.deployHistories(histories, { logging: true })
         } catch (error) {
@@ -35,7 +41,7 @@ export class MultiServerHistoryRequest {
     }
 
     /** Execute the request on one server */
-    private async executeRequestOn(server: ContentServerClient): Promise<DeploymentHistory> {
+    private async executeRequestOn(server: ContentServerClient): Promise<LegacyDeploymentHistory> {
         try {
             return await retry(() => server.getHistory(this.request.from, this.request.serverName, this.request.to), 5, `fetch history from server ${server.getName()}`, '5s')
         } catch (error) {

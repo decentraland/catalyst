@@ -5,7 +5,7 @@ import { EthAddress } from "dcl-crypto";
 import { Pointer, EntityType } from "../Entity";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { Timestamp } from "../time/TimeSorting";
-import { retry } from "@katalyst/content/helpers/FetchHelper";
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 
 export class AccessCheckerImpl implements AccessChecker {
 

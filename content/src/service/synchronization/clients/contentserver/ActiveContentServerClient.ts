@@ -1,13 +1,14 @@
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
-import { DeploymentHistory } from "../../../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
 import { ContentFileHash, Hashing } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
 import { EntityFactory } from "../../../EntityFactory";
-import { AuditInfo } from "../../../audit/Audit";
+import { LegacyAuditInfo } from "../../../Audit";
 import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
-import { FetchHelper, retry } from "@katalyst/content/helpers/FetchHelper";
+import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
+import { retry } from "@katalyst/content/helpers/RetryHelper";
 import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
 
 export function getClient(fetchHelper: FetchHelper, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
@@ -42,7 +43,7 @@ class ActiveContentServerClient extends ContentServerClient {
         return EntityFactory.fromJsonObject(entity);
     }
 
-    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo> {
+    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<LegacyAuditInfo> {
         return this.fetchHelper.fetchJson(`${this.address}/audit/${entityType}/${entityId}`)
     }
 
@@ -50,7 +51,7 @@ class ActiveContentServerClient extends ContentServerClient {
         return this.fetchHelper.fetchJson(`${this.address}/status`)
     }
 
-    async getHistory(from: Timestamp, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory> {
+    async getHistory(from: Timestamp, serverName?: ServerName, to?: Timestamp): Promise<LegacyDeploymentHistory> {
         return HistoryClient.consumeAllHistory(this.fetchHelper, this.address, from, to, serverName)
     }
 

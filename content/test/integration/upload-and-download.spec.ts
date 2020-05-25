@@ -1,35 +1,25 @@
-import { EnvironmentConfig, EnvironmentBuilder } from "@katalyst/content/Environment"
+import { Bean } from "@katalyst/content/Environment"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
 import { EntityType } from "@katalyst/content/service/Entity"
-import { DeploymentEvent, DeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFile } from "@katalyst/content/service/Service"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
-import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
-import { buildDeployData, deleteServerStorage, DeployData } from "./E2ETestUtils"
+import { buildDeployData, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
-import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter"
+import { loadTestEnvironment } from "./E2ETestEnvironment"
 
 describe("End 2 end deploy test", () => {
 
+    const testEnv = loadTestEnvironment()
     let server: TestServer
 
-    beforeAll(async () => {
-        const env = await new EnvironmentBuilder()
-            .withDeploymentReporter(new NoOpDeploymentReporter())
-            .withSynchronizationManager(new MockedSynchronizationManager())
-            .withAccessChecker(new MockedAccessChecker())
-            .withConfig(EnvironmentConfig.METRICS, false)
-            .withConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
-            .build()
-        server = new TestServer(env)
+    beforeEach(async () => {
+        server = await testEnv.configServer()
+            .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
+            .andBuild()
         await server.start()
-    })
-
-    afterAll(async () => {
-        await server.stop()
-        deleteServerStorage(server)
     })
 
     it('When a user tries to deploy the same entity twice, then an exception is thrown', async() => {
@@ -66,7 +56,7 @@ describe("End 2 end deploy test", () => {
         const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, ["0,0"])
         await validateReceivedData(scenesByPointer, deployData)
 
-        const [deploymentEvent]: DeploymentHistory = (await server.getHistory()).events
+        const [deploymentEvent]: LegacyDeploymentHistory = (await server.getHistory()).events
         validateHistoryEvent(deploymentEvent, deployData, entityBeingDeployed, creationTimestamp)
     });
 
@@ -80,19 +70,20 @@ describe("End 2 end deploy test", () => {
         expect(scene.pointers[0]).toBe("0,0")
         expect(scene.pointers[1]).toBe("0,1")
 
-        expect(scene.content?.length).toBe(2)
+        expect(scene.content).toBeDefined()
+        expect(scene.content!!.length).toBe(2)
         expect(findInArray(scene.content, deployData.files[1].name)).toBeDefined()
         expect(findInArray(scene.content, deployData.files[2].name)).toBeDefined()
 
-        scene.content?.forEach(async contentElement => {
+        for (const contentElement of scene.content!!) {
             const downloadedContent = await server.downloadContent(contentElement.hash)
             expect(downloadedContent).toEqual(findInFileArray(deployData.files, contentElement.file)?.content ?? Buffer.from([]))
-        })
+        }
     }
 
 })
 
-function validateHistoryEvent(deploymentEvent: DeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
+function validateHistoryEvent(deploymentEvent: LegacyDeploymentEvent, deployData: DeployData, entityBeingDeployed: ControllerEntity, creationTimestamp: Timestamp) {
     expect(deploymentEvent.entityId).toBe(deployData.entityId)
     expect(deploymentEvent.entityType).toBe(entityBeingDeployed.type)
     expect(deploymentEvent.timestamp).toBe(creationTimestamp)

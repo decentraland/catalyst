@@ -10,6 +10,8 @@ import { Controller } from "./controller/Controller";
 import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
+import { MigrationManager } from "./migrations/MigrationManager";
+import { MetaverseContentService } from "./service/Service";
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger("Server");
@@ -18,6 +20,8 @@ export class Server {
   private app: express.Express;
   private httpServer: http.Server;
   private synchronizationManager: SynchronizationManager;
+  private readonly migrationManager: MigrationManager;
+  private readonly service: MetaverseContentService
 
   constructor(env: Environment) {
     // Set logger
@@ -34,6 +38,8 @@ export class Server {
     const upload = multer({ dest: "uploads/" });
     const controller: Controller = env.getBean(Bean.CONTROLLER);
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
+    this.service = env.getBean(Bean.SERVICE)
+    this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }));
@@ -53,8 +59,6 @@ export class Server {
     this.registerRoute("/entities", controller, controller.createEntity, HttpMethod.POST, upload.any());
     this.registerRoute("/contents/:hashId", controller, controller.getContent);
     this.registerRoute("/available-content", controller, controller.getAvailableContent);
-    //   this.registerRoute("/pointers/:type"       , controller, controller.getPointers);
-    this.registerRoute("/pointers/:type/:pointer", controller, controller.getPointerHistory);
     this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
     this.registerRoute("/history", controller, controller.getHistory);
     this.registerRoute("/status", controller, controller.getStatus);
@@ -109,6 +113,8 @@ export class Server {
   }
 
   async start(): Promise<void> {
+    await this.migrationManager.run()
+    await this.validateHistory()
     this.httpServer = this.app.listen(this.port);
     await once(this.httpServer, "listening");
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`);
@@ -123,6 +129,18 @@ export class Server {
       });
     }
   }
+
+  private async validateHistory() {
+    // Validate last history entry is before Date.now()
+    const lastEvents = await this.service.getDeployments(undefined, undefined, 0, 1)
+    if (lastEvents.events.length > 0) {
+        const currentTimestamp = Date.now()
+        if (lastEvents.events[0].localTimestamp > currentTimestamp) {
+            console.error("Last stored timestamp for this server is newer than current time. The server can not be started.")
+            process.exit(1)
+        }
+    }
+}
 }
 
 enum HttpMethod {

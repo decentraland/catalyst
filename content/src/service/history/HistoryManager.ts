@@ -1,16 +1,17 @@
 import { Timestamp } from "../time/TimeSorting"
 import { EntityType, EntityId } from "../Entity"
 import { ServerName } from "../naming/NameKeeper"
+import { DeploymentsRepository } from "@katalyst/content/storage/repositories/DeploymentsRepository"
 
 export interface HistoryManager {
-    newEntityDeployment(serverName: ServerName, entityType: EntityType, entityId: EntityId, timestamp: Timestamp): Promise<void>;
-    setTimeAsImmutable(immutableTime: Timestamp): Promise<void>;
+    reportDeployment(deploymentsRepository: DeploymentsRepository): Promise<void>;
+    setTimeAsImmutable(immutableTime: Timestamp): void;
     getLastImmutableTime(): Timestamp;
-    getHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentHistory>;
+    getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory>;
     getHistorySize(): number;
 }
 
-export type DeploymentEvent = {
+export type LegacyDeploymentEvent = {
     /** The server where the user uploaded the entity */
     serverName: ServerName,
     entityType: EntityType,
@@ -19,10 +20,10 @@ export type DeploymentEvent = {
     timestamp: Timestamp,
 }
 
-export type DeploymentHistory = DeploymentEvent[]
+export type LegacyDeploymentHistory = LegacyDeploymentEvent[]
 
-export type PartialDeploymentHistory = {
-    events: DeploymentEvent[],
+export type PartialDeploymentLegacyHistory = {
+    events: LegacyDeploymentEvent[],
     filters: {
         from?: Timestamp,
         to?: Timestamp,

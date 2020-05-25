@@ -3,12 +3,15 @@ import { MetaverseContentService, ContentFile, ServerStatus } from "@katalyst/co
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
-import { AuditInfo } from "@katalyst/content/service/audit/Audit"
+import { AuditInfo, AuditInfoBase } from "@katalyst/content/service/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
-import { PointerHistory } from "@katalyst/content/service/pointers/PointerManager"
+import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
+import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
+import { PartialDeploymentHistory } from "@katalyst/content/service/deployments/DeploymentManager"
+import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 
@@ -21,7 +24,9 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     }
 
     static readonly AUDIT_INFO: AuditInfo = {
-        deployedTimestamp: Date.now(),
+        localTimestamp: Date.now(),
+        originTimestamp: Date.now(),
+        originServerUrl: 'http://localhost',
         authChain: [{type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
         version: CURRENT_CONTENT_VERSION,
     }
@@ -34,6 +39,18 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         this.content = builder.content
     }
 
+    getDeployments(from?: number, to?: number, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
+        return Promise.resolve({
+            events: [],
+            filters: { },
+            pagination: {
+                offset: 0,
+                limit: 100,
+                moreData: false,
+            }
+        })
+    }
+
     getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
         return Promise.resolve(this.entities.filter(entity => entity.type == type && this.intersects(pointers, entity.pointers)))
     }
@@ -42,24 +59,16 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(this.entities.filter(entity => entity.type == type && ids.includes(entity.id)))
     }
 
-    getActivePointers(type: EntityType): Promise<Pointer[]> {
-        const pointers = this.entities.filter(entity => entity.type == type)
-            .map(entity => entity.pointers)
-            .reduce((accum, current) => accum.concat(current), [])
-        return Promise.resolve(pointers)
-    }
-
-    async getPointerHistory(type: EntityType, pointer: Pointer): Promise<PointerHistory> {
-        const entities = await this.getEntitiesByPointers(type, [pointer])
-        return entities.map(entity => ({ entityId: entity.id, timestamp: entity.timestamp }))
-    }
-
-    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<Timestamp> {
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase): Promise<Timestamp> {
         return Promise.resolve(Date.now())
     }
 
     deployToFix(files: ContentFile[], entityId: EntityId): Promise<Timestamp> {
         return Promise.resolve(Date.now())
+    }
+
+    deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase, repository?: RepositoryTask | Repository): Promise<number> {
+        throw new Error("Method not implemented.")
     }
 
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
@@ -80,12 +89,20 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         }
     }
 
-    getStatus(): Promise<ServerStatus> {
-        return Promise.resolve(MockedMetaverseContentService.STATUS)
+    getStatus(): ServerStatus {
+        return MockedMetaverseContentService.STATUS
     }
 
     getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
         return Promise.resolve(MockedMetaverseContentService.AUDIT_INFO)
+    }
+
+    getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory> {
+        throw new Error("Method not implemented.")
+    }
+
+    getAllFailedDeployments(): Promise<FailedDeployment[]> {
+        throw new Error("Method not implemented.")
     }
 
     private isThereAnEntityWithId(entityId: EntityId): boolean {

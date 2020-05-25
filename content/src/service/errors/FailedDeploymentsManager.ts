@@ -1,49 +1,44 @@
-import { EntityType, EntityId } from "../Entity";
-import { Timestamp } from "../time/TimeSorting";
-import { DeploymentEvent } from "../history/HistoryManager";
-import { FailedDeploymentsStorage } from "./FailedDeploymentsStorage";
-import { ServerName } from "../naming/NameKeeper";
+import { EntityType, EntityId } from "@katalyst/content/service/Entity";
+import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
+import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
+import { FailedDeploymentsRepository } from "@katalyst/content/storage/repositories/FailedDeploymentsRepository";
 
 /**
  * This manager will handle all failed deployments
  */
 export class FailedDeploymentsManager {
 
-    constructor(private readonly storage: FailedDeploymentsStorage) { }
-
-    reportFailure(entityType: EntityType, entityId: EntityId, deploymentTimestamp: Timestamp, serverName: ServerName, reason: FailureReason): Promise<void> {
-        const deployment = { entityType, entityId, timestamp: deploymentTimestamp, serverName  }
-        return this.storage.addFailedDeployment({ deployment, reason, moment: Date.now() })
+    reportFailure(failedDeploymentsRepo: FailedDeploymentsRepository, entityType: EntityType, entityId: EntityId, originTimestamp: Timestamp, originServerUrl: ServerAddress, reason: FailureReason, errorDescription?: string): Promise<null> {
+        return failedDeploymentsRepo.reportFailure(entityType, entityId, originTimestamp, originServerUrl, Date.now(), reason, errorDescription)
     }
 
-    getAllFailedDeployments(): Promise<FailedDeployment[]> {
-        return this.storage.getAllFailedDeployments()
+    getAllFailedDeployments(failedDeploymentsRepo: FailedDeploymentsRepository): Promise<FailedDeployment[]> {
+        return failedDeploymentsRepo.getAllFailedDeployments()
     }
 
-    reportSuccessfulDeployment(entityType: EntityType, entityId: EntityId): Promise<void> {
-        return this.storage.deleteDeploymentEventIfPresent(entityType, entityId)
+    reportSuccessfulDeployment(failedDeploymentsRepo: FailedDeploymentsRepository, entityType: EntityType, entityId: EntityId): Promise<null> {
+        return failedDeploymentsRepo.reportSuccessfulDeployment(entityType, entityId)
     }
 
-    async getDeploymentStatus(entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
-        const failedDeployments: FailedDeployment[] = await this.getAllFailedDeployments()
-        return this.findStatus(failedDeployments, entityType, entityId)
+    async getFailedDeployment(failedDeploymentsRepo: FailedDeploymentsRepository, entityType: EntityType, entityId: EntityId): Promise<FailedDeployment | null> {
+        return failedDeploymentsRepo.findFailedDeployment(entityType, entityId)
     }
 
-    private async findStatus(failedDeployments: FailedDeployment[], entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
-        for (const failedDeployment of failedDeployments) {
-            if (failedDeployment.deployment.entityId === entityId &&
-                failedDeployment.deployment.entityType === entityType) {
-                return failedDeployment.reason;
-            }
-        }
-        return NoFailure.NOT_MARKED_AS_FAILED
+    async getDeploymentStatus(failedDeploymentsRepo: FailedDeploymentsRepository, entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
+        const failedDeployment = await failedDeploymentsRepo.findFailedDeployment(entityType, entityId)
+        return failedDeployment?.reason ?? NoFailure.NOT_MARKED_AS_FAILED
     }
+
 }
 
 export type FailedDeployment = {
-    deployment: DeploymentEvent,
+    entityType: EntityType,
+    entityId: EntityId,
+    originTimestamp: Timestamp,
+    originServerUrl: ServerAddress,
+    failureTimestamp: Timestamp,
     reason: FailureReason,
-    moment: Timestamp,
+    errorDescription?: string
 }
 
 export enum FailureReason {

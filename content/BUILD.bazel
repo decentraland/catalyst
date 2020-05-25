@@ -13,6 +13,16 @@ nodejs_binary(
     entry_point = "//content/src:entrypoints/run-server.ts",
 )
 
+nodejs_binary(
+    name = "db",
+    data = [
+        "//content/src:content",
+        "@npm//@bazel/typescript",
+        "@npm//typescript",
+    ],
+    entry_point = "//content/src:entrypoints/run-local-database.ts",
+)
+
 load("//tools/npm:package.bzl", "dataform_npm_package")
 
 dataform_npm_package(
@@ -78,6 +88,7 @@ ts_library(
         "@npm//form-data",
         "@npm//ms",
         "@npm//node-fetch",
+        "@npm//testcontainers",
         "@npm//ts-mockito",
     ],
 )

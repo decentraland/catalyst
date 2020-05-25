@@ -1,39 +1,36 @@
-import { random } from "faker"
-import { EnvironmentConfig, Environment, Bean } from "@katalyst/content/Environment"
+import { random, internet } from "faker"
 import { FailedDeploymentsManager, FailureReason, FailedDeployment, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager"
-import { ContentStorageFactory } from "@katalyst/content/storage/ContentStorageFactory"
-import { FailedDeploymentsManagerFactory } from "@katalyst/content/service/errors/FailedDeploymentsManagerFactory"
-import { DeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
 import { EntityType } from "@katalyst/content/service/Entity"
-import { deleteFolderRecursive } from "../E2ETestUtils"
+import { loadTestEnvironment } from "../E2ETestEnvironment"
+import { Repository } from "@katalyst/content/storage/Repository"
+import { DeploymentEventBase } from "@katalyst/content/service/deployments/DeploymentManager"
+import { RepositoryFactory } from "@katalyst/content/storage/RepositoryFactory"
+import { MigrationManagerFactory } from "@katalyst/content/migrations/MigrationManagerFactory"
 
 describe("Integration - Failed Deployments Manager", function() {
 
-    const STORAGE = "storage"
-    let manager: FailedDeploymentsManager
+    const testEnv = loadTestEnvironment()
+    const manager = new FailedDeploymentsManager()
+    let repository: Repository
 
     beforeEach(async () => {
-        const env = new Environment()
-        env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, STORAGE)
-        env.registerBean(Bean.STORAGE, await ContentStorageFactory.local(env))
-        manager = FailedDeploymentsManagerFactory.create(env)
-    })
-
-    afterEach(async () => {
-        deleteFolderRecursive(STORAGE)
+        const env = await testEnv.getEnvForNewDatabase()
+        const migrationManager = MigrationManagerFactory.create(env)
+        await migrationManager.run()
+        repository = await RepositoryFactory.create(env)
     })
 
     it(`When failures are reported, then the last status is returned`, async () => {
         const deployment = buildRandomDeployment()
 
-        await reportDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+        await reportDeployment({ deployment, reason: FailureReason.NO_ENTITY_OR_AUDIT })
 
-        let status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
+        let status = await manager.getDeploymentStatus(repository.failedDeployments, deployment.entityType, deployment.entityId)
         expect(status).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
 
-        await reportDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
+        await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-        status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
+        status = await manager.getDeploymentStatus(repository.failedDeployments, deployment.entityType, deployment.entityId)
         expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
     })
 
@@ -41,42 +38,51 @@ describe("Integration - Failed Deployments Manager", function() {
         const deployment1 = buildRandomDeployment()
         const deployment2 = buildRandomDeployment()
 
-        await reportDeployment(deployment1, FailureReason.NO_ENTITY_OR_AUDIT)
-        await reportDeployment(deployment2, FailureReason.DEPLOYMENT_ERROR)
+        await reportDeployment({ deployment: deployment1, reason: FailureReason.NO_ENTITY_OR_AUDIT, description: 'description' })
+        await reportDeployment({ deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
 
-        const [failed1, failed2]: Array<FailedDeployment> = await manager.getAllFailedDeployments()
+        const [failed1, failed2]: Array<FailedDeployment> = await manager.getAllFailedDeployments(repository.failedDeployments)
 
+        assertFailureWasDueToDeployment(failed1, deployment2)
         expect(failed1.reason).toBe(FailureReason.DEPLOYMENT_ERROR)
-        expect(failed1.deployment).toEqual(deployment2)
+        expect(failed1.errorDescription).toBeUndefined()
+        assertFailureWasDueToDeployment(failed2, deployment1)
         expect(failed2.reason).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
-        expect(failed2.deployment).toEqual(deployment1)
+        expect(failed2.errorDescription).toEqual('description')
     })
 
     it(`When successful deployment is reported, then all previous failures of such reported are deleted`, async () => {
         const deployment = buildRandomDeployment()
 
-        await reportDeployment(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
-        await reportDeployment(deployment, FailureReason.DEPLOYMENT_ERROR)
+        await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-        await manager.reportSuccessfulDeployment(deployment.entityType, deployment.entityId)
+        await manager.reportSuccessfulDeployment(repository.failedDeployments, deployment.entityType, deployment.entityId)
 
-        const status = await manager.getDeploymentStatus(deployment.entityType, deployment.entityId)
+        const status = await manager.getDeploymentStatus(repository.failedDeployments, deployment.entityType, deployment.entityId)
         expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
     })
 
-    function reportDeployment(deployment: DeploymentEvent, reason: FailureReason): Promise<void> {
-        const { entityType, entityId, timestamp, serverName } = deployment
-        return manager.reportFailure(entityType, entityId, timestamp, serverName, reason)
+    function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: DeploymentEventBase) {
+        expect(failedDeployment.entityId).toEqual(deployment.entityId)
+        expect(failedDeployment.entityType).toEqual(deployment.entityType)
+        expect(failedDeployment.originServerUrl).toEqual(deployment.originServerUrl)
+        expect(failedDeployment.originTimestamp).toEqual(deployment.originTimestamp)
+        expect(failedDeployment.failureTimestamp).toBeGreaterThanOrEqual(deployment.originTimestamp)
     }
 
-    function buildRandomDeployment(): DeploymentEvent {
-        const timestamp = random.number()
-        const serverName = random.alphaNumeric(20)
+    function reportDeployment({ deployment, reason, description }: { deployment: DeploymentEventBase; reason: FailureReason; description?: string }): Promise<null> {
+        const { entityType, entityId, originTimestamp, originServerUrl } = deployment
+        return manager.reportFailure(repository.failedDeployments, entityType, entityId, originTimestamp, originServerUrl, reason, description)
+    }
+
+    function buildRandomDeployment(): DeploymentEventBase {
+        const originTimestamp = Date.now()
+        const originServerUrl = internet.url()
         const event =  {
             entityType: EntityType.PROFILE,
             entityId: random.alphaNumeric(10),
-            timestamp,
-            serverName
+            originTimestamp,
+            originServerUrl
         }
         return event
     }

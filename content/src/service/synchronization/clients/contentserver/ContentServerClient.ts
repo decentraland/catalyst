@@ -1,10 +1,10 @@
 import { ContentFile, ServerStatus } from "../../../Service";
 import { Timestamp } from "../../../time/TimeSorting";
 import { EntityId, EntityType, Entity } from "../../../Entity";
-import { DeploymentHistory } from "../../../history/HistoryManager";
+import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
 import { ContentFileHash } from "../../../Hashing";
 import { ServerName } from "../../../naming/NameKeeper";
-import { AuditInfo } from "../../../audit/Audit";
+import { LegacyAuditInfo } from "../../../Audit";
 
 export const UNREACHABLE: string = "UNREACHABLE"
 
@@ -13,7 +13,7 @@ export abstract class ContentServerClient {
     constructor(protected readonly name: ServerName,
         protected estimatedLocalImmutableTime: Timestamp) { }
 
-    getNewDeployments(): Promise<DeploymentHistory> {
+    getNewDeployments(): Promise<LegacyDeploymentHistory> {
         return this.getHistory(this.estimatedLocalImmutableTime + 1, this.name)
     }
 
@@ -29,9 +29,9 @@ export abstract class ContentServerClient {
     abstract updateEstimatedLocalImmutableTime(timestamp: Timestamp | undefined): Promise<void>;
     abstract getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity>;
     abstract getContentFile(fileHash: ContentFileHash): Promise<ContentFile>;
-    abstract getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<AuditInfo>;
+    abstract getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<LegacyAuditInfo>;
     abstract getStatus(): Promise<ServerStatus>;
-    abstract getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<DeploymentHistory>;
+    abstract getHistory(from: number, serverName?: ServerName, to?: Timestamp): Promise<LegacyDeploymentHistory>;
     abstract getConnectionState(): ConnectionState;
 }
 
