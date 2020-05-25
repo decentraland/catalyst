@@ -84,7 +84,7 @@ describe("End 2 end - Node onboarding", function() {
         // Start server 3
         await server3.start()
 
-        // Assert server 3 has all the history, but since the server is not available anymore, them name and origin server url are unknown
+        // Assert server 3 has all the history, but since the server is not available anymore, the name and origin server url are unknown
         const deploymentEventWithoutName = buildEventWithName(entity, HistoryManagerImpl.UNKNOWN_NAME, deploymentTimestamp)
         deployment.auditInfo.originServerUrl = 'https://peer.decentraland.org/content'
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEventWithoutName))

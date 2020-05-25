@@ -21,7 +21,7 @@ describe("Integration - Deployments Client", function() {
         await server.start()
     })
 
-    it(`When history is consumed entirely, all the events are retrieved`, async () => {
+    it(`When deployments are consumed entirely, all the events are retrieved`, async () => {
         // Add some deployments
         for(let i=0; i<10; i=i+1) {
             const [deployData, ] = await buildDeployData(["X1,Y1"], "metadata")

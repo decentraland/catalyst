@@ -133,7 +133,7 @@ export class Server {
 
   private async validateHistory() {
     // Validate last history entry is before Date.now()
-    const lastDeployments = await this.service.getDeployments(undefined, 0, 1)
+    const lastDeployments = await this.service.getDeployments({ }, 0, 1)
     if (lastDeployments.deployments.length > 0) {
         const currentTimestamp = Date.now()
         if (lastDeployments.deployments[0].auditInfo.localTimestamp > currentTimestamp) {
