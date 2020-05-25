@@ -188,12 +188,12 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     const entityToTarget: Map<Entity, DenylistTarget> = new Map(entities.map(entity => [entity, buildEntityTarget(entity.type, entity.id)]));
 
     // Check if targets are denylisted
-    const denylistQueryResult = await this.denylist.areTargetsDenylisted(denylistRepo, Array.from(entityToTarget.values()));
+    const queryResult = await this.denylist.areTargetsDenylisted(denylistRepo, Array.from(entityToTarget.values()));
 
     // Sanitize denylisted entities
     return entities.map(entity => {
       const target = entityToTarget.get(entity)!!
-      const isDenylisted = isTargetDenylisted(target, denylistQueryResult)
+      const isDenylisted = isTargetDenylisted(target, queryResult)
       if (isDenylisted) {
         return new Entity(entity.id, entity.type, entity.pointers, entity.timestamp, undefined, DenylistServiceDecorator.DENYLISTED_METADATA);
       } else {
