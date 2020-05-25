@@ -1,5 +1,5 @@
 import ms from "ms"
-import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotDenylisted, assertContentNotIsDenylisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed } from "../E2EAssertions"
+import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotDenylisted, assertContentNotIsDenylisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed, assertDeploymentsAreReported, buildDeployment } from "../E2EAssertions"
 import { EnvironmentConfig } from "@katalyst/content/Environment"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
@@ -44,6 +44,7 @@ describe("End 2 end - Denylist handling", () => {
 
         // Assert there is nothing on history
         await assertHistoryOnServerHasEvents(onboardingServer, )
+        await assertDeploymentsAreReported(onboardingServer, )
 
         // Assert it wasn't deployed
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
@@ -71,6 +72,7 @@ describe("End 2 end - Denylist handling", () => {
 
         // Assert there is nothing on history
         await assertHistoryOnServerHasEvents(onboardingServer, )
+        await assertDeploymentsAreReported(onboardingServer, )
 
         // Assert it wasn't deployed
         await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
@@ -86,9 +88,11 @@ describe("End 2 end - Denylist handling", () => {
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
+        const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
 
         // Wait for servers to sync
         await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
+        await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
 
         // Black list the entity
         await server1.denylistEntity(entityBeingDeployed, identity)
@@ -101,6 +105,7 @@ describe("End 2 end - Denylist handling", () => {
 
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
+        await assertDeploymentsAreReported(onboardingServer, deployment)
 
         // Assert the entity is retrieved correctly
         const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
@@ -122,9 +127,11 @@ describe("End 2 end - Denylist handling", () => {
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
+        const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
 
         // Wait for servers to sync
         await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
+        await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
 
         // Black list the entity
         await server1.denylistContent(contentHash, identity)
@@ -137,6 +144,7 @@ describe("End 2 end - Denylist handling", () => {
 
         // Assert on onboarding server has all history
         await assertHistoryOnServerHasEvents(onboardingServer, deploymentEvent)
+        await assertDeploymentsAreReported(onboardingServer, deployment)
 
         // Assert the entity is retrieved correctly
         const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)

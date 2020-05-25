@@ -4,7 +4,6 @@ import { ServerName } from "../naming/NameKeeper"
 import { ContentCluster } from "../synchronization/ContentCluster"
 import { ServerAddress } from "../synchronization/clients/contentserver/ContentServerClient"
 import { DeploymentsRepository } from "@katalyst/content/storage/repositories/DeploymentsRepository"
-import { DeploymentEvent } from "../deployments/DeploymentManager"
 
 export class HistoryManagerImpl implements HistoryManager {
 
@@ -46,7 +45,7 @@ export class HistoryManagerImpl implements HistoryManager {
         const curatedOffset = (offset && offset>=0) ? offset : 0
         const curatedLimit = (limit && limit>0 && limit<=HistoryManagerImpl.MAX_HISTORY_LIMIT) ? limit : HistoryManagerImpl.DEFAULT_HISTORY_LIMIT
 
-        const deployments: DeploymentEvent[] = await deploymentsRepository.getHistoricalDeploymentsByOriginTimestamp(curatedOffset, curatedLimit + 1, from, to, address)
+        const deployments = await deploymentsRepository.getHistoricalDeploymentsByOriginTimestamp(curatedOffset, curatedLimit + 1, from, to, address)
         const moreData = deployments.length > curatedLimit
         const finalDeployments: LegacyDeploymentEvent[] = deployments.slice(0, curatedLimit)
             .map(deployment => ({

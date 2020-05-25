@@ -10,7 +10,7 @@ import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
 import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
-import { PartialDeploymentHistory } from "@katalyst/content/service/deployments/DeploymentManager"
+import { PartialDeploymentHistory, DeploymentFilters, Deployment } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
@@ -39,9 +39,9 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         this.content = builder.content
     }
 
-    getDeployments(from?: number, to?: number, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
+    getDeployments(filters: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
         return Promise.resolve({
-            events: [],
+            deployments: this.entities.map(entity => this.entityToDeployment(entity)),
             filters: { },
             pagination: {
                 offset: 0,
@@ -103,6 +103,17 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     getAllFailedDeployments(): Promise<FailedDeployment[]> {
         throw new Error("Method not implemented.")
+    }
+
+    private entityToDeployment(entity: Entity): Deployment {
+        return {
+            ...entity,
+            entityType: entity.type,
+            entityId: entity.id,
+            entityTimestamp: entity.timestamp,
+            deployedBy: '',
+            auditInfo: MockedMetaverseContentService.AUDIT_INFO,
+        }
     }
 
     private isThereAnEntityWithId(entityId: EntityId): boolean {
