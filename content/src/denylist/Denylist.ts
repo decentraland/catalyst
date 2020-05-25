@@ -1,11 +1,11 @@
 import { Timestamp } from "../service/time/TimeSorting";
 import { DenylistTarget, DenylistTargetType, DenylistTargetId } from "./DenylistTarget";
 import { ContentCluster } from "../service/synchronization/ContentCluster";
-import { EthAddress, AuthChain, Authenticator } from "dcl-crypto";
+import { EthAddress, AuthChain } from "dcl-crypto";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
-import { httpProviderForNetwork } from '../../../contracts/utils';
 import { Repository } from "../storage/Repository";
 import { DenylistRepository } from "../storage/repositories/DenylistRepository";
+import { validateSignature } from "decentraland-katalyst-commons/signatures";
 
 export class Denylist {
 
@@ -19,10 +19,7 @@ export class Denylist {
     }
 
     async addTarget(target: DenylistTarget, metadata: DenylistMetadata) {
-        // Validate that blocker can denylist
-        this.validateBlocker(metadata)
-
-        // Validate that signature belongs to the blocker
+        // Validate blocker and signature
         await this.validateSignature(target, metadata);
 
         await this.repository.tx(async transaction => {
@@ -35,10 +32,7 @@ export class Denylist {
     }
 
     async removeTarget(target: DenylistTarget, metadata: DenylistMetadata) {
-        // Validate that blocker can remove from denylist
-        this.validateBlocker(metadata)
-
-        // Validate that signature belongs to the blocker
+        // Validate blocker and signature
         await this.validateSignature(target, metadata);
 
         await this.repository.tx(async transaction => {
@@ -82,24 +76,22 @@ export class Denylist {
         return result
     }
 
-    private validateBlocker(metadata: DenylistMetadata) {
-        // Check if address belongs to Decentraland
-        const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
-        const blocker: EthAddress = Authenticator.ownerAddress(metadata.authChain)
-        const isBlockerTheNodeOwner: boolean = nodeOwner === blocker
-        if (!isBlockerTheNodeOwner && !this.authenticator.isAddressOwnedByDecentraland(blocker)) {
-            throw new Error("Expected the denylister to be either Decentraland, or the node's owner")
-        }
-    }
-
     private async validateSignature(target: DenylistTarget, metadata: DenylistMetadata) {
+        const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
         const messageToSign = Denylist.buildMessageToSign(target, metadata.timestamp)
-        const validationResult = await this.authenticator.validateSignature(messageToSign, metadata.authChain, httpProviderForNetwork(this.network), Date.now());
-        if (!validationResult.ok) {
-            throw new Error(`Failed to authenticate the blocker. Please sign the target and timestamp`);
+        try {
+            await new Promise((resolve, reject) => {
+                validateSignature(metadata,
+                    messageToSign,
+                    resolve,
+                    reject,
+                    signer => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
+                    this.network)
+                })
+        } catch (error) {
+            throw new Error(`Failed to authenticate the blocker. Error was: ${error}`);
         }
     }
-
 }
 
 export type DenylistMetadata = {
