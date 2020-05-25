@@ -19,4 +19,10 @@ export class MockedContentCluster {
         return instance(mockedCluster)
     }
 
+    static withName(name: string): ContentCluster {
+        let mockedCluster: ContentCluster = mock(ContentCluster)
+        when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: '', address: "", id: "", name })
+        return instance(mockedCluster)
+    }
+
 }

@@ -4,7 +4,7 @@ import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
-import { ControllerEntity, ControllerDenylistData } from "@katalyst/content/controller/Controller"
+import { ControllerEntity, ControllerDenylistData, ControllerDeployment } from "@katalyst/content/controller/Controller"
 import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
 import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { DeployData, hashAndSignMessage, Identity, parseEntityType, deleteFolderRecursive } from "./E2ETestUtils"
@@ -84,6 +84,10 @@ export class TestServer extends Server {
 
     getHistory(): Promise<PartialDeploymentLegacyHistory> {
         return this.makeRequest(`${this.getAddress()}/history`)
+    }
+
+    getDeployments(): Promise<{ deployments: ControllerDeployment[] }> {
+        return this.makeRequest(`${this.getAddress()}/deployments`)
     }
 
     getStatus(): Promise<ServerStatus> {

@@ -61,6 +61,7 @@ export class Server {
     this.registerRoute("/available-content", controller, controller.getAvailableContent);
     this.registerRoute("/audit/:type/:entityId", controller, controller.getAudit);
     this.registerRoute("/history", controller, controller.getHistory);
+    this.registerRoute("/deployments", controller, controller.getDeployments);
     this.registerRoute("/status", controller, controller.getStatus);
     this.registerRoute("/denylist", controller, controller.getAllDenylistTargets);
     this.registerRoute("/denylist/:type/:id", controller, controller.addToDenylist, HttpMethod.PUT);
@@ -132,10 +133,10 @@ export class Server {
 
   private async validateHistory() {
     // Validate last history entry is before Date.now()
-    const lastEvents = await this.service.getDeployments(undefined, undefined, 0, 1)
-    if (lastEvents.events.length > 0) {
+    const lastDeployments = await this.service.getDeployments({ }, 0, 1)
+    if (lastDeployments.deployments.length > 0) {
         const currentTimestamp = Date.now()
-        if (lastEvents.events[0].localTimestamp > currentTimestamp) {
+        if (lastDeployments.deployments[0].auditInfo.localTimestamp > currentTimestamp) {
             console.error("Last stored timestamp for this server is newer than current time. The server can not be started.")
             process.exit(1)
         }

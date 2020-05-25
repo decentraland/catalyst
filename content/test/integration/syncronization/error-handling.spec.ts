@@ -1,5 +1,5 @@
 import ms from "ms"
-import { buildEvent, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive, assertDeploymentFailed, assertThereIsAFailedDeployment } from "../E2EAssertions"
+import { buildEvent, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive, assertDeploymentFailed, assertThereIsAFailedDeployment, assertDeploymentsAreReported, buildDeployment } from "../E2EAssertions"
 import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { ControllerEntity } from "@katalyst/content/controller/Controller"
@@ -114,6 +114,7 @@ describe("End 2 end - Error handling", () => {
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
+        const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
 
         // Cause failure
         await causeOfFailure(entityBeingDeployed)
@@ -126,6 +127,7 @@ describe("End 2 end - Error handling", () => {
 
         // Assert history was not modified
         await assertHistoryOnServerHasEvents(server2, )
+        await assertDeploymentsAreReported(server2, )
 
         // Assert immutable time is more recent than the entity
         const immutableTime = await server2.getStatus().then(status => status.lastImmutableTime)
@@ -147,6 +149,7 @@ describe("End 2 end - Error handling", () => {
 
         // Assert history was modified
         await assertHistoryOnServerHasEvents(server2, deploymentEvent)
+        await assertDeploymentsAreReported(server2, deployment)
     }
 
 })

@@ -1,15 +1,16 @@
-import { EthAddress } from "dcl-crypto";
+import { EthAddress, AuthChain } from "dcl-crypto";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
-import { EntityId, EntityType, Entity } from "@katalyst/content/service/Entity";
+import { EntityId, EntityType, Entity, Pointer } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
-import { AuditInfo } from "../Audit";
+import { AuditInfo, EntityVersion } from "../Audit";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
 import { MigrationDataRepository } from "@katalyst/content/storage/repositories/MigrationDataRepository";
 import { CacheByType } from "../caching/Cache";
 import { CacheManager, ENTITIES_CACHE_CONFIG } from "../caching/CacheManager";
 import { DeploymentResult } from "../pointers/PointerManager";
 import { DeploymentDeltasRepository } from "@katalyst/content/storage/repositories/DeploymentDeltasRepository";
+import { ContentFileHash } from "../Hashing";
 
 export class DeploymentManager {
 
@@ -34,17 +35,46 @@ export class DeploymentManager {
         })
     }
 
-    async getDeployments(deploymentsRepository: DeploymentsRepository, fromLocalTimestamp?: Timestamp, toLocalTimestamp?: Timestamp, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
+    async getDeployments(
+        deploymentsRepository: DeploymentsRepository,
+        contentFilesRepository: ContentFilesRepository,
+        migrationDataRepository: MigrationDataRepository,
+        filters?: DeploymentFilters,
+        offset?: number,
+        limit?: number): Promise<PartialDeploymentHistory> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        const deployments: DeploymentEvent[] = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, fromLocalTimestamp, toLocalTimestamp)
-        const moreData = deployments.length > curatedLimit
+        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters?.fromLocalTimestamp, filters?.toLocalTimestamp)
+        const moreData = deploymentsWithExtra.length > curatedLimit
+
+        const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
+        const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
+        const content = await contentFilesRepository.getContentFiles(deploymentIds)
+        const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
+
+        const deployments: Deployment[] = deploymentsResult.map(result => ({
+            entityType: result.entityType,
+            entityId: result.entityId,
+            pointers: result.pointers,
+            entityTimestamp: result.entityTimestamp,
+            content: content.get(result.deploymentId),
+            metadata: result.metadata,
+            deployedBy: result.deployerAddress,
+            auditInfo: {
+                version: result.version,
+                authChain: result.authChain,
+                originServerUrl: result.originServerUrl,
+                originTimestamp: result.originTimestamp,
+                localTimestamp: result.localTimestamp,
+                overwrittenBy: result.overwrittenBy,
+                migrationData: migrationData.get(result.deploymentId),
+            }
+        }));
         return {
-            events: deployments.slice(0, curatedLimit),
+            deployments: deployments,
             filters: {
-                fromLocalTimestamp: fromLocalTimestamp,
-                toLocalTimestamp: toLocalTimestamp,
+                ...filters,
             },
             pagination: {
                 offset: curatedOffset,
@@ -84,7 +114,7 @@ export class DeploymentManager {
         const auditInfo: AuditInfo = {
             ...deploymentResult.auditInfo,
             deployedTimestamp: deploymentResult.auditInfo.originTimestamp,
-            originalMetadata: migrationResult,
+            originalMetadata: migrationResult.get(deploymentResult.deploymentId),
         }
 
         return auditInfo
@@ -101,16 +131,39 @@ export class DeploymentManager {
 }
 
 export type PartialDeploymentHistory = {
-    events: DeploymentEvent[],
-    filters: {
-        fromLocalTimestamp?: Timestamp,
-        toLocalTimestamp?: Timestamp,
-    },
+    deployments: Deployment[],
+    filters: DeploymentFilters,
     pagination: {
         offset: number,
         limit: number,
         moreData: boolean,
     },
+}
+
+export type DeploymentFilters = {
+    fromLocalTimestamp?: Timestamp
+    toLocalTimestamp?: Timestamp
+}
+
+export type Deployment = {
+    entityType: EntityType,
+    entityId: EntityId,
+    pointers: Pointer[],
+    entityTimestamp: Timestamp,
+    content?: Map<string, ContentFileHash>,
+    metadata?: any,
+    deployedBy: EthAddress,
+    auditInfo: {
+        version: EntityVersion,
+        authChain: AuthChain,
+        originServerUrl: ServerAddress,
+        originTimestamp: Timestamp,
+        localTimestamp: Timestamp,
+        overwrittenBy?: EntityId,
+        migrationData?: any,
+        isDenylisted?: boolean,
+        denylistedContent?: ContentFileHash[],
+    }
 }
 
 export type DeploymentEventBase = {
@@ -120,9 +173,4 @@ export type DeploymentEventBase = {
     originTimestamp: Timestamp,
 }
 
-export type DeploymentEvent = DeploymentEventBase & {
-    localTimestamp: Timestamp,
-    deployer: EthAddress,
-}
 
-export type DeploymentHistory = DeploymentEvent[]

@@ -19,7 +19,7 @@ import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeployme
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
-import { DeploymentManager, PartialDeploymentHistory } from "./deployments/DeploymentManager";
+import { DeploymentManager, PartialDeploymentHistory, DeploymentFilters } from "./deployments/DeploymentManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -150,7 +150,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             } else {
                 auditInfoComplete = {
                     originTimestamp: localTimestamp,
-                    originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? ServiceImpl.DEFAULT_SERVER_NAME,
+                    originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
                     ...auditInfo,
                     localTimestamp,
                 }
@@ -267,12 +267,12 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.deploymentManager.areEntitiesDeployed(repository.deployments, entityIds)
     }
 
-    getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number) {
+    getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number) {
         return this.historyManager.getHistory(this.repository.deployments, from, to, serverName, offset, limit)
     }
 
-    getDeployments(from?: number, to?: number, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory> {
-        return this.deploymentManager.getDeployments(repository.deployments, from, to, offset, limit)
+    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory> {
+        return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, filters, offset, limit))
     }
 
     getAllFailedDeployments() {

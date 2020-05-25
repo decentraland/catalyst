@@ -8,7 +8,7 @@ import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManag
 import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
 import { PartialDeploymentLegacyHistory } from "./history/HistoryManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
-import { PartialDeploymentHistory } from "./deployments/DeploymentManager";
+import { PartialDeploymentHistory, DeploymentFilters } from "./deployments/DeploymentManager";
 
 export const ENTITY_FILE_NAME = 'entity.json';
 
@@ -27,7 +27,7 @@ export interface MetaverseContentService {
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
     getStatus(): ServerStatus;
     getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory>;
-    getDeployments(from?: Timestamp, to?: Timestamp, offset?: number, limit?: number): Promise<PartialDeploymentHistory>;
+    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
 }
 

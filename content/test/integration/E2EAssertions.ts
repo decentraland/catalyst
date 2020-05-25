@@ -1,14 +1,14 @@
+import { Authenticator } from "dcl-crypto"
 import assert from "assert"
 import { Response } from "node-fetch"
 import { TestServer } from "./TestServer"
-import { ControllerEntity, ControllerEntityContent } from "@katalyst/content/controller/Controller"
-import { EntityType } from "@katalyst/content/service/Entity"
+import { ControllerEntity, ControllerEntityContent, ControllerDeployment } from "@katalyst/content/controller/Controller"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { LegacyDeploymentEvent, LegacyDeploymentHistory } from "@katalyst/content/service/history/HistoryManager"
+import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
 import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
-import { LegacyAuditInfo } from "@katalyst/content/service/Audit"
+import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
 import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
-import { parseEntityType } from "./E2ETestUtils"
+import { parseEntityType, DeployData } from "./E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 
@@ -42,14 +42,34 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
 
 /** Please set the expected events from older to newer */
 export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: LegacyDeploymentEvent[]) {
-    const deploymentHistory: LegacyDeploymentHistory = (await server.getHistory()).events
+    const { events: deploymentHistory } = await server.getHistory()
     assert.equal(deploymentHistory.length, expectedEvents.length, `Expected to find ${expectedEvents.length} deployments in history on server ${server.getAddress()}. Instead, found ${deploymentHistory.length}.`)
     const { historySize } = await server.getStatus()
     assert.equal(historySize, expectedEvents.length, `Expected to find a history of size ${expectedEvents.length} on the status on ${server.getAddress()}. Instead, found ${historySize}.`)
     for (let i = 0; i < expectedEvents.length; i++) {
         const expectedEvent: LegacyDeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
         const actualEvent: LegacyDeploymentEvent = deploymentHistory[i]
-        assertEqualsDeployment(actualEvent, expectedEvent)
+        assertEqualsDeploymentEvent(actualEvent, expectedEvent)
+    }
+}
+
+export async function assertDeploymentsAreReported(server: TestServer, ...expectedDeployments: ControllerDeployment[]) {
+    const { deployments } = await server.getDeployments()
+    assert.equal(deployments.length, expectedDeployments.length, `Expected to find ${expectedDeployments.length} deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`)
+
+    // Make sure that deployments are sorted per descending local timestamp
+    for (let i = 1; i < deployments.length; i++) {
+        assert.ok(deployments[i - 1].auditInfo.localTimestamp > deployments[i].auditInfo.localTimestamp)
+    }
+
+    // Sort deployments by ascending origin timestamp
+    const sortedDeployments = deployments.sort((a, b) => (a.auditInfo.originTimestamp > b.auditInfo.originTimestamp) ? 1 : -1)
+
+    // Compare deployments
+    for (let i = 0; i < expectedDeployments.length; i++) {
+        const expectedEvent: ControllerDeployment = expectedDeployments[i]
+        const actualEvent: ControllerDeployment = sortedDeployments[i]
+        assertEqualsDeployment(server, actualEvent, expectedEvent)
     }
 }
 
@@ -69,11 +89,33 @@ export async function assertDeploymentFailed(server: TestServer, reason: Failure
     assert.ok(failedDeployment.failureTimestamp > originTimestamp)
 }
 
-function assertEqualsDeployment(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
+function assertEqualsDeployment(server: TestServer, actualDeployment: ControllerDeployment, expectedDeployment: ControllerDeployment) {
+    assert.equal(actualDeployment.entityType, expectedDeployment.entityType)
+    assert.equal(actualDeployment.entityId, expectedDeployment.entityId)
+    assert.deepEqual(actualDeployment.pointers, expectedDeployment.pointers)
+    assert.equal(actualDeployment.entityTimestamp, expectedDeployment.entityTimestamp)
+    assert.deepEqual(actualDeployment.content, expectedDeployment.content)
+    assert.deepEqual(actualDeployment.metadata, expectedDeployment.metadata)
+    assert.equal(actualDeployment.deployedBy, expectedDeployment.deployedBy)
+    assert.equal(actualDeployment.auditInfo.version, expectedDeployment.auditInfo.version)
+    assert.deepEqual(actualDeployment.auditInfo.authChain, expectedDeployment.auditInfo.authChain)
+    assert.equal(actualDeployment.auditInfo.originServerUrl, expectedDeployment.auditInfo.originServerUrl)
+    assert.equal(actualDeployment.auditInfo.originTimestamp, expectedDeployment.auditInfo.originTimestamp)
+    assert.deepEqual(actualDeployment.auditInfo.migrationData, expectedDeployment.auditInfo.migrationData)
+    assert.equal(actualDeployment.auditInfo.isDenylisted, expectedDeployment.auditInfo.isDenylisted)
+    assert.deepEqual(actualDeployment.auditInfo.denylistedContent, expectedDeployment.auditInfo.denylistedContent)
+    if (server.getAddress() === actualDeployment.auditInfo.originServerUrl) {
+        assert.equal(actualDeployment.auditInfo.localTimestamp, expectedDeployment.auditInfo.localTimestamp)
+    } else {
+        assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)
+    }
+}
+
+function assertEqualsDeploymentEvent(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
     assert.equal(actualEvent.entityId, expectedEvent.entityId)
     assert.equal(actualEvent.entityType, expectedEvent.entityType)
     assert.equal(actualEvent.timestamp, expectedEvent.timestamp)
-    assert.ok(actualEvent.serverName.startsWith(expectedEvent.serverName))
+    assert.ok(actualEvent.serverName.startsWith(expectedEvent.serverName), `Expected name to start with '${expectedEvent.serverName}'. Instead, it was '${actualEvent.serverName}'`)
 }
 
 async function assertEntityIsOnServer(server: TestServer, entity: ControllerEntity) {
@@ -123,6 +165,24 @@ export async function assertContentIsDenylisted(server: TestServer, entity: Cont
     assert.ok(auditInfo.denylistedContent!!.includes(contentHash))
 }
 
+export function buildDeployment(deployData: DeployData, entity: ControllerEntity, server: TestServer, deploymentTimestamp: Timestamp): ControllerDeployment {
+    return {
+        ...entity,
+        content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : [],
+        entityType: parseEntityType(entity),
+        entityId: entity.id,
+        entityTimestamp: entity.timestamp,
+        deployedBy: deployData.ethAddress,
+        auditInfo: {
+            version: EntityVersion.V3,
+            originServerUrl: server.getAddress(),
+            originTimestamp: deploymentTimestamp,
+            localTimestamp: deploymentTimestamp,
+            authChain: Authenticator.createSimpleAuthChain(deployData.entityId, deployData.ethAddress, deployData.signature)
+        }
+    }
+}
+
 export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): LegacyDeploymentEvent {
     return buildEventWithName(entity, server.namePrefix, timestamp)
 }
@@ -131,7 +191,7 @@ export function buildEventWithName(entity: ControllerEntity, name: string, times
     return {
         serverName: name,
         entityId: entity.id,
-        entityType: EntityType[entity.type.toUpperCase().trim()],
+        entityType: parseEntityType(entity),
         timestamp,
     }
 }

@@ -2,7 +2,7 @@ import ms from "ms"
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
-import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent } from "../E2EAssertions"
+import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent, buildDeployment, assertDeploymentsAreReported } from "../E2EAssertions"
 import { delay } from "decentraland-katalyst-utils/util"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
 
@@ -26,20 +26,25 @@ describe("End 2 end synchronization tests", function() {
 
         // Make sure there are no deployments on server 1
         await assertHistoryOnServerHasEvents(server1, )
+        await assertDeploymentsAreReported(server1, )
 
         // Make sure there are no deployments on server 2
         await assertHistoryOnServerHasEvents(server2, )
+        await assertDeploymentsAreReported(server2, )
 
         // Deploy the entity to server 1
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
         const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
+        const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
 
         // Assert that the entity was deployed on server 1
         await assertHistoryOnServerHasEvents(server1, deploymentEvent)
+        await assertDeploymentsAreReported(server1, deployment)
 
         // Assert that the entity was synced from server 1 to server 2
         await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entityBeingDeployed))
         await assertHistoryOnServerHasEvents(server2, deploymentEvent)
+        await assertDeploymentsAreReported(server2, deployment)
     })
 
     it(`Even when there are no deployments, immutable time advances across all servers`, async () => {
@@ -126,17 +131,22 @@ describe("End 2 end synchronization tests", function() {
         // Deploy entity 1 on server 1
         const deploymentTimestamp1 = await server1.deploy(deployData1)
         const deploymentEvent1 = buildEvent(entityBeingDeployed1, server1, deploymentTimestamp1)
+        const deployment1 = buildDeployment(deployData1, entityBeingDeployed1, server1, deploymentTimestamp1)
 
         // Wait for servers to sync
         await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1))
+        await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1))
 
         // Deploy entity 2 on server 2
         const deploymentTimestamp2 = await server2.deploy(deployData2)
         const deploymentEvent2 = buildEvent(entityBeingDeployed2, server2, deploymentTimestamp2)
+        const deployment2 = buildDeployment(deployData2, entityBeingDeployed2, server2, deploymentTimestamp2)
 
         // Assert that the entities were deployed on the servers
         await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2))
         await assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2)
+        await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
+        await assertDeploymentsAreReported(server2, deployment1, deployment2)
     })
 
      /**
@@ -163,9 +173,11 @@ describe("End 2 end synchronization tests", function() {
         // Deploy the entities 1 and 2
         const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
         const deploymentEvent1 = buildEvent(entity1, server1, deploymentTimestamp1)
+        const deployment1 = buildDeployment(deployData1, entity1, server1, deploymentTimestamp1)
 
         const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
         const deploymentEvent2 = buildEvent(entity2, server2, deploymentTimestamp2)
+        const deployment2 = buildDeployment(deployData2, entity2, server2, deploymentTimestamp2)
 
         // Stop server 2
         await server2.stop({ deleteStorage: false })
@@ -173,10 +185,13 @@ describe("End 2 end synchronization tests", function() {
         // Deploy entity 3
         const deploymentTimestamp3: Timestamp = await server3.deploy(deployData3)
         const deploymentEvent3 = buildEvent(entity3, server3, deploymentTimestamp3)
+        const deployment3 = buildDeployment(deployData3, entity3, server3, deploymentTimestamp3)
 
         // Wait for servers to sync
         await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent3))
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent3))
+        await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment3))
+        await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment3))
 
         // Make sure that both server 1 and 3 have entity 1 and 3 currently active
         await assertEntitiesAreActiveOnServer(server1, entity1, entity3)
@@ -189,6 +204,9 @@ describe("End 2 end synchronization tests", function() {
         await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2, deploymentEvent3))
         await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2, deploymentEvent3))
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2, deploymentEvent3))
+        await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2, deployment3))
+        await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1, deployment2, deployment3))
+        await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment2, deployment3))
 
         // Make assertions on Server 1
         await assertEntitiesAreActiveOnServer(server1, entity3)
