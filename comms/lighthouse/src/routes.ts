@@ -7,6 +7,7 @@ import { PeerInfo, Layer } from "./types";
 import { PeersService } from "./peersService";
 import { validateSignatureHandler } from "decentraland-katalyst-commons/handlers";
 import { ConfigService } from "./configService";
+import { ReadyStateService } from "./readyStateService";
 
 export type RoutesOptions = {
   env?: any;
@@ -21,10 +22,11 @@ export type Services = {
   realmProvider: () => IRealm;
   peersService: PeersService;
   configService: ConfigService;
+  readyStateService: ReadyStateService;
 };
 
 export function configureRoutes(app: express.Express, services: Services, options: RoutesOptions) {
-  const { layersService, realmProvider: getPeerJsRealm, peersService, configService } = services;
+  const { layersService, realmProvider: getPeerJsRealm, peersService, configService, readyStateService } = services;
 
   const validateLayerExists = (req, res, next) => {
     if (layersService.exists(req.params.layerId)) {
@@ -40,6 +42,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       version: options.version,
       currenTime: Date.now(),
       env: options.env,
+      isReady: readyStateService.isReady(),
     };
 
     const globalMaxPerLayer = await configService.getMaxPeersPerLayer();
