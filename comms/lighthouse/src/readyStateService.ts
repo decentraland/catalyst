@@ -1,15 +1,67 @@
+import ms from "ms"
 
 export class ReadyStateService {
+
+  private static readonly INTERVAL = ms('10s')
+  private static readonly MAX_FAILED_ATTEMPTS = 3
+  private readonly failedAttempts: Map<StateCheckName, number> = new Map()
+  private readonly checks: Map<StateCheckName, () => Promise<boolean>>
   private ready: boolean = false
+
+  constructor() {
+    this.checks = new Map(stateChecks.map(({ name, execution }) => [ name, execution ]))
+    setTimeout(() => this.executeChecks(), ReadyStateService.INTERVAL)
+  }
 
   isReady() {
     return this.ready
   }
 
+  private async executeChecks() {
+    const checksToExecute = Array.from(this.checks.entries())
+    for (const [ checkName, execution ] of checksToExecute) {
+      try {
+        const isReady = await execution()
+        if (isReady) {
+          console.log(`Check ready '${checkName}'`)
+          this.checks.delete(checkName)
+        }
+      } catch (error) {
+        console.log(`Couldn't execute the state check '${checkName}'. Error was: ${error}`)
+        const failedAttempts = (this.failedAttempts.get(checkName) ?? 0) + 1
+        if (failedAttempts >= ReadyStateService.MAX_FAILED_ATTEMPTS) {
+          console.log(`Maxed out on failed attempts to check '${checkName}'`)
+          this.checks.delete(checkName)
+        } else {
+          this.failedAttempts.set(checkName, failedAttempts)
+        }
+      }
+    }
+    if (this.checks.size === 0) {
+      this.ready = true
+    } else {
+      setTimeout(() => this.executeChecks(), ReadyStateService.INTERVAL)
+    }
+  }
 }
 
+type StateCheckName = string
 
 type StateCheck = {
-  name: string,
-  call: () => Promise<boolean>
+  name: StateCheckName,
+  execution: () => Promise<boolean>
 }
+
+const stateChecks: StateCheck[] = [
+    {
+      name: 'Content Server Bootstrapping',
+      execution: async () => {
+        const statusResponse = await fetch(`http://content-server:6969/status`, { timeout: ms('2s') } as any);
+        if (statusResponse.ok) {
+          const { synchronizationState } = await statusResponse.json();
+          return synchronizationState !== 'Bootstrapping'
+        }
+        throw new Error(`Response not OK. Response status: ${statusResponse.status}`);
+      }
+    }
+  ]

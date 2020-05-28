@@ -72,7 +72,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   const idService = new IdService({ alphabet: idAlphabet, idLength });
 
-  const readyStateService = new ReadyStateService();
+  const readyStateService = new ReadyStateService()
 
   configureRoutes(
     app,
