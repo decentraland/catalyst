@@ -1,7 +1,7 @@
 import ms from "ms";
 
 const awaitContentServerEnabled = (process.env.AWAIT_CONTENT_SERVER ?? "true") === "true";
-const internalContentServerURL = process.env.INTERNAL_CONTENT_SERVER_URL ?? 'http://content-server:6969';
+const internalContentServerURL = process.env.INTERNAL_CONTENT_SERVER_URL ?? "http://content-server:6969";
 
 export class ReadyStateService {
   private static readonly INTERVAL = ms("10s");
@@ -12,7 +12,11 @@ export class ReadyStateService {
 
   constructor() {
     this.checks = new Map(stateChecks.map(({ name, execution }) => [name, execution]));
-    setTimeout(() => this.executeChecks(), 0); // We start the execution of the checks asynchronously but immediately.
+    if (this.checks.size > 0) {
+      setTimeout(() => this.executeChecks(), ReadyStateService.INTERVAL);
+    } else {
+      this.ready = true;
+    }
   }
 
   isReady() {
