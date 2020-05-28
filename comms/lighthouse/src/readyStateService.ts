@@ -58,7 +58,8 @@ const stateChecks: StateCheck[] = [
       execution: async () => {
         const statusResponse = await fetch(`http://content-server:6969/status`, { timeout: ms('2s') } as any);
         if (statusResponse.ok) {
-          const { synchronizationState } = await statusResponse.json();
+          const { synchronizationStatus } = await statusResponse.json();
+          const { synchronizationState } = synchronizationStatus;
           return synchronizationState !== 'Bootstrapping'
         }
         throw new Error(`Response not OK. Response status: ${statusResponse.status}`);
