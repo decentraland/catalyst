@@ -139,6 +139,8 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
         type: MessageType.ERROR,
         payload: { msg: "The lighthouse is not ready to accept connections yet" }
       })
+
+      client.getSocket()?.close();
     }
   })
 
