@@ -22,6 +22,7 @@ import { IdService } from "./idService";
 import { ConfigService } from "./configService";
 import { lighthouseConfigStorage } from "./simpleStorage";
 import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
+import { ReadyStateService } from "./readyStateService";
 
 const LIGHTHOUSE_VERSION = "0.2";
 const DEFAULT_ETH_NETWORK = "ropsten";
@@ -71,9 +72,11 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   const idService = new IdService({ alphabet: idAlphabet, idLength });
 
+  const readyStateService = new ReadyStateService();
+
   configureRoutes(
     app,
-    { layersService, realmProvider: getPeerJsRealm, peersService, configService},
+    { layersService, realmProvider: getPeerJsRealm, peersService, configService, readyStateService },
     {
       name,
       version: LIGHTHOUSE_VERSION,
@@ -128,6 +131,16 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
   });
 
   peerServer.on("error", console.log);
+
+  //@ts-ignore
+  peerServer.on("connection", (client: IClient) => {
+    if(!readyStateService.isReady) {
+      client.send({
+        type: MessageType.ERROR,
+        payload: { msg: "The lighthouse is not ready to accept connections yet" }
+      })
+    }
+  })
 
   //@ts-ignore
   peerServer.on("message", (client: IClient, message: IMessage) => {

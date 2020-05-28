@@ -1,5 +1,5 @@
 import express from "express";
-import { validatePeerToken, requireOneOf, requireAll } from "./handlers";
+import { validatePeerToken, requireOneOf, requireAll, requireServerReady } from "./handlers";
 import { LayersService } from "./layersService";
 import { IRealm } from "peerjs-server";
 import { RequestError } from "./errors";
@@ -7,6 +7,7 @@ import { PeerInfo, Layer } from "./types";
 import { PeersService } from "./peersService";
 import { validateSignatureHandler } from "decentraland-katalyst-commons/handlers";
 import { ConfigService } from "./configService";
+import { ReadyStateService } from "./readyStateService";
 
 export type RoutesOptions = {
   env?: any;
@@ -21,10 +22,11 @@ export type Services = {
   realmProvider: () => IRealm;
   peersService: PeersService;
   configService: ConfigService;
+  readyStateService: ReadyStateService;
 };
 
 export function configureRoutes(app: express.Express, services: Services, options: RoutesOptions) {
-  const { layersService, realmProvider: getPeerJsRealm, peersService, configService } = services;
+  const { layersService, realmProvider: getPeerJsRealm, peersService, configService, readyStateService } = services;
 
   const validateLayerExists = (req, res, next) => {
     if (layersService.exists(req.params.layerId)) {
@@ -35,17 +37,24 @@ export function configureRoutes(app: express.Express, services: Services, option
   };
 
   app.get("/status", async (req, res, next) => {
+    const ready = readyStateService.isReady();
+
     const status: any = {
       name: options.name,
       version: options.version,
       currenTime: Date.now(),
       env: options.env,
+      ready,
     };
 
     const globalMaxPerLayer = await configService.getMaxPeersPerLayer();
 
     if (req.query.includeLayers === "true") {
       status.layers = layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, true));
+    }
+
+    if (!ready) {
+      res.status(503);
     }
 
     res.send(status);
@@ -80,6 +89,7 @@ export function configureRoutes(app: express.Express, services: Services, option
 
   app.put(
     "/layers/:layerId",
+    requireServerReady(readyStateService),
     requireOneOf(["id", "peerId"], (req, res) => req.body),
     validatePeerToken(getPeerJsRealm),
     async (req, res, next) => {
@@ -95,6 +105,7 @@ export function configureRoutes(app: express.Express, services: Services, option
 
   app.put(
     "/layers/:layerId/rooms/:roomId",
+    requireServerReady(readyStateService),
     validateLayerExists,
     requireOneOf(["id", "peerId"], (req, res) => req.body),
     validatePeerToken(getPeerJsRealm),
@@ -109,13 +120,13 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   );
 
-  app.delete("/layers/:layerId/rooms/:roomId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
+  app.delete("/layers/:layerId/rooms/:roomId/users/:userId", requireServerReady(readyStateService), validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { roomId, userId, layerId } = req.params;
     const room = layersService.getRoomsService(layerId)?.removePeerFromRoom(roomId, userId);
     res.send(mapUsersToJson(peersService.getPeersInfo(room?.peers ?? [])));
   });
 
-  app.delete("/layers/:layerId/users/:userId", validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
+  app.delete("/layers/:layerId/users/:userId", requireServerReady(readyStateService), validateLayerExists, validatePeerToken(getPeerJsRealm), (req, res, next) => {
     const { userId, layerId } = req.params;
     const layer = layersService.removePeerFromLayer(layerId, userId);
     res.send(mapUsersToJson(peersService.getPeersInfo(layer?.peers ?? [])));
@@ -140,9 +151,9 @@ export function configureRoutes(app: express.Express, services: Services, option
     "/config",
     requireAll(["config"], (req) => req.body),
     validateSignatureHandler(
-      body => JSON.stringify(body.config),
+      (body) => JSON.stringify(body.config),
       options.ethNetwork,
-      signer => signer?.toLowerCase() == options.restrictedAccessSigner.toLowerCase()
+      (signer) => signer?.toLowerCase() == options.restrictedAccessSigner.toLowerCase()
     ),
     async (req, res, next) => {
       const configKeyValues = req.body.config;
