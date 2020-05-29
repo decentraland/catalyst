@@ -200,6 +200,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
+  getDeltas() {
+    return this.service.getDeltas(this.repository)
+  }
+
   getAllFailedDeployments() {
     return this.service.getAllFailedDeployments()
   }

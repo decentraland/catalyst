@@ -19,7 +19,7 @@ import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeployme
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
-import { DeploymentManager, PartialDeploymentHistory, DeploymentFilters } from "./deployments/DeploymentManager";
+import { DeploymentManager, PartialDeploymentHistory, DeploymentFilters, DeploymentDelta } from "./deployments/DeploymentManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -273,6 +273,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
     getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory> {
         return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, filters, offset, limit))
+    }
+
+    getDeltas(repository: RepositoryTask | Repository = this.repository): Promise<DeploymentDelta[]> {
+        return repository.taskIf(task => this.deploymentManager.getDeltas(task.deploymentDeltas, task.deployments))
     }
 
     getAllFailedDeployments() {

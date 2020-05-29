@@ -1,7 +1,6 @@
 import { EntityType, Pointer } from "@katalyst/content/service/Entity";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { Bean, EnvironmentBuilder } from "@katalyst/content/Environment";
-import { MigrationManager } from "@katalyst/content/migrations/MigrationManager";
 import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
 import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
@@ -41,8 +40,6 @@ describe("Integration - Order Check", () => {
         const env = await new EnvironmentBuilder(baseEnv)
             .withBean(Bean.VALIDATIONS, new NoOpValidations())
             .build()
-        const migrationManager = env.getBean<MigrationManager>(Bean.MIGRATION_MANAGER)
-        await migrationManager.run()
         service = env.getBean(Bean.SERVICE)
     })
 
