@@ -39,6 +39,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         this.content = builder.content
     }
 
+    getDeltas(repository?: RepositoryTask | Repository) {
+        return Promise.resolve([])
+    }
+
     getDeployments(filters: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
         return Promise.resolve({
             deployments: this.entities.map(entity => this.entityToDeployment(entity)),

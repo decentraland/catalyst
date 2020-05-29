@@ -96,7 +96,7 @@ export class PointerManager {
 
 export type DeploymentResult = Map<Pointer, { before: DeploymentId | undefined, after: DELTA_POINTER_RESULT }>
 
-enum DELTA_POINTER_RESULT {
+export enum DELTA_POINTER_RESULT {
     SET = 'set',
     CLEARED = 'cleared',
 }

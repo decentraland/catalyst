@@ -8,7 +8,7 @@ import { ContentFilesRepository } from "@katalyst/content/storage/repositories/C
 import { MigrationDataRepository } from "@katalyst/content/storage/repositories/MigrationDataRepository";
 import { CacheByType } from "../caching/Cache";
 import { CacheManager, ENTITIES_CACHE_CONFIG } from "../caching/CacheManager";
-import { DeploymentResult } from "../pointers/PointerManager";
+import { DeploymentResult, DELTA_POINTER_RESULT } from "../pointers/PointerManager";
 import { DeploymentDeltasRepository } from "@katalyst/content/storage/repositories/DeploymentDeltasRepository";
 import { ContentFileHash } from "../Hashing";
 
@@ -124,8 +124,27 @@ export class DeploymentManager {
         return deploymentsRepository.setEntitiesAsOverwritten(overwritten, overwrittenBy)
     }
 
+    async getDeltas(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository): Promise<DeploymentDelta[]> {
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(0, DeploymentManager.MAX_HISTORY_LIMIT, undefined, undefined)
+        const deploymentIds = deploymentsWithExtra.map(({ deploymentId }) => deploymentId)
+        const deltas = await deploymentDeltasRepo.getDeltasForDeployments(deploymentIds)
+
+        return deploymentsWithExtra
+            .map(({ deploymentId, entityId, entityType, localTimestamp }) => {
+                const delta = deltas.get(deploymentId) ?? new Map()
+                const changes = this.transformDelta(entityId, delta)
+                return { entityType, entityId, localTimestamp, changes }
+            })
+    }
+
     saveDelta(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentId: DeploymentId, result: DeploymentResult) {
        return deploymentDeltasRepo.saveDelta(deploymentId, result)
+    }
+
+    private transformDelta(deployedEntity: EntityId, input: Map<Pointer, { before: EntityId | undefined, after: DELTA_POINTER_RESULT }>): DeploymentDeltaChanges {
+        const newEntries = Array.from(input.entries())
+            .map<[Pointer, { before: EntityId | undefined, after: EntityId | undefined }]>(([ pointer, { before, after } ]) => [ pointer, { before, after: after ===  DELTA_POINTER_RESULT.SET ? deployedEntity : undefined } ])
+        return new Map(newEntries)
     }
 
 }
@@ -173,4 +192,12 @@ export type DeploymentEventBase = {
     originTimestamp: Timestamp,
 }
 
+export type DeploymentDelta = {
+    entityType: EntityType,
+    entityId: EntityId,
+    localTimestamp: Timestamp,
+    changes: DeploymentDeltaChanges,
+}
+
+export type DeploymentDeltaChanges = Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }>
 

@@ -5,7 +5,6 @@ import { loadTestEnvironment } from "../E2ETestEnvironment"
 import { Repository } from "@katalyst/content/storage/Repository"
 import { DeploymentEventBase } from "@katalyst/content/service/deployments/DeploymentManager"
 import { RepositoryFactory } from "@katalyst/content/storage/RepositoryFactory"
-import { MigrationManagerFactory } from "@katalyst/content/migrations/MigrationManagerFactory"
 
 describe("Integration - Failed Deployments Manager", function() {
 
@@ -15,8 +14,6 @@ describe("Integration - Failed Deployments Manager", function() {
 
     beforeEach(async () => {
         const env = await testEnv.getEnvForNewDatabase()
-        const migrationManager = MigrationManagerFactory.create(env)
-        await migrationManager.run()
         repository = await RepositoryFactory.create(env)
     })
 

@@ -11,6 +11,7 @@ import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/Mocke
 import { ServerAddress } from '@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { Container } from 'testcontainers/dist/container'
+import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
 
 export class E2ETestEnvironment {
 
@@ -84,10 +85,14 @@ export class E2ETestEnvironment {
         return builder
     }
 
+    /** Returns the environment, with the migrations run */
     async getEnvForNewDatabase(): Promise<Environment> {
         const [ dbName ] = await this.createDatabases(1)
-        return new Environment(this.sharedEnv)
+        const env = new Environment(this.sharedEnv)
             .setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
+        const migrationManager = MigrationManagerFactory.create(env)
+        await migrationManager.run()
+        return env
     }
 
     removeFromDAO(address: ServerAddress) {
