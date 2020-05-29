@@ -11,7 +11,7 @@ import { loadTestEnvironment } from "../../E2ETestEnvironment";
 /**
  * This test verifies that the deltas are calculated correctly
  */
-fdescribe("Integration - Deltas Check", () => {
+describe("Integration - Deltas Check", () => {
 
     const P1 = "x1,y1"
     const P2 = "x2,y2"
