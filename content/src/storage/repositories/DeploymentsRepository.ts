@@ -94,7 +94,7 @@ export class DeploymentsRepository {
             ''
 
         query += where
-        query += ` ORDER BY dep1.${timestampField} DESC LIMIT $(limit) OFFSET $(offset)`
+        query += ` ORDER BY dep1.${timestampField} DESC, dep1.entity_id DESC LIMIT $(limit) OFFSET $(offset)`
 
         return this.db.map(query, values, row => ({
             deploymentId: row.id,
