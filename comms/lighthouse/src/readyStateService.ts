@@ -5,7 +5,7 @@ const internalContentServerURL = process.env.INTERNAL_CONTENT_SERVER_URL ?? "htt
 
 export class ReadyStateService {
   private static readonly INTERVAL = ms("10s");
-  private static readonly MAX_FAILED_ATTEMPTS = 3;
+  private static readonly MAX_FAILED_ATTEMPTS = 12;
   private readonly failedAttempts: Map<StateCheckName, number> = new Map();
   private readonly checks: Map<StateCheckName, () => Promise<boolean>>;
   private ready: boolean = false;
