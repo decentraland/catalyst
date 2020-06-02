@@ -34,7 +34,7 @@ export class LastDeployedPointersRepository {
             SELECT DISTINCT ON (deployments.id)
                 deployments.id,
                 deployments.entity_id,
-                deployments.entity_timestamp,
+                date_part('epoch', deployments.entity_timestamp) * 1000 AS entity_timestamp,
                 deployments.entity_pointers,
                 CASE WHEN deployments.deleter_deployment IS NULL
                     THEN FALSE
@@ -54,15 +54,17 @@ export class LastDeployedPointersRepository {
     }
 
     async setAsLastDeployedOnPointers(deploymentId: DeploymentId, entityType: EntityType, pointers: Pointer[]): Promise<void> {
-        await this.db.txIf(transaction => {
-            const upserts = pointers.map(pointer => transaction.none(`
-                INSERT INTO last_deployed_pointers (deployment, pointer, entity_type)
-                VALUES ($1, $2, $3)
-                ON CONFLICT ON CONSTRAINT last_deployed_pointers_uniq_pointer_entity_type
-                DO UPDATE SET deployment = $1`, [deploymentId, pointer, entityType]));
+        if (pointers.length > 0) {
+            await this.db.txIf(transaction => {
+                const upserts = pointers.map(pointer => transaction.none(`
+                    INSERT INTO last_deployed_pointers (deployment, pointer, entity_type)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT ON CONSTRAINT last_deployed_pointers_uniq_pointer_entity_type
+                    DO UPDATE SET deployment = $1`, [deploymentId, pointer, entityType]));
 
-            return transaction.batch(upserts)
-        })
+                return transaction.batch(upserts)
+            })
+        }
     }
 
 }

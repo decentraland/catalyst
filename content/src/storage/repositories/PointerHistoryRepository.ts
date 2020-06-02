@@ -15,7 +15,7 @@ export class PointerHistoryRepository {
                 LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
                 WHERE pointer_history.entity_type = $1 AND
                     pointer_history.pointer IN ($2:list) AND
-                    dep1.entity_timestamp <= to_timestamp($3 / 1000.0) AND
+                    (dep1.entity_timestamp < to_timestamp($3 / 1000.0) OR (dep1.entity_timestamp = to_timestamp($3 / 1000.0) AND dep1.entity_id < $4)) AND
                     (dep2.id IS NULL OR dep2.entity_timestamp > to_timestamp($3 / 1000.0) OR (dep2.entity_timestamp = to_timestamp($3 / 1000.0) AND dep2.entity_id > $4))
                 ORDER BY pointer_history.pointer, dep1.entity_timestamp DESC, dep1.entity_id DESC`,
                 [entity.type, entity.pointers, entity.timestamp, entity.id],

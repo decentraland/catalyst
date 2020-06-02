@@ -14,7 +14,7 @@ export function sortFromOldestToNewest<T extends EntityComparable> (comparableAr
 
 /** Return true if the first object happened before the second one */
 export function happenedBefore(comparable1: EntityComparable, comparable2: EntityComparable): boolean {
-    return comparable1.timestamp < comparable2.timestamp || (comparable1.timestamp == comparable2.timestamp && comparable1.entityId < comparable2.entityId)
+    return comparable1.timestamp < comparable2.timestamp || (comparable1.timestamp == comparable2.timestamp && comparable1.entityId.toLowerCase() < comparable2.entityId.toLowerCase())
 }
 
 /** Return true if the first entity was created happened before the second one */
