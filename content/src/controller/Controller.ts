@@ -231,16 +231,16 @@ export class Controller {
         // Path: /deployments
         // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-        const entityTypes:(EntityType|undefined)[] = this.asArray<string>(req.query.entityType).map(type => this.parseEntityType(type))
-        const entityIds:EntityId[]                 = this.asArray<EntityId>(req.query.entityId)
-        const fromLocalTimestamp                   = this.asInt(req.query.fromLocalTimestamp)
-        const toLocalTimestamp                     = this.asInt(req.query.toLocalTimestamp)
-        const onlyCurrentlyPointed                 = this.asBoolean(req.query.onlyCurrentlyPointed)
-        const showAudit                            = this.asBoolean(req.query.showAudit) ?? false
-        const deployedBy                           = this.asArray<EthAddress>(req.query.deployedBy)
-        const pointers                             = this.asArray<Pointer>(req.query.pointer)
-        const offset                               = this.asInt(req.query.offset)
-        const limit                                = this.asInt(req.query.limit)
+        const entityTypes:(EntityType|undefined)[] | undefined = this.asArray<string>(req.query.entityType).map(type => this.parseEntityType(type))
+        const entityIds:EntityId[] | undefined       = this.asArray<EntityId>(req.query.entityId)
+        const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: number | undefined   = this.asInt(req.query.toLocalTimestamp)
+        const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
+        const showAudit: boolean                     = this.asBoolean(req.query.showAudit) ?? false
+        const deployedBy: EthAddress[] | undefined   = this.asArray<EthAddress>(req.query.deployedBy)
+        const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
+        const offset: number | undefined             = this.asInt(req.query.offset)
+        const limit: number | undefined              = this.asInt(req.query.limit)
 
         // Validate type is valid
         if (entityTypes.some(type => !type)) {
