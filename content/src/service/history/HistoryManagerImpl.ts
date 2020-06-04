@@ -44,8 +44,9 @@ export class HistoryManagerImpl implements HistoryManager {
         }
         const curatedOffset = (offset && offset>=0) ? offset : 0
         const curatedLimit = (limit && limit>0 && limit<=HistoryManagerImpl.MAX_HISTORY_LIMIT) ? limit : HistoryManagerImpl.DEFAULT_HISTORY_LIMIT
+        const filters = { fromOriginTimestamp: from, toOriginTimestamp: to, originServerUrl: address }
 
-        const deployments = await deploymentsRepository.getHistoricalDeploymentsByOriginTimestamp(curatedOffset, curatedLimit + 1, from, to, address)
+        const deployments = await deploymentsRepository.getHistoricalDeploymentsByOriginTimestamp(curatedOffset, curatedLimit + 1, filters)
         const moreData = deployments.length > curatedLimit
         const finalDeployments: LegacyDeploymentEvent[] = deployments.slice(0, curatedLimit)
             .map(deployment => ({

@@ -41,7 +41,7 @@ describe("Integration - Deployments Client", function() {
     async function validateHistoryThroughClient(server: TestServer, expectedDeployments: ControllerDeployment[], batchSize?: number): Promise<void> {
         const executions: {url:string, res: PartialDeploymentHistory}[] = []
 
-        const deployments = await DeploymentsClient.consumeAllDeployments(new FetchHelper(), server.getAddress(), undefined, batchSize,
+        const deployments = await DeploymentsClient.consumeAllDeployments(new FetchHelper(), server.getAddress(), undefined, batchSize, true,
         (url:string, res: PartialDeploymentHistory) => {
             executions.push({
                 url: url,

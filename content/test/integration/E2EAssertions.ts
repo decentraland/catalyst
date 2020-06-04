@@ -14,6 +14,7 @@ import { ServerAddress } from "@katalyst/content/service/synchronization/clients
 
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
+    // Legacy check
     for (const entity of entities) {
         const entityType = parseEntityType(entity)
         const entities: ControllerEntity[] = await server.getEntitiesByPointers(entityType, entity.pointers)
@@ -21,22 +22,49 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
         assert.equal(unexpectedEntities.length, 0, `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers} on server '${server.getAddress()}.'`)
         await assertEntityIsOnServer(server, entity)
     }
+
+    // Deployments check
+    const entityIds = entities.map(({ id }) => id)
+    const { deployments } = await server.getDeployments({ entityIds })
+    assert.equal(deployments.length, entities.length)
+    for (const deployment of deployments) {
+        assert.notEqual(deployment.auditInfo.overwrittenBy, undefined)
+        await assertFileIsOnServer(server, deployment.entityId)
+    }
 }
 
 export async function assertEntityWasNotDeployed(server: TestServer, entity: ControllerEntity) {
     await assertFileIsNotOnServer(server, entity.id)
+
+    // Legacy check
     const content: ControllerEntityContent[] = (entity.content ?? [])
     await Promise.all(content.map(({ hash }) => assertFileIsNotOnServer(server, hash)))
     const entities = await server.getEntitiesByIds(entity.type, entity.id)
     assert.equal(entities.length, 0)
+
+    // Deployments check
+    const { deployments } = await server.getDeployments({ entityIds: [entity.id] })
+    assert.equal(deployments.length, 0)
 }
 
 export async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
+    // Legacy check
     for (const entity of entities) {
         const entityType = parseEntityType(entity)
         const entitiesByPointer = await server.getEntitiesByPointers(entityType, entity.pointers)
         assert.deepStrictEqual(entitiesByPointer, [entity])
         await assertEntityIsOnServer(server, entity)
+    }
+
+    // Deployments check
+    const entitiesById = new Map(entities.map((entity) => [ entity.id, entity ]))
+    const allPointers = entities.map(({ pointers }) => pointers).reduce((accum, curr) => accum.concat(curr), [])
+    const { deployments } = await server.getDeployments({ pointers: allPointers, onlyCurrentlyPointed: true })
+    assert.equal(deployments.length, entities.length)
+    for (const deployment of deployments) {
+        assertEntityIsTheSameAsDeployment(entitiesById.get(deployment.entityId)!!, deployment)
+        assert.equal(deployment.auditInfo.overwrittenBy, undefined)
+        await assertFileIsOnServer(server, deployment.entityId)
     }
 }
 
@@ -135,34 +163,64 @@ export async function assertFileIsNotOnServer(server: TestServer, hash: ContentF
 }
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
+    // Legacy check
     const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.overwrittenBy, overwrittenBy.id)
+
+    // Deployments check
+    const deployment = await getEntitysDeployment(server, entity)
+    assert.equal(deployment.auditInfo.overwrittenBy, overwrittenBy.id)
 }
 
 export async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
+    // Legacy check
     const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.overwrittenBy, undefined)
+
+    // Deployments check
+    const deployment = await getEntitysDeployment(server, entity)
+    assert.equal(deployment.auditInfo.overwrittenBy, undefined)
 }
 
 
 export async function assertEntityIsNotDenylisted(server: TestServer, entity: ControllerEntity) {
+    // Legacy check
     const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.isDenylisted, undefined)
+
+    // Deployments check
+    const deployment = await getEntitysDeployment(server, entity)
+    assert.equal(deployment.auditInfo.isDenylisted, undefined)
 }
 
 export async function assertEntityIsDenylisted(server: TestServer, entity: ControllerEntity) {
+    // Legacy check
     const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(auditInfo.isDenylisted)
+
+    // Deployments check
+    const deployment = await getEntitysDeployment(server, entity)
+    assert.ok(deployment.auditInfo.isDenylisted)
 }
 
 export async function assertContentNotIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+    // Legacy check
     const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(!auditInfo.denylistedContent || !auditInfo.denylistedContent.includes(contentHash))
+
+    // Deployments check
+    const deployment = await getEntitysDeployment(server, entity)
+    assert.ok(!deployment.auditInfo.denylistedContent || !deployment.auditInfo.denylistedContent.includes(contentHash))
 }
 
 export async function assertContentIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
+    // Legacy check
     const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(auditInfo.denylistedContent!!.includes(contentHash))
+
+    // Deployments check
+    const deployment = await getEntitysDeployment(server, entity)
+    assert.ok(deployment.auditInfo.denylistedContent!!.includes(contentHash))
 }
 
 export function buildDeployment(deployData: DeployData, entity: ControllerEntity, server: TestServer, deploymentTimestamp: Timestamp): ControllerDeployment {
@@ -209,6 +267,27 @@ export function assertFieldsOnEntitiesExceptIdsAreEqual(entity1: ControllerEntit
     assert.equal(entity1.timestamp, entity2.timestamp)
     assert.deepStrictEqual(entity1.content, entity2.content)
     assert.deepStrictEqual(entity1.metadata, entity2.metadata)
+}
+
+function assertEntityIsTheSameAsDeployment(entity: ControllerEntity, deployment: ControllerDeployment) {
+    assert.strictEqual(entity.id, deployment.entityId)
+    assert.strictEqual(entity.type, deployment.entityType)
+    assert.strictEqual(entity.timestamp, deployment.entityTimestamp)
+    assert.deepStrictEqual(entity.pointers, deployment.pointers)
+    assert.deepStrictEqual(entity.metadata, deployment.metadata)
+    const mappedContent = entity.content?.map(({ file, hash }) => ({ key: file, hash }))
+    if (mappedContent) {
+        assert.deepStrictEqual(mappedContent, deployment.content)
+    } else {
+        assert.ok(deployment.content === undefined || deployment.content.length === 0)
+    }
+}
+
+async function getEntitysDeployment(server: TestServer, entity: ControllerEntity): Promise<ControllerDeployment> {
+    const { deployments } = await server.getDeployments({ entityIds: [ entity.id ] })
+    assert.equal(deployments.length, 1)
+    const [ deployment ] = deployments
+    return deployment
 }
 
 export async function assertResponseIsOkOrThrow(response: Response) {

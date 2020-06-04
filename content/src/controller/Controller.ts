@@ -229,19 +229,39 @@ export class Controller {
     async getDeployments(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /deployments
-        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}
-        const fromLocalTimestamp = this.asInt(req.query.fromLocalTimestamp)
-        const toLocalTimestamp   = this.asInt(req.query.toLocalTimestamp)
-        const offset             = this.asInt(req.query.offset)
-        const limit              = this.asInt(req.query.limit)
+        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-        const { deployments, filters, pagination } = await this.service.getDeployments({ fromLocalTimestamp, toLocalTimestamp }, offset, limit)
+        const entityTypes:(EntityType|undefined)[] | undefined = this.asArray<string>(req.query.entityType).map(type => this.parseEntityType(type))
+        const entityIds:EntityId[] | undefined       = this.asArray<EntityId>(req.query.entityId)
+        const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: number | undefined   = this.asInt(req.query.toLocalTimestamp)
+        const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
+        const showAudit: boolean                     = this.asBoolean(req.query.showAudit) ?? false
+        const deployedBy: EthAddress[] | undefined   = this.asArray<EthAddress>(req.query.deployedBy)
+        const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
+        const offset: number | undefined             = this.asInt(req.query.offset)
+        const limit: number | undefined              = this.asInt(req.query.limit)
+
+        // Validate type is valid
+        if (entityTypes.some(type => !type)) {
+            res.status(400).send({ error: `Found an unrecognized entity type` });
+            return
+        }
+
+        const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
+        const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
         const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.maskEntity(deployment))
+            .map(deployment => (!showAudit ? {...deployment, auditInfo: undefined } : deployment))
+
         res.send( { deployments: controllerDeployments, filters, pagination })
     }
 
     private asInt(value: any): number | undefined {
         return value ? parseInt(value) : undefined
+    }
+
+    private asBoolean(value: any): boolean | undefined {
+        return value ? (value === 'true') : undefined
     }
 
     async getStatus(req: express.Request, res: express.Response) {

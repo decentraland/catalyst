@@ -1,12 +1,10 @@
 import { EntityType, Pointer } from "@katalyst/content/service/Entity";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
-import { Bean, EnvironmentBuilder } from "@katalyst/content/Environment";
 import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
 import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
 import { ControllerEntity } from "@katalyst/content/controller/Controller";
 import { parseEntityType } from "../E2ETestUtils";
-import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 
 /**
@@ -35,11 +33,7 @@ describe("Integration - Same Timestamp Check", () => {
     })
 
     beforeEach(async () => {
-        const baseEnv = await testEnv.getEnvForNewDatabase()
-        const env = await new EnvironmentBuilder(baseEnv)
-            .withBean(Bean.VALIDATIONS, new NoOpValidations())
-            .build()
-        service = env.getBean(Bean.SERVICE)
+        service = await testEnv.buildService()
     })
 
     it(`When oldest is deployed first, they overwrites are calculated correctly correctly`, async () => {

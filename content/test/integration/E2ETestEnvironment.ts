@@ -12,6 +12,8 @@ import { ServerAddress } from '@katalyst/content/service/synchronization/clients
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { Container } from 'testcontainers/dist/container'
 import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
+import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { MetaverseContentService } from '@katalyst/content/service/Service'
 
 export class E2ETestEnvironment {
 
@@ -93,6 +95,15 @@ export class E2ETestEnvironment {
         const migrationManager = MigrationManagerFactory.create(env)
         await migrationManager.run()
         return env
+    }
+
+    /** Returns a service that connects to the database, with the migrations run */
+    async buildService(): Promise<MetaverseContentService> {
+        const baseEnv = await this.getEnvForNewDatabase()
+        const env = await new EnvironmentBuilder(baseEnv)
+            .withBean(Bean.VALIDATIONS, new NoOpValidations())
+            .build()
+        return env.getBean(Bean.SERVICE)
     }
 
     removeFromDAO(address: ServerAddress) {

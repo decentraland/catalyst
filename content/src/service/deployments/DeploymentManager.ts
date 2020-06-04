@@ -45,7 +45,7 @@ export class DeploymentManager {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters?.fromLocalTimestamp, filters?.toLocalTimestamp)
+        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
@@ -125,7 +125,7 @@ export class DeploymentManager {
     }
 
     async getDeltas(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository): Promise<DeploymentDelta[]> {
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(0, DeploymentManager.MAX_HISTORY_LIMIT, undefined, undefined)
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(0, DeploymentManager.MAX_HISTORY_LIMIT, undefined)
         const deploymentIds = deploymentsWithExtra.map(({ deploymentId }) => deploymentId)
         const deltas = await deploymentDeltasRepo.getDeltasForDeployments(deploymentIds)
 
@@ -159,9 +159,17 @@ export type PartialDeploymentHistory = {
     },
 }
 
-export type DeploymentFilters = {
-    fromLocalTimestamp?: Timestamp
-    toLocalTimestamp?: Timestamp
+export type  DeploymentFilters = {
+    fromLocalTimestamp?: Timestamp,
+    toLocalTimestamp?: Timestamp,
+    fromOriginTimestamp?: Timestamp,
+    toOriginTimestamp?: Timestamp,
+    originServerUrl?: ServerAddress,
+    deployedBy?: EthAddress[],
+    entityTypes?: EntityType[],
+    entityIds?: EntityId[],
+    pointers?: Pointer[],
+    onlyCurrentlyPointed?: boolean,
 }
 
 export type Deployment = {
