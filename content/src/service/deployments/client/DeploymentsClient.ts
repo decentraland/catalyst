@@ -10,6 +10,7 @@ export class DeploymentsClient {
         address: ServerAddress,
         filters?: DeploymentFilters,
         limit?: number,
+        showAudit: boolean = false,
         partialCallback?: (url: string, res: PartialDeploymentHistory) => void)
         : Promise<Deployment[]> {
         let deployments: Deployment[] = []
@@ -24,6 +25,9 @@ export class DeploymentsClient {
             }
             if (limit) {
                 url += `&limit=${limit}`
+            }
+            if (showAudit) {
+                url += `&showAudit=true`
             }
             const partialHistory: PartialDeploymentHistory = await retry(() => fetchHelper.fetchJson(url), 3, `fetch deployments from ${address}`)
             if (partialCallback) {

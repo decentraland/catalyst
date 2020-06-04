@@ -1,12 +1,10 @@
 import { EntityType, Pointer } from "@katalyst/content/service/Entity";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
-import { Bean, EnvironmentBuilder } from "@katalyst/content/Environment";
 import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
 import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
 import { ControllerEntity } from "@katalyst/content/controller/Controller";
 import { parseEntityType } from "../E2ETestUtils";
-import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
@@ -36,11 +34,7 @@ describe("Integration - Order Check", () => {
     })
 
     beforeEach(async () => {
-        const baseEnv = await testEnv.getEnvForNewDatabase()
-        const env = await new EnvironmentBuilder(baseEnv)
-            .withBean(Bean.VALIDATIONS, new NoOpValidations())
-            .build()
-        service = env.getBean(Bean.SERVICE)
+        service = await testEnv.buildService()
     })
 
     permutator([0, 1, 2, 3, 4])

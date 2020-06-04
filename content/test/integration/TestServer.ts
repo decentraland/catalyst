@@ -16,6 +16,7 @@ import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { assertResponseIsOkOrThrow } from "./E2EAssertions"
 import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
+import { DeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -86,8 +87,15 @@ export class TestServer extends Server {
         return this.makeRequest(`${this.getAddress()}/history`)
     }
 
-    getDeployments(): Promise<{ deployments: ControllerDeployment[] }> {
-        return this.makeRequest(`${this.getAddress()}/deployments`)
+    getDeployments(filters?: DeploymentFilters): Promise<{ deployments: ControllerDeployment[] }> {
+        const queryFilters: string[] = []
+        filters?.deployedBy?.forEach(filter => queryFilters.push(`deployedBy=${filter}`))
+        filters?.entityIds?.forEach(filter => queryFilters.push(`entityId=${filter}`))
+        filters?.entityTypes?.forEach(filter => queryFilters.push(`entityType=${filter}`))
+        if (filters?.fromLocalTimestamp) queryFilters.push(`fromLocalTimestamp=${filters.fromLocalTimestamp}`)
+        if (filters?.toLocalTimestamp) queryFilters.push(`toLocalTimestamp=${filters.toLocalTimestamp}`)
+        if (filters?.onlyCurrentlyPointed) queryFilters.push(`onlyCurrentlyPointed=${filters.onlyCurrentlyPointed}`)
+        return this.makeRequest(`${this.getAddress()}/deployments?showAudit=true&${queryFilters.join('&')}`)
     }
 
     getStatus(): Promise<ServerStatus> {

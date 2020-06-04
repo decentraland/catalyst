@@ -1,10 +1,8 @@
 import { EntityType, Pointer } from "@katalyst/content/service/Entity";
-import { Bean, EnvironmentBuilder } from "@katalyst/content/Environment";
 import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
 import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
 import { ControllerEntity } from "@katalyst/content/controller/Controller";
-import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
 import { DeploymentDeltaChanges } from "@katalyst/content/service/deployments/DeploymentManager";
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
 
@@ -30,11 +28,7 @@ describe("Integration - Deltas Check", () => {
     })
 
     beforeEach(async () => {
-        const baseEnv = await testEnv.getEnvForNewDatabase()
-        const env = await new EnvironmentBuilder(baseEnv)
-            .withBean(Bean.VALIDATIONS, new NoOpValidations())
-            .build()
-        service = env.getBean(Bean.SERVICE)
+        service = await testEnv.buildService()
     })
 
     it('When an entity is deployed and set as active but it has no one to overwrite, then it is reported correctly', async () => {

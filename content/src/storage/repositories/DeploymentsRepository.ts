@@ -2,8 +2,7 @@ import { Authenticator } from 'dcl-crypto';
 import { EntityId, Entity, EntityType } from '@katalyst/content/service/Entity';
 import { AuditInfo } from '@katalyst/content/service/Audit';
 import { Repository } from '@katalyst/content/storage/Repository';
-import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
-import { ServerAddress } from '@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient';
+import { DeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager';
 
 export class DeploymentsRepository {
 
@@ -39,15 +38,15 @@ export class DeploymentsRepository {
         return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], row => parseInt(row.count));
     }
 
-    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress) {
-        return this.getDeploymentsBy('origin_timestamp', offset, limit, from, to, serverUrl)
+    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, filters?: DeploymentFilters) {
+        return this.getDeploymentsBy('origin_timestamp', offset, limit, filters)
     }
 
-    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress) {
-        return this.getDeploymentsBy('local_timestamp', offset, limit, from, to, serverUrl)
+    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, filters?: DeploymentFilters) {
+        return this.getDeploymentsBy('local_timestamp', offset, limit, filters)
     }
 
-    private getDeploymentsBy(timestampField: string, offset: number, limit: number, from?: Timestamp, to?: Timestamp, serverUrl?: ServerAddress) {
+    private getDeploymentsBy(timestampField: string, offset: number, limit: number, filters?: DeploymentFilters) {
         let query = `
             SELECT
                 dep1.id,
@@ -74,19 +73,53 @@ export class DeploymentsRepository {
             offset,
         }
 
-        if (from) {
-            values.from = from
-            whereClause.push(`dep1.${timestampField} >= to_timestamp($(from) / 1000.0)`)
+        if (filters?.fromLocalTimestamp) {
+            values.fromLocalTimestamp = filters.fromLocalTimestamp
+            whereClause.push(`dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0)`)
         }
 
-        if (to) {
-            values.to = to
-            whereClause.push(`dep1.${timestampField} <= to_timestamp($(to) / 1000.0)`)
+        if (filters?.toLocalTimestamp) {
+            values.toLocalTimestamp = filters.toLocalTimestamp
+            whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
         }
 
-        if (serverUrl) {
-            values.serverUrl = serverUrl
-            whereClause.push(`dep1.origin_server_url = $(serverUrl)`)
+        if (filters?.fromOriginTimestamp) {
+            values.fromOriginTimestamp = filters.fromOriginTimestamp
+            whereClause.push(`dep1.origin_timestamp >= to_timestamp($(fromOriginTimestamp) / 1000.0)`)
+        }
+
+        if (filters?.toOriginTimestamp) {
+            values.toOriginTimestamp = filters.toOriginTimestamp
+            whereClause.push(`dep1.origin_timestamp <= to_timestamp($(toOriginTimestamp) / 1000.0)`)
+        }
+
+        if (filters?.originServerUrl) {
+            values.originServerUrl = filters.originServerUrl
+            whereClause.push(`dep1.origin_server_url = $(originServerUrl)`)
+        }
+
+        if (filters?.deployedBy && filters.deployedBy.length > 0) {
+            values.deployedBy = filters.deployedBy
+            whereClause.push(`dep1.deployer_address IN ($(deployedBy:list))`)
+        }
+
+        if (filters?.entityTypes && filters.entityTypes.length > 0) {
+            values.entityTypes = filters.entityTypes
+            whereClause.push(`dep1.entity_type IN ($(entityTypes:list))`)
+        }
+
+        if (filters?.entityIds && filters.entityIds.length > 0) {
+            values.entityIds = filters.entityIds
+            whereClause.push(`dep1.entity_id IN ($(entityIds:list))`)
+        }
+
+        if (filters?.onlyCurrentlyPointed) {
+            whereClause.push(`dep1.deleter_deployment IS NULL`)
+        }
+
+        if (filters?.pointers && filters.pointers.length > 0) {
+            values.pointers = filters.pointers
+            whereClause.push(`dep1.entity_pointers && ARRAY[$(pointers:list)]`)
         }
 
         const where = whereClause.length > 0 ?
