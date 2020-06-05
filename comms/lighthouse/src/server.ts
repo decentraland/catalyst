@@ -66,13 +66,13 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
     app.use(morgan("combined"));
   }
 
-  const configService = new ConfigService(lighthouseConfigStorage)
+  const configService = new ConfigService(lighthouseConfigStorage);
 
   const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService });
 
   const idService = new IdService({ alphabet: idAlphabet, idLength });
 
-  const readyStateService = new ReadyStateService()
+  const readyStateService = new ReadyStateService();
 
   configureRoutes(
     app,
@@ -113,7 +113,19 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
         const provider = httpProviderForNetwork(CURRENT_ETH_NETWORK);
         const result = await Authenticator.validateSignature(client.getMsg(), message.payload, provider);
 
-        peersService.setPeerAddress(client.getId(), message.payload[0].payload)
+        const address = message.payload[0].payload;
+
+        if (!peersService.existsPeerWithAddress(address)) {
+          peersService.setPeerAddress(client.getId(), message.payload[0].payload);
+        } else {
+          client.send({
+            type: MessageType.ID_TAKEN,
+            payload: { msg: "ETH Address is taken" },
+          });
+
+          await client.getSocket()?.close();
+          return false;
+        }
 
         return result.ok;
       } catch (e) {
@@ -134,15 +146,15 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
   //@ts-ignore
   peerServer.on("connection", (client: IClient) => {
-    if(!readyStateService.isReady()) {
+    if (!readyStateService.isReady()) {
       client.send({
         type: MessageType.ERROR,
-        payload: { msg: "The lighthouse is not ready to accept connections yet" }
-      })
+        payload: { msg: "The lighthouse is not ready to accept connections yet" },
+      });
 
       client.getSocket()?.close();
     }
-  })
+  });
 
   //@ts-ignore
   peerServer.on("message", (client: IClient, message: IMessage) => {
