@@ -4,7 +4,7 @@ import { StringPropertyMapper, IntPropertyMapper, SystemPropertyMapper } from ".
 
 export class SystemProperty<PropertyType> {
 
-    static readonly NAME: SystemProperty<string> = new SystemProperty('name', new StringPropertyMapper())
+    static readonly NAME: SystemProperty<string> = new SystemProperty('server_name', new StringPropertyMapper())
     static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<Timestamp> = new SystemProperty('last_garbage_collection_time', new IntPropertyMapper())
 
     constructor(

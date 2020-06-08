@@ -22,6 +22,8 @@ import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOp
 import { NoOpPointerManager } from "./pointers/NoOpPointerManager";
 import { NoOpDeploymentManager } from "./deployments/NoOpDeploymentManager";
 import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
+import { ServiceStorageFactory } from "@katalyst/content/service/ServiceStorageFactory";
+import { NoOpGarbageCollectionManager } from "./garbage-collection/NoOpGarbageCollectionManager";
 
 describe("Service", function () {
 
@@ -111,9 +113,10 @@ describe("Service", function () {
             .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
             .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
+            .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
             .setConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, allowDeploymentsForTesting)
-
-        return ServiceFactory.create(env);
+        const serviceStorage = ServiceStorageFactory.create(env)
+        return ServiceFactory.create(env.registerBean(Bean.SERVICE_STORAGE, serviceStorage));
     }
 
 })

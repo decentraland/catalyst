@@ -21,7 +21,7 @@ export class ContentFilesRepository {
                     FROM content_files
                     WHERE deployment IN ($1:list)
                 )
-            ) AS sub
+            ) AS subquery
             GROUP BY content_hash
             HAVING bool_or(currently_used) = FALSE
             `, [ deploymentIds ], row => row.content_hash)
