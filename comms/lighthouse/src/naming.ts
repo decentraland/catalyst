@@ -18,7 +18,7 @@ export async function pickName(configuredNames: string | undefined, daoClient: D
     }
   }
 
-  const namesList = (configuredNames?.split(",")?.map(it => it.trim()) ?? defaultNames).filter(it => !existingNames.includes(it));
+  const namesList = (configuredNames?.split(",")?.map((it) => it.trim()) ?? defaultNames).filter((it) => !existingNames.includes(it));
 
   if (namesList.length === 0) throw new Error("Could not set my name! Names taken: " + existingNames);
 
@@ -44,12 +44,13 @@ async function getName(server: ServerMetadata): Promise<string> {
   //Timeout is an option that is supported server side, but not browser side, so it doesn't compile if we don't cast it to any
   try {
     const statusResponse = await fetch(`${server.address}/comms/status`, { timeout: 5000 } as any);
-    if (statusResponse.ok) {
-      const json = await statusResponse.json();
+    const json = await statusResponse.json();
+
+    if (json.name) {
       return json.name;
     }
 
-    throw new Error(`Response not OK. Response status: ${statusResponse.status}`);
+    throw new Error(`Response did not have the expected format. Response was: ${JSON.stringify(json)}`);
   } catch (e) {
     console.warn(`Error while getting the name of ${server.address}, id: ${server.id}`, e.message);
     throw e;

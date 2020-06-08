@@ -23,6 +23,8 @@ export interface IPeersService {
 
 export class PeersService implements IPeersService {
   private peersTopology: Record<string, string[]> = {};
+
+  // This structure contains information of all peers, even those that have disconnected. To know if a peer is disconnected, check the realm
   private peers: Record<string, PeerInfo> = {};
 
   constructor(private realmProvider: () => IRealm, private distanceFunction: (p1: Position, p2: Position) => number = discretizedPositionDistance) {}
@@ -65,6 +67,12 @@ export class PeersService implements IPeersService {
   setPeerAddress(peerId: string, address: string) {
     const peerInfo = this.ensurePeerInfo({ id: peerId });
     peerInfo.address = address;
+  }
+
+  existsPeerWithAddress(address: string) {
+    return this.realmProvider()
+      .getClientsIds()
+      .some((it) => this.getPeerInfo(it)?.address?.toLocaleLowerCase() === address.toLocaleLowerCase());
   }
 
   peerExistsInRealm(peerId: string) {
