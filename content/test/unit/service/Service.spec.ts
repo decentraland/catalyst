@@ -23,7 +23,7 @@ import { NoOpPointerManager } from "./pointers/NoOpPointerManager";
 import { NoOpDeploymentManager } from "./deployments/NoOpDeploymentManager";
 import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
 import { ServiceStorageFactory } from "@katalyst/content/service/ServiceStorageFactory";
-import { NoOpGarbageCollectionManager } from "./garbage-collection/NoOpGarbageCollectionManager";
+import { NoOpGarbageCollectionManager } from "@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager";
 
 describe("Service", function () {
 
