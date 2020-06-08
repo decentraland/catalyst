@@ -1,11 +1,7 @@
-import { EntityType, Pointer } from "@katalyst/content/service/Entity";
+import { EntityType } from "@katalyst/content/service/Entity";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
-import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
-import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
-import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
-import { ControllerEntity } from "@katalyst/content/controller/Controller";
-import { parseEntityType } from "../E2ETestUtils";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
+import { MetaverseContentService } from "@katalyst/content/service/Service";
+import { EntityCombo, buildEntityCombo } from "../E2ETestUtils";
 
 /**
  * This test verifies that the entities with the same entity timestamp are deployed correctly
@@ -21,8 +17,8 @@ describe("Integration - Same Timestamp Check", () => {
 
     beforeAll(async () => {
         const timestamp = Date.now()
-        const e1 = await buildEntityCombo(P1, timestamp)
-        const e2 = await buildEntityCombo(P1, timestamp)
+        const e1 = await buildEntityCombo([P1], { type, timestamp, metadata: 'metadata1' })
+        const e2 = await buildEntityCombo([P1], { type, timestamp, metadata: 'metadata2' })
         if (e1.entity.id.toLowerCase() < e2.entity.id.toLowerCase()) {
             oldestEntity = e1
             newestEntity = e2
@@ -70,34 +66,18 @@ describe("Integration - Same Timestamp Check", () => {
     }
 
     async function deploy(entityCombo: EntityCombo) {
-        const { entity, entityFile, auditInfo } = entityCombo
-        await service.deployEntity([entityFile], entity.id, auditInfo, '')
+        const { entity, files, auditInfo } = entityCombo
+        await service.deployEntity(files, entity.id, auditInfo, '')
     }
 
     async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(parseEntityType(overwritten.entity), overwritten.entity.id)
+        const auditInfo = await service.getAuditInfo(overwritten.entity.type, overwritten.entity.id)
         expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
     }
 
     async function assertNotOverwritten(entity: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(parseEntityType(entity.entity), entity.entity.id)
+        const auditInfo = await service.getAuditInfo(entity.entity.type, entity.entity.id)
         expect(auditInfo?.overwrittenBy).toBeUndefined()
     }
 
-    async function buildEntityCombo(pointer: Pointer, timestamp: Timestamp): Promise<EntityCombo> {
-        const [ entity, entityFile ] = await buildControllerEntityAndFile(type, [pointer], timestamp, undefined, Math.random())
-        const auditInfo: AuditInfoBase = { version: EntityVersion.V2, authChain: [] }
-        return {
-            entity,
-            entityFile,
-            auditInfo
-        }
-    }
-
 })
-
-type EntityCombo = {
-    entity: ControllerEntity,
-    entityFile: ContentFile,
-    auditInfo: AuditInfoBase,
-}

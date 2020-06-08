@@ -6,6 +6,28 @@ export class ContentFilesRepository {
 
     constructor(private readonly db: Repository) { }
 
+    findContentHashesNotBeingUsedAnymore(deploymentIds: DeploymentId[]): Promise<ContentFileHash[]> {
+        if (deploymentIds.length === 0) {
+            return Promise.resolve([])
+        }
+        return this.db.map(`
+            SELECT content_hash
+            FROM (
+                SELECT content_hash, (deleter_deployment IS NULL) AS currently_used
+                FROM content_files
+                LEFT JOIN deployments ON deployments.id = content_files.deployment
+                WHERE content_hash IN (
+                    SELECT DISTINCT content_hash
+                    FROM content_files
+                    WHERE deployment IN ($1:list)
+                )
+            ) AS sub
+            GROUP BY content_hash
+            HAVING bool_or(currently_used) = FALSE
+            `, [ deploymentIds ], row => row.content_hash)
+
+    }
+
     async getContentFiles(deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, Map<string, ContentFileHash>>> {
         if (deploymentIds.length === 0) {
             return new Map()

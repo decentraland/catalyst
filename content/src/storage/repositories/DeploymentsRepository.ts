@@ -3,6 +3,7 @@ import { EntityId, Entity, EntityType } from '@katalyst/content/service/Entity';
 import { AuditInfo } from '@katalyst/content/service/Audit';
 import { Repository } from '@katalyst/content/storage/Repository';
 import { DeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager';
+import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
 
 export class DeploymentsRepository {
 
@@ -44,6 +45,16 @@ export class DeploymentsRepository {
 
     getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, filters?: DeploymentFilters) {
         return this.getDeploymentsBy('local_timestamp', offset, limit, filters)
+    }
+
+    findDeploymentsOverwrittenAfter(timestamp: Timestamp): Promise<DeploymentId[]> {
+        return this.db.map(`
+            SELECT dep1.id
+            FROM deployments AS dep1
+            INNER JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
+            WHERE dep2.local_timestamp > to_timestamp($1 / 1000.0)
+        `, [ timestamp ], row => row.id)
+
     }
 
     private getDeploymentsBy(timestampField: string, offset: number, limit: number, filters?: DeploymentFilters) {

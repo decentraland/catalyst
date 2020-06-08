@@ -18,9 +18,14 @@ export class FileSystemContentStorage implements ContentStorage {
         return fs.promises.writeFile(this.getFilePath(id), content)
     }
 
-    async delete(id: string): Promise<void> {
-        // TODO: Catch potential exception if file doesn't exist, and return better error message
-        await fs.promises.unlink(this.getFilePath(id))
+    async delete(ids: string[]): Promise<void> {
+        for (const id of ids) {
+            try {
+                await fs.promises.unlink(this.getFilePath(id))
+            } catch (error) {
+                // Ignore these errors
+            }
+        }
     }
 
     async retrieve(id: string): Promise<ContentItem | undefined> {

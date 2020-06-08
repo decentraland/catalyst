@@ -8,6 +8,7 @@ import { FailedDeploymentsRepository } from './repositories/FailedDeploymentsRep
 import { DeploymentDeltasRepository } from './repositories/DeploymentDeltasRepository';
 import { DenylistRepository } from './repositories/DenylistRepository';
 import { retry } from '../helpers/RetryHelper';
+import { SystemPropertiesRepository } from './repositories/SystemPropertiesRepository';
 
 export type Repository = IDatabase<IExtensions> & IExtensions
 export type RepositoryTask = ITask<IExtensions> & IExtensions
@@ -21,6 +22,7 @@ export interface IExtensions {
     failedDeployments: FailedDeploymentsRepository,
     deploymentDeltas: DeploymentDeltasRepository,
     denylist: DenylistRepository,
+    systemProperties: SystemPropertiesRepository,
 }
 
 export type DBConnection = {
@@ -68,6 +70,7 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
             obj.deploymentDeltas = new DeploymentDeltasRepository(obj);
             obj.failedDeployments = new FailedDeploymentsRepository(obj);
             obj.denylist = new DenylistRepository(obj);
+            obj.systemProperties = new SystemPropertiesRepository(obj);
         },
 
         error(err, e) {

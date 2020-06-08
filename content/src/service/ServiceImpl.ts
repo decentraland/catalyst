@@ -20,6 +20,7 @@ import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
 import { DeploymentManager, PartialDeploymentHistory, DeploymentFilters, DeploymentDelta } from "./deployments/DeploymentManager";
+import { GarbageCollectionManager } from "./garbage-collection/GarbageCollectionManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -36,6 +37,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private readonly deploymentManager: DeploymentManager,
         private readonly validations: Validations,
         private readonly repository: Repository,
+        private readonly garbageCollectionManager: GarbageCollectionManager,
         private readonly allowDeploymentsWhenNotInDAO: boolean = false) {
     }
 
@@ -185,6 +187,9 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
 
             // Record deployment for analytics
             this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
+
+            // Set overwritten entities as ready for garbage collection
+            this.garbageCollectionManager.deploymentsWereOverwritten(overwrote)
 
             return auditInfoComplete.localTimestamp
         })

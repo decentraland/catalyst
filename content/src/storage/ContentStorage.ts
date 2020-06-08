@@ -2,7 +2,7 @@ import { Readable, Duplex } from "stream";
 
 export interface ContentStorage {
     store(id: string, content: Buffer): Promise<void>;
-    delete(id: string): Promise<void>;
+    delete(ids: string[]): Promise<void>;
     retrieve(id: string): Promise<ContentItem | undefined>;
     exist(ids: string[]): Promise<Map<string, boolean>>;
 }
