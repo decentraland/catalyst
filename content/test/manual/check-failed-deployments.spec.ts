@@ -142,7 +142,7 @@ describe("Failed Deployments validations.", () => {
         }, MAX_SAFE_TIMEOUT)
 
     it('Entity access check', async () => {
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower');
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager');
         const accessSnapshot = {
             pointers: ["55,-132"],
             ethAddress: '0xaabe0ecfaf9e028d63cf7ea7e772cf52d662691a',
