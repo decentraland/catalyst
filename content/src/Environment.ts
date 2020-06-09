@@ -29,8 +29,8 @@ export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
 const DEFAULT_SERVER_PORT = 6969
 export const DEFAULT_ETH_NETWORK = "ropsten"
-export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN = 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower-ropsten'
-export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/nicosantangelo/watchtower'
+export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
+export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
 export const DEFAULT_DATABASE_CONFIG = {
     password: '12345678',
