@@ -1,16 +1,22 @@
 import { Entity, EntityType } from "@katalyst/content/service/Entity";
 import { SQSDeploymentReporter } from "@katalyst/content/service/reporters/SQSDeploymentReporter";
-import { EnvironmentConfig, Environment } from "@katalyst/content/Environment";
 
 describe("SQS Deployment Reporter", () => {
 
-    it(`Simple event reporting`, async () => {
-        const env: Environment = await Environment.getInstance()
+    var MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1;
+
+    fit(`Simple event reporting`, async () => {
+        const sqsAccessKey = process.env.SQS_ACCESS_KEY_ID ?? ""
+        const sqsSecretKey = process.env.SQS_SECRET_ACCESS_KEY ?? ""
+        const sqsQueueUrl  = process.env.SQS_QUEUE_URL_REPORTING ?? ""
+        console.log(`sqsAccessKey: ${sqsAccessKey}`)
+        console.log(`sqsSecretKey: ${sqsSecretKey}`)
+        console.log(`sqsQueueUrl : ${sqsQueueUrl}`)
         const result: {error?:string, messageId?:string} = await new Promise((resolve,) => {
             const sqsReporter = new SQSDeploymentReporter(
-                env.getConfig(EnvironmentConfig.SQS_ACCESS_KEY_ID),
-                env.getConfig(EnvironmentConfig.SQS_SECRET_ACCESS_KEY),
-                "https://sqs.us-east-1.amazonaws.com/872049612737/content-migrator-pending",
+                sqsAccessKey,
+                sqsSecretKey,
+                sqsQueueUrl,
                 (error,messageId) => {
                     resolve({error,messageId})
                 }
@@ -21,6 +27,6 @@ describe("SQS Deployment Reporter", () => {
         })
         expect(result.error).toBeUndefined()
         expect(result.messageId).toBeDefined()
-    });
+    }, MAX_SAFE_TIMEOUT);
 
 })

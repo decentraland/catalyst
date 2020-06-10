@@ -23,9 +23,9 @@ describe("Failed Deployments validations.", () => {
         const validateProfilesSignatures = true
 
         const failedDeployments: FailedDeployment[] = await getFailedDeployments()
-        const failedScenes = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.SCENE)
-        const failedProfiles = failedDeployments.filter(fd => fd.deployment.entityType===EntityType.PROFILE)
-        const servers = failedProfiles.map(fd => fd.deployment.serverName).filter(onlyUnique)
+        const failedScenes = failedDeployments.filter(fd => fd.entityType===EntityType.SCENE)
+        const failedProfiles = failedDeployments.filter(fd => fd.entityType===EntityType.PROFILE)
+        const servers = failedProfiles.map(fd => fd.originServerUrl).filter(onlyUnique)
 
         console.log(`Total Failed Deployments: ${failedDeployments.length}`)
         console.log(`Scenes  : ${failedScenes.length}`)
@@ -41,7 +41,7 @@ describe("Failed Deployments validations.", () => {
         const accessSnapshots: AccessSnapshot[] = (await Promise.all(failedDeployments
             .map(async fd => {
                 console.log(`=> ${(accessSnapshotsCount++)+1} of ${failedDeployments.length}`)
-                return await getAccessSnapshot(fd.deployment.serverName, fd.deployment.entityType, fd.deployment.entityId)
+                return await getAccessSnapshot(fd.originServerUrl, fd.entityType, fd.entityId)
             })))
             .filter(notEmpty)
 
@@ -199,24 +199,6 @@ function countAndSort<V>(associativeArray: AssociativeArray<V>, ascending: boole
     return array
 }
 
-const serverDomains = {
-    '02c7e319-3fd7-4bf4-9764-b7bf1feea490': 'peer.decentraland.org',
-    '0b447141-540a-42dd-a579-3d95e6e83259': 'interconnected.online',
-    '4bb3deae-3f3b-4ac0-8f55-4a1633b3a6b0': 'www.decentraland.club',
-    '1d052409-af2e-4d3f-be3c-5eaf0ef0be46': 'peer.decentral.games',
-    '84c62f6c-1af5-41cc-a26c-5bcf742d814b': 'peer.kyllian.me',
-    'fd21f05a-6804-4b6f-9669-39fc4e6f42a0': 'peer.uadevops.com',
-    '19fa85d1-d92f-4e32-ac17-879d9b945736': 'peer-wc1.decentraland.org',
-    '2b235332-2e10-4d07-9966-b95efb6146ec': 'peer.melonwave.com',
-    '7173c4be-ac32-4662-b5f2-eff6ce28f84e': 'interconnected.online',
-    '47827f19-dfe7-4662-a6f8-48cdd9c078d7': 'interconnected.online',
-}
-
-function getServerContentBaseUrl(serverName: string): string {
-    const serverDomain: string = serverDomains[serverName] ?? 'peer.decentraland.org'
-    return `https://${serverDomain}/content`
-}
-
 type AccessSnapshot = {
     entityType: EntityType,
     entityId: EntityId,
@@ -228,12 +210,11 @@ type AccessSnapshot = {
 }
 
 const LOCAL_STORAGE_FOR_ACCESS_SNAPSHOTS = '/tmp/failed-deployments-access-snapshots'
-async function getAccessSnapshot(serverDomain: string, entityType: EntityType, entityId: EntityId): Promise<AccessSnapshot | undefined>{
+async function getAccessSnapshot(serverBaseUrl: string, entityType: EntityType, entityId: EntityId): Promise<AccessSnapshot | undefined>{
     const localCopyFile = `${LOCAL_STORAGE_FOR_ACCESS_SNAPSHOTS}/${entityId}`
     if (fs.existsSync(localCopyFile)) {
         return JSON.parse(fs.readFileSync(localCopyFile).toString())
     }
-    const serverBaseUrl = getServerContentBaseUrl(serverDomain)
     const entity: Entity | undefined = await fetchEntity(serverBaseUrl, entityType, entityId)
     const audit: AuditInfo | undefined = await fetchAuditInfo(serverBaseUrl, entityType, entityId)
     if (entity && audit) {
@@ -252,7 +233,7 @@ async function getAccessSnapshot(serverDomain: string, entityType: EntityType, e
         fs.writeFileSync(localCopyFile, JSON.stringify(accessSnapshot))
         return accessSnapshot
     }
-    console.log('ERROR: Can not retrieve Access Snapshot for:', serverDomain, entityType, entityId)
+    console.log('ERROR: Can not retrieve Access Snapshot for:', serverBaseUrl, entityType, entityId)
     return undefined
 }
 
