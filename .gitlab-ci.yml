@@ -1,12 +1,11 @@
-image: node:latest
+image: decentraland/ci-node:latest
 
 build:
   script:
-    - cd status
-    - npm install
-    - npm run build
-    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" > /dev/null
-    - unzip awscliv2.zip > /dev/null
-    - ./aws/install > /dev/null
-    - /usr/local/bin/aws s3 sync --acl=public-read build/ s3://catalysts-decentraland-io-contentbucket-a220319/
+    - cd status && npm install && npm run build && cd ..
+    - dcl-lock-sync
+    - cd .ci && npm install && dcl-up website-catalysts
+    - dcl-sync-release && cd ..
+    - dcl-upload status/build
+    - cd .ci && dcl-cache-invalidation
 

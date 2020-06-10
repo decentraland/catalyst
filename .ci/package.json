@@ -1,0 +1,14 @@
+{
+    "name": "website-catalysts",
+    "devDependencies": {
+        "@types/node": "^14.0.13"
+    },
+    "dependencies": {
+        "@pulumi/aws": "^2.8.0",
+        "@pulumi/awsx": "^0.20.0",
+        "@pulumi/eks": "^0.19.2",
+        "@pulumi/kubernetes": "^2.3.0",
+        "@pulumi/pulumi": "^2.3.0",
+        "dcl-ops-lib": "1.0.9"
+    }
+}
