@@ -1,5 +1,5 @@
 import log4js from "log4js";
-import { Entity } from "../Entity";
+import { Entity, EntityType } from "../Entity";
 import { DeploymentReporter } from "./DeploymentReporter";
 import { EthAddress } from "dcl-crypto";
 import SQS, { SendMessageRequest } from "aws-sdk/clients/sqs";
@@ -23,6 +23,10 @@ export class SQSDeploymentReporter implements DeploymentReporter {
     }
 
     reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
+        if (entity.type !== EntityType.SCENE) {
+            // Only send SCENE notifications to SQS
+            return
+        }
         const messageBody = {
             type: entity.type,
             id: entity.id,
