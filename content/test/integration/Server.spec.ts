@@ -8,6 +8,7 @@ import { randomEntity } from "@katalyst/test-helpers/service/EntityTestFactory"
 import { ControllerFactory } from "@katalyst/content/controller/ControllerFactory"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { NoOpMigrationManager } from "@katalyst/test-helpers/NoOpMigrationManager"
+import { NoOpGarbageCollectionManager } from "@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager"
 
 describe("Integration - Server", function() {
     let server: Server
@@ -27,6 +28,7 @@ describe("Integration - Server", function() {
             .registerBean(Bean.SERVICE, service)
             .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
             .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())
+            .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
             .setConfig(EnvironmentConfig.SERVER_PORT, port)
             .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
 

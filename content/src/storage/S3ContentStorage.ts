@@ -37,22 +37,23 @@ export class S3ContentStorage implements ContentStorage {
         })
     }
 
-    delete(id: string): Promise<void> {
-        const request: AWS.S3.Types.DeleteObjectRequest = {
-            Bucket: this.bucket,
-            Key: id,
-        }
+    delete(ids: string[]): Promise<void> {
+        throw new Error('Not implemented')
+        // const request: AWS.S3.Types.DeleteObjectRequest = {
+        //     Bucket: this.bucket,
+        //     Key: id,
+        // }
 
-        return new Promise((resolve, reject) => {
-            this.s3Client.deleteObject(request, (error, data) => {
-                if (error) {
-                    console.error(`Error deleting data from S3. Id: ${id}`, error);
-                    return reject(error)
-                }
-                console.log(`Successfully deleted data from S3. Id: ${id}`);
-                return resolve()
-            })
-        })
+        // return new Promise((resolve, reject) => {
+        //     this.s3Client.deleteObject(request, (error, data) => {
+        //         if (error) {
+        //             console.error(`Error deleting data from S3. Id: ${id}`, error);
+        //             return reject(error)
+        //         }
+        //         console.log(`Successfully deleted data from S3. Id: ${id}`);
+        //         return resolve()
+        //     })
+        // })
     }
 
     async retrieve(id: string): Promise<ContentItem | undefined> {

@@ -50,7 +50,7 @@ describe("ContentStorage", () => {
         var exists = await storage.exist([id])
         expect(exists.get(id)).toBe(true)
 
-        await storage.delete(id)
+        await storage.delete([id])
 
         exists = await storage.exist([id])
         expect(exists.get(id)).toBe(false)

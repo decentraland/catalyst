@@ -1,9 +1,7 @@
 import { EntityType, Pointer, ContentFile } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
-import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
-import { parseEntityType } from "../E2ETestUtils";
+import { buildEntityCombo, buildEntityComboAfter, EntityCombo } from "../E2ETestUtils";
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
@@ -14,7 +12,7 @@ describe("Integration - Order Check", () => {
     const P2 = "X2,Y2"
     const P3 = "X3,Y3"
     const P4 = "X4,Y4"
-    const type = EntityType.PROFILE
+    const type = EntityType.SCENE
     let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo, E4: EntityCombo, E5: EntityCombo
 
     let allEntities: EntityCombo[]
@@ -23,11 +21,11 @@ describe("Integration - Order Check", () => {
     let service: MetaverseContentService
 
     beforeAll(async () => {
-        E1 = await buildEntityCombo(P1)
-        E2 = await buildEntityComboAfter(E1, P2)
-        E3 = await buildEntityComboAfter(E2, P1, P2, P3)
-        E4 = await buildEntityComboAfter(E3, P1, P3, P4)
-        E5 = await buildEntityComboAfter(E4, P2, P4)
+        E1 = await buildEntityCombo([P1])
+        E2 = await buildEntityComboAfter(E1, [P2])
+        E3 = await buildEntityComboAfter(E2, [P1, P2, P3])
+        E4 = await buildEntityComboAfter(E3, [P1, P3, P4])
+        E5 = await buildEntityComboAfter(E4, [P2, P4])
         allEntities = [ E1, E2, E3, E4, E5 ]
         allEntities.forEach(({ entity }, idx) => console.log(`E${idx + 1}: ${entity.id}`))
     })
@@ -66,34 +64,19 @@ describe("Integration - Order Check", () => {
     }
 
     async function commit(entities: EntityCombo[]) {
-        for (const { entity, entityFile, auditInfo } of entities) {
-            await service.deployEntity([entityFile], entity.id, auditInfo, '')
+        for (const { entity, files, auditInfo } of entities) {
+            await service.deployEntity(files, entity.id, auditInfo, '')
         }
     }
 
     async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(parseEntityType(overwritten.entity), overwritten.entity.id)
+        const auditInfo = await service.getAuditInfo(overwritten.entity.type, overwritten.entity.id)
         expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
     }
 
     async function assertNotOverwritten(entity: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(parseEntityType(entity.entity), entity.entity.id)
+        const auditInfo = await service.getAuditInfo(entity.entity.type, entity.entity.id)
         expect(auditInfo?.overwrittenBy).toBeUndefined()
-    }
-
-    async function buildEntityCombo(...pointers: Pointer[]): Promise<EntityCombo> {
-        return buildEntityComboAfter(undefined, ...pointers)
-    }
-
-    async function buildEntityComboAfter(entityCombo?: EntityCombo, ...pointers: Pointer[]): Promise<EntityCombo> {
-        const timestamp = entityCombo ? entityCombo.entity.timestamp + 1 : Date.now()
-        const [ entity, entityFile ] = await buildControllerEntityAndFile(type, pointers, timestamp)
-        const auditInfo: AuditInfoBase = { version: EntityVersion.V2, authChain: [] }
-        return {
-            entity,
-            entityFile,
-            auditInfo
-        }
     }
 
     function permutator<T>(array: Array<T>): Array<Array<T>> {
@@ -115,9 +98,3 @@ describe("Integration - Order Check", () => {
     }
 
 })
-
-type EntityCombo = {
-    entity: ControllerEntity,
-    entityFile: ContentFile,
-    auditInfo: AuditInfoBase,
-}

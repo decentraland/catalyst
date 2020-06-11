@@ -24,7 +24,7 @@ describe("FileSystemContentStorage", () => {
         await fss.store(id, content)
         expect(fsu.fileExists(tmpRootDir, id)).toBe(true)
 
-        await fss.delete(id)
+        await fss.delete([id])
         expect(fsu.fileExists(tmpRootDir, id)).toBe(false)
     });
 

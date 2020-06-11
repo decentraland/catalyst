@@ -110,7 +110,6 @@ describe("Service", function () {
             .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
             .setConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, allowDeploymentsForTesting)
-
         return ServiceFactory.create(env);
     }
 

@@ -1,12 +1,11 @@
 import { Authenticator } from "dcl-crypto";
-import { EntityType, Pointer } from "@katalyst/content/service/Entity";
-import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
-import { AuditInfoBase, EntityVersion, AuditInfo } from "@katalyst/content/service/Audit";
-import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
-import { ControllerEntity } from "@katalyst/content/controller/Controller";
+import { EntityType } from "@katalyst/content/service/Entity";
+import { MetaverseContentService } from "@katalyst/content/service/Service";
+import { AuditInfo } from "@katalyst/content/service/Audit";
 import { DeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager";
 import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
+import { EntityCombo, buildEntityCombo, buildEntityComboAfter } from "../../E2ETestUtils";
 
 /**
  * This test verifies that all deployment filters are working correctly
@@ -22,9 +21,9 @@ describe("Integration - Deployment Filters", () => {
     let service: MetaverseContentService
 
     beforeAll(async () => {
-        E1 = await buildEntityCombo(EntityType.PROFILE, P1)
-        E2 = await buildEntityComboAfter(EntityType.SCENE, E1, P2)
-        E3 = await buildEntityComboAfter(EntityType.PROFILE, E2, P1, P2, P3)
+        E1 = await buildEntityCombo([P1], { type: EntityType.PROFILE })
+        E2 = await buildEntityComboAfter(E1, [P2], { type: EntityType.SCENE })
+        E3 = await buildEntityComboAfter(E2, [P1, P2, P3], { type: EntityType.PROFILE })
     })
 
     beforeEach(async () => {
@@ -148,33 +147,12 @@ describe("Integration - Deployment Filters", () => {
 
     async function deployWithAuditInfo(entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
         const result: Timestamp[] = []
-        for (const { entity, entityFile, auditInfo } of entities) {
+        for (const { entity, files, auditInfo } of entities) {
             const newAuditInfo = { ...auditInfo, ...overrideAuditInfo }
-            const deploymentTimestamp = await service.deployEntity([entityFile], entity.id, newAuditInfo, '')
+            const deploymentTimestamp = await service.deployEntity(files, entity.id, newAuditInfo, '')
             result.push(deploymentTimestamp)
         }
         return result
     }
 
-    async function buildEntityCombo(type: EntityType, ...pointers: Pointer[]): Promise<EntityCombo> {
-        return buildEntityComboAfter(type, undefined, ...pointers)
-    }
-
-    async function buildEntityComboAfter(type: EntityType, entityCombo?: EntityCombo, ...pointers: Pointer[]): Promise<EntityCombo> {
-        const timestamp = entityCombo ? entityCombo.entity.timestamp + 1 : Date.now()
-        const [ entity, entityFile ] = await buildControllerEntityAndFile(type, pointers, timestamp)
-        const auditInfo: AuditInfoBase = { version: EntityVersion.V2, authChain: [] }
-        return {
-            entity,
-            entityFile,
-            auditInfo
-        }
-    }
-
 })
-
-type EntityCombo = {
-    entity: ControllerEntity,
-    entityFile: ContentFile,
-    auditInfo: AuditInfoBase,
-}

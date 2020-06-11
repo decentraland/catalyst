@@ -161,7 +161,7 @@ export class AccessCheckerImpl implements AccessChecker {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that parcel.
          * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
-         * For more information, you can use the query explorer at https://thegraph.com/explorer/subgraph/nicosantangelo/watchtower
+         * For more information, you can use the query explorer at https://thegraph.com/explorer/subgraph/decentraland/land-manager
          */
 
         const query = `
@@ -223,7 +223,7 @@ export class AccessCheckerImpl implements AccessChecker {
         /**
          * You can use `owner`, `operator` and `updateOperator` to check the current value for that estate.
          * Keep in mind that each association (owners, operators, etc) is capped to a thousand (1000) results.
-         * For more information, you can use the query explorer at https://thegraph.com/explorer/subgraph/nicosantangelo/watchtower
+         * For more information, you can use the query explorer at https://thegraph.com/explorer/subgraph/decentraland/land-manager
          */
 
         const query = `
