@@ -5,9 +5,9 @@ import { ServiceStorage } from "./ServiceStorage";
 
 export class ServiceFactory {
     static create(env: Environment): MetaverseContentService & TimeKeepingService & ClusterDeploymentsService {
-        const storage = new ServiceStorage(env.getBean(Bean.STORAGE));
+        const serviceStorage = new ServiceStorage(env.getBean(Bean.STORAGE));
         return new ServiceImpl(
-            storage,
+            serviceStorage,
             env.getBean(Bean.HISTORY_MANAGER),
             env.getBean(Bean.POINTER_MANAGER),
             env.getBean(Bean.CONTENT_CLUSTER),
