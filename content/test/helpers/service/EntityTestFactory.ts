@@ -1,18 +1,15 @@
 import { random } from "faker"
-import { EntityType, Pointer, Entity } from "@katalyst/content/service/Entity";
-import { ContentFile, ENTITY_FILE_NAME } from "@katalyst/content/service/Service";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
-import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing";
+import { buildEntityAndFile as buildEntityAndFileHelper, EntityType, Pointer, Timestamp, ContentFile, ContentFileHash } from "dcl-catalyst-commons";
+import { Entity } from "@katalyst/content/service/Entity";
+import { EntityFactory } from "@katalyst/content/service/EntityFactory";
 
 /** Builds an entity with the given params, and also the file what represents it */
 export async function buildEntityAndFile(type: EntityType, pointers: Pointer[], timestamp: Timestamp,
     content?: Map<string, ContentFileHash>, metadata?: any): Promise<[Entity, ContentFile]> {
-
-    const entity: Entity = new Entity("temp-id", type, pointers, timestamp, content, metadata)
-    const file: ContentFile = entityToFile(entity, ENTITY_FILE_NAME)
-    const fileHash: ContentFileHash = await Hashing.calculateHash(file)
-    const entityWithCorrectId = new Entity(fileHash, entity.type, entity.pointers.map(pointer => pointer.toLocaleLowerCase()), entity.timestamp, entity.content, entity.metadata)
-    return [entityWithCorrectId, file]
+        const newContent = Array.from((content ?? new Map()).entries())
+            .map(([file, hash]) => ({ file, hash }))
+    const { entity, entityFile } = await buildEntityAndFileHelper(type, pointers, timestamp, newContent, metadata)
+    return [EntityFactory.fromJsonObject(entity), entityFile]
 }
 
 /** Build a file with the given entity as the content */

@@ -1,3 +1,4 @@
+import { ServerName } from "dcl-catalyst-commons";
 import { NamingStorage } from "./NamingStorage";
 import v4 from 'uuid/v4';
 
@@ -25,5 +26,3 @@ export class NameKeeper {
     }
 
 }
-
-export type ServerName = string

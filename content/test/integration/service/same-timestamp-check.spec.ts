@@ -1,11 +1,9 @@
-import { EntityType, Pointer } from "@katalyst/content/service/Entity";
+import { EntityType, Pointer, Timestamp, ContentFile, Entity as ControllerEntity } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
-import { MetaverseContentService, ContentFile } from "@katalyst/content/service/Service";
+import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit";
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
-import { ControllerEntity } from "@katalyst/content/controller/Controller";
 import { parseEntityType } from "../E2ETestUtils";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 
 /**
  * This test verifies that the entities with the same entity timestamp are deployed correctly

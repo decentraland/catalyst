@@ -1,6 +1,5 @@
-import { EntityType, Pointer } from "../Entity";
 import { EthAddress } from "dcl-crypto";
-import { Timestamp } from "../time/TimeSorting";
+import { EntityType, Pointer, Timestamp } from "dcl-catalyst-commons";
 
 export interface AccessChecker {
 

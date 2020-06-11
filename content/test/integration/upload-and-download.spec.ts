@@ -1,7 +1,5 @@
+import { EntityType, Entity as ControllerEntity, ContentFile } from "dcl-catalyst-commons"
 import { Bean } from "@katalyst/content/Environment"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { EntityType } from "@katalyst/content/service/Entity"
-import { ContentFile } from "@katalyst/content/service/Service"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"

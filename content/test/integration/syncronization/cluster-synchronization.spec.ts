@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
+import { Timestamp } from "dcl-catalyst-commons"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent, buildDeployment, assertDeploymentsAreReported } from "../E2EAssertions"

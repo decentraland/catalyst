@@ -1,12 +1,10 @@
-import { ENTITY_FILE_NAME, ContentFile } from "@katalyst/content/service/Service";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
-import { EntityType, Entity } from "@katalyst/content/service/Entity";
+import { ContentFileHash, ContentFile, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp } from "dcl-catalyst-commons";
 import { EnvironmentConfig, Bean, Environment } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
 import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
-import { Hashing, ContentFileHash } from '@katalyst/content/service/Hashing';
+import { Entity } from "@katalyst/content/service/Entity";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";

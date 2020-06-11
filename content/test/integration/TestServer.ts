@@ -1,22 +1,14 @@
 import fetch from "node-fetch"
-import FormData from "form-data"
+import { ServerAddress, Timestamp, EntityType, Pointer, DeploymentFilters, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash } from "dcl-catalyst-commons"
+import { ContentClient, DeploymentFields } from "dcl-catalyst-client"
 import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
-import { ServerAddress, ContentServerClient } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
-import { EntityType, Pointer, EntityId } from "@katalyst/content/service/Entity"
-import { ControllerEntity, ControllerDenylistData, ControllerDeployment } from "@katalyst/content/controller/Controller"
-import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
+import { ControllerDenylistData } from "@katalyst/content/controller/Controller"
 import { DeployData, hashAndSignMessage, Identity, parseEntityType, deleteFolderRecursive } from "./E2ETestUtils"
-import { ContentFile, ServerStatus } from "@katalyst/content/service/Service"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { LegacyAuditInfo } from "@katalyst/content/service/Audit"
-import { getClient } from "@katalyst/content/service/synchronization/clients/contentserver/ActiveContentServerClient"
+import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { assertResponseIsOkOrThrow } from "./E2EAssertions"
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper"
-import { DeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager"
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -26,16 +18,14 @@ export class TestServer extends Server {
     private readonly storageFolder: string
     private started: boolean = false
 
-    private readonly client: ContentServerClient
+    private readonly client: ContentClient
 
     constructor(env: Environment) {
         super(env)
         this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
         this.namePrefix = env.getConfig(EnvironmentConfig.NAME_PREFIX)
         this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
-        const fetchHelper: FetchHelper = env.getBean(Bean.FETCH_HELPER)
-        const requestTtlBackwards: number = env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
-        this.client = getClient(fetchHelper, this.getAddress(), requestTtlBackwards, this.namePrefix, 0)
+        this.client = new ContentClient(this.getAddress(), '', env.getBean(Bean.FETCHER))
     }
 
     getAddress(): ServerAddress {
@@ -58,73 +48,48 @@ export class TestServer extends Server {
     }
 
     async deploy(deployData: DeployData, fix: boolean = false): Promise<Timestamp> {
-        const form = new FormData();
-        form.append('entityId'  , deployData.entityId)
-        form.append('ethAddress', deployData.ethAddress)
-        form.append('signature' , deployData.signature)
-        deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
-
-        const deployResponse = await fetch(`${this.getAddress()}/entities${fix ? '?fix=true' : ''}`, { method: 'POST', body: form })
-        if (deployResponse.ok) {
-            const { creationTimestamp } = await deployResponse.json()
-            return creationTimestamp
-        } else {
-            const errorMessage = await deployResponse.text()
-            throw new Error(errorMessage)
-        }
+        return this.client.deployEntity(deployData, fix)
     }
 
     getFailedDeployments(): Promise<FailedDeployment[]> {
         return this.makeRequest(`${this.getAddress()}/failedDeployments`)
     }
 
-    async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
-        const filterParam = pointers.map(pointer => `pointer=${pointer}`).join("&")
-        return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
+    getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
+        return this.client.fetchEntitiesByPointers(type, pointers)
     }
 
-    getHistory(): Promise<PartialDeploymentLegacyHistory> {
-        return this.makeRequest(`${this.getAddress()}/history`)
+    getHistory(): Promise<LegacyPartialDeploymentHistory> {
+        return this.client.fetchHistory()
     }
 
-    getDeployments(filters?: DeploymentFilters): Promise<{ deployments: ControllerDeployment[] }> {
-        const queryFilters: string[] = []
-        filters?.deployedBy?.forEach(filter => queryFilters.push(`deployedBy=${filter}`))
-        filters?.entityIds?.forEach(filter => queryFilters.push(`entityId=${filter}`))
-        filters?.entityTypes?.forEach(filter => queryFilters.push(`entityType=${filter}`))
-        if (filters?.fromLocalTimestamp) queryFilters.push(`fromLocalTimestamp=${filters.fromLocalTimestamp}`)
-        if (filters?.toLocalTimestamp) queryFilters.push(`toLocalTimestamp=${filters.toLocalTimestamp}`)
-        if (filters?.onlyCurrentlyPointed) queryFilters.push(`onlyCurrentlyPointed=${filters.onlyCurrentlyPointed}`)
-        return this.makeRequest(`${this.getAddress()}/deployments?showAudit=true&${queryFilters.join('&')}`)
+    getDeployments(filters?: DeploymentFilters): Promise<ControllerDeployment[]> {
+        return this.client.fetchAllDeployments(filters, DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO)
     }
 
     getStatus(): Promise<ServerStatus> {
-        return this.client.getStatus()
+        return this.client.fetchStatus()
     }
 
-    getEntitiesByIds(type: string, ...ids: EntityId[]): Promise<ControllerEntity[]> {
-        const filterParam = ids.map(id => `id=${id}`).join("&")
-        return this.makeRequest(`${this.getAddress()}/entities/${type}?${filterParam}`)
+    getEntitiesByIds(type: EntityType, ...ids: EntityId[]): Promise<ControllerEntity[]> {
+        return this.client.fetchEntitiesByIds(type, ids)
     }
 
-    async getEntityById(type: string, id: EntityId): Promise<ControllerEntity> {
-        const entities: ControllerEntity[] = await this.getEntitiesByIds(type, id)
-        expect(entities.length).toEqual(1)
-        expect(entities[0].id).toEqual(id)
-        return entities[0]
+    getEntityById(type: EntityType, id: EntityId): Promise<ControllerEntity> {
+        return this.client.fetchEntityById(type, id)
     }
 
-    async downloadContent(fileHash: ContentFileHash): Promise<Buffer> {
-        const response = await fetch(`${this.getAddress()}/contents/${fileHash}`);
-        if (response.ok) {
-            return await response.buffer();
-        }
-
-        throw new Error(`Failed to fetch file with hash ${fileHash} on server ${this.namePrefix}`)
+    downloadContent(fileHash: ContentFileHash): Promise<Buffer> {
+        return this.client.downloadContent(fileHash)
     }
 
     async getAuditInfo(entity: ControllerEntity): Promise<LegacyAuditInfo> {
-        return this.client.getAuditInfo(parseEntityType(entity), entity.id)
+        const auditInfo = await this.client.fetchAuditInfo(parseEntityType(entity), entity.id)
+        return {
+            ...auditInfo,
+            deployedTimestamp: auditInfo.originTimestamp,
+            version: EntityVersion[auditInfo.version.toUpperCase()],
+        }
     }
 
     getDenylistTargets(): Promise<ControllerDenylistData[]> {

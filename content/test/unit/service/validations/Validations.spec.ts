@@ -1,6 +1,7 @@
 import * as EthCrypto from "eth-crypto";
-import { Validations } from "../../../../src/service/validations/Validations";
-import { Entity, EntityType } from "../../../../src/service/Entity";
+import { EntityType } from "dcl-catalyst-commons";
+import { Validations } from "@katalyst/content/service/validations/Validations";
+import { Entity } from "@katalyst/content/service/Entity";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext";
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl";

@@ -8,6 +8,7 @@ import { MockedSynchronizationManager } from "../helpers/service/synchronization
 import { assertResponseIsOkOrThrow } from "./E2EAssertions"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 import { loadTestEnvironment } from "./E2ETestEnvironment"
+import { Authenticator } from "dcl-crypto"
 
 describe("End 2 end - Legacy Entities", () => {
 

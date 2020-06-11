@@ -1,4 +1,5 @@
-import { EntityId, Entity } from "../Entity";
+import { Entity } from "../Entity";
+import { Timestamp, EntityId } from "dcl-catalyst-commons";
 
 /** Sort comparable objects from oldest to newest */
 export function sortNonComparableFromOldestToNewest<T extends { entityId: EntityId }> (array: T[], timestampExtraction: (element: T) => Timestamp): T[] {
@@ -37,8 +38,6 @@ function comparatorNewestToOldest(comparable1: EntityComparable, comparable2: En
         return 1
     }
 }
-
-export type Timestamp = number
 
 type EntityComparable = {
     timestamp: Timestamp,

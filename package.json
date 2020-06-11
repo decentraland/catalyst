@@ -84,6 +84,8 @@
     "cids": "^0.7.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
+    "dcl-catalyst-client": "^1.3.0",
+    "dcl-catalyst-commons": "^1.3.2",
     "dcl-crypto": "2.2.0",
     "decentraland-commons": "^5.1.0",
     "decentraland-ui": "^2.10.2",

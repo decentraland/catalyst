@@ -1,16 +1,13 @@
-import { EthAddress, AuthChain } from "dcl-crypto";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
-import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
-import { EntityId, EntityType, Entity, Pointer } from "@katalyst/content/service/Entity";
+import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress } from "dcl-catalyst-commons";
+import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
-import { AuditInfo, EntityVersion } from "../Audit";
+import { AuditInfo } from "../Audit";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
 import { MigrationDataRepository } from "@katalyst/content/storage/repositories/MigrationDataRepository";
 import { CacheByType } from "../caching/Cache";
 import { CacheManager, ENTITIES_CACHE_CONFIG } from "../caching/CacheManager";
 import { DeploymentResult, DELTA_POINTER_RESULT } from "../pointers/PointerManager";
 import { DeploymentDeltasRepository } from "@katalyst/content/storage/repositories/DeploymentDeltasRepository";
-import { ContentFileHash } from "../Hashing";
 
 export class DeploymentManager {
 
@@ -39,9 +36,9 @@ export class DeploymentManager {
         deploymentsRepository: DeploymentsRepository,
         contentFilesRepository: ContentFilesRepository,
         migrationDataRepository: MigrationDataRepository,
-        filters?: DeploymentFilters,
+        filters?: ExtendedDeploymentFilters,
         offset?: number,
-        limit?: number): Promise<PartialDeploymentHistory> {
+        limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
 
@@ -149,48 +146,12 @@ export class DeploymentManager {
 
 }
 
-export type PartialDeploymentHistory = {
-    deployments: Deployment[],
-    filters: DeploymentFilters,
-    pagination: {
-        offset: number,
-        limit: number,
-        moreData: boolean,
-    },
-}
+export type Deployment = Omit<ControllerDeployment, 'content'> & { content?: Map<string, ContentFileHash> };
 
-export type  DeploymentFilters = {
-    fromLocalTimestamp?: Timestamp,
-    toLocalTimestamp?: Timestamp,
+export type ExtendedDeploymentFilters = DeploymentFilters & {
     fromOriginTimestamp?: Timestamp,
     toOriginTimestamp?: Timestamp,
     originServerUrl?: ServerAddress,
-    deployedBy?: EthAddress[],
-    entityTypes?: EntityType[],
-    entityIds?: EntityId[],
-    pointers?: Pointer[],
-    onlyCurrentlyPointed?: boolean,
-}
-
-export type Deployment = {
-    entityType: EntityType,
-    entityId: EntityId,
-    pointers: Pointer[],
-    entityTimestamp: Timestamp,
-    content?: Map<string, ContentFileHash>,
-    metadata?: any,
-    deployedBy: EthAddress,
-    auditInfo: {
-        version: EntityVersion,
-        authChain: AuthChain,
-        originServerUrl: ServerAddress,
-        originTimestamp: Timestamp,
-        localTimestamp: Timestamp,
-        overwrittenBy?: EntityId,
-        migrationData?: any,
-        isDenylisted?: boolean,
-        denylistedContent?: ContentFileHash[],
-    }
 }
 
 export type DeploymentEventBase = {

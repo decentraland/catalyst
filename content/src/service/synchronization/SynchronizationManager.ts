@@ -1,9 +1,8 @@
 import { setTimeout, clearTimeout } from "timers"
 import ms from "ms";
 import log4js from "log4js"
+import { Timestamp, LegacyDeploymentHistory } from "dcl-catalyst-commons";
 import { TimeKeepingService } from "../Service";
-import { Timestamp } from "../time/TimeSorting";
-import { LegacyDeploymentHistory } from "../history/HistoryManager";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";

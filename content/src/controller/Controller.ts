@@ -1,9 +1,9 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Entity, EntityId, Pointer } from "../service/Entity"
-import { MetaverseContentService, ContentFile } from "../service/Service";
-import { Timestamp } from "../service/time/TimeSorting";
+import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity } from "dcl-catalyst-commons";
+import { Entity } from "../service/Entity"
+import { MetaverseContentService } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
 import { parseDenylistTypeAndId } from "../denylist/DenylistTarget";
@@ -370,46 +370,6 @@ export class Controller {
         res.send({ challengeText })
     }
 
-}
-
-export interface ControllerEntity {
-    id: string
-    type: string
-    pointers: string[]
-    timestamp: number
-    content?: ControllerEntityContent[]
-    metadata?: any
-}
-
-export interface ControllerDeployment {
-    entityType: string,
-    entityId: string,
-    pointers: string[],
-    entityTimestamp: number,
-    content?: ControllerDeploymentContent[],
-    metadata?: any,
-    deployedBy: string,
-    auditInfo: {
-        version: string,
-        authChain: AuthChain,
-        originServerUrl: string,
-        originTimestamp: number,
-        localTimestamp: number ,
-        overwrittenBy?: string,
-        migrationData?: any,
-        isDenylisted?: boolean,
-        denylistedContent?: string[],
-    }
-}
-
-export type ControllerEntityContent = {
-    file: string,
-    hash: string,
-}
-
-export type ControllerDeploymentContent = {
-    key: string,
-    hash: string,
 }
 
 export enum EntityField {

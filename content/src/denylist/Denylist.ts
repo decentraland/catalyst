@@ -1,4 +1,4 @@
-import { Timestamp } from "../service/time/TimeSorting";
+import { Timestamp } from "dcl-catalyst-commons";
 import { DenylistTarget, DenylistTargetType, DenylistTargetId } from "./DenylistTarget";
 import { ContentCluster } from "../service/synchronization/ContentCluster";
 import { EthAddress, AuthChain } from "dcl-crypto";

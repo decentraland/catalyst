@@ -1,6 +1,4 @@
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
+import { ContentFileHash, Timestamp } from "dcl-catalyst-commons"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy, buildEventWithName, assertDeploymentsAreReported, buildDeployment } from "../E2EAssertions"
@@ -24,7 +22,7 @@ describe("End 2 end - Node onboarding", function() {
 
         // Prepare data to be deployed
         const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/integration/resources/some-binary-file.png')
-        const entity1ContentHash: ContentFileHash  = (entity1.content as ControllerEntityContent[])[0].hash
+        const entity1ContentHash: ContentFileHash  = entity1.content!![0].hash
         const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata2", entity1)
 
         // Deploy entity1 on server 1
@@ -63,7 +61,7 @@ describe("End 2 end - Node onboarding", function() {
 
         // Prepare data to be deployed
         const [deployData, entity] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata", 'content/test/integration/resources/some-binary-file.png')
-        const entityContentHash: ContentFileHash  = (entity.content as ControllerEntityContent[])[0].hash
+        const entityContentHash: ContentFileHash  = entity.content!![0].hash
 
         // Deploy entity on server 1
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)

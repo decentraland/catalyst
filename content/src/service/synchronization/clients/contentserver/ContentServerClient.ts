@@ -1,9 +1,5 @@
-import { ContentFile, ServerStatus } from "../../../Service";
-import { Timestamp } from "../../../time/TimeSorting";
-import { EntityId, EntityType, Entity } from "../../../Entity";
-import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
-import { ContentFileHash } from "../../../Hashing";
-import { ServerName } from "../../../naming/NameKeeper";
+import { Timestamp, EntityType, EntityId, ContentFile, ServerStatus, ContentFileHash, ServerName, LegacyDeploymentHistory } from "dcl-catalyst-commons";
+import { Entity } from "../../../Entity";
 import { LegacyAuditInfo } from "../../../Audit";
 
 export const UNREACHABLE: string = "UNREACHABLE"
@@ -40,5 +36,3 @@ export enum ConnectionState {
     CONNECTION_LOST = "Connection lost",
     NEVER_REACHED = "Could never be reached",
 }
-
-export type ServerAddress = string

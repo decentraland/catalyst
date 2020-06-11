@@ -15,7 +15,7 @@ import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFac
 import { EntityVersion } from "./service/Audit";
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
-import { FetchHelperFactory } from "./helpers/FetchHelperFactory";
+import { FetcherFactory } from "./helpers/FetcherFactory";
 import { CacheManagerFactory } from "./service/caching/CacheManagerFactory";
 import { ValidationsFactory } from "./service/validations/ValidationsFactory";
 import { ChallengeSupervisor } from "./service/synchronization/ChallengeSupervisor";
@@ -103,7 +103,7 @@ export const enum Bean {
     DENYLIST,
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
-    FETCH_HELPER,
+    FETCHER,
     CACHE_MANAGER,
     VALIDATIONS,
     CHALLENGE_SUPERVISOR,
@@ -207,7 +207,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY                  , () => repository)
         this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR        , () => new ChallengeSupervisor())
         this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER               , () => CacheManagerFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.FETCH_HELPER                , () => FetchHelperFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FETCHER                , () => FetcherFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_REPORTER         , () => DeploymentReporterFactory.create(env))

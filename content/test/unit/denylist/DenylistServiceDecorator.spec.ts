@@ -1,10 +1,10 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
+import { Pointer, ContentFile } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
-import { ContentFile } from "@katalyst/content/service/Service";
-import { Pointer, Entity } from "@katalyst/content/service/Entity";
+import { Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { EntityVersion, AuditInfo, AuditInfoBase  } from "@katalyst/content/service/Audit";

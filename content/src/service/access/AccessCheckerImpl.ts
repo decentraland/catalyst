@@ -1,10 +1,9 @@
 import log4js from "log4js"
 import ms from "ms";
+import { EntityType, Pointer, Timestamp } from "dcl-catalyst-commons";
 import { AccessChecker } from "./AccessChecker";
 import { EthAddress } from "dcl-crypto";
-import { Pointer, EntityType } from "../Entity";
 import { ContentAuthenticator } from "../auth/Authenticator";
-import { Timestamp } from "../time/TimeSorting";
 import { retry } from "@katalyst/content/helpers/RetryHelper";
 
 export class AccessCheckerImpl implements AccessChecker {

@@ -1,8 +1,9 @@
 import { Authenticator } from 'dcl-crypto';
-import { EntityId, Entity, EntityType } from '@katalyst/content/service/Entity';
+import { EntityId, EntityType } from 'dcl-catalyst-commons';
+import { Entity } from '@katalyst/content/service/Entity';
 import { AuditInfo } from '@katalyst/content/service/Audit';
 import { Repository } from '@katalyst/content/storage/Repository';
-import { DeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager';
+import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager';
 
 export class DeploymentsRepository {
 
@@ -38,15 +39,15 @@ export class DeploymentsRepository {
         return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], row => parseInt(row.count));
     }
 
-    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, filters?: DeploymentFilters) {
+    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
         return this.getDeploymentsBy('origin_timestamp', offset, limit, filters)
     }
 
-    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, filters?: DeploymentFilters) {
+    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
         return this.getDeploymentsBy('local_timestamp', offset, limit, filters)
     }
 
-    private getDeploymentsBy(timestampField: string, offset: number, limit: number, filters?: DeploymentFilters) {
+    private getDeploymentsBy(timestampField: string, offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
         let query = `
             SELECT
                 dep1.id,

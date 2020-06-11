@@ -1,12 +1,9 @@
 import fs from "fs"
 import path from "path"
 import * as EthCrypto from "eth-crypto"
-import { Pointer, EntityType } from "@katalyst/content/service/Entity"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { ContentFileHash, Hashing } from "@katalyst/content/service/Hashing"
-import { ContentFile } from "@katalyst/content/service/Service"
+import { Hashing, Pointer, ContentFile, ContentFileHash, EntityType , Entity as ControllerEntity, EntityId} from "dcl-catalyst-commons"
 import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
-import { Authenticator, EthAddress } from "dcl-crypto"
+import { Authenticator, EthAddress, AuthChain } from "dcl-crypto"
 import { retry } from "@katalyst/content/helpers/RetryHelper"
 
 export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
@@ -24,9 +21,8 @@ export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: 
 async function buildDeployDataInternal(pointers: Pointer[], metadata: any, contentPaths: string[], identity: Identity, afterEntity?: ControllerEntity): Promise<[DeployData, ControllerEntity]> {
     const files: ContentFile[] = contentPaths.map(filePath => ({ name: path.basename(filePath), content: fs.readFileSync(filePath) }))
 
-    const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
-    const content: Map<string, string> = new Map(Array.from(hashes.entries())
-        .map(([hash, file]) => [file.name, hash]))
+    const hashes: { hash: ContentFileHash, file: ContentFile }[] = await Hashing.calculateHashes(files)
+    const content: Map<string, string> = new Map(hashes.map(({ hash, file }) => [file.name, hash]))
 
     const [entity, entityFile] = await buildControllerEntityAndFile(
         EntityType.SCENE,
@@ -80,10 +76,9 @@ export function awaitUntil(evaluation: () => Promise<any>, attempts: number = 10
 }
 
 export type DeployData = {
-    entityId: string,
-    ethAddress: string,
-    signature: string,
-    files: ContentFile[]
+    entityId: EntityId,
+    authChain: AuthChain;
+    files: Map<ContentFileHash, ContentFile>;
 }
 
 export type Identity = {

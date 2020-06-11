@@ -1,6 +1,5 @@
 import log4js from "log4js"
-import { Timestamp } from "../time/TimeSorting";
-import { LegacyDeploymentHistory } from "../history/HistoryManager";
+import { Timestamp, LegacyDeploymentHistory } from "dcl-catalyst-commons";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { EventDeployer } from "./EventDeployer";
 import { ContentCluster } from "./ContentCluster";

@@ -1,28 +1,26 @@
-import { ContentFile, ServerStatus } from "../../../Service";
-import { Timestamp } from "../../../time/TimeSorting";
-import { EntityId, EntityType, Entity } from "../../../Entity";
-import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
-import { ContentFileHash, Hashing } from "../../../Hashing";
-import { ServerName } from "../../../naming/NameKeeper";
+import { ServerAddress, ServerName, Timestamp, EntityType, EntityId, ServerStatus, LegacyDeploymentHistory, ContentFileHash, ContentFile, Fetcher } from "dcl-catalyst-commons";
+import { ContentClient } from "dcl-catalyst-client";
+import { Entity } from "../../../Entity";
 import { EntityFactory } from "../../../EntityFactory";
-import { LegacyAuditInfo } from "../../../Audit";
-import { ContentServerClient, ServerAddress, ConnectionState } from "./ContentServerClient";
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
-import { retry } from "@katalyst/content/helpers/RetryHelper";
-import { HistoryClient } from "@katalyst/content/service/history/client/HistoryClient";
+import { LegacyAuditInfo, EntityVersion } from "../../../Audit";
+import { ContentServerClient, ConnectionState } from "./ContentServerClient";
 
-export function getClient(fetchHelper: FetchHelper, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
-    return new ActiveContentServerClient(fetchHelper, address, requestTtlBackwards, name, lastKnownTimestamp)
+export function getClient(fetcher: Fetcher, address: ServerAddress, requestTtlBackwards: number, name: ServerName, lastKnownTimestamp: Timestamp): ActiveContentServerClient {
+    return new ActiveContentServerClient(requestTtlBackwards, fetcher, address, name, lastKnownTimestamp)
 }
 
 class ActiveContentServerClient extends ContentServerClient {
 
-    constructor(private readonly fetchHelper: FetchHelper,
-        private readonly address: ServerAddress,
+    private readonly client: ContentClient
+
+    constructor(
         private readonly requestTtlBackwards: number,
+        fetcher: Fetcher,
+        address: ServerAddress,
         name: ServerName,
         estimatedLocalImmutableTime: Timestamp) {
             super(name, estimatedLocalImmutableTime)
+            this.client = new ContentClient(address, '', fetcher)
         }
 
     /**
@@ -38,21 +36,25 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getEntity(entityType: EntityType, entityId: EntityId): Promise<Entity> {
-        const json = await this.fetchHelper.fetchJson(`${this.address}/entities/${entityType}?id=${entityId}`)
-        const entity = json[0];
+        const entity = this.client.fetchEntityById(entityType, entityId)
         return EntityFactory.fromJsonObject(entity);
     }
 
-    getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<LegacyAuditInfo> {
-        return this.fetchHelper.fetchJson(`${this.address}/audit/${entityType}/${entityId}`)
+    async getAuditInfo(entityType: EntityType, entityId: EntityId): Promise<LegacyAuditInfo> {
+        const auditInfo = await this.client.fetchAuditInfo(entityType, entityId)
+        return {
+            ...auditInfo,
+            version: EntityVersion[auditInfo.version.toUpperCase()],
+            deployedTimestamp: auditInfo.originTimestamp,
+        }
     }
 
     getStatus(): Promise<ServerStatus> {
-        return this.fetchHelper.fetchJson(`${this.address}/status`)
+        return this.client.fetchStatus()
     }
 
-    async getHistory(from: Timestamp, serverName?: ServerName, to?: Timestamp): Promise<LegacyDeploymentHistory> {
-        return HistoryClient.consumeAllHistory(this.fetchHelper, this.address, from, to, serverName)
+    getHistory(from: Timestamp, serverName?: ServerName, to?: Timestamp): Promise<LegacyDeploymentHistory> {
+        return this.client.fetchFullHistory({ from, to, serverName })
     }
 
     getConnectionState(): ConnectionState {
@@ -60,14 +62,8 @@ class ActiveContentServerClient extends ContentServerClient {
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
-        return retry(async () => {
-            const content = await this.fetchHelper.fetchBuffer(`${this.address}/contents/${fileHash}`);
-            const downloadedHash = await Hashing.calculateBufferHash(content)
-            if (downloadedHash === fileHash) {
-                return { name: fileHash, content: content }
-            }
-            throw new Error(`Failed to fetch file with hash ${fileHash} from ${this.address}`)
-        }, 3, `get file with hash ${fileHash}`, '0.5s')
+        const content = await this.client.downloadContent(fileHash, { attempts: 3, waitTime: '0.5s' })
+        return { name: fileHash, content }
     }
 
     /**

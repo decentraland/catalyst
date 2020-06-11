@@ -1,9 +1,9 @@
 import log4js from "log4js"
+import { LegacyDeploymentEvent } from "dcl-catalyst-commons";
 import { retry } from "@katalyst/content/helpers/RetryHelper";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
-import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager";
-import { DeploymentEventBase } from "@katalyst/content/service/deployments/DeploymentManager";
+import { DeploymentEventBase } from "../deployments/DeploymentManager";
 
 const LOGGER = log4js.getLogger('ClusterUtils');
 

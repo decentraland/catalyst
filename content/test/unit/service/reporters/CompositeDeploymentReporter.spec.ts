@@ -1,5 +1,6 @@
+import { EntityType } from "dcl-catalyst-commons";
 import { CompositeDeploymentReporter } from "@katalyst/content/service/reporters/CompositeDeploymentReporter";
-import { Entity, EntityType } from "@katalyst/content/service/Entity";
+import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentReporter } from "@katalyst/content/service/reporters/DeploymentReporter";
 
 describe("Composite Deployment Reporter", () => {

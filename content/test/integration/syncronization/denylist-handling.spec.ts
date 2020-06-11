@@ -1,9 +1,7 @@
 import ms from "ms"
+import { ContentFileHash, Timestamp } from "dcl-catalyst-commons"
 import { buildEvent, assertHistoryOnServerHasEvents, assertEntityIsNotDenylisted, assertContentNotIsDenylisted, assertFieldsOnEntitiesExceptIdsAreEqual, assertFileIsOnServer, assertEntityWasNotDeployed, assertDeploymentsAreReported, buildDeployment } from "../E2EAssertions"
 import { EnvironmentConfig } from "@katalyst/content/Environment"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { ControllerEntityContent } from "@katalyst/content/controller/Controller"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
 import { TestServer } from "../TestServer"
 import { buildDeployData, createIdentity, awaitUntil } from "../E2ETestUtils"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
@@ -122,7 +120,7 @@ describe("End 2 end - Denylist handling", () => {
 
         // Prepare entity to deploy
         const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
-        const contentHash: ContentFileHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
+        const contentHash: ContentFileHash = entityBeingDeployed.content!![0].hash
 
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)

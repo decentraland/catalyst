@@ -1,7 +1,5 @@
-import { EntityType, EntityId } from '@katalyst/content/service/Entity';
+import { EntityType, EntityId, Timestamp, ServerAddress } from 'dcl-catalyst-commons';
 import { Repository } from '@katalyst/content/storage/Repository';
-import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
-import { ServerAddress } from '@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient';
 import { FailureReason, FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager';
 
 export class FailedDeploymentsRepository {

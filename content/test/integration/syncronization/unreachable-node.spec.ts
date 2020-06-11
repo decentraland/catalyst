@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
+import { Timestamp } from "dcl-catalyst-commons"
 import { EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, awaitUntil } from "../E2ETestUtils"
