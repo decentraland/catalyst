@@ -25,6 +25,7 @@ export interface MetaverseContentService {
     getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<AuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
+    deleteContent(fileHashes: ContentFileHash[]): Promise<void>;
     getStatus(): ServerStatus;
     getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory>;
     getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory>;

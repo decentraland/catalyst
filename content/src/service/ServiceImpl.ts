@@ -249,6 +249,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         }
     }
 
+    deleteContent(fileHashes: string[]): Promise<void> {
+        return this.storage.deleteContent(fileHashes)
+    }
+
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void> {
         const legacy = !!auditInfo.originalMetadata
         await this.deployInternal(files, entityId, auditInfo, legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED, 'sync')

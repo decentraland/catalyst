@@ -13,6 +13,10 @@ export class ServiceStorage {
         return this.storage.retrieve(fileHash)
     }
 
+    deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
+        return this.storage.delete(fileHashes)
+    }
+
     async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
         return this.storage.exist(fileHashes)
     }

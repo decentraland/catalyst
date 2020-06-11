@@ -12,6 +12,7 @@ import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import { SynchronizationManager } from "./service/synchronization/SynchronizationManager";
 import { MigrationManager } from "./migrations/MigrationManager";
 import { MetaverseContentService } from "./service/Service";
+import { GarbageCollectionManager } from "./service/garbage-collection/GarbageCollectionManager";
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger("Server");
@@ -19,7 +20,8 @@ export class Server {
   private port: number;
   private app: express.Express;
   private httpServer: http.Server;
-  private synchronizationManager: SynchronizationManager;
+  private readonly synchronizationManager: SynchronizationManager;
+  private readonly garbageCollectionManager: GarbageCollectionManager;
   private readonly migrationManager: MigrationManager;
   private readonly service: MetaverseContentService
 
@@ -37,6 +39,7 @@ export class Server {
     this.app = express();
     const upload = multer({ dest: "uploads/" });
     const controller: Controller = env.getBean(Bean.CONTROLLER);
+    this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER);
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
     this.service = env.getBean(Bean.SERVICE)
     this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
@@ -120,10 +123,11 @@ export class Server {
     await once(this.httpServer, "listening");
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`);
     await this.synchronizationManager.start();
+    await this.garbageCollectionManager.start();
   }
 
   async stop(): Promise<void> {
-    await this.synchronizationManager.stop();
+    await Promise.all([ this.garbageCollectionManager.stop(), this.synchronizationManager.stop() ]);
     if (this.httpServer) {
       this.httpServer.close(() => {
         Server.LOGGER.info(`Content Server stopped.`);

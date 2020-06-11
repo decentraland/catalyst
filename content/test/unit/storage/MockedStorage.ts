@@ -8,8 +8,8 @@ export class MockedStorage implements ContentStorage {
         this.storage.set(id, content)
         return Promise.resolve()
     }
-    delete(id: string): Promise<void> {
-        this.storage.delete(id)
+    delete(ids: string[]): Promise<void> {
+        ids.forEach(id => this.storage.delete(id))
         return Promise.resolve()
     }
     retrieve(id: string): Promise<ContentItem | undefined> {

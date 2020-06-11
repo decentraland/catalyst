@@ -16,3 +16,4 @@ export async function buildControllerEntityAndFile(type: EntityType, pointers: P
     }
     return [controllerEntity, file]
 }
+

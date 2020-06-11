@@ -39,6 +39,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         this.content = builder.content
     }
 
+    deleteContent(fileHashes: string[]): Promise<void> {
+        throw new Error("Method not implemented.")
+    }
+
     getDeltas(repository?: RepositoryTask | Repository) {
         return Promise.resolve([])
     }
