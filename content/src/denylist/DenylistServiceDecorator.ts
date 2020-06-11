@@ -145,6 +145,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getLegacyHistory(from, to, serverName, offset, limit)
   }
 
+  deleteContent(fileHashes: string[]): Promise<void> {
+    return this.service.deleteContent(fileHashes)
+  }
+
   async getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
     return this.repository.task(async task => {
       // TODO: Filter denylisted pointers from filters, when added

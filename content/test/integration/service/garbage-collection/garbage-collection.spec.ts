@@ -58,7 +58,8 @@ describe("Integration - Garbage Collection", () => {
         await deploy(E2)
 
         // Assert only the shared content is still available
-        await awaitUntil(() => assertContentIsAvailable(sharedContent))
+        await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
+        await assertContentIsAvailable(sharedContent)
     })
 
     it(`When garbage collection is off, then unused content isn't deleted`, async () => {
@@ -76,6 +77,7 @@ describe("Integration - Garbage Collection", () => {
 
         // Assert all content is still available
         await assertContentIsAvailable(sharedContent, onlyE1Content)
+        await assertReportedAsDeletedAre()
     })
 
     it(`When garbage collection is started after deployments, then unused content is still deleted`, async () => {
@@ -86,37 +88,28 @@ describe("Integration - Garbage Collection", () => {
         await garbageCollector.start()
 
         // Assert only the shared content is still available
-        await awaitUntil(() => assertContentIsAvailable(sharedContent))
+        await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
+        await assertContentIsAvailable(sharedContent)
     })
 
-    it(`When entity is overwritten, then it is sent to the garbage collector`, async () => {
-        // Deploy E1
-        await deploy(E1)
-
-        // No overwrite reported
-        assertReportedOverwritesAre(0)
-
-        // Deploy E3
-        await deploy(E3)
-
-        // No overwrite reported, since E3 and E1 don't overlap
-        assertReportedOverwritesAre(0)
-
-        // Deploy E2
-        await deploy(E2)
-
-        // Overwrite reported
-        assertReportedOverwritesAre(1)
+    it(`When entity is not overwritten, then it is not garbage collected`, async () => {
+        // Deploy E1 and E3
+        await deploy(E1, E3)
 
         // Start garbage collection
         await garbageCollector.start()
 
-        // Make sure it was garbage collected
-        await awaitUntil(() => { assertReportedOverwritesAre(0); return Promise.resolve() })
+        // Wait a little
+        await delay(ms('4s'))
+
+        // Assert nothing was deleted
+        await assertReportedAsDeletedAre()
+        await assertContentIsAvailable(sharedContent, onlyE1Content)
     })
 
-    function assertReportedOverwritesAre(amount: number) {
-        assert.equal(garbageCollector.amountOfOverwrittenDeploymentsSinceLastSweep(), amount)
+    function assertReportedAsDeletedAre(...fileHashes: ContentFileHash[]) {
+        assert.deepEqual(garbageCollector.deletedInLastSweep(), new Set(fileHashes))
+        return Promise.resolve()
     }
 
     async function assertContentIsAvailable(...hashes: ContentFileHash[]) {

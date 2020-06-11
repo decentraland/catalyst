@@ -26,7 +26,6 @@ import { MigrationManagerFactory } from "./migrations/MigrationManagerFactory";
 import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 import { SystemPropertiesManagerFactory } from "./service/system-properties/SystemPropertiesManagerFactory";
 import { GarbageCollectionManagerFactory } from "./service/garbage-collection/GarbageCollectionManagerFactory";
-import { ServiceStorageFactory } from "./service/ServiceStorageFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -112,7 +111,6 @@ export const enum Bean {
     CHALLENGE_SUPERVISOR,
     REPOSITORY,
     MIGRATION_MANAGER,
-    SERVICE_STORAGE,
     GARBAGE_COLLECTION_MANAGER,
     SYSTEM_PROPERTIES_MANAGER,
 }
@@ -226,8 +224,6 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
         const nameKeeper = await NameKeeperFactory.create(env)
         this.registerBeanIfNotAlreadySet(env, Bean.NAME_KEEPER                 , () => nameKeeper)
-        this.registerBeanIfNotAlreadySet(env, Bean.SERVICE_STORAGE             , () => ServiceStorageFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER  , () => GarbageCollectionManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER             , () => ContentClusterFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => HistoryManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER          , () => DeploymentManagerFactory.create(env))
@@ -237,6 +233,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => new FailedDeploymentsManager())
         this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS                 , () => ValidationsFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER  , () => GarbageCollectionManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env))

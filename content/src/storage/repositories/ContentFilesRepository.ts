@@ -1,30 +1,22 @@
 import { ContentFileHash } from '@katalyst/content/service/Hashing';
 import { Repository } from '@katalyst/content/storage/Repository';
 import { DeploymentId } from './DeploymentsRepository';
+import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
 
 export class ContentFilesRepository {
 
     constructor(private readonly db: Repository) { }
 
-    findContentHashesNotBeingUsedAnymore(deploymentIds: DeploymentId[]): Promise<ContentFileHash[]> {
-        if (deploymentIds.length === 0) {
-            return Promise.resolve([])
-        }
+    findContentHashesNotBeingUsedAnymore(lastGarbageCollection: Timestamp): Promise<ContentFileHash[]> {
         return this.db.map(`
-            SELECT content_hash
-            FROM (
-                SELECT content_hash, (deleter_deployment IS NULL) AS currently_used
-                FROM content_files
-                LEFT JOIN deployments ON deployments.id = content_files.deployment
-                WHERE content_hash IN (
-                    SELECT DISTINCT content_hash
-                    FROM content_files
-                    WHERE deployment IN ($1:list)
-                )
-            ) AS subquery
-            GROUP BY content_hash
-            HAVING bool_or(currently_used) = FALSE
-            `, [ deploymentIds ], row => row.content_hash)
+            SELECT content_files.content_hash
+            FROM content_files
+            INNER JOIN deployments ON content_files.deployment=id
+            LEFT  JOIN deployments AS dd ON deployments.deleter_deployment=dd.id
+            WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp($1 / 1000.0)
+            GROUP BY content_files.content_hash
+            HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
+            `, [ lastGarbageCollection ], row => row.content_hash)
 
     }
 

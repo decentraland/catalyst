@@ -1,11 +1,13 @@
 import { MetaverseContentService, TimeKeepingService, ClusterDeploymentsService } from "./Service";
 import { Environment, Bean, EnvironmentConfig } from "../Environment";
 import { ServiceImpl } from "./ServiceImpl";
+import { ServiceStorage } from "./ServiceStorage";
 
 export class ServiceFactory {
     static create(env: Environment): MetaverseContentService & TimeKeepingService & ClusterDeploymentsService {
+        const storage = new ServiceStorage(env.getBean(Bean.STORAGE));
         return new ServiceImpl(
-            env.getBean(Bean.SERVICE_STORAGE),
+            storage,
             env.getBean(Bean.HISTORY_MANAGER),
             env.getBean(Bean.POINTER_MANAGER),
             env.getBean(Bean.CONTENT_CLUSTER),
@@ -14,7 +16,6 @@ export class ServiceFactory {
             env.getBean(Bean.DEPLOYMENT_MANAGER),
             env.getBean(Bean.VALIDATIONS),
             env.getBean(Bean.REPOSITORY),
-            env.getBean(Bean.GARBAGE_COLLECTION_MANAGER),
             env.getConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING));
     }
 }
