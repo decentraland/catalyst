@@ -2,7 +2,7 @@ image: decentraland/ci-node:10
 
 build:
   script:
-    - cd status && yarn install && yarn build && cd ..
+    - cd status && yarn install && PUBLIC_URL=https://catalysts.decentraland.io yarn build && cd ..
     - dcl-lock-sync
     - cd .ci && npm install && dcl-up website-catalysts
     - dcl-sync-release && cd ..
