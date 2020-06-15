@@ -1,6 +1,6 @@
 import { random, internet } from "faker"
+import { EntityType } from "dcl-catalyst-commons"
 import { FailedDeploymentsManager, FailureReason, FailedDeployment, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager"
-import { EntityType } from "@katalyst/content/service/Entity"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
 import { Repository } from "@katalyst/content/storage/Repository"
 import { DeploymentEventBase } from "@katalyst/content/service/deployments/DeploymentManager"

@@ -1,7 +1,6 @@
-import { ContentFileHash } from 'dcl-catalyst-commons';
+import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons';
 import { Repository } from '@katalyst/content/storage/Repository';
 import { DeploymentId } from './DeploymentsRepository';
-import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
 
 export class ContentFilesRepository {
 

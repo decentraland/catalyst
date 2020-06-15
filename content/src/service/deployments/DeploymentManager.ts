@@ -28,7 +28,7 @@ export class DeploymentManager {
             const deployments = await deploymentRepository.getEntitiesByIds(type, ids)
             const deploymentIds = deployments.map(row => row.id);
             const contents = await contentFilesRepository.getContentFiles(deploymentIds)
-            return new Map(deployments.map(row => [row.entityId, new Entity(row.entityId, row.entityType, row.pointers, row.timestamp, contents.get(row.id), row.metadata)]))
+            return new Map(deployments.map(row => [row.entityId, { id: row.entityId, type: row.entityType, pointers: row.pointers, timestamp: row.timestamp, content: contents.get(row.id), metadata: row.metadata }]))
         })
     }
 

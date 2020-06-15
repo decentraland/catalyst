@@ -4,7 +4,7 @@ import { ContentClient, DeploymentFields } from "dcl-catalyst-client"
 import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ControllerDenylistData } from "@katalyst/content/controller/Controller"
-import { DeployData, hashAndSignMessage, Identity, parseEntityType, deleteFolderRecursive } from "./E2ETestUtils"
+import { DeployData, hashAndSignMessage, Identity, deleteFolderRecursive } from "./E2ETestUtils"
 import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
@@ -84,7 +84,7 @@ export class TestServer extends Server {
     }
 
     async getAuditInfo(entity: ControllerEntity): Promise<LegacyAuditInfo> {
-        const auditInfo = await this.client.fetchAuditInfo(parseEntityType(entity), entity.id)
+        const auditInfo = await this.client.fetchAuditInfo(entity.type, entity.id)
         return {
             ...auditInfo,
             deployedTimestamp: auditInfo.originTimestamp,

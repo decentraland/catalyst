@@ -144,6 +144,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getLegacyHistory(from, to, serverName, offset, limit)
   }
 
+  deleteContent(fileHashes: string[]): Promise<void> {
+    return this.service.deleteContent(fileHashes)
+  }
+
   async getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(async task => {
       // TODO: Filter denylisted pointers from filters, when added
@@ -250,7 +254,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
       const target = entityToTarget.get(entity)!!
       const isDenylisted = isTargetDenylisted(target, denylistQueryResult)
       if (isDenylisted) {
-        return new Entity(entity.id, entity.type, entity.pointers, entity.timestamp, undefined, DenylistServiceDecorator.DENYLISTED_METADATA);
+        return { ...entity, content: undefined, metadata: DenylistServiceDecorator.DENYLISTED_METADATA }
       } else {
         return entity;
       }

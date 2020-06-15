@@ -21,7 +21,7 @@ describe("End 2 end deploy test", () => {
 
     it('When a user tries to deploy the same entity twice, then an exception is thrown', async() => {
         // Build data for deployment
-        const [deployData] = await buildDeployData(["0,0", "0,1"], "this is just some metadata")
+        const { deployData } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata"' })
 
         // Execute first deploy
         await server.deploy(deployData)
@@ -34,7 +34,7 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Deploy the content
         //------------------------------
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], "this is just some metadata", 'content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata"', contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
 
         const creationTimestamp = await server.deploy(deployData)
         const deploymentEvent = buildEventWithName(entityBeingDeployed, 'UNKNOWN_NAME', creationTimestamp)
@@ -77,7 +77,7 @@ describe("End 2 end deploy test", () => {
 
         for (const contentElement of scene.content!!) {
             const downloadedContent = await server.downloadContent(contentElement.hash)
-            expect(downloadedContent).toEqual(findInFileArray(deployData.files, contentElement.file)?.content ?? Buffer.from([]))
+            expect(downloadedContent).toEqual(findInFileArray(Array.from(deployData.files.values()), contentElement.file)?.content ?? Buffer.from([]))
         }
     }
 

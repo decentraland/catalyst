@@ -1,7 +1,7 @@
-import { EntityType, Pointer, Timestamp, ContentFile, Entity as ControllerEntity } from "dcl-catalyst-commons";
+import { EntityType } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory";
+import { EntityCombo, buildDeployData, deployEntitiesCombo } from "../E2ETestUtils";
 
 
 /**
@@ -18,8 +18,8 @@ describe("Integration - Same Timestamp Check", () => {
 
     beforeAll(async () => {
         const timestamp = Date.now()
-        const e1 = await buildEntityCombo([P1], { type, timestamp, metadata: 'metadata1' })
-        const e2 = await buildEntityCombo([P1], { type, timestamp, metadata: 'metadata2' })
+        const e1 = await buildDeployData([P1], { type, timestamp, metadata: 'metadata1' })
+        const e2 = await buildDeployData([P1], { type, timestamp, metadata: 'metadata2' })
         if (e1.entity.id.toLowerCase() < e2.entity.id.toLowerCase()) {
             oldestEntity = e1
             newestEntity = e2
@@ -35,8 +35,8 @@ describe("Integration - Same Timestamp Check", () => {
 
     it(`When oldest is deployed first, they overwrites are calculated correctly correctly`, async () => {
         // Deploy the entities
-        await deploy(oldestEntity)
-        await deploy(newestEntity)
+        await deployEntitiesCombo(service, oldestEntity)
+        await deployEntitiesCombo(service, newestEntity)
 
         // Verify overwrites
         await assertOverwrittenBy(oldestEntity, newestEntity)
@@ -48,8 +48,8 @@ describe("Integration - Same Timestamp Check", () => {
 
     it(`When newest is deployed first, they overwrites are calculated correctly correctly`, async () => {
         // Deploy the entities
-        await deploy(newestEntity)
-        await deploy(oldestEntity)
+        await deployEntitiesCombo(service, newestEntity)
+        await deployEntitiesCombo(service, oldestEntity)
 
         // Verify overwrites
         await assertOverwrittenBy(oldestEntity, newestEntity)
@@ -64,11 +64,6 @@ describe("Integration - Same Timestamp Check", () => {
         expect(activeEntities.length).toEqual(1)
         const activeEntity = activeEntities[0]
         expect(activeEntity.id).toEqual(entityCombo.entity.id)
-    }
-
-    async function deploy(entityCombo: EntityCombo) {
-        const { entity, files, auditInfo } = entityCombo
-        await service.deployEntity(files, entity.id, auditInfo, '')
     }
 
     async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {

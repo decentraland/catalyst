@@ -1,7 +1,7 @@
-import { EntityType, Pointer, ContentFile } from "dcl-catalyst-commons";
+import { EntityType } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { buildEntityCombo, buildEntityComboAfter, EntityCombo } from "../E2ETestUtils";
+import { EntityCombo, deployEntitiesCombo, buildDeployData, buildDeployDataAfterEntity } from "../E2ETestUtils";
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.
@@ -21,11 +21,11 @@ describe("Integration - Order Check", () => {
     let service: MetaverseContentService
 
     beforeAll(async () => {
-        E1 = await buildEntityCombo([P1])
-        E2 = await buildEntityComboAfter(E1, [P2])
-        E3 = await buildEntityComboAfter(E2, [P1, P2, P3])
-        E4 = await buildEntityComboAfter(E3, [P1, P3, P4])
-        E5 = await buildEntityComboAfter(E4, [P2, P4])
+        E1 = await buildDeployData([P1])
+        E2 = await buildDeployDataAfterEntity(E1, [P2])
+        E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3])
+        E4 = await buildDeployDataAfterEntity(E3, [P1, P3, P4])
+        E5 = await buildDeployDataAfterEntity(E4, [P2, P4])
         allEntities = [ E1, E2, E3, E4, E5 ]
         allEntities.forEach(({ entity }, idx) => console.log(`E${idx + 1}: ${entity.id}`))
     })
@@ -39,7 +39,7 @@ describe("Integration - Order Check", () => {
             const names = indices.map((idx) => `E${idx + 1}`).join(' -> ')
             it(names, async done =>  {
                 const entityCombos = indices.map(idx => allEntities[idx])
-                await commit(entityCombos);
+                await deployEntitiesCombo(service, ...entityCombos);
                 await assertCommitsWhereDoneCorrectly()
                 done();
             });
@@ -61,12 +61,6 @@ describe("Integration - Order Check", () => {
         await assertOverwrittenBy(E3, E4)
         await assertOverwrittenBy(E4, E5)
         await assertNotOverwritten(E5)
-    }
-
-    async function commit(entities: EntityCombo[]) {
-        for (const { entity, files, auditInfo } of entities) {
-            await service.deployEntity(files, entity.id, auditInfo, '')
-        }
     }
 
     async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {

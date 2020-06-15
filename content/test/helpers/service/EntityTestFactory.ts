@@ -22,5 +22,5 @@ export function entityToFile(entity: Entity, fileName?: string): ContentFile {
 }
 
 export function randomEntity(type?: EntityType): Entity {
-    return new Entity(random.alphaNumeric(10), type ?? EntityType.PROFILE, [random.alphaNumeric(1)], random.number(10), undefined, random.alphaNumeric(10))
+    return { id: random.alphaNumeric(10), type: type ?? EntityType.PROFILE, pointers: [random.alphaNumeric(1)], timestamp: random.number(10), metadata: random.alphaNumeric(10) }
 }

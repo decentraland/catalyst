@@ -1,53 +1,52 @@
 import fs from "fs"
 import path from "path"
-import * as EthCrypto from "eth-crypto"
-import { Hashing, Pointer, ContentFile, ContentFileHash, EntityType , Entity as ControllerEntity, EntityId} from "dcl-catalyst-commons"
-import { buildControllerEntityAndFile } from "@katalyst/test-helpers/controller/ControllerEntityTestFactory"
+import EthCrypto from "eth-crypto"
+import { Pointer, ContentFile, EntityType , Entity as ControllerEntity, EntityId, Timestamp, ContentFileHash} from "dcl-catalyst-commons"
 import { Authenticator, EthAddress, AuthChain } from "dcl-crypto"
 import { retry } from "@katalyst/content/helpers/RetryHelper"
-import { AuditInfoBase, EntityVersion } from "@katalyst/content/service/Audit"
-import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
+import { EntityVersion } from "@katalyst/content/service/Audit"
+import { Entity } from "@katalyst/content/service/Entity"
+import { DeploymentBuilder } from "dcl-catalyst-client"
+import { EntityFactory } from "@katalyst/content/service/EntityFactory"
+import { ControllerEntityFactory } from "@katalyst/content/controller/ControllerEntityFactory"
+import { MetaverseContentService } from "@katalyst/content/service/Service"
 
-export function buildDeployDataWithIdentity(pointers: Pointer[], metadata: any, identity: Identity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
-    return buildDeployDataInternal(pointers, metadata, contentPaths, identity)
+export async function buildDeployDataAfterEntity(afterEntity: ({ timestamp: Timestamp } | { entity: { timestamp: Timestamp } }), pointers: Pointer[], options?: Exclude<DeploymentOptions, 'timestamp'>): Promise<EntityCombo> {
+    const after = 'timestamp' in afterEntity ? afterEntity.timestamp : afterEntity.entity.timestamp
+    const timestamp = Math.max(options?.timestamp ?? Date.now(), after + 1)
+    const opts = Object.assign({ timestamp }, options)
+    return buildDeployData(pointers, opts)
 }
 
-export function buildDeployData(pointers: Pointer[], metadata: any, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
-    return buildDeployDataInternal(pointers, metadata, contentPaths, createIdentity())
-}
+export async function buildDeployData(pointers: Pointer[], options?: DeploymentOptions): Promise<EntityCombo> {
+    const opts = Object.assign({ type: EntityType.SCENE, timestamp: Date.now(), metadata: "metadata", contentPaths: [], identity: createIdentity() }, options)
+    const buffers: Map<string, Buffer> | undefined = opts.contentPaths.length > 0 ?
+        new Map(opts.contentPaths.map(filePath => ([path.basename(filePath), fs.readFileSync(filePath) ]))) :
+        undefined
 
-export async function buildDeployDataAfterEntity(pointers: Pointer[], metadata: any, afterEntity: ControllerEntity, ...contentPaths: string[]): Promise<[DeployData, ControllerEntity]> {
-    return buildDeployDataInternal(pointers, metadata, contentPaths, createIdentity(), afterEntity)
-}
+    const deploymentPreparationData = await DeploymentBuilder.buildEntity(opts.type, pointers, buffers, opts.metadata, opts.timestamp)
+    const [, signature] = hashAndSignMessage(deploymentPreparationData.entityId, opts.identity)
+    const authChain = Authenticator.createSimpleAuthChain(deploymentPreparationData.entityId, opts.identity.address, signature)
 
-async function buildDeployDataInternal(pointers: Pointer[], metadata: any, contentPaths: string[], identity: Identity, afterEntity?: ControllerEntity): Promise<[DeployData, ControllerEntity]> {
-    const files: ContentFile[] = contentPaths.map(filePath => ({ name: path.basename(filePath), content: fs.readFileSync(filePath) }))
+    const entity: Entity = EntityFactory.fromFile(deploymentPreparationData.files.get(deploymentPreparationData.entityId)!!, deploymentPreparationData.entityId)
 
-    const hashes: { hash: ContentFileHash, file: ContentFile }[] = await Hashing.calculateHashes(files)
-    const content: Map<string, string> = new Map(hashes.map(({ hash, file }) => [file.name, hash]))
-
-    const [entity, entityFile] = await buildControllerEntityAndFile(
-        EntityType.SCENE,
-        pointers.map(pointer => pointer.toLocaleLowerCase()),
-        Math.max(Date.now(), afterEntity?.timestamp ?? 0 + 1),
-        content.size > 0 ? content : undefined,
-        metadata)
-
-    const [address, signature] = hashAndSignMessage(entity.id, identity)
+    if (!entity.content || entity.content.size === 0) {
+        delete entity.content
+    }
 
     const deployData: DeployData = {
         entityId: entity.id,
-        ethAddress: address,
-        signature: signature,
-        files: [ entityFile, ...files]
+        authChain: authChain,
+        files: deploymentPreparationData.files
     }
 
-    return [deployData, entity]
-}
+    const controllerEntity = ControllerEntityFactory.maskEntity(entity)
 
-export function parseEntityType(entity: ControllerEntity) {
-    return EntityType[entity.type.toUpperCase().trim()]
+    if (!controllerEntity.content || controllerEntity.content.length === 0) {
+        delete controllerEntity.content
+    }
+
+    return { deployData, entity, controllerEntity }
 }
 
 export function hashAndSignMessage(message: string, identity: Identity = createIdentity()) {
@@ -78,48 +77,10 @@ export function awaitUntil(evaluation: () => Promise<any>, attempts: number = 10
     return retry(evaluation, attempts, 'perform assertion', waitBetweenAttempts)
 }
 
-export function buildEntityCombo(pointers: Pointer[], otherProperties?: { type?: EntityType, timestamp?: Timestamp, metadata?: any, contentPaths?: string[] }): Promise<EntityCombo> {
-    const opts = Object.assign({ type: EntityType.SCENE, timestamp: Date.now(), metadata: "metadata", contentPaths: [] }, otherProperties)
-    return buildEntityComboInternal(pointers, opts.metadata, opts.contentPaths, opts.type, opts.timestamp)
-}
-
-export async function buildEntityComboAfter(afterEntity: EntityCombo, pointers: Pointer[], otherProperties?: { type?: EntityType, timestamp?: Timestamp, metadata?: any, contentPaths?: string[] }): Promise<EntityCombo> {
-    const opts = Object.assign({ type: EntityType.SCENE, timestamp: Date.now(), metadata: "metadata", contentPaths: [] }, otherProperties)
-    return buildEntityComboInternal(pointers, opts.metadata, opts.contentPaths, opts.type, Math.max(opts.timestamp, afterEntity?.entity?.timestamp ?? 0 + 1))
-}
-
-async function buildEntityComboInternal(pointers: Pointer[], metadata: any, contentPaths: string[], type: EntityType, timestamp: Timestamp): Promise<EntityCombo> {
-    const files: ContentFile[] = contentPaths.map(filePath => ({ name: path.basename(filePath), content: fs.readFileSync(filePath) }))
-
-    const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
-    const content: Map<string, string> = new Map(Array.from(hashes.entries())
-        .map(([hash, file]) => [file.name, hash]))
-
-    const [entity, entityFile] = await buildEntityAndFile(
-        type,
-        pointers.map(pointer => pointer.toLocaleLowerCase()),
-        timestamp,
-        content.size > 0 ? content : undefined,
-        metadata)
-
-    const [address, signature] = hashAndSignMessage(entity.id, createIdentity())
-
-    const entityCombo: EntityCombo = {
-        entity,
-        files: [ entityFile, ...files],
-        auditInfo: {
-            version: EntityVersion.V3,
-            authChain: Authenticator.createSimpleAuthChain(entity.id, address, signature)
-        }
+export function deployEntitiesCombo(service: MetaverseContentService, ...entitiesCombo: EntityCombo[]) {
+    for (const { deployData } of entitiesCombo) {
+        return service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, { authChain: deployData.authChain, version: EntityVersion.V2 }, '')
     }
-
-    return entityCombo
-}
-
-export type EntityCombo = {
-    entity: Entity,
-    files: ContentFile[],
-    auditInfo: AuditInfoBase,
 }
 
 export type DeployData = {
@@ -131,4 +92,18 @@ export type DeployData = {
 export type Identity = {
     address: EthAddress,
     privateKey: string,
+}
+
+type DeploymentOptions = {
+    type?: EntityType,
+    timestamp?: Timestamp,
+    metadata?: any,
+    contentPaths?: string[],
+    identity?: Identity
+}
+
+export type EntityCombo = {
+    deployData: DeployData,
+    controllerEntity: ControllerEntity,
+    entity: Entity
 }

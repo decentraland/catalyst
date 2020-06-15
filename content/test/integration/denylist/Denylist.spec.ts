@@ -1,10 +1,10 @@
+import { Entity as ControllerEntity } from "dcl-catalyst-commons";
 import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
-import { EntityType } from "@katalyst/content/service/Entity"
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator"
-import { buildDeployData, createIdentity, parseEntityType } from "../E2ETestUtils"
+import { buildDeployData, createIdentity } from "../E2ETestUtils"
 import { TestServer } from "../TestServer"
 import { assertFileIsOnServer, assertEntityIsNotDenylisted, assertEntityIsDenylisted, assertFileIsNotOnServer, assertContentNotIsDenylisted, assertContentIsDenylisted, assertRequiredFieldsOnEntitiesAreEqual } from "../E2EAssertions"
-import { ControllerEntityContent, ControllerDenylistData, ControllerEntity } from "@katalyst/content/controller/Controller"
+import { ControllerDenylistData } from "@katalyst/content/controller/Controller"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { assertPromiseIsRejected } from "@katalyst/test-helpers/PromiseAssertions"
 import { DenylistTargetType, buildEntityTarget } from "@katalyst/content/denylist/DenylistTarget"
@@ -31,13 +31,13 @@ describe("Integration - Denylist", () => {
 
     it(`When an entity is denylisted, then the metadata and content are hidden`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata, contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
 
         // Deploy the entity
         await server.deploy(deployData)
 
         // Assert that the entity is not sanitized
-        const entityOnServer = await server.getEntityById(EntityType[entityBeingDeployed.type.toUpperCase()], entityBeingDeployed.id)
+        const entityOnServer = await server.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
         expect(entityOnServer).toEqual(entityBeingDeployed)
 
         // Assert that entity file is available
@@ -50,7 +50,7 @@ describe("Integration - Denylist", () => {
         await server.denylistEntity(entityBeingDeployed, decentralandIdentity)
 
         // Assert that entity has been sanitized
-        const denylistedEntity = await server.getEntityById(EntityType[entityBeingDeployed.type.toUpperCase()], entityBeingDeployed.id)
+        const denylistedEntity = await server.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
         assertRequiredFieldsOnEntitiesAreEqual(denylistedEntity, entityBeingDeployed)
         expect(denylistedEntity.metadata).toBe(DenylistServiceDecorator.DENYLISTED_METADATA)
         expect(denylistedEntity.content).toBeUndefined()
@@ -64,7 +64,7 @@ describe("Integration - Denylist", () => {
 
     it(`When an entity is undenylisted, then it goes back to normal`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata, contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -82,14 +82,14 @@ describe("Integration - Denylist", () => {
         await assertEntityIsNotDenylisted(server, entityBeingDeployed)
 
         // Assert that the entity is not sanitized
-        const entityOnServer = await server.getEntityById(EntityType[entityBeingDeployed.type.toUpperCase()], entityBeingDeployed.id)
+        const entityOnServer = await server.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
         expect(entityOnServer).toEqual(entityBeingDeployed)
     });
 
     it(`When content is denylisted, then the entity that contains it says so`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
-        const contentHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata, contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
+        const contentHash = entityBeingDeployed.content!![0].hash
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -112,7 +112,7 @@ describe("Integration - Denylist", () => {
 
     it(`When an entity is denylisted, then it is reported as target`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata })
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -135,7 +135,7 @@ describe("Integration - Denylist", () => {
 
     it(`When an entity is undenylisted, then it is no longer reported as target`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata })
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -157,7 +157,7 @@ describe("Integration - Denylist", () => {
 
     it(`When random identity tries to denylist an entity, then an error is thrown`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata })
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -168,8 +168,8 @@ describe("Integration - Denylist", () => {
 
     it(`When random identity tries to denylist some content, then an error is thrown`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
-        const contentHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata, contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
+        const contentHash = entityBeingDeployed.content!![0].hash
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -180,7 +180,7 @@ describe("Integration - Denylist", () => {
 
     it(`When cluster owner tries to denylist content, then it is successful`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata)
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata })
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -194,8 +194,8 @@ describe("Integration - Denylist", () => {
 
     it(`When cluster owner tries to denylist an entity, then it is successful`, async () => {
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], metadata, 'content/test/integration/resources/some-binary-file.png')
-        const contentHash = (entityBeingDeployed.content as ControllerEntityContent[])[0].hash
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata, contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
+        const contentHash = entityBeingDeployed.content!![0].hash
 
         // Deploy the entity
         await server.deploy(deployData)
@@ -210,5 +210,5 @@ describe("Integration - Denylist", () => {
 })
 
 function getTargetIdFromEntity(entity: ControllerEntity) {
-    return buildEntityTarget(parseEntityType(entity), entity.id).getId()
+    return buildEntityTarget(entity.type, entity.id).getId()
 }

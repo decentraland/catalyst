@@ -6,7 +6,7 @@ import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManag
 import { RepositoryTask, Repository } from "../storage/Repository";
 import { DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
 
-/**
+/**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
  * were done directly to it, and it is not aware that the service lives inside a cluster.
  */

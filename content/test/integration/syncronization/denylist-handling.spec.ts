@@ -26,7 +26,7 @@ describe("End 2 end - Denylist handling", () => {
         await server1.start()
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'metadata' })
 
         // Deploy the entity
         await server1.deploy(deployData)
@@ -53,7 +53,7 @@ describe("End 2 end - Denylist handling", () => {
         await server1.start()
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
         const contentHash: ContentFileHash = entityBeingDeployed.content!![0].hash
 
         // Deploy the entity
@@ -81,7 +81,7 @@ describe("End 2 end - Denylist handling", () => {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
 
         // Deploy the entity
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
@@ -119,7 +119,7 @@ describe("End 2 end - Denylist handling", () => {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare entity to deploy
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], 'metadata', 'content/test/integration/resources/some-binary-file.png')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
         const contentHash: ContentFileHash = entityBeingDeployed.content!![0].hash
 
         // Deploy the entity

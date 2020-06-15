@@ -1,5 +1,6 @@
 import log4js from "log4js";
-import { Entity, EntityType } from "../Entity";
+import { EntityType } from "dcl-catalyst-commons";
+import { Entity } from "../Entity";
 import { DeploymentReporter } from "./DeploymentReporter";
 import { EthAddress } from "dcl-crypto";
 import SQS, { SendMessageRequest } from "aws-sdk/clients/sqs";
