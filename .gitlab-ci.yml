@@ -2,7 +2,7 @@ image: decentraland/ci-node:latest
 
 build:
   script:
-    - cd status && npm install && npm run build && cd ..
+    - cd status && yarn install && yarn build && cd ..
     - dcl-lock-sync
     - cd .ci && npm install && dcl-up website-catalysts
     - dcl-sync-release && cd ..
