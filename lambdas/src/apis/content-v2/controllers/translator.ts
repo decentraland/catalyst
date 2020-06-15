@@ -201,7 +201,7 @@ function copySuccessResponse(responseFrom: NodeFetchResponse, responseTo: Respon
     responseFrom.body.pipe(responseTo);
 }
 
-const KNOWN_HEADERS: string[] = ['Content-Type', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'ETag', 'Date', 'Content-Length']
+const KNOWN_HEADERS: string[] = ['Content-Type', 'Access-Control-Allow-Origin', 'Access-Control-Expose-Headers', 'ETag', 'Date', 'Content-Length', 'Cache-Control']
 function fixHeaderNameCase(headerName: string): string | undefined {
     return KNOWN_HEADERS.find(item => item.toLocaleLowerCase()===headerName.toLocaleLowerCase())
 }

@@ -168,10 +168,12 @@ export class Controller {
         const hashId = req.params.hashId;
 
         const data: ContentItem | undefined = await this.service.getContent(hashId);
+
         if (data) {
             res.contentType('application/octet-stream')
             res.setHeader('ETag', hashId)
             res.setHeader('Access-Control-Expose-Headers', '*')
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
 
             if(data.getLength()) {
                 res.setHeader('Content-Length', data.getLength()!.toString())
