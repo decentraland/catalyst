@@ -6,7 +6,6 @@ const { defaultSecurityGroupName } = globalConfig[env]
 
 async function main() {
   const builder = buildStatic({
-    path: "./www/",
     domain: `catalysts.decentraland.${envTLD}`,
   });
 
