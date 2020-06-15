@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { DEFAULT_DATABASE_CONFIG } from '../Environment';
 
 exec(`
-    docker rm -f postgres && \
+    docker rm -f postgres ; \
     docker run \
     --name postgres \
     -e POSTGRES_PASSWORD=${DEFAULT_DATABASE_CONFIG.password} \
