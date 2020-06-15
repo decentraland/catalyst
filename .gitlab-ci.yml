@@ -1,4 +1,4 @@
-image: decentraland/ci-node:latest
+image: decentraland/ci-node:10
 
 build:
   script:
@@ -6,6 +6,6 @@ build:
     - dcl-lock-sync
     - cd .ci && npm install && dcl-up website-catalysts
     - dcl-sync-release && cd ..
-    - dcl-upload status/build
+    - dcl-upload status/public
     - cd .ci && dcl-cache-invalidation
 
