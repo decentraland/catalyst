@@ -34,7 +34,7 @@ describe("End 2 end deploy test", () => {
         //------------------------------
         // Deploy the content
         //------------------------------
-        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata"', contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
 
         const creationTimestamp = await server.deploy(deployData)
         const deploymentEvent = buildEventWithName(entityBeingDeployed, 'UNKNOWN_NAME', creationTimestamp)
@@ -72,8 +72,8 @@ describe("End 2 end deploy test", () => {
 
         expect(scene.content).toBeDefined()
         expect(scene.content!!.length).toBe(2)
-        expect(findInArray(scene.content, deployData.files[1].name)).toBeDefined()
-        expect(findInArray(scene.content, deployData.files[2].name)).toBeDefined()
+        expect(findInArray(scene.content, Array.from(deployData.files.values())[0].name)).toBeDefined()
+        expect(findInArray(scene.content, Array.from(deployData.files.values())[1].name)).toBeDefined()
 
         for (const contentElement of scene.content!!) {
             const downloadedContent = await server.downloadContent(contentElement.hash)

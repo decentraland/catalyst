@@ -89,15 +89,14 @@ export class Controller {
         // Path: /legacy-entities
         // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
         const entityId:EntityId     = req.body.entityId;
-        const ethAddress:EthAddress = req.body.ethAddress;
-        const signature:Signature   = req.body.signature;
+        const authChain:AuthChain   = req.body.authChain;
         const originalVersion:EntityVersion = EntityVersion[req.body.version.toUpperCase().trim()];
         const migrationInformation  = JSON.parse(req.body.migration_data);
         const files                 = req.files
 
         try {
             const auditInfo: AuditInfoBase = {
-                authChain: Authenticator.createSimpleAuthChain(entityId, ethAddress, signature),
+                authChain,
                 version: CURRENT_CONTENT_VERSION,
                 originalMetadata: {
                     originalVersion,
@@ -115,6 +114,7 @@ export class Controller {
             })
         } catch (error) {
             Controller.LOGGER.warn(`Returning error '${error.message}'`)
+            console.trace(error)
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
         }
     }

@@ -77,9 +77,9 @@ export function awaitUntil(evaluation: () => Promise<any>, attempts: number = 10
     return retry(evaluation, attempts, 'perform assertion', waitBetweenAttempts)
 }
 
-export function deployEntitiesCombo(service: MetaverseContentService, ...entitiesCombo: EntityCombo[]) {
+export async function deployEntitiesCombo(service: MetaverseContentService, ...entitiesCombo: EntityCombo[]) {
     for (const { deployData } of entitiesCombo) {
-        return service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, { authChain: deployData.authChain, version: EntityVersion.V2 }, '')
+        await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, { authChain: deployData.authChain, version: EntityVersion.V2 }, '')
     }
 }
 

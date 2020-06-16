@@ -63,7 +63,6 @@ async function deployLegacy(server: TestServer, deployData: DeployData) {
     form.append('entityId'      , deployData.entityId)
     //@ts-ignore
     addModelToFormData(deployData.authChain, form, 'authChain')
-    form.append('authChain'     , deployData.authChain)
     form.append('version'       , "v2")
     form.append('migration_data', JSON.stringify({ data: "data" }))
 
