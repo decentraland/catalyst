@@ -3,9 +3,8 @@ import { Bean } from "@katalyst/content/Environment"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
-import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 import { loadTestEnvironment } from "./E2ETestEnvironment"
-import { assertHistoryOnServerHasEvents, buildEventWithName, assertDeploymentsAreReported, buildDeployment } from "./E2EAssertions"
+import { assertHistoryOnServerHasEvents, buildEventWithName, assertDeploymentsAreReported, buildDeployment, assertDeploymentFailsWith } from "./E2EAssertions"
 
 describe("End 2 end deploy test", () => {
 
@@ -27,7 +26,7 @@ describe("End 2 end deploy test", () => {
         await server.deploy(deployData)
 
         // Try to re deploy, and fail
-        await assertPromiseRejectionIs(() => server.deploy(deployData), "This entity was already deployed. You can't redeploy it")
+        await assertDeploymentFailsWith(() => server.deploy(deployData), "This entity was already deployed. You can't redeploy it")
     })
 
     it(`Deploy and retrieve some content`, async () => {

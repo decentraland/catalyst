@@ -2468,10 +2468,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@1.3.6:
-  version "1.3.6"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-1.3.6.tgz#a5ad1540219a2bcdc902e87221d081b78fa6e521"
-  integrity sha512-+H7UPLPVezXSIShvcOuvEgkhNKua8aoqIdBnf4FrY4l4ng9gpftPmBmNI2nRJ3KptEl7a4QuJKa9H6ttsIbriQ==
+dcl-catalyst-client@1.3.7:
+  version "1.3.7"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-1.3.7.tgz#8de432869a45eabe302bf0d150982982c86396aa"
+  integrity sha512-z6AXOdkygirYADtx1nKnU9DcnGosefJNV1mOFCZ3DcdptdnrdoKglJetAQB0DYHToJeC0Y43ePqyo+pxUonQig==
   dependencies:
     "@types/ms" "^0.7.31"
     abort-controller "^3.0.0"

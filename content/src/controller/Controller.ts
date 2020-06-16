@@ -114,7 +114,6 @@ export class Controller {
             })
         } catch (error) {
             Controller.LOGGER.warn(`Returning error '${error.message}'`)
-            console.trace(error)
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
         }
     }

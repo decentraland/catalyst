@@ -1,14 +1,12 @@
 import ms from "ms"
 import { Timestamp, Entity as ControllerEntity} from "dcl-catalyst-commons"
-import { buildEvent, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive, assertDeploymentFailed, assertThereIsAFailedDeployment, assertDeploymentsAreReported, buildDeployment } from "../E2EAssertions"
+import { buildEvent, assertEntityWasNotDeployed, assertEntitiesAreActiveOnServer, assertHistoryOnServerHasEvents, assertEntitiesAreDeployedButNotActive, assertDeploymentFailed, assertThereIsAFailedDeployment, assertDeploymentsAreReported, buildDeployment, assertDeploymentFailsWith } from "../E2EAssertions"
 import { EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, createIdentity, awaitUntil, buildDeployDataAfterEntity } from "../E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker"
-import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 import { loadTestEnvironment } from "../E2ETestEnvironment";
-
 
 describe("End 2 end - Error handling", () => {
 
@@ -86,7 +84,7 @@ describe("End 2 end - Error handling", () => {
         const { deployData } = await buildDeployData(["0,0", "0,1"], { metadata: 'metadata' })
 
         // Try to deploy the entity, and fail
-        await assertPromiseRejectionIs(() => server1.deploy(deployData, true), "You are trying to fix an entity that is not marked as failed")
+        await assertDeploymentFailsWith(() => server1.deploy(deployData, true), "You are trying to fix an entity that is not marked as failed")
     });
 
     it(`When a user tries to fix an entity that hadn't fail, then an error is thrown`, async () => {
@@ -100,7 +98,7 @@ describe("End 2 end - Error handling", () => {
         await server1.deploy(deployData)
 
         // Try to fix the entity, and fail
-        await assertPromiseRejectionIs(() => server1.deploy(deployData, true), "This entity was already deployed. You can't redeploy it\nYou are trying to fix an entity that is not marked as failed")
+        await assertDeploymentFailsWith(() => server1.deploy(deployData, true), "This entity was already deployed. You can't redeploy it\nYou are trying to fix an entity that is not marked as failed")
     });
 
     async function runTest(errorType: FailureReason, causeOfFailure: (entity: ControllerEntity) => Promise<void>, removeCauseOfFailure?: () => Promise<void>, ) {

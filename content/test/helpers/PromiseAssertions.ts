@@ -8,7 +8,7 @@ export function assertPromiseRejectionIs(promiseExecution: () => Promise<any>, e
     return assertPromiseRejectionGeneric(promiseExecution, returnedMessage => assert.equal(returnedMessage, errorMessage))
 }
 
-async function assertPromiseRejectionGeneric(promiseExecution: () => Promise<any>, evaluation: (error: string) => void): Promise<void> {
+export async function assertPromiseRejectionGeneric(promiseExecution: () => Promise<any>, evaluation: (error: string) => void): Promise<void> {
     try {
         await promiseExecution()
     } catch (error) {

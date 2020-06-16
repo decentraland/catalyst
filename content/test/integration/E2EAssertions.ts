@@ -4,7 +4,7 @@ import { Response } from "node-fetch"
 import { LegacyDeploymentEvent, Timestamp, ServerAddress, ContentFileHash, Hashing, Deployment as ControllerDeployment, Entity as ControllerEntity, EntityContentItemReference } from "dcl-catalyst-commons"
 import { TestServer } from "./TestServer"
 import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
-import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
+import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from "../helpers/PromiseAssertions"
 import { DeployData } from "./E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
@@ -93,6 +93,13 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
         const actualEvent: ControllerDeployment = sortedDeployments[i]
         assertEqualsDeployment(server, actualEvent, expectedEvent)
     }
+}
+
+export function assertDeploymentFailsWith(promiseExecution: () => Promise<any>, errorMessage: string) {
+    return assertPromiseRejectionGeneric(promiseExecution, (error) => {
+        console.log(error)
+        expect(error.endsWith(`Got status 500. Response was '${errorMessage}'`)).toBeTruthy()
+    })
 }
 
 export async function assertThereIsAFailedDeployment(server: TestServer): Promise<FailedDeployment> {
