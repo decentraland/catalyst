@@ -1,5 +1,5 @@
+import { EntityType } from "dcl-catalyst-commons";
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl";
-import { EntityType } from "@katalyst/content/service/Entity";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 

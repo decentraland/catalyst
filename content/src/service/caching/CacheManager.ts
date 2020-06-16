@@ -1,5 +1,5 @@
 import { CacheByType } from "./Cache"
-import { EntityType } from "../Entity"
+import { EntityType } from "dcl-catalyst-commons"
 
 export class CacheManager {
 

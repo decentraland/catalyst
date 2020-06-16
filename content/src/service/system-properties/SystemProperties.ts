@@ -1,5 +1,5 @@
+import { Timestamp } from "dcl-catalyst-commons";
 import { Repository, RepositoryTask } from "@katalyst/content/storage/Repository";
-import { Timestamp } from "../time/TimeSorting";
 import { StringPropertyMapper, IntPropertyMapper, SystemPropertyMapper } from "./SystemPropertyMappers";
 
 export class SystemProperty<PropertyType> {

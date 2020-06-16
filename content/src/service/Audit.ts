@@ -1,8 +1,5 @@
 import { AuthChain } from "dcl-crypto";
-import { Timestamp } from "./time/TimeSorting";
-import { EntityId } from "./Entity";
-import { ContentFileHash } from "./Hashing";
-import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
+import { ContentFileHash, Timestamp, EntityId, ServerAddress } from "dcl-catalyst-commons";
 
 export type LegacyAuditInfo = {
     version: EntityVersion,

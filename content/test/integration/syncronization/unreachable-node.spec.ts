@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
+import { Timestamp } from "dcl-catalyst-commons"
 import { EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, awaitUntil } from "../E2ETestUtils"
@@ -34,7 +34,7 @@ describe("End 2 end - Unreachable node", function() {
         await Promise.all([server1.start(), server2.start(), server3.start()])
 
         // Prepare data to be deployed
-        const [deployData, entity] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata")
+        const { deployData, controllerEntity: entity } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: 'metadata' })
 
         // Deploy the entity on server 1
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)

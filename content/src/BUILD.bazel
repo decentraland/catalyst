@@ -30,6 +30,8 @@ ts_library(
         "@npm//compression",
         "@npm//cors",
         "@npm//dcl-crypto",
+        "@npm//dcl-catalyst-client",
+        "@npm//dcl-catalyst-commons",
         "@npm//eth-crypto",
         "@npm//express",
         "@npm//ip",

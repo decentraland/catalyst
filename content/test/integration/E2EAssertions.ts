@@ -1,23 +1,18 @@
 import { Authenticator } from "dcl-crypto"
 import assert from "assert"
 import { Response } from "node-fetch"
+import { LegacyDeploymentEvent, Timestamp, ServerAddress, ContentFileHash, Hashing, Deployment as ControllerDeployment, Entity as ControllerEntity, EntityContentItemReference } from "dcl-catalyst-commons"
 import { TestServer } from "./TestServer"
-import { ControllerEntity, ControllerEntityContent, ControllerDeployment } from "@katalyst/content/controller/Controller"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { LegacyDeploymentEvent } from "@katalyst/content/service/history/HistoryManager"
-import { Hashing, ContentFileHash } from "@katalyst/content/service/Hashing"
 import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
-import { assertPromiseIsRejected } from "../helpers/PromiseAssertions"
-import { parseEntityType, DeployData } from "./E2ETestUtils"
+import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from "../helpers/PromiseAssertions"
+import { DeployData } from "./E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
-import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient"
 
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
     // Legacy check
     for (const entity of entities) {
-        const entityType = parseEntityType(entity)
-        const entities: ControllerEntity[] = await server.getEntitiesByPointers(entityType, entity.pointers)
+        const entities: ControllerEntity[] = await server.getEntitiesByPointers(entity.type, entity.pointers)
         const unexpectedEntities = entities.filter(({ id }) => id === entity.id)
         assert.equal(unexpectedEntities.length, 0, `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers} on server '${server.getAddress()}.'`)
         await assertEntityIsOnServer(server, entity)
@@ -25,7 +20,7 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
 
     // Deployments check
     const entityIds = entities.map(({ id }) => id)
-    const { deployments } = await server.getDeployments({ entityIds })
+    const deployments = await server.getDeployments({ entityIds })
     assert.equal(deployments.length, entities.length)
     for (const deployment of deployments) {
         assert.notEqual(deployment.auditInfo.overwrittenBy, undefined)
@@ -37,21 +32,20 @@ export async function assertEntityWasNotDeployed(server: TestServer, entity: Con
     await assertFileIsNotOnServer(server, entity.id)
 
     // Legacy check
-    const content: ControllerEntityContent[] = (entity.content ?? [])
+    const content: EntityContentItemReference[] = (entity.content ?? [])
     await Promise.all(content.map(({ hash }) => assertFileIsNotOnServer(server, hash)))
     const entities = await server.getEntitiesByIds(entity.type, entity.id)
     assert.equal(entities.length, 0)
 
     // Deployments check
-    const { deployments } = await server.getDeployments({ entityIds: [entity.id] })
+    const deployments = await server.getDeployments({ entityIds: [entity.id] })
     assert.equal(deployments.length, 0)
 }
 
 export async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
     // Legacy check
     for (const entity of entities) {
-        const entityType = parseEntityType(entity)
-        const entitiesByPointer = await server.getEntitiesByPointers(entityType, entity.pointers)
+        const entitiesByPointer = await server.getEntitiesByPointers(entity.type, entity.pointers)
         assert.deepStrictEqual(entitiesByPointer, [entity])
         await assertEntityIsOnServer(server, entity)
     }
@@ -59,7 +53,7 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
     // Deployments check
     const entitiesById = new Map(entities.map((entity) => [ entity.id, entity ]))
     const allPointers = entities.map(({ pointers }) => pointers).reduce((accum, curr) => accum.concat(curr), [])
-    const { deployments } = await server.getDeployments({ pointers: allPointers, onlyCurrentlyPointed: true })
+    const deployments = await server.getDeployments({ pointers: allPointers, onlyCurrentlyPointed: true })
     assert.equal(deployments.length, entities.length)
     for (const deployment of deployments) {
         assertEntityIsTheSameAsDeployment(entitiesById.get(deployment.entityId)!!, deployment)
@@ -82,7 +76,7 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
 }
 
 export async function assertDeploymentsAreReported(server: TestServer, ...expectedDeployments: ControllerDeployment[]) {
-    const { deployments } = await server.getDeployments()
+    const deployments = await server.getDeployments()
     assert.equal(deployments.length, expectedDeployments.length, `Expected to find ${expectedDeployments.length} deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`)
 
     // Make sure that deployments are sorted per descending local timestamp
@@ -99,6 +93,13 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
         const actualEvent: ControllerDeployment = sortedDeployments[i]
         assertEqualsDeployment(server, actualEvent, expectedEvent)
     }
+}
+
+export function assertDeploymentFailsWith(promiseExecution: () => Promise<any>, errorMessage: string) {
+    return assertPromiseRejectionGeneric(promiseExecution, (error) => {
+        console.log(error)
+        expect(error.endsWith(`Got status 500. Response was '${errorMessage}'`)).toBeTruthy()
+    })
 }
 
 export async function assertThereIsAFailedDeployment(server: TestServer): Promise<FailedDeployment> {
@@ -147,7 +148,7 @@ function assertEqualsDeploymentEvent(actualEvent: LegacyDeploymentEvent, expecte
 }
 
 async function assertEntityIsOnServer(server: TestServer, entity: ControllerEntity) {
-    const fetchedEntity: ControllerEntity = await server.getEntityById(parseEntityType(entity), entity.id)
+    const fetchedEntity: ControllerEntity = await server.getEntityById(entity.type, entity.id)
     assert.deepStrictEqual(fetchedEntity, entity)
     return assertFileIsOnServer(server, entity.id)
 }
@@ -227,16 +228,16 @@ export function buildDeployment(deployData: DeployData, entity: ControllerEntity
     return {
         ...entity,
         content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : [],
-        entityType: parseEntityType(entity),
+        entityType: entity.type,
         entityId: entity.id,
         entityTimestamp: entity.timestamp,
-        deployedBy: deployData.ethAddress,
+        deployedBy: Authenticator.ownerAddress(deployData.authChain),
         auditInfo: {
             version: EntityVersion.V3,
             originServerUrl: server.getAddress(),
             originTimestamp: deploymentTimestamp,
             localTimestamp: deploymentTimestamp,
-            authChain: Authenticator.createSimpleAuthChain(deployData.entityId, deployData.ethAddress, deployData.signature)
+            authChain: deployData.authChain
         }
     }
 }
@@ -249,7 +250,7 @@ export function buildEventWithName(entity: ControllerEntity, name: string, times
     return {
         serverName: name,
         entityId: entity.id,
-        entityType: parseEntityType(entity),
+        entityType: entity.type,
         timestamp,
     }
 }
@@ -284,7 +285,7 @@ function assertEntityIsTheSameAsDeployment(entity: ControllerEntity, deployment:
 }
 
 async function getEntitysDeployment(server: TestServer, entity: ControllerEntity): Promise<ControllerDeployment> {
-    const { deployments } = await server.getDeployments({ entityIds: [ entity.id ] })
+    const deployments = await server.getDeployments({ entityIds: [ entity.id ] })
     assert.equal(deployments.length, 1)
     const [ deployment ] = deployments
     return deployment

@@ -1,12 +1,13 @@
 import { CompositeDeploymentReporter } from "@katalyst/content/service/reporters/CompositeDeploymentReporter";
-import { Entity, EntityType } from "@katalyst/content/service/Entity";
+import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentReporter } from "@katalyst/content/service/reporters/DeploymentReporter";
+import { randomEntity } from "@katalyst/test-helpers/service/EntityTestFactory";
 
 describe("Composite Deployment Reporter", () => {
 
     it(`When no reporters are set, nothing fails`, () => {
         const composite = new CompositeDeploymentReporter([])
-        const entity: Entity = new Entity("id", EntityType.SCENE, [], 0)
+        const entity: Entity = randomEntity()
         composite.reportDeployment(entity, "ethAddress", "origin")
     });
 
@@ -15,10 +16,10 @@ describe("Composite Deployment Reporter", () => {
         const mock2 = new MockDeploymentReporter()
         const composite = new CompositeDeploymentReporter([mock1, mock2])
 
-        const entity1: Entity = new Entity("id1", EntityType.SCENE, [], 0)
+        const entity1: Entity = randomEntity()
         composite.reportDeployment(entity1, "ethAddress", "origin")
 
-        const entity2: Entity = new Entity("id2", EntityType.SCENE, [], 0)
+        const entity2: Entity = randomEntity()
         composite.reportDeployment(entity2, "ethAddress", "origin")
 
         expect(mock1.events.length).toEqual(2)

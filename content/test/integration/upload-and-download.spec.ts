@@ -1,13 +1,10 @@
+import { EntityType, Entity as ControllerEntity, ContentFile } from "dcl-catalyst-commons"
 import { Bean } from "@katalyst/content/Environment"
-import { ControllerEntity } from "@katalyst/content/controller/Controller"
-import { EntityType } from "@katalyst/content/service/Entity"
-import { ContentFile } from "@katalyst/content/service/Service"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
-import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 import { loadTestEnvironment } from "./E2ETestEnvironment"
-import { assertHistoryOnServerHasEvents, buildEventWithName, assertDeploymentsAreReported, buildDeployment } from "./E2EAssertions"
+import { assertHistoryOnServerHasEvents, buildEventWithName, assertDeploymentsAreReported, buildDeployment, assertDeploymentFailsWith } from "./E2EAssertions"
 
 describe("End 2 end deploy test", () => {
 
@@ -23,20 +20,20 @@ describe("End 2 end deploy test", () => {
 
     it('When a user tries to deploy the same entity twice, then an exception is thrown', async() => {
         // Build data for deployment
-        const [deployData] = await buildDeployData(["0,0", "0,1"], "this is just some metadata")
+        const { deployData } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata"' })
 
         // Execute first deploy
         await server.deploy(deployData)
 
         // Try to re deploy, and fail
-        await assertPromiseRejectionIs(() => server.deploy(deployData), "This entity was already deployed. You can't redeploy it")
+        await assertDeploymentFailsWith(() => server.deploy(deployData), "This entity was already deployed. You can't redeploy it")
     })
 
     it(`Deploy and retrieve some content`, async () => {
         //------------------------------
         // Deploy the content
         //------------------------------
-        const [deployData, entityBeingDeployed] = await buildDeployData(["0,0", "0,1"], "this is just some metadata", 'content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt')
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
 
         const creationTimestamp = await server.deploy(deployData)
         const deploymentEvent = buildEventWithName(entityBeingDeployed, 'UNKNOWN_NAME', creationTimestamp)
@@ -74,12 +71,12 @@ describe("End 2 end deploy test", () => {
 
         expect(scene.content).toBeDefined()
         expect(scene.content!!.length).toBe(2)
-        expect(findInArray(scene.content, deployData.files[1].name)).toBeDefined()
-        expect(findInArray(scene.content, deployData.files[2].name)).toBeDefined()
+        expect(findInArray(scene.content, Array.from(deployData.files.values())[0].name)).toBeDefined()
+        expect(findInArray(scene.content, Array.from(deployData.files.values())[1].name)).toBeDefined()
 
         for (const contentElement of scene.content!!) {
             const downloadedContent = await server.downloadContent(contentElement.hash)
-            expect(downloadedContent).toEqual(findInFileArray(deployData.files, contentElement.file)?.content ?? Buffer.from([]))
+            expect(downloadedContent).toEqual(findInFileArray(Array.from(deployData.files.values()), contentElement.file)?.content ?? Buffer.from([]))
         }
     }
 

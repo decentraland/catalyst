@@ -1,8 +1,8 @@
 import log4js from "log4js"
+import { EntityId, ContentFile, ENTITY_FILE_NAME, ContentFileHash } from "dcl-catalyst-commons";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
-import { Entity, EntityId } from "../Entity";
-import { ContentFileHash } from "../Hashing";
-import { ENTITY_FILE_NAME, ContentFile, ClusterDeploymentsService } from "../Service";
+import { Entity } from "../Entity";
+import { ClusterDeploymentsService } from "../Service";
 import { ContentCluster } from "./ContentCluster";
 import { LegacyAuditInfo, AuditInfoExternal } from "../Audit";
 import { tryOnCluster } from "./ClusterUtils";

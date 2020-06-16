@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
+import { Timestamp } from "dcl-catalyst-commons"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent, buildDeployment, assertDeploymentsAreReported } from "../E2EAssertions"
@@ -22,7 +22,7 @@ describe("End 2 end synchronization tests", function() {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare data to be deployed
-        const [deployData, entityBeingDeployed] = await buildDeployData(["X1,Y1"], "metadata")
+        const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["X1,Y1"], { metadata: "metadata" })
 
         // Make sure there are no deployments on server 1
         await assertHistoryOnServerHasEvents(server1, )
@@ -125,8 +125,8 @@ describe("End 2 end synchronization tests", function() {
         await Promise.all([server1.start(), server2.start()])
 
         // Prepare data to be deployed
-        const [deployData1, entityBeingDeployed1] = await buildDeployData(["X1,Y1"], "metadata", 'content/test/integration/resources/some-binary-file.png')
-        const [deployData2, entityBeingDeployed2] = await buildDeployDataAfterEntity(["X2,Y2"], "metadata", entityBeingDeployed1, 'content/test/integration/resources/some-binary-file.png')
+        const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(["X1,Y1"], { metadata: "metadata", contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
+        const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(entityBeingDeployed1, ["X2,Y2"], { metadata: "metadata", contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
 
         // Deploy entity 1 on server 1
         const deploymentTimestamp1 = await server1.deploy(deployData1)
@@ -165,9 +165,9 @@ describe("End 2 end synchronization tests", function() {
         await Promise.all([server1.start(), server2.start(), server3.start()])
 
         // Prepare data to be deployed
-        const [deployData1, entity1] = await buildDeployData(["X1,Y1", "X2,Y2"], "metadata")
-        const [deployData2, entity2] = await buildDeployDataAfterEntity(["X2,Y2", "X3,Y3"], { metadata: "metadata2" }, entity1)
-        const [deployData3, entity3] = await buildDeployDataAfterEntity(["X3,Y3", "X4,Y4"], "metadata3", entity2)
+        const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: "metadata" })
+        const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(entity1, ["X2,Y2", "X3,Y3"], { metadata: "metadata2" })
+        const { deployData: deployData3, controllerEntity: entity3 } = await buildDeployDataAfterEntity(entity2, ["X3,Y3", "X4,Y4"], { metadata: "metadata3" })
 
 
         // Deploy the entities 1 and 2

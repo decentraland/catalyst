@@ -1,5 +1,5 @@
+import { ContentFileHash } from "dcl-catalyst-commons"
 import { ContentStorage, ContentItem } from "../storage/ContentStorage"
-import { ContentFileHash } from "./Hashing"
 
 export class ServiceStorage {
 

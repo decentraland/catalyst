@@ -1,11 +1,10 @@
 import { Authenticator } from "dcl-crypto";
-import { EntityType } from "@katalyst/content/service/Entity";
+import { EntityType, Timestamp } from "dcl-catalyst-commons";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { AuditInfo } from "@katalyst/content/service/Audit";
-import { DeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
+import { AuditInfo, EntityVersion } from "@katalyst/content/service/Audit";
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
-import { EntityCombo, buildEntityCombo, buildEntityComboAfter } from "../../E2ETestUtils";
+import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from "../../E2ETestUtils";
+import { ExtendedDeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager";
 
 /**
  * This test verifies that all deployment filters are working correctly
@@ -21,9 +20,9 @@ describe("Integration - Deployment Filters", () => {
     let service: MetaverseContentService
 
     beforeAll(async () => {
-        E1 = await buildEntityCombo([P1], { type: EntityType.PROFILE })
-        E2 = await buildEntityComboAfter(E1, [P2], { type: EntityType.SCENE })
-        E3 = await buildEntityComboAfter(E2, [P1, P2, P3], { type: EntityType.PROFILE })
+        E1 = await buildDeployData([P1], { type: EntityType.PROFILE })
+        E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE })
+        E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3], { type: EntityType.PROFILE })
     })
 
     beforeEach(async () => {
@@ -125,7 +124,7 @@ describe("Integration - Deployment Filters", () => {
         await assertDeploymentsWithFilterAre({ pointers: [ P1, P2, P3 ] }, E1, E2, E3)
     })
 
-    async function assertDeploymentsWithFilterAre(filter: DeploymentFilters, ...expectedEntities: EntityCombo[]) {
+    async function assertDeploymentsWithFilterAre(filter: ExtendedDeploymentFilters, ...expectedEntities: EntityCombo[]) {
         const actualDeployments = await service.getDeployments(filter)
         const expectedEntityIds = expectedEntities.map(entityCombo => entityCombo.entity.id).sort()
         const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
@@ -147,9 +146,9 @@ describe("Integration - Deployment Filters", () => {
 
     async function deployWithAuditInfo(entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
         const result: Timestamp[] = []
-        for (const { entity, files, auditInfo } of entities) {
-            const newAuditInfo = { ...auditInfo, ...overrideAuditInfo }
-            const deploymentTimestamp = await service.deployEntity(files, entity.id, newAuditInfo, '')
+        for (const { deployData } of entities) {
+            const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
+            const deploymentTimestamp = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, newAuditInfo, '')
             result.push(deploymentTimestamp)
         }
         return result

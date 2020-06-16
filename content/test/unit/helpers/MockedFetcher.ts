@@ -1,20 +1,19 @@
 
 
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
-import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
+import { Fetcher, ServerAddress } from "dcl-catalyst-commons";
 
-export class MockedFetchHelper extends FetchHelper {
+export class MockedFetcher extends Fetcher {
 
     private readonly jsonResultByUrl: Map<string, any> = new Map()
     private readonly bufferResultByUrl: Map<string, Buffer> = new Map()
 
-    addJsonEndpoint(address: ServerAddress, endpoint: string, result: any): MockedFetchHelper {
+    addJsonEndpoint(address: ServerAddress, endpoint: string, result: any): MockedFetcher {
         const url = `${address}/${endpoint}`
         this.jsonResultByUrl.set(url, result)
         return this
     }
 
-    addBufferEndpoint(address: ServerAddress, endpoint: string, result: Buffer): MockedFetchHelper {
+    addBufferEndpoint(address: ServerAddress, endpoint: string, result: Buffer): MockedFetcher {
         const url = `${address}/${endpoint}`
         this.bufferResultByUrl.set(url, result)
         return this

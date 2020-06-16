@@ -1,9 +1,7 @@
-import { Timestamp } from "../time/TimeSorting"
-import { HistoryManager, PartialDeploymentLegacyHistory, LegacyDeploymentEvent } from "./HistoryManager"
-import { ServerName } from "../naming/NameKeeper"
-import { ContentCluster } from "../synchronization/ContentCluster"
-import { ServerAddress } from "../synchronization/clients/contentserver/ContentServerClient"
+import { Timestamp, ServerName, ServerAddress, LegacyDeploymentEvent, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons"
 import { DeploymentsRepository } from "@katalyst/content/storage/repositories/DeploymentsRepository"
+import { HistoryManager } from "./HistoryManager"
+import { ContentCluster } from "../synchronization/ContentCluster"
 
 export class HistoryManagerImpl implements HistoryManager {
 
@@ -37,7 +35,7 @@ export class HistoryManagerImpl implements HistoryManager {
     private static MAX_HISTORY_LIMIT = 500
     private static DEFAULT_HISTORY_LIMIT = 500
     /** Returns the history sorted from newest to oldest */
-    async getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory> {
+    async getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         let address: ServerAddress | undefined
         if (serverName) {
             address = this.cluster.getAddressForServerName(serverName)

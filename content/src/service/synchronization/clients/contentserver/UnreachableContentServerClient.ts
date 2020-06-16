@@ -1,9 +1,5 @@
-import { ContentFile, ServerStatus } from "../../../Service";
-import { Timestamp } from "../../../time/TimeSorting";
-import { EntityId, EntityType, Entity } from "../../../Entity";
-import { LegacyDeploymentHistory } from "../../../history/HistoryManager";
-import { ContentFileHash } from "../../../Hashing";
-import { ServerName } from "../../../naming/NameKeeper";
+import { EntityType, EntityId, ServerStatus, ContentFileHash, ContentFile, ServerName, Timestamp, LegacyDeploymentHistory } from "dcl-catalyst-commons";
+import { Entity } from "@katalyst/content/service/Entity";
 import { LegacyAuditInfo } from "../../../Audit";
 import { ContentServerClient, UNREACHABLE, ConnectionState } from "./ContentServerClient";
 

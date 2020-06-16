@@ -1,7 +1,7 @@
+import { Pointer, EntityId } from 'dcl-catalyst-commons';
 import { Repository } from '@katalyst/content/storage/Repository';
 import { DeploymentId } from './DeploymentsRepository';
 import { DeploymentResult, DELTA_POINTER_RESULT } from '@katalyst/content/service/pointers/PointerManager';
-import { Pointer, EntityId } from '@katalyst/content/service/Entity';
 
 export class DeploymentDeltasRepository {
 

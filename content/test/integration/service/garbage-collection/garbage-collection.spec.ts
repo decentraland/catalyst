@@ -1,13 +1,13 @@
+import ms from "ms";
 import assert from "assert"
+import { ContentFileHash } from "dcl-catalyst-commons";
+import { delay } from "decentraland-katalyst-utils/util";
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { EnvironmentBuilder, Bean, EnvironmentConfig } from "@katalyst/content/Environment";
 import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
 import { GarbageCollectionManager } from "@katalyst/content/service/garbage-collection/GarbageCollectionManager";
-import { EntityCombo, buildEntityCombo, buildEntityComboAfter, awaitUntil } from "../../E2ETestUtils";
-import { ContentFileHash } from "@katalyst/content/service/Hashing";
-import ms from "ms";
-import { delay } from "decentraland-katalyst-utils/util";
+import { EntityCombo, awaitUntil, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from "../../E2ETestUtils";
 
 describe("Integration - Garbage Collection", () => {
 
@@ -21,9 +21,9 @@ describe("Integration - Garbage Collection", () => {
     let garbageCollector: GarbageCollectionManager
 
     beforeAll(async () => {
-        E1 = await buildEntityCombo([P1], { contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
-        E2 = await buildEntityComboAfter(E1, [P1], { contentPaths: ['content/test/integration/resources/some-binary-file.png'] });
-        E3 = await buildEntityComboAfter(E2, [P2]);
+        E1 = await buildDeployData([P1], { contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
+        E2 = await buildDeployDataAfterEntity(E1, [P1], { contentPaths: ['content/test/integration/resources/some-binary-file.png'] });
+        E3 = await buildDeployDataAfterEntity(E2, [P2]);
         [ sharedContent, onlyE1Content ] = Array.from(E1.entity.content!!.values())
     })
 
@@ -49,13 +49,13 @@ describe("Integration - Garbage Collection", () => {
         await garbageCollector.start()
 
         // Deploy E1
-        await deploy(E1)
+        await deployEntitiesCombo(service, E1)
 
         // Assert all content is available
         await assertContentIsAvailable(sharedContent, onlyE1Content)
 
         // Deploy E2
-        await deploy(E2)
+        await deployEntitiesCombo(service, E2)
 
         // Assert only the shared content is still available
         await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
@@ -64,13 +64,13 @@ describe("Integration - Garbage Collection", () => {
 
     it(`When garbage collection is off, then unused content isn't deleted`, async () => {
         // Deploy E1
-        await deploy(E1)
+        await deployEntitiesCombo(service, E1)
 
         // Assert all content is available
         await assertContentIsAvailable(sharedContent, onlyE1Content)
 
         // Deploy E2
-        await deploy(E2)
+        await deployEntitiesCombo(service, E2)
 
         // Wait a little
         await delay(ms('4s'))
@@ -82,7 +82,7 @@ describe("Integration - Garbage Collection", () => {
 
     it(`When garbage collection is started after deployments, then unused content is still deleted`, async () => {
         // Deploy E1 and E2
-        await deploy(E1, E2)
+        await deployEntitiesCombo(service, E1, E2)
 
         // Start garbage collection
         await garbageCollector.start()
@@ -94,7 +94,7 @@ describe("Integration - Garbage Collection", () => {
 
     it(`When entity is not overwritten, then it is not garbage collected`, async () => {
         // Deploy E1 and E3
-        await deploy(E1, E3)
+        await deployEntitiesCombo(service, E1, E3)
 
         // Start garbage collection
         await garbageCollector.start()
@@ -117,12 +117,4 @@ describe("Integration - Garbage Collection", () => {
         const allAvailable = Array.from(result.values()).every(available => available)
         assert.ok(allAvailable)
     }
-
-    async function deploy(...entityCombos: EntityCombo[]) {
-        for (const entityCombo of entityCombos) {
-            const { entity, files, auditInfo } = entityCombo
-            await service.deployEntity(files, entity.id, auditInfo, '')
-        }
-    }
-
 })

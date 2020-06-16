@@ -1,4 +1,4 @@
-import { ServerName } from "./NameKeeper";
+import { ServerName } from "dcl-catalyst-commons";
 import { NamingContentStorage } from "./NamingContentStorage";
 
 export class NamingStorage {

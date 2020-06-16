@@ -1,18 +1,17 @@
 import ms from "ms";
 import log4js from "log4js"
 import { setTimeout, clearTimeout } from "timers"
+import { ServerAddress, Timestamp, ServerName, Fetcher } from "dcl-catalyst-commons";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { delay } from "decentraland-katalyst-utils/util";
-import { ServerAddress, ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
-import { NameKeeper, ServerName } from "../naming/NameKeeper";
-import { Timestamp } from "../time/TimeSorting";
+import { ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
+import { NameKeeper } from "../naming/NameKeeper";
 import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
 import { getClient } from "./clients/contentserver/ActiveContentServerClient";
 import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
 import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
 import { Listener, Disposable } from "./events/ClusterEvent";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
-import { FetchHelper } from "@katalyst/content/helpers/FetchHelper";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
 
 export interface IdentityProvider {
@@ -43,7 +42,7 @@ export class ContentCluster implements IdentityProvider {
         private readonly timeBetweenSyncs: number,
         private readonly nameKeeper: NameKeeper,
         private readonly challengeSupervisor: ChallengeSupervisor,
-        private readonly fetchHelper: FetchHelper,
+        private readonly fetcher: Fetcher,
         private readonly requestTtlBackwards: number) { }
 
     /** Connect to the DAO for the first time */
@@ -154,11 +153,11 @@ export class ContentCluster implements IdentityProvider {
                     } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
                         // Create new client
                         ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
-                        newClient = getClient(this.fetchHelper, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
+                        newClient = getClient(this.fetcher, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
                     } else if (previousClient.getName() !== newName) {
                         // Update known name to new one
                         ContentCluster.LOGGER.warn(`Server's name changed on ${address}. It was ${previousClient.getName()} and now it is ${newName}.`)
-                        newClient = getClient(this.fetchHelper, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
+                        newClient = getClient(this.fetcher, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
                     }
                 } else {
                     if (newName === UNREACHABLE) {
@@ -166,7 +165,7 @@ export class ContentCluster implements IdentityProvider {
                         newClient = getUnreachableClient()
                     } else {
                         // Create new client
-                        newClient = getClient(this.fetchHelper, address, this.requestTtlBackwards, newName, this.lastImmutableTime)
+                        newClient = getClient(this.fetcher, address, this.requestTtlBackwards, newName, this.lastImmutableTime)
                         ContentCluster.LOGGER.info(`Connected to new server ${newName} on ${address}`)
                     }
                 }
@@ -272,7 +271,7 @@ export class ContentCluster implements IdentityProvider {
     /** Return the server's name, or the text "UNREACHABLE" if it couldn't be reached */
     private async getServerName(address: ServerAddress): Promise<ServerName> {
         try {
-            const { name } = await this.fetchHelper.fetchJson(`${address}/status`)
+            const { name } = await this.fetcher.fetchJson(`${address}/status`)
             return name
         } catch (error) {
             return UNREACHABLE
@@ -282,7 +281,7 @@ export class ContentCluster implements IdentityProvider {
     /** Return the server's challenge text, or undefined if it couldn't be reached */
     private async getChallengeInServer(address: ServerAddress): Promise<ChallengeText | undefined> {
         try {
-            const { challengeText }: { challengeText: ChallengeText } = await this.fetchHelper.fetchJson(`${address}/challenge`)
+            const { challengeText }: { challengeText: ChallengeText } = await this.fetcher.fetchJson(`${address}/challenge`)
             return challengeText
         } catch (error) { }
     }

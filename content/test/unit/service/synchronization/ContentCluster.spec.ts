@@ -1,11 +1,10 @@
+import { ServerAddress, ServerName } from "dcl-catalyst-commons";
 import { EnvironmentConfig, Bean, Environment } from "@katalyst/content/Environment";
 import { ContentClusterFactory } from "@katalyst/content/service/synchronization/ContentClusterFactory";
 import { ChallengeText } from "@katalyst/content/service/synchronization/ChallengeSupervisor";
 import { MockedDAOClient } from "@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient";
 import { ContentCluster } from "@katalyst/content/service/synchronization/ContentCluster";
-import { ServerName } from "@katalyst/content/service/naming/NameKeeper";
-import { ServerAddress } from "@katalyst/content/service/synchronization/clients/contentserver/ContentServerClient";
-import { MockedFetchHelper } from "../../helpers/MockedFetchHelper";
+import { MockedFetcher } from "../../helpers/MockedFetcher";
 
 describe("ContentCluster", function () {
 
@@ -69,7 +68,7 @@ describe("ContentCluster", function () {
 class ContentClusterBuilder {
 
     private readonly addresses: Set<ServerAddress> = new Set()
-    private readonly fetchHelper: MockedFetchHelper = new MockedFetchHelper()
+    private readonly fetchHelper: MockedFetcher = new MockedFetcher()
     private localChallenge: ChallengeText | undefined
     private localName: ServerName | undefined
 
@@ -101,7 +100,7 @@ class ContentClusterBuilder {
         const env = new Environment();
 
         env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.addresses.values()))
-        env.registerBean(Bean.FETCH_HELPER, this.fetchHelper)
+        env.registerBean(Bean.FETCHER, this.fetchHelper)
         env.setConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, 1000)
         env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 10000)
 

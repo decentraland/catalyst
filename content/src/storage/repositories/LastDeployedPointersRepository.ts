@@ -1,5 +1,4 @@
-import { Pointer, EntityId, EntityType } from '@katalyst/content/service/Entity';
-import { Timestamp } from '@katalyst/content/service/time/TimeSorting';
+import { EntityType, Pointer, EntityId, Timestamp } from 'dcl-catalyst-commons';
 import { Repository } from '../Repository';
 import { DeploymentId } from './DeploymentsRepository';
 

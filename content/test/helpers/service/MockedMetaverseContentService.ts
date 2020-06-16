@@ -1,16 +1,14 @@
 import { random } from "faker"
-import { MetaverseContentService, ContentFile, ServerStatus } from "@katalyst/content/service/Service"
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting"
-import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity"
-import { ContentFileHash } from "@katalyst/content/service/Hashing"
+import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons"
+import { MetaverseContentService } from "@katalyst/content/service/Service"
+import { Entity } from "@katalyst/content/service/Entity"
 import { AuditInfo, AuditInfoBase } from "@katalyst/content/service/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
-import { PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager"
-import { PartialDeploymentHistory, DeploymentFilters, Deployment } from "@katalyst/content/service/deployments/DeploymentManager"
+import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
@@ -47,7 +45,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve([])
     }
 
-    getDeployments(filters: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
+    getDeployments(filters: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
         return Promise.resolve({
             deployments: this.entities.map(entity => this.entityToDeployment(entity)),
             filters: { },
@@ -105,7 +103,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(MockedMetaverseContentService.AUDIT_INFO)
     }
 
-    getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory> {
+    getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         throw new Error("Method not implemented.")
     }
 

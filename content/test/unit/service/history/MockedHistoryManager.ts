@@ -1,6 +1,5 @@
-import { HistoryManager, PartialDeploymentLegacyHistory } from "@katalyst/content/service/history/HistoryManager";
-import { ServerName } from "@katalyst/content/service/naming/NameKeeper";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
+import { Timestamp, ServerName, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
 import { DeploymentsRepository } from "@katalyst/content/storage/repositories/DeploymentsRepository";
 
 export class MockedHistoryManager implements HistoryManager {
@@ -16,7 +15,7 @@ export class MockedHistoryManager implements HistoryManager {
         return 0
     }
 
-    getHistory(deploymentRepo: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<PartialDeploymentLegacyHistory> {
+    getHistory(deploymentRepo: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         throw new Error("Method not implemented.");
     }
 

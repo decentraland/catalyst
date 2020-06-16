@@ -1,6 +1,6 @@
 import ms from 'ms'
 import LRU from "lru-cache"
-import { EntityType } from "../Entity"
+import { EntityType } from 'dcl-catalyst-commons'
 
 /** This is a regular cache, that can be configured with a max size of elements */
 export class Cache<Key, Value> {

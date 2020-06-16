@@ -1,6 +1,6 @@
-import { MetaverseContentService, ContentFile, ServerStatus } from "../service/Service";
-import { Entity, EntityType, EntityId, Pointer } from "../service/Entity";
-import { ContentFileHash } from "../service/Hashing";
+import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { MetaverseContentService } from "../service/Service";
+import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
 import { buildPointerTarget, buildEntityTarget, DenylistTarget, buildContentTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "./DenylistTarget";
 import { AuditInfo, AuditInfoBase } from "../service/Audit";
@@ -8,10 +8,9 @@ import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
 import { ContentItem } from "../storage/ContentStorage";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
-import { Timestamp } from "../service/time/TimeSorting";
 import { Repository } from "../storage/Repository";
 import { DenylistRepository } from "../storage/repositories/DenylistRepository";
-import { DeploymentFilters, PartialDeploymentHistory } from "../service/deployments/DeploymentManager";
+import { Deployment } from "../service/deployments/DeploymentManager";
 
 /**
  * This decorator takes a MetaverseContentService and adds denylisting functionality to it
@@ -141,7 +140,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 
 
-  getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: string, offset?: number, limit?: number | undefined) {
+  getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: string, offset?: number, limit?: number | undefined): Promise<LegacyPartialDeploymentHistory> {
     return this.service.getLegacyHistory(from, to, serverName, offset, limit)
   }
 
@@ -149,7 +148,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.deleteContent(fileHashes)
   }
 
-  async getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory> {
+  async getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(async task => {
       // TODO: Filter denylisted pointers from filters, when added
       const deploymentHistory = await this.service.getDeployments(filters, offset, limit, task)
@@ -255,7 +254,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
       const target = entityToTarget.get(entity)!!
       const isDenylisted = isTargetDenylisted(target, denylistQueryResult)
       if (isDenylisted) {
-        return new Entity(entity.id, entity.type, entity.pointers, entity.timestamp, undefined, DenylistServiceDecorator.DENYLISTED_METADATA);
+        return { ...entity, content: undefined, metadata: DenylistServiceDecorator.DENYLISTED_METADATA }
       } else {
         return entity;
       }

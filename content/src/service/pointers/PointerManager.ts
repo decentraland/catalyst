@@ -1,4 +1,5 @@
-import { EntityType, Pointer, EntityId, Entity } from "@katalyst/content/service/Entity";
+import { Pointer, EntityId, EntityType } from "dcl-catalyst-commons";
+import { Entity } from "@katalyst/content/service/Entity";
 import { happenedBefore } from "@katalyst/content/service/time/TimeSorting";
 import { CacheManager, POINTERS_CACHE_CONFIG } from "@katalyst/content/service/caching/CacheManager";
 import { CacheByType } from "@katalyst/content/service/caching/Cache"

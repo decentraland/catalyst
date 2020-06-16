@@ -1,10 +1,9 @@
 import log4js from 'log4js'
 import ms from 'ms';
+import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons';
 import { Repository } from "@katalyst/content/storage/Repository";
-import { Timestamp } from "@katalyst/content/service/time/TimeSorting";
 import { SystemPropertiesManager, SystemProperty } from "@katalyst/content/service/system-properties/SystemProperties";
 import { delay } from 'decentraland-katalyst-utils/util';
-import { ContentFileHash } from '../Hashing';
 import { MetaverseContentService } from '../Service';
 
 export class GarbageCollectionManager {

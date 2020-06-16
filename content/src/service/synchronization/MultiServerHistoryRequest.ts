@@ -1,8 +1,6 @@
 import log4js from "log4js"
-import { ServerName } from "../naming/NameKeeper";
+import { Timestamp, ServerName, LegacyDeploymentHistory } from "dcl-catalyst-commons";
 import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
-import { Timestamp } from "../time/TimeSorting";
-import { LegacyDeploymentHistory } from "../history/HistoryManager";
 import { EventDeployer } from "./EventDeployer";
 import { retry } from "@katalyst/content/helpers/RetryHelper";
 import { legacyDeploymentEventToDeploymentEventBase } from "./ClusterUtils";

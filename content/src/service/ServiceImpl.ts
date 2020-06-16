@@ -1,11 +1,10 @@
 import log4js from "log4js"
-import { ContentFileHash, Hashing } from "./Hashing";
-import { EntityType, Pointer, EntityId, Entity } from "./Entity";
-import { MetaverseContentService, ENTITY_FILE_NAME, ContentFile, ServerStatus, TimeKeepingService, ClusterDeploymentsService } from "./Service";
-import { Timestamp, happenedBeforeEntities } from "./time/TimeSorting";
+import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { Entity } from "./Entity";
+import { MetaverseContentService, TimeKeepingService, ClusterDeploymentsService } from "./Service";
+import { happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
-import { ServerName } from "./naming/NameKeeper";
 import { DeploymentReporter } from "./reporters/DeploymentReporter";
 import { PointerManager } from "./pointers/PointerManager";
 import { ServiceStorage } from "./ServiceStorage";
@@ -18,8 +17,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeploymentsManager";
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
-import { ServerAddress } from "./synchronization/clients/contentserver/ContentServerClient";
-import { DeploymentManager, PartialDeploymentHistory, DeploymentFilters, DeploymentDelta } from "./deployments/DeploymentManager";
+import { DeploymentManager, DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
 
 export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
 
@@ -109,7 +107,8 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         await validation.validateAccess(entity.type, entity.pointers, entity.timestamp, ownerAddress, validationContext)
 
         // Hash all files, and validate them
-        const hashes: Map<ContentFileHash, ContentFile> = await Hashing.calculateHashes(files)
+        const hashEntries: { hash: ContentFileHash, file: ContentFile }[] = await Hashing.calculateHashes(files)
+        const hashes: Map<ContentFileHash, ContentFile> = new Map(hashEntries.map(({ hash, file }) => [ hash, file ]))
 
         // Check for if content is already stored
         const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
@@ -271,11 +270,11 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.deploymentManager.areEntitiesDeployed(repository.deployments, entityIds)
     }
 
-    getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number) {
+    getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         return this.historyManager.getHistory(this.repository.deployments, from, to, serverName, offset, limit)
     }
 
-    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory> {
+    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory<Deployment>> {
         return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, filters, offset, limit))
     }
 

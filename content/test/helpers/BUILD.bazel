@@ -14,6 +14,7 @@ ts_library(
         "//content/src:content",
         "@npm//@types/faker",
         "@npm//@types/node",
+        "@npm//dcl-catalyst-commons",
         "@npm//dcl-crypto",
         "@npm//faker",
         "@npm//ts-mockito",

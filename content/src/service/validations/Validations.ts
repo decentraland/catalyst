@@ -1,8 +1,6 @@
 import ms from "ms"
-import { EntityId, Pointer, EntityType, Entity } from "../Entity";
-import { ENTITY_FILE_NAME } from "../Service";
-import { ContentFile } from '../Service';
-import { ContentFileHash } from "../Hashing";
+import { EntityType, EntityId, ContentFileHash, Timestamp, ContentFile, Pointer, ENTITY_FILE_NAME } from "dcl-catalyst-commons";
+import { Entity } from "../Entity";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
 import { EntityVersion, AuditInfoBase } from "../Audit";
@@ -10,7 +8,7 @@ import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { DeploymentStatus, NoFailure } from "../errors/FailedDeploymentsManager";
 import { httpProviderForNetwork } from '../../../../contracts/utils';
-import { Timestamp, happenedBeforeEntities } from "../time/TimeSorting";
+import { happenedBeforeEntities } from "../time/TimeSorting";
 
 export class Validations {
 
