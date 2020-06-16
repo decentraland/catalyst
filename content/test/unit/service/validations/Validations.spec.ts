@@ -1,7 +1,6 @@
 import * as EthCrypto from "eth-crypto";
-import { EntityType } from "dcl-catalyst-commons";
+import { EntityType, Timestamp } from "dcl-catalyst-commons";
 import { Validations } from "@katalyst/content/service/validations/Validations";
-import { Entity } from "@katalyst/content/service/Entity";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext";
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl";
@@ -12,16 +11,7 @@ import { EntityVersion } from "@katalyst/content/service/Audit";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
-    let entity = new Entity(
-      "id",
-      EntityType.SCENE,
-      [],
-      Date.now(),
-      new Map([
-        ["name-1", "hash-1"],
-        ["name-2", "hash-2"]
-      ])
-    );
+    let entity = buildEntity( {content: new Map([["name-1", "hash-1"], ["name-2", "hash-2"]]) });
     const validation = getValidatorWithMockedAccess();
     validation.validateContent(entity, new Map([["hash-1", { name: "name-1", content: Buffer.from([]) }]]), new Map([]), ValidationContext.ALL);
 
@@ -30,7 +20,7 @@ describe("Validations", function() {
   });
 
   it(`When an entity with a timestamp too far into the past is deployed, then an error is returned`, () => {
-    const entity = new Entity("id", EntityType.SCENE, [], Date.now() - ms('25m'));
+    const entity = buildEntity({ timestamp: Date.now() - ms('25m') });
     const validation = getValidatorWithMockedAccess();
     validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
 
@@ -38,7 +28,7 @@ describe("Validations", function() {
   });
 
   it(`When an entity with a timestamp too far into the future is deployed, then an error is returned`, () => {
-    const entity = new Entity("id", EntityType.SCENE, [], Date.now() + ms('20m'));
+    const entity = buildEntity({ timestamp: Date.now() + ms('20m') });
     const validation = getValidatorWithMockedAccess();
     validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
 
@@ -46,7 +36,7 @@ describe("Validations", function() {
   });
 
   it(`When an entity with the correct timestamp is deployed, then no error is returned`, () => {
-    const entity = new Entity("id", EntityType.SCENE, [], Date.now());
+    const entity = buildEntity({ timestamp: Date.now() });
     const validation = getValidatorWithMockedAccess();
     validation.validateDeploymentIsRecent(entity, ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
@@ -62,7 +52,7 @@ describe("Validations", function() {
     },
   }
 
-  const LEGACY_ENTITY = new Entity("id", EntityType.SCENE, ["P1"], 1000);
+  const LEGACY_ENTITY = buildEntity({ timestamp: 1000 });
 
   it(`When a legacy entity is deployed and there is no entity, then no error is returned`, async () => {
     const validation = getValidatorWithMockedAccess();
@@ -71,14 +61,14 @@ describe("Validations", function() {
   });
 
   it(`When a legacy entity is deployed and there is an entity without an audit info, then no error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 1001);
+    const entity = buildEntity({ timestamp: 1001 });
     const validation = getValidatorWithMockedAccess();
     await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(undefined), ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
   it(`When a legacy entity is deployed and there is an entity with a higher timestamp, then no error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 1001);
+    const entity = buildEntity({ timestamp: 1001 });
     const auditInfo = {
         version: EntityVersion.V3,
         deployedTimestamp: 10,
@@ -90,7 +80,7 @@ describe("Validations", function() {
   });
 
   it(`When a legacy entity is deployed and there is a previous entity with a higher version, then an error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const entity = buildEntity({ timestamp: 999 });
     const legacyAuditInfo = { ...LEGACY_AUDIT_INFO, version: EntityVersion.V2 }
     const auditInfo = {
         version: EntityVersion.V3,
@@ -103,7 +93,7 @@ describe("Validations", function() {
   });
 
   it(`When a legacy entity is deployed and there is a previous entity with a lower version, then no error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const entity = buildEntity({ timestamp: 999 });
     const auditInfo = {
         version: EntityVersion.V2,
         deployedTimestamp: 10,
@@ -115,7 +105,7 @@ describe("Validations", function() {
   });
 
   it(`When a legacy entity is deployed and there is a previous entity without original metadata, then an error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const entity = buildEntity({ timestamp: 999 });
     const auditInfo = {
         version: EntityVersion.V3,
         authChain: []
@@ -126,7 +116,7 @@ describe("Validations", function() {
   });
 
   it(`When a legacy entity is deployed and there is a previous entity with a higher original version, then an error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const entity = buildEntity({ timestamp: 999 });
     const auditInfo = {
         version: EntityVersion.V3,
         deployedTimestamp: 10,
@@ -142,7 +132,7 @@ describe("Validations", function() {
   });
 
   it(`When a legacy entity is deployed and there is a previous entity with the same original version, then no error is returned`, async () => {
-    const entity = new Entity("id", EntityType.SCENE, ["P1"], 999);
+    const entity = buildEntity({ timestamp: 999 });
     const auditInfo = {
         version: EntityVersion.V3,
         deployedTimestamp: 10,
@@ -158,16 +148,7 @@ describe("Validations", function() {
   });
 
   it(`When a non available hash is referenced, it is reported`, () => {
-    let entity = new Entity(
-      "id",
-      EntityType.SCENE,
-      [],
-      Date.now(),
-      new Map([
-        ["name-1", "hash-1"],
-        ["name-2", "hash-2"]
-      ])
-    );
+    let entity = buildEntity( {content: new Map([["name-1", "hash-1"], ["name-2", "hash-2"]]) });
     const validation = getValidatorWithMockedAccess();
     validation.validateContent(entity, new Map([]), new Map([["hash-2", true]]), ValidationContext.ALL);
 
@@ -176,7 +157,7 @@ describe("Validations", function() {
   });
 
   it(`When a hash is uploaded but not referenced, it is reported`, () => {
-    let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([["name-1", "hash-1"]]));
+    let entity = buildEntity( {content: new Map([["name-1", "hash-1"]]) });
     const validation = getValidatorWithMockedAccess();
     validation.validateContent(
       entity,
@@ -193,7 +174,7 @@ describe("Validations", function() {
   });
 
   it(`Already available but not referenced hashes are not reported`, () => {
-    let entity = new Entity("id", EntityType.SCENE, [], Date.now(), new Map([["name-1", "hash-1"]]));
+    let entity = buildEntity();
     let validation = getValidatorWithMockedAccess();
     validation.validateContent(entity, new Map([["hash-1", { name: "name-1", content: Buffer.from([]) }]]), new Map([["hash-2", true]]), ValidationContext.ALL);
 
@@ -383,6 +364,11 @@ const notAvailableHashMessage = hash => {
 const notReferencedHashMessage = hash => {
   return `This hash was uploaded but is not referenced in the entity: ${hash}`;
 };
+
+function buildEntity(options?: { timestamp?: Timestamp, content?: Map<string, string> }) {
+    const opts = Object.assign({ timestamp: Date.now(), content: undefined }, options)
+    return { id: "id", type: EntityType.SCENE, pointers: ["P1"], timestamp: opts.timestamp, content: opts.content }
+}
 
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
