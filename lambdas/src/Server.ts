@@ -10,6 +10,7 @@ import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
 import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
 import { initializeCryptoRoutes } from "./apis/crypto/routes";
+import { initializeImagesRoutes } from "./apis/images/routes";
 
 export class Server {
   private port: number;
@@ -51,6 +52,9 @@ export class Server {
 
     // DCL-Crypto API implementation
     this.app.use("/crypto", initializeCryptoRoutes(express.Router(), env));
+
+    // Images API for resizing contents
+    this.app.use("/images", initializeImagesRoutes(express.Router(), env, fetcher));
 
   }
 

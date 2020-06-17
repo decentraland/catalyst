@@ -16,6 +16,7 @@ ts_library(
         "@npm//@types/log4js",
         "@npm//cors",
         "@npm//express",
+        "@npm//sharp",
         "@npm//compression",
         "@npm//log4js",
         "@npm//morgan",
