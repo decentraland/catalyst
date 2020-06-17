@@ -14,24 +14,14 @@ export async function getProfileById(env: Environment, fetcher: SmartContentServ
     if (response.ok) {
         const entities:V3ControllerEntity[] = await response.json()
         if (entities && entities.length > 0 && entities[0].metadata) {
-            const theGraphBaseUrl: string = env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL);
+            const theGraphBaseUrl:string = env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL);
             const profile = entities[0].metadata
             returnProfile = profile
             returnProfile = await filterNonOwnedNames(theGraphBaseUrl, profileId, returnProfile)
-            returnProfile = addAdditionalMetadata(
-                fetcher.getExternalContentServerUrl(), getExternalLambdasUrl(env, fetcher.getExternalContentServerUrl()), returnProfile
-            )
+            returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
         }
     }
     res.send(returnProfile)
-}
-
-function getExternalLambdasUrl(env: Environment, contentUrlForFallback: string): string {
-    const configured: string = env.getConfig(EnvironmentConfig.LAMBDAS_SERVER_ADDRESS);
-
-    if(configured) return configured;
-
-    return contentUrlForFallback;
 }
 
 /**
@@ -62,39 +52,21 @@ function ownsENS(ownedENS: string[], ensToCheck: string): boolean {
 /**
  * The content server provides the snapshots' hashes, but clients expect a full url. So in this
  * method, we replace the hashes by urls that would trigger the snapshot download.
- * 
- * We also ensure that the properties name and description are added and also add urls for
- * other sizes of the snapshots if they are not provided
  */
-function addAdditionalMetadata(baseUrl: string, lambdasUrl: string, metadata: EntityMetadata): EntityMetadata {
-    function addBaseUrl(dst: AvatarSnapshots, src: AvatarSnapshots, key: keyof AvatarSnapshots) {
-        if(src[key]) {
-            dst[key] = baseUrl + `/contents/${src[key]}`
-        }
-    }
-
-    const avatars = metadata.avatars.map(profile => {
-        const original = profile.avatar.snapshots;
-        const snapshots: AvatarSnapshots = { face: baseUrl + `/contents/${original.face}` }
-        
-        addBaseUrl(snapshots, original, 'body')
-        addBaseUrl(snapshots, original, 'face128')
-        addBaseUrl(snapshots, original, 'face256')
-
-        if(!snapshots.face128) snapshots.transientFace128 = lambdasUrl + `/images/${original.face}/128`
-        if(!snapshots.face256) snapshots.transientFace256 = lambdasUrl + `/images/${original.face}/256`
-
-        return {
+function addBaseUrlToSnapshots(baseUrl: string, metadata: EntityMetadata): EntityMetadata {
+    const avatars = metadata.avatars.map(profile => (
+        {
             ...profile,
             name: profile.name,
             description: profile.description,
             avatar: {
                 ...profile.avatar,
-                snapshots
+                snapshots:{
+                    face: baseUrl + `/contents/${profile.avatar.snapshots.face}`,
+                    body: baseUrl + `/contents/${profile.avatar.snapshots.body}`
+                }
             }
-        };
-    })
-
+        }))
     return { avatars }
 }
 
@@ -120,21 +92,15 @@ type EntityMetadata = {
     }[]
 }
 
-type AvatarSnapshots = {
-    body?: string,
-    face: string,
-    face128?: string,
-    face256?: string,
-    transientFace128?: string,
-    transientFace256?: string,
-}
-
 type Avatar = {
     bodyShape: any,
     eyes: any,
     hair: any,
     skin: any,
-    snapshots: AvatarSnapshots,
+    snapshots: {
+        body: string,
+        face: string
+    },
     version: number,
     wearables: any,
 }
