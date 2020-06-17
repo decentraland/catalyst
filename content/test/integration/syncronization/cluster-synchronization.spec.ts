@@ -3,7 +3,6 @@ import { Timestamp } from "dcl-catalyst-commons"
 import { TestServer } from "../TestServer"
 import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertEntitiesAreActiveOnServer, assertEntitiesAreDeployedButNotActive, assertHistoryOnServerHasEvents, assertEntityIsOverwrittenBy, assertEntityIsNotOverwritten, buildEvent, buildDeployment, assertDeploymentsAreReported } from "../E2EAssertions"
-import { delay } from "decentraland-katalyst-utils/util"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
 
 describe("End 2 end synchronization tests", function() {
@@ -45,79 +44,6 @@ describe("End 2 end synchronization tests", function() {
         await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entityBeingDeployed))
         await assertHistoryOnServerHasEvents(server2, deploymentEvent)
         await assertDeploymentsAreReported(server2, deployment)
-    })
-
-    it(`Even when there are no deployments, immutable time advances across all servers`, async () => {
-        // Start server 1, 2 and 3
-        await Promise.all([server1.start(), server2.start(), server3.start()])
-
-        // Store their immutable time
-        const immutableTimeServer1 = await getImmutableTime(server1)
-        const immutableTimeServer2 = await getImmutableTime(server2)
-        const immutableTimeServer3 = await getImmutableTime(server3)
-
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Get new immutable time
-        const newImmutableTimeServer1 = await getImmutableTime(server1)
-        const newImmutableTimeServer2 = await getImmutableTime(server2)
-        const newImmutableTimeServer3 = await getImmutableTime(server3)
-
-        // Assert immutable times advanced
-        expect(newImmutableTimeServer1).toBeGreaterThan(immutableTimeServer1)
-        expect(newImmutableTimeServer2).toBeGreaterThan(immutableTimeServer2)
-        expect(newImmutableTimeServer3).toBeGreaterThan(immutableTimeServer3)
-    })
-
-    it(`When a server registered on the DAO never was reachable, then immutable time can't advance`, async () => {
-        // Start server 1 and 2
-        await Promise.all([server1.start(), server2.start()])
-
-        // Assert immutable time is still 0
-        expect(await getImmutableTime(server1)).toBe(0)
-        expect(await getImmutableTime(server2)).toBe(0)
-
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Assert immutable time is still 0
-        expect(await getImmutableTime(server1)).toBe(0)
-        expect(await getImmutableTime(server2)).toBe(0)
-    })
-
-    it(`When a server registered on the DAO stops responding, then immutable time can't advance`, async () => {
-        // Start server 1, 2 and 3
-        await Promise.all([server1.start(), server2.start(), server3.start()])
-
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Assert immutable time advanced
-        expect(await getImmutableTime(server1)).not.toBe(0)
-        expect(await getImmutableTime(server2)).not.toBe(0)
-        expect(await getImmutableTime(server3)).not.toBe(0)
-
-        // Stop server 3
-        await server3.stop()
-
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 5)
-
-        // Store their immutable time
-        const immutableTimeServer1 = await getImmutableTime(server1)
-        const immutableTimeServer2 = await getImmutableTime(server2)
-
-        // Wait for servers to sync
-        await delay(SYNC_INTERVAL * 2)
-
-        // Get new immutable time
-        const newImmutableTimeServer1 = await getImmutableTime(server1)
-        const newImmutableTimeServer2 = await getImmutableTime(server2)
-
-       // Assert immutable time didn't advanced
-       expect(newImmutableTimeServer1).toBe(immutableTimeServer1)
-       expect(newImmutableTimeServer2).toBe(immutableTimeServer2)
     })
 
     it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => {
@@ -229,9 +155,5 @@ describe("End 2 end synchronization tests", function() {
         await assertEntityIsOverwrittenBy(server3, entity2, entity3)
         await assertEntityIsNotOverwritten(server3, entity3)
     })
-
-    function getImmutableTime(server: TestServer): Promise<Timestamp> {
-        return server.getStatus().then(({ lastImmutableTime }) => lastImmutableTime)
-    }
 
 })

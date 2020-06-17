@@ -126,10 +126,6 @@ describe("End 2 end - Error handling", () => {
         await assertHistoryOnServerHasEvents(server2, )
         await assertDeploymentsAreReported(server2, )
 
-        // Assert immutable time is more recent than the entity
-        const immutableTime = await server2.getStatus().then(status => status.lastImmutableTime)
-        expect(immutableTime).toBeGreaterThan(0)
-
         // Remove cause of failure
         if (removeCauseOfFailure)
             await removeCauseOfFailure()
