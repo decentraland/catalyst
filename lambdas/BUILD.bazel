@@ -10,6 +10,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//contracts",
+        "//commons/servers",
         "@npm//@types",
         "@npm//@types/node",
         "@npm//@types/compression",

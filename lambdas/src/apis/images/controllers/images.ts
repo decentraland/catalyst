@@ -5,6 +5,7 @@ import { Environment, EnvironmentConfig } from "../../../Environment";
 import fs from "fs";
 import sharp from "sharp";
 import fetch from "node-fetch"
+import { ensureDirectoryExists } from "decentraland-katalyst-commons/fsutils";
 
 const LOGGER = log4js.getLogger("ImagesController");
 
@@ -22,22 +23,6 @@ class ServiceError extends Error {
 function validateSize(size: string) {
   if (!validSizes.includes(size)) {
     throw new ServiceError("Invalid size");
-  }
-}
-
-async function existPath(path: string): Promise<boolean> {
-  try {
-    await fs.promises.access(path, fs.constants.F_OK | fs.constants.W_OK);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-async function ensureDirectoryExists(directory: string): Promise<void> {
-  const alreadyExist = await existPath(directory);
-  if (!alreadyExist) {
-    await fs.promises.mkdir(directory);
   }
 }
 
