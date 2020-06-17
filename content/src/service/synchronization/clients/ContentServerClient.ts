@@ -67,7 +67,7 @@ export class ContentServerClient {
     }
 
     getConnectionState(): ConnectionState {
-        return ConnectionState.CONNECTED;
+        return this.connectionState;
     }
 
     getLastLocalDeploymentTimestamp() {
