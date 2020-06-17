@@ -56,7 +56,6 @@ export const enum EnvironmentConfig {
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
-  LAMBDAS_SERVER_ADDRESS,
   LAMBDAS_STORAGE_LOCATION
 }
 
@@ -87,7 +86,6 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? "info");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK, () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK);
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LAMBDAS_SERVER_ADDRESS, () => process.env.LAMBDAS_SERVER_ADDRESS);
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LAMBDAS_STORAGE_LOCATION, () => process.env.LAMBDAS_STORAGE_LOCATION ?? DEFAULT_LAMBDAS_STORAGE_LOCATION);
 
     // Please put special attention on the bean registration order.
