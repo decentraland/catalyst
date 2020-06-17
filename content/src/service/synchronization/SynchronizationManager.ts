@@ -1,16 +1,10 @@
 import { setTimeout, clearTimeout } from "timers"
 import ms from "ms";
 import log4js from "log4js"
-import { Timestamp, LegacyDeploymentHistory } from "dcl-catalyst-commons";
-import { TimeKeepingService } from "../Service";
-import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
+import { ContentServerClient } from "./clients/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";
-import { MultiServerHistoryRequest } from "./MultiServerHistoryRequest";
-import { Bootstrapper } from "./Bootstrapper";
-import { Disposable } from "./events/ClusterEvent";
 import { delay } from "decentraland-katalyst-utils/util";
-import { legacyDeploymentEventToDeploymentEventBase } from "./ClusterUtils";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -22,42 +16,28 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager');
     private syncWithNodesTimeout: NodeJS.Timeout;
-    private daoRemovalEventSubscription: Disposable
-    private lastImmutableTime = 0
     private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
     private stopping: boolean = false
 
     constructor(private readonly cluster: ContentCluster,
-        private readonly service: TimeKeepingService,
         private readonly deployer: EventDeployer,
-        private readonly timeBetweenSyncs: number,
-        private readonly performMultiServerOnboarding: boolean,
-        private readonly requestTtlBackwards: number) { }
+        private readonly timeBetweenSyncs: number) { }
 
     async start(): Promise<void> {
         // Make sure the stopping flag is set to false
         this.stopping = false
 
-        // Start immutable time as 0, to get all history
-        this.lastImmutableTime = 0
-
         // Connect to the cluster
-        await this.cluster.connect(this.lastImmutableTime)
+        await this.cluster.connect()
 
-        // Register to listen to when a server is removed from the DAO
-        this.daoRemovalEventSubscription = this.cluster.listenToRemoval(removal => this.handleServerRemoval(removal));
-
-        // Onboard into cluster
-        await Bootstrapper.onboardIntoCluster(this.cluster, this.deployer, this.lastImmutableTime, this.performMultiServerOnboarding)
-
-        // Set a timeout to stay in sync with other servers
-        this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
+        // Sync with other servers
+        await this.syncWithServers()
     }
 
     stop(): Promise<void> {
         this.stopping = true
-        clearTimeout(this.syncWithNodesTimeout)
-        this.daoRemovalEventSubscription?.dispose()
+        if (this.syncWithNodesTimeout)
+            clearTimeout(this.syncWithNodesTimeout)
         this.cluster.disconnect()
         return this.waitUntilSyncFinishes()
     }
@@ -72,27 +52,23 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     private async syncWithServers(): Promise<void> {
         // Update flag
-        this.synchronizationState = SynchronizationState.SYNCING
+        if (this.synchronizationState !== SynchronizationState.BOOTSTRAPPING) {
+            this.synchronizationState = SynchronizationState.SYNCING
+        }
 
         ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
         try {
             // Gather all servers
             const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
-            // Fetch and process new deployments
-            await Promise.all(contentServers.map(server => this.syncWithContentServer(server)))
+            // Fetch all new deployments
+            const allDeployments = await Promise.all(contentServers.map(server => server.getNewDeployments()))
 
-            // Find the minimum timestamp between all servers
-            const minTimestamp: Timestamp = contentServers.map(contentServer => contentServer.getEstimatedLocalImmutableTime())
-                .reduce((min, current) => Math.min(min, current), Date.now() - this.requestTtlBackwards)
+            // Process them together
+            await this.deployer.processAllDeployments(allDeployments)
 
-            if (minTimestamp > this.lastImmutableTime) {
-                // Set this new minimum timestamp as the latest immutable time
-                ClusterSynchronizationManager.LOGGER.debug(`Setting immutable time to ${minTimestamp}`)
-                this.lastImmutableTime = minTimestamp
-                this.cluster.setImmutableTime(minTimestamp)
-                this.service.setImmutableTime(minTimestamp)
-            }
+            // If everything worked, then update the last deployment timesamp
+            contentServers.forEach(contentServer => contentServer.updateLastLocalDeploymentTimestamp())
 
             this.synchronizationState = SynchronizationState.SYNCED;
             ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
@@ -105,38 +81,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
                 this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
             }
         }
-    }
-
-    /** Get all updates from one specific content server */
-    private async syncWithContentServer(contentServer: ContentServerClient): Promise<void> {
-        try {
-            // Get new deployments on a specific content server
-            const newDeploymentsLegacy: LegacyDeploymentHistory = await contentServer.getNewDeployments()
-
-            // Map to the new deployment format
-            const newDeployments = newDeploymentsLegacy.map(event => legacyDeploymentEventToDeploymentEventBase(this.cluster, event))
-
-            // Process them
-            await this.deployer.deployHistory(newDeployments, { preferredServer: contentServer })
-
-            // Let the client know that the deployment was successful, and update the estimated immutable time
-            await contentServer.updateEstimatedLocalImmutableTime(newDeployments[0]?.originTimestamp)
-        } catch(error) {
-            ClusterSynchronizationManager.LOGGER.error(`Failed to get new entities from content server '${contentServer.getName()}'\n${error}`)
-        }
-    }
-
-    /**
-     * When a node is removed from the DAO, we want to ask all other servers on the DAO if they knew something else about it
-     */
-    private handleServerRemoval({ serverRemoved, estimatedLocalImmutableTime, remainingServers }): Promise<void> {
-        ClusterSynchronizationManager.LOGGER.info(`Handling removal of ${serverRemoved}. It's estimated local immutable time is ${estimatedLocalImmutableTime}`)
-
-        // Prepare request
-        const request = new MultiServerHistoryRequest(remainingServers, this.deployer, this.cluster, estimatedLocalImmutableTime, serverRemoved)
-
-        // Execute the request
-        return request.execute()
     }
 
     private waitUntilSyncFinishes(): Promise<void> {

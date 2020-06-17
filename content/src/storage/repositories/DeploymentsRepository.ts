@@ -1,7 +1,6 @@
 import { Authenticator } from 'dcl-crypto';
-import { EntityId, EntityType } from 'dcl-catalyst-commons';
+import { EntityId, EntityType, AuditInfo } from 'dcl-catalyst-commons';
 import { Entity } from '@katalyst/content/service/Entity';
-import { AuditInfo } from '@katalyst/content/service/Audit';
 import { Repository } from '@katalyst/content/storage/Repository';
 import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager';
 

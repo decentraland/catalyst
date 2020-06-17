@@ -1,9 +1,8 @@
-import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
-import { MetaverseContentService } from "../service/Service";
+import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
+import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
 import { buildPointerTarget, buildEntityTarget, DenylistTarget, buildContentTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "./DenylistTarget";
-import { AuditInfo, AuditInfoBase } from "../service/Audit";
 import { EntityFactory } from "../service/EntityFactory";
 import { ServiceImpl } from "../service/ServiceImpl";
 import { ContentItem } from "../storage/ContentStorage";
@@ -109,7 +108,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-  async deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string): Promise<Timestamp> {
+  async deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string): Promise<Timestamp> {
     return this.repository.task(async task => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)
@@ -119,7 +118,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-  async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string): Promise<Timestamp> {
+  async deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string): Promise<Timestamp> {
     return this.repository.task(async task => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)
@@ -129,7 +128,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-  async deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase): Promise<Timestamp> {
+  async deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
     return this.repository.task(async task => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)
@@ -215,7 +214,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getStatus();
   }
 
-  private async validateDeployment(denylistRepo: DenylistRepository, files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase) {
+  private async validateDeployment(denylistRepo: DenylistRepository, files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo) {
     // No deployments from denylisted eth addresses are allowed
     const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo.authChain);
     if (await this.areDenylisted(denylistRepo, buildAddressTarget(ownerAddress))) {

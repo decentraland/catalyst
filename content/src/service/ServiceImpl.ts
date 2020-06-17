@@ -1,14 +1,13 @@
 import log4js from "log4js"
-import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
-import { MetaverseContentService, TimeKeepingService, ClusterDeploymentsService } from "./Service";
+import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo } from "./Service";
 import { happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { DeploymentReporter } from "./reporters/DeploymentReporter";
 import { PointerManager } from "./pointers/PointerManager";
 import { ServiceStorage } from "./ServiceStorage";
-import { AuditInfo, AuditInfoExternal, AuditInfoBase } from "./Audit";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
@@ -19,7 +18,7 @@ import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { DeploymentManager, DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
 
-export class ServiceImpl implements MetaverseContentService, TimeKeepingService, ClusterDeploymentsService {
+export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
@@ -33,8 +32,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly deploymentManager: DeploymentManager,
         private readonly validations: Validations,
-        private readonly repository: Repository,
-        private readonly allowDeploymentsWhenNotInDAO: boolean = false) {
+        private readonly repository: Repository) {
     }
 
     async getEntitiesByPointers(type: EntityType, pointers: Pointer[], repository: RepositoryTask | Repository = this.repository): Promise<Entity[]> {
@@ -50,27 +48,21 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return repository.taskIf(task => this.deploymentManager.getEntitiesByIds(task.deployments, task.content, type, idsWithoutDuplicates))
     }
 
-    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository: RepositoryTask | Repository = this.repository): Promise<Timestamp> {
-        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getIdentityInDAO()) {
-            throw new Error(`Deployments are not allow since server is not in DAO`)
-        }
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository: RepositoryTask | Repository = this.repository): Promise<Timestamp> {
         return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, origin, repository)
     }
 
-    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository: RepositoryTask | Repository = this.repository): Promise<Timestamp> {
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository: RepositoryTask | Repository = this.repository): Promise<Timestamp> {
         return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, origin, repository, true)
     }
 
-    deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase, repository: RepositoryTask | Repository = this.repository): Promise<number> {
-        if (!this.allowDeploymentsWhenNotInDAO && !this.identityProvider.getIdentityInDAO()) {
-            throw new Error(`Deployments are not allow since server is not in DAO`)
-        }
+    deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: LocalDeploymentAuditInfo, repository: RepositoryTask | Repository = this.repository): Promise<number> {
         return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, 'legacy', repository)
     }
 
     private async deployInternal(files: ContentFile[],
         entityId: EntityId,
-        auditInfo: AuditInfoExternal | AuditInfoBase,
+        auditInfo: AuditInfo | LocalDeploymentAuditInfo,
         validationContext: ValidationContext,
         origin: string,
         repository: RepositoryTask | Repository = this.repository,
@@ -230,8 +222,13 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.storage.getContent(fileHash);
     }
 
-    async getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<AuditInfo | undefined> {
+    getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<AuditInfo | undefined> {
         return repository.taskIf(task => this.deploymentManager.getAuditInfo(task.deployments, task.migrationData, type, id))
+    }
+
+    async getLastDeploymentTimestampFromServer(serverAddress: string): Promise<number | undefined> {
+        const { deployments } = await this.repository.task(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, { originServerUrl: serverAddress }, 0, 1))
+        return deployments[0]?.auditInfo?.localTimestamp
     }
 
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
@@ -243,7 +240,7 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
             name: this.getOwnName(),
             version: CURRENT_CONTENT_VERSION,
             currentTime: Date.now(),
-            lastImmutableTime: this.historyManager.getLastImmutableTime(),
+            lastImmutableTime: 0,
             historySize: this.historyManager.getHistorySize(),
         }
     }
@@ -252,18 +249,14 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         return this.storage.deleteContent(fileHashes)
     }
 
-    async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void> {
+    async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
         const legacy = !!auditInfo.originalMetadata
         await this.deployInternal(files, entityId, auditInfo, legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED, 'sync')
     }
 
-    async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void> {
+    async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
         const legacy = !!auditInfo.originalMetadata
         await this.deployInternal([entityFile], entityId, auditInfo, legacy ? ValidationContext.OVERWRITTEN_LEGACY_ENTITY : ValidationContext.OVERWRITTEN, 'sync')
-    }
-
-    setImmutableTime(immutableTime: number): void {
-        this.historyManager.setTimeAsImmutable(immutableTime)
     }
 
     areEntitiesAlreadyDeployed(entityIds: EntityId[], repository: RepositoryTask | Repository = this.repository): Promise<Map<EntityId, boolean>> {

@@ -1,10 +1,10 @@
 import ms from "ms"
 import log4js from "log4js"
+import { EntityVersion } from "dcl-catalyst-commons";
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
-import { NameKeeperFactory } from "./service/naming/NameKeeperFactory";
 import { DeploymentReporterFactory } from "./service/reporters/DeploymentReporterFactory";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
@@ -12,7 +12,6 @@ import { ContentClusterFactory } from "./service/synchronization/ContentClusterF
 import { EventDeployerFactory } from "./service/synchronization/EventDeployerFactory";
 import { DenylistFactory } from "./denylist/DenylistFactory";
 import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFactory";
-import { EntityVersion } from "./service/Audit";
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 import { FetcherFactory } from "./helpers/FetcherFactory";
@@ -94,7 +93,6 @@ export const enum Bean {
     CONTROLLER,
     HISTORY_MANAGER,
     POINTER_MANAGER,
-    NAME_KEEPER,
     DEPLOYMENT_REPORTER,
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
@@ -131,11 +129,10 @@ export enum EnvironmentConfig {
     JSON_REQUEST_TIMEOUT,
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
     USE_COMPRESSION_MIDDLEWARE,
-    PERFORM_MULTI_SERVER_ONBOARDING,
+    BOOTSTRAP_FROM_SCRATCH,
     CACHE_SIZES,
     REQUEST_TTL_BACKWARDS,
     DCL_PARCEL_ACCESS_URL,
-    ALLOW_DEPLOYMENTS_FOR_TESTING,
     SQS_QUEUE_URL_REPORTING,
     SQS_ACCESS_KEY_ID,
     SQS_SECRET_ACCESS_KEY,
@@ -191,11 +188,10 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT           , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT  , () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE     , () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, () => true);
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH         , () => process.env.BOOTSTRAP_FROM_SCRATCH === 'true');
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES                    , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING  , () => process.env.ALLOW_DEPLOYMENTS_FOR_TESTING === "true")
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_QUEUE_URL_REPORTING        , () => process.env.SQS_QUEUE_URL_REPORTING)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_ACCESS_KEY_ID              , () => process.env.SQS_ACCESS_KEY_ID)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_SECRET_ACCESS_KEY          , () => process.env.SQS_SECRET_ACCESS_KEY)
@@ -222,8 +218,6 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_REPORTER         , () => DeploymentReporterFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
-        const nameKeeper = await NameKeeperFactory.create(env)
-        this.registerBeanIfNotAlreadySet(env, Bean.NAME_KEEPER                 , () => nameKeeper)
         this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER             , () => ContentClusterFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => HistoryManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER          , () => DeploymentManagerFactory.create(env))

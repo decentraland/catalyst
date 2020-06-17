@@ -1,5 +1,5 @@
 import * as EthCrypto from "eth-crypto";
-import { EntityType, Timestamp } from "dcl-catalyst-commons";
+import { EntityType, Timestamp, EntityVersion } from "dcl-catalyst-commons";
 import { Validations } from "@katalyst/content/service/validations/Validations";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext";
@@ -7,7 +7,6 @@ import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessChecke
 import { AuthChain, AuthLinkType } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 import ms from "ms";
-import { EntityVersion } from "@katalyst/content/service/Audit";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {

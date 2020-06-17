@@ -1,9 +1,7 @@
 import log4js from "log4js"
-import { LegacyDeploymentEvent } from "dcl-catalyst-commons";
 import { retry } from "@katalyst/content/helpers/RetryHelper";
-import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
+import { ContentServerClient } from "./clients/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
-import { DeploymentEventBase } from "../deployments/DeploymentManager";
 
 const LOGGER = log4js.getLogger('ClusterUtils');
 
@@ -23,25 +21,16 @@ export async function tryOnCluster<T>(execution: (server: ContentServerClient) =
             try {
                 return await execution(server)
             } catch (error) {
-                LOGGER.debug(`Tried to ${description} on '${server.getName()}' but it failed because of: ${error}`)
+                LOGGER.debug(`Tried to ${description} on '${server.getAddress()}' but it failed because of: ${error}`)
             }
         }
         throw new Error(`Tried to ${description} on all servers on the cluster, but they all failed`)
     }, retries + 1, `${description} on all servers on the cluster`, '1s');
 }
 
-export function legacyDeploymentEventToDeploymentEventBase(cluster: ContentCluster, legacyEvent: LegacyDeploymentEvent): DeploymentEventBase {
-    return {
-        entityType: legacyEvent.entityType,
-        entityId: legacyEvent.entityId,
-        originTimestamp: legacyEvent.timestamp,
-        originServerUrl: cluster.getAddressForServerName(legacyEvent.serverName) ?? 'https://peer.decentraland.org/content'
-    }
-}
-
 function reorderAccordingToPreference(activeServers: ContentServerClient[], preferred: ContentServerClient | undefined): ContentServerClient[] {
     if (preferred) {
-        const newOrder = activeServers.filter(server => server.getName() != preferred.getName())
+        const newOrder = activeServers.filter(server => server.getAddress() != preferred.getAddress())
         newOrder.unshift(preferred);
         return newOrder
     } else {

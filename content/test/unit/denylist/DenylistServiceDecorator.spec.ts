@@ -1,16 +1,16 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { Pointer, ContentFile } from "dcl-catalyst-commons";
+import { Pointer, ContentFile, AuditInfo, EntityVersion } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
 import { Entity } from "@katalyst/content/service/Entity";
 import { MockedMetaverseContentService, MockedMetaverseContentServiceBuilder, buildEntity, buildContent as buildRandomContent } from "@katalyst/test-helpers/service/MockedMetaverseContentService";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
-import { EntityVersion, AuditInfo, AuditInfoBase  } from "@katalyst/content/service/Audit";
 import { Authenticator } from "dcl-crypto";
 import { MockedRepository } from "../storage/MockedRepository";
 import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
+import { LocalDeploymentAuditInfo } from "@katalyst/content/service/Service";
 
 describe("DenylistServiceDecorator", () => {
 
@@ -19,7 +19,7 @@ describe("DenylistServiceDecorator", () => {
     const content1 = buildRandomContent()
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
-    const auditInfo: AuditInfoBase = {
+    const auditInfo: LocalDeploymentAuditInfo = {
         authChain: Authenticator.createSimpleAuthChain('', ethAddress, random.alphaNumeric(10)),
         version: EntityVersion.V3
     }
@@ -214,7 +214,9 @@ describe("DenylistServiceDecorator", () => {
         const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id) as AuditInfo
 
         expect(auditInfo).toBeDefined()
-        expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
+        expect(auditInfo.localTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.localTimestamp)
+        expect(auditInfo.originServerUrl).toEqual(MockedMetaverseContentService.AUDIT_INFO.originServerUrl)
+        expect(auditInfo.originTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.originTimestamp)
         expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isDenylisted).toBeTruthy()
@@ -228,7 +230,9 @@ describe("DenylistServiceDecorator", () => {
         const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id) as AuditInfo
 
         expect(auditInfo).toBeDefined()
-        expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
+        expect(auditInfo.localTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.localTimestamp)
+        expect(auditInfo.originServerUrl).toEqual(MockedMetaverseContentService.AUDIT_INFO.originServerUrl)
+        expect(auditInfo.originTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.originTimestamp)
         expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isDenylisted).toBeUndefined()

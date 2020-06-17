@@ -1,13 +1,12 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity, EntityVersion } from "dcl-catalyst-commons";
 import { Entity } from "../service/Entity"
-import { MetaverseContentService } from "../service/Service";
+import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
 import { parseDenylistTypeAndId } from "../denylist/DenylistTarget";
-import { EntityVersion, AuditInfoBase } from "../service/Audit";
 import { CURRENT_CONTENT_VERSION, CURRENT_COMMIT_HASH } from "../Environment";
 import { EthAddress, Signature, AuthLink, AuthChain } from "dcl-crypto";
 import { Authenticator } from "dcl-crypto";
@@ -95,7 +94,7 @@ export class Controller {
         const files                 = req.files
 
         try {
-            const auditInfo: AuditInfoBase = {
+            const auditInfo: LocalDeploymentAuditInfo = {
                 authChain,
                 version: CURRENT_CONTENT_VERSION,
                 originalMetadata: {
@@ -140,7 +139,7 @@ export class Controller {
                 deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
             }
 
-            const auditInfo: AuditInfoBase = { authChain, version: CURRENT_CONTENT_VERSION }
+            const auditInfo: LocalDeploymentAuditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
             let creationTimestamp: Timestamp
             if (fixAttempt) {
                 creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)

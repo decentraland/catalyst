@@ -1,7 +1,6 @@
-import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress } from "dcl-catalyst-commons";
+import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
-import { AuditInfo } from "../Audit";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
 import { MigrationDataRepository } from "@katalyst/content/storage/repositories/MigrationDataRepository";
 import { CacheByType } from "../caching/Cache";
@@ -110,7 +109,6 @@ export class DeploymentManager {
 
         const auditInfo: AuditInfo = {
             ...deploymentResult.auditInfo,
-            deployedTimestamp: deploymentResult.auditInfo.originTimestamp,
             originalMetadata: migrationResult.get(deploymentResult.deploymentId),
         }
 
@@ -152,13 +150,6 @@ export type ExtendedDeploymentFilters = DeploymentFilters & {
     fromOriginTimestamp?: Timestamp,
     toOriginTimestamp?: Timestamp,
     originServerUrl?: ServerAddress,
-}
-
-export type DeploymentEventBase = {
-    entityType: EntityType,
-    entityId: EntityId,
-    originServerUrl: ServerAddress,
-    originTimestamp: Timestamp,
 }
 
 export type DeploymentDelta = {

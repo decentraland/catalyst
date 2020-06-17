@@ -38,7 +38,7 @@ export class HistoryManagerImpl implements HistoryManager {
     async getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         let address: ServerAddress | undefined
         if (serverName) {
-            address = this.cluster.getAddressForServerName(serverName)
+            address = this.cluster.getAddressForServerName(serverName) ?? 'UNKNOWN_NAME'
         }
         const curatedOffset = (offset && offset>=0) ? offset : 0
         const curatedLimit = (limit && limit>0 && limit<=HistoryManagerImpl.MAX_HISTORY_LIMIT) ? limit : HistoryManagerImpl.DEFAULT_HISTORY_LIMIT
