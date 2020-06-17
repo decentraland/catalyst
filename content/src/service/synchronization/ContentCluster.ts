@@ -7,7 +7,7 @@ import { delay } from "decentraland-katalyst-utils/util";
 import { ContentServerClient, ConnectionState } from "./clients/ContentServerClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
-import { ClusterDeploymentsService } from "../Service";
+import { LastKnownDeploymentService } from "../Service";
 
 export interface IdentityProvider {
     getIdentityInDAO(): ServerIdentity | undefined;
@@ -31,16 +31,19 @@ export class ContentCluster implements IdentityProvider {
     private serverNames: Map<ServerAddress, ServerName> = new Map()
     // Time of last sync with the DAO
     private timeOfLastSync: Timestamp = 0
+    // Service in charge of knowing the last known deployments made by new servers
+    private service: LastKnownDeploymentService
 
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
         private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly fetcher: Fetcher,
-        private readonly service: ClusterDeploymentsService,
         private readonly bootstrapFromScratch: boolean) { }
 
     /** Connect to the DAO for the first time */
-    async connect(): Promise<void> {
+    async connect(service: LastKnownDeploymentService): Promise<void> {
+        this.service = service
+
         // Get all servers on the DAO
         this.allServersInDAO = await this.dao.getAllContentServers()
 

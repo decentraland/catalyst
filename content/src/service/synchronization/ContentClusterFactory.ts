@@ -9,7 +9,6 @@ export class ContentClusterFactory {
             env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL),
             env.getBean(Bean.CHALLENGE_SUPERVISOR),
             env.getBean(Bean.FETCHER),
-            env.getBean(Bean.SERVICE),
             env.getConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH))
     }
 }

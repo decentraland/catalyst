@@ -44,8 +44,8 @@ export class EventDeployer {
         // Keep only new deployments
         const newDeployments = deployments.filter(event => newEntities.has(event.entityId));
 
-        if (history.length > 0) {
-            EventDeployer.LOGGER.debug(`History had ${history.length} entities, only ${newDeployments.length} new.`)
+        if (deployments.length > 0) {
+            EventDeployer.LOGGER.debug(`History had ${deployments.length} entities, only ${newDeployments.length} new.`)
             if (newDeployments.length > 0) {
                 EventDeployer.LOGGER.debug(`Will start to deploy the ${newDeployments.length} new entities.`)
             }
@@ -65,7 +65,7 @@ export class EventDeployer {
         const { auditInfo } = deployment
 
         if (entityFile) {
-            if (deployment.auditInfo.overwrittenBy) {
+            if (auditInfo.overwrittenBy) {
                 // Deploy the entity as overwritten
                 return this.buildDeploymentExecution(deployment, () => this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo))
             } else {

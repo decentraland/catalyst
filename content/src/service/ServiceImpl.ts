@@ -1,7 +1,7 @@
 import log4js from "log4js"
 import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
-import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo } from "./Service";
+import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, LastKnownDeploymentService } from "./Service";
 import { happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
@@ -18,7 +18,7 @@ import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { DeploymentManager, DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
 
-export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
+export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService, LastKnownDeploymentService {
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'

@@ -6,6 +6,7 @@ export class ClusterSynchronizationManagerFactory {
     static create(env: Environment): ClusterSynchronizationManager {
         return new ClusterSynchronizationManager(
             env.getBean(Bean.CONTENT_CLUSTER),
+            env.getBean(Bean.SERVICE),
             env.getBean(Bean.EVENT_DEPLOYER),
             env.getConfig(EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL))
     }

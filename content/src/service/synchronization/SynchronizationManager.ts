@@ -5,6 +5,7 @@ import { ContentServerClient } from "./clients/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";
 import { delay } from "decentraland-katalyst-utils/util";
+import { LastKnownDeploymentService } from "../Service";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -20,6 +21,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private stopping: boolean = false
 
     constructor(private readonly cluster: ContentCluster,
+        private readonly service: LastKnownDeploymentService,
         private readonly deployer: EventDeployer,
         private readonly timeBetweenSyncs: number) { }
 
@@ -28,7 +30,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         this.stopping = false
 
         // Connect to the cluster
-        await this.cluster.connect()
+        await this.cluster.connect(this.service)
 
         // Sync with other servers
         await this.syncWithServers()
@@ -72,7 +74,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
             this.synchronizationState = SynchronizationState.SYNCED;
             ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
-        } catch(error) {
+        } catch (error) {
+            console.trace(error)
             this.synchronizationState = SynchronizationState.FAILED_TO_SYNC;
             ClusterSynchronizationManager.LOGGER.warn(`Failed to sync with servers. Reason:\n${error}`)
         } finally {

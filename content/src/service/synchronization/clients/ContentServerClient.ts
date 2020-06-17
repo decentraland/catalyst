@@ -5,7 +5,7 @@ import { Deployment } from '@katalyst/content/service/deployments/DeploymentMana
 
 export class ContentServerClient {
 
-    private static readonly LOGGER = log4js.getLogger('ContentCluster');
+    private static readonly LOGGER = log4js.getLogger('ContentServerClient');
     private readonly client: ContentClient
     private connectionState: ConnectionState = ConnectionState.NEVER_REACHED
     private potentialNewLastLocalDeploymentTimestamp: Timestamp | undefined

@@ -37,6 +37,9 @@ export interface ClusterDeploymentsService {
     deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>;
+}
+
+export interface LastKnownDeploymentService {
     getLastDeploymentTimestampFromServer(serverAddress: ServerAddress): Promise<Timestamp | undefined>
 }
 

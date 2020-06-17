@@ -29,10 +29,10 @@ export class EventStreamProcessor {
         const deploymentsStream = streamFrom(sortedHistory.map((event, index) => [index, event]));
 
         // Build a transform stream that process the deployment info and prepares the deployment
-        const transform = this.prepareDeploymentBuilder(history.length, options)
+        const transform = this.prepareDeploymentBuilder(deployments.length, options)
 
         // Create writer stream that deploys the entity on this server
-        const deployerStream = this.prepareStreamDeployer(history.length, options);
+        const deployerStream = this.prepareStreamDeployer(deployments.length, options);
 
         // Build and execute the pipeline
         try {

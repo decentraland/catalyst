@@ -1,11 +1,10 @@
 import fetch from "node-fetch"
-import { ServerAddress, Timestamp, EntityType, Pointer, DeploymentFilters, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash } from "dcl-catalyst-commons"
+import { ServerAddress, Timestamp, EntityType, Pointer, DeploymentFilters, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash, AuditInfo } from "dcl-catalyst-commons"
 import { ContentClient, DeploymentFields } from "dcl-catalyst-client"
 import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ControllerDenylistData } from "@katalyst/content/controller/Controller"
 import { DeployData, hashAndSignMessage, Identity, deleteFolderRecursive } from "./E2ETestUtils"
-import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
 import { buildEntityTarget, DenylistTarget, buildContentTarget } from "@katalyst/content/denylist/DenylistTarget"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { assertResponseIsOkOrThrow } from "./E2EAssertions"
@@ -23,7 +22,6 @@ export class TestServer extends Server {
     constructor(env: Environment) {
         super(env)
         this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
-        this.namePrefix = env.getConfig(EnvironmentConfig.NAME_PREFIX)
         this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
         this.client = new ContentClient(this.getAddress(), '', env.getBean(Bean.FETCHER))
     }
@@ -83,13 +81,8 @@ export class TestServer extends Server {
         return this.client.downloadContent(fileHash)
     }
 
-    async getAuditInfo(entity: ControllerEntity): Promise<LegacyAuditInfo> {
-        const auditInfo = await this.client.fetchAuditInfo(entity.type, entity.id)
-        return {
-            ...auditInfo,
-            deployedTimestamp: auditInfo.originTimestamp,
-            version: EntityVersion[auditInfo.version.toUpperCase()],
-        }
+    getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
+        return this.client.fetchAuditInfo(entity.type, entity.id)
     }
 
     getDenylistTargets(): Promise<ControllerDenylistData[]> {
