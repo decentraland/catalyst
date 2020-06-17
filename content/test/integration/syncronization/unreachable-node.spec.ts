@@ -1,5 +1,5 @@
 import ms from "ms"
-import { Timestamp } from "dcl-catalyst-commons"
+import { Timestamp, delay } from "dcl-catalyst-commons"
 import { EnvironmentConfig } from "@katalyst/content/Environment"
 import { TestServer } from "../TestServer"
 import { buildDeployData, awaitUntil } from "../E2ETestUtils"
@@ -32,6 +32,9 @@ describe("End 2 end - Unreachable node", function() {
     it('When a node is unreachable, remaining nodes ask each others for the unreachable node\'s updates', async () => {
         // Start server 1, 2 and 3
         await Promise.all([server1.start(), server2.start(), server3.start()])
+
+        // Wait a little bit so server 3 does the initial sync
+        await delay('1s')
 
         // Prepare data to be deployed
         const { deployData, controllerEntity: entity } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: 'metadata' })
