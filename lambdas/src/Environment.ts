@@ -7,6 +7,8 @@ export const DEFAULT_ETH_NETWORK = "ropsten"
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten";
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = "https://api.thegraph.com/subgraphs/name/decentraland/marketplace";
 
+const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
+
 export class Environment {
   private configs: Map<EnvironmentConfig, any> = new Map();
   private beans: Map<Bean, any> = new Map();
@@ -53,7 +55,8 @@ export const enum EnvironmentConfig {
   COMMIT_HASH,
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
-  ETH_NETWORK
+  ETH_NETWORK,
+  LAMBDAS_STORAGE_LOCATION
 }
 
 export class EnvironmentBuilder {
@@ -82,7 +85,8 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? "Unknown");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE, () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? "info");
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK, () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK, () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK);
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LAMBDAS_STORAGE_LOCATION, () => process.env.LAMBDAS_STORAGE_LOCATION ?? DEFAULT_LAMBDAS_STORAGE_LOCATION);
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
