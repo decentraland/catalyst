@@ -129,7 +129,7 @@ function assertEqualsDeployment(server: TestServer, actualDeployment: Controller
     assert.deepEqual(actualDeployment.auditInfo.authChain, expectedDeployment.auditInfo.authChain)
     assert.equal(actualDeployment.auditInfo.originServerUrl, expectedDeployment.auditInfo.originServerUrl)
     assert.equal(actualDeployment.auditInfo.originTimestamp, expectedDeployment.auditInfo.originTimestamp)
-    assert.deepEqual(actualDeployment.auditInfo.originalMetadata, expectedDeployment.auditInfo.originalMetadata)
+    assert.deepEqual(actualDeployment.auditInfo.migrationData, expectedDeployment.auditInfo.migrationData)
     assert.equal(actualDeployment.auditInfo.isDenylisted, expectedDeployment.auditInfo.isDenylisted)
     assert.deepEqual(actualDeployment.auditInfo.denylistedContent, expectedDeployment.auditInfo.denylistedContent)
     if (server.getAddress() === actualDeployment.auditInfo.originServerUrl) {

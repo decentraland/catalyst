@@ -1,4 +1,4 @@
-import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory, LegacyAuditInfo } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
@@ -66,7 +66,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return availability;
   }
 
-  async getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo | undefined> {
+  async getAuditInfo(type: EntityType, id: EntityId): Promise<LegacyAuditInfo | undefined> {
     return this.repository.task(async task => {
       // Retrieve audit info and entity
       const auditInfo = await this.service.getAuditInfo(type, id, task);
@@ -85,7 +85,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         const denylisted = await this.denylist.areTargetsDenylisted(task.denylist, allTargets);
 
         // Create new result
-        let result: AuditInfo = {
+        let result: LegacyAuditInfo = {
           ...auditInfo
         };
 

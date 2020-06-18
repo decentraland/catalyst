@@ -1,5 +1,5 @@
 import { random } from "faker"
-import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons"
+import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "@katalyst/content/service/Service"
 import { Entity } from "@katalyst/content/service/Entity"
 import { buildEntityAndFile } from "./EntityTestFactory"
@@ -20,9 +20,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         historySize: 0,
     }
 
-    static readonly AUDIT_INFO: AuditInfo = {
+    static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {
         localTimestamp: Date.now(),
         originTimestamp: Date.now(),
+        deployedTimestamp: Date.now(),
         originServerUrl: 'http://localhost',
         authChain: [{type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
         version: CURRENT_CONTENT_VERSION,
@@ -98,7 +99,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return MockedMetaverseContentService.STATUS
     }
 
-    getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
+    getAuditInfo(type: EntityType, id: EntityId): Promise<LegacyAuditInfo> {
         return Promise.resolve(MockedMetaverseContentService.AUDIT_INFO)
     }
 

@@ -1,4 +1,4 @@
-import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
+import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
@@ -87,8 +87,8 @@ export class DeploymentManager {
         auditInfo: AuditInfo,
         overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
             const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
-            if (auditInfo.originalMetadata) {
-                await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.originalMetadata)
+            if (auditInfo.migrationData) {
+                await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.migrationData)
             }
 
             if (entity.content) {
@@ -100,16 +100,17 @@ export class DeploymentManager {
             return deploymentId
     }
 
-    async getAuditInfo(deploymentsRepository: DeploymentsRepository, migrationDataRepository: MigrationDataRepository, type: EntityType, id: EntityId): Promise<AuditInfo | undefined> {
+    async getAuditInfo(deploymentsRepository: DeploymentsRepository, migrationDataRepository: MigrationDataRepository, type: EntityType, id: EntityId): Promise<LegacyAuditInfo | undefined> {
         const deploymentResult = await deploymentsRepository.getAuditInfo(type, id)
         if (!deploymentResult) {
             return undefined
         }
         const migrationResult = await migrationDataRepository.getMigrationData(deploymentResult.deploymentId)
 
-        const auditInfo: AuditInfo = {
+        const auditInfo: LegacyAuditInfo = {
             ...deploymentResult.auditInfo,
             originalMetadata: migrationResult.get(deploymentResult.deploymentId),
+            deployedTimestamp: deploymentResult.auditInfo.originTimestamp,
         }
 
         return auditInfo

@@ -2468,22 +2468,36 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^1.3.9:
-  version "1.3.9"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-1.3.9.tgz#cf55a4d91c052090c62d9f8c60cd15a535b2f193"
-  integrity sha512-nYMiL6rA27af828m5KG4FpnaNL0e9A9X5pSDpE2gQIinB3VQMhchqs0HuF9Py0V35QtiB+oQJkBjvFM4MOfzNw==
+dcl-catalyst-client@1.3.8:
+  version "1.3.8"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-1.3.8.tgz#f1a7085f4469225441211054d40c9ed9efb378a6"
+  integrity sha512-2bH0DKnZm0tgkxt8IyajP5fd3tdiHHBqFG2pmFhHWRXe1JYKmgIHOK16tNCWLY23JftrZP6f5F/Pq421SDNtaQ==
   dependencies:
     "@types/ms" "^0.7.31"
     abort-controller "^3.0.0"
     cids "^0.8.0"
     cross-blob "^1.2.2"
-    dcl-catalyst-commons "^1.3.4"
+    dcl-catalyst-commons "^1.3.3"
     dcl-crypto "^2.1.0"
     isomorphic-form-data "^2.0.0"
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
-dcl-catalyst-commons@^1.3.4:
+dcl-catalyst-commons@1.3.3:
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.3.3.tgz#fb065f731e657c7f97655c86da30f4d75ea5fc3c"
+  integrity sha512-iyzai0X3s+ZsshJfcomKLEtz0yCiVFNGeLPyLHjoA+uWp0VyKlVt9aldN14SA6pUhYbrzt7hhrUvzMwVhcQVOA==
+  dependencies:
+    "@types/isomorphic-fetch" "0.0.35"
+    "@types/ms" "^0.7.31"
+    abort-controller "^3.0.0"
+    cids "^0.8.0"
+    dcl-crypto "^2.1.0"
+    isomorphic-fetch "^2.2.1"
+    ms "^2.1.2"
+    multihashing-async "^0.8.1"
+
+dcl-catalyst-commons@^1.3.3:
   version "1.3.4"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.3.4.tgz#288c0c6dee0a19b513ee4453ecf51f0dff4a86c0"
   integrity sha512-MTg9g9O4NYd3UDPfjtcz+zAYiLDOW+FtgrRz80I2UHvmbp4mbi3itPmSdGzqEeeihH7v14RF2v220HgH6A4wdg==

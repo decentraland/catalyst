@@ -1,6 +1,6 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { Pointer, ContentFile, AuditInfo, EntityVersion } from "dcl-catalyst-commons";
+import { Pointer, ContentFile, EntityVersion, LegacyAuditInfo } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
@@ -211,12 +211,10 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id) as AuditInfo
+        const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id) as LegacyAuditInfo
 
         expect(auditInfo).toBeDefined()
-        expect(auditInfo.localTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.localTimestamp)
-        expect(auditInfo.originServerUrl).toEqual(MockedMetaverseContentService.AUDIT_INFO.originServerUrl)
-        expect(auditInfo.originTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.originTimestamp)
+        expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
         expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isDenylisted).toBeTruthy()
@@ -227,12 +225,10 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 
-        const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id) as AuditInfo
+        const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id) as LegacyAuditInfo
 
         expect(auditInfo).toBeDefined()
-        expect(auditInfo.localTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.localTimestamp)
-        expect(auditInfo.originServerUrl).toEqual(MockedMetaverseContentService.AUDIT_INFO.originServerUrl)
-        expect(auditInfo.originTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.originTimestamp)
+        expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
         expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
         expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
         expect(auditInfo.isDenylisted).toBeUndefined()

@@ -1,4 +1,4 @@
-import { ContentFile, ContentFileHash, ServerStatus, EntityType, Pointer, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory, EntityVersion, AuditInfo } from "dcl-catalyst-commons";
+import { ContentFile, ContentFileHash, ServerStatus, EntityType, Pointer, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory, EntityVersion, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
 import { AuthChain } from "dcl-crypto";
 import { Entity } from "./Entity";
 import { ContentItem } from "../storage/ContentStorage";
@@ -16,7 +16,7 @@ export interface MetaverseContentService {
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
     deployLocalLegacy(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, repository?: RepositoryTask | Repository): Promise<Timestamp>;
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
-    getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<AuditInfo | undefined>;
+    getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<LegacyAuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
     deleteContent(fileHashes: ContentFileHash[]): Promise<void>;

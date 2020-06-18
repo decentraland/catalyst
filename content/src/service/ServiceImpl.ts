@@ -1,5 +1,5 @@
 import log4js from "log4js"
-import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
+import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
 import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, LastKnownDeploymentService } from "./Service";
 import { happenedBeforeEntities } from "./time/TimeSorting";
@@ -222,7 +222,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return this.storage.getContent(fileHash);
     }
 
-    getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<AuditInfo | undefined> {
+
+    getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<LegacyAuditInfo | undefined> {
         return repository.taskIf(task => this.deploymentManager.getAuditInfo(task.deployments, task.migrationData, type, id))
     }
 
@@ -250,12 +251,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
-        const legacy = !!auditInfo.originalMetadata
+        const legacy = !!auditInfo.migrationData
         await this.deployInternal(files, entityId, auditInfo, legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED, 'sync')
     }
 
     async deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
-        const legacy = !!auditInfo.originalMetadata
+        const legacy = !!auditInfo.migrationData
         await this.deployInternal([entityFile], entityId, auditInfo, legacy ? ValidationContext.OVERWRITTEN_LEGACY_ENTITY : ValidationContext.OVERWRITTEN, 'sync')
     }
 
