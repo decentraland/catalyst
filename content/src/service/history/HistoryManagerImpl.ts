@@ -6,7 +6,6 @@ import { ContentCluster } from "../synchronization/ContentCluster"
 export class HistoryManagerImpl implements HistoryManager {
 
     static UNKNOWN_NAME = 'UNKNOWN_NAME'
-    private immutableTime: Timestamp = 0
     private historySize: number | undefined
 
     constructor(private readonly cluster: ContentCluster) { }
@@ -22,14 +21,6 @@ export class HistoryManagerImpl implements HistoryManager {
 
     getHistorySize(): number {
         return this.historySize ?? 0
-    }
-
-    setTimeAsImmutable(immutableTime: number): void {
-        this.immutableTime = immutableTime
-    }
-
-    getLastImmutableTime(): Timestamp {
-        return this.immutableTime
     }
 
     private static MAX_HISTORY_LIMIT = 500

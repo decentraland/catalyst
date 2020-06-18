@@ -3,8 +3,6 @@ import { DeploymentsRepository } from "@katalyst/content/storage/repositories/De
 
 export interface HistoryManager {
     reportDeployment(deploymentsRepository: DeploymentsRepository): Promise<void>;
-    setTimeAsImmutable(immutableTime: Timestamp): void;
-    getLastImmutableTime(): Timestamp;
     getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory>;
     getHistorySize(): number;
 }
