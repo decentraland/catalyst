@@ -47,7 +47,7 @@ export class EventStreamProcessor {
      * We will download everything in parallel, but it will be deployed in order
      */
     private prepareDeploymentBuilder(historyLength: number, options?: HistoryDeploymentOptions) {
-        return parallelTransform(EventStreamProcessor.PARALLEL_DOWNLOAD_WORKERS, { objectMode: true, ordered: false }, async ([index, deploymentEvent], done) => {
+        return parallelTransform(EventStreamProcessor.PARALLEL_DOWNLOAD_WORKERS, { objectMode: true }, async ([index, deploymentEvent], done) => {
             try {
                 EventStreamProcessor.LOGGER.trace(`Preparing deployment for ${index + 1}/${historyLength}. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`)
                 const execution = await this.deploymentBuilder(deploymentEvent, options?.preferredServer);
