@@ -54,19 +54,31 @@ function ownsENS(ownedENS: string[], ensToCheck: string): boolean {
  * method, we replace the hashes by urls that would trigger the snapshot download.
  */
 function addBaseUrlToSnapshots(baseUrl: string, metadata: EntityMetadata): EntityMetadata {
-    const avatars = metadata.avatars.map(profile => (
-        {
+    function addBaseUrl(dst: AvatarSnapshots, src: AvatarSnapshots, key: keyof AvatarSnapshots) {
+        if(src[key]) {
+            dst[key] = baseUrl + `/contents/${src[key]}`
+        }
+    }
+
+    const avatars = metadata.avatars.map(profile => {
+        const original = profile.avatar.snapshots;
+        const snapshots: AvatarSnapshots = {}
+        
+        for(const key in original)  {
+            addBaseUrl(snapshots, original, key)
+        }
+
+        return {
             ...profile,
             name: profile.name,
             description: profile.description,
             avatar: {
                 ...profile.avatar,
-                snapshots:{
-                    face: baseUrl + `/contents/${profile.avatar.snapshots.face}`,
-                    body: baseUrl + `/contents/${profile.avatar.snapshots.body}`
-                }
+                snapshots
             }
-        }))
+        };
+    })
+
     return { avatars }
 }
 
@@ -92,15 +104,14 @@ type EntityMetadata = {
     }[]
 }
 
+type AvatarSnapshots = Record<string, string>
+
 type Avatar = {
     bodyShape: any,
     eyes: any,
     hair: any,
     skin: any,
-    snapshots: {
-        body: string,
-        face: string
-    },
+    snapshots: AvatarSnapshots,
     version: number,
     wearables: any,
 }
