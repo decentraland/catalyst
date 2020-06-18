@@ -40,17 +40,16 @@ export function legacyDeploymentEventToDeploymentEventBase(cluster: ContentClust
 }
 
 function reorderAccordingToPreference(activeServers: ContentServerClient[], preferred: ContentServerClient | undefined): ContentServerClient[] {
-    const shuffled = shuffleArray(activeServers)
     if (preferred) {
-        const withPriority = shuffled.filter(server => server.getName() != preferred.getName())
-        withPriority.unshift(preferred);
-        return withPriority
+        const newOrder = activeServers.filter(server => server.getName() != preferred.getName())
+        newOrder.unshift(preferred);
+        return newOrder
     } else {
-        return shuffled
+        return activeServers
     }
 }
 
-function shuffleArray<T>(arr: T[]): T[] {
+export function shuffleArray<T>(arr: T[]): T[] {
     for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
