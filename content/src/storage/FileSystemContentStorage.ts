@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
+import { ensureDirectoryExists, existPath } from 'decentraland-katalyst-commons/fsutils';
 
 export class FileSystemContentStorage implements ContentStorage {
 
@@ -10,7 +11,7 @@ export class FileSystemContentStorage implements ContentStorage {
         while (root.endsWith('/')) {
             root = root.slice(0, -1)
         }
-        await this.ensureDirectoryExists(root)
+        await ensureDirectoryExists(root)
         return new FileSystemContentStorage(root)
     }
 
@@ -31,7 +32,7 @@ export class FileSystemContentStorage implements ContentStorage {
     async retrieve(id: string): Promise<ContentItem | undefined> {
         try {
             const filePath = this.getFilePath(id)
-            if (await FileSystemContentStorage.existPath(filePath)) {
+            if (await existPath(filePath)) {
                 const stat = await fs.promises.stat(filePath)
 
                 return SimpleContentItem.fromStream(fs.createReadStream(filePath), stat.size)
@@ -41,33 +42,13 @@ export class FileSystemContentStorage implements ContentStorage {
     }
 
     async exist(ids: string[]): Promise<Map<string, boolean>> {
-        const checks = await Promise.all(ids.map<Promise<[string, boolean]>>(async id => [id, await FileSystemContentStorage.existPath(this.getFilePath(id))]))
+        const checks = await Promise.all(ids.map<Promise<[string, boolean]>>(async id => [id, await existPath(this.getFilePath(id))]))
         return new Map(checks)
     }
 
     private getFilePath(id: string): string {
         return path.join(this.root, id)
     }
-
-    private static async ensureDirectoryExists(directory: string): Promise<void> {
-        const alreadyExist = await FileSystemContentStorage.existPath(directory)
-        if (!alreadyExist) {
-            try {
-                await fs.promises.mkdir(directory, { recursive: true });
-            } catch (error) {
-                // Ignore these errors
-            }
-        }
-    }
-
-    private static async existPath(path: string): Promise<boolean> {
-        try {
-            await fs.promises.access(path, fs.constants.F_OK | fs.constants.W_OK)
-            return true
-        } catch (error) {
-            return false
-        }
-    }
-
+    
 }
 
