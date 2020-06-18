@@ -12,7 +12,7 @@ import { Authenticator } from "dcl-crypto";
 import { MockedRepository } from "../storage/MockedRepository";
 import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
 
-fdescribe("DenylistServiceDecorator", () => {
+describe("DenylistServiceDecorator", () => {
 
     const P1: Pointer = "p1"
     const P2: Pointer = "p2"
