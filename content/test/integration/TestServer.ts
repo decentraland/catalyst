@@ -1,5 +1,5 @@
 import fetch from "node-fetch"
-import { ServerAddress, Timestamp, EntityType, Pointer, DeploymentFilters, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash, AuditInfo } from "dcl-catalyst-commons"
+import { ServerAddress, Timestamp, EntityType, Pointer, DeploymentFilters, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { ContentClient, DeploymentFields } from "dcl-catalyst-client"
 import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
@@ -81,7 +81,7 @@ export class TestServer extends Server {
         return this.client.downloadContent(fileHash)
     }
 
-    getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
+    getAuditInfo(entity: ControllerEntity): Promise<LegacyAuditInfo> {
         return this.client.fetchAuditInfo(entity.type, entity.id)
     }
 

@@ -75,7 +75,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             this.synchronizationState = SynchronizationState.SYNCED;
             ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
         } catch (error) {
-            console.trace(error)
             this.synchronizationState = SynchronizationState.FAILED_TO_SYNC;
             ClusterSynchronizationManager.LOGGER.warn(`Failed to sync with servers. Reason:\n${error}`)
         } finally {

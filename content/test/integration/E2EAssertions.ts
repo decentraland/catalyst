@@ -1,7 +1,7 @@
 import { Authenticator } from "dcl-crypto"
 import assert from "assert"
 import { Response } from "node-fetch"
-import { LegacyDeploymentEvent, Timestamp, ServerAddress, ContentFileHash, Hashing, Deployment as ControllerDeployment, Entity as ControllerEntity, EntityContentItemReference, AuditInfo, EntityVersion } from "dcl-catalyst-commons"
+import { LegacyDeploymentEvent, Timestamp, ServerAddress, ContentFileHash, Hashing, Deployment as ControllerDeployment, Entity as ControllerEntity, EntityContentItemReference, EntityVersion, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { TestServer } from "./TestServer"
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from "../helpers/PromiseAssertions"
 import { DeployData } from "./E2ETestUtils"
@@ -164,7 +164,7 @@ export async function assertFileIsNotOnServer(server: TestServer, hash: ContentF
 
 export async function assertEntityIsOverwrittenBy(server: TestServer, entity: ControllerEntity, overwrittenBy: ControllerEntity) {
     // Legacy check
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.overwrittenBy, overwrittenBy.id)
 
     // Deployments check
@@ -174,7 +174,7 @@ export async function assertEntityIsOverwrittenBy(server: TestServer, entity: Co
 
 export async function assertEntityIsNotOverwritten(server: TestServer, entity: ControllerEntity) {
     // Legacy check
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.overwrittenBy, undefined)
 
     // Deployments check
@@ -185,7 +185,7 @@ export async function assertEntityIsNotOverwritten(server: TestServer, entity: C
 
 export async function assertEntityIsNotDenylisted(server: TestServer, entity: ControllerEntity) {
     // Legacy check
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.equal(auditInfo.isDenylisted, undefined)
 
     // Deployments check
@@ -195,7 +195,7 @@ export async function assertEntityIsNotDenylisted(server: TestServer, entity: Co
 
 export async function assertEntityIsDenylisted(server: TestServer, entity: ControllerEntity) {
     // Legacy check
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(auditInfo.isDenylisted)
 
     // Deployments check
@@ -205,7 +205,7 @@ export async function assertEntityIsDenylisted(server: TestServer, entity: Contr
 
 export async function assertContentNotIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
     // Legacy check
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(!auditInfo.denylistedContent || !auditInfo.denylistedContent.includes(contentHash))
 
     // Deployments check
@@ -215,7 +215,7 @@ export async function assertContentNotIsDenylisted(server: TestServer, entity: C
 
 export async function assertContentIsDenylisted(server: TestServer, entity: ControllerEntity, contentHash: ContentFileHash) {
     // Legacy check
-    const auditInfo: AuditInfo = await server.getAuditInfo(entity)
+    const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
     assert.ok(auditInfo.denylistedContent!!.includes(contentHash))
 
     // Deployments check
