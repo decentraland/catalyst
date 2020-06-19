@@ -8,6 +8,7 @@ import { ContentServerClient, ConnectionState } from "./clients/ContentServerCli
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
 import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
+import { shuffleArray } from "./ClusterUtils";
 
 export interface IdentityProvider {
     getIdentityInDAO(): ServerIdentity | undefined;
@@ -222,9 +223,12 @@ export class ContentCluster implements IdentityProvider {
     /** Returns all the addresses on the DAO, except for the current server's */
     private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerAddress[] {
         // Filter myself out
-        return Array.from(allServers)
+        const addresses = Array.from(allServers)
             .map(({ address }) => address)
             .filter(address => address !== this.myIdentity?.address)
+
+        // We are sorting the array, so when we query the servers, we will choose a different one each time
+        return shuffleArray(addresses)
     }
 
     /** Return the server's name, or the text "UNREACHABLE" if it couldn't be reached */

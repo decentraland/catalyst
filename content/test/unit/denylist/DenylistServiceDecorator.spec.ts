@@ -16,6 +16,7 @@ describe("DenylistServiceDecorator", () => {
 
     const P1: Pointer = "p1"
     const P2: Pointer = "p2"
+    const P3: Pointer = "p3"
     const content1 = buildRandomContent()
     const content2 = buildRandomContent()
     const ethAddress = random.alphaNumeric(10)
@@ -37,7 +38,7 @@ describe("DenylistServiceDecorator", () => {
     let service: MockedMetaverseContentService;
 
     beforeAll(async () => {
-        [entity1, entityFile1] = await buildEntity([P1], content1);
+        [entity1, entityFile1] = await buildEntity([P1, P3], content1);
         [entity2, ] = await buildEntity([P2], content2);
 
         P1Target = buildPointerTarget(entity1.type, P1);
@@ -120,6 +121,45 @@ describe("DenylistServiceDecorator", () => {
         // Assert no content is marked as denylisted
         deploymentEquals(entity2, deployment2)
         expect(deployment2.auditInfo.denylistedContent).toBeUndefined
+    })
+
+    it(`When a pointer is denylisted, then deployments whose pointers fully match the filter are not returned`, async () => {
+        const denylist = denylistWith(P1Target)
+        const decorator = getDecorator(denylist)
+
+        const { deployments } = await decorator.getDeployments( { pointers: [P1] });
+
+        expect(deployments.length).toBe(0)
+    })
+
+    it(`When a pointer is denylisted, then deployments whose pointers partially match the filter are returned`, async () => {
+        const denylist = denylistWith(P1Target)
+        const decorator = getDecorator(denylist)
+
+        const { deployments } = await decorator.getDeployments( { pointers: entity1.pointers });
+
+        expect(deployments.length).toBe(1)
+        deploymentEquals(entity1, deployments[0])
+    })
+
+    it(`When a pointer is denylisted but it is not used as a pointer filter, then it has no effect`, async () => {
+        const denylist = denylistWith(P1Target)
+        const decorator = getDecorator(denylist)
+
+        const { deployments } = await decorator.getDeployments( { pointers: entity2.pointers });
+
+        expect(deployments.length).toBe(1)
+        deploymentEquals(entity2, deployments[0])
+    })
+
+    it(`When a pointer is denylisted but it is not used as filter, then it has no effect`, async () => {
+        const denylist = denylistWith(P1Target)
+        const decorator = getDecorator(denylist)
+
+        const { deployments } = await decorator.getDeployments( { entityIds: [ entity1.id ] });
+
+        expect(deployments.length).toBe(1)
+        deploymentEquals(entity1, deployments[0])
     })
 
     it(`When an entity is not denylisted, then it is returned by pointers correctly`, async () => {

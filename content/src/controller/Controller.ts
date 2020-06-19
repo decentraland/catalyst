@@ -1,7 +1,7 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity, EntityVersion } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash } from "dcl-catalyst-commons";
 import { Entity } from "../service/Entity"
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
@@ -31,8 +31,8 @@ export class Controller {
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
         const type:EntityType    = this.parseEntityType(req.params.type)
-        const pointers:Pointer[] = this.asArray<Pointer>(req.query.pointer)
-        const ids:EntityId[]     = this.asArray<EntityId>(req.query.id)
+        const pointers:Pointer[] = this.asArray<Pointer>(req.query.pointer) ?? []
+        const ids:EntityId[]     = this.asArray<EntityId>(req.query.id) ?? []
         const fields:string      = req.query.fields
 
         // Validate type is valid
@@ -73,9 +73,9 @@ export class Controller {
         return type
     }
 
-    private asArray<T>(elements: T[]|T): T[] {
+    private asArray<T>(elements: T[]): T[] | undefined {
         if (!elements) {
-            return []
+            return undefined
         }
         if (elements instanceof Array) {
             return elements
@@ -186,10 +186,14 @@ export class Controller {
         // Method: GET
         // Path: /available-content
         // Query String: ?cid={hashId1}&cid={hashId2}
-        const cids = this.asArray(req.query.cid)
+        const cids = this.asArray<ContentFileHash>(req.query.cid)
 
-        const availableContent = await this.service.isContentAvailable(cids)
-        res.send(Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({ cid: fileHash, available: isAvailable })))
+        if (!cids) {
+            res.status(400).send('Please set at least one cid.')
+        } else {
+            const availableContent = await this.service.isContentAvailable(cids)
+            res.send(Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({ cid: fileHash, available: isAvailable })))
+        }
     }
 
     async getAudit(req: express.Request, res: express.Response) {
@@ -231,7 +235,8 @@ export class Controller {
         // Path: /deployments
         // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-        const entityTypes:(EntityType|undefined)[] | undefined = this.asArray<string>(req.query.entityType).map(type => this.parseEntityType(type))
+        const stringEntityTypes = this.asArray<string>(req.query.entityType);
+        const entityTypes:(EntityType|undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
         const entityIds:EntityId[] | undefined       = this.asArray<EntityId>(req.query.entityId)
         const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
         const toLocalTimestamp: number | undefined   = this.asInt(req.query.toLocalTimestamp)
@@ -243,7 +248,7 @@ export class Controller {
         const limit: number | undefined              = this.asInt(req.query.limit)
 
         // Validate type is valid
-        if (entityTypes.some(type => !type)) {
+        if (entityTypes && entityTypes.some(type => !type)) {
             res.status(400).send({ error: `Found an unrecognized entity type` });
             return
         }

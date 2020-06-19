@@ -45,9 +45,9 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve([])
     }
 
-    getDeployments(filters: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
+    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
         return Promise.resolve({
-            deployments: this.entities.map(entity => this.entityToDeployment(entity)),
+            deployments: this.entities.map(entity => this.entityToDeployment(entity)).filter(deployment => !filters?.entityIds || filters.entityIds.includes(deployment.entityId)),
             filters: { },
             pagination: {
                 offset: 0,

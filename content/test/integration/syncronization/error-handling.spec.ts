@@ -98,7 +98,7 @@ describe("End 2 end - Error handling", () => {
         await server1.deploy(deployData)
 
         // Try to fix the entity, and fail
-        await assertDeploymentFailsWith(() => server1.deploy(deployData, true), "This entity was already deployed. You can't redeploy it\nYou are trying to fix an entity that is not marked as failed")
+        await assertDeploymentFailsWith(() => server1.deploy(deployData, true), "You are trying to fix an entity that is not marked as failed")
     });
 
     async function runTest(errorType: FailureReason, causeOfFailure: (entity: ControllerEntity) => Promise<void>, removeCauseOfFailure?: () => Promise<void>, ) {
