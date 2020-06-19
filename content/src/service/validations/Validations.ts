@@ -1,14 +1,14 @@
 import ms from "ms"
-import { EntityType, EntityId, ContentFileHash, Timestamp, ContentFile, Pointer, ENTITY_FILE_NAME } from "dcl-catalyst-commons";
+import { EntityType, EntityId, ContentFileHash, Timestamp, ContentFile, Pointer, ENTITY_FILE_NAME, EntityVersion } from "dcl-catalyst-commons";
 import { Entity } from "../Entity";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
-import { EntityVersion, AuditInfoBase } from "../Audit";
 import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { DeploymentStatus, NoFailure } from "../errors/FailedDeploymentsManager";
 import { httpProviderForNetwork } from '../../../../contracts/utils';
 import { happenedBeforeEntities } from "../time/TimeSorting";
+import { LocalDeploymentAuditInfo } from "../Service";
 
 export class Validations {
 
@@ -149,17 +149,17 @@ export class ValidatorInstance {
 
     /** Validate that there is no entity with a higher version already deployed that the legacy entity is trying to overwrite */
     async validateLegacyEntity(entityToBeDeployed: Entity,
-        auditInfoBeingDeployed: AuditInfoBase,
+        auditInfoBeingDeployed: LocalDeploymentAuditInfo,
         entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>,
-        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<AuditInfoBase | undefined>,
+        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<LocalDeploymentAuditInfo | undefined>,
         validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
             if (auditInfoBeingDeployed.originalMetadata && auditInfoBeingDeployed.originalMetadata.originalVersion === EntityVersion.V2) {
                 const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
-                const currentAuditInfos: Map<Entity, AuditInfoBase | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, AuditInfoBase | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
+                const currentAuditInfos: Map<Entity, LocalDeploymentAuditInfo | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, LocalDeploymentAuditInfo | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
                 Array.from(currentAuditInfos.entries())
                     .filter(([, currentAuditInfo]) => !!currentAuditInfo)
-                    .map<[Entity, AuditInfoBase]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
+                    .map<[Entity, LocalDeploymentAuditInfo]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
                     .forEach(([currentEntity, currentAuditInfo]) => {
                     if (happenedBeforeEntities(currentEntity, entityToBeDeployed)) {
                         if (currentAuditInfo.version > auditInfoBeingDeployed.version) {

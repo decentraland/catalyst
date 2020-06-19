@@ -1,14 +1,13 @@
-import { ContentFileHash, ContentFile, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp } from "dcl-catalyst-commons";
-import { EnvironmentConfig, Bean, Environment } from "@katalyst/content/Environment";
+import { ContentFileHash, ContentFile, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp, EntityVersion } from "dcl-catalyst-commons";
+import { Bean, Environment } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
 import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
-import { MetaverseContentService } from "@katalyst/content/service/Service";
+import { MetaverseContentService, LocalDeploymentAuditInfo } from "@katalyst/content/service/Service";
 import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
 import { Entity } from "@katalyst/content/service/Entity";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory";
 import { MockedStorage } from "../storage/MockedStorage";
-import { EntityVersion, AuditInfoBase } from "@katalyst/content/service/Audit";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { Authenticator } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
@@ -23,7 +22,7 @@ import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOp
 
 describe("Service", function () {
 
-    const auditInfo: AuditInfoBase = {
+    const auditInfo: LocalDeploymentAuditInfo = {
         authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature'),
         version: EntityVersion.V3,
     }
@@ -83,20 +82,7 @@ describe("Service", function () {
         expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile.content)
     });
 
-    it(`When server is not in DAO, then deployments aren't allowed`, async () => {
-        const service = await buildService(false)
-
-        await assertPromiseRejectionIs(() => service.deployEntity([entityFile, randomFile], entity.id, auditInfo, ''),
-            'Deployments are not allow since server is not in DAO')
-    });
-
-    it(`When server is not in DAO, then fixes are still allowed`, async () => {
-        const service = await buildService(false)
-
-        await service.deployToFix([entityFile, randomFile], entity.id, auditInfo, '')
-    });
-
-    async function buildService(allowDeploymentsForTesting = true) {
+    async function buildService() {
         const env = new Environment()
             .registerBean(Bean.STORAGE, storage)
             .registerBean(Bean.HISTORY_MANAGER, historyManager)
@@ -109,7 +95,6 @@ describe("Service", function () {
             .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
             .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
-            .setConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, allowDeploymentsForTesting)
         return ServiceFactory.create(env);
     }
 

@@ -1,8 +1,7 @@
 import { random } from "faker"
-import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons"
-import { MetaverseContentService } from "@katalyst/content/service/Service"
+import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
+import { MetaverseContentService, LocalDeploymentAuditInfo } from "@katalyst/content/service/Service"
 import { Entity } from "@katalyst/content/service/Entity"
-import { AuditInfo, AuditInfoBase } from "@katalyst/content/service/Audit"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
@@ -21,9 +20,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         historySize: 0,
     }
 
-    static readonly AUDIT_INFO: AuditInfo = {
+    static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {
         localTimestamp: Date.now(),
         originTimestamp: Date.now(),
+        deployedTimestamp: Date.now(),
         originServerUrl: 'http://localhost',
         authChain: [{type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
         version: CURRENT_CONTENT_VERSION,
@@ -65,7 +65,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(this.entities.filter(entity => entity.type == type && ids.includes(entity.id)))
     }
 
-    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase): Promise<Timestamp> {
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
         return Promise.resolve(Date.now())
     }
 
@@ -73,7 +73,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return Promise.resolve(Date.now())
     }
 
-    deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: AuditInfoBase, repository?: RepositoryTask | Repository): Promise<number> {
+    deployLocalLegacy(files: ContentFile[], entityId: string, auditInfo: LocalDeploymentAuditInfo, repository?: RepositoryTask | Repository): Promise<number> {
         throw new Error("Method not implemented.")
     }
 
@@ -99,7 +99,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return MockedMetaverseContentService.STATUS
     }
 
-    getAuditInfo(type: EntityType, id: EntityId): Promise<AuditInfo> {
+    getAuditInfo(type: EntityType, id: EntityId): Promise<LegacyAuditInfo> {
         return Promise.resolve(MockedMetaverseContentService.AUDIT_INFO)
     }
 

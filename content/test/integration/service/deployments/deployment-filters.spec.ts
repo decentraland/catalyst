@@ -1,7 +1,6 @@
 import { Authenticator } from "dcl-crypto";
-import { EntityType, Timestamp } from "dcl-catalyst-commons";
+import { EntityType, Timestamp, EntityVersion, AuditInfo } from "dcl-catalyst-commons";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { AuditInfo, EntityVersion } from "@katalyst/content/service/Audit";
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
 import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from "../../E2ETestUtils";
 import { ExtendedDeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager";

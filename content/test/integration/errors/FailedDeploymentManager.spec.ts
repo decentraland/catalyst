@@ -1,9 +1,8 @@
 import { random, internet } from "faker"
-import { EntityType } from "dcl-catalyst-commons"
+import { EntityType, ServerAddress, Timestamp, EntityId } from "dcl-catalyst-commons"
 import { FailedDeploymentsManager, FailureReason, FailedDeployment, NoFailure } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
 import { Repository } from "@katalyst/content/storage/Repository"
-import { DeploymentEventBase } from "@katalyst/content/service/deployments/DeploymentManager"
 import { RepositoryFactory } from "@katalyst/content/storage/RepositoryFactory"
 
 describe("Integration - Failed Deployments Manager", function() {
@@ -59,7 +58,7 @@ describe("Integration - Failed Deployments Manager", function() {
         expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
     })
 
-    function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: DeploymentEventBase) {
+    function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: FakeDeployment) {
         expect(failedDeployment.entityId).toEqual(deployment.entityId)
         expect(failedDeployment.entityType).toEqual(deployment.entityType)
         expect(failedDeployment.originServerUrl).toEqual(deployment.originServerUrl)
@@ -67,12 +66,12 @@ describe("Integration - Failed Deployments Manager", function() {
         expect(failedDeployment.failureTimestamp).toBeGreaterThanOrEqual(deployment.originTimestamp)
     }
 
-    function reportDeployment({ deployment, reason, description }: { deployment: DeploymentEventBase; reason: FailureReason; description?: string }): Promise<null> {
+    function reportDeployment({ deployment, reason, description }: { deployment: FakeDeployment; reason: FailureReason; description?: string }): Promise<null> {
         const { entityType, entityId, originTimestamp, originServerUrl } = deployment
         return manager.reportFailure(repository.failedDeployments, entityType, entityId, originTimestamp, originServerUrl, reason, description)
     }
 
-    function buildRandomDeployment(): DeploymentEventBase {
+    function buildRandomDeployment(): FakeDeployment {
         const originTimestamp = Date.now()
         const originServerUrl = internet.url()
         const event =  {
@@ -85,3 +84,10 @@ describe("Integration - Failed Deployments Manager", function() {
     }
 
 })
+
+type FakeDeployment = {
+    entityType: EntityType,
+    entityId: EntityId,
+    originTimestamp: Timestamp,
+    originServerUrl: ServerAddress,
+}

@@ -1,9 +1,8 @@
 import { Authenticator } from "dcl-crypto"
 import assert from "assert"
 import { Response } from "node-fetch"
-import { LegacyDeploymentEvent, Timestamp, ServerAddress, ContentFileHash, Hashing, Deployment as ControllerDeployment, Entity as ControllerEntity, EntityContentItemReference } from "dcl-catalyst-commons"
+import { LegacyDeploymentEvent, Timestamp, ServerAddress, ContentFileHash, Hashing, Deployment as ControllerDeployment, Entity as ControllerEntity, EntityContentItemReference, EntityVersion, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { TestServer } from "./TestServer"
-import { LegacyAuditInfo, EntityVersion } from "@katalyst/content/service/Audit"
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from "../helpers/PromiseAssertions"
 import { DeployData } from "./E2ETestUtils"
 import { FailedDeployment, FailureReason } from "@katalyst/content/service/errors/FailedDeploymentsManager"
@@ -144,7 +143,7 @@ function assertEqualsDeploymentEvent(actualEvent: LegacyDeploymentEvent, expecte
     assert.equal(actualEvent.entityId, expectedEvent.entityId)
     assert.equal(actualEvent.entityType, expectedEvent.entityType)
     assert.equal(actualEvent.timestamp, expectedEvent.timestamp)
-    assert.ok(actualEvent.serverName.startsWith(expectedEvent.serverName), `Expected name to start with '${expectedEvent.serverName}'. Instead, it was '${actualEvent.serverName}'`)
+    assert.equal(actualEvent.serverName, expectedEvent.serverName)
 }
 
 async function assertEntityIsOnServer(server: TestServer, entity: ControllerEntity) {
@@ -243,7 +242,7 @@ export function buildDeployment(deployData: DeployData, entity: ControllerEntity
 }
 
 export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): LegacyDeploymentEvent {
-    return buildEventWithName(entity, server.namePrefix, timestamp)
+    return buildEventWithName(entity, encodeURIComponent(server.getAddress()), timestamp)
 }
 
 export function buildEventWithName(entity: ControllerEntity, name: string, timestamp: Timestamp): LegacyDeploymentEvent {

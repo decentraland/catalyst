@@ -2,10 +2,10 @@ import { Writable } from "stream"
 import parallelTransform from "parallel-transform"
 import log4js from "log4js"
 import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
+import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
 import { sortNonComparableFromOldestToNewest } from "../time/TimeSorting";
-import { ContentServerClient } from "./clients/contentserver/ContentServerClient";
+import { ContentServerClient } from "./clients/ContentServerClient";
 import { HistoryDeploymentOptions } from "./EventDeployer";
-import { DeploymentEventBase } from "../deployments/DeploymentManager";
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -19,20 +19,20 @@ export class EventStreamProcessor {
     constructor(private readonly deploymentBuilder: DeploymentPreparation) { }
 
     /**
-     * This method takes a history, goes through each event and tries to deploy them locally.
+     * This method takes a load of deployments, goes through each event and tries to deploy them locally.
      */
-    async deployHistory(history: DeploymentEventBase[], options?: HistoryDeploymentOptions) {
+    async processDeployments(deployments: Deployment[], options?: HistoryDeploymentOptions) {
         // Sort from oldest to newest
-        const sortedHistory = sortNonComparableFromOldestToNewest(history, event => event.originTimestamp)
+        const sortedHistory = sortNonComparableFromOldestToNewest(deployments, event => event.entityTimestamp)
 
         // Create a readable stream with all the deployments
         const deploymentsStream = streamFrom(sortedHistory.map((event, index) => [index, event]));
 
         // Build a transform stream that process the deployment info and prepares the deployment
-        const transform = this.prepareDeploymentBuilder(history.length, options)
+        const transform = this.prepareDeploymentBuilder(deployments.length, options)
 
         // Create writer stream that deploys the entity on this server
-        const deployerStream = this.prepareStreamDeployer(history.length, options);
+        const deployerStream = this.prepareStreamDeployer(deployments.length, options);
 
         // Build and execute the pipeline
         try {
@@ -82,5 +82,5 @@ export class EventStreamProcessor {
     }
 }
 
-type DeploymentPreparation = (event: DeploymentEventBase, preferred?: ContentServerClient) => Promise<DeploymentExecution>
+type DeploymentPreparation = (event: Deployment, preferred?: ContentServerClient) => Promise<DeploymentExecution>
 type DeploymentExecution = () => Promise<void>

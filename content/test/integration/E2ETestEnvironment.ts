@@ -44,8 +44,7 @@ export class E2ETestEnvironment {
             .setConfig(EnvironmentConfig.METRICS, false)
             .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
             .setConfig(EnvironmentConfig.LOG_LEVEL, "debug")
-            .setConfig(EnvironmentConfig.ALLOW_DEPLOYMENTS_FOR_TESTING, true)
-            .setConfig(EnvironmentConfig.PERFORM_MULTI_SERVER_ONBOARDING, false)
+            .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
             .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
             .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
         this.repository = await RepositoryFactory.create(this.sharedEnv)
@@ -172,7 +171,6 @@ export class ServerBuilder {
             const address = `http://localhost:${port}`
             this.testEnvCalls.addToDAO(address)
             const env = await this.builder
-                .withConfig(EnvironmentConfig.NAME_PREFIX, `Server${i + 1}_`)
                 .withConfig(EnvironmentConfig.SERVER_PORT, port)
                 .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
                 .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])

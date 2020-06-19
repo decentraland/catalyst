@@ -4,15 +4,8 @@ import { DeploymentsRepository } from "@katalyst/content/storage/repositories/De
 
 export class MockedHistoryManager implements HistoryManager {
 
-    setTimeAsImmutable(immutableTime: number): void {
-    }
-
     reportDeployment(deploymentsRepository: DeploymentsRepository): Promise<void> {
         return Promise.resolve()
-    }
-
-    getLastImmutableTime(): Timestamp {
-        return 0
     }
 
     getHistory(deploymentRepo: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {

@@ -4,20 +4,17 @@ import { setTimeout, clearTimeout } from "timers"
 import { ServerAddress, Timestamp, ServerName, Fetcher } from "dcl-catalyst-commons";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { delay } from "decentraland-katalyst-utils/util";
-import { ContentServerClient, UNREACHABLE, ConnectionState } from "./clients/contentserver/ContentServerClient";
-import { NameKeeper } from "../naming/NameKeeper";
-import { getRedirectClient } from "./clients/contentserver/RedirectContentServerClient";
-import { getClient } from "./clients/contentserver/ActiveContentServerClient";
-import { getUnreachableClient } from "./clients/contentserver/UnreachableContentServerClient";
-import { DAORemovalEvent, DAORemoval } from "./events/DAORemovalEvent";
-import { Listener, Disposable } from "./events/ClusterEvent";
+import { ContentServerClient, ConnectionState } from "./clients/ContentServerClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
+import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
 import { shuffleArray } from "./ClusterUtils";
 
 export interface IdentityProvider {
     getIdentityInDAO(): ServerIdentity | undefined;
 }
+
+const UNREACHABLE = 'UNREACHABLE'
 
 export class ContentCluster implements IdentityProvider {
 
@@ -31,34 +28,25 @@ export class ContentCluster implements IdentityProvider {
     private serverClients: Map<ServerAddress, ContentServerClient> = new Map()
     // All the servers on the DAO. Renewed with each sync
     private allServersInDAO: Set<ServerMetadata>
-    // Last immutable time. This shouldn't be a responsibility of the cluster, but we can avoid doing really long calls
-    // when creating a new client if we know this.
-    private lastImmutableTime: Timestamp = 0
-    // An event triggered when a server is removed fro the DAO
-    private removalEvent: DAORemovalEvent = new DAORemovalEvent()
+    // Server name for each address
+    private serverNames: Map<ServerAddress, ServerName> = new Map()
     // Time of last sync with the DAO
     private timeOfLastSync: Timestamp = 0
 
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
-        private readonly nameKeeper: NameKeeper,
         private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly fetcher: Fetcher,
-        private readonly requestTtlBackwards: number) { }
+        private readonly systemProperties: SystemPropertiesManager,
+        private readonly bootstrapFromScratch: boolean) { }
 
     /** Connect to the DAO for the first time */
-    async connect(lastImmutableTime: Timestamp): Promise<void> {
-        // Set the immutable time
-        this.setImmutableTime(lastImmutableTime)
-
+    async connect(): Promise<void> {
         // Get all servers on the DAO
         this.allServersInDAO = await this.dao.getAllContentServers()
 
         // Detect my own identity
         await this.detectMyIdentity(10)
-
-        // TODO: Remove when syncing with /deployments instead of /history
-        await delay(1000)
 
         // Perform first sync with the DAO
         await this.syncWithDAO()
@@ -74,7 +62,7 @@ export class ContentCluster implements IdentityProvider {
             .map(([address, client]) => ( {
                 address,
                 connectionState: client.getConnectionState(),
-                estimatedLocalImmutableTime: client.getEstimatedLocalImmutableTime(),
+                lastDeploymentTimestamp: client.getLastLocalDeploymentTimestamp(),
             } ))
 
         return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
@@ -84,8 +72,8 @@ export class ContentCluster implements IdentityProvider {
         if (this.myIdentity && this.myIdentity.name === serverName) {
             return this.myIdentity.address
         } else {
-            return Array.from(this.serverClients.entries())
-                .filter(([, client]) => client.getName() === serverName)
+            return Array.from(this.serverNames.entries())
+                .filter(([, name]) => name === serverName)
                 .map(([address]) => address)[0]
         }
     }
@@ -94,7 +82,7 @@ export class ContentCluster implements IdentityProvider {
         if (this.myIdentity && this.myIdentity.address === address) {
             return this.myIdentity.name
         } else {
-            return this.serverClients.get(address)?.getName()
+            return this.serverNames.get(address)
         }
     }
 
@@ -105,14 +93,6 @@ export class ContentCluster implements IdentityProvider {
     getAllActiveServersInCluster(): ContentServerClient[] {
         return Array.from(this.serverClients.values())
             .filter(client => client.getConnectionState() === ConnectionState.CONNECTED)
-    }
-
-    setImmutableTime(immutableTime: Timestamp) {
-        this.lastImmutableTime = immutableTime
-    }
-
-    listenToRemoval(listener: Listener<DAORemoval>): Disposable {
-        return this.removalEvent.on(listener)
     }
 
     getIdentityInDAO(): ServerIdentity | undefined {
@@ -134,44 +114,37 @@ export class ContentCluster implements IdentityProvider {
             // Get all addresses in cluster (except for me)
             const allAddresses: ServerAddress[] = this.getAllOtherAddressesOnDAO(this.allServersInDAO)
 
-            // Handle the possibility that some servers where removed from the DAO.
-            // If so, remove them from the list, and raise an event
-            await this.handleRemovalsFromDAO(allAddresses);
+            // Handle the possibility that some servers where removed from the DAO. If so, remove them from the list
+            this.handleRemovalsFromDAO(allAddresses);
 
-            // Get the server name for each address
+            // Update server names
+            // TODO: Remove this when everyone is calculating its own name based on the server url
             const names = await Promise.all(allAddresses
                 .map(async address => ({ address, name: await this.getServerName(address) })))
-
-            for (const { address, name: newName } of names) {
-                let newClient: ContentServerClient | undefined
-                // Check if we already knew the server
-                const previousClient: ContentServerClient | undefined = this.serverClients.get(address);
-                if (previousClient && previousClient.getConnectionState() !== ConnectionState.NEVER_REACHED) {
-                    if (newName === UNREACHABLE) {
-                        // Create redirect client
-                        newClient = getRedirectClient(this, previousClient.getName(), previousClient.getEstimatedLocalImmutableTime())
-                        ContentCluster.LOGGER.info(`Can't connect to server ${previousClient.getName()} on ${address}`)
-                    } else if (previousClient.getConnectionState() !== ConnectionState.CONNECTED) {
-                        // Create new client
-                        ContentCluster.LOGGER.info(`Could re-connect to server ${newName} on ${address}`)
-                        newClient = getClient(this.fetcher, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
-                    } else if (previousClient.getName() !== newName) {
-                        // Update known name to new one
-                        ContentCluster.LOGGER.warn(`Server's name changed on ${address}. It was ${previousClient.getName()} and now it is ${newName}.`)
-                        newClient = getClient(this.fetcher, address, this.requestTtlBackwards, newName, previousClient.getEstimatedLocalImmutableTime())
-                    }
-                } else {
-                    if (newName === UNREACHABLE) {
-                        // Create unreachable client
-                        newClient = getUnreachableClient()
-                    } else {
-                        // Create new client
-                        newClient = getClient(this.fetcher, address, this.requestTtlBackwards, newName, this.lastImmutableTime)
-                        ContentCluster.LOGGER.info(`Connected to new server ${newName} on ${address}`)
-                    }
+            for (const { address, name } of names) {
+                if (name !== UNREACHABLE) {
+                    this.serverNames.set(address, name)
                 }
-                if (newClient) {
-                    this.serverClients.set(address, newClient)
+            }
+
+            // Detect new servers
+            const newAddresses = allAddresses.filter(address => !this.serverClients.has(address))
+            if (newAddresses.length > 0) {
+                let lastKnownTimestamps: Map<ServerAddress, Timestamp> = new Map()
+
+                // Check if we want to start syncing from scratch or not
+                if (!this.bootstrapFromScratch) {
+                    lastKnownTimestamps = new Map(await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS))
+                }
+
+                for (const newAddress of newAddresses) {
+                    let lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
+                    lastDeploymentTimestamp =  0 // TODO: Remove this, on the next deployment
+
+                    // Create and store the new client
+                    const newClient = new ContentServerClient(newAddress, lastDeploymentTimestamp, this.fetcher)
+                    this.serverClients.set(newAddress, newClient)
+                    ContentCluster.LOGGER.info(`Connected to new server '${newAddress}'`)
                 }
             }
 
@@ -186,28 +159,15 @@ export class ContentCluster implements IdentityProvider {
         }
     }
 
-    private async handleRemovalsFromDAO(allAddresses: string[]) {
+    private handleRemovalsFromDAO(allAddresses: string[]): void {
         // Calculate if any known servers where removed from the DAO
-        const serversRemovedFromDAO = Array.from(this.serverClients.entries())
-            .filter(([address,]) => !allAddresses.includes(address));
+        const serversRemovedFromDAO = Array.from(this.serverClients.keys())
+            .filter(address => !allAddresses.includes(address));
 
         // Remove servers from list
-        serversRemovedFromDAO.forEach(([address,]) => this.serverClients.delete(address));
-
-        // Alert listeners that some servers where removed
-        const remainingServersOnDAO: ContentServerClient[] = this.getAllActiveServersInCluster()
-        const listenerReactions = serversRemovedFromDAO
-            .map(([, client]) => client)
-            .filter(client => client.getConnectionState() !== ConnectionState.NEVER_REACHED) // There is no point in letting listeners know that a server we could never reach is no longer on the DAO
-            .map(client => {
-                const daoRemoval = {
-                    serverRemoved: client.getName(),
-                    estimatedLocalImmutableTime: client.getEstimatedLocalImmutableTime(),
-                    remainingServers: remainingServersOnDAO,
-                }
-                return this.removalEvent.emit(daoRemoval);
-            })
-        await Promise.all(listenerReactions)
+        serversRemovedFromDAO.forEach(address => {
+            this.serverClients.delete(address)
+        });
     }
 
     /** Detect my own identity */
@@ -239,8 +199,7 @@ export class ContentCluster implements IdentityProvider {
 
                 if (serversWithMyChallengeText.length === 1){
                     const [ address ] = serversWithMyChallengeText[0]
-                    // TODO: In the future, calculate the name based on the address
-                    const name = this.nameKeeper.getServerName()
+                    const name = encodeURIComponent(address)
                     this.myIdentity = {
                         ...serversByAddresses.get(address)!!,
                         name

@@ -6,7 +6,6 @@ import { ContentCluster } from "../synchronization/ContentCluster"
 export class HistoryManagerImpl implements HistoryManager {
 
     static UNKNOWN_NAME = 'UNKNOWN_NAME'
-    private immutableTime: Timestamp = 0
     private historySize: number | undefined
 
     constructor(private readonly cluster: ContentCluster) { }
@@ -24,21 +23,13 @@ export class HistoryManagerImpl implements HistoryManager {
         return this.historySize ?? 0
     }
 
-    setTimeAsImmutable(immutableTime: number): void {
-        this.immutableTime = immutableTime
-    }
-
-    getLastImmutableTime(): Timestamp {
-        return this.immutableTime
-    }
-
     private static MAX_HISTORY_LIMIT = 500
     private static DEFAULT_HISTORY_LIMIT = 500
     /** Returns the history sorted from newest to oldest */
     async getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         let address: ServerAddress | undefined
         if (serverName) {
-            address = this.cluster.getAddressForServerName(serverName)
+            address = this.cluster.getAddressForServerName(serverName) ?? 'UNKNOWN_NAME'
         }
         const curatedOffset = (offset && offset>=0) ? offset : 0
         const curatedLimit = (limit && limit>0 && limit<=HistoryManagerImpl.MAX_HISTORY_LIMIT) ? limit : HistoryManagerImpl.DEFAULT_HISTORY_LIMIT

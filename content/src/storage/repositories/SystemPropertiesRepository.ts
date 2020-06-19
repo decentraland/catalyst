@@ -5,7 +5,7 @@ export class SystemPropertiesRepository {
     constructor(private readonly db: Repository) { }
 
     getProperty(key: string): Promise<string | undefined> {
-        return this.db.oneOrNone(`SELECT value FROM system_properties WHERE key = $1`, [ key ], value => value ?? undefined)
+        return this.db.oneOrNone(`SELECT value FROM system_properties WHERE key = $1`, [ key ], row => (row && row.value) ?? undefined)
     }
 
     setProperty(key: string, value: string) {

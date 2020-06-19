@@ -1,6 +1,6 @@
-import { ContentFile, ContentFileHash, ServerStatus, EntityType, Pointer, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { ContentFile, ContentFileHash, ServerStatus, EntityType, Pointer, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory, EntityVersion, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
+import { AuthChain } from "dcl-crypto";
 import { Entity } from "./Entity";
-import { AuditInfo, AuditInfoExternal, AuditInfoBase } from "./Audit";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
@@ -13,10 +13,10 @@ import { DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
 export interface MetaverseContentService {
     getEntitiesByPointers(type: EntityType, pointers: Pointer[], repository?: RepositoryTask | Repository): Promise<Entity[]>;
     getEntitiesByIds(type: EntityType, ids: EntityId[], repository?: RepositoryTask | Repository): Promise<Entity[]>;
-    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
-    deployLocalLegacy(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, repository?: RepositoryTask | Repository): Promise<Timestamp>;
-    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoBase, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
-    getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<AuditInfo | undefined>;
+    deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    deployLocalLegacy(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
+    getAuditInfo(type: EntityType, id: EntityId, repository?: RepositoryTask | Repository): Promise<LegacyAuditInfo | undefined>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
     deleteContent(fileHashes: ContentFileHash[]): Promise<void>;
@@ -33,15 +33,17 @@ export interface MetaverseContentService {
  */
 export interface ClusterDeploymentsService {
     reportErrorDuringSync(entityType: EntityType, entityId: EntityId, originTimestamp: Timestamp, originServerUrl: ServerAddress, reason: FailureReason, errorDescription?: string): Promise<null>;
-    deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void>;
-    deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfoExternal): Promise<void>;
+    deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void>;
+    deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo): Promise<void>;
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>;
 }
 
-/** This version of the service can keep track of the immutable time */
-export interface TimeKeepingService {
-    setImmutableTime(immutableTime: Timestamp): void;
+export type LocalDeploymentAuditInfo = {
+    version: EntityVersion,
+    authChain: AuthChain,
+    originalMetadata?: { // This is used for migrations
+        originalVersion: EntityVersion,
+        data: any,
+    },
 }
-
-
