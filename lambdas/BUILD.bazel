@@ -27,6 +27,7 @@ ts_library(
         "@npm//@types/node-fetch",
         "@npm//decentraland-commons",
         "@npm//web3",
+        "@npm//fp-future",
         "@npm//@types/web3",
         "@npm//aws-sdk",
         "@npm//dcl-crypto",

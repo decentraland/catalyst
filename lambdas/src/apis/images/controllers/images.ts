@@ -4,12 +4,15 @@ import { SmartContentServerFetcher } from "../../../SmartContentServerFetcher";
 import { Environment, EnvironmentConfig } from "../../../Environment";
 import fs from "fs";
 import sharp from "sharp";
-import fetch from "node-fetch"
+import fetch from "node-fetch";
+import future, { IFuture } from "fp-future";
 import { ensureDirectoryExists } from "decentraland-katalyst-commons/fsutils";
 
 const LOGGER = log4js.getLogger("ImagesController");
 
 const validSizes = ["128", "256", "512"];
+
+const existingDownloadsFutures: Record<string, IFuture<void>> = {};
 
 class ServiceError extends Error {
   statusCode: number;
@@ -37,6 +40,7 @@ async function getStorageLocation(env: Environment) {
 
   return root;
 }
+
 export async function getResizedImage(env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response) {
   // Method: GET
   // Path: /images/:cid/:size
@@ -69,24 +73,35 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
   }
 
   async function downloadAndResize(cid: string, size: string, filePath: string) {
-    const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`;
-    const contentServerResponse = await fetch(v3Url);
+    const downloadFuture = (existingDownloadsFutures[filePath] = future());
 
-    if (contentServerResponse.ok) {
-      const imageData = await contentServerResponse.arrayBuffer();
-      try {
-        await sharp(Buffer.from(imageData))
-          .resize({ width: parseInt(size) })
-          .toFile(filePath);
-      } catch (error) {
-        LOGGER.error(`Error while trying to conver image of ${cid} to size ${size}`, error);
-        throw new ServiceError("Couldn't resize content. Is content a valid image?", 400);
+    try {
+      const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`;
+      const contentServerResponse = await fetch(v3Url);
+
+      if (contentServerResponse.ok) {
+        const imageData = await contentServerResponse.arrayBuffer();
+        try {
+          await sharp(Buffer.from(imageData))
+            .resize({ width: parseInt(size) })
+            .toFile(filePath);
+
+          downloadFuture.resolve();
+          if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath];
+        } catch (error) {
+          LOGGER.error(`Error while trying to conver image of ${cid} to size ${size}`, error);
+          throw new ServiceError("Couldn't resize content. Is content a valid image?", 400);
+        }
+      } else if (contentServerResponse.status === 404) {
+        throw new ServiceError("Content not found in server", 404);
+      } else {
+        const body = await contentServerResponse.text();
+        throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500);
       }
-    } else if (contentServerResponse.status === 404) {
-      throw new ServiceError("Content not found in server", 404);
-    } else {
-      const body = await contentServerResponse.text();
-      throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500);
+    } catch (e) {
+      downloadFuture.reject(e);
+      if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath];
+      throw e;
     }
   }
 
@@ -94,11 +109,25 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
     const storageLocation = await getStorageLocation(env);
     const filePath = `${storageLocation}/${cid}_${size}`;
 
+    await existingDownloadOf(filePath);
+
     try {
       return await getFileStream(filePath);
     } catch (e) {
-      await downloadAndResize(cid, size, filePath);
+      if (!await existingDownloadOf(filePath)) {
+        await downloadAndResize(cid, size, filePath);
+      }
+
       return await getFileStream(filePath);
     }
   }
 }
+async function existingDownloadOf(filePath: string): Promise<boolean> {
+  if (existingDownloadsFutures[filePath]) {
+    await existingDownloadsFutures[filePath];
+    return true
+  }
+
+  return false
+}
+
