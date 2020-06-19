@@ -7,7 +7,7 @@ import { delay } from "decentraland-katalyst-utils/util";
 import { ContentServerClient, ConnectionState } from "./clients/ContentServerClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
-import { LastKnownDeploymentService } from "../Service";
+import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
 
 export interface IdentityProvider {
     getIdentityInDAO(): ServerIdentity | undefined;
@@ -31,19 +31,16 @@ export class ContentCluster implements IdentityProvider {
     private serverNames: Map<ServerAddress, ServerName> = new Map()
     // Time of last sync with the DAO
     private timeOfLastSync: Timestamp = 0
-    // Service in charge of knowing the last known deployments made by new servers
-    private service: LastKnownDeploymentService
 
     constructor(private readonly dao: DAOClient,
         private readonly timeBetweenSyncs: number,
         private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly fetcher: Fetcher,
+        private readonly systemProperties: SystemPropertiesManager,
         private readonly bootstrapFromScratch: boolean) { }
 
     /** Connect to the DAO for the first time */
-    async connect(service: LastKnownDeploymentService): Promise<void> {
-        this.service = service
-
+    async connect(): Promise<void> {
         // Get all servers on the DAO
         this.allServersInDAO = await this.dao.getAllContentServers()
 
@@ -129,20 +126,24 @@ export class ContentCluster implements IdentityProvider {
                 }
             }
 
-            for (const address of allAddresses) {
-                // If the address is new, then create the new client
-                if (!this.serverClients.has(address)) {
-                    // Check if we want to start syncing from scratch or not
-                    let lastDeploymentTimestamp: Timestamp = 0
-                    if (!this.bootstrapFromScratch) {
-                        lastDeploymentTimestamp = await this.service.getLastDeploymentTimestampFromServer(address) ?? 0
-                        lastDeploymentTimestamp = 0 // TODO: Remove this, on the next deployment
-                    }
+            // Detect new servers
+            const newAddresses = allAddresses.filter(address => !this.serverClients.has(address))
+            if (newAddresses.length > 0) {
+                let lastKnownTimestamps: Map<ServerAddress, Timestamp> = new Map()
+
+                // Check if we want to start syncing from scratch or not
+                if (!this.bootstrapFromScratch) {
+                    lastKnownTimestamps = new Map(await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS))
+                }
+
+                for (const newAddress of newAddresses) {
+                    let lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
+                    lastDeploymentTimestamp =  0 // TODO: Remove this, on the next deployment
 
                     // Create and store the new client
-                    const newClient = new ContentServerClient(address, lastDeploymentTimestamp, this.fetcher)
-                    this.serverClients.set(address, newClient)
-                    ContentCluster.LOGGER.info(`Connected to new server '${address}'`)
+                    const newClient = new ContentServerClient(newAddress, lastDeploymentTimestamp, this.fetcher)
+                    this.serverClients.set(newAddress, newClient)
+                    ContentCluster.LOGGER.info(`Connected to new server '${newAddress}'`)
                 }
             }
 

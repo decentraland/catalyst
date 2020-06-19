@@ -5,7 +5,9 @@ import { ContentServerClient } from "./clients/ContentServerClient";
 import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";
 import { delay } from "decentraland-katalyst-utils/util";
-import { LastKnownDeploymentService } from "../Service";
+import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
+import { ServerAddress, Timestamp } from "dcl-catalyst-commons";
+import { Deployment } from "../deployments/DeploymentManager";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -16,12 +18,13 @@ export interface SynchronizationManager {
 export class ClusterSynchronizationManager implements SynchronizationManager {
 
     private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager');
+    private lastKnownDeployments: Map<ServerAddress, Timestamp>
     private syncWithNodesTimeout: NodeJS.Timeout;
     private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
     private stopping: boolean = false
 
     constructor(private readonly cluster: ContentCluster,
-        private readonly service: LastKnownDeploymentService,
+        private readonly systemProperties: SystemPropertiesManager,
         private readonly deployer: EventDeployer,
         private readonly timeBetweenSyncs: number) { }
 
@@ -30,7 +33,10 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         this.stopping = false
 
         // Connect to the cluster
-        await this.cluster.connect(this.service)
+        await this.cluster.connect()
+
+        // Read last deployments
+        this.lastKnownDeployments = new Map(await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS))
 
         // Sync with other servers
         await this.syncWithServers()
@@ -64,13 +70,25 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
             // Fetch all new deployments
-            const allDeployments = await Promise.all(contentServers.map(server => server.getNewDeployments()))
+            const allDeployments = new Map(await Promise.all(contentServers.map<Promise<[ContentServerClient, Deployment[]]>>(async server => [server, await server.getNewDeployments()])))
 
             // Process them together
-            await this.deployer.processAllDeployments(allDeployments)
+            await this.deployer.processAllDeployments(Array.from(allDeployments.values()))
 
-            // If everything worked, then update the last deployment timesamp
-            contentServers.forEach(contentServer => contentServer.updateLastLocalDeploymentTimestamp())
+            // If everything worked, then update the last deployment timestamp
+            Array.from(allDeployments.entries())
+                .map(([ client, deployments ]) => ({ client, newLastKnownTimestamp: deployments[0]?.auditInfo?.localTimestamp }))
+                .filter(({ newLastKnownTimestamp }) => !!newLastKnownTimestamp)
+                .forEach(({ client, newLastKnownTimestamp }) => {
+                    // Update the client, so it knows from when to ask next time
+                    client.updateLastLocalDeploymentTimestamp(newLastKnownTimestamp)
+
+                    // Update the map, so we can store in on the database
+                    this.lastKnownDeployments.set(client.getAddress(), newLastKnownTimestamp)
+                })
+
+            // Update the database
+            await this.systemProperties.setSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS, Array.from(this.lastKnownDeployments.entries()))
 
             this.synchronizationState = SynchronizationState.SYNCED;
             ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)

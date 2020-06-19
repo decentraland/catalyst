@@ -39,10 +39,6 @@ export interface ClusterDeploymentsService {
     areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>;
 }
 
-export interface LastKnownDeploymentService {
-    getLastDeploymentTimestampFromServer(serverAddress: ServerAddress): Promise<Timestamp | undefined>
-}
-
 export type LocalDeploymentAuditInfo = {
     version: EntityVersion,
     authChain: AuthChain,

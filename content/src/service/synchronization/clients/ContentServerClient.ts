@@ -8,7 +8,6 @@ export class ContentServerClient {
     private static readonly LOGGER = log4js.getLogger('ContentServerClient');
     private readonly client: ContentClient
     private connectionState: ConnectionState = ConnectionState.NEVER_REACHED
-    private potentialNewLastLocalDeploymentTimestamp: Timestamp | undefined
 
     constructor(private readonly address: ServerAddress,
         private lastLocalDeploymentTimestamp: Timestamp,
@@ -19,8 +18,8 @@ export class ContentServerClient {
     /**
      * After entities have been deployed (or set as failed deployments), we can finally update the last deployment timestamp.
      */
-    updateLastLocalDeploymentTimestamp(): void {
-        this.lastLocalDeploymentTimestamp = Math.max(this.lastLocalDeploymentTimestamp, this.potentialNewLastLocalDeploymentTimestamp ?? -1);
+    updateLastLocalDeploymentTimestamp(timestamp: Timestamp): void {
+        this.lastLocalDeploymentTimestamp = Math.max(this.lastLocalDeploymentTimestamp, timestamp);
     }
 
     /** Return all new deployments, and store the local timestamp of the newest one. */
@@ -29,29 +28,22 @@ export class ContentServerClient {
             // Fetch the deployments
             const deployments: ControllerDeployment[] = await this.client.fetchAllDeployments({ fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 }, DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO)
 
-            // Map to their domain version
-            const mappedDeployments = deployments.map(deployment => ({
-                ...deployment,
-                content: new Map((deployment.content ?? []).map(({ key, hash }) => [ key, hash ]))
-            }))
-
-            // Update connection state
-            if (this.connectionState !== ConnectionState.CONNECTED) {
+             // Update connection state
+             if (this.connectionState !== ConnectionState.CONNECTED) {
                 ContentServerClient.LOGGER.info(`Could connect to '${this.address}'`)
             }
             this.connectionState = ConnectionState.CONNECTED
 
-            // Save potential new timestamp
-            this.potentialNewLastLocalDeploymentTimestamp = deployments[0]?.auditInfo?.localTimestamp
-
-            // Return the domain deployments
-            return mappedDeployments
+            // Map to th eir domain version
+            return deployments.map(deployment => ({
+                ...deployment,
+                content: new Map((deployment.content ?? []).map(({ key, hash }) => [ key, hash ]))
+            }))
         } catch (error) {
             if (this.connectionState === ConnectionState.CONNECTED) {
                 this.connectionState = ConnectionState.CONNECTION_LOST
                 ContentServerClient.LOGGER.info(`Lost connection to '${this.address}'`)
             }
-            this.potentialNewLastLocalDeploymentTimestamp = undefined
             ContentServerClient.LOGGER.error(`Failed to get new entities from content server '${this.getAddress()}'\n${error}`)
             return []
         }

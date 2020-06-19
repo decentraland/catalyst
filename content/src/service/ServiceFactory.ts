@@ -1,10 +1,10 @@
-import { MetaverseContentService, ClusterDeploymentsService, LastKnownDeploymentService } from "./Service";
+import { MetaverseContentService, ClusterDeploymentsService } from "./Service";
 import { Environment, Bean } from "../Environment";
 import { ServiceImpl } from "./ServiceImpl";
 import { ServiceStorage } from "./ServiceStorage";
 
 export class ServiceFactory {
-    static create(env: Environment): MetaverseContentService & ClusterDeploymentsService & LastKnownDeploymentService {
+    static create(env: Environment): MetaverseContentService & ClusterDeploymentsService {
         const serviceStorage = new ServiceStorage(env.getBean(Bean.STORAGE));
         return new ServiceImpl(
             serviceStorage,

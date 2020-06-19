@@ -1,7 +1,7 @@
 import log4js from "log4js"
 import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
-import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, LastKnownDeploymentService } from "./Service";
+import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo } from "./Service";
 import { happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
@@ -18,7 +18,7 @@ import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { DeploymentManager, DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
 
-export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService, LastKnownDeploymentService {
+export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
@@ -225,11 +225,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<LegacyAuditInfo | undefined> {
         return repository.taskIf(task => this.deploymentManager.getAuditInfo(task.deployments, task.migrationData, type, id))
-    }
-
-    async getLastDeploymentTimestampFromServer(serverAddress: string): Promise<number | undefined> {
-        const { deployments } = await this.repository.task(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, { originServerUrl: serverAddress }, 0, 1))
-        return deployments[0]?.auditInfo?.localTimestamp
     }
 
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {

@@ -1,10 +1,10 @@
-import { Timestamp } from "dcl-catalyst-commons";
+import { Timestamp, ServerAddress } from "dcl-catalyst-commons";
 import { Repository, RepositoryTask } from "@katalyst/content/storage/Repository";
-import { StringPropertyMapper, IntPropertyMapper, SystemPropertyMapper } from "./SystemPropertyMappers";
+import { IntPropertyMapper, SystemPropertyMapper, JSONPropertyMapper } from "./SystemPropertyMappers";
 
 export class SystemProperty<PropertyType> {
 
-    static readonly NAME: SystemProperty<string> = new SystemProperty('server_name', new StringPropertyMapper())
+    static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerAddress, Timestamp][] > = new SystemProperty('last_known_local_deployments', new JSONPropertyMapper())
     static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<Timestamp> = new SystemProperty('last_garbage_collection_time', new IntPropertyMapper())
 
     constructor(
