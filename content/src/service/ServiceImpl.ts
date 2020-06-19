@@ -117,8 +117,10 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
         validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
         return repository.txIf(async transaction => {
+            const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
+
             // Validate if the entity can be re deployed
-            await validation.validateThatEntityCanBeRedeployed(entity, entityId => this.isEntityAlreadyDeployed(entityId, transaction), validationContext)
+            await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
             // Validate that there is no entity with a higher version
             await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers, transaction), (type, id) => this.getAuditInfo(type, id, transaction), validationContext)
@@ -133,59 +135,62 @@ export class ServiceImpl implements MetaverseContentService, TimeKeepingService,
                 throw new Error(validation.getErrors().join('\n'))
             }
 
-            // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
-
             const localTimestamp = Date.now()
-            let auditInfoComplete: AuditInfo;
 
-            if (fix) {
-                const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(transaction.failedDeployments, entity.type, entity.id))!!
-                auditInfoComplete = {
-                    ...auditInfo,
-                    originTimestamp: failedDeployment.originTimestamp,
-                    originServerUrl: failedDeployment.originServerUrl,
-                    localTimestamp,
+            if (!isEntityAlreadyDeployed) {
+                // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
+
+                let auditInfoComplete: AuditInfo;
+
+                if (fix) {
+                    const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(transaction.failedDeployments, entity.type, entity.id))!!
+                    auditInfoComplete = {
+                        ...auditInfo,
+                        originTimestamp: failedDeployment.originTimestamp,
+                        originServerUrl: failedDeployment.originServerUrl,
+                        localTimestamp,
+                    }
+                } else {
+                    auditInfoComplete = {
+                        originTimestamp: localTimestamp,
+                        originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
+                        ...auditInfo,
+                        localTimestamp,
+                    }
                 }
-            } else {
-                auditInfoComplete = {
-                    originTimestamp: localTimestamp,
-                    originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
-                    ...auditInfo,
-                    localTimestamp,
-                }
+
+                // Calculate overwrites
+                const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
+
+                // Store the deployment
+                const deploymentId = await this.deploymentManager.saveDeployment(transaction.deployments, transaction.migrationData, transaction.content, entity, auditInfoComplete, overwrittenBy)
+
+                // Modify active pointers
+                const result = await this.pointerManager.referenceEntityFromPointers(transaction.lastDeployedPointers, deploymentId, entity)
+
+                // Save deployment delta
+                await this.deploymentManager.saveDelta(transaction.deploymentDeltas, deploymentId, result)
+
+                // Add to pointer history
+                await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
+
+                // Set who overwrote who
+                await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
+
+                // Store the entity's content
+                await this.storeEntityContent(hashes, alreadyStoredContent)
+
+                // Since we are still reporting the history size, add one to it
+                await this.historyManager.reportDeployment(transaction.deployments)
+
+                // Record deployment for analytics
+                this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
             }
-
-            // Calculate overwrites
-            const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
-
-            // Store the deployment
-            const deploymentId = await this.deploymentManager.saveDeployment(transaction.deployments, transaction.migrationData, transaction.content, entity, auditInfoComplete, overwrittenBy)
-
-            // Modify active pointers
-            const result = await this.pointerManager.referenceEntityFromPointers(transaction.lastDeployedPointers, deploymentId, entity)
-
-            // Save deployment delta
-            await this.deploymentManager.saveDelta(transaction.deploymentDeltas, deploymentId, result)
-
-            // Add to pointer history
-            await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
-
-            // Set who overwrote who
-            await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
 
             // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
             await this.failedDeploymentsManager.reportSuccessfulDeployment(transaction.failedDeployments, entity.type, entity.id)
 
-            // Store the entity's content
-            await this.storeEntityContent(hashes, alreadyStoredContent)
-
-            // Since we are still reporting the history size, add one to it
-            await this.historyManager.reportDeployment(transaction.deployments)
-
-            // Record deployment for analytics
-            this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
-
-            return auditInfoComplete.localTimestamp
+            return localTimestamp
         })
     }
 
