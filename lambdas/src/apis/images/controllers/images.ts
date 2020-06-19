@@ -12,7 +12,7 @@ const LOGGER = log4js.getLogger("ImagesController");
 
 const validSizes = ["128", "256", "512"];
 
-const filesFutures: Record<string, IFuture<void>> = {};
+const existingDownloadsFutures: Record<string, IFuture<void>> = {};
 
 class ServiceError extends Error {
   statusCode: number;
@@ -73,7 +73,7 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
   }
 
   async function downloadAndResize(cid: string, size: string, filePath: string) {
-    const fileFuture = (filesFutures[filePath] = future());
+    const downloadFuture = (existingDownloadsFutures[filePath] = future());
 
     try {
       const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`;
@@ -86,8 +86,8 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
             .resize({ width: parseInt(size) })
             .toFile(filePath);
 
-          fileFuture.resolve();
-          if (filesFutures[filePath] === fileFuture) delete filesFutures[filePath];
+          downloadFuture.resolve();
+          if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath];
         } catch (error) {
           LOGGER.error(`Error while trying to conver image of ${cid} to size ${size}`, error);
           throw new ServiceError("Couldn't resize content. Is content a valid image?", 400);
@@ -99,8 +99,8 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
         throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500);
       }
     } catch (e) {
-      fileFuture.reject(e);
-      if (filesFutures[filePath] === fileFuture) delete filesFutures[filePath];
+      downloadFuture.reject(e);
+      if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath];
       throw e;
     }
   }
@@ -109,19 +109,25 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
     const storageLocation = await getStorageLocation(env);
     const filePath = `${storageLocation}/${cid}_${size}`;
 
-    if (filesFutures[filePath]) {
-      await filesFutures[filePath];
-    }
+    await existingDownloadOf(filePath);
 
     try {
       return await getFileStream(filePath);
     } catch (e) {
-      if (filesFutures[filePath]) {
-        await filesFutures[filePath];
-      } else {
+      if (!await existingDownloadOf(filePath)) {
         await downloadAndResize(cid, size, filePath);
       }
+
       return await getFileStream(filePath);
     }
   }
 }
+async function existingDownloadOf(filePath: string): Promise<boolean> {
+  if (existingDownloadsFutures[filePath]) {
+    await existingDownloadsFutures[filePath];
+    return true
+  }
+
+  return false
+}
+
