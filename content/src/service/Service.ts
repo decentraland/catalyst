@@ -1,5 +1,4 @@
-import { ContentFile, ContentFileHash, ServerStatus, EntityType, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory, EntityVersion, AuditInfo } from "dcl-catalyst-commons";
-import { AuthChain } from "dcl-crypto";
+import { ContentFile, ContentFileHash, ServerStatus, EntityType, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
@@ -35,11 +34,4 @@ export interface ClusterDeploymentsService {
     areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>;
 }
 
-export type LocalDeploymentAuditInfo = {
-    version: EntityVersion,
-    authChain: AuthChain,
-    migrationData?: { // This is used for migrations
-        originalVersion: EntityVersion,
-        data: any,
-    },
-}
+export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'version'| 'authChain' | 'migrationData'>

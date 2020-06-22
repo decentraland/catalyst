@@ -6,24 +6,6 @@ export class LastDeployedPointersRepository {
 
     constructor(private readonly db: Repository) { }
 
-    /** Returns active deployments on the given pointers */
-    async getActiveDeploymentsOnPointers(entityType: EntityType, pointers: Pointer[]): Promise<Map<Pointer, EntityId | undefined>> {
-        if (pointers.length === 0) {
-            return new Map()
-        }
-        const result: { pointer: Pointer, entityId: EntityId | undefined }[] = await this.db.map(`
-            SELECT last_deployed_pointers.pointer, deployments.entity_id
-            FROM last_deployed_pointers
-            LEFT JOIN deployments ON last_deployed_pointers.deployment = deployments.id
-            WHERE last_deployed_pointers.pointer IN ($2:list) AND
-                last_deployed_pointers.entity_type = $1 AND
-                deployments.deleter_deployment IS NULL`, [entityType, pointers], row => ({
-                    pointer: row.pointer,
-                    entityId: row.entity_id,
-                }))
-        return new Map(result.map(({ pointer, entityId }) => [pointer, entityId]))
-    }
-
     /** Returns the last deployments (could be active or not) on the given pointers */
     getLastDeploymentsOnPointers(entityType: EntityType, pointers: Pointer[]): Promise<{ deployment: DeploymentId, entityId: EntityId, timestamp: Timestamp, pointers: Pointer[], deleted: boolean }[]> {
         if (pointers.length === 0) {
