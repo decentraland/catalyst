@@ -1,5 +1,5 @@
 import log4js from 'log4js'
-import { Timestamp, ContentFile, ContentFileHash, Deployment as ControllerDeployment, ServerAddress, Fetcher } from "dcl-catalyst-commons";
+import { Timestamp, ContentFile, ContentFileHash, Deployment as ControllerDeployment, ServerAddress, Fetcher, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 import { ContentClient, DeploymentFields } from "dcl-catalyst-client";
 import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager';
 
@@ -23,7 +23,7 @@ export class ContentServerClient {
     }
 
     /** Return all new deployments, and store the local timestamp of the newest one. */
-    async getNewDeployments(): Promise<Deployment[]> {
+    async getNewDeployments(): Promise<DeploymentWithAuditInfo[]> {
         try {
             // Fetch the deployments
             const deployments: ControllerDeployment[] = await this.client.fetchAllDeployments({ fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 }, DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO)
@@ -34,11 +34,12 @@ export class ContentServerClient {
             }
             this.connectionState = ConnectionState.CONNECTED
 
-            // Map to th eir domain version
-            return deployments.map(deployment => ({
-                ...deployment,
-                content: new Map((deployment.content ?? []).map(({ key, hash }) => [ key, hash ]))
-            }))
+            // Keep only values that are used for sync
+            return deployments.map(({ entityType, entityId, entityTimestamp, deployedBy, auditInfo }) => {
+                delete auditInfo.denylistedContent
+                delete auditInfo.isDenylisted
+                return { entityType, entityId, entityTimestamp, deployedBy, auditInfo }
+            })
         } catch (error) {
             if (this.connectionState === ConnectionState.CONNECTED) {
                 this.connectionState = ConnectionState.CONNECTION_LOST
@@ -65,7 +66,6 @@ export class ContentServerClient {
     getLastLocalDeploymentTimestamp() {
         return this.lastLocalDeploymentTimestamp
     }
-
 }
 
 export enum ConnectionState {

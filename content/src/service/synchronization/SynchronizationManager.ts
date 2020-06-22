@@ -6,8 +6,7 @@ import { ContentCluster } from "./ContentCluster";
 import { EventDeployer } from "./EventDeployer";
 import { delay } from "decentraland-katalyst-utils/util";
 import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
-import { ServerAddress, Timestamp } from "dcl-catalyst-commons";
-import { Deployment } from "../deployments/DeploymentManager";
+import { ServerAddress, Timestamp, EntityId, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -69,23 +68,32 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             // Gather all servers
             const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
-            // Fetch all new deployments
-            const allDeployments = new Map(await Promise.all(contentServers.map<Promise<[ContentServerClient, Deployment[]]>>(async server => [server, await server.getNewDeployments()])))
+            // Fetch all new deployments, removing duplicates
+            const deployments: Map<EntityId, DeploymentWithAuditInfo> = new Map()
+            const newLastKnownTimestamp: Map<ContentServerClient, Timestamp> = new Map()
+            const fetchingPromises = contentServers.map(async server => {
+                const newDeployments = await server.getNewDeployments()
+                const lastKnownTimestamp: Timestamp | undefined = deployments[0]?.auditInfo?.localTimestamp
+                if (lastKnownTimestamp) {
+                    newLastKnownTimestamp.set(server, lastKnownTimestamp)
+                }
+                newDeployments.forEach(deployment => deployments.set(deployment.entityId, deployment))
+            })
+
+            // Wait for all deployments to be fetched
+            await Promise.all(fetchingPromises)
 
             // Process them together
-            await this.deployer.processAllDeployments(Array.from(allDeployments.values()))
+            await this.deployer.processAllDeployments(Array.from(deployments.values()))
 
             // If everything worked, then update the last deployment timestamp
-            Array.from(allDeployments.entries())
-                .map(([ client, deployments ]) => ({ client, newLastKnownTimestamp: deployments[0]?.auditInfo?.localTimestamp }))
-                .filter(({ newLastKnownTimestamp }) => !!newLastKnownTimestamp)
-                .forEach(({ client, newLastKnownTimestamp }) => {
-                    // Update the client, so it knows from when to ask next time
-                    client.updateLastLocalDeploymentTimestamp(newLastKnownTimestamp)
+            newLastKnownTimestamp.forEach((newTimestamp, client) => {
+                // Update the client, so it knows from when to ask next time
+                client.updateLastLocalDeploymentTimestamp(newTimestamp)
 
-                    // Update the map, so we can store in on the database
-                    this.lastKnownDeployments.set(client.getAddress(), newLastKnownTimestamp)
-                })
+                // Update the map, so we can store in on the database
+                this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
+            })
 
             // Update the database
             await this.systemProperties.setSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS, Array.from(this.lastKnownDeployments.entries()))

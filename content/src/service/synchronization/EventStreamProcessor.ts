@@ -1,6 +1,7 @@
 import { Writable } from "stream"
 import parallelTransform from "parallel-transform"
 import log4js from "log4js"
+import { DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 import { streamFrom, awaitablePipeline } from "@katalyst/content/helpers/StreamHelper";
 import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
 import { sortNonComparableFromOldestToNewest } from "../time/TimeSorting";
@@ -21,7 +22,7 @@ export class EventStreamProcessor {
     /**
      * This method takes a load of deployments, goes through each event and tries to deploy them locally.
      */
-    async processDeployments(deployments: Deployment[], options?: HistoryDeploymentOptions) {
+    async processDeployments(deployments: DeploymentWithAuditInfo[], options?: HistoryDeploymentOptions) {
         // Sort from oldest to newest
         const sortedHistory = sortNonComparableFromOldestToNewest(deployments, event => event.entityTimestamp)
 

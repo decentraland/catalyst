@@ -1,6 +1,5 @@
 import log4js from "log4js"
-import { EntityId, ContentFile, ENTITY_FILE_NAME, ContentFileHash } from "dcl-catalyst-commons";
-import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
+import { EntityId, ContentFile, ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 import { ContentServerClient } from "./clients/ContentServerClient";
 import { Entity } from "../Entity";
 import { ClusterDeploymentsService } from "../Service";
@@ -21,19 +20,7 @@ export class EventDeployer {
             this.eventProcessor = new EventStreamProcessor((event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
         }
 
-    processAllDeployments(allDeployments: Deployment[][], options?: HistoryDeploymentOptions) {
-        // Remove duplicates
-        const map: Map<EntityId, Deployment> = new Map()
-        allDeployments.forEach(serverDeployments => serverDeployments.forEach(deployment => map.set(deployment.entityId, deployment)))
-
-        // Unify
-        const unifiedDeployments = Array.from(map.values())
-
-        // Deploy
-        return this.deployDeployments(unifiedDeployments, options)
-    }
-
-    private async deployDeployments(deployments: Deployment[], options?: HistoryDeploymentOptions) {
+    async processAllDeployments(deployments: DeploymentWithAuditInfo[], options?: HistoryDeploymentOptions) {
         // Determine whether I already know the entities
         const entitiesInDeployments: EntityId[] = deployments.map(({ entityId }) => entityId)
         const deployInfo = await this.service.areEntitiesAlreadyDeployed(entitiesInDeployments)
@@ -56,7 +43,7 @@ export class EventDeployer {
     }
 
     /** Download and prepare everything necessary to deploy an entity */
-    private async prepareDeployment(deployment: Deployment, source?: ContentServerClient): Promise<DeploymentExecution> {
+    private async prepareDeployment(deployment: DeploymentWithAuditInfo, source?: ContentServerClient): Promise<DeploymentExecution> {
         EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
 
         // Download the entity file
@@ -123,7 +110,7 @@ export class EventDeployer {
         return files
     }
 
-    private async getEntityFile(deployment: Deployment, source?: ContentServerClient): Promise<ContentFile | undefined> {
+    private async getEntityFile(deployment: DeploymentWithAuditInfo, source?: ContentServerClient): Promise<ContentFile | undefined> {
         const file: ContentFile | undefined = await this.getFileOrUndefined(deployment.entityId, source)
 
         // If we could download the entity file, rename it
@@ -150,13 +137,13 @@ export class EventDeployer {
             .map(([fileHash, _]) => fileHash)
     }
 
-    private reportError(deployment: Deployment, reason: FailureReason, description?: string): Promise<null> {
+    private reportError(deployment: DeploymentWithAuditInfo, reason: FailureReason, description?: string): Promise<null> {
         const { entityType, entityId, auditInfo } = deployment
         const { originTimestamp, originServerUrl } = auditInfo
         return this.service.reportErrorDuringSync(entityType, entityId, originTimestamp, originServerUrl, reason, description)
     }
 
-    private buildDeploymentExecution(deploymentEvent: Deployment, execution: () => Promise<void>): DeploymentExecution {
+    private buildDeploymentExecution(deploymentEvent: DeploymentWithAuditInfo, execution: () => Promise<void>): DeploymentExecution {
         return {
             metadata: {
                 deploymentEvent,
@@ -192,7 +179,7 @@ export class EventDeployer {
 
 export type DeploymentExecution = {
     metadata: {
-        deploymentEvent: Deployment
+        deploymentEvent: DeploymentWithAuditInfo
     },
     execution: () => Promise<void>,
 }
