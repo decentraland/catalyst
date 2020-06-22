@@ -1,7 +1,6 @@
 import log4js from 'log4js'
 import { Timestamp, ContentFile, ContentFileHash, Deployment as ControllerDeployment, ServerAddress, Fetcher, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 import { ContentClient, DeploymentFields } from "dcl-catalyst-client";
-import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager';
 
 export class ContentServerClient {
 
