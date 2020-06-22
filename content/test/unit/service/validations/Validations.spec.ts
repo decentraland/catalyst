@@ -1,5 +1,5 @@
 import * as EthCrypto from "eth-crypto";
-import { EntityType, Timestamp, EntityVersion } from "dcl-catalyst-commons";
+import { EntityType, Timestamp, EntityVersion, Entity, AuditInfo } from "dcl-catalyst-commons";
 import { Validations } from "@katalyst/content/service/validations/Validations";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext";
@@ -7,6 +7,7 @@ import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessChecke
 import { AuthChain, AuthLinkType } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 import ms from "ms";
+import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
 
 describe("Validations", function() {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
@@ -45,7 +46,7 @@ describe("Validations", function() {
     version: EntityVersion.V3,
     deployedTimestamp: 10,
     authChain: [],
-    originalMetadata: { // This is used for migrations
+    migrationData: { // This is used for migrations
       originalVersion: EntityVersion.V2,
       data: "data",
     },
@@ -55,14 +56,8 @@ describe("Validations", function() {
 
   it(`When a legacy entity is deployed and there is no entity, then no error is returned`, async () => {
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([]), () => Promise.resolve(undefined), ValidationContext.ALL);
-    expect(validation.getErrors().length).toBe(0);
-  });
-
-  it(`When a legacy entity is deployed and there is an entity without an audit info, then no error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 1001 });
-    const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(undefined), ValidationContext.ALL);
+    const history = { deployments: []}
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve(history), ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
@@ -74,7 +69,7 @@ describe("Validations", function() {
         authChain: [],
       }
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve(deploymentWith(entity, auditInfo)), ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
@@ -87,7 +82,7 @@ describe("Validations", function() {
         authChain: []
       }
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, legacyAuditInfo, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    await validation.validateLegacyEntity(LEGACY_ENTITY, legacyAuditInfo, () => Promise.resolve(deploymentWith(entity, auditInfo)), ValidationContext.ALL);
     expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`]);
   });
 
@@ -99,7 +94,7 @@ describe("Validations", function() {
         authChain: []
       }
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve(deploymentWith(entity, auditInfo)), ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
@@ -110,7 +105,7 @@ describe("Validations", function() {
         authChain: []
       }
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve(deploymentWith(entity, auditInfo)), ValidationContext.ALL);
     expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`]);
   });
 
@@ -126,7 +121,7 @@ describe("Validations", function() {
         }
       }
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve(deploymentWith(entity, auditInfo)), ValidationContext.ALL);
     expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`]);
   });
 
@@ -136,13 +131,13 @@ describe("Validations", function() {
         version: EntityVersion.V3,
         deployedTimestamp: 10,
         authChain: [],
-        originalMetadata: {
+        migrationData: {
             originalVersion: EntityVersion.V2,
             data: "data",
         }
       }
     const validation = getValidatorWithMockedAccess();
-    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve([entity]), () => Promise.resolve(auditInfo), ValidationContext.ALL);
+    await validation.validateLegacyEntity(LEGACY_ENTITY, LEGACY_AUDIT_INFO, () => Promise.resolve(deploymentWith(entity, auditInfo)), ValidationContext.ALL);
     expect(validation.getErrors().length).toBe(0);
   });
 
@@ -382,4 +377,24 @@ function getValidatorWithMockedAccess() {
     new ContentAuthenticator(),
     "ropsten",
     ms('10m')).getInstance();
+}
+
+function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
+    const deployment: Deployment = {
+        ...entity,
+        entityId: entity.id,
+        entityTimestamp: entity.timestamp,
+        entityType: entity.type,
+        deployedBy: '0x...',
+        content: undefined,
+        auditInfo: {
+            version: EntityVersion.V2,
+            authChain: [],
+            originServerUrl: '',
+            originTimestamp: 10,
+            localTimestamp: 20,
+            ...auditInfo
+        }
+    }
+    return { deployments: [deployment] }
 }

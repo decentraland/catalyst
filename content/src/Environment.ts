@@ -15,7 +15,6 @@ import { DAOClientFactory } from "./service/synchronization/clients/DAOClientFac
 import { AuthenticatorFactory } from "./service/auth/AuthenticatorFactory";
 import { AccessCheckerImplFactory } from "./service/access/AccessCheckerImplFactory";
 import { FetcherFactory } from "./helpers/FetcherFactory";
-import { CacheManagerFactory } from "./service/caching/CacheManagerFactory";
 import { ValidationsFactory } from "./service/validations/ValidationsFactory";
 import { ChallengeSupervisor } from "./service/synchronization/ChallengeSupervisor";
 import { RepositoryFactory } from "./storage/RepositoryFactory";
@@ -104,7 +103,6 @@ export const enum Bean {
     AUTHENTICATOR,
     FAILED_DEPLOYMENTS_MANAGER,
     FETCHER,
-    CACHE_MANAGER,
     VALIDATIONS,
     CHALLENGE_SUPERVISOR,
     REPOSITORY,
@@ -129,7 +127,6 @@ export enum EnvironmentConfig {
     FILE_DOWNLOAD_REQUEST_TIMEOUT,
     USE_COMPRESSION_MIDDLEWARE,
     BOOTSTRAP_FROM_SCRATCH,
-    CACHE_SIZES,
     REQUEST_TTL_BACKWARDS,
     DCL_PARCEL_ACCESS_URL,
     SQS_QUEUE_URL_REPORTING,
@@ -187,7 +184,6 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT  , () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE     , () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH         , () => process.env.BOOTSTRAP_FROM_SCRATCH === 'true');
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CACHE_SIZES                    , () => new Map(Object.entries(process.env).filter(([name,]) => name.startsWith("CACHE"))));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_QUEUE_URL_REPORTING        , () => process.env.SQS_QUEUE_URL_REPORTING)
@@ -209,7 +205,6 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY                  , () => repository)
         this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER   , () => SystemPropertiesManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR        , () => new ChallengeSupervisor())
-        this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER               , () => CacheManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.FETCHER                , () => FetcherFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
