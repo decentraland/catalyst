@@ -27,7 +27,7 @@ export class PeersService implements IPeersService {
   // This structure contains information of all peers, even those that have disconnected. To know if a peer is disconnected, check the realm
   private peers: Record<string, PeerInfo> = {};
 
-  constructor(private realmProvider: () => IRealm, private distanceFunction: (p1: Position, p2: Position) => number = discretizedPositionDistance) {}
+  constructor(private realmProvider: () => IRealm, private distanceFunction: (p1: Position, p2: Position) => number = discretizedPositionDistance()) {}
 
   notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
     this.notifyPeersById(

@@ -25,7 +25,7 @@ export type PeerData = {
 
 type PacketData = { messageData: MessageData } | { pingData: PingData } | { pongData: PongData };
 
-type PeerResponse = { id?: string; userId?: string; peerId?: string };
+type PeerResponse = { id?: string; userId?: string; peerId?: string; position?: Position };
 
 const PeerSignals = { offer: "offer", answer: "answer" };
 
@@ -37,7 +37,7 @@ function signalMessage(peer: PeerData, connectionId: string, signal: SignalData)
 
 type ActivePing = { results: PingResult[]; startTime?: number; future: IFuture<PingResult[]> };
 
-// Try not to use this. It should be removed when lighthouses are updated
+// Try not to use this. It is domain specific and should be phased out eventually
 function toParcel(position: any) {
   if (position instanceof Array && position.length === 3) {
     return [Math.floor(position[0] / 16), Math.floor(position[2] / 16)];
@@ -101,7 +101,7 @@ export class Peer implements IPeer {
     this.config.backoffMs = this.config.backoffMs ?? 2000;
 
     if (this.config.positionConfig) {
-      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance;
+      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance([100, 200, 300, 400]);
       this.config.positionConfig.nearbyPeersDistance = this.config.positionConfig.nearbyPeersDistance ?? DISCRETIZE_POSITION_INTERVALS[DISCRETIZE_POSITION_INTERVALS.length - 1];
     }
 
@@ -174,14 +174,14 @@ export class Peer implements IPeer {
       ...(this.config.socketBuilder ? { socketBuilder: this.config.socketBuilder } : {}),
     });
 
-    this.peerJsConnection.on(PeerEventType.AssignedId, id => this.peerId = id);
+    this.peerJsConnection.on(PeerEventType.AssignedId, (id) => (this.peerId = id));
   }
 
   public peerIdOrFail(): string {
-    if(this.peerId) {
-      return this.peerId
+    if (this.peerId) {
+      return this.peerId;
     } else {
-      throw new Error("This peer doesn't have an id yet")
+      throw new Error("This peer doesn't have an id yet");
     }
   }
 
@@ -220,7 +220,7 @@ export class Peer implements IPeer {
     return this.config.positionConfig
       ? {
           position: this.config.positionConfig.selfPosition(),
-          // This is domain specific, but is kept here for retrocompatibility with old lighthouses. When all lighthouses are updated, we can remove it
+          // This is domain specific, but we still need it for finding crowded realms
           parcel: toParcel(this.config.positionConfig.selfPosition()),
         }
       : {};
@@ -336,7 +336,7 @@ export class Peer implements IPeer {
 
     this.currentLayer = layer;
     this.cleanStateAndConnections();
-    this.updateKnownPeers(layerUsers.map((it) => ({ id: (it.id ?? it.userId)! })));
+    this.updateKnownPeers(layerUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position })));
 
     //@ts-ignore
     const ignored = this.updateNetwork();
@@ -372,7 +372,7 @@ export class Peer implements IPeer {
 
     this.updateKnownPeersWithRoom(
       room,
-      roomUsers.map((it) => ({ id: (it.id ?? it.userId)! }))
+      roomUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position }))
     );
 
     await this.updateNetwork();
@@ -401,16 +401,14 @@ export class Peer implements IPeer {
   }
 
   private updateKnownPeers(newPeers: MinPeerData[]) {
-    //We remove those peers that are not in this newPeers list
-    Object.keys(this.knownPeers).forEach((peerId) => {
-      if (!newPeers.some(($) => $.id === peerId)) {
-        this.removeKnownPeer(peerId);
-      }
-    });
+    //We don't need to remove existing peers since they will eventually expire
 
     newPeers.forEach((peer) => {
       if (peer.id !== this.peerId) {
         this.addKnownPeerIfNotExists(peer);
+        if (peer.position) {
+          this.setPeerPositionIfExistingPositionIsOld(peer.id, peer.position);
+        }
       }
     });
   }
@@ -464,17 +462,15 @@ export class Peer implements IPeer {
 
       this.checkConnectionsSanity();
 
-      let connectionCandidates = Object.values(this.knownPeers).filter((it) => !this.isConnectedTo(it.id));
+      let connectionCandidates = Object.values(this.knownPeers).filter((it) => this.isValidConnectionCandidate(it));
 
-      if (connectionCandidates.length > 0) {
-        let operation: NetworkOperation | undefined;
-        while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
-          try {
-            connectionCandidates = await operation();
-          } catch (e) {
-            // We may want to invalidate the operation or something to avoid repeating the same mistake
-            this.log(LogLevel.DEBUG, "Error performing operation", operation, e);
-          }
+      let operation: NetworkOperation | undefined;
+      while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
+        try {
+          connectionCandidates = await operation();
+        } catch (e) {
+          // We may want to invalidate the operation or something to avoid repeating the same mistake
+          this.log(LogLevel.DEBUG, "Error performing operation", operation, e);
         }
       }
     } finally {
@@ -482,6 +478,15 @@ export class Peer implements IPeer {
 
       this.updatingNetwork = false;
     }
+  }
+
+  private isValidConnectionCandidate(it: KnownPeerData): boolean {
+    return !this.isConnectedTo(it.id) && this.isValidConnectionByDistance(it);
+  }
+
+  private isValidConnectionByDistance(peer: KnownPeerData) {
+    const distance = this.distanceTo(peer.id);
+    return !this.config.positionConfig?.maxConnectionDistance || (typeof distance !== "undefined" && distance <= this.config.positionConfig.maxConnectionDistance);
   }
 
   private checkConnectionsSanity() {
@@ -577,6 +582,22 @@ export class Peer implements IPeer {
         }
       }
     }
+
+    // We drop those connections too far away
+    if (this.config.positionConfig?.disconnectDistance) {
+      const connectionsToDrop = Object.keys(this.connectedPeers).filter((it) => {
+        const distance = this.distanceTo(it);
+        // We need to check that we are actually connected to the peer, and also only disconnect to it if we know we are far away
+        return this.isConnectedTo(it) && distance && distance >= this.config.positionConfig!.disconnectDistance!;
+      });
+
+      if (connectionsToDrop.length > 0) {
+        return async () => {
+          connectionsToDrop.forEach((it) => this.disconnectFrom(it));
+          return connectionCandidates;
+        };
+      }
+    }
   }
 
   private getWorstConnectedPeerByDistance(): [number, string] | undefined {
@@ -670,6 +691,15 @@ export class Peer implements IPeer {
 
   setPeerPosition(peerId: string, position: Position) {
     if (this.knownPeers[peerId]) {
+      this.knownPeers[peerId].position = position;
+    }
+  }
+
+  setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
+    const timestamp = this.knownPeers[peerId]?.timestamp;
+    if (this.knownPeers[peerId] && (!timestamp || Date.now() - timestamp > 30000)) {
+      // We assume that if we haven't received a position from a peer in 30 seconds,
+      // then we can safely replace the position even if it is not the most updated
       this.knownPeers[peerId].position = position;
     }
   }
@@ -1216,8 +1246,7 @@ export class Peer implements IPeer {
   }
 
   private checkForCrossOffers(peerId: string, sessionId?: string) {
-    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) &&
-      (!sessionId || this.connectedPeers[peerId].sessionId !== sessionId) && this.peerIdOrFail() < peerId;
+    const isCrossOfferToBeDiscarded = this.hasInitiatedConnectionFor(peerId) && (!sessionId || this.connectedPeers[peerId].sessionId !== sessionId) && this.peerIdOrFail() < peerId;
     if (isCrossOfferToBeDiscarded) {
       this.log(LogLevel.WARN, "Received offer/candidate for already existing peer but it was discarded: " + peerId);
     }

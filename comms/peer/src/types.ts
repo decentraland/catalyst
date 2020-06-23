@@ -17,7 +17,7 @@ export type KnownPeerData = {
   latency?: number;
   hops?: number;
 };
-export type MinPeerData = { id: string; rooms?: string[] };
+export type MinPeerData = { id: string; rooms?: string[]; position?: Position };
 
 export interface IPeer {
   peerId?: string;
@@ -41,7 +41,7 @@ export enum LogLevel {
   INFO = 2,
   WARN = 3,
   ERROR = 4,
-  NONE = Number.MAX_SAFE_INTEGER
+  NONE = Number.MAX_SAFE_INTEGER,
 }
 
 export type LogLevelString = keyof typeof LogLevel;
@@ -69,7 +69,7 @@ export type PeerConfig = {
   authHandler?: (msg: string) => Promise<string>;
   positionConfig?: PositionConfig;
   statusHandler?: (status: string) => void;
-  statsUpdateInterval?: number; 
+  statsUpdateInterval?: number;
   /**
    * If not set, the peer won't execute pings regularly.
    * Keep in mind that the peer won't execute two pings at the same time.
@@ -83,6 +83,13 @@ export type PositionConfig = {
   selfPosition: () => Position | undefined;
   distance?: (l1: Position, l2: Position) => number;
   nearbyPeersDistance?: number;
+  /** Maximum distance for selecting connection candidates*/
+
+  maxConnectionDistance?: number;
+  /** Distance for which peers will be disconnected when updating network. It should be greater than maxConnectionDistance.
+   * If not specified, connections will not be dropped by distance*/
+
+  disconnectDistance?: number;
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
