@@ -246,6 +246,7 @@ export class Controller {
         const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
         const offset: number | undefined             = this.asInt(req.query.offset)
         const limit: number | undefined              = this.asInt(req.query.limit)
+        let fields: string | undefined             = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -253,10 +254,29 @@ export class Controller {
             return
         }
 
+        // TODO: Delete after one deployment
+        if (showAudit) {
+            if (fields && !fields.includes(DeploymentField.AUDIT_INFO)) {
+                fields += `,${DeploymentField.AUDIT_INFO}`
+            } else if (!fields) {
+                fields = `${DeploymentField.POINTERS},${DeploymentField.CONTENT},${DeploymentField.METADATA},${DeploymentField.AUDIT_INFO}`
+            }
+        }
+
+        // Validate fields are correct or empty
+        let enumFields: DeploymentField[]
+        if (fields) {
+            const acceptedValues = Object.values(DeploymentField).map(e => e.toString())
+            enumFields = fields.split(',')
+                .filter(f => acceptedValues.includes(f))
+                .map(f => f as DeploymentField)
+        } else {
+            enumFields = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]
+        }
+
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
         const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
-        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.maskEntity(deployment))
-            .map(deployment => (!showAudit ? {...deployment, auditInfo: undefined } : deployment))
+        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.maskEntity(deployment, enumFields))
 
         res.send( { deployments: controllerDeployments, filters, pagination })
     }
@@ -381,6 +401,13 @@ export enum EntityField {
     CONTENT = "content",
     POINTERS = "pointers",
     METADATA = "metadata",
+}
+
+export enum DeploymentField {
+    CONTENT = "content",
+    POINTERS = "pointers",
+    METADATA = "metadata",
+    AUDIT_INFO = "auditInfo",
 }
 
 export type ControllerDenylistData = {
