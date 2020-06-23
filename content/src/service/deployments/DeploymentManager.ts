@@ -1,10 +1,8 @@
-import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
+import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
 import { MigrationDataRepository } from "@katalyst/content/storage/repositories/MigrationDataRepository";
-import { CacheByType } from "../caching/Cache";
-import { CacheManager, ENTITIES_CACHE_CONFIG } from "../caching/CacheManager";
 import { DeploymentResult, DELTA_POINTER_RESULT } from "../pointers/PointerManager";
 import { DeploymentDeltasRepository } from "@katalyst/content/storage/repositories/DeploymentDeltasRepository";
 
@@ -12,23 +10,8 @@ export class DeploymentManager {
 
     private static MAX_HISTORY_LIMIT = 500
 
-    private entities: CacheByType<EntityId, Entity>
-
-    constructor(cacheManager: CacheManager) {
-        this.entities = cacheManager.buildEntityTypedCache(ENTITIES_CACHE_CONFIG)
-    }
-
     areEntitiesDeployed(deploymentRepository: DeploymentsRepository, entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
         return deploymentRepository.areEntitiesDeployed(entityIds)
-    }
-
-    getEntitiesByIds(deploymentRepository: DeploymentsRepository, contentFilesRepository: ContentFilesRepository, entityType: EntityType, entityIds: EntityId[]): Promise<Entity[]> {
-        return this.entities.get(entityType, entityIds, async (type, ids) => {
-            const deployments = await deploymentRepository.getEntitiesByIds(type, ids)
-            const deploymentIds = deployments.map(row => row.id);
-            const contents = await contentFilesRepository.getContentFiles(deploymentIds)
-            return new Map(deployments.map(row => [row.entityId, { id: row.entityId, type: row.entityType, pointers: row.pointers, timestamp: row.timestamp, content: contents.get(row.id), metadata: row.metadata }]))
-        })
     }
 
     async getDeployments(
@@ -95,25 +78,8 @@ export class DeploymentManager {
                 await contentRepository.saveContentFiles(deploymentId, entity.content)
             }
 
-            this.entities.invalidate(entity.type, entity.id)
 
             return deploymentId
-    }
-
-    async getAuditInfo(deploymentsRepository: DeploymentsRepository, migrationDataRepository: MigrationDataRepository, type: EntityType, id: EntityId): Promise<LegacyAuditInfo | undefined> {
-        const deploymentResult = await deploymentsRepository.getAuditInfo(type, id)
-        if (!deploymentResult) {
-            return undefined
-        }
-        const migrationResult = await migrationDataRepository.getMigrationData(deploymentResult.deploymentId)
-
-        const auditInfo: LegacyAuditInfo = {
-            ...deploymentResult.auditInfo,
-            originalMetadata: migrationResult.get(deploymentResult.deploymentId),
-            deployedTimestamp: deploymentResult.auditInfo.originTimestamp,
-        }
-
-        return auditInfo
     }
 
     setEntitiesAsOverwritten(deploymentsRepository: DeploymentsRepository, overwritten: Set<DeploymentId>, overwrittenBy: DeploymentId) {

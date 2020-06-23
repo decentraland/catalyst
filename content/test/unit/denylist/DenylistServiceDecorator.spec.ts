@@ -1,6 +1,6 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { Pointer, ContentFile, EntityVersion, LegacyAuditInfo } from "dcl-catalyst-commons";
+import { Pointer, ContentFile, EntityVersion } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
@@ -54,35 +54,16 @@ describe("DenylistServiceDecorator", () => {
                 .build()
     })
 
-    it(`When a pointer is denylisted, then no entities are reported on it`, async () => {
-        const denylist = denylistWith(P1Target)
-        const decorator = getDecorator(denylist)
-
-        const entities = await decorator.getEntitiesByPointers(entity1.type, [P1]);
-
-        expect(entities.length).toBe(0)
-    })
-
-    it(`When a pointer is not denylisted, then it reports the entity correctly`, async () => {
-        const denylist = denylistWith(P1Target)
-        const decorator = getDecorator(denylist)
-
-        const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers);
-
-        expect(entities).toEqual([entity2])
-    })
-
-    it(`When an entity is denylisted, then it is returned by pointers, but without content or metadata`, async () => {
+    it(`When an entity is not denylisted, then the audit info is not modified`, async () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers);
+        const { deployments } = await decorator.getDeployments();
 
-        expect(entities.length).toBe(1)
-        const returnedEntity = entities[0];
-        entitiesEqualNonSanitizableProperties(returnedEntity, entity2)
-        expect(returnedEntity.metadata).toEqual(DenylistServiceDecorator.DENYLISTED_METADATA)
-        expect(returnedEntity.content).toBeUndefined()
+        expect(deployments.length).toBe(2)
+        const [ deployment1 ] = deployments
+
+        expect(deployment1.auditInfo).toEqual(MockedMetaverseContentService.AUDIT_INFO)
     })
 
     it(`When an entity is denylisted, then it is returned on deployments, but without content or metadata`, async () => {
@@ -162,37 +143,6 @@ describe("DenylistServiceDecorator", () => {
         deploymentEquals(entity1, deployments[0])
     })
 
-    it(`When an entity is not denylisted, then it is returned by pointers correctly`, async () => {
-        const denylist = denylistWith(entity2Target)
-        const decorator = getDecorator(denylist)
-
-        const entities = await decorator.getEntitiesByPointers(entity1.type, entity1.pointers);
-
-        expect(entities).toEqual([entity1])
-    })
-
-    it(`When an entity is denylisted, then it is returned by id, but without content or metadata`, async () => {
-        const denylist = denylistWith(entity2Target)
-        const decorator = getDecorator(denylist)
-
-        const entities = await decorator.getEntitiesByIds(entity2.type, [entity2.id]);
-
-        expect(entities.length).toBe(1)
-        const returnedEntity = entities[0];
-        entitiesEqualNonSanitizableProperties(returnedEntity, entity2)
-        expect(returnedEntity.metadata).toEqual(DenylistServiceDecorator.DENYLISTED_METADATA)
-        expect(returnedEntity.content).toBeUndefined()
-    })
-
-    it(`When an entity is not denylisted, then it is returned by id correctly`, async () => {
-        const denylist = denylistWith(entity2Target)
-        const decorator = getDecorator(denylist)
-
-        const entities = await decorator.getEntitiesByIds(entity1.type, [entity1.id]);
-
-        expect(entities).toEqual([entity1])
-    })
-
     it(`When content is denylisted, then it can't be returned`, async () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
@@ -247,43 +197,6 @@ describe("DenylistServiceDecorator", () => {
         expect(available.get(entity2.id)).toBeFalsy()
     })
 
-    it(`When an entity is denylisted, then it is marked as so on the audit info`, async () => {
-        const denylist = denylistWith(entity2Target)
-        const decorator = getDecorator(denylist)
-
-        const auditInfo = await decorator.getAuditInfo(entity2.type, entity2.id) as LegacyAuditInfo
-
-        expect(auditInfo).toBeDefined()
-        expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
-        expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
-        expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
-        expect(auditInfo.isDenylisted).toBeTruthy()
-        expect(auditInfo.denylistedContent).toBeUndefined()
-    })
-
-    it(`When content is denylisted, then it is marked as so on the audit info`, async () => {
-        const denylist = denylistWith(content1Target)
-        const decorator = getDecorator(denylist)
-
-        const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id) as LegacyAuditInfo
-
-        expect(auditInfo).toBeDefined()
-        expect(auditInfo.deployedTimestamp).toEqual(MockedMetaverseContentService.AUDIT_INFO.deployedTimestamp)
-        expect(auditInfo.authChain).toEqual(MockedMetaverseContentService.AUDIT_INFO.authChain)
-        expect(auditInfo.overwrittenBy).toEqual(MockedMetaverseContentService.AUDIT_INFO.overwrittenBy)
-        expect(auditInfo.isDenylisted).toBeUndefined()
-        expect(auditInfo.denylistedContent).toEqual([content1.hash])
-    })
-
-    it(`When an entity is not denylisted, then the audit info is not modified`, async () => {
-        const denylist = denylistWith(entity2Target)
-        const decorator = getDecorator(denylist)
-
-        const auditInfo = await decorator.getAuditInfo(entity1.type, entity1.id);
-
-        expect(auditInfo).toEqual(MockedMetaverseContentService.AUDIT_INFO)
-    })
-
     it(`When status is requested, then it is not modified`, async () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
@@ -323,13 +236,6 @@ describe("DenylistServiceDecorator", () => {
         await assertPromiseRejectionIs(() => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
             `Can't allow the deployment since the entity contains a denylisted content.`)
     })
-
-    function entitiesEqualNonSanitizableProperties(entity1: Entity, entity2: Entity) {
-        expect(entity1.id).toEqual(entity2.id)
-        expect(entity1.type).toEqual(entity2.type)
-        expect(entity1.pointers).toEqual(entity2.pointers)
-        expect(entity1.timestamp).toEqual(entity2.timestamp)
-    }
 
     function deploymentEqualsNonSanitizableProperties(entity: Entity, deployment: Deployment) {
         expect(entity.id).toEqual(deployment.entityId)
@@ -371,4 +277,3 @@ describe("DenylistServiceDecorator", () => {
     }
 
 })
-

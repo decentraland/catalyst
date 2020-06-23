@@ -1,4 +1,4 @@
-import { EntityType } from "dcl-catalyst-commons";
+import { EntityType, AuditInfo } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { EntityCombo, buildDeployData, deployEntitiesCombo } from "../E2ETestUtils";
@@ -60,20 +60,25 @@ describe("Integration - Same Timestamp Check", () => {
     })
 
     async function assertIsActive(entityCombo: EntityCombo) {
-        const activeEntities = await service.getEntitiesByPointers(type, [P1])
-        expect(activeEntities.length).toEqual(1)
-        const activeEntity = activeEntities[0]
-        expect(activeEntity.id).toEqual(entityCombo.entity.id)
+        const { deployments } = await service.getDeployments( { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true} )
+        expect(deployments.length).toEqual(1)
+        const [ activeEntity ] = deployments
+        expect(activeEntity.entityId).toEqual(entityCombo.entity.id)
     }
 
     async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(overwritten.entity.type, overwritten.entity.id)
+        const auditInfo = await getAuditInfo(overwritten)
         expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
     }
 
     async function assertNotOverwritten(entity: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(entity.entity.type, entity.entity.id)
+        const auditInfo = await getAuditInfo(entity)
         expect(auditInfo?.overwrittenBy).toBeUndefined()
+    }
+
+    async function getAuditInfo(entity: EntityCombo): Promise<AuditInfo> {
+        const { deployments } = await service.getDeployments({ entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] })
+        return deployments[0].auditInfo
     }
 
 })
