@@ -257,7 +257,7 @@ export class Controller {
         const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
         const offset: number | undefined             = this.asInt(req.query.offset)
         const limit: number | undefined              = this.asInt(req.query.limit)
-        let fields: string | undefined               = req.query.fields
+        const fields: string | undefined             = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -265,24 +265,15 @@ export class Controller {
             return
         }
 
-        // TODO: Delete after one deployment
-        if (showAudit) {
-            if (fields && !fields.includes(DeploymentField.AUDIT_INFO)) {
-                fields += `,${DeploymentField.AUDIT_INFO}`
-            } else if (!fields) {
-                fields = `${DeploymentField.POINTERS},${DeploymentField.CONTENT},${DeploymentField.METADATA},${DeploymentField.AUDIT_INFO}`
-            }
-        }
-
         // Validate fields are correct or empty
-        let enumFields: DeploymentField[]
+        let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
         if (fields) {
             const acceptedValues = Object.values(DeploymentField).map(e => e.toString())
             enumFields = fields.split(',')
                 .filter(f => acceptedValues.includes(f))
                 .map(f => f as DeploymentField)
-        } else {
-            enumFields = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]
+        } else if (showAudit) { // TODO: Delete after one deployment
+            enumFields.push(DeploymentField.AUDIT_INFO)
         }
 
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
@@ -432,3 +423,4 @@ export type ControllerDenylistData = {
     }
 }
 
+const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]
