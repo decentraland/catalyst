@@ -226,7 +226,7 @@ export async function assertContentIsDenylisted(server: TestServer, entity: Cont
 export function buildDeployment(deployData: DeployData, entity: ControllerEntity, server: TestServer, deploymentTimestamp: Timestamp): ControllerDeployment {
     return {
         ...entity,
-        content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : [],
+        content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : undefined,
         entityType: entity.type,
         entityId: entity.id,
         entityTimestamp: entity.timestamp,
