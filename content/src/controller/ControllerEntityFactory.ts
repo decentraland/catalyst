@@ -1,6 +1,7 @@
 import { Entity as ControllerEntity, EntityContentItemReference } from "dcl-catalyst-commons"
 import { Entity } from "../service/Entity"
 import { EntityField } from "./Controller"
+import { Deployment } from "../service/deployments/DeploymentManager"
 
 export class ControllerEntityFactory {
     static maskEntity(fullEntity: Entity, fields?: EntityField[]): ControllerEntity {
@@ -19,6 +20,11 @@ export class ControllerEntityFactory {
             pointers = fullEntity.pointers
         }
         return { id, type, timestamp, pointers, content, metadata }
+    }
+
+    static maskDeployment(fullDeployment: Deployment, fields?: EntityField[]): ControllerEntity {
+        const entity: Entity = { ...fullDeployment, id: fullDeployment.entityId, timestamp: fullDeployment.entityTimestamp, type: fullDeployment.entityType }
+        return this.maskEntity(entity, fields)
     }
 
 }

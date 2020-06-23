@@ -1,8 +1,7 @@
 import log4js from "log4js"
-import { Hashing, ContentFileHash, ContentFile, EntityType, Pointer, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons";
+import { Hashing, ContentFileHash, ContentFile, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
 import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo } from "./Service";
-import { happenedBeforeEntities } from "./time/TimeSorting";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { DeploymentReporter } from "./reporters/DeploymentReporter";
@@ -17,6 +16,7 @@ import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeployme
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { DeploymentManager, DeploymentDelta, Deployment } from "./deployments/DeploymentManager";
+import { happenedBefore } from "./time/TimeSorting";
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
 
@@ -33,19 +33,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         private readonly deploymentManager: DeploymentManager,
         private readonly validations: Validations,
         private readonly repository: Repository) {
-    }
-
-    async getEntitiesByPointers(type: EntityType, pointers: Pointer[], repository: RepositoryTask | Repository = this.repository): Promise<Entity[]> {
-        const lowerCase = pointers.map((pointer: Pointer) => pointer.toLocaleLowerCase())
-        return repository.taskIf(async task => {
-            const entityIds = await this.pointerManager.getActiveEntitiesInPointers(task.lastDeployedPointers, type, lowerCase);
-            return this.getEntitiesByIds(type, entityIds, task)
-        })
-    }
-
-    async getEntitiesByIds(type: EntityType, ids: EntityId[], repository: RepositoryTask | Repository = this.repository): Promise<Entity[]> {
-        const idsWithoutDuplicates = ids.filter((elem, pos, array) => array.indexOf(elem) == pos)
-        return repository.taskIf(task => this.deploymentManager.getEntitiesByIds(task.deployments, task.content, type, idsWithoutDuplicates))
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository: RepositoryTask | Repository = this.repository): Promise<Timestamp> {
@@ -115,7 +102,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
             // Validate that there is no entity with a higher version
-            await validation.validateLegacyEntity(entity, auditInfo, (type, pointers) => this.getEntitiesByPointers(type, pointers, transaction), (type, id) => this.getAuditInfo(type, id, transaction), validationContext)
+            await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, transaction), validationContext)
 
             // Validate that there are no newer entities on pointers
             await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
@@ -194,9 +181,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     /** Check if there are newer entities on the given entity's pointers */
     private async areThereNewerEntitiesOnPointers(entity: Entity, transaction: RepositoryTask): Promise<boolean> {
         // Validate that pointers aren't referring to an entity with a higher timestamp
-        const currentPointedEntities = await this.getEntitiesByPointers(entity.type, entity.pointers, transaction)
-        for (const currentEntity of currentPointedEntities) {
-            if (happenedBeforeEntities(entity, currentEntity)) {
+        const { deployments: lastDeployments } = await this.getDeployments({ entityTypes: [entity.type], pointers: entity.pointers }, undefined, undefined, transaction)
+        for (const lastDeployment of lastDeployments) {
+            if (happenedBefore(entity, lastDeployment)) {
                 return true
             }
         }
@@ -225,11 +212,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
         return this.storage.getContent(fileHash);
-    }
-
-
-    getAuditInfo(type: EntityType, id: EntityId, repository: RepositoryTask | Repository = this.repository): Promise<LegacyAuditInfo | undefined> {
-        return repository.taskIf(task => this.deploymentManager.getAuditInfo(task.deployments, task.migrationData, type, id))
     }
 
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {

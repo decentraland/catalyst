@@ -4,7 +4,7 @@ import { DeploymentField } from "./Controller"
 
 export class ControllerDeploymentFactory {
 
-    static maskEntity<T extends ControllerDeployment>(deployment: Deployment, fields: DeploymentField[]): T {
+    static deployment2ControllerEntity<T extends ControllerDeployment>(deployment: Deployment, fields: DeploymentField[]): T {
         const { entityType, entityId, entityTimestamp, deployedBy, pointers, auditInfo } = deployment
         let result: any = { entityType, entityId, entityTimestamp, deployedBy }
         if (fields.includes(DeploymentField.POINTERS)) {
