@@ -21,23 +21,21 @@ function happenedBeforeComparable(comparable1: EntityComparable, comparable2: En
 
 /** Return true if the first deployments happened before the second one */
 export function happenedBefore(toBeComparable1: Deployment | Entity | EntityComparable, toBeComparable2: Deployment | Entity | EntityComparable): boolean {
-    let comparable1: EntityComparable
-    let comparable2: EntityComparable
-    if ('auditInfo' in toBeComparable1) {
-        comparable1 = { entityId: toBeComparable1.entityId, timestamp: toBeComparable1.entityTimestamp }
-    } else if ('id' in toBeComparable1) {
-        comparable1 = { entityId: toBeComparable1.id, timestamp: toBeComparable1.timestamp }
-    } else {
-        comparable1 = toBeComparable1
-    }
-    if ('auditInfo' in toBeComparable2) {
-        comparable2 = { entityId: toBeComparable2.entityId, timestamp: toBeComparable2.entityTimestamp }
-    } else if ('id' in toBeComparable2) {
-        comparable2 = { entityId: toBeComparable2.id, timestamp: toBeComparable2.timestamp }
-    } else {
-        comparable2 = toBeComparable2
-    }
+    const comparable1: EntityComparable = toComparable(toBeComparable1);
+    const comparable2: EntityComparable = toComparable(toBeComparable2);
     return happenedBeforeComparable(comparable1, comparable2)
+}
+
+function toComparable(toBeComparable: EntityComparable | Deployment | Entity) {
+    let comparable: EntityComparable;
+    if ('auditInfo' in toBeComparable) {
+        comparable = { entityId: toBeComparable.entityId, timestamp: toBeComparable.entityTimestamp };
+    } else if ('id' in toBeComparable) {
+        comparable = { entityId: toBeComparable.id, timestamp: toBeComparable.timestamp };
+    } else {
+        comparable = toBeComparable;
+    }
+    return comparable
 }
 
 function comparatorOldestToNewest(comparable1: EntityComparable, comparable2: EntityComparable) {

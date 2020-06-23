@@ -266,7 +266,7 @@ export class Controller {
 
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
         const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
-        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.maskEntity(deployment))
+        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment))
             .map(deployment => (!showAudit ? {...deployment, auditInfo: undefined } : deployment))
 
         res.send( { deployments: controllerDeployments, filters, pagination })
