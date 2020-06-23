@@ -138,8 +138,7 @@ export class ContentCluster implements IdentityProvider {
                 }
 
                 for (const newAddress of newAddresses) {
-                    let lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
-                    lastDeploymentTimestamp =  0 // TODO: Remove this, on the next deployment
+                    const lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
 
                     // Create and store the new client
                     const newClient = new ContentServerClient(newAddress, lastDeploymentTimestamp, this.fetcher)

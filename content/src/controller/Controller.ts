@@ -257,6 +257,7 @@ export class Controller {
         const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
         const offset: number | undefined             = this.asInt(req.query.offset)
         const limit: number | undefined              = this.asInt(req.query.limit)
+        const fields: string | undefined             = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -264,10 +265,20 @@ export class Controller {
             return
         }
 
+        // Validate fields are correct or empty
+        let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
+        if (fields) {
+            const acceptedValues = Object.values(DeploymentField).map(e => e.toString())
+            enumFields = fields.split(',')
+                .filter(f => acceptedValues.includes(f))
+                .map(f => f as DeploymentField)
+        } else if (showAudit) { // TODO: Delete after one deployment
+            enumFields.push(DeploymentField.AUDIT_INFO)
+        }
+
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
         const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
-        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment))
-            .map(deployment => (!showAudit ? {...deployment, auditInfo: undefined } : deployment))
+        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
         res.send( { deployments: controllerDeployments, filters, pagination })
     }
@@ -394,6 +405,13 @@ export enum EntityField {
     METADATA = "metadata",
 }
 
+export enum DeploymentField {
+    CONTENT = "content",
+    POINTERS = "pointers",
+    METADATA = "metadata",
+    AUDIT_INFO = "auditInfo",
+}
+
 export type ControllerDenylistData = {
     target: {
         type: string,
@@ -405,3 +423,4 @@ export type ControllerDenylistData = {
     }
 }
 
+const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]
