@@ -14,6 +14,6 @@ describe("Ensure ENS filtering work as expected", () => {
 
         const namesLower = await getOwnedENS(DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, originalAddress.toLowerCase())
         expect(namesLower).toEqual(namesOriginal)
-    });
+    }, 10000);
 
 });
