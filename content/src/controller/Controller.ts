@@ -246,7 +246,7 @@ export class Controller {
         const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
         const offset: number | undefined             = this.asInt(req.query.offset)
         const limit: number | undefined              = this.asInt(req.query.limit)
-        let fields: string | undefined             = req.query.fields
+        let fields: string | undefined               = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
