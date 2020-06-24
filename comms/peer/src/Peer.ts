@@ -101,7 +101,7 @@ export class Peer implements IPeer {
     this.config.backoffMs = this.config.backoffMs ?? 2000;
 
     if (this.config.positionConfig) {
-      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance([100, 200, 300, 400]);
+      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance();
       this.config.positionConfig.nearbyPeersDistance = this.config.positionConfig.nearbyPeersDistance ?? DISCRETIZE_POSITION_INTERVALS[DISCRETIZE_POSITION_INTERVALS.length - 1];
     }
 
