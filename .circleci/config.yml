@@ -12,8 +12,8 @@ commands:
       - run:
           name: Update node version
           command: |
-            nvm install v12.13.0
-            nvm alias default v12.13.0
+            nvm install v12.18.1
+            nvm alias default v12.18.1
 
 references:
   .workspace_root: &workspace_root /tmp/repo

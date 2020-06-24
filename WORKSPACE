@@ -25,7 +25,12 @@ http_archive(
 load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "yarn_install")
 
 node_repositories(
-    node_version = "12.13.0",
+    node_version = "12.18.1",
+    node_repositories = {
+        "12.18.1-darwin_amd64": ("node-v12.18.1-darwin-x64.tar.gz", "node-v12.18.1-darwin-x64", "80e1d644fe78838da47cd16de234b612c20e06ffe14447125db9622e381ed1ba"),
+        "12.18.1-linux_amd64": ("node-v12.18.1-linux-x64.tar.xz", "node-v12.18.1-linux-x64", "863f816967e297c9eb221ad3cf32521f7ac46fffc66750e60f159ed63809affa"),
+        "12.18.1-windows_amd64": ("node-v12.18.1-win-x64.zip", "node-v12.18.1-win-x64", "93039ebfc7c5bfad168b015f77667757925070fff3ae84c3eb73348b3123a82a"),
+    },
 )
 
 yarn_install(
