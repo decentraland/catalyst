@@ -314,7 +314,7 @@ export class AccessCheckerImpl implements AccessChecker {
         query: string,
         variables: Record<string, any>
     ): Promise<T> {
-        const timeoutTime = 1000 * 15 // 30 seconds
+        const timeoutTime = 1000 * 30 // 30 seconds
         const controller = new AbortController();
         const timeout = setTimeout(() => {
             controller.abort();
@@ -328,12 +328,9 @@ export class AccessCheckerImpl implements AccessChecker {
         }
 
         try {
-            console.log('HERE', Date.now())
             const res = await fetch(this.dclParcelAccessUrl, opts)
-            console.log('HERE2', Date.now())
             if (res.ok) {
                 const json = await res.json()
-                console.log('HERE3', Date.now())
                 if (json.errors) {
                     throw new Error(
                         `Error querying graph. Reasons: ${JSON.stringify(json.errors)}`
