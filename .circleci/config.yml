@@ -228,8 +228,6 @@ workflows:
           requires:
             - build-peer
             - build-lighthouse
-            - build-content
-            - build-lambdas
       - publish-docker:
           <<: *all_branches_and_tags
           requires:
