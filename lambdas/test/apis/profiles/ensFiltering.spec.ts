@@ -3,7 +3,7 @@ import { DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN } from "../../../src/Environment
 
 describe("Ensure ENS filtering work as expected", () => {
 
-    fit(`Ensure Address case is ignored when retrieving ENS`, async () => {
+    it(`Ensure Address case is ignored when retrieving ENS`, async () => {
         const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
 
         const namesOriginal = await getOwnedENS(DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, originalAddress)
