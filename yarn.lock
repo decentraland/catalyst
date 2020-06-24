@@ -2489,10 +2489,10 @@ dcl-catalyst-client@^1.3.11:
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
-dcl-catalyst-commons@1.3.3:
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.3.3.tgz#fb065f731e657c7f97655c86da30f4d75ea5fc3c"
-  integrity sha512-iyzai0X3s+ZsshJfcomKLEtz0yCiVFNGeLPyLHjoA+uWp0VyKlVt9aldN14SA6pUhYbrzt7hhrUvzMwVhcQVOA==
+dcl-catalyst-commons@^1.3.5:
+  version "1.3.5"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.3.5.tgz#4e7c5b3b3fc1126123897c7785a6d9c5d0632127"
+  integrity sha512-ISjoK4S4aZLaOJzX7K2lAi2H0WVu2XFSQxkbT+B5pr+NRwfLkdF5LUfZE+4+mPNZlQzxM0U191oM9AdS101itw==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
@@ -2503,10 +2503,10 @@ dcl-catalyst-commons@1.3.3:
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
-dcl-catalyst-commons@^1.3.5:
-  version "1.3.5"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.3.5.tgz#4e7c5b3b3fc1126123897c7785a6d9c5d0632127"
-  integrity sha512-ISjoK4S4aZLaOJzX7K2lAi2H0WVu2XFSQxkbT+B5pr+NRwfLkdF5LUfZE+4+mPNZlQzxM0U191oM9AdS101itw==
+dcl-catalyst-commons@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.4.0.tgz#c7c1a46051e9d07c9bceceadf2e912a5f71b465b"
+  integrity sha512-l2xd4lmQ5AbDfw19+Kc21XHcXVJSWLDKpGLXRHjk2+7vluHMZapV/nnl/AHRHHAJoIuSSk13Jqpc0PWQ/wsjLA==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"

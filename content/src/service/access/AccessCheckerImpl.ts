@@ -1,6 +1,6 @@
 import log4js from "log4js"
 import ms from "ms";
-import { EntityType, Pointer, Timestamp } from "dcl-catalyst-commons";
+import { EntityType, Pointer, Timestamp, Fetcher } from "dcl-catalyst-commons";
 import { AccessChecker } from "./AccessChecker";
 import { EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
@@ -12,6 +12,7 @@ export class AccessCheckerImpl implements AccessChecker {
 
     constructor(
         private readonly authenticator: ContentAuthenticator,
+        private readonly fetcher: Fetcher,
         private readonly dclParcelAccessUrl: string) { }
 
     async hasAccess(entityType: EntityType, pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
@@ -313,26 +314,13 @@ export class AccessCheckerImpl implements AccessChecker {
         query: string,
         variables: Record<string, any>
     ): Promise<T> {
-        const opts = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query, variables })
+        const json = await this.fetcher.postForm(this.dclParcelAccessUrl, JSON.stringify({ query, variables }), { 'Content-Type': 'application/json' }, { attempts: 1 })
+        if (json.errors) {
+            throw new Error(
+                `Error querying graph. Reasons: ${JSON.stringify(json.errors)}`
+            )
         }
-
-        const res = await fetch(this.dclParcelAccessUrl, opts)
-        if (res.ok) {
-            const json = await res.json()
-            if (json.errors) {
-                throw new Error(
-                    `Error querying graph. Reasons: ${JSON.stringify(json.errors)}`
-                )
-            }
-            return json.data
-        }
-
-        throw new Error(
-            `Could not query graph. Reason: ${res.status}: ${res.statusText}`
-        )
+        return json.data
     }
 }
 
