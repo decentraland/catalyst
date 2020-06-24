@@ -481,12 +481,16 @@ export class Peer implements IPeer {
   }
 
   private isValidConnectionCandidate(it: KnownPeerData): boolean {
-    return !this.isConnectedTo(it.id) && this.isValidConnectionByDistance(it);
+    return !this.isConnectedTo(it.id) && (!this.config.positionConfig?.maxConnectionDistance || this.isValidConnectionByDistance(it) || this.isValidConnectionByRooms(it));
   }
 
   private isValidConnectionByDistance(peer: KnownPeerData) {
     const distance = this.distanceTo(peer.id);
-    return !this.config.positionConfig?.maxConnectionDistance || (typeof distance !== "undefined" && distance <= this.config.positionConfig.maxConnectionDistance);
+    return typeof distance !== "undefined" && distance <= this.config.positionConfig!.maxConnectionDistance!;
+  }
+
+  private isValidConnectionByRooms(peer: KnownPeerData): boolean {
+    return this.currentRooms.some(room => peer.rooms.includes(room.id));
   }
 
   private checkConnectionsSanity() {
@@ -587,11 +591,14 @@ export class Peer implements IPeer {
     if (this.config.positionConfig?.disconnectDistance) {
       const connectionsToDrop = Object.keys(this.connectedPeers).filter((it) => {
         const distance = this.distanceTo(it);
-        // We need to check that we are actually connected to the peer, and also only disconnect to it if we know we are far away
-        return this.isConnectedTo(it) && distance && distance >= this.config.positionConfig!.disconnectDistance!;
+        // We need to check that we are actually connected to the peer, and also only disconnect to it if we know we are far away and we don't have any rooms in common
+        return this.isConnectedTo(it) && distance &&
+           distance >= this.config.positionConfig!.disconnectDistance! && 
+           !this.isValidConnectionByRooms(this.knownPeers[it]);
       });
 
       if (connectionsToDrop.length > 0) {
+        this.log(LogLevel.DEBUG, "Dropping connections because they are too far away and don't have rooms in common: ", connectionsToDrop);
         return async () => {
           connectionsToDrop.forEach((it) => this.disconnectFrom(it));
           return connectionCandidates;

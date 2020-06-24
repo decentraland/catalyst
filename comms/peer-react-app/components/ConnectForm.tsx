@@ -44,7 +44,7 @@ export function ConnectForm(props: {
           selfPosition: () => [mouse.x, mouse.y, 0],
           maxConnectionDistance: 3,
           distance: discretizedPositionDistance([100, 200, 400, 600, 800]),
-          nearbyPeersDistance: 4,
+          nearbyPeersDistance: 10,
           disconnectDistance: 5
         },
         targetConnections: 2,
