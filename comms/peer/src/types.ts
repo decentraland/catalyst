@@ -10,14 +10,13 @@ type PacketSubtypeData = {
 export type Room = { id: string; users: string[] };
 export type KnownPeerData = {
   id: string;
-  rooms: string[];
   timestamp?: number;
   subtypeData: Record<string, PacketSubtypeData>;
   position?: Position;
   latency?: number;
   hops?: number;
 };
-export type MinPeerData = { id: string; rooms?: string[]; position?: Position };
+export type MinPeerData = { id: string; position?: Position };
 
 export interface IPeer {
   peerId?: string;

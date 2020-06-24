@@ -352,12 +352,17 @@ export class Peer implements IPeer {
     if (this.disposed) return;
     this.assertPeerInLayer();
 
-    const room = {
-      id: roomId,
-      users: [] as string[],
-    };
+    let room = this.findRoom(roomId);
 
-    this.currentRooms.push(room);
+    if (!room) {
+      room = {
+        id: roomId,
+        users: [] as string[],
+      };
+      this.currentRooms.push(room);
+    } else {
+      room.users = [];
+    }
 
     const id = this.peerIdOrFail();
     const { json } = await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}`, {
@@ -370,34 +375,10 @@ export class Peer implements IPeer {
 
     room.users = roomUsers.map((it) => (it.id ?? it.userId)!);
 
-    this.updateKnownPeersWithRoom(
-      room,
-      roomUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position }))
-    );
+    this.updateKnownPeers(roomUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position })));
 
     await this.updateNetwork();
     return await this.roomConnectionHealthy(roomId);
-  }
-
-  private updateKnownPeersWithRoom(room: Room, roomPeersData: MinPeerData[]) {
-    //We remove the room for those known peers which are not in the room and have it
-    Object.keys(this.knownPeers).forEach((it) => {
-      const roomIndex = this.knownPeers[it].rooms?.indexOf(room.id);
-      if (roomIndex && room.users.indexOf(it) < 0 && roomIndex > 0) {
-        this.knownPeers[it].rooms.splice(roomIndex, 1);
-      }
-    });
-
-    //We add the room to those known peers that are in the room
-    roomPeersData
-      .filter((it) => it.id !== this.peerId)
-      .forEach((it) => {
-        if (!this.knownPeers[it.id] || typeof this.knownPeers[it.id].rooms === "undefined") {
-          this.knownPeers[it.id] = { ...it, rooms: [room.id], subtypeData: {} };
-        } else if (this.knownPeers[it.id].rooms.indexOf(room.id) < 0) {
-          this.knownPeers[it.id].rooms.push(room.id);
-        }
-      });
   }
 
   private updateKnownPeers(newPeers: MinPeerData[]) {
@@ -415,26 +396,24 @@ export class Peer implements IPeer {
 
   private addKnownPeerIfNotExists(peer: MinPeerData) {
     if (!this.knownPeers[peer.id]) {
-      this.knownPeers[peer.id] = { rooms: peer.rooms ?? [], ...peer, subtypeData: {} };
+      this.knownPeers[peer.id] = { ...peer, subtypeData: {} };
     }
 
     return this.knownPeers[peer.id];
   }
 
   private ensureKnownPeer(packet: Packet) {
-    this.addKnownPeerIfNotExists({ id: packet.src, rooms: packet.messageData?.room ? [packet.messageData?.room] : [] });
+    const minPeerData = { id: packet.src };
+    this.addKnownPeerIfNotExists(minPeerData);
 
-    if (packet.messageData?.room && !this.knownPeers[packet.src].rooms.includes(packet.messageData?.room)) {
-      this.knownPeers[packet.src].rooms.push(packet.messageData.room);
+    if (packet.messageData?.room) {
+      this.addUserToRoom(packet.messageData.room, minPeerData);
     }
   }
 
   private removeKnownPeer(peerId: string) {
-    const peerData = this.knownPeers[peerId];
     delete this.knownPeers[peerId];
-    if (peerData) {
-      peerData.rooms.forEach((room) => this.removeUserFromRoom(room, peerId));
-    }
+    this.currentRooms.forEach((it) => this.removeUserFromRoom(it.id, peerId));
   }
 
   async roomConnectionHealthy(roomId: string) {
@@ -490,7 +469,7 @@ export class Peer implements IPeer {
   }
 
   private isValidConnectionByRooms(peer: KnownPeerData): boolean {
-    return this.currentRooms.some(room => peer.rooms.includes(room.id));
+    return this.currentRooms.some((room) => room.users.includes(peer.id));
   }
 
   private checkConnectionsSanity() {
@@ -592,9 +571,7 @@ export class Peer implements IPeer {
       const connectionsToDrop = Object.keys(this.connectedPeers).filter((it) => {
         const distance = this.distanceTo(it);
         // We need to check that we are actually connected to the peer, and also only disconnect to it if we know we are far away and we don't have any rooms in common
-        return this.isConnectedTo(it) && distance &&
-           distance >= this.config.positionConfig!.disconnectDistance! && 
-           !this.isValidConnectionByRooms(this.knownPeers[it]);
+        return this.isConnectedTo(it) && distance && distance >= this.config.positionConfig!.disconnectDistance! && !this.isValidConnectionByRooms(this.knownPeers[it]);
       });
 
       if (connectionsToDrop.length > 0) {
@@ -1237,14 +1214,7 @@ export class Peer implements IPeer {
   }
 
   private addUserToRoom(roomId: string, peerData: MinPeerData) {
-    peerData.rooms = [...(peerData.rooms ?? []), roomId];
-
-    const knownPeer = this.knownPeers[peerData.id];
-    if (!knownPeer) {
-      this.addKnownPeerIfNotExists(peerData);
-    } else if (!knownPeer.rooms.includes(roomId)) {
-      knownPeer.rooms.push(roomId);
-    }
+    this.addKnownPeerIfNotExists(peerData);
 
     const room = this.findRoom(roomId);
     if (room && !room.users.includes(peerData.id)) {
