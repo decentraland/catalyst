@@ -5,6 +5,7 @@ export class AccessCheckerImplFactory {
     static create(env: Environment): AccessCheckerImpl {
         return new AccessCheckerImpl(
             env.getBean(Bean.AUTHENTICATOR),
+            env.getBean(Bean.FETCHER),
             env.getConfig(EnvironmentConfig.DCL_PARCEL_ACCESS_URL))
     }
 }

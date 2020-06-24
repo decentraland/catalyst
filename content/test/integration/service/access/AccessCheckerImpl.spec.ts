@@ -1,4 +1,4 @@
-import { EntityType } from "dcl-catalyst-commons";
+import { EntityType, Fetcher } from "dcl-catalyst-commons";
 import { AccessCheckerImpl } from "@katalyst/content/service/access/AccessCheckerImpl";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 import { DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN } from "@katalyst/content/Environment";
@@ -6,7 +6,7 @@ import { DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN } from "@katalyst/content/Environ
 describe("Integration - AccessCheckerImpl", function () {
 
     it(`When access URL is wrong it reports an error`, async () => {
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), "Wrong URL");
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), "Wrong URL");
 
         const errors = await accessChecker.hasAccess(EntityType.SCENE, ["102,4"], Date.now(), "Some-address-without-permissions");
 
@@ -15,7 +15,7 @@ describe("Integration - AccessCheckerImpl", function () {
     })
 
     it(`When an address without permissions tries to deploy it fails`, async () => {
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN);
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(),new Fetcher(), DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN);
 
         const errors = await accessChecker.hasAccess(EntityType.SCENE, ["102,4"], Date.now(), "Some-address-without-permissions");
 
