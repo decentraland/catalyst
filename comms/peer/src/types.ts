@@ -77,7 +77,6 @@ export type PeerConfig = {
    */
   pingInterval?: number;
   pingTimeout?: number;
-  checkRoomsForConnections?: boolean;
 };
 
 export type PositionConfig = {
