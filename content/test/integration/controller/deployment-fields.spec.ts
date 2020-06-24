@@ -19,7 +19,7 @@ describe("Integration - Deployment Fields", () => {
         await server.start()
     })
 
-    it('When deployments fields filter is used, then the result is the expected', async() => {
+    fit('When deployments fields filter is used, then the result is the expected', async() => {
         const { deployData } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
 
         // Deploy entity

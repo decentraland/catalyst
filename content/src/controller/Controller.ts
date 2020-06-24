@@ -275,6 +275,7 @@ export class Controller {
         } else if (showAudit) { // TODO: Delete after one deployment
             enumFields.push(DeploymentField.AUDIT_INFO)
         }
+        console.log(enumFields, 'showAudit', showAudit)
 
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
         const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
