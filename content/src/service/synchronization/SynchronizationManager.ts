@@ -38,8 +38,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         // Make sure the stopping flag is set to false
         this.stopping = false
 
-        // Start immutable time as 0, to get all history
-        this.lastImmutableTime = 0
+        // Start immutable time 1 day back
+        this.lastImmutableTime = Date.now() - ms('1d')
 
         // Connect to the cluster
         await this.cluster.connect(this.lastImmutableTime)

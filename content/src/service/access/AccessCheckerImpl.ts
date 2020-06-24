@@ -1,6 +1,7 @@
 import log4js from "log4js"
 import ms from "ms";
 import { EntityType, Pointer, Timestamp } from "dcl-catalyst-commons";
+import AbortController from 'abort-controller';
 import { AccessChecker } from "./AccessChecker";
 import { EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
@@ -313,26 +314,40 @@ export class AccessCheckerImpl implements AccessChecker {
         query: string,
         variables: Record<string, any>
     ): Promise<T> {
+        const timeoutTime = 1000 * 15 // 30 seconds
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+            controller.abort();
+            console.log("Timeouted")
+        }, timeoutTime);
         const opts = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query, variables })
+            body: JSON.stringify({ query, variables }),
+            signal: controller.signal,
         }
 
-        const res = await fetch(this.dclParcelAccessUrl, opts)
-        if (res.ok) {
-            const json = await res.json()
-            if (json.errors) {
-                throw new Error(
-                    `Error querying graph. Reasons: ${JSON.stringify(json.errors)}`
-                )
+        try {
+            console.log('HERE', Date.now())
+            const res = await fetch(this.dclParcelAccessUrl, opts)
+            console.log('HERE2', Date.now())
+            if (res.ok) {
+                const json = await res.json()
+                console.log('HERE3', Date.now())
+                if (json.errors) {
+                    throw new Error(
+                        `Error querying graph. Reasons: ${JSON.stringify(json.errors)}`
+                    )
+                }
+                return json.data
             }
-            return json.data
-        }
 
-        throw new Error(
-            `Could not query graph. Reason: ${res.status}: ${res.statusText}`
-        )
+            throw new Error(
+                `Could not query graph. Reason: ${res.status}: ${res.statusText}`
+            )
+        } finally {
+            clearTimeout(timeout)
+        }
     }
 }
 
