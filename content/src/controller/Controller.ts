@@ -266,8 +266,8 @@ export class Controller {
         }
 
         // Validate fields are correct or empty
-        let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
-        if (fields) {
+        let enumFields: DeploymentField[] = [...DEFAULT_FIELDS_ON_DEPLOYMENTS]
+        if (fields && fields.trim().length > 0) {
             const acceptedValues = Object.values(DeploymentField).map(e => e.toString())
             enumFields = fields.split(',')
                 .filter(f => acceptedValues.includes(f))

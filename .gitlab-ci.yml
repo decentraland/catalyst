@@ -1,4 +1,4 @@
-image: decentraland/ci-node:10
+image: decentraland/ci-node:12
 
 build:
   script:
