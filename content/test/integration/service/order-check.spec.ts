@@ -1,4 +1,4 @@
-import { EntityType } from "dcl-catalyst-commons";
+import { AuditInfo } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { EntityCombo, deployEntitiesCombo, buildDeployData, buildDeployDataAfterEntity } from "../E2ETestUtils";
@@ -12,7 +12,6 @@ describe("Integration - Order Check", () => {
     const P2 = "X2,Y2"
     const P3 = "X3,Y3"
     const P4 = "X4,Y4"
-    const type = EntityType.SCENE
     let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo, E4: EntityCombo, E5: EntityCombo
 
     let allEntities: EntityCombo[]
@@ -47,14 +46,10 @@ describe("Integration - Order Check", () => {
 
     async function assertCommitsWhereDoneCorrectly() {
         // Assert only E5 is active
-        const activeEntities = await service.getEntitiesByPointers(type, [P1, P2, P3, P4])
+        const activeEntities = await getActiveDeployments()
         expect(activeEntities.length).toEqual(1)
         const activeEntity = activeEntities[0]
-        expect(activeEntity.id).toEqual(E5.entity.id)
-
-        // Assert there is no entity on P1 and P3
-        const noEntities = await service.getEntitiesByPointers(type, [P1, P3])
-        expect(noEntities.length).toEqual(0)
+        expect(activeEntity.entityId).toEqual(E5.entity.id)
 
         await assertOverwrittenBy(E1, E3)
         await assertOverwrittenBy(E2, E3)
@@ -63,14 +58,24 @@ describe("Integration - Order Check", () => {
         await assertNotOverwritten(E5)
     }
 
+    async function getActiveDeployments() {
+        const { deployments } = await service.getDeployments({ onlyCurrentlyPointed: true })
+        return deployments
+    }
+
     async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(overwritten.entity.type, overwritten.entity.id)
+        const auditInfo = await getAuditInfo(overwritten)
         expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
     }
 
     async function assertNotOverwritten(entity: EntityCombo) {
-        const auditInfo = await service.getAuditInfo(entity.entity.type, entity.entity.id)
+        const auditInfo = await getAuditInfo(entity)
         expect(auditInfo?.overwrittenBy).toBeUndefined()
+    }
+
+    async function getAuditInfo(entity: EntityCombo): Promise<AuditInfo> {
+        const { deployments } = await service.getDeployments({ entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] })
+        return deployments[0].auditInfo
     }
 
     function permutator<T>(array: Array<T>): Array<Array<T>> {

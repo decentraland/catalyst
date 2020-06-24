@@ -1,8 +1,7 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash } from "dcl-catalyst-commons";
-import { Entity } from "../service/Entity"
+import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
@@ -15,6 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
+import { Deployment } from "../service/deployments/DeploymentManager";
 
 export class Controller {
 
@@ -54,13 +54,13 @@ export class Controller {
         }
 
         // Calculate and mask entities
-        let entities: Entity[]
+        let history: PartialDeploymentHistory<Deployment>
         if (ids.length > 0) {
-            entities = await this.service.getEntitiesByIds(type, ids)
+            history = await this.service.getDeployments({ entityTypes: [type], entityIds: ids })
         } else {
-            entities = await this.service.getEntitiesByPointers(type, pointers)
+            history = await this.service.getDeployments({ entityTypes: [type], pointers, onlyCurrentlyPointed: true })
         }
-        const maskedEntities: ControllerEntity[] = entities.map(fullEntity => ControllerEntityFactory.maskEntity(fullEntity, enumFields))
+        const maskedEntities: ControllerEntity[] = history.deployments.map(fullDeployment => ControllerEntityFactory.maskDeployment(fullDeployment, enumFields))
         res.send(maskedEntities)
     }
 
@@ -97,7 +97,7 @@ export class Controller {
             const auditInfo: LocalDeploymentAuditInfo = {
                 authChain,
                 version: CURRENT_CONTENT_VERSION,
-                originalMetadata: {
+                migrationData: {
                     originalVersion,
                     data: migrationInformation
                 }
@@ -208,9 +208,20 @@ export class Controller {
             return
         }
 
-        const auditInfo = await this.service.getAuditInfo(type, entityId)
-        if (auditInfo) {
-            res.send(auditInfo)
+        const { deployments } = await this.service.getDeployments({ entityIds: [entityId], entityTypes: [type] })
+
+        if (deployments.length > 0) {
+            const { auditInfo } = deployments[0]
+            const legacyAuditInfo: LegacyAuditInfo = {
+                version: auditInfo.version,
+                deployedTimestamp: auditInfo.originTimestamp,
+                authChain: auditInfo.authChain,
+                overwrittenBy: auditInfo.overwrittenBy,
+                isDenylisted: auditInfo.isDenylisted,
+                denylistedContent: auditInfo.denylistedContent,
+                originalMetadata: auditInfo.migrationData
+            }
+            res.send(legacyAuditInfo)
         } else {
             res.status(404).send()
         }
@@ -246,6 +257,7 @@ export class Controller {
         const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
         const offset: number | undefined             = this.asInt(req.query.offset)
         const limit: number | undefined              = this.asInt(req.query.limit)
+        const fields: string | undefined             = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -253,10 +265,20 @@ export class Controller {
             return
         }
 
+        // Validate fields are correct or empty
+        let enumFields: DeploymentField[] = [...DEFAULT_FIELDS_ON_DEPLOYMENTS]
+        if (fields && fields.trim().length > 0) {
+            const acceptedValues = Object.values(DeploymentField).map(e => e.toString())
+            enumFields = fields.split(',')
+                .filter(f => acceptedValues.includes(f))
+                .map(f => f as DeploymentField)
+        } else if (showAudit) { // TODO: Delete after one deployment
+            enumFields.push(DeploymentField.AUDIT_INFO)
+        }
+
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
         const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
-        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.maskEntity(deployment))
-            .map(deployment => (!showAudit ? {...deployment, auditInfo: undefined } : deployment))
+        const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
         res.send( { deployments: controllerDeployments, filters, pagination })
     }
@@ -383,6 +405,13 @@ export enum EntityField {
     METADATA = "metadata",
 }
 
+export enum DeploymentField {
+    CONTENT = "content",
+    POINTERS = "pointers",
+    METADATA = "metadata",
+    AUDIT_INFO = "auditInfo",
+}
+
 export type ControllerDenylistData = {
     target: {
         type: string,
@@ -394,3 +423,4 @@ export type ControllerDenylistData = {
     }
 }
 
+const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]

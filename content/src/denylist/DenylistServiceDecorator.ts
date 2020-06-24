@@ -1,4 +1,4 @@
-import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory, LegacyAuditInfo } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
@@ -20,21 +20,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   constructor(private readonly service: MetaverseContentService,
     private readonly denylist: Denylist,
     private readonly repository: Repository) {}
-
-  async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
-    return this.repository.task(async task => {
-      const nonDenylistedPointers: EntityId[] = await this.filterDenylisted(task.denylist, pointers, pointer => buildPointerTarget(type, pointer));
-      const entities: Entity[] = await this.service.getEntitiesByPointers(type, nonDenylistedPointers, task);
-      return this.sanitizeEntities(task.denylist, entities);
-    })
-  }
-
-  async getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
-    return this.repository.task(async task => {
-      const entities: Entity[] = await this.service.getEntitiesByIds(type, ids, task);
-      return this.sanitizeEntities(task.denylist, entities);
-    })
-  }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
     const isDenylisted = await this.areDenylisted(this.repository.denylist, ...this.getHashTargets(fileHash));
@@ -64,48 +49,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
 
     return availability;
-  }
-
-  async getAuditInfo(type: EntityType, id: EntityId): Promise<LegacyAuditInfo | undefined> {
-    return this.repository.task(async task => {
-      // Retrieve audit info and entity
-      const auditInfo = await this.service.getAuditInfo(type, id, task);
-
-      if (!auditInfo) {
-        return undefined;
-      } else {
-        const entity = (await this.service.getEntitiesByIds(type, [id], task))[0];
-
-        // Build respective targets
-        const entityTarget = buildEntityTarget(type, id);
-        const contentTargets: Map<ContentFileHash, DenylistTarget> = new Map(Array.from(entity.content?.values() ?? []).map(fileHash => [fileHash, buildContentTarget(fileHash)]));
-        const allTargets = [entityTarget, ...contentTargets.values()];
-
-        // Check if any of the targets are denylisted
-        const denylisted = await this.denylist.areTargetsDenylisted(task.denylist, allTargets);
-
-        // Create new result
-        let result: LegacyAuditInfo = {
-          ...auditInfo
-        };
-
-        // If entity is denylisted, then mark it on the audit info
-        if (isTargetDenylisted(entityTarget, denylisted)) {
-          result.isDenylisted = true;
-        }
-
-        // If any of the content is denylisted, then add them to the audit info
-        const denylistedContent: ContentFileHash[] = Array.from(contentTargets.entries())
-          .filter(([, target]) => isTargetDenylisted(target, denylisted))
-          .map(([fileHash]) => fileHash);
-
-        if (denylistedContent.length > 0) {
-          result.denylistedContent = denylistedContent;
-        }
-
-        return result;
-      }
-    })
   }
 
   async deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string): Promise<Timestamp> {
@@ -201,16 +144,22 @@ export class DenylistServiceDecorator implements MetaverseContentService {
             .map(({ hash }) => hash)
 
         const { auditInfo } = deployment
-        return {
+        const result = {
             ...deployment,
             content: isEntityDenylisted ? undefined : deployment.content,
             metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
             auditInfo: {
                 ...auditInfo,
-                denylistedContent: denylistedContent.length > 0 ? denylistedContent : undefined,
-                isDenylisted: isEntityDenylisted ? true : undefined,
+
             },
         }
+        if (denylistedContent.length > 0) {
+            result.auditInfo.denylistedContent = denylistedContent
+        }
+        if (isEntityDenylisted) {
+            result.auditInfo.isDenylisted = true
+        }
+        return result
       })
 
       return {
@@ -258,26 +207,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
   }
 
-  /** When an entity is denylisted, we don't want to show its content and metadata  */
-  private async sanitizeEntities(denylistRepo: DenylistRepository, entities: Entity[]): Promise<Entity[]> {
-    // Build the target per entity
-    const entityToTarget: Map<Entity, DenylistTarget> = new Map(entities.map(entity => [entity, buildEntityTarget(entity.type, entity.id)]));
-
-    // Check if targets are denylisted
-    const denylistQueryResult = await this.denylist.areTargetsDenylisted(denylistRepo, Array.from(entityToTarget.values()));
-
-    // Sanitize denylisted entities
-    return entities.map(entity => {
-      const target = entityToTarget.get(entity)!!
-      const isDenylisted = isTargetDenylisted(target, denylistQueryResult)
-      if (isDenylisted) {
-        return { ...entity, content: undefined, metadata: DenylistServiceDecorator.DENYLISTED_METADATA }
-      } else {
-        return entity;
-      }
-    });
-  }
-
   /** Since entity ids are also file hashes, we need to check for all possible targets */
   private getHashTargets(fileHash: string): DenylistTarget[] {
     return [...this.getEntityTargets(fileHash), buildContentTarget(fileHash)]
@@ -297,14 +226,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
       .reduce((prev, current) => prev || current.some(denylisted => denylisted), false)
   }
 
-  /** Filter out denylisted targets */
-  private async filterDenylisted<T>(denylistRepo: DenylistRepository, elements: T[], targetBuild: (element: T) => DenylistTarget): Promise<T[]> {
-    const elementToTarget: Map<T, DenylistTarget> = new Map(elements.map(element => [element, targetBuild(element)]));
-    const areDenylisted = await this.denylist.areTargetsDenylisted(denylistRepo, Array.from(elementToTarget.values()));
-    return Array.from(elementToTarget.entries())
-      .filter(([, target]) => !isTargetDenylisted(target, areDenylisted))
-      .map(([element]) => element);
-  }
 }
 
 function isTargetDenylisted(target: DenylistTarget, queryResult: Map<DenylistTargetType, Map<DenylistTargetId, boolean>>): boolean {
