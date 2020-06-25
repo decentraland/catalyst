@@ -57,14 +57,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         })
     }
 
-    getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
-        return Promise.resolve(this.entities.filter(entity => entity.type == type && this.intersects(pointers, entity.pointers)))
-    }
-
-    getEntitiesByIds(type: EntityType, ids: EntityId[]): Promise<Entity[]> {
-        return Promise.resolve(this.entities.filter(entity => entity.type == type && ids.includes(entity.id)))
-    }
-
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
         return Promise.resolve(Date.now())
     }
@@ -99,10 +91,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         return MockedMetaverseContentService.STATUS
     }
 
-    getAuditInfo(type: EntityType, id: EntityId): Promise<LegacyAuditInfo> {
-        return Promise.resolve(MockedMetaverseContentService.AUDIT_INFO)
-    }
-
     getLegacyHistory(from?: number, to?: number, serverName?: string, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         throw new Error("Method not implemented.")
     }
@@ -125,15 +113,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     private isThereAnEntityWithId(entityId: EntityId): boolean {
         return this.entities.map(entity => entity.id == entityId)
             .reduce((accum,  currentValue) => accum || currentValue)
-    }
-
-    private intersects(pointers1: Pointer[], pointers2: Pointer[]) {
-        for (const pointer of pointers1) {
-            if (pointers2.includes(pointer)) {
-                return true
-            }
-        }
-        return false
     }
 
 }

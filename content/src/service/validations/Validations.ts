@@ -1,5 +1,5 @@
 import ms from "ms"
-import { EntityType, EntityId, ContentFileHash, Timestamp, ContentFile, Pointer, ENTITY_FILE_NAME, EntityVersion } from "dcl-catalyst-commons";
+import { EntityType, EntityId, ContentFileHash, Timestamp, ContentFile, Pointer, ENTITY_FILE_NAME, EntityVersion, DeploymentFilters } from "dcl-catalyst-commons";
 import { Entity } from "../Entity";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
@@ -7,8 +7,9 @@ import { AuthChain, EthAddress } from "dcl-crypto";
 import { ContentAuthenticator } from "../auth/Authenticator";
 import { DeploymentStatus, NoFailure } from "../errors/FailedDeploymentsManager";
 import { httpProviderForNetwork } from '../../../../contracts/utils';
-import { happenedBeforeEntities } from "../time/TimeSorting";
 import { LocalDeploymentAuditInfo } from "../Service";
+import { happenedBefore } from "../time/TimeSorting";
+import { Deployment } from "../deployments/DeploymentManager";
 
 export class Validations {
 
@@ -150,24 +151,20 @@ export class ValidatorInstance {
     /** Validate that there is no entity with a higher version already deployed that the legacy entity is trying to overwrite */
     async validateLegacyEntity(entityToBeDeployed: Entity,
         auditInfoBeingDeployed: LocalDeploymentAuditInfo,
-        entitiesByPointersFetcher: (type: EntityType, pointers: Pointer[]) => Promise<Entity[]>,
-        auditInfoFetcher: (type: EntityType, entityId: EntityId) => Promise<LocalDeploymentAuditInfo | undefined>,
+        deploymentsFetcher: (filters: DeploymentFilters) => Promise<{ deployments: Deployment[] }>,
         validationContext: ValidationContext): Promise<void> {
         if (validationContext.shouldValidate(Validation.LEGACY_ENTITY)) {
-            if (auditInfoBeingDeployed.originalMetadata && auditInfoBeingDeployed.originalMetadata.originalVersion === EntityVersion.V2) {
-                const currentPointedEntities = await entitiesByPointersFetcher(entityToBeDeployed.type, entityToBeDeployed.pointers)
-                const currentAuditInfos: Map<Entity, LocalDeploymentAuditInfo | undefined> = new Map(await Promise.all(currentPointedEntities.map<Promise<[Entity, LocalDeploymentAuditInfo | undefined]>>(async entity => [entity, await auditInfoFetcher(entity.type, entity.id)])))
-                Array.from(currentAuditInfos.entries())
-                    .filter(([, currentAuditInfo]) => !!currentAuditInfo)
-                    .map<[Entity, LocalDeploymentAuditInfo]>(([currentEntity, currentAuditInfo]) => [currentEntity, currentAuditInfo!!])
-                    .forEach(([currentEntity, currentAuditInfo]) => {
-                    if (happenedBeforeEntities(currentEntity, entityToBeDeployed)) {
+            if (auditInfoBeingDeployed.migrationData && auditInfoBeingDeployed.migrationData.originalVersion === EntityVersion.V2) {
+                const { deployments } = await deploymentsFetcher({ entityTypes: [entityToBeDeployed.type], pointers: entityToBeDeployed.pointers, onlyCurrentlyPointed: true })
+                deployments.forEach((currentDeployment) => {
+                    const currentAuditInfo = currentDeployment.auditInfo
+                    if (happenedBefore(currentDeployment, entityToBeDeployed)) {
                         if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
                             this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
-                        } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.originalMetadata) {
-                            if (!currentAuditInfo.originalMetadata) {
+                        } else if (currentAuditInfo.version == auditInfoBeingDeployed.version && auditInfoBeingDeployed.migrationData) {
+                            if (!currentAuditInfo.migrationData) {
                                 this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
-                            } else if (currentAuditInfo.originalMetadata.originalVersion > auditInfoBeingDeployed.originalMetadata.originalVersion) {
+                            } else if (currentAuditInfo.migrationData.originalVersion > auditInfoBeingDeployed.migrationData.originalVersion) {
                                 this.errors.push(`Found an overlapping entity with a higher version already deployed.`)
                             }
                         }
