@@ -1,5 +1,5 @@
 import * as EthCrypto from "eth-crypto";
-import { EntityType, Timestamp, EntityVersion, Entity, AuditInfo } from "dcl-catalyst-commons";
+import { EntityType, Timestamp, EntityVersion, Entity, AuditInfo, Fetcher } from "dcl-catalyst-commons";
 import { Validations } from "@katalyst/content/service/validations/Validations";
 import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/MockedAccessChecker";
 import { ValidationContext } from "@katalyst/content/service/validations/ValidationContext";
@@ -366,7 +366,7 @@ function buildEntity(options?: { timestamp?: Timestamp, content?: Map<string, st
 
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
-  return new Validations(new AccessCheckerImpl(authenticator, "unused_url"),
+  return new Validations(new AccessCheckerImpl(authenticator, new Fetcher(), "unused_url"),
     authenticator,
     "ropsten",
     ms('10m')).getInstance();

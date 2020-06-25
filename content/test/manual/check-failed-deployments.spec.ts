@@ -10,6 +10,7 @@ import { DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET } from "@katalyst/content/Environ
 import fs from 'fs';
 import { httpProviderForNetwork } from "../../../contracts/utils"
 import ms from "ms"
+import { Fetcher } from "dcl-catalyst-commons"
 
 describe("Failed Deployments validations.", () => {
 
@@ -45,7 +46,7 @@ describe("Failed Deployments validations.", () => {
             })))
             .filter(notEmpty)
 
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET);
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET);
 
         if (reviewSceneErrors) {
             console.log('------------------------------')
@@ -142,7 +143,7 @@ describe("Failed Deployments validations.", () => {
         }, MAX_SAFE_TIMEOUT)
 
     it('Entity access check', async () => {
-        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager');
+        const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager');
         const accessSnapshot = {
             pointers: ["55,-132"],
             ethAddress: '0xaabe0ecfaf9e028d63cf7ea7e772cf52d662691a',
