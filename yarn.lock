@@ -2621,10 +2621,18 @@ dcl-catalyst-commons@^1.4.0:
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
-dcl-crypto@2.2.0, dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
+dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.2.0.tgz#d9ebb1177caac40f57ae5e3016d0af46c64c4efc"
   integrity sha512-7UUhIue8y4bs85gmW+cm9uSJITwGI9CDBBtfXCCF6MGnkbG5E81iiI68P8jd6tNDPeXV4OfL+0a7X/jGtDSEcQ==
+  dependencies:
+    eth-crypto "^1.5.1"
+    web3x "^4.0.6"
+
+dcl-crypto@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.3.0.tgz#a223b1513888a359ff93b302b0d5a045edff5a79"
+  integrity sha512-ypsd4XjSWaOj0DtESxpnY+YYQBy43c/uUrNRaVnWGiJehQc+3EC7nONnCy3p8XcLspGAwtes7nwWtRnsNKFvVQ==
   dependencies:
     eth-crypto "^1.5.1"
     web3x "^4.0.6"
