@@ -1,3 +1,4 @@
+import log4js from 'log4js'
 import { Transform } from 'stream'
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons';
 
@@ -9,6 +10,7 @@ import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons';
 export class OnlyNotDeployedFilter extends Transform {
 
     private static readonly BUFFERED_DEPLOYMENTS = 300
+    private static readonly LOGGER = log4js.getLogger('OnlyNotDeployedFilter');
     private readonly buffer: DeploymentWithAuditInfo[] = []
 
     constructor(private readonly checkIfAlreadyDeployed: (entityIds: EntityId[]) => Promise<Map<EntityId, boolean>>,) {
@@ -37,6 +39,10 @@ export class OnlyNotDeployedFilter extends Transform {
         const newEntities: Set<EntityId> = new Set(Array.from(deployInfo.entries())
             .filter(([, deployed]) => !deployed)
             .map(([entityId]) => entityId))
+
+        if (newEntities.size !== this.buffer.length) {
+            OnlyNotDeployedFilter.LOGGER.debug(`Ignoring ${this.buffer.length - newEntities.size} deployments because they were already deployed.`)
+        }
 
         // Filter out already deployed entities and push the new ones
         this.buffer.filter(event => newEntities.has(event.entityId))
