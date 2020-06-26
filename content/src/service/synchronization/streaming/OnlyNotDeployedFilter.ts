@@ -5,7 +5,7 @@ import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons';
 /**
  * Expose a stream transform that filters out already deployed entities.
  * We will use a buffer to accumulate a number of deployments, and when the number is reached, we
- * check which of those deployments is new.
+ * will check which of those deployments is new.
  */
 export class OnlyNotDeployedFilter extends Transform {
 

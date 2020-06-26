@@ -34,9 +34,6 @@ export class ContentServerClient {
             DeploymentFields.AUDIT_INFO,
             (errorMessage) => {
                 error = true
-                if (this.connectionState === ConnectionState.CONNECTED) {
-                    this.connectionState = ConnectionState.CONNECTION_LOST
-                }
                 ContentServerClient.LOGGER.error(`Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`)
             })
 
@@ -52,6 +49,10 @@ export class ContentServerClient {
                 }
                 this.connectionState = ConnectionState.CONNECTED
             } else {
+                // Update connection state
+                if (this.connectionState === ConnectionState.CONNECTED) {
+                    this.connectionState = ConnectionState.CONNECTION_LOST
+                }
                 this.potentialLocalDeploymentTimestamp = undefined
             }
         })

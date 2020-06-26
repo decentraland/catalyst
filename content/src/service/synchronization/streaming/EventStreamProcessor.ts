@@ -10,7 +10,6 @@ import { OnlyNotDeployedFilter } from "./OnlyNotDeployedFilter";
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
- * However, it will always deploy the older events fist.
  */
 export class EventStreamProcessor {
 
@@ -22,7 +21,7 @@ export class EventStreamProcessor {
         private readonly deploymentBuilder: DeploymentPreparation) { }
 
     /**
-     * This method takes a load of deployments, goes through each event and tries to deploy them locally.
+     * This method takes many deployment streams and tries to deploy them locally.
      */
     async processDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
         // Merge the streams from the different servers
@@ -69,7 +68,6 @@ export class EventStreamProcessor {
 
     /**
      * Build a transform stream that takes the deployment information and downloads all files necessary to deploy it locally.
-     * We will download everything in parallel, but it will be deployed in order
      */
     private prepareDeploymentBuilder(options?: HistoryDeploymentOptions) {
         return parallelTransform(EventStreamProcessor.PARALLEL_DOWNLOAD_WORKERS, { objectMode: true, ordered: false }, async (deploymentEvent, done) => {
