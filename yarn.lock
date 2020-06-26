@@ -2610,8 +2610,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-"dcl-catalyst-client@file:../catalyst-client":
-  version "0.0.0-development"
+dcl-catalyst-client@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.1.0.tgz#e69ccac3f3904183b5f14b06d10ce063512fab61"
+  integrity sha512-A1BCO7QUBcEwerIQNn18CYtSHiX0S9MrLmAM+LzbVN4vg1tOCXccmVD7ILhhESbc0vJD9xFrTPEpJsYnz3IXZA==
   dependencies:
     async-iterator-to-array "0.0.1"
     dcl-catalyst-commons "^1.4.0"

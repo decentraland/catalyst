@@ -84,7 +84,7 @@
     "aws-sdk": "^2.704.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
-    "dcl-catalyst-client": "file:/Users/nchamo/repos/catalyst-client/",
+    "dcl-catalyst-client": "^2.1.0",
     "dcl-catalyst-commons": "^1.4.0",
     "dcl-crypto": "2.2.0",
     "decentraland-commons": "^5.2.0",
