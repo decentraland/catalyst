@@ -86,7 +86,7 @@
     "cors": "^2.8.5",
     "dcl-catalyst-client": "^2.1.0",
     "dcl-catalyst-commons": "^1.4.0",
-    "dcl-crypto": "2.2.0",
+    "dcl-crypto": "^2.3.0",
     "decentraland-commons": "^5.2.0",
     "decentraland-ui": "^2.23.0",
     "eth-crypto": "^1.6.0",
