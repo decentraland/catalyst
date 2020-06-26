@@ -16,7 +16,7 @@ describe("End 2 end synchronization tests", function() {
             .andBuildMany(3)
     })
 
-    it(`When a server gets some content uploaded, then the other servers download it`, async () => {
+    fit(`When a server gets some content uploaded, then the other servers download it`, async () => {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 

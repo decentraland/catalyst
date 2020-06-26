@@ -1,12 +1,15 @@
 import log4js from 'log4js'
-import { Timestamp, ContentFile, ContentFileHash, Deployment as ControllerDeployment, ServerAddress, Fetcher, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
+import { Readable } from 'stream'
+import { Timestamp, ContentFile, ContentFileHash, ServerAddress, Fetcher, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 import { ContentClient, DeploymentFields } from "dcl-catalyst-client";
+import { passThrough } from '../streaming/StreamHelper';
 
 export class ContentServerClient {
 
     private static readonly LOGGER = log4js.getLogger('ContentServerClient');
     private readonly client: ContentClient
     private connectionState: ConnectionState = ConnectionState.NEVER_REACHED
+    private potentialLocalDeploymentTimestamp: Timestamp | undefined
 
     constructor(private readonly address: ServerAddress,
         private lastLocalDeploymentTimestamp: Timestamp,
@@ -17,36 +20,43 @@ export class ContentServerClient {
     /**
      * After entities have been deployed (or set as failed deployments), we can finally update the last deployment timestamp.
      */
-    updateLastLocalDeploymentTimestamp(timestamp: Timestamp): void {
-        this.lastLocalDeploymentTimestamp = Math.max(this.lastLocalDeploymentTimestamp, timestamp);
+    allDeploymentsWereSuccessful(): Timestamp {
+        return this.lastLocalDeploymentTimestamp = Math.max(this.lastLocalDeploymentTimestamp, this.potentialLocalDeploymentTimestamp ?? 0);
     }
 
     /** Return all new deployments, and store the local timestamp of the newest one. */
-    async getNewDeployments(): Promise<DeploymentWithAuditInfo[]> {
-        try {
-            // Fetch the deployments
-            const deployments: ControllerDeployment[] = await this.client.fetchAllDeployments({ fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 }, DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO)
+    getNewDeployments(): Readable {
+        let error = false
 
-             // Update connection state
-             if (this.connectionState !== ConnectionState.CONNECTED) {
-                ContentServerClient.LOGGER.info(`Could connect to '${this.address}'`)
-            }
-            this.connectionState = ConnectionState.CONNECTED
-
-            // Keep only values that are used for sync
-            return deployments.map(({ entityType, entityId, entityTimestamp, deployedBy, auditInfo }) => {
-                delete auditInfo.denylistedContent
-                delete auditInfo.isDenylisted
-                return { entityType, entityId, entityTimestamp, deployedBy, auditInfo }
+        // Fetch the deployments
+        const stream = this.client.streamAllDeployments(
+            { fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 },
+            DeploymentFields.AUDIT_INFO,
+            (errorMessage) => {
+                error = true
+                if (this.connectionState === ConnectionState.CONNECTED) {
+                    this.connectionState = ConnectionState.CONNECTION_LOST
+                }
+                ContentServerClient.LOGGER.error(`Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`)
             })
-        } catch (error) {
-            if (this.connectionState === ConnectionState.CONNECTED) {
-                this.connectionState = ConnectionState.CONNECTION_LOST
-                ContentServerClient.LOGGER.info(`Lost connection to '${this.address}'`)
+
+        // Listen to all deployments passing through, and store the newest one's timestamps
+        const passTrough = passThrough((deployment: DeploymentWithAuditInfo) => this.potentialLocalDeploymentTimestamp = Math.max(this.potentialLocalDeploymentTimestamp ?? 0, deployment.auditInfo.localTimestamp))
+
+        // Wait for stream to end to update connection state
+        stream.once('end', () => {
+            if (!error) {
+                // Update connection state
+                if (this.connectionState !== ConnectionState.CONNECTED) {
+                    ContentServerClient.LOGGER.info(`Could connect to '${this.address}'`)
+                }
+                this.connectionState = ConnectionState.CONNECTED
+            } else {
+                this.potentialLocalDeploymentTimestamp = undefined
             }
-            ContentServerClient.LOGGER.error(`Failed to get new entities from content server '${this.getAddress()}'\n${error}`)
-            return []
-        }
+        })
+
+        return stream.pipe(passTrough)
     }
 
     async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {

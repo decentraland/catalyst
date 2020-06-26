@@ -1,12 +1,13 @@
 import log4js from "log4js"
-import { EntityId, ContentFile, ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
+import { ContentFile, ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
+import { Readable } from "stream";
 import { ContentServerClient } from "./clients/ContentServerClient";
 import { Entity } from "../Entity";
 import { ClusterDeploymentsService } from "../Service";
 import { ContentCluster } from "./ContentCluster";
 import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
-import { EventStreamProcessor } from "./EventStreamProcessor";
+import { EventStreamProcessor } from "./streaming/EventStreamProcessor";
 import { FailureReason } from "../errors/FailedDeploymentsManager";
 
 export class EventDeployer {
@@ -17,29 +18,14 @@ export class EventDeployer {
 
     constructor(private readonly cluster: ContentCluster,
         private readonly service: ClusterDeploymentsService) {
-            this.eventProcessor = new EventStreamProcessor((event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
+            this.eventProcessor = new EventStreamProcessor(
+                (entityIds) => this.service.areEntitiesAlreadyDeployed(entityIds),
+                (event, source) => this.wrapDeployment(this.prepareDeployment(event, source)))
         }
 
-    async processAllDeployments(deployments: DeploymentWithAuditInfo[], options?: HistoryDeploymentOptions) {
-        // Determine whether I already know the entities
-        const entitiesInDeployments: EntityId[] = deployments.map(({ entityId }) => entityId)
-        const deployInfo = await this.service.areEntitiesAlreadyDeployed(entitiesInDeployments)
-        const newEntities: Set<EntityId> = new Set(Array.from(deployInfo.entries())
-            .filter(([, deployed]) => !deployed)
-            .map(([entityId]) => entityId))
-
-        // Keep only new deployments
-        const newDeployments = deployments.filter(event => newEntities.has(event.entityId));
-
-        if (deployments.length > 0) {
-            EventDeployer.LOGGER.debug(`History had ${deployments.length} entities, only ${newDeployments.length} new.`)
-            if (newDeployments.length > 0) {
-                EventDeployer.LOGGER.debug(`Will start to deploy the ${newDeployments.length} new entities.`)
-            }
-        }
-
+    async processAllDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
         // Process history and deploy it
-        return this.eventProcessor.processDeployments(newDeployments, options)
+        return this.eventProcessor.processDeployments(deployments, options)
     }
 
     /** Download and prepare everything necessary to deploy an entity */

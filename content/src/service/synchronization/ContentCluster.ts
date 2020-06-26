@@ -143,7 +143,7 @@ export class ContentCluster implements IdentityProvider {
                     // Create and store the new client
                     const newClient = new ContentServerClient(newAddress, lastDeploymentTimestamp, this.fetcher)
                     this.serverClients.set(newAddress, newClient)
-                    ContentCluster.LOGGER.info(`Connected to new server '${newAddress}'`)
+                    ContentCluster.LOGGER.info(`Discovered new server '${newAddress}'`)
                 }
             }
 
