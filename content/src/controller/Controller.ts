@@ -257,11 +257,6 @@ export class Controller {
             return
         }
 
-        if (type !== EntityType.SCENE) {
-            res.status(400).send({ error: `Only scenes are allowed for now.` });
-            return
-        }
-
         const requestFilters = { entityType: type, fromLocalTimestamp, toLocalTimestamp }
         const { deltas, filters, pagination } = await this.service.getDeltas(requestFilters, offset, limit)
         const controllerDeltas: ControllerDelta[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
