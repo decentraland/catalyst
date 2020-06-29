@@ -7,7 +7,7 @@ import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
-import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager"
+import { Deployment, DeltaFilters, DeploymentDelta } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
@@ -31,18 +31,28 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     private readonly entities: Entity[]
     private readonly content: Map<ContentFileHash, Buffer>
+    private readonly deltas: DeploymentDelta[]
 
     constructor(builder: MockedMetaverseContentServiceBuilder) {
         this.entities = builder.entities
         this.content = builder.content
+        this.deltas = builder.deltas
     }
 
     deleteContent(fileHashes: string[]): Promise<void> {
         throw new Error("Method not implemented.")
     }
 
-    getDeltas(repository?: RepositoryTask | Repository) {
-        return Promise.resolve([])
+    getDeltas(filters: DeltaFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository) {
+        return Promise.resolve({
+            deltas: this.deltas,
+            filters: {},
+            pagination: {
+                offset: 0,
+                limit: 100,
+                moreData: false,
+            }
+        })
     }
 
     getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
@@ -121,6 +131,7 @@ export class MockedMetaverseContentServiceBuilder {
 
     readonly entities: Entity[] = []
     readonly content: Map<ContentFileHash, Buffer> = new Map()
+    readonly deltas: DeploymentDelta[] = []
 
     withEntity(newEntity: Entity): MockedMetaverseContentServiceBuilder {
         this.entities.push(newEntity)
@@ -129,6 +140,11 @@ export class MockedMetaverseContentServiceBuilder {
 
     withContent(...content: { hash: ContentFileHash, buffer: Buffer }[]): MockedMetaverseContentServiceBuilder {
         content.forEach(({hash, buffer}) => this.content.set(hash, buffer))
+        return this
+    }
+
+    withDelta(delta: DeploymentDelta): MockedMetaverseContentServiceBuilder {
+        this.deltas.push(delta)
         return this
     }
 

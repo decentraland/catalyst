@@ -9,12 +9,15 @@ import { ControllerFactory } from "@katalyst/content/controller/ControllerFactor
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { NoOpMigrationManager } from "@katalyst/test-helpers/NoOpMigrationManager"
 import { NoOpGarbageCollectionManager } from "@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager"
+import { DeploymentDelta } from "@katalyst/content/service/deployments/DeploymentManager"
+import { ControllerDelta } from "@katalyst/content/controller/Controller"
 
 describe("Integration - Server", function() {
     let server: Server
     const content = buildContent()
     const entity1 = randomEntity(EntityType.SCENE)
     const entity2 = randomEntity(EntityType.SCENE)
+    const delta: DeploymentDelta = { entityId: entity1.id, entityType: entity1.type, localTimestamp: 10, changes: new Map([[entity1.pointers[0], { before: undefined, after: entity1.id }]]) }
     const port = 8080
     const address: string = `http://localhost:${port}`
 
@@ -22,6 +25,7 @@ describe("Integration - Server", function() {
         const service = new MockedMetaverseContentServiceBuilder()
             .withEntity(entity1)
             .withEntity(entity2)
+            .withDelta(delta)
             .withContent(content)
             .build()
         const env = new Environment()
@@ -80,6 +84,23 @@ describe("Integration - Server", function() {
         expect(response.ok).toBe(true)
         const buffer = await response.buffer()
         expect(buffer).toEqual(content.buffer)
+    });
+
+    fit(`Deltas`, async () => {
+        const response = await fetch(`${address}/deltas/${entity1.type}`)
+        expect(response.ok).toBe(true)
+        const { deltas }: { deltas: ControllerDelta[] } = await response.json()
+        expect(deltas.length).toBe(1)
+        const [ controllerDelta ] = deltas
+        expect(controllerDelta.entityId).toBe(delta.entityId)
+        expect(controllerDelta.entityType).toBe(delta.entityType)
+        expect(controllerDelta.localTimestamp).toBe(delta.localTimestamp)
+        const { changes } = controllerDelta
+        expect(changes.length).toBe(1)
+        const [ change ] = changes
+        expect(change.pointer).toBe(entity1.pointers[0])
+        expect(change.before).toBe(undefined)
+        expect(change.after).toBe(entity1.id)
     });
 
 })

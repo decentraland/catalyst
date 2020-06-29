@@ -14,7 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
-import { Deployment } from "../service/deployments/DeploymentManager";
+import { Deployment, DeploymentDelta } from "../service/deployments/DeploymentManager";
 
 export class Controller {
 
@@ -241,6 +241,33 @@ export class Controller {
         res.send(history)
     }
 
+    async getDeltas(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /deltas/:type
+        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}
+        const type: EntityType                          = this.parseEntityType(req.params.type)
+        const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: Timestamp | undefined   = this.asInt(req.query.toLocalTimestamp)
+        const offset: number | undefined                = this.asInt(req.query.offset)
+        const limit: number | undefined                 = this.asInt(req.query.limit)
+
+        // Validate type is valid
+        if (!type) {
+            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+            return
+        }
+
+        if (type !== EntityType.SCENE) {
+            res.status(400).send({ error: `Only scenes are allowed for now.` });
+            return
+        }
+
+        const requestFilters = { entityType: type, fromLocalTimestamp, toLocalTimestamp }
+        const { deltas, filters, pagination } = await this.service.getDeltas(requestFilters, offset, limit)
+        const controllerDeltas: ControllerDelta[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
+        res.send( { deltas: controllerDeltas, filters, pagination })
+    }
+
     async getDeployments(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /deployments
@@ -410,6 +437,14 @@ export enum DeploymentField {
     POINTERS = "pointers",
     METADATA = "metadata",
     AUDIT_INFO = "auditInfo",
+}
+
+export type ControllerDelta = Omit<DeploymentDelta, 'changes'> & {
+    changes: {
+        pointer: Pointer,
+        before: EntityId | undefined,
+        after: EntityId | undefined
+    }[]
 }
 
 export type ControllerDenylistData = {

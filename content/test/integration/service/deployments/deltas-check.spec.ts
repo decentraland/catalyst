@@ -71,7 +71,7 @@ describe("Integration - Deltas Check", () => {
     }
 
     async function getChangesInDeltaFor(entityCombo: EntityCombo): Promise<DeploymentDeltaChanges> {
-        const deltas = await service.getDeltas()
+        const { deltas } = await service.getDeltas({ entityType: entityCombo.entity.type })
         const { changes } = deltas.filter(delta => delta.entityId === entityCombo.entity.id)[0]
         return changes
     }

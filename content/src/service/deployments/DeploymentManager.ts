@@ -86,17 +86,34 @@ export class DeploymentManager {
         return deploymentsRepository.setEntitiesAsOverwritten(overwritten, overwrittenBy)
     }
 
-    async getDeltas(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository): Promise<DeploymentDelta[]> {
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(0, DeploymentManager.MAX_HISTORY_LIMIT, undefined)
-        const deploymentIds = deploymentsWithExtra.map(({ deploymentId }) => deploymentId)
-        const deltas = await deploymentDeltasRepo.getDeltasForDeployments(deploymentIds)
+    async getDeltas(filters: DeltaFilters, deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository, offset?: number,
+        limit?: number): Promise<PartialDeploymentDeltas> {
+            const curatedOffset = (offset && offset >= 0) ? offset : 0
+        const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, { ...filters, entityTypes: [filters.entityType] })
+        const moreData = deploymentsWithExtra.length > curatedLimit
 
-        return deploymentsWithExtra
+        const deployments = deploymentsWithExtra.slice(0, curatedLimit)
+        const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
+        const deltasForDeployments = await deploymentDeltasRepo.getDeltasForDeployments(deploymentIds)
+        const deltas: DeploymentDelta[] = deployments
             .map(({ deploymentId, entityId, entityType, localTimestamp }) => {
-                const delta = deltas.get(deploymentId) ?? new Map()
+                const delta = deltasForDeployments.get(deploymentId) ?? new Map()
                 const changes = this.transformDelta(entityId, delta)
                 return { entityType, entityId, localTimestamp, changes }
             })
+        return {
+            deltas,
+            filters: {
+                fromLocalTimestamp: filters.fromLocalTimestamp,
+                toLocalTimestamp: filters.toLocalTimestamp,
+            },
+            pagination: {
+                offset: curatedOffset,
+                limit: curatedLimit,
+                moreData,
+            }
+        }
     }
 
     saveDelta(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentId: DeploymentId, result: DeploymentResult) {
@@ -125,6 +142,18 @@ export type DeploymentDelta = {
     localTimestamp: Timestamp,
     changes: DeploymentDeltaChanges,
 }
+
+export declare type PartialDeploymentDeltas = {
+    deltas: DeploymentDelta[],
+    filters: Omit<DeltaFilters, 'entityType'>,
+    pagination: {
+        offset: number;
+        limit: number;
+        moreData: boolean;
+    };
+};
+
+export type DeltaFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp'> & { entityType: EntityType }
 
 export type DeploymentDeltaChanges = Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }>
 
