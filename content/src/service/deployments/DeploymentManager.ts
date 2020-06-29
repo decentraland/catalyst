@@ -88,7 +88,7 @@ export class DeploymentManager {
 
     async getDeltas(filters: DeltaFilters, deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository, offset?: number,
         limit?: number): Promise<PartialDeploymentDeltas> {
-            const curatedOffset = (offset && offset >= 0) ? offset : 0
+        const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
         const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, { ...filters, entityTypes: [filters.entityType] })
         const moreData = deploymentsWithExtra.length > curatedLimit
