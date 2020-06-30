@@ -14,7 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
-import { Deployment, DeploymentDelta } from "../service/deployments/DeploymentManager";
+import { Deployment, DeploymentPointerChanges } from "../service/deployments/DeploymentManager";
 
 export class Controller {
 
@@ -260,9 +260,9 @@ export class Controller {
         }
 
         const requestFilters = { entityTypes: (entityTypes as EntityType[] | undefined), fromLocalTimestamp, toLocalTimestamp }
-        const { deltas, filters, pagination } = await this.service.getPointerChanges(requestFilters, offset, limit)
-        const controllerDeltas: ControllerDelta[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
-        res.send( { deltas: controllerDeltas, filters, pagination })
+        const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(requestFilters, offset, limit)
+        const controllerPointerChanges: ControllerPointerChanges[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
+        res.send( { deltas: controllerPointerChanges, filters, pagination })
     }
 
     async getDeployments(req: express.Request, res: express.Response) {
@@ -436,7 +436,7 @@ export enum DeploymentField {
     AUDIT_INFO = "auditInfo",
 }
 
-export type ControllerDelta = Omit<DeploymentDelta, 'changes'> & {
+export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
     changes: {
         pointer: Pointer,
         before: EntityId | undefined,

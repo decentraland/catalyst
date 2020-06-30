@@ -15,7 +15,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeploymentsManager";
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
-import { DeploymentManager, Deployment, PartialDeploymentDeltas, PointerChangesFilters } from "./deployments/DeploymentManager";
+import { DeploymentManager, Deployment, PartialDeploymentPointerChanges, PointerChangesFilters } from "./deployments/DeploymentManager";
 import { happenedBefore } from "./time/TimeSorting";
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
@@ -147,8 +147,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                 // Modify active pointers
                 const result = await this.pointerManager.referenceEntityFromPointers(transaction.lastDeployedPointers, deploymentId, entity)
 
-                // Save deployment delta
-                await this.deploymentManager.saveDelta(transaction.deploymentDeltas, deploymentId, result)
+                // Save deployment pointer changes
+                await this.deploymentManager.savePointerChanges(transaction.deploymentPointerChanges, deploymentId, result)
 
                 // Add to pointer history
                 await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
@@ -254,8 +254,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, filters, offset, limit))
     }
 
-    getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentDeltas> {
-        return repository.taskIf(task => this.deploymentManager.getPointerChanges(task.deploymentDeltas, task.deployments, filters, offset, limit))
+    getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentPointerChanges> {
+        return repository.taskIf(task => this.deploymentManager.getPointerChanges(task.deploymentPointerChanges, task.deployments, filters, offset, limit))
     }
 
     getAllFailedDeployments() {

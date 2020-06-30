@@ -7,7 +7,7 @@ import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
-import { Deployment, PointerChangesFilters, DeploymentDelta } from "@katalyst/content/service/deployments/DeploymentManager"
+import { Deployment, PointerChangesFilters, DeploymentPointerChanges } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
@@ -31,12 +31,12 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     private readonly entities: Entity[]
     private readonly content: Map<ContentFileHash, Buffer>
-    private readonly deltas: DeploymentDelta[]
+    private readonly pointerChanges: DeploymentPointerChanges[]
 
     constructor(builder: MockedMetaverseContentServiceBuilder) {
         this.entities = builder.entities
         this.content = builder.content
-        this.deltas = builder.deltas
+        this.pointerChanges = builder.pointerChanges
     }
 
     deleteContent(fileHashes: string[]): Promise<void> {
@@ -45,7 +45,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository) {
         return Promise.resolve({
-            deltas: this.deltas,
+            pointerChanges: this.pointerChanges,
             filters: {},
             pagination: {
                 offset: 0,
@@ -131,7 +131,7 @@ export class MockedMetaverseContentServiceBuilder {
 
     readonly entities: Entity[] = []
     readonly content: Map<ContentFileHash, Buffer> = new Map()
-    readonly deltas: DeploymentDelta[] = []
+    readonly pointerChanges: DeploymentPointerChanges[] = []
 
     withEntity(newEntity: Entity): MockedMetaverseContentServiceBuilder {
         this.entities.push(newEntity)
@@ -143,8 +143,8 @@ export class MockedMetaverseContentServiceBuilder {
         return this
     }
 
-    withDelta(delta: DeploymentDelta): MockedMetaverseContentServiceBuilder {
-        this.deltas.push(delta)
+    withPointerChanges(delta: DeploymentPointerChanges): MockedMetaverseContentServiceBuilder {
+        this.pointerChanges.push(delta)
         return this
     }
 
