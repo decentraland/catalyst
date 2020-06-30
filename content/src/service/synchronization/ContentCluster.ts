@@ -4,7 +4,7 @@ import { setTimeout, clearTimeout } from "timers"
 import { ServerAddress, Timestamp, ServerName, Fetcher } from "dcl-catalyst-commons";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { delay } from "decentraland-katalyst-utils/util";
-import { ContentServerClient, ConnectionState } from "./clients/ContentServerClient";
+import { ContentServerClient } from "./clients/ContentServerClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { ChallengeSupervisor, ChallengeText } from "./ChallengeSupervisor"
 import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
@@ -90,11 +90,6 @@ export class ContentCluster implements IdentityProvider {
         return Array.from(this.serverClients.values())
     }
 
-    getAllActiveServersInCluster(): ContentServerClient[] {
-        return Array.from(this.serverClients.values())
-            .filter(client => client.getConnectionState() === ConnectionState.CONNECTED)
-    }
-
     getIdentityInDAO(): ServerIdentity | undefined {
         return this.myIdentity
     }
@@ -143,7 +138,7 @@ export class ContentCluster implements IdentityProvider {
                     // Create and store the new client
                     const newClient = new ContentServerClient(newAddress, lastDeploymentTimestamp, this.fetcher)
                     this.serverClients.set(newAddress, newClient)
-                    ContentCluster.LOGGER.info(`Connected to new server '${newAddress}'`)
+                    ContentCluster.LOGGER.info(`Discovered new server '${newAddress}'`)
                 }
             }
 
