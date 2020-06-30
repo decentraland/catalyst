@@ -1167,6 +1167,13 @@
   resolved "https://registry.yarnpkg.com/@types/long/-/long-4.0.0.tgz#719551d2352d301ac8b81db732acb6bdc28dbdef"
   integrity sha512-1w52Nyx4Gq47uuu0EVcsHBxZFJgurQ+rTKS3qMHxR1GY2T8c2AJYd6vZoZ9q1rupaDjU0yT+Jc2XTyXkjeMA+Q==
 
+"@types/merge-stream@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@types/merge-stream/-/merge-stream-1.1.2.tgz#a880ff66b1fbbb5eef4958d015c5947a9334dbb1"
+  integrity sha512-7faLmaE99g/yX0Y9pF1neh2IUqOf/fXMOWCVzsXjqI1EJ91lrgXmaBKf6bRWM164lLyiHxHt6t/ZO/cIzq61XA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/mime@*":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-2.0.1.tgz#dc488842312a7f075149312905b5e3c0b054c79d"
@@ -1640,6 +1647,11 @@ assert-plus@1.0.0, assert-plus@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/assert-plus/-/assert-plus-1.0.0.tgz#f12e0f3c5d77b0b1cdd9146942e4e96c1e4dd525"
   integrity sha1-8S4PPF13sLHN2RRpQuTpbB5N1SU=
+
+async-iterator-to-array@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/async-iterator-to-array/-/async-iterator-to-array-0.0.1.tgz#3ab70698c68b4219ff36e7327c5a4880917b0d49"
+  integrity sha512-BH6nAEYCRjNh24ylW8juMrHq5k/wx2l3kLcFjVZQ3uNYNKHQmVb9UbXxDo9Z8YUjhCGTthUaR9hBf4aK+aHRQg==
 
 async-limiter@^1.0.0, async-limiter@~1.0.0:
   version "1.0.1"
@@ -2598,11 +2610,12 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.0.0.tgz#258a17f54ab71ec069fe85a8ba10580672700785"
-  integrity sha512-7jQrmpE+7VmAy4P9n7rvL70K3mzQZ4HVifwqSIRROq84v01Pjc9bI2e8knYblqSrHkqAkr22x3VUwklAJO1Dvw==
+dcl-catalyst-client@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.1.0.tgz#e69ccac3f3904183b5f14b06d10ce063512fab61"
+  integrity sha512-A1BCO7QUBcEwerIQNn18CYtSHiX0S9MrLmAM+LzbVN4vg1tOCXccmVD7ILhhESbc0vJD9xFrTPEpJsYnz3IXZA==
   dependencies:
+    async-iterator-to-array "0.0.1"
     dcl-catalyst-commons "^1.4.0"
     dcl-crypto "^2.2.0"
     isomorphic-form-data "^2.0.0"
