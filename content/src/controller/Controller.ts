@@ -253,7 +253,6 @@ export class Controller {
         const limit: number | undefined                 = this.asInt(req.query.limit)
 
         // Validate type is valid
-        // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
             res.status(400).send({ error: `Found an unrecognized entity type` });
             return
