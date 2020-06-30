@@ -7,7 +7,7 @@ import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
-import { Deployment, DeltaFilters, DeploymentDelta } from "@katalyst/content/service/deployments/DeploymentManager"
+import { Deployment, PointerChangesFilters, DeploymentDelta } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
@@ -43,7 +43,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         throw new Error("Method not implemented.")
     }
 
-    getDeltas(filters: DeltaFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository) {
+    getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository) {
         return Promise.resolve({
             deltas: this.deltas,
             filters: {},

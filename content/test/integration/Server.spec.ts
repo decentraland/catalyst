@@ -86,8 +86,8 @@ describe("Integration - Server", function() {
         expect(buffer).toEqual(content.buffer)
     });
 
-    it(`Deltas`, async () => {
-        const response = await fetch(`${address}/deltas/${entity1.type}`)
+    it(`PointerChanges`, async () => {
+        const response = await fetch(`${address}/pointerChanges?entityType=${entity1.type}`)
         expect(response.ok).toBe(true)
         const { deltas }: { deltas: ControllerDelta[] } = await response.json()
         expect(deltas.length).toBe(1)

@@ -86,11 +86,10 @@ export class DeploymentManager {
         return deploymentsRepository.setEntitiesAsOverwritten(overwritten, overwrittenBy)
     }
 
-    async getDeltas(filters: DeltaFilters, deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository, offset?: number,
-        limit?: number): Promise<PartialDeploymentDeltas> {
+    async getPointerChanges(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository, filters?: PointerChangesFilters, offset?: number, limit?: number): Promise<PartialDeploymentDeltas> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, { ...filters, entityTypes: [filters.entityType] })
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deployments = deploymentsWithExtra.slice(0, curatedLimit)
@@ -105,8 +104,7 @@ export class DeploymentManager {
         return {
             deltas,
             filters: {
-                fromLocalTimestamp: filters.fromLocalTimestamp,
-                toLocalTimestamp: filters.toLocalTimestamp,
+                ...filters
             },
             pagination: {
                 offset: curatedOffset,
@@ -145,7 +143,7 @@ export type DeploymentDelta = {
 
 export declare type PartialDeploymentDeltas = {
     deltas: DeploymentDelta[],
-    filters: Omit<DeltaFilters, 'entityType'>,
+    filters: Omit<PointerChangesFilters, 'entityType'>,
     pagination: {
         offset: number;
         limit: number;
@@ -153,7 +151,7 @@ export declare type PartialDeploymentDeltas = {
     };
 };
 
-export type DeltaFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp'> & { entityType: EntityType }
+export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
 
 export type DeploymentDeltaChanges = Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }>
 

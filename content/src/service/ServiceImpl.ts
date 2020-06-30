@@ -15,7 +15,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeploymentsManager";
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
-import { DeploymentManager, Deployment, PartialDeploymentDeltas, DeltaFilters } from "./deployments/DeploymentManager";
+import { DeploymentManager, Deployment, PartialDeploymentDeltas, PointerChangesFilters } from "./deployments/DeploymentManager";
 import { happenedBefore } from "./time/TimeSorting";
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
@@ -254,8 +254,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, filters, offset, limit))
     }
 
-    getDeltas(filters: DeltaFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentDeltas> {
-        return repository.taskIf(task => this.deploymentManager.getDeltas(filters, task.deploymentDeltas, task.deployments, offset, limit))
+    getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentDeltas> {
+        return repository.taskIf(task => this.deploymentManager.getPointerChanges(task.deploymentDeltas, task.deployments, filters, offset, limit))
     }
 
     getAllFailedDeployments() {

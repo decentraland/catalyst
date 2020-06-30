@@ -2,7 +2,7 @@ import { ContentFile, ContentFileHash, ServerStatus, EntityType, EntityId, Times
 import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
-import { Deployment, PartialDeploymentDeltas, DeltaFilters } from "./deployments/DeploymentManager";
+import { Deployment, PartialDeploymentDeltas, PointerChangesFilters } from "./deployments/DeploymentManager";
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -19,7 +19,7 @@ export interface MetaverseContentService {
     getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory>;
     getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
-    getDeltas(filters: DeltaFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentDeltas>;
+    getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentDeltas>;
 }
 
 /**

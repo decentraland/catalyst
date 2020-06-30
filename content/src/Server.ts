@@ -72,7 +72,7 @@ export class Server {
     this.registerRoute("/denylist/:type/:id", controller, controller.isTargetDenylisted, HttpMethod.HEAD);
     this.registerRoute("/failedDeployments", controller, controller.getFailedDeployments);
     this.registerRoute("/challenge", controller, controller.getChallenge);
-    this.registerRoute("/deltas/:type", controller, controller.getDeltas);
+    this.registerRoute("/pointerChanges", controller, controller.getPointerChanges);
 
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute("/legacy-entities", controller, controller.createLegacyEntity, HttpMethod.POST, upload.any());

@@ -241,24 +241,26 @@ export class Controller {
         res.send(history)
     }
 
-    async getDeltas(req: express.Request, res: express.Response) {
+    async getPointerChanges(req: express.Request, res: express.Response) {
         // Method: GET
-        // Path: /deltas/:type
-        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}
-        const type: EntityType                          = this.parseEntityType(req.params.type)
+        // Path: /pointerChanges
+        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}&entityType={entityType}
+        const stringEntityTypes = this.asArray<string>(req.query.entityType);
+        const entityTypes:(EntityType|undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
         const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
         const toLocalTimestamp: Timestamp | undefined   = this.asInt(req.query.toLocalTimestamp)
         const offset: number | undefined                = this.asInt(req.query.offset)
         const limit: number | undefined                 = this.asInt(req.query.limit)
 
         // Validate type is valid
-        if (!type) {
-            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+        // Validate type is valid
+        if (entityTypes && entityTypes.some(type => !type)) {
+            res.status(400).send({ error: `Found an unrecognized entity type` });
             return
         }
 
-        const requestFilters = { entityType: type, fromLocalTimestamp, toLocalTimestamp }
-        const { deltas, filters, pagination } = await this.service.getDeltas(requestFilters, offset, limit)
+        const requestFilters = { entityTypes: (entityTypes as EntityType[] | undefined), fromLocalTimestamp, toLocalTimestamp }
+        const { deltas, filters, pagination } = await this.service.getPointerChanges(requestFilters, offset, limit)
         const controllerDeltas: ControllerDelta[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
         res.send( { deltas: controllerDeltas, filters, pagination })
     }

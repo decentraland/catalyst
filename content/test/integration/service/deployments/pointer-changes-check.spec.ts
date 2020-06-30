@@ -5,9 +5,9 @@ import { loadTestEnvironment } from "../../E2ETestEnvironment";
 import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from "../../E2ETestUtils";
 
 /**
- * This test verifies that the deltas are calculated correctly
+ * This test verifies that the pointer changes are calculated correctly
  */
-describe("Integration - Deltas Check", () => {
+describe("Integration - Pointer Changes Check", () => {
 
     const P1 = "x1,y1"
     const P2 = "x2,y2"
@@ -71,7 +71,7 @@ describe("Integration - Deltas Check", () => {
     }
 
     async function getChangesInDeltaFor(entityCombo: EntityCombo): Promise<DeploymentDeltaChanges> {
-        const { deltas } = await service.getDeltas({ entityType: entityCombo.entity.type })
+        const { deltas } = await service.getPointerChanges({ entityTypes: [entityCombo.entity.type] })
         const { changes } = deltas.filter(delta => delta.entityId === entityCombo.entity.id)[0]
         return changes
     }
