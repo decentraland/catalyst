@@ -10,7 +10,7 @@ const LOGGER = log4js.getLogger('ClusterUtils');
  */
 export async function tryOnCluster<T>(execution: (server: ContentServerClient) => Promise<T>, cluster: ContentCluster, description: string, options?: { retries?: number, preferred?: ContentServerClient}): Promise<T> {
     // Re order server list
-    const servers = reorderAccordingToPreference(cluster.getAllActiveServersInCluster(), options?.preferred);
+    const servers = reorderAccordingToPreference(cluster.getAllServersInCluster(), options?.preferred);
 
     // Calculate amount of retries. Default is one
     let retries = options?.retries ?? 1

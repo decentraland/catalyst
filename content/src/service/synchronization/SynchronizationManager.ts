@@ -7,7 +7,6 @@ import { EventDeployer } from "./EventDeployer";
 import { delay } from "decentraland-katalyst-utils/util";
 import { SystemPropertiesManager, SystemProperty } from "../system-properties/SystemProperties";
 import { ServerAddress, Timestamp } from "dcl-catalyst-commons";
-import { Deployment } from "../deployments/DeploymentManager";
 
 export interface SynchronizationManager {
     start(): Promise<void>;
@@ -70,22 +69,19 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
             // Fetch all new deployments
-            const allDeployments = new Map(await Promise.all(contentServers.map<Promise<[ContentServerClient, Deployment[]]>>(async server => [server, await server.getNewDeployments()])))
+            const streams = contentServers.map(contentServer => contentServer.getNewDeployments())
 
             // Process them together
-            await this.deployer.processAllDeployments(Array.from(allDeployments.values()))
+            await this.deployer.processAllDeployments(streams)
 
             // If everything worked, then update the last deployment timestamp
-            Array.from(allDeployments.entries())
-                .map(([ client, deployments ]) => ({ client, newLastKnownTimestamp: deployments[0]?.auditInfo?.localTimestamp }))
-                .filter(({ newLastKnownTimestamp }) => !!newLastKnownTimestamp)
-                .forEach(({ client, newLastKnownTimestamp }) => {
-                    // Update the client, so it knows from when to ask next time
-                    client.updateLastLocalDeploymentTimestamp(newLastKnownTimestamp)
+            contentServers.forEach(client => {
+                // Update the client, so it knows from when to ask next time
+                const newTimestamp = client.allDeploymentsWereSuccessful()
 
-                    // Update the map, so we can store in on the database
-                    this.lastKnownDeployments.set(client.getAddress(), newLastKnownTimestamp)
-                })
+                // Update the map, so we can store in on the database
+                this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
+            })
 
             // Update the database
             await this.systemProperties.setSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS, Array.from(this.lastKnownDeployments.entries()))
