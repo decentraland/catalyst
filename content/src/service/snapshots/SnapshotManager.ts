@@ -7,7 +7,6 @@ import { Entity } from '../Entity';
 
 export class SnapshotManager {
 
-    private static readonly ALLOWED_TYPES: EntityType[] = Object.values(EntityType)
     private static readonly LOGGER = log4js.getLogger('SnapshotManager');
     private static readonly FREQUENCY: Map<EntityType, number> = new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500]]) // We will generate a snapshot every ${FREQUENCY} deployments
     private readonly counter: Map<EntityType, number> = new Map()
@@ -23,7 +22,7 @@ export class SnapshotManager {
     start(): Promise<void> {
         return this.repository.txIf(async transaction => {
             this.lastSnapshots = new Map(await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOT, transaction))
-            for (const entityType of SnapshotManager.ALLOWED_TYPES) {
+            for (const entityType of Object.values(EntityType)) {
                 const snapshot = this.lastSnapshots.get(entityType)
                 const typeFrequency = this.getFrequencyForType(entityType)
                 if (!snapshot || (await this.deploymentsSince(entityType, snapshot.timestamp, transaction)) > typeFrequency) {
@@ -81,6 +80,7 @@ export class SnapshotManager {
             SnapshotManager.LOGGER.debug(`Generated snapshot for type: '${entityType}'. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`)
         })
 
+        // Delete the previous snapshot (if it exists)
         if (previousSnapshot) {
             await this.service.deleteContent([ previousSnapshot.hash ])
         }
