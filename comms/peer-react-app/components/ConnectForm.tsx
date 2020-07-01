@@ -22,13 +22,13 @@ export function ConnectForm(props: {
     new (url: string, peerId: string, callback: any, config: any): IPeer;
   };
 }) {
-  const [url, setUrl] = useState("http://localhost:9000");
   let [nickname, setNickname] = useState("");
   let [room, setRoom] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  
   const searchParams = new URLSearchParams(window.location.search);
+  const [url, setUrl] = useState(searchParams.get("lighthouseUrl") ?? "http://localhost:9000");
 
   const queryRoom = searchParams.get("room");
   const queryNickname = searchParams.get("nickname");
@@ -45,14 +45,18 @@ export function ConnectForm(props: {
           maxConnectionDistance: 3,
           distance: discretizedPositionDistance([100, 200, 400, 600, 800]),
           nearbyPeersDistance: 10,
-          disconnectDistance: 5
+          disconnectDistance: 5,
         },
         targetConnections: 2,
         logLevel: "DEBUG",
         maxConnections: 6,
-        pingTimeout: 5000,
-        pingInterval: 2000,
-        optimizeNetworkInterval: 5000,
+        pingTimeout: 10000,
+        pingInterval: 5000,
+        optimizeNetworkInterval: 10000,
+        relaySuspensionConfig: {
+          relaySuspensionInterval: 750,
+          relaySuspensionDuration: 5000,
+        },
         connectionConfig: {
           iceServers: [
             {
