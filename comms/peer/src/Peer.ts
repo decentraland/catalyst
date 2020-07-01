@@ -3,10 +3,10 @@ import { ServerMessage } from "./peerjs-server-connector/servermessage";
 import { ServerMessageType, PeerEventType } from "./peerjs-server-connector/enums";
 import SimplePeer, { SignalData } from "simple-peer";
 import { connectionIdFor, util, pickRandom, delay, pickBy } from "./peerjs-server-connector/util";
-import { KnownPeerData, IPeer, Room, MinPeerData, LogLevel, PingResult, PeerConfig, PacketCallback } from "./types";
+import { KnownPeerData, IPeer, Room, MinPeerData, LogLevel, PingResult, PeerConfig, PacketCallback, ConnectedPeerData } from "./types";
 import { PeerHttpClient } from "./PeerHttpClient";
-import { PeerMessageType, PingMessageType, PongMessageType } from "./messageTypes";
-import { Packet, PayloadEncoding, MessageData, PingData, PongData } from "./proto/peer_protobuf";
+import { PeerMessageType, PingMessageType, PongMessageType, SuspendRelayType } from "./messageTypes";
+import { Packet, PayloadEncoding, MessageData, PingData, PongData, SuspendRelayData } from "./proto/peer_protobuf";
 import { Reader } from "protobufjs/minimal";
 import { future, IFuture } from "fp-future";
 import { Position, PeerConnectionHint, discretizedPositionDistance, DISCRETIZE_POSITION_INTERVALS } from "../../../commons/utils/Positions";
@@ -15,15 +15,9 @@ import { GlobalStats } from "./stats";
 
 const PROTOCOL_VERSION = 4;
 
-export type PeerData = {
-  id: string;
-  sessionId: string;
-  initiator: boolean;
-  createTimestamp: number;
-  connection: SimplePeer.Instance;
-};
+const KNOWN_PEER_RELAY_EXPIRE_TIME = 30000;
 
-type PacketData = { messageData: MessageData } | { pingData: PingData } | { pongData: PongData };
+type PacketData = { messageData: MessageData } | { pingData: PingData } | { pongData: PongData } | { suspendRelayData: SuspendRelayData };
 
 type PeerResponse = { id?: string; userId?: string; peerId?: string; position?: Position };
 
@@ -31,7 +25,7 @@ const PeerSignals = { offer: "offer", answer: "answer" };
 
 const MUST_BE_IN_SAME_DOMAIN_AND_LAYER = "MUST_BE_IN_SAME_DOMAIN_AND_LAYER";
 
-function signalMessage(peer: PeerData, connectionId: string, signal: SignalData) {
+function signalMessage(peer: ConnectedPeerData, connectionId: string, signal: SignalData) {
   peer.connection.signal(signal);
 }
 
@@ -48,7 +42,7 @@ type NetworkOperation = () => Promise<KnownPeerData[]>;
 
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
-  private connectedPeers: Record<string, PeerData> = {};
+  private connectedPeers: Record<string, ConnectedPeerData> = {};
 
   private peerConnectionPromises: Record<string, { resolve: () => void; reject: () => void }[]> = {};
 
@@ -201,6 +195,28 @@ export class Peer implements IPeer {
   private expirePeers() {
     const currentTimestamp = Date.now();
 
+    this.expireKnownPeers(currentTimestamp);
+    this.expireConnectedPeers(currentTimestamp);
+  }
+
+  private expireConnectedPeers(currentTimestamp: number) {
+    Object.keys(this.connectedPeers).forEach((id) => {
+      const connected = this.connectedPeers[id];
+      // We expire peers suspensions
+      Object.keys(connected.ownSuspendedRelays).forEach((srcId) => {
+        if (connected.ownSuspendedRelays[srcId] <= currentTimestamp) {
+          delete connected.ownSuspendedRelays[srcId];
+        }
+      });
+      Object.keys(connected.theirSuspendedRelays).forEach((srcId) => {
+        if (connected.theirSuspendedRelays[srcId] <= currentTimestamp) {
+          delete connected.theirSuspendedRelays[srcId];
+        }
+      });
+    });
+  }
+
+  private expireKnownPeers(currentTimestamp: number) {
     Object.keys(this.knownPeers).forEach((id) => {
       const lastUpdate = this.knownPeers[id].timestamp;
       if (lastUpdate && currentTimestamp - lastUpdate > 90000) {
@@ -208,6 +224,13 @@ export class Peer implements IPeer {
           this.disconnectFrom(id);
         }
         delete this.knownPeers[id];
+      } else {
+        // We expire reachable through data
+        Object.keys(this.knownPeers[id].reachableThrough).forEach((relayId) => {
+          if (currentTimestamp - this.knownPeers[id].reachableThrough[relayId].timestamp > KNOWN_PEER_RELAY_EXPIRE_TIME) {
+            delete this.knownPeers[id].reachableThrough[relayId];
+          }
+        });
       }
     });
   }
@@ -396,15 +419,17 @@ export class Peer implements IPeer {
 
   private addKnownPeerIfNotExists(peer: MinPeerData) {
     if (!this.knownPeers[peer.id]) {
-      this.knownPeers[peer.id] = { ...peer, subtypeData: {} };
+      this.knownPeers[peer.id] = { ...peer, subtypeData: {}, reachableThrough: {} };
     }
 
     return this.knownPeers[peer.id];
   }
 
-  private ensureKnownPeer(packet: Packet) {
+  private ensureAndUpdateKnownPeer(packet: Packet, connectedPeerId: string) {
     const minPeerData = { id: packet.src };
     this.addKnownPeerIfNotExists(minPeerData);
+
+    this.knownPeers[packet.src].reachableThrough[connectedPeerId] = { id: connectedPeerId, hops: packet.hops + 1, timestamp: Date.now() };
 
     if (packet.messageData?.room) {
       this.addUserToRoom(packet.messageData.room, minPeerData);
@@ -707,7 +732,7 @@ export class Peer implements IPeer {
     return this.currentRooms.find(($) => $.id === id);
   }
 
-  private subscribeToConnection(peerData: PeerData, connection: SimplePeer.Instance) {
+  private subscribeToConnection(peerData: ConnectedPeerData, connection: SimplePeer.Instance) {
     connection.on("signal", this.handleSignal(peerData));
     connection.on("close", () => this.handleDisconnection(peerData));
     connection.on("connect", () => this.handleConnection(peerData));
@@ -741,7 +766,7 @@ export class Peer implements IPeer {
 
       const alreadyReceived = !!this.receivedPackets[this.packetKey(packet)];
 
-      this.ensureKnownPeer(packet);
+      this.ensureAndUpdateKnownPeer(packet, peerId);
 
       if (packet.discardOlderThan !== 0) {
         //If discardOlderThan is zero, then we don't need to store the package.
@@ -752,6 +777,10 @@ export class Peer implements IPeer {
       const expired = this.checkExpired(packet);
 
       this.stats.countPacket(packet, data.length, "received", this.getTagsForPacket(alreadyReceived, expired, packet));
+
+      if (packet.hops >= 1) {
+        this.countRelay(peerId, packet, expired, alreadyReceived);
+      }
 
       if (!alreadyReceived && !expired) {
         this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
@@ -780,10 +809,120 @@ export class Peer implements IPeer {
         if (pongData) {
           this.processPong(packet.src, pongData.pingId);
         }
+
+        const suspendRelayData = packet.suspendRelayData;
+        if (suspendRelayData) {
+          this.processSuspensionRequest(packet.src, suspendRelayData);
+        }
+      } else {
+        this.requestRelaySuspension(packet, peerId);
       }
     } catch (e) {
       this.log(LogLevel.WARN, "Failed to process message from: " + peerId, e);
       return;
+    }
+  }
+
+  private processSuspensionRequest(peerId: string, suspendRelayData: SuspendRelayData) {
+    const connectedPeer = this.connectedPeers[peerId];
+    if (connectedPeer) {
+      suspendRelayData.relayedPeers.forEach((it) => (connectedPeer.ownSuspendedRelays[it] = Date.now() + suspendRelayData.durationMillis));
+    }
+  }
+
+  private requestRelaySuspension(packet: Packet, peerId: string) {
+    const suspensionConfig = this.config.relaySuspensionConfig;
+    if (suspensionConfig) {
+      // First we update pending suspensions requests, adding the new one if needed
+      this.consolidateSuspensionRequest(packet, peerId);
+
+      const now = Date.now();
+
+      const connected = this.connectedPeers[peerId];
+
+      const lastSuspension = connected.lastRelaySuspensionTimestamp;
+
+      // We only send suspensions requests if more time than the configured interval has passed since last time
+      if (lastSuspension && now - lastSuspension > suspensionConfig.relaySuspensionInterval) {
+        const suspendRelayData: SuspendRelayData = {
+          relayedPeers: connected.pendingSuspensionRequests,
+          durationMillis: suspensionConfig.relaySuspensionDuration,
+        };
+
+        this.log(LogLevel.DEBUG, `Requesting relay suspension to ${peerId}`, suspendRelayData);
+
+        const packet = this.buildPacketWithData(SuspendRelayType, { suspendRelayData });
+
+        this.sendPacketToPeer(connected.id, packet);
+
+        suspendRelayData.relayedPeers.forEach((relayedPeerId) => {
+          connected.theirSuspendedRelays[relayedPeerId] = Date.now() + suspensionConfig.relaySuspensionDuration;
+        });
+
+        connected.pendingSuspensionRequests = [];
+        connected.lastRelaySuspensionTimestamp = now;
+      } else if (!lastSuspension) {
+        // We skip the first suspension to give time to populate the structures
+        connected.lastRelaySuspensionTimestamp = now;
+      }
+    }
+  }
+
+  private consolidateSuspensionRequest(packet: Packet, connectedPeerId: string) {
+    if (this.connectedPeers[connectedPeerId].pendingSuspensionRequests.includes(packet.src)) {
+      // If there is already a pending suspension for this src through this connection, we don't do anything
+      return;
+    }
+
+    this.log(LogLevel.DEBUG, `Consolidating suspension for ${packet.src}->${connectedPeerId}`);
+
+    const now = Date.now();
+
+    // We get a list of through which connected peers is this src reachable and are not suspended
+    const reachableThrough = Object.values(this.knownPeers[packet.src].reachableThrough).filter(
+      (it) => this.isConnectedTo(it.id) && now - it.timestamp < KNOWN_PEER_RELAY_EXPIRE_TIME && !this.isRelayFromConnectionSuspended(it.id, packet.src, now)
+    );
+
+    this.log(LogLevel.DEBUG, `${packet.src} is reachable through`, reachableThrough);
+
+    // We only suspend if we will have at least 1 path of connection for this peer after suspensions
+    if (reachableThrough.length > 1 || (reachableThrough.length === 1 && reachableThrough[0].id !== connectedPeerId)) {
+      this.log(LogLevel.DEBUG, `Will add suspension for ${packet.src}->${connectedPeerId}`);
+      this.connectedPeers[connectedPeerId].pendingSuspensionRequests.push(packet.src);
+    }
+  }
+
+  private isRelayFromConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()) {
+    const connectedPeer = this.connectedPeers[connectedPeerId];
+    return (
+      connectedPeer &&
+      (connectedPeer.pendingSuspensionRequests.includes(srcId) ||
+        // Relays are suspended only if they are not expired
+        (connectedPeer.theirSuspendedRelays[srcId] && now < connectedPeer.theirSuspendedRelays[srcId]))
+    );
+  }
+
+  private isRelayToConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()) {
+    const connectedPeer = this.connectedPeers[connectedPeerId];
+    return connectedPeer && connectedPeer.ownSuspendedRelays[srcId] && now < connectedPeer.ownSuspendedRelays[srcId];
+  }
+
+  private countRelay(peerId: string, packet: Packet, expired: boolean, alreadyReceived: boolean) {
+    let relayData = this.connectedPeers[peerId].receivedRelayData[packet.src];
+    if (!relayData) {
+      relayData = this.connectedPeers[peerId].receivedRelayData[packet.src] = {
+        hops: packet.hops,
+        discarded: 0,
+        total: 0,
+      };
+    } else {
+      relayData.hops = packet.hops;
+    }
+
+    relayData.total += 1;
+
+    if (expired || alreadyReceived) {
+      relayData.discarded += 1;
     }
   }
 
@@ -833,11 +972,7 @@ export class Peer implements IPeer {
   }
 
   private checkExpired(packet: Packet) {
-    let discardedByOlderThan: boolean = false;
-    if (packet.discardOlderThan >= 0 && packet.subtype) {
-      const subtypeData = this.knownPeers[packet.src]?.subtypeData[packet.subtype];
-      discardedByOlderThan = subtypeData && subtypeData.lastTimestamp - packet.timestamp > packet.discardOlderThan && subtypeData.lastSequenceId >= packet.sequenceId;
-    }
+    let discardedByOlderThan: boolean = this.isDiscardedByOlderThanReceivedPackages(packet);
 
     let discardedByExpireTime: boolean = false;
     const expireTime = this.getExpireTime(packet);
@@ -849,11 +984,20 @@ export class Peer implements IPeer {
     return discardedByOlderThan || discardedByExpireTime;
   }
 
+  private isDiscardedByOlderThanReceivedPackages(packet: Packet) {
+    if (packet.discardOlderThan >= 0 && packet.subtype) {
+      const subtypeData = this.knownPeers[packet.src]?.subtypeData[packet.subtype];
+      return subtypeData && subtypeData.lastTimestamp - packet.timestamp > packet.discardOlderThan && subtypeData.lastSequenceId >= packet.sequenceId;
+    }
+
+    return false;
+  }
+
   private isInRoom(room: string) {
     return this.currentRooms.some((it) => it.id === room);
   }
 
-  private handleDisconnection(peerData: PeerData) {
+  private handleDisconnection(peerData: ConnectedPeerData) {
     this.log(LogLevel.INFO, "DISCONNECTED from " + peerData.id + " through " + connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId));
     // TODO - maybe add a callback for the client to know that a peer has been disconnected, also might need to handle connection errors - moliva - 16/12/2019
     if (this.connectedPeers[peerData.id]) {
@@ -874,7 +1018,7 @@ export class Peer implements IPeer {
     return this.currentMessageId;
   }
 
-  private handleConnection(peerData: PeerData) {
+  private handleConnection(peerData: ConnectedPeerData) {
     this.log(LogLevel.INFO, "CONNECTED to " + peerData.id + " through " + connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId));
 
     this.peerConnectionPromises[peerData.id]?.forEach(($) => $.resolve());
@@ -910,8 +1054,15 @@ export class Peer implements IPeer {
   }
 
   private sendPacketWithData(data: PacketData, type: PeerMessageType, packetProperties: Partial<Packet> = {}) {
-    const sequenceId = this.generateMessageId();
+    const packet: Packet = this.buildPacketWithData(type, data, packetProperties);
 
+    this.sendPacket(packet);
+
+    return Promise.resolve();
+  }
+
+  private buildPacketWithData(type: PeerMessageType, data: PacketData, packetProperties: Partial<Packet> = {}) {
+    const sequenceId = this.generateMessageId();
     const packet: Packet = {
       sequenceId,
       instanceId: this.instanceId,
@@ -926,14 +1077,12 @@ export class Peer implements IPeer {
       optimistic: this.getOptimistic(sequenceId, type),
       pingData: undefined,
       pongData: undefined,
+      suspendRelayData: undefined,
       messageData: undefined,
       ...data,
       ...packetProperties,
     };
-
-    this.sendPacket(packet);
-
-    return Promise.resolve();
+    return packet;
   }
 
   async ping() {
@@ -974,7 +1123,10 @@ export class Peer implements IPeer {
 
     if (!packet.receivedBy.includes(id)) packet.receivedBy.push(this.peerIdOrFail());
 
-    const peersToSend = Object.keys(this.connectedPeers).filter((it) => !packet.receivedBy.includes(it));
+    const peersToSend = Object.keys(this.connectedPeers).filter(
+      (it) => !packet.receivedBy.includes(it) && (packet.hops === 0 || !this.isRelayToConnectionSuspended(it, packet.src))
+    );
+
     if (packet.optimistic) {
       //We only add those connected peers that the connection actually informs as connected
       const fullyConnectedToSend = peersToSend.filter((it) => this.fullyConnectedPeerIds().includes(it));
@@ -989,21 +1141,23 @@ export class Peer implements IPeer {
       }
     }
 
-    peersToSend.forEach((peer) => {
-      const conn = this.connectedPeers[peer].connection;
-      if (this.isConnectedTo(peer)) {
-        try {
-          const data = Packet.encode(packet).finish();
-          conn.send(data);
-          this.stats.countPacket(packet, data.length, packet.hops === 0 ? "sent" : "relayed");
-        } catch (e) {
-          this.log(LogLevel.WARN, "Error sending data to peer " + peer, e);
-        }
-      }
-    });
+    peersToSend.forEach((peer) => this.sendPacketToPeer(peer, packet));
   }
 
-  private handleSignal(peerData: PeerData) {
+  private sendPacketToPeer(peer: string, packet: Packet) {
+    const conn = this.connectedPeers[peer].connection;
+    if (this.isConnectedTo(peer)) {
+      try {
+        const data = Packet.encode(packet).finish();
+        conn.send(data);
+        this.stats.countPacket(packet, data.length, packet.hops === 0 ? "sent" : "relayed");
+      } catch (e) {
+        this.log(LogLevel.WARN, "Error sending data to peer " + peer, e);
+      }
+    }
+  }
+
+  private handleSignal(peerData: ConnectedPeerData) {
     const connectionId = connectionIdFor(this.peerIdOrFail(), peerData.id, peerData.sessionId);
     return (data: SignalData) => {
       if (this.disposed) return;
@@ -1059,11 +1213,15 @@ export class Peer implements IPeer {
     return peer;
   }
 
-  private createPeerConnection(peerId: string, sessionId: string, initiator: boolean): PeerData {
+  private createPeerConnection(peerId: string, sessionId: string, initiator: boolean): ConnectedPeerData {
     const peer = (this.connectedPeers[peerId] = {
       id: peerId,
       sessionId,
       initiator,
+      ownSuspendedRelays: {},
+      theirSuspendedRelays: {},
+      receivedRelayData: {},
+      pendingSuspensionRequests: [],
       createTimestamp: new Date().getTime(),
       connection: new SimplePeer({
         initiator,
@@ -1120,7 +1278,7 @@ export class Peer implements IPeer {
             break;
           }
 
-          if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
+          if (this.currentLayer !== payload.layer) {
             this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, MUST_BE_IN_SAME_DOMAIN_AND_LAYER);
             break;
           }
