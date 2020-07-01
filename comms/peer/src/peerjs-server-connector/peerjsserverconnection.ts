@@ -5,7 +5,7 @@ import { Socket, SocketBuilder } from "./socket";
 import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from "./enums";
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
-import { PeerData } from "../Peer";
+import { ConnectedPeerData } from "../types";
 import { Position } from "../../../../commons/utils/Positions";
 
 export type MessageHandler = {
@@ -37,7 +37,7 @@ type HandshakeData = {
   position?: Position;
 };
 
-export function createOfferMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
+export function createOfferMessage(myId: string, peerData: ConnectedPeerData, handshakeData: HandshakeData) {
   return createMessage(myId, peerData.id, ServerMessageType.Offer, handshakeData);
 }
 
@@ -49,11 +49,11 @@ export function createValidationMessage(myId: string, payload: string) {
   };
 }
 
-export function createAnswerMessage(myId: string, peerData: PeerData, handshakeData: HandshakeData) {
+export function createAnswerMessage(myId: string, peerData: ConnectedPeerData, handshakeData: HandshakeData) {
   return createMessage(myId, peerData.id, ServerMessageType.Answer, handshakeData);
 }
 
-export function createCandidateMessage(myId: string, peerData: PeerData, candidateData: any, connectionId: string) {
+export function createCandidateMessage(myId: string, peerData: ConnectedPeerData, candidateData: any, connectionId: string) {
   const payload = {
     ...candidateData,
     connectionId,
@@ -362,11 +362,11 @@ export class PeerJSServerConnection extends EventEmitter {
     });
   }
 
-  sendOffer(peerData: PeerData, handshakeData: HandshakeData) {
+  sendOffer(peerData: ConnectedPeerData, handshakeData: HandshakeData) {
     this.socket.send(createOfferMessage(this.id!, peerData, handshakeData));
   }
 
-  sendAnswer(peerData: PeerData, handshakeData: HandshakeData) {
+  sendAnswer(peerData: ConnectedPeerData, handshakeData: HandshakeData) {
     this.socket.send(createAnswerMessage(this.id!, peerData, handshakeData));
   }
 
@@ -374,7 +374,7 @@ export class PeerJSServerConnection extends EventEmitter {
     this.socket.send(createValidationMessage(this.id!, payload));
   }
 
-  sendCandidate(peerData: PeerData, candidateData: any, connectionId: string) {
+  sendCandidate(peerData: ConnectedPeerData, candidateData: any, connectionId: string) {
     this.socket.send(createCandidateMessage(this.id!, peerData, candidateData, connectionId));
   }
 

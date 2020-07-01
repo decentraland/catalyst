@@ -7,6 +7,7 @@ export enum PacketType {
   MESSAGE = 1,
   PING = 2,
   PONG = 3,
+  SUSPEND_RELAY = 4,
 }
 
 export enum PayloadEncoding {
@@ -30,6 +31,11 @@ export interface PongData {
   pingId: number;
 }
 
+export interface SuspendRelayData {
+  relayedPeers: string[];
+  durationMillis: number;
+}
+
 export interface Packet {
   sequenceId: number;
   instanceId: number;
@@ -45,6 +51,7 @@ export interface Packet {
   messageData: MessageData | undefined;
   pingData: PingData | undefined;
   pongData: PongData | undefined;
+  suspendRelayData: SuspendRelayData | undefined;
 }
 
 const baseMessageData: object = {
@@ -60,6 +67,11 @@ const basePingData: object = {
 
 const basePongData: object = {
   pingId: 0,
+};
+
+const baseSuspendRelayData: object = {
+  relayedPeers: "",
+  durationMillis: 0,
 };
 
 const basePacket: object = {
@@ -98,6 +110,9 @@ export namespace PacketType {
       case 3:
       case "PONG":
         return PacketType.PONG;
+      case 4:
+      case "SUSPEND_RELAY":
+        return PacketType.SUSPEND_RELAY;
       default:
         throw new Error(`Invalid value ${object}`);
     }
@@ -112,6 +127,8 @@ export namespace PacketType {
         return "PING";
       case PacketType.PONG:
         return "PONG";
+      case PacketType.SUSPEND_RELAY:
+        return "SUSPEND_RELAY";
       default:
         return "UNKNOWN";
     }
@@ -338,6 +355,76 @@ export const PongData = {
   },
 };
 
+export const SuspendRelayData = {
+  encode(message: SuspendRelayData, writer: Writer = Writer.create()): Writer {
+    for (const v of message.relayedPeers) {
+      writer.uint32(10).string(v!);
+    }
+    writer.uint32(16).uint32(message.durationMillis);
+    return writer;
+  },
+  decode(reader: Reader, length?: number): SuspendRelayData {
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = Object.create(baseSuspendRelayData) as SuspendRelayData;
+    message.relayedPeers = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.relayedPeers.push(reader.string());
+          break;
+        case 2:
+          message.durationMillis = reader.uint32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): SuspendRelayData {
+    const message = Object.create(baseSuspendRelayData) as SuspendRelayData;
+    message.relayedPeers = [];
+    if (object.relayedPeers !== undefined && object.relayedPeers !== null) {
+      for (const e of object.relayedPeers) {
+        message.relayedPeers.push(String(e));
+      }
+    }
+    if (object.durationMillis !== undefined && object.durationMillis !== null) {
+      message.durationMillis = Number(object.durationMillis);
+    } else {
+      message.durationMillis = 0;
+    }
+    return message;
+  },
+  fromPartial(object: DeepPartial<SuspendRelayData>): SuspendRelayData {
+    const message = Object.create(baseSuspendRelayData) as SuspendRelayData;
+    message.relayedPeers = [];
+    if (object.relayedPeers !== undefined && object.relayedPeers !== null) {
+      for (const e of object.relayedPeers) {
+        message.relayedPeers.push(e);
+      }
+    }
+    if (object.durationMillis !== undefined && object.durationMillis !== null) {
+      message.durationMillis = object.durationMillis;
+    } else {
+      message.durationMillis = 0;
+    }
+    return message;
+  },
+  toJSON(message: SuspendRelayData): unknown {
+    const obj: any = {};
+    if (message.relayedPeers) {
+      obj.relayedPeers = message.relayedPeers.map(e => e || "");
+    } else {
+      obj.relayedPeers = [];
+    }
+    obj.durationMillis = message.durationMillis || 0;
+    return obj;
+  },
+};
+
 export const Packet = {
   encode(message: Packet, writer: Writer = Writer.create()): Writer {
     writer.uint32(8).uint32(message.sequenceId);
@@ -361,6 +448,9 @@ export const Packet = {
     }
     if (message.pongData !== undefined && message.pongData !== undefined) {
       PongData.encode(message.pongData, writer.uint32(106).fork()).ldelim();
+    }
+    if (message.suspendRelayData !== undefined && message.suspendRelayData !== undefined) {
+      SuspendRelayData.encode(message.suspendRelayData, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -412,6 +502,9 @@ export const Packet = {
           break;
         case 13:
           message.pongData = PongData.decode(reader, reader.uint32());
+          break;
+        case 15:
+          message.suspendRelayData = SuspendRelayData.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -493,6 +586,11 @@ export const Packet = {
     } else {
       message.pongData = undefined;
     }
+    if (object.suspendRelayData !== undefined && object.suspendRelayData !== null) {
+      message.suspendRelayData = SuspendRelayData.fromJSON(object.suspendRelayData);
+    } else {
+      message.suspendRelayData = undefined;
+    }
     return message;
   },
   fromPartial(object: DeepPartial<Packet>): Packet {
@@ -568,6 +666,11 @@ export const Packet = {
     } else {
       message.pongData = undefined;
     }
+    if (object.suspendRelayData !== undefined && object.suspendRelayData !== null) {
+      message.suspendRelayData = SuspendRelayData.fromPartial(object.suspendRelayData);
+    } else {
+      message.suspendRelayData = undefined;
+    }
     return message;
   },
   toJSON(message: Packet): unknown {
@@ -590,6 +693,7 @@ export const Packet = {
     obj.messageData = message.messageData ? MessageData.toJSON(message.messageData) : undefined;
     obj.pingData = message.pingData ? PingData.toJSON(message.pingData) : undefined;
     obj.pongData = message.pongData ? PongData.toJSON(message.pongData) : undefined;
+    obj.suspendRelayData = message.suspendRelayData ? SuspendRelayData.toJSON(message.suspendRelayData) : undefined;
     return obj;
   },
 };

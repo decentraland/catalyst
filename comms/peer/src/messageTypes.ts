@@ -61,3 +61,10 @@ export const PongMessageType: PeerMessageType = {
   ...PingMessageType,
   name: "pong"
 }
+
+export const SuspendRelayType: PeerMessageType = {
+  name: "suspendRelay",
+  ttl: 1,
+  optimistic: true,
+  discardOlderThan: 0
+}

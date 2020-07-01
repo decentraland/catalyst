@@ -5,6 +5,7 @@ enum PacketType {
   MESSAGE = 1;
   PING = 2;
   PONG = 3;
+  SUSPEND_RELAY = 4;
 }
 
 enum PayloadEncoding {
@@ -28,6 +29,11 @@ message PongData {
   uint32 pingId = 1;
 }
 
+message SuspendRelayData {
+  repeated string relayedPeers = 1;
+  uint32 durationMillis = 2;
+}
+
 message Packet {
   uint32 sequenceId = 1;
   uint32 instanceId = 2;
@@ -46,5 +52,6 @@ message Packet {
     MessageData messageData = 11;
     PingData pingData = 12;
     PongData pongData = 13;
+    SuspendRelayData suspendRelayData = 15;
   }
 }

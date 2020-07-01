@@ -1,6 +1,7 @@
 import { PeerMessageType } from "./messageTypes";
 import { Position } from "../../../commons/utils/Positions";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
+import SimplePeer from "simple-peer";
 
 type PacketSubtypeData = {
   lastTimestamp: number;
@@ -8,6 +9,9 @@ type PacketSubtypeData = {
 };
 
 export type Room = { id: string; users: string[] };
+
+export type PeerRelay = { id: string; hops: number; timestamp: number };
+
 export type KnownPeerData = {
   id: string;
   timestamp?: number;
@@ -15,7 +19,9 @@ export type KnownPeerData = {
   position?: Position;
   latency?: number;
   hops?: number;
+  reachableThrough: Record<string, PeerRelay>;
 };
+
 export type MinPeerData = { id: string; position?: Position };
 
 export interface IPeer {
@@ -76,6 +82,22 @@ export type PeerConfig = {
    */
   pingInterval?: number;
   pingTimeout?: number;
+
+  /**
+   * If not set, suspensions won't be requested.
+   */
+  relaySuspensionConfig?: RelaySuspensionConfig;
+};
+
+export type RelaySuspensionConfig = {
+  /**
+   * Interval to send relay suspension control messages to other peers.
+   */
+  relaySuspensionInterval: number;
+  /**
+   * Duration of the suspension
+   */
+  relaySuspensionDuration: number;
 };
 
 export type PositionConfig = {
@@ -92,3 +114,41 @@ export type PositionConfig = {
 };
 
 export type PacketCallback = (sender: string, room: string, payload: any) => void;
+
+export type ReceivedRelayData = {
+  hops: number;
+  total: number;
+  discarded: number;
+};
+
+export type ConnectedPeerData = {
+  id: string;
+  sessionId: string;
+  initiator: boolean;
+  createTimestamp: number;
+  connection: SimplePeer.Instance;
+  lastRelaySuspensionTimestamp?: number;
+  /**
+   * This is data for relays received from this peer
+   */
+  receivedRelayData: Record<string, ReceivedRelayData>;
+  /**
+   * This is suspension data for relays sent by this peer
+   * Example: A requests suspension of P to B ==> B stores that suspension in ownSuspendedRelays in the connection data of their connection
+   * key = source peer id. Value = suspension expiration
+   * */
+  ownSuspendedRelays: Record<string, number>;
+
+  /**
+   * These are suspensions requested to this peer, tracked by the local peer
+   * Example: A requests suspension of P to B ==> A stores that suspension in theirSuspendedRelays in the connection data of their connection
+   * key = source peer id. Value = suspension expiration
+   * */
+  theirSuspendedRelays: Record<string, number>;
+
+  /**
+   * Suspension requests to be sent to this peer by the local peer in the next window.
+   * Is the list of the ids of the relayed peers for which to suspend relay
+   */
+  pendingSuspensionRequests: string[];
+};
