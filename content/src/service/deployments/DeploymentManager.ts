@@ -4,7 +4,7 @@ import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/r
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
 import { MigrationDataRepository } from "@katalyst/content/storage/repositories/MigrationDataRepository";
 import { DeploymentResult, DELTA_POINTER_RESULT } from "../pointers/PointerManager";
-import { DeploymentDeltasRepository } from "@katalyst/content/storage/repositories/DeploymentDeltasRepository";
+import { DeploymentPointerChangesRepository } from "@katalyst/content/storage/repositories/DeploymentPointerChangesRepository";
 
 export class DeploymentManager {
 
@@ -86,24 +86,39 @@ export class DeploymentManager {
         return deploymentsRepository.setEntitiesAsOverwritten(overwritten, overwrittenBy)
     }
 
-    async getDeltas(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentsRepo: DeploymentsRepository): Promise<DeploymentDelta[]> {
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(0, DeploymentManager.MAX_HISTORY_LIMIT, undefined)
-        const deploymentIds = deploymentsWithExtra.map(({ deploymentId }) => deploymentId)
-        const deltas = await deploymentDeltasRepo.getDeltasForDeployments(deploymentIds)
+    async getPointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentsRepo: DeploymentsRepository, filters?: PointerChangesFilters, offset?: number, limit?: number): Promise<PartialDeploymentPointerChanges> {
+        const curatedOffset = (offset && offset >= 0) ? offset : 0
+        const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
+        const moreData = deploymentsWithExtra.length > curatedLimit
 
-        return deploymentsWithExtra
+        const deployments = deploymentsWithExtra.slice(0, curatedLimit)
+        const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
+        const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(deploymentIds)
+        const pointerChanges: DeploymentPointerChanges[] = deployments
             .map(({ deploymentId, entityId, entityType, localTimestamp }) => {
-                const delta = deltas.get(deploymentId) ?? new Map()
-                const changes = this.transformDelta(entityId, delta)
+                const delta = deltasForDeployments.get(deploymentId) ?? new Map()
+                const changes = this.transformPointerChanges(entityId, delta)
                 return { entityType, entityId, localTimestamp, changes }
             })
+        return {
+            pointerChanges,
+            filters: {
+                ...filters
+            },
+            pagination: {
+                offset: curatedOffset,
+                limit: curatedLimit,
+                moreData,
+            }
+        }
     }
 
-    saveDelta(deploymentDeltasRepo: DeploymentDeltasRepository, deploymentId: DeploymentId, result: DeploymentResult) {
-       return deploymentDeltasRepo.saveDelta(deploymentId, result)
+    savePointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentId: DeploymentId, result: DeploymentResult) {
+       return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
     }
 
-    private transformDelta(deployedEntity: EntityId, input: Map<Pointer, { before: EntityId | undefined, after: DELTA_POINTER_RESULT }>): DeploymentDeltaChanges {
+    private transformPointerChanges(deployedEntity: EntityId, input: Map<Pointer, { before: EntityId | undefined, after: DELTA_POINTER_RESULT }>): PointerChanges {
         const newEntries = Array.from(input.entries())
             .map<[Pointer, { before: EntityId | undefined, after: EntityId | undefined }]>(([ pointer, { before, after } ]) => [ pointer, { before, after: after ===  DELTA_POINTER_RESULT.SET ? deployedEntity : undefined } ])
         return new Map(newEntries)
@@ -119,12 +134,24 @@ export type ExtendedDeploymentFilters = DeploymentFilters & {
     originServerUrl?: ServerAddress,
 }
 
-export type DeploymentDelta = {
+export type DeploymentPointerChanges = {
     entityType: EntityType,
     entityId: EntityId,
     localTimestamp: Timestamp,
-    changes: DeploymentDeltaChanges,
+    changes: PointerChanges,
 }
 
-export type DeploymentDeltaChanges = Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }>
+export declare type PartialDeploymentPointerChanges = {
+    pointerChanges: DeploymentPointerChanges[],
+    filters: Omit<PointerChangesFilters, 'entityType'>,
+    pagination: {
+        offset: number;
+        limit: number;
+        moreData: boolean;
+    };
+};
+
+export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
+
+export type PointerChanges = Map<Pointer, { before: EntityId | undefined, after: EntityId | undefined }>
 

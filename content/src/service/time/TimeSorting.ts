@@ -3,13 +3,6 @@ import { Timestamp, EntityId } from "dcl-catalyst-commons";
 import { Deployment } from "../deployments/DeploymentManager";
 
 /** Sort comparable objects from oldest to newest */
-export function sortNonComparableFromOldestToNewest<T extends { entityId: EntityId }> (array: T[], timestampExtraction: (element: T) => Timestamp): T[] {
-    return array.map<[EntityComparable, T]>(element => [{...element, timestamp: timestampExtraction(element)}, element])
-        .sort(([comparable1], [comparable2]) => comparatorOldestToNewest(comparable1, comparable2))
-        .map(([, element]) => element)
-}
-
-/** Sort comparable objects from oldest to newest */
 export function sortFromOldestToNewest<T extends EntityComparable> (comparableArray: T[]): T[] {
     return comparableArray.sort((event1, event2) => comparatorOldestToNewest(event1, event2))
 }

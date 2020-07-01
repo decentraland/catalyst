@@ -14,7 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
-import { Deployment } from "../service/deployments/DeploymentManager";
+import { Deployment, DeploymentPointerChanges } from "../service/deployments/DeploymentManager";
 
 export class Controller {
 
@@ -241,6 +241,29 @@ export class Controller {
         res.send(history)
     }
 
+    async getPointerChanges(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /pointerChanges
+        // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}&entityType={entityType}
+        const stringEntityTypes = this.asArray<string>(req.query.entityType);
+        const entityTypes:(EntityType|undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
+        const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: Timestamp | undefined   = this.asInt(req.query.toLocalTimestamp)
+        const offset: number | undefined                = this.asInt(req.query.offset)
+        const limit: number | undefined                 = this.asInt(req.query.limit)
+
+        // Validate type is valid
+        if (entityTypes && entityTypes.some(type => !type)) {
+            res.status(400).send({ error: `Found an unrecognized entity type` });
+            return
+        }
+
+        const requestFilters = { entityTypes: (entityTypes as EntityType[] | undefined), fromLocalTimestamp, toLocalTimestamp }
+        const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(requestFilters, offset, limit)
+        const controllerPointerChanges: ControllerPointerChanges[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
+        res.send( { deltas: controllerPointerChanges, filters, pagination })
+    }
+
     async getDeployments(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /deployments
@@ -410,6 +433,14 @@ export enum DeploymentField {
     POINTERS = "pointers",
     METADATA = "metadata",
     AUDIT_INFO = "auditInfo",
+}
+
+export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
+    changes: {
+        pointer: Pointer,
+        before: EntityId | undefined,
+        after: EntityId | undefined
+    }[]
 }
 
 export type ControllerDenylistData = {
