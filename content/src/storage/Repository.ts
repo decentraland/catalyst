@@ -5,7 +5,7 @@ import { ContentFilesRepository } from './repositories/ContentFilesRepository';
 import { PointerHistoryRepository } from './repositories/PointerHistoryRepository';
 import { LastDeployedPointersRepository } from './repositories/LastDeployedPointersRepository';
 import { FailedDeploymentsRepository } from './repositories/FailedDeploymentsRepository';
-import { DeploymentDeltasRepository } from './repositories/DeploymentDeltasRepository';
+import { DeploymentPointerChangesRepository } from './repositories/DeploymentPointerChangesRepository';
 import { DenylistRepository } from './repositories/DenylistRepository';
 import { retry } from '../helpers/RetryHelper';
 import { SystemPropertiesRepository } from './repositories/SystemPropertiesRepository';
@@ -20,7 +20,7 @@ export interface IExtensions {
     pointerHistory: PointerHistoryRepository,
     lastDeployedPointers: LastDeployedPointersRepository,
     failedDeployments: FailedDeploymentsRepository,
-    deploymentDeltas: DeploymentDeltasRepository,
+    deploymentPointerChanges: DeploymentPointerChangesRepository,
     denylist: DenylistRepository,
     systemProperties: SystemPropertiesRepository,
 }
@@ -67,7 +67,7 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
             obj.content = new ContentFilesRepository(obj);
             obj.pointerHistory = new PointerHistoryRepository(obj);
             obj.lastDeployedPointers = new LastDeployedPointersRepository(obj);
-            obj.deploymentDeltas = new DeploymentDeltasRepository(obj);
+            obj.deploymentPointerChanges = new DeploymentPointerChangesRepository(obj);
             obj.failedDeployments = new FailedDeploymentsRepository(obj);
             obj.denylist = new DenylistRepository(obj);
             obj.systemProperties = new SystemPropertiesRepository(obj);

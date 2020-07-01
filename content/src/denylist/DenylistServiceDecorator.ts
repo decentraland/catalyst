@@ -9,7 +9,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { Repository } from "../storage/Repository";
 import { DenylistRepository } from "../storage/repositories/DenylistRepository";
-import { Deployment } from "../service/deployments/DeploymentManager";
+import { Deployment, PointerChangesFilters } from "../service/deployments/DeploymentManager";
 
 /**
  * This decorator takes a MetaverseContentService and adds denylisting functionality to it
@@ -169,8 +169,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-  getDeltas() {
-    return this.service.getDeltas(this.repository)
+  getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number) {
+    return this.service.getPointerChanges(filters, offset, limit, this.repository)
   }
 
   getAllFailedDeployments() {
