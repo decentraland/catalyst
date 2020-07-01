@@ -6,7 +6,7 @@ import { SnapshotMetadata } from "../snapshots/SnapshotManager";
 export class SystemProperty<PropertyType> {
 
     static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerAddress, Timestamp][] > = new SystemProperty('last_known_local_deployments', new JSONPropertyMapper())
-    static readonly LAST_SNAPSHOT: SystemProperty<[EntityType, SnapshotMetadata][]> = new SystemProperty('last_snapshot', new JSONPropertyMapper())
+    static readonly LAST_SNAPSHOTS: SystemProperty<[EntityType, SnapshotMetadata][]> = new SystemProperty('last_snapshot', new JSONPropertyMapper())
     static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<Timestamp> = new SystemProperty('last_garbage_collection_time', new IntPropertyMapper())
 
     constructor(

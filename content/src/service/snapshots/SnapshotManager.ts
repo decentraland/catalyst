@@ -16,16 +16,16 @@ export class SnapshotManager {
         private readonly repository: Repository,
         private readonly service: MetaverseContentService,
         private readonly snapshotFrequency: Map<EntityType, number>) {
-            service.listenToDeployments(async (deployment) => await this.onDeployment(deployment))
+            service.listenToDeployments((deployment) => this.onDeployment(deployment))
         }
 
     start(): Promise<void> {
         return this.repository.txIf(async transaction => {
-            this.lastSnapshots = new Map(await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOT, transaction))
+            this.lastSnapshots = new Map(await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOTS, transaction))
             for (const entityType of Object.values(EntityType)) {
                 const snapshot = this.lastSnapshots.get(entityType)
                 const typeFrequency = this.getFrequencyForType(entityType)
-                if (!snapshot || (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) > typeFrequency) {
+                if (!snapshot || (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >= typeFrequency) {
                     await this.generateSnapshot(entityType, transaction)
                 }
             }
@@ -92,7 +92,7 @@ export class SnapshotManager {
 
     private storeSnapshotMetadata(entityType: EntityType, hash: ContentFileHash, lastIncludedDeploymentTimestamp: Timestamp, repository: RepositoryTask | Repository = this.repository) {
         this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
-        return this.systemPropertiesManager.setSystemProperty(SystemProperty.LAST_SNAPSHOT, Array.from(this.lastSnapshots.entries()), repository)
+        return this.systemPropertiesManager.setSystemProperty(SystemProperty.LAST_SNAPSHOTS, Array.from(this.lastSnapshots.entries()), repository)
     }
 
     private getFrequencyForType(entityType: EntityType): number {
