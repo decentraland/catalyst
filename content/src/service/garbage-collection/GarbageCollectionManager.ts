@@ -1,9 +1,7 @@
 import log4js from 'log4js'
-import ms from 'ms';
-import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons';
+import { ContentFileHash, Timestamp, delay } from 'dcl-catalyst-commons';
 import { Repository } from "@katalyst/content/storage/Repository";
 import { SystemPropertiesManager, SystemProperty } from "@katalyst/content/service/system-properties/SystemProperties";
-import { delay } from 'decentraland-katalyst-utils/util';
 import { MetaverseContentService } from '../Service';
 
 export class GarbageCollectionManager {
@@ -71,7 +69,7 @@ export class GarbageCollectionManager {
     private waitUntilSyncFinishes(): Promise<void> {
         return new Promise(async (resolve) => {
             while (this.sweeping === true) {
-                await delay(ms('1s'))
+                await delay('1s')
             }
             resolve()
         })

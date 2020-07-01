@@ -3,6 +3,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
 import { Deployment, PartialDeploymentPointerChanges, PointerChangesFilters } from "./deployments/DeploymentManager";
+import { Entity } from "./Entity";
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -15,11 +16,13 @@ export interface MetaverseContentService {
     isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>;
     getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>;
     deleteContent(fileHashes: ContentFileHash[]): Promise<void>;
+    storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>;
     getStatus(): ServerStatus;
     getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory>;
     getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
     getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentPointerChanges>;
+    listenToDeployments(listener: DeploymentListener): void;
 }
 
 /**
@@ -35,3 +38,10 @@ export interface ClusterDeploymentsService {
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'version'| 'authChain' | 'migrationData'>
+
+export type DeploymentEvent = {
+    entity: Entity,
+    auditInfo: AuditInfo,
+    origin: string,
+}
+export type DeploymentListener = (deployment: DeploymentEvent) => void

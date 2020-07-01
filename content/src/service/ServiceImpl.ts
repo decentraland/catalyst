@@ -1,7 +1,7 @@
 import log4js from "log4js"
 import { Hashing, ContentFileHash, ContentFile, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
-import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo } from "./Service";
+import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, DeploymentListener } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { DeploymentReporter } from "./reporters/DeploymentReporter";
@@ -22,6 +22,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
+    private readonly listeners: DeploymentListener[] = []
 
     constructor(
         private readonly storage: ServiceStorage,
@@ -164,6 +165,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
                 // Record deployment for analytics
                 this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
+
+                // Report deployment to listeners
+                this.listeners.forEach(listener => listener({ entity, auditInfo: auditInfoComplete, origin }))
             }
 
             // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
@@ -228,8 +232,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         }
     }
 
-    deleteContent(fileHashes: string[]): Promise<void> {
+    deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
         return this.storage.deleteContent(fileHashes)
+    }
+
+    storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
+        return this.storage.storeContent(fileHash, content)
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
@@ -260,6 +268,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     getAllFailedDeployments() {
         return this.failedDeploymentsManager.getAllFailedDeployments(this.repository.failedDeployments)
+    }
+
+    listenToDeployments(listener: DeploymentListener): void {
+        this.listeners.push(listener)
     }
 
     private async isEntityAlreadyDeployed(entityId: EntityId, transaction: RepositoryTask): Promise<boolean> {

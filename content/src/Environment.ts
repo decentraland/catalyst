@@ -24,6 +24,7 @@ import { MigrationManagerFactory } from "./migrations/MigrationManagerFactory";
 import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 import { SystemPropertiesManagerFactory } from "./service/system-properties/SystemPropertiesManagerFactory";
 import { GarbageCollectionManagerFactory } from "./service/garbage-collection/GarbageCollectionManagerFactory";
+import { SnapshotManagerFactory } from "./service/snapshots/SnapshotManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -109,6 +110,7 @@ export const enum Bean {
     MIGRATION_MANAGER,
     GARBAGE_COLLECTION_MANAGER,
     SYSTEM_PROPERTIES_MANAGER,
+    SNAPSHOT_MANAGER,
 }
 
 export enum EnvironmentConfig {
@@ -220,6 +222,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => new FailedDeploymentsManager())
         this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS                 , () => ValidationsFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER            , () => SnapshotManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER  , () => GarbageCollectionManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))
