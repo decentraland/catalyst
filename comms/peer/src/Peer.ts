@@ -1278,7 +1278,7 @@ export class Peer implements IPeer {
             break;
           }
 
-          if (this.currentLayer !== payload.layer) {
+          if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
             this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, MUST_BE_IN_SAME_DOMAIN_AND_LAYER);
             break;
           }
