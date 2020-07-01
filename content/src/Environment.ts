@@ -1,6 +1,6 @@
 import ms from "ms"
 import log4js from "log4js"
-import { EntityVersion } from "dcl-catalyst-commons";
+import { EntityVersion, EntityType } from "dcl-catalyst-commons";
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
@@ -142,6 +142,7 @@ export enum EnvironmentConfig {
     PSQL_PORT,
     GARBAGE_COLLECTION,
     GARBAGE_COLLECTION_INTERVAL,
+    SNAPSHOT_FREQUENCY,
 }
 
 export class EnvironmentBuilder {
@@ -199,6 +200,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_PORT                      , () => process.env.POSTGRES_PORT ?? DEFAULT_DATABASE_CONFIG.port)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION             , () => process.env.GARBAGE_COLLECTION === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL    , () => ms('6h'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SNAPSHOT_FREQUENCY             , () => new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500]]))
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before

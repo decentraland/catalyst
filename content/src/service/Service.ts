@@ -44,4 +44,4 @@ export type DeploymentEvent = {
     auditInfo: AuditInfo,
     origin: string,
 }
-export type DeploymentListener = (deployment: DeploymentEvent) => void
+export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>

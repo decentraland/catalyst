@@ -1,4 +1,4 @@
-import { Environment, Bean } from "@katalyst/content/Environment";
+import { Environment, Bean, EnvironmentConfig } from "@katalyst/content/Environment";
 import { SnapshotManager } from "./SnapshotManager";
 
 export class SnapshotManagerFactory {
@@ -7,6 +7,7 @@ export class SnapshotManagerFactory {
         return new SnapshotManager(
             env.getBean(Bean.SYSTEM_PROPERTIES_MANAGER),
             env.getBean(Bean.REPOSITORY),
-            env.getBean(Bean.SERVICE))
+            env.getBean(Bean.SERVICE),
+            env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY))
     }
 }

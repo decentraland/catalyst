@@ -8,15 +8,15 @@ import { Entity } from '../Entity';
 export class SnapshotManager {
 
     private static readonly LOGGER = log4js.getLogger('SnapshotManager');
-    private static readonly FREQUENCY: Map<EntityType, number> = new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500]]) // We will generate a snapshot every ${FREQUENCY} deployments
     private readonly counter: Map<EntityType, number> = new Map()
     private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
 
     constructor(
         private readonly systemPropertiesManager: SystemPropertiesManager,
         private readonly repository: Repository,
-        private readonly service: MetaverseContentService) {
-            service.listenToDeployments((deployment) => this.onDeployment(deployment))
+        private readonly service: MetaverseContentService,
+        private readonly snapshotFrequency: Map<EntityType, number>) {
+            service.listenToDeployments(async (deployment) => await this.onDeployment(deployment))
         }
 
     start(): Promise<void> {
@@ -25,7 +25,7 @@ export class SnapshotManager {
             for (const entityType of Object.values(EntityType)) {
                 const snapshot = this.lastSnapshots.get(entityType)
                 const typeFrequency = this.getFrequencyForType(entityType)
-                if (!snapshot || (await this.deploymentsSince(entityType, snapshot.timestamp, transaction)) > typeFrequency) {
+                if (!snapshot || (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) > typeFrequency) {
                     await this.generateSnapshot(entityType, transaction)
                 }
             }
@@ -36,14 +36,14 @@ export class SnapshotManager {
         return this.lastSnapshots.get(entityType)
     }
 
-    private async onDeployment({ entity }: { entity: Entity }) {
+    private async onDeployment({ entity }: { entity: Entity }): Promise<void> {
         const { type } = entity
         // Update the counter
         const updatedCounter = (this.counter.get(type) ?? 0) + 1
         this.counter.set(type, updatedCounter)
 
         // If the number of deployments reaches the frequency, then generate a snapshot
-        if (updatedCounter > this.getFrequencyForType(type)) {
+        if (updatedCounter >= this.getFrequencyForType(type)) {
             await this.generateSnapshot(type)
         }
     }
@@ -90,14 +90,14 @@ export class SnapshotManager {
         return repository.deployments.deploymentsSince(entityType, timestamp)
     }
 
-    private storeSnapshotMetadata(entityType: EntityType, hash: ContentFileHash, timestamp: Timestamp, repository: RepositoryTask | Repository = this.repository) {
-        this.lastSnapshots.set(entityType, { hash, timestamp })
+    private storeSnapshotMetadata(entityType: EntityType, hash: ContentFileHash, lastIncludedDeploymentTimestamp: Timestamp, repository: RepositoryTask | Repository = this.repository) {
+        this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
         return this.systemPropertiesManager.setSystemProperty(SystemProperty.LAST_SNAPSHOT, Array.from(this.lastSnapshots.entries()), repository)
     }
 
     private getFrequencyForType(entityType: EntityType): number {
-        return SnapshotManager.FREQUENCY.get(entityType) ?? 100
+        return this.snapshotFrequency.get(entityType) ?? 100
     }
 }
 
-export type SnapshotMetadata = { hash: ContentFileHash, timestamp: Timestamp }
+export type SnapshotMetadata = { hash: ContentFileHash, lastIncludedDeploymentTimestamp: Timestamp }
