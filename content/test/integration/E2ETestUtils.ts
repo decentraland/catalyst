@@ -76,10 +76,13 @@ export function awaitUntil(evaluation: () => Promise<any>, attempts: number = 10
     return retry(evaluation, attempts, 'perform assertion', waitBetweenAttempts)
 }
 
-export async function deployEntitiesCombo(service: MetaverseContentService, ...entitiesCombo: EntityCombo[]) {
+/** Returns the deployment timestamp of the last deployed entity */
+export async function deployEntitiesCombo(service: MetaverseContentService, ...entitiesCombo: EntityCombo[]): Promise<Timestamp> {
+    let timestamp: Timestamp = 0
     for (const { deployData } of entitiesCombo) {
-        await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, { authChain: deployData.authChain, version: EntityVersion.V2 }, '')
+        timestamp = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, { authChain: deployData.authChain, version: EntityVersion.V2 }, '')
     }
+    return timestamp
 }
 
 export type DeployData = {

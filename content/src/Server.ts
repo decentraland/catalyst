@@ -13,6 +13,7 @@ import { SynchronizationManager } from "./service/synchronization/Synchronizatio
 import { MigrationManager } from "./migrations/MigrationManager";
 import { MetaverseContentService } from "./service/Service";
 import { GarbageCollectionManager } from "./service/garbage-collection/GarbageCollectionManager";
+import { SnapshotManager } from "./service/snapshots/SnapshotManager";
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger("Server");
@@ -22,6 +23,7 @@ export class Server {
   private httpServer: http.Server;
   private readonly synchronizationManager: SynchronizationManager;
   private readonly garbageCollectionManager: GarbageCollectionManager;
+  private readonly snapshotManager: SnapshotManager;
   private readonly migrationManager: MigrationManager;
   private readonly service: MetaverseContentService
 
@@ -41,6 +43,7 @@ export class Server {
     const controller: Controller = env.getBean(Bean.CONTROLLER);
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER);
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
+    this.snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER);
     this.service = env.getBean(Bean.SERVICE)
     this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
 
@@ -73,6 +76,7 @@ export class Server {
     this.registerRoute("/failedDeployments", controller, controller.getFailedDeployments);
     this.registerRoute("/challenge", controller, controller.getChallenge);
     this.registerRoute("/pointerChanges", controller, controller.getPointerChanges);
+    this.registerRoute("/snapshot/:type", controller, controller.getSnapshot);
 
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute("/legacy-entities", controller, controller.createLegacyEntity, HttpMethod.POST, upload.any());
@@ -123,6 +127,7 @@ export class Server {
     this.httpServer = this.app.listen(this.port);
     await once(this.httpServer, "listening");
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`);
+    await this.snapshotManager.start();
     await this.synchronizationManager.start();
     await this.garbageCollectionManager.start();
   }

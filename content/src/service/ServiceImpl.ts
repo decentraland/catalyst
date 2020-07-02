@@ -1,7 +1,7 @@
 import log4js from "log4js"
 import { Hashing, ContentFileHash, ContentFile, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
-import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo } from "./Service";
+import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, DeploymentListener } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
 import { DeploymentReporter } from "./reporters/DeploymentReporter";
@@ -22,6 +22,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
+    private readonly listeners: DeploymentListener[] = []
 
     constructor(
         private readonly storage: ServiceStorage,
@@ -95,7 +96,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // Validate the entity's content property
         validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
-        return repository.txIf(async transaction => {
+        const { auditInfoComplete, wasEntityDeployed } = await repository.txIf(async transaction => {
             const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
             // Validate if the entity can be re deployed
@@ -116,27 +117,27 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
             const localTimestamp = Date.now()
 
+            let auditInfoComplete: AuditInfo;
+
+            if (fix) {
+                const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(transaction.failedDeployments, entity.type, entity.id))!!
+                auditInfoComplete = {
+                    ...auditInfo,
+                    originTimestamp: failedDeployment.originTimestamp,
+                    originServerUrl: failedDeployment.originServerUrl,
+                    localTimestamp,
+                }
+            } else {
+                auditInfoComplete = {
+                    originTimestamp: localTimestamp,
+                    originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
+                    ...auditInfo,
+                    localTimestamp,
+                }
+            }
+
             if (!isEntityAlreadyDeployed) {
                 // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
-
-                let auditInfoComplete: AuditInfo;
-
-                if (fix) {
-                    const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(transaction.failedDeployments, entity.type, entity.id))!!
-                    auditInfoComplete = {
-                        ...auditInfo,
-                        originTimestamp: failedDeployment.originTimestamp,
-                        originServerUrl: failedDeployment.originServerUrl,
-                        localTimestamp,
-                    }
-                } else {
-                    auditInfoComplete = {
-                        originTimestamp: localTimestamp,
-                        originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
-                        ...auditInfo,
-                        localTimestamp,
-                    }
-                }
 
                 // Calculate overwrites
                 const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
@@ -169,8 +170,15 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
             await this.failedDeploymentsManager.reportSuccessfulDeployment(transaction.failedDeployments, entity.type, entity.id)
 
-            return localTimestamp
+            return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
         })
+
+        // Report deployment to listeners
+        if (wasEntityDeployed) {
+            await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
+        }
+
+        return auditInfoComplete.localTimestamp
     }
 
     reportErrorDuringSync(entityType: EntityType, entityId: EntityId, originTimestamp: Timestamp, originServerUrl: ServerAddress, reason: FailureReason, errorDescription?: string): Promise<null> {
@@ -228,8 +236,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         }
     }
 
-    deleteContent(fileHashes: string[]): Promise<void> {
+    deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
         return this.storage.deleteContent(fileHashes)
+    }
+
+    storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
+        return this.storage.storeContent(fileHash, content)
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
@@ -260,6 +272,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     getAllFailedDeployments() {
         return this.failedDeploymentsManager.getAllFailedDeployments(this.repository.failedDeployments)
+    }
+
+    listenToDeployments(listener: DeploymentListener): void {
+        this.listeners.push(listener)
     }
 
     private async isEntityAlreadyDeployed(entityId: EntityId, transaction: RepositoryTask): Promise<boolean> {
