@@ -6,6 +6,7 @@ import { MetaverseContentService } from "../service/Service";
 import { SynchronizationManager } from "../service/synchronization/SynchronizationManager";
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { Repository } from "../storage/Repository";
+import { SnapshotManager } from "../service/snapshots/SnapshotManager";
 
 export class ControllerFactory {
     static create(env: Environment): Controller {
@@ -14,11 +15,12 @@ export class ControllerFactory {
         const denylist: Denylist = env.getBean(Bean.DENYLIST);
         const synchronizationManager: SynchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
         const challengeSupervisor: ChallengeSupervisor = env.getBean(Bean.CHALLENGE_SUPERVISOR);
+        const snapshotManager: SnapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER);
         const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK);
         if (denylist && repository) {
-            return new Controller(new DenylistServiceDecorator(service, denylist, repository), denylist, synchronizationManager, challengeSupervisor, ethNetwork);
+            return new Controller(new DenylistServiceDecorator(service, denylist, repository), denylist, synchronizationManager, challengeSupervisor, snapshotManager, ethNetwork);
         } else {
-            return new Controller(service, denylist, synchronizationManager, challengeSupervisor, ethNetwork);
+            return new Controller(service, denylist, synchronizationManager, challengeSupervisor, snapshotManager, ethNetwork);
         }
     }
 }

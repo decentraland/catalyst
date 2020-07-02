@@ -1,6 +1,6 @@
 import ms from "ms"
 import log4js from "log4js"
-import { EntityVersion } from "dcl-catalyst-commons";
+import { EntityVersion, EntityType } from "dcl-catalyst-commons";
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
@@ -24,6 +24,7 @@ import { MigrationManagerFactory } from "./migrations/MigrationManagerFactory";
 import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 import { SystemPropertiesManagerFactory } from "./service/system-properties/SystemPropertiesManagerFactory";
 import { GarbageCollectionManagerFactory } from "./service/garbage-collection/GarbageCollectionManagerFactory";
+import { SnapshotManagerFactory } from "./service/snapshots/SnapshotManagerFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -109,6 +110,7 @@ export const enum Bean {
     MIGRATION_MANAGER,
     GARBAGE_COLLECTION_MANAGER,
     SYSTEM_PROPERTIES_MANAGER,
+    SNAPSHOT_MANAGER,
 }
 
 export enum EnvironmentConfig {
@@ -140,6 +142,7 @@ export enum EnvironmentConfig {
     PSQL_PORT,
     GARBAGE_COLLECTION,
     GARBAGE_COLLECTION_INTERVAL,
+    SNAPSHOT_FREQUENCY,
 }
 
 export class EnvironmentBuilder {
@@ -197,6 +200,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_PORT                      , () => process.env.POSTGRES_PORT ?? DEFAULT_DATABASE_CONFIG.port)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION             , () => process.env.GARBAGE_COLLECTION === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL    , () => ms('6h'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SNAPSHOT_FREQUENCY             , () => new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500]]))
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
@@ -220,6 +224,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => new FailedDeploymentsManager())
         this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS                 , () => ValidationsFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER            , () => SnapshotManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER  , () => GarbageCollectionManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER     , () => ClusterSynchronizationManagerFactory.create(env))

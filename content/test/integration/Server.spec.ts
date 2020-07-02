@@ -11,6 +11,7 @@ import { NoOpMigrationManager } from "@katalyst/test-helpers/NoOpMigrationManage
 import { NoOpGarbageCollectionManager } from "@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager"
 import { DeploymentPointerChanges } from "@katalyst/content/service/deployments/DeploymentManager"
 import { ControllerPointerChanges } from "@katalyst/content/controller/Controller"
+import { NoOpSnapshotManager } from "@katalyst/test-helpers/service/snapshots/NoOpGarbageCollectionManager"
 
 describe("Integration - Server", function() {
     let server: Server
@@ -33,6 +34,7 @@ describe("Integration - Server", function() {
             .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
             .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())
             .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
+            .registerBean(Bean.SNAPSHOT_MANAGER, NoOpSnapshotManager.build())
             .setConfig(EnvironmentConfig.SERVER_PORT, port)
             .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
 

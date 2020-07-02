@@ -1,5 +1,5 @@
 import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
-import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
+import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
 import { buildPointerTarget, buildEntityTarget, DenylistTarget, buildContentTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "./DenylistTarget";
@@ -179,6 +179,14 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   getStatus(): ServerStatus {
     return this.service.getStatus();
+  }
+
+  storeContent(fileHash: string, content: Buffer): Promise<void> {
+    return this.service.storeContent(fileHash, content)
+  }
+
+  listenToDeployments(listener: DeploymentListener): void {
+    return this.service.listenToDeployments(listener)
   }
 
   private async validateDeployment(denylistRepo: DenylistRepository, files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo) {

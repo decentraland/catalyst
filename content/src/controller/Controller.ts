@@ -15,6 +15,7 @@ import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervi
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
 import { Deployment, DeploymentPointerChanges } from "../service/deployments/DeploymentManager";
+import { SnapshotManager } from "../service/snapshots/SnapshotManager";
 
 export class Controller {
 
@@ -24,6 +25,7 @@ export class Controller {
         private readonly denylist: Denylist,
         private readonly synchronizationManager: SynchronizationManager,
         private readonly challengeSupervisor: ChallengeSupervisor,
+        private readonly snapshotManager: SnapshotManager,
         private readonly ethNetwork: string) { }
 
     async getEntities(req: express.Request, res: express.Response) {
@@ -327,6 +329,27 @@ export class Controller {
             commitHash: CURRENT_COMMIT_HASH,
             ethNetwork: this.ethNetwork,
          })
+    }
+
+    getSnapshot(req: express.Request, res: express.Response) {
+        // Method: GET
+        // Path: /snapshot/:type
+
+        const type = this.parseEntityType(req.params.type)
+
+        // Validate type is valid
+        if (!type) {
+            res.status(400).send({ error: `Unrecognized type: ${req.params.type}` });
+            return
+        }
+
+        const metadata = this.snapshotManager.getSnapshotMetadata(type)
+
+        if (!metadata) {
+            res.status(503).send({ error: 'Snapshot not yet created' })
+        } else {
+            res.send(metadata)
+        }
     }
 
     async addToDenylist(req: express.Request, res: express.Response) {

@@ -1,6 +1,6 @@
 import { random } from "faker"
 import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
-import { MetaverseContentService, LocalDeploymentAuditInfo } from "@katalyst/content/service/Service"
+import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "@katalyst/content/service/Service"
 import { Entity } from "@katalyst/content/service/Entity"
 import { buildEntityAndFile } from "./EntityTestFactory"
 import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
@@ -106,6 +106,13 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     }
 
     getAllFailedDeployments(): Promise<FailedDeployment[]> {
+        throw new Error("Method not implemented.")
+    }
+
+    storeContent(fileHash: string, content: Buffer): Promise<void> {
+        throw new Error("Method not implemented.")
+    }
+    listenToDeployments(listener: DeploymentListener): void {
         throw new Error("Method not implemented.")
     }
 
