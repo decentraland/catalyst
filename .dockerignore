@@ -2,5 +2,8 @@ dist
 bazel-out
 .git
 .gitignore
+.vscode
+node_modules
 *.log
-
+tmpbin
+comms/performance-test
