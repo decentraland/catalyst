@@ -21,6 +21,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private syncWithNodesTimeout: NodeJS.Timeout;
     private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
     private stopping: boolean = false
+    private timeOfLastSync: Timestamp = 0
 
     constructor(private readonly cluster: ContentCluster,
         private readonly systemProperties: SystemPropertiesManager,
@@ -54,6 +55,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         return {
             ...clusterStatus,
             synchronizationState: this.synchronizationState,
+            lastSyncWithOtherServers: this.timeOfLastSync,
         }
     }
 
@@ -87,6 +89,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             await this.systemProperties.setSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS, Array.from(this.lastKnownDeployments.entries()))
 
             this.synchronizationState = SynchronizationState.SYNCED;
+            this.timeOfLastSync = Date.now()
             ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
         } catch (error) {
             this.synchronizationState = SynchronizationState.FAILED_TO_SYNC;
