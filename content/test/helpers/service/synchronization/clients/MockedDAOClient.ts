@@ -16,7 +16,7 @@ export class MockedDAOClient implements DAOClient {
     }
 
     async getAllServers(): Promise<Set<ServerMetadata>> {
-        throw new Error('Not IMplemented')
+        throw new Error('Not Implemented')
     }
 
     add(address: ServerAddress) {
