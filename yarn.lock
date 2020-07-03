@@ -881,6 +881,11 @@
     "@ethersproject/rlp" "^5.0.0"
     "@ethersproject/signing-key" "^5.0.0"
 
+"@nrk/rfetch@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@nrk/rfetch/-/rfetch-1.1.0.tgz#08415341c6e992a989d435136a9a9db922442338"
+  integrity sha512-ta5dDapXykJqKVD4p9uYCYypXn4w0kPrdGQDqwOzsWsXnhEo56LKlVHhkFu0CmOYw8STXMefGv3xQkndFFZVsA==
+
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@protobufjs/aspromise/-/aspromise-1.1.2.tgz#9b8b0cc663d669a7d8f6f5d0893a14d348f30fbf"
@@ -2610,21 +2615,22 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.1.0.tgz#e69ccac3f3904183b5f14b06d10ce063512fab61"
-  integrity sha512-A1BCO7QUBcEwerIQNn18CYtSHiX0S9MrLmAM+LzbVN4vg1tOCXccmVD7ILhhESbc0vJD9xFrTPEpJsYnz3IXZA==
+dcl-catalyst-client@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.1.1.tgz#0a148f41a5f09947ec84d460378c3e2408d4d870"
+  integrity sha512-gSk8WfD7kWfDHQjc36m3BClPm5H7RComBJWQJWvXG8kj63pR9WsWcEKoJX+Fsh1hu1+iWXo1GrkKH2BPb82pVQ==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^1.4.0"
+    dcl-catalyst-commons "^1.4.1"
     dcl-crypto "^2.2.0"
     isomorphic-form-data "^2.0.0"
 
-dcl-catalyst-commons@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.4.0.tgz#c7c1a46051e9d07c9bceceadf2e912a5f71b465b"
-  integrity sha512-l2xd4lmQ5AbDfw19+Kc21XHcXVJSWLDKpGLXRHjk2+7vluHMZapV/nnl/AHRHHAJoIuSSk13Jqpc0PWQ/wsjLA==
+dcl-catalyst-commons@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.4.1.tgz#e5b1bfa9bc5574a9a1debdbc496ccf15f1eba50a"
+  integrity sha512-ZnWWkYopsZSD3SlW23NzO10r1OO1318H3TD7s/ox13AZ12PPnCSI/S1OJZtcVS4+JJbskqJWJDOifZB9NhbiOg==
   dependencies:
+    "@nrk/rfetch" "^1.1.0"
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
     abort-controller "^3.0.0"
