@@ -881,11 +881,6 @@
     "@ethersproject/rlp" "^5.0.0"
     "@ethersproject/signing-key" "^5.0.0"
 
-"@nrk/rfetch@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@nrk/rfetch/-/rfetch-1.1.0.tgz#08415341c6e992a989d435136a9a9db922442338"
-  integrity sha512-ta5dDapXykJqKVD4p9uYCYypXn4w0kPrdGQDqwOzsWsXnhEo56LKlVHhkFu0CmOYw8STXMefGv3xQkndFFZVsA==
-
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@protobufjs/aspromise/-/aspromise-1.1.2.tgz#9b8b0cc663d669a7d8f6f5d0893a14d348f30fbf"
@@ -2520,6 +2515,13 @@ create-react-context@^0.3.0:
     gud "^1.0.0"
     warning "^4.0.3"
 
+cross-fetch@^3.0.5:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/cross-fetch/-/cross-fetch-3.0.5.tgz#2739d2981892e7ab488a7ad03b92df2816e03f4c"
+  integrity sha512-FFLcLtraisj5eteosnX1gf01qYDCOc4fDy0+euOt8Kn9YBY2NtXL/pCoYPavw24NIQkQqm5ZOLsGD5Zzj0gyew==
+  dependencies:
+    node-fetch "2.6.0"
+
 cross-spawn@^4:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/cross-spawn/-/cross-spawn-4.0.2.tgz#7b9247621c23adfdd3856004a823cbe397424d41"
@@ -2615,28 +2617,27 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.1.1.tgz#0a148f41a5f09947ec84d460378c3e2408d4d870"
-  integrity sha512-gSk8WfD7kWfDHQjc36m3BClPm5H7RComBJWQJWvXG8kj63pR9WsWcEKoJX+Fsh1hu1+iWXo1GrkKH2BPb82pVQ==
+dcl-catalyst-client@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-2.1.2.tgz#380c27c798b200d20b45f2a052c9f38f7b108404"
+  integrity sha512-KO+fpNQhU7wEkHmhs0nfev4YmO1IY74xACQNQDTQehIKhUEdqPiUKQPGgJkBUHM1fl0HvXcqInxTq6ONGBMaEg==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^1.4.1"
+    dcl-catalyst-commons "^1.4.2"
     dcl-crypto "^2.2.0"
     isomorphic-form-data "^2.0.0"
 
-dcl-catalyst-commons@^1.4.1:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.4.1.tgz#e5b1bfa9bc5574a9a1debdbc496ccf15f1eba50a"
-  integrity sha512-ZnWWkYopsZSD3SlW23NzO10r1OO1318H3TD7s/ox13AZ12PPnCSI/S1OJZtcVS4+JJbskqJWJDOifZB9NhbiOg==
+dcl-catalyst-commons@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.4.2.tgz#f38aac8c73fc863531e094a8b33395b37593a124"
+  integrity sha512-Q3hS55ay1DpxYuY+gw1tv2OsIVe79M5OzdvrIBigTfjuYh6dOG3bgF/ABvMKeuiYTNQVi5ni1h9tUbN3pqZ1uA==
   dependencies:
-    "@nrk/rfetch" "^1.1.0"
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
     abort-controller "^3.0.0"
     cids "^0.8.0"
+    cross-fetch "^3.0.5"
     dcl-crypto "^2.1.0"
-    isomorphic-fetch "^2.2.1"
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
@@ -5265,6 +5266,11 @@ node-duration@^1.0.4:
   resolved "https://registry.yarnpkg.com/node-duration/-/node-duration-1.0.4.tgz#3e94ecc0e473691c89c4560074503362071cecac"
   integrity sha512-eUXYNSY7DL53vqfTosggWkvyIW3bhAcqBDIlolgNYlZhianXTrCL50rlUJWD1eRqkIxMppXTfiFbp+9SjpPrgA==
 
+node-fetch@2.6.0, node-fetch@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
+  integrity sha512-8dG4H5ujfvFiqDmVu9fQ5bOHUC15JMjMY/Zumv26oOvvVJjM67KF8koCWIabKQ1GJIa9r2mMZscBq/TbdOcmNA==
+
 node-fetch@^1.0.1:
   version "1.7.3"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-1.7.3.tgz#980f6f72d85211a5347c6b2bc18c5b84c3eb47ef"
@@ -5272,11 +5278,6 @@ node-fetch@^1.0.1:
   dependencies:
     encoding "^0.1.11"
     is-stream "^1.0.1"
-
-node-fetch@^2.6.0:
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
-  integrity sha512-8dG4H5ujfvFiqDmVu9fQ5bOHUC15JMjMY/Zumv26oOvvVJjM67KF8koCWIabKQ1GJIa9r2mMZscBq/TbdOcmNA==
 
 node-gyp-build@^4.2.0:
   version "4.2.2"
