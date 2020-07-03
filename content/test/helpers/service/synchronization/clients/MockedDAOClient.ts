@@ -1,21 +1,22 @@
-import { mock, instance } from "ts-mockito";
 import { ServerAddress } from "dcl-catalyst-commons";
 import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
 import { EthAddress } from 'dcl-crypto';
-import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 
-export class MockedDAOClient extends DAOClient {
+export class MockedDAOClient implements DAOClient {
 
     private readonly serversByAddress: Map<ServerAddress, ServerMetadata>
 
     private constructor(servers: {address: ServerAddress, owner: EthAddress}[]) {
-        super(instance(mock(DAOContract)))
         this.serversByAddress = new Map(servers.map(server => [server.address, {...server, id: "Id"}]))
     }
 
     async getAllContentServers(): Promise<Set<ServerMetadata>> {
         return new Set(this.serversByAddress.values())
+    }
+
+    async getAllServers(): Promise<Set<ServerMetadata>> {
+        throw new Error('Not IMplemented')
     }
 
     add(address: ServerAddress) {

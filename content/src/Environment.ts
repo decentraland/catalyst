@@ -143,6 +143,7 @@ export enum EnvironmentConfig {
     GARBAGE_COLLECTION,
     GARBAGE_COLLECTION_INTERVAL,
     SNAPSHOT_FREQUENCY,
+    CUSTOM_DAO,
 }
 
 export class EnvironmentBuilder {
@@ -201,6 +202,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION             , () => process.env.GARBAGE_COLLECTION === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL    , () => ms('6h'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SNAPSHOT_FREQUENCY             , () => new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500]]))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO                     , () => process.env.CUSTOM_DAO)
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
