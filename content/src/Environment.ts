@@ -184,8 +184,8 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ALLOW_LEGACY_ENTITIES          , () => process.env.ALLOW_LEGACY_ENTITIES === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.ETH_NETWORK                    , () => process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL                      , () => process.env.LOG_LEVEL ?? "info")
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT           , () => process.env.JSON_REQUEST_TIMEOUT ?? ms('1m'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT  , () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? ms('5m'))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.JSON_REQUEST_TIMEOUT           , () => process.env.JSON_REQUEST_TIMEOUT ?? '1m')
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT  , () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? '5m')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE     , () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH         , () => process.env.BOOTSTRAP_FROM_SCRATCH === 'true');
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
