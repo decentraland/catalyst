@@ -15,7 +15,7 @@ import { DEFAULT_LAYERS } from "./default_layers";
 import { Authenticator } from "dcl-crypto";
 import { pickName } from "./naming";
 import { patchLog } from "./logging";
-import { DAOClient } from "decentraland-katalyst-commons/DAOClient";
+import { DAOContractClient } from "decentraland-katalyst-commons/DAOClient";
 import { httpProviderForNetwork } from "decentraland-katalyst-contracts/utils";
 import { DAOContract } from "decentraland-katalyst-contracts/DAOContract";
 import { IdService } from "./idService";
@@ -30,7 +30,7 @@ const DEFAULT_ETH_NETWORK = "ropsten";
 const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
 
 (async function () {
-  const daoClient = new DAOClient(DAOContract.withNetwork(CURRENT_ETH_NETWORK));
+  const daoClient = new DAOContractClient(DAOContract.withNetwork(CURRENT_ETH_NETWORK));
 
   const name = await pickName(process.env.LIGHTHOUSE_NAMES, daoClient);
   console.info("Picked name: " + name);
