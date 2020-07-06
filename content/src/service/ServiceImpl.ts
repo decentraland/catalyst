@@ -1,5 +1,5 @@
 import log4js from "log4js"
-import { Hashing, ContentFileHash, ContentFile, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
+import { Hashing, ContentFileHash, ContentFile, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo, Pointer } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
 import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, DeploymentListener } from "./Service";
 import { EntityFactory } from "./EntityFactory";
@@ -23,6 +23,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private static readonly LOGGER = log4js.getLogger('ServiceImpl');
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
     private readonly listeners: DeploymentListener[] = []
+    private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
 
     constructor(
         private readonly storage: ServiceStorage,
@@ -115,6 +116,17 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                 throw new Error(validation.getErrors().join('\n'))
             }
 
+            // Validate that the entity's pointers are not being modified by a concurrent transaction
+            const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
+            const overlappingPointers = entity.pointers.filter(pointer => pointersCurrentlyBeingDeployed.has(pointer))
+            if (overlappingPointers.length > 0) {
+                throw new Error(`The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`)
+            }
+
+            // Update the current list of pointers being deployed
+            entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.add(pointer))
+            this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
+
             const localTimestamp = Date.now()
 
             let auditInfoComplete: AuditInfo;
@@ -177,6 +189,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         if (wasEntityDeployed) {
             await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
         }
+
+        // Update the current list of pointers being deployed
+        entity.pointers.forEach(pointer => this.pointersBeingDeployed.get(entity.type)!!.delete(pointer))
 
         return auditInfoComplete.localTimestamp
     }
