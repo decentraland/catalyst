@@ -143,7 +143,8 @@ export class Peer implements IPeer {
     this.stats.startPeriod();
   }
 
-  public setLighthouseUrl(lighthouseUrl: string) {
+  public setLighthouseUrl(lighthouseUrl: string, addRetryListener: boolean = true) {
+    this.peerJsConnection?.removeAllListeners();
     this.peerJsConnection?.disconnect().catch((e) => this.log(LogLevel.DEBUG, "Error while disconnecting ", e));
 
     this.cleanStateAndConnections();
@@ -169,6 +170,15 @@ export class Peer implements IPeer {
     });
 
     this.peerJsConnection.on(PeerEventType.AssignedId, (id) => (this.peerId = id));
+    if (addRetryListener) {
+      this.addRetryListenerToConnection();
+    }
+  }
+
+  private addRetryListenerToConnection() {
+    this.peerJsConnection.on(PeerEventType.Error, async (err) => {
+      await this.retryConnection();
+    });
   }
 
   public peerIdOrFail(): string {
@@ -295,8 +305,6 @@ export class Peer implements IPeer {
       if (result.isPending) {
         return result.reject(err);
       }
-
-      await this.retryConnection();
     });
 
     this.peerJsConnection.on(PeerEventType.Valid, () => result.isPending && result.resolve());
@@ -311,12 +319,14 @@ export class Peer implements IPeer {
     const { reconnectionAttempts, backoffMs } = this.config;
 
     for (let i = 1; ; ++i) {
+      if (this.disposed) return;
+
       this.log(LogLevel.DEBUG, `Connection attempt `, i);
       // To avoid synced retries, we use a random delay
       await delay(backoffMs! + Math.floor(Math.random() * backoffMs!));
 
       try {
-        this.setLighthouseUrl(this.lighthouseUrl());
+        this.setLighthouseUrl(this.lighthouseUrl(), false);
         await this.awaitConnectionEstablished();
 
         if (layer) {
@@ -325,6 +335,9 @@ export class Peer implements IPeer {
             await this.joinRoom(room.id);
           }
         }
+
+        this.addRetryListenerToConnection();
+
         // successfully reconnected
         break;
       } catch (e) {
