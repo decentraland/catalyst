@@ -191,7 +191,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         }
 
         // Update the current list of pointers being deployed
-        entity.pointers.forEach(pointer => this.pointersBeingDeployed.get(entity.type)!!.delete(pointer))
+        const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!!
+        entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.delete(pointer))
 
         return auditInfoComplete.localTimestamp
     }
