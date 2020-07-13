@@ -67,6 +67,7 @@ export class Peer implements IPeer {
   public stats: GlobalStats;
 
   private disposed: boolean = false;
+  private disconnectionCause: Error | undefined;
 
   public logLevel: keyof typeof LogLevel = "INFO";
 
@@ -170,6 +171,9 @@ export class Peer implements IPeer {
     });
 
     this.peerJsConnection.on(PeerEventType.AssignedId, (id) => (this.peerId = id));
+    this.peerJsConnection.on(PeerEventType.Error, (err) => {
+      if (!this.disconnectionCause) this.disconnectionCause = err;
+    });
     if (addRetryListener) {
       this.addRetryListenerToConnection();
     }
@@ -291,7 +295,7 @@ export class Peer implements IPeer {
     if (this.peerJsConnection.connected) {
       return Promise.resolve();
     } else if (this.peerJsConnection.disconnected) {
-      return Promise.reject(new Error("Peer already disconnected!"));
+      return Promise.reject(this.disconnectionCause ?? new Error("Peer already disconnected!"));
     }
 
     // otherwise wait for connection to be established/rejected
