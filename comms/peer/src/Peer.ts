@@ -989,7 +989,7 @@ export class Peer implements IPeer {
   }
 
   private checkExpired(packet: Packet) {
-    let discardedByOlderThan: boolean = this.isDiscardedByOlderThanReceivedPackages(packet);
+    const discardedByOlderThan: boolean = this.isDiscardedByOlderThanReceivedPackages(packet);
 
     let discardedByExpireTime: boolean = false;
     const expireTime = this.getExpireTime(packet);
