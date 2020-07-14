@@ -241,7 +241,7 @@ export class PeerJSServerConnection extends EventEmitter {
     switch (type) {
       case ServerMessageType.AssignedId:
         this._id = message.payload.id;
-        this.emit(PeerEventType.AssignedId, this.id)
+        this.emit(PeerEventType.AssignedId, this.id);
         break;
       case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
@@ -259,9 +259,6 @@ export class PeerJSServerConnection extends EventEmitter {
       case ServerMessageType.ValidationOk: // The connection to the server is accepted.
         this.emit(PeerEventType.Valid, this.id);
         this._valid = true;
-        break;
-      case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
-        this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
         break;
       case ServerMessageType.ValidationNok: // The connection is aborted due to validation not correct
         this._abort(PeerErrorType.ValidationError, `Result of validation challenge is incorrect`);
