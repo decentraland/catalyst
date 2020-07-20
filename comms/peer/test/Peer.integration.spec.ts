@@ -407,6 +407,138 @@ describe("Peer Integration Test", function () {
     expect(peer.peerIdOrFail()).toBe("assigned");
   });
 
+  it("sorts connection candidates by distance", () => {
+    
+  })
+
+  it("creates a new connection when setting lighthouse url", () => {
+
+  })
+
+  it("retries connection when disconnected", () => {
+
+  })
+
+  it("expires messages periodically", () => {
+
+  })
+
+  it("expires peers periodically", () => {
+
+  })
+
+  it("requests network optimization on heartbeat periodically", () => {
+
+  })
+
+  it("adds known peers when joining layers", () => {
+
+  })
+
+  it("adds room when joining room", () => {
+
+  })
+
+  it("connects to close peers when updating network", () => {
+
+  })
+
+  it("disconnects when over connected when updating network", () => {
+
+  })
+
+  it("disconnects from distant peers when updating network", () => {
+
+  })
+
+  it("removes local room representation when leaving room", () => {
+
+  })
+
+  it("set peers position when updating known peers if their positions are old", () => {
+
+  })
+
+  it("performs only one network update at a time", () => {
+
+  })
+
+  it("perform various network updates in succession", () => {
+    
+  })
+
+  it("selects valid connection candidates for network updates", () => {
+    
+  })
+
+  it("finds the worst connected peer by distance", () => {
+
+  })
+
+  it("counts packet with statstics when received", () => {
+    
+  })
+
+  it("marks a packet as received", () => {
+
+  })
+
+  it("marks a peer as reachable through when receiving a relayed packet", () => {
+
+  })
+
+  it("updates peer and room based on the packet", () => {
+    
+  })
+  
+  it("doesn't process a package expired or duplicate and requests relay suspension", () => {
+    
+  })
+
+  it("processes a message packet", () => {
+    
+  })
+
+  it("processes a relay suspension packet", () => {
+    
+  })
+
+  it("consolidates relay suspension request adding pending suspension", () => {
+    
+  })
+
+  it("ignores relay suspension request if only one link remains", () => {
+    
+  })
+
+  it("sends pending succession requests at its interval", () => {
+    
+  })
+
+  it("sends the corresponding packet for a message", () => {
+    
+  })
+
+  it("sends the corresponding packet to valid peers", () => {
+    
+  })
+
+  it("rejects a connection from a peer of another lighthouse or layer", () => {
+    
+  })
+
+  it("rejects a connection from a peer with another protocol version", () => {
+    
+  })
+
+  it("rejects a connection from a peer when it has too many connections", () => {
+    
+  })
+
+  it("updates known peers and rooms with notifications from lighthouse", () => {
+    
+  })
+
   function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
     expectPeerToBeInRoomWith(peer, roomId, otherPeer);
     expectPeerToBeConnectedTo(peer, otherPeer);

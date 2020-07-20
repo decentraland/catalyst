@@ -40,6 +40,23 @@ function toParcel(position: any) {
 
 type NetworkOperation = () => Promise<KnownPeerData[]>;
 
+export const peerSortCriteria = (peer1: KnownPeerData, peer2: KnownPeerData) => {
+  if (this.config.positionConfig) {
+    // We prefer those peers that have position over those that don't
+    if (peer1.position && !peer2.position) return -1;
+    if (peer2.position && !peer1.position) return 1;
+
+    if (peer1.position && peer2.position) {
+      const distanceDiff = this.distanceTo(peer1.id)! - this.distanceTo(peer2.id)!;
+      // If the distance is the same, we randomize
+      return distanceDiff === 0 ? 0.5 - Math.random() : distanceDiff;
+    }
+  }
+
+  // If none has position or if we don't, we randomize
+  return 0.5 - Math.random();
+};
+
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private connectedPeers: Record<string, ConnectedPeerData> = {};
@@ -222,6 +239,7 @@ export class Peer implements IPeer {
           delete connected.ownSuspendedRelays[srcId];
         }
       });
+
       Object.keys(connected.theirSuspendedRelays).forEach((srcId) => {
         if (connected.theirSuspendedRelays[srcId] <= currentTimestamp) {
           delete connected.theirSuspendedRelays[srcId];
@@ -483,7 +501,7 @@ export class Peer implements IPeer {
 
       this.checkConnectionsSanity();
 
-      let connectionCandidates = Object.values(this.knownPeers).filter((it) => this.isValidConnectionCandidate(it));
+      let connectionCandidates = this.validConnectionCandidates();
 
       let operation: NetworkOperation | undefined;
       while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
@@ -499,6 +517,10 @@ export class Peer implements IPeer {
 
       this.updatingNetwork = false;
     }
+  }
+
+  private validConnectionCandidates() {
+    return Object.values(this.knownPeers).filter((it) => this.isValidConnectionCandidate(it));
   }
 
   private isValidConnectionCandidate(it: KnownPeerData): boolean {
@@ -527,23 +549,6 @@ export class Peer implements IPeer {
 
   private calculateNextNetworkOperation(connectionCandidates: KnownPeerData[]): NetworkOperation | undefined {
     this.log(LogLevel.DEBUG, "Calculating network operation with candidates", connectionCandidates);
-
-    const peerSortCriteria = (peer1: KnownPeerData, peer2: KnownPeerData) => {
-      if (this.config.positionConfig) {
-        // We prefer those peers that have position over those that don't
-        if (peer1.position && !peer2.position) return -1;
-        if (peer2.position && !peer1.position) return 1;
-
-        if (peer1.position && peer2.position) {
-          const distanceDiff = this.distanceTo(peer1.id)! - this.distanceTo(peer2.id)!;
-          // If the distance is the same, we randomize
-          return distanceDiff === 0 ? 0.5 - Math.random() : distanceDiff;
-        }
-      }
-
-      // If none has position or if we don't, we randomize
-      return 0.5 - Math.random();
-    };
 
     const pickCandidates = (count: number) => {
       if (!this.config.positionConfig) return pickRandom(connectionCandidates, count);
@@ -721,7 +726,7 @@ export class Peer implements IPeer {
     }
   }
 
-  setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
+  private setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
     const timestamp = this.knownPeers[peerId]?.timestamp;
     if (this.knownPeers[peerId] && (!timestamp || Date.now() - timestamp > 30000)) {
       // We assume that if we haven't received a position from a peer in 30 seconds,
@@ -786,8 +791,8 @@ export class Peer implements IPeer {
       this.ensureAndUpdateKnownPeer(packet, peerId);
 
       if (packet.discardOlderThan !== 0) {
-        //If discardOlderThan is zero, then we don't need to store the package.
-        //Same or older packages will be instantly discarded
+        // If discardOlderThan is zero, then we don't need to store the package.
+        // Same or older packages will be instantly discarded
         this.markReceived(packet);
       }
 
@@ -800,43 +805,48 @@ export class Peer implements IPeer {
       }
 
       if (!alreadyReceived && !expired) {
-        this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
-
-        packet.hops += 1;
-
-        this.knownPeers[packet.src].hops = packet.hops;
-
-        if (packet.hops < packet.ttl) {
-          this.sendPacket(packet);
-        }
-
-        const messageData = packet.messageData;
-        if (messageData) {
-          if (this.isInRoom(messageData.room)) {
-            this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
-          }
-        }
-
-        const pingData = packet.pingData;
-        if (pingData) {
-          this.respondPing(pingData.pingId);
-        }
-
-        const pongData = packet.pongData;
-        if (pongData) {
-          this.processPong(packet.src, pongData.pingId);
-        }
-
-        const suspendRelayData = packet.suspendRelayData;
-        if (suspendRelayData) {
-          this.processSuspensionRequest(packet.src, suspendRelayData);
-        }
+        this.processPacket(packet);
       } else {
         this.requestRelaySuspension(packet, peerId);
       }
+
     } catch (e) {
       this.log(LogLevel.WARN, "Failed to process message from: " + peerId, e);
       return;
+    }
+  }
+
+  private processPacket(packet: Packet) {
+    this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
+    
+    packet.hops += 1;
+    
+    this.knownPeers[packet.src].hops = packet.hops;
+    
+    if (packet.hops < packet.ttl) {
+      this.sendPacket(packet);
+    }
+
+    const messageData = packet.messageData;
+    if (messageData) {
+      if (this.isInRoom(messageData.room)) {
+        this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
+      }
+    }
+
+    const pingData = packet.pingData;
+    if (pingData) {
+      this.respondPing(pingData.pingId);
+    }
+
+    const pongData = packet.pongData;
+    if (pongData) {
+      this.processPong(packet.src, pongData.pingId);
+    }
+    
+    const suspendRelayData = packet.suspendRelayData;
+    if (suspendRelayData) {
+      this.processSuspensionRequest(packet.src, suspendRelayData);
     }
   }
 
@@ -1264,70 +1274,19 @@ export class Peer implements IPeer {
       this.log(LogLevel.DEBUG, `Received message from ${peerId}: ${type}`);
       switch (type) {
         case ServerMessageType.Offer:
-          if (this.checkForCrossOffers(peerId)) {
-            break;
-          }
+          this.handleOfferPayload(payload, peerId)
+          break;
 
-          if (this.connectedCount() >= this.config.maxConnections!) {
-            if (payload.position && this.selfPosition()) {
-              const knownPeer = this.addKnownPeerIfNotExists({ id: peerId });
-              knownPeer.timestamp = Date.now();
-              knownPeer.position = payload.position;
-
-              const worstPeer = this.getWorstConnectedPeerByDistance();
-              if (worstPeer && this.distanceTo(peerId)! > worstPeer[0]) {
-                // If the new peer distance is worse than the worst peer distance we have, we reject it
-                this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
-                break;
-              } else {
-                // We are going to be over connected so we trigger a delayed network update to ensure we keep below the max connections
-                setTimeout(() => this.updateNetwork(), 500);
-              }
-            } else {
-              // We also reject if there is no position configuration
-              this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
-              break;
-            }
-          }
         case ServerMessageType.Answer: {
-          if (payload.protocolVersion !== PROTOCOL_VERSION) {
-            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
-            break;
-          }
-
-          if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
-            this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, MUST_BE_IN_SAME_DOMAIN_AND_LAYER);
-            break;
-          }
-
-          const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
-          signalMessage(peer, payload.connectionId, payload.sdp);
+          this.handleHandshakePayload(payload, peerId);
           break;
         }
         case ServerMessageType.Candidate: {
-          if (this.checkForCrossOffers(peerId, payload.sessionId)) {
-            break;
-          }
-
-          //If we receive a candidate for a connection that we don't have, we ignore it
-          if (!this.hasConnectionsFor(peerId)) {
-            this.log(LogLevel.INFO, `Received candidate for unknown peer connection: ${peerId}. Ignoring.`);
-            break;
-          }
-
-          const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
-          signalMessage(peer, payload.connectionId, {
-            candidate: payload.candidate,
-          });
+          this.handleCandidatePayload(peerId, payload);
           break;
         }
         case ServerMessageType.Reject: {
-          const peer = this.connectedPeers[peerId];
-          peer?.connection?.destroy();
-          delete this.connectedPeers[peerId];
-          if (payload.reason === MUST_BE_IN_SAME_DOMAIN_AND_LAYER) {
-            this.removeKnownPeer(peerId);
-          }
+          this.handleRejection(peerId, payload.reason);
           break;
         }
         case ServerMessageType.PeerLeftRoom: {
@@ -1366,6 +1325,77 @@ export class Peer implements IPeer {
         }
       }
     }
+  }
+
+  private handleRejection(peerId: string, reason: string) {
+    const peer = this.connectedPeers[peerId];
+    peer?.connection?.destroy();
+    delete this.connectedPeers[peerId];
+    if (reason === MUST_BE_IN_SAME_DOMAIN_AND_LAYER) {
+      this.removeKnownPeer(peerId);
+    }
+  }
+
+  private handleCandidatePayload(peerId: string, payload: any) {
+    if (this.checkForCrossOffers(peerId, payload.sessionId)) {
+      return;
+    }
+    // If we receive a candidate for a connection that we don't have, we ignore it
+    if (!this.hasConnectionsFor(peerId)) {
+      this.log(LogLevel.INFO, `Received candidate for unknown peer connection: ${peerId}. Ignoring.`);
+      return;
+    }
+    const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
+    signalMessage(peer, payload.connectionId, {
+      candidate: payload.candidate,
+    });
+  }
+
+  private handleHandshakePayload(payload: any, peerId: string) {
+    if (payload.protocolVersion !== PROTOCOL_VERSION) {
+      this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "INCOMPATIBLE_PROTOCOL_VERSION");
+      return;
+    }
+
+    if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
+      this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, MUST_BE_IN_SAME_DOMAIN_AND_LAYER);
+      return;
+    }
+
+    const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId);
+
+    signalMessage(peer, payload.connectionId, payload.sdp);
+  }
+
+  private handleOfferPayload(payload: any, peerId: string) {
+    if (this.checkForCrossOffers(peerId)) {
+      return;
+    }
+
+    if (this.connectedCount() >= this.config.maxConnections!) {
+      if (payload.position && this.selfPosition()) {
+        const knownPeer = this.addKnownPeerIfNotExists({ id: peerId });
+        knownPeer.timestamp = Date.now();
+        knownPeer.position = payload.position;
+
+        const worstPeer = this.getWorstConnectedPeerByDistance();
+        if (worstPeer && this.distanceTo(peerId)! > worstPeer[0]) {
+          // If the new peer distance is worse than the worst peer distance we have, we reject it
+          this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
+          return;
+        } else {
+          // We are going to be over connected so we trigger a delayed network update to ensure we keep below the max connections
+          setTimeout(() => this.updateNetwork(), 500);
+          // This continues below
+        }
+      } else {
+        // We also reject if there is no position configuration
+        this.peerJsConnection.sendRejection(peerId, payload.sessionId, payload.label, "TOO_MANY_CONNECTIONS");
+        return;
+      }
+    }
+    
+    this.handleHandshakePayload(payload, peerId);
   }
 
   private processOptimalConnectionsResponse(optimalConnections: PeerConnectionHint[]) {
