@@ -40,23 +40,6 @@ function toParcel(position: any) {
 
 type NetworkOperation = () => Promise<KnownPeerData[]>;
 
-export const peerSortCriteria = (peer1: KnownPeerData, peer2: KnownPeerData) => {
-  if (this.config.positionConfig) {
-    // We prefer those peers that have position over those that don't
-    if (peer1.position && !peer2.position) return -1;
-    if (peer2.position && !peer1.position) return 1;
-
-    if (peer1.position && peer2.position) {
-      const distanceDiff = this.distanceTo(peer1.id)! - this.distanceTo(peer2.id)!;
-      // If the distance is the same, we randomize
-      return distanceDiff === 0 ? 0.5 - Math.random() : distanceDiff;
-    }
-  }
-
-  // If none has position or if we don't, we randomize
-  return 0.5 - Math.random();
-};
-
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
   private connectedPeers: Record<string, ConnectedPeerData> = {};
@@ -501,7 +484,7 @@ export class Peer implements IPeer {
 
       this.checkConnectionsSanity();
 
-      let connectionCandidates = this.validConnectionCandidates();
+      let connectionCandidates = Object.values(this.knownPeers).filter((it) => this.isValidConnectionCandidate(it));
 
       let operation: NetworkOperation | undefined;
       while ((operation = this.calculateNextNetworkOperation(connectionCandidates))) {
@@ -517,10 +500,6 @@ export class Peer implements IPeer {
 
       this.updatingNetwork = false;
     }
-  }
-
-  private validConnectionCandidates() {
-    return Object.values(this.knownPeers).filter((it) => this.isValidConnectionCandidate(it));
   }
 
   private isValidConnectionCandidate(it: KnownPeerData): boolean {
@@ -547,8 +526,29 @@ export class Peer implements IPeer {
     });
   }
 
+  private peerSortCriteria() {
+    return (peer1: KnownPeerData, peer2: KnownPeerData) => {
+      if (this.config.positionConfig) {
+        // We prefer those peers that have position over those that don't
+        if (peer1.position && !peer2.position) return -1;
+        if (peer2.position && !peer1.position) return 1;
+
+        if (peer1.position && peer2.position) {
+          const distanceDiff = this.distanceTo(peer1.id)! - this.distanceTo(peer2.id)!;
+          // If the distance is the same, we randomize
+          return distanceDiff === 0 ? 0.5 - Math.random() : distanceDiff;
+        }
+      }
+
+      // If none has position or if we don't, we randomize
+      return 0.5 - Math.random();
+    };
+  }
+
   private calculateNextNetworkOperation(connectionCandidates: KnownPeerData[]): NetworkOperation | undefined {
     this.log(LogLevel.DEBUG, "Calculating network operation with candidates", connectionCandidates);
+
+    const peerSortCriteria = this.peerSortCriteria();
 
     const pickCandidates = (count: number) => {
       if (!this.config.positionConfig) return pickRandom(connectionCandidates, count);
@@ -726,7 +726,7 @@ export class Peer implements IPeer {
     }
   }
 
-  private setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
+  setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
     const timestamp = this.knownPeers[peerId]?.timestamp;
     if (this.knownPeers[peerId] && (!timestamp || Date.now() - timestamp > 30000)) {
       // We assume that if we haven't received a position from a peer in 30 seconds,
@@ -809,7 +809,6 @@ export class Peer implements IPeer {
       } else {
         this.requestRelaySuspension(packet, peerId);
       }
-
     } catch (e) {
       this.log(LogLevel.WARN, "Failed to process message from: " + peerId, e);
       return;
@@ -818,11 +817,11 @@ export class Peer implements IPeer {
 
   private processPacket(packet: Packet) {
     this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId);
-    
+
     packet.hops += 1;
-    
+
     this.knownPeers[packet.src].hops = packet.hops;
-    
+
     if (packet.hops < packet.ttl) {
       this.sendPacket(packet);
     }
@@ -843,7 +842,7 @@ export class Peer implements IPeer {
     if (pongData) {
       this.processPong(packet.src, pongData.pingId);
     }
-    
+
     const suspendRelayData = packet.suspendRelayData;
     if (suspendRelayData) {
       this.processSuspensionRequest(packet.src, suspendRelayData);
@@ -1274,7 +1273,7 @@ export class Peer implements IPeer {
       this.log(LogLevel.DEBUG, `Received message from ${peerId}: ${type}`);
       switch (type) {
         case ServerMessageType.Offer:
-          this.handleOfferPayload(payload, peerId)
+          this.handleOfferPayload(payload, peerId);
           break;
 
         case ServerMessageType.Answer: {
@@ -1394,7 +1393,7 @@ export class Peer implements IPeer {
         return;
       }
     }
-    
+
     this.handleHandshakePayload(payload, peerId);
   }
 

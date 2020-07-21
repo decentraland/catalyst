@@ -13,6 +13,7 @@ const globalScope: any = typeof window === "undefined" ? global : window;
 const layer = "blue";
 
 class SocketMock implements SocketType {
+  closed: boolean = false;
   onmessage: any = () => {};
   onclose: any = () => {};
 
@@ -28,7 +29,9 @@ class SocketMock implements SocketType {
     }
   }
 
-  close(code?: number, reason?: string): void {}
+  close(code?: number, reason?: string): void {
+    this.closed = true;
+  }
 
   send(data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView): void {
     this.destinations.forEach(($) => $.onmessage({ data }));
@@ -39,16 +42,31 @@ const messageHandler: PacketCallback = (sender, room, payload) => {
   // console.log(`Received message from ${sender} in ${room}`, payload);
 };
 
+type LighthouseState = {
+  roomPeers: Record<string, MinPeerData[]>;
+  layerPeers: Record<string, MinPeerData[]>;
+};
+
 describe("Peer Integration Test", function () {
-  let roomPeers: Record<string, MinPeerData[]>;
-  let layerPeers: Record<string, MinPeerData[]>;
+  const DEFAULT_LIGHTHOUSE = "http://notimportant:8888";
+
+  let lighthouses: Record<string, LighthouseState>;
 
   let sockets: Record<string, SocketMock>;
+
+  function getLighthouse(lighthouse: string = DEFAULT_LIGHTHOUSE) {
+    let aLighthouse = lighthouses[lighthouse];
+    if (!aLighthouse) {
+      aLighthouse = lighthouses[lighthouse] = { roomPeers: {}, layerPeers: {} };
+    }
+
+    return aLighthouse;
+  }
 
   async function createPeer(peerId: string, layerId: string = layer, socketDestination: SocketMock[] = [], callback: PacketCallback = messageHandler): Promise<[SocketMock, Peer]> {
     const socket = new SocketMock(socketDestination);
 
-    const peer = new Peer("http://notimportant:8888", peerId, callback, {
+    const peer = new Peer(DEFAULT_LIGHTHOUSE, peerId, callback, {
       socketBuilder: () => socket,
     });
 
@@ -91,16 +109,28 @@ describe("Peer Integration Test", function () {
     peer.peerJsConnection._disconnected = true;
   }
 
-  function expectSinglePeerInRoom(peer: Peer, roomId: string) {
-    expect(roomPeers[roomId]).toBeDefined();
-    expect(roomPeers[roomId].length).toBe(1);
+  function expectPeerInLayer(peer: Peer, layer: string, lighthouse: string = DEFAULT_LIGHTHOUSE) {
+    // @ts-ignore
+    expect(peer.currentLayer).toEqual("blue");
 
+    expect(getLighthouse(lighthouse).layerPeers[layer]).toBeDefined();
+    expect(getLighthouse(lighthouse).layerPeers[layer].map((it) => it.id)).toContain(peer.peerIdOrFail());
+  }
+
+  function expectSinglePeerInRoom(peer: Peer, roomId: string, lighthouse: string = DEFAULT_LIGHTHOUSE) {
+    expect(getLighthouse(lighthouse).roomPeers[roomId].length).toBe(1);
+    const peerRoom = expectPeerInRoom(peer, roomId, lighthouse);
+    expect(peerRoom.users.length).toBe(1);
+  }
+
+  function expectPeerInRoom(peer: Peer, roomId: string, lighthouse: string = DEFAULT_LIGHTHOUSE) {
+    expect(getLighthouse(lighthouse).roomPeers[roomId]).toBeDefined();
+    expect(getLighthouse(lighthouse).roomPeers[roomId].map((it) => it.id)).toContain(peer.peerIdOrFail());
     const peerRoom = peer.currentRooms.find((room) => room.id === roomId)!;
     expect(peerRoom).toBeDefined();
-
     expect(peerRoom.id).toBe(roomId);
-    expect(peerRoom.users.length).toBe(1);
     expect(peerRoom.users.includes(peer.peerIdOrFail())).toBeTrue();
+    return peerRoom;
   }
 
   function notify(peers: MinPeerData[], notificationKey: string, notification: ServerMessageType, peerData: MinPeerData, collectionId: string) {
@@ -155,15 +185,14 @@ describe("Peer Integration Test", function () {
     };
   }
 
-  const joinRoom = joinCollection(() => roomPeers, "roomId", ServerMessageType.PeerJoinedRoom);
-  const joinLayer = joinCollection(() => layerPeers, "layerId", ServerMessageType.PeerJoinedLayer);
+  const joinRoom = (lighthouse: string) => joinCollection(() => getLighthouse(lighthouse).roomPeers, "roomId", ServerMessageType.PeerJoinedRoom);
+  const joinLayer = (lighthouse: string) => joinCollection(() => getLighthouse(lighthouse).layerPeers, "layerId", ServerMessageType.PeerJoinedLayer);
 
-  const leaveRoom = leaveCollection(() => roomPeers, "roomId", ServerMessageType.PeerLeftRoom);
-  const leaveLayer = leaveCollection(() => layerPeers, "layerId", ServerMessageType.PeerLeftLayer);
+  const leaveRoom = (lighthouse: string) => leaveCollection(() => getLighthouse(lighthouse).roomPeers, "roomId", ServerMessageType.PeerLeftRoom);
+  const leaveLayer = (lighthouse: string) => leaveCollection(() => getLighthouse(lighthouse).layerPeers, "layerId", ServerMessageType.PeerLeftLayer);
 
   beforeEach(() => {
-    roomPeers = {};
-    layerPeers = {};
+    lighthouses = {};
     sockets = {};
     globalScope.fetch = (input, init) => {
       const url = new URL(input);
@@ -174,10 +203,10 @@ describe("Peer Integration Test", function () {
           if (segments.length === 5) {
             const roomId = segments[segments.length - 1];
             const peerPair = JSON.parse(init.body) as MinPeerData;
-            return joinRoom(peerPair, roomId);
+            return joinRoom(url.origin)(peerPair, roomId);
           } else {
             const layerId = segments[segments.length - 1];
-            return joinLayer(JSON.parse(init.body), layerId);
+            return joinLayer(url.origin)(JSON.parse(init.body), layerId);
           }
         }
         case "DELETE": {
@@ -185,11 +214,11 @@ describe("Peer Integration Test", function () {
           if (segments.length === 7) {
             const roomId = segments[segments.length - 3];
             const userId = segments[segments.length - 1];
-            return leaveRoom(userId, roomId);
+            return leaveRoom(url.origin)(userId, roomId);
           } else {
             const layerId = segments[segments.length - 3];
             const userId = segments[segments.length - 1];
-            return leaveLayer(userId, layerId);
+            return leaveLayer(url.origin)(userId, layerId);
           }
         }
       }
@@ -337,7 +366,7 @@ describe("Peer Integration Test", function () {
 
     await peer.leaveRoom("room");
 
-    expect(roomPeers["room"].length).toBe(1);
+    expect(lighthouses[DEFAULT_LIGHTHOUSE].roomPeers["room"].length).toBe(1);
     expect(peer.currentRooms.length).toBe(0);
   });
 
@@ -350,12 +379,12 @@ describe("Peer Integration Test", function () {
 
     await peer.leaveRoom("room");
 
-    expect(roomPeers["room"].length).toBe(0);
+    expect(lighthouses[DEFAULT_LIGHTHOUSE].roomPeers["room"].length).toBe(0);
     expect(peer.currentRooms.length).toBe(0);
 
     await peer.leaveRoom("room");
 
-    expect(roomPeers["room"].length).toBe(0);
+    expect(lighthouses[DEFAULT_LIGHTHOUSE].roomPeers["room"].length).toBe(0);
     expect(peer.currentRooms.length).toBe(0);
   });
 
@@ -368,7 +397,7 @@ describe("Peer Integration Test", function () {
 
     await peer.leaveRoom("room");
 
-    expect(roomPeers["room"]).toBeUndefined();
+    expect(lighthouses[DEFAULT_LIGHTHOUSE]?.roomPeers["room"]).toBeUndefined();
     expectSinglePeerInRoom(peer, "roomin");
   });
 
@@ -398,146 +427,167 @@ describe("Peer Integration Test", function () {
   it("sets its id once logged into the server", async () => {
     const socket = new SocketMock([]);
 
-    const peer = new Peer("http://notimportant:8888", undefined, messageHandler, {
+    const peer = new Peer(DEFAULT_LIGHTHOUSE, undefined, messageHandler, {
       socketBuilder: () => socket,
     });
 
-    socket.onmessage({data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id: "assigned" } })});
+    assignId(socket);
 
     expect(peer.peerIdOrFail()).toBe("assigned");
   });
 
   it("sorts connection candidates by distance", () => {
-    
-  })
+    const socket = new SocketMock([]);
 
-  it("creates a new connection when setting lighthouse url", () => {
+    const peer = new Peer(DEFAULT_LIGHTHOUSE, undefined, messageHandler, {
+      socketBuilder: () => socket,
+      positionConfig: {
+        selfPosition: () => [0, 0, 0],
+        maxConnectionDistance: 4,
+        nearbyPeersDistance: 5,
+        disconnectDistance: 5,
+      },
+    });
 
-  })
+    const knownPeers = [{ id: "4" }, { id: "3", position: [200, 0, 0] }, { id: "1", position: [40, 0, 0] }, { id: "2", position: [70, 0, 0] }];
 
-  it("retries connection when disconnected", () => {
+    // @ts-ignore
+    peer.updateKnownPeers(knownPeers);
 
-  })
+    // @ts-ignore
+    const sortedPeers = knownPeers.sort(peer.peerSortCriteria());
 
-  it("expires messages periodically", () => {
+    expect(sortedPeers.map((it) => it.id)).toEqual(["1", "2", "3", "4"]);
+  });
 
-  })
+  it("creates a new connection when setting lighthouse url", async () => {
+    let i = -1;
+    const sockets = [new SocketMock([]), new SocketMock([])];
 
-  it("expires peers periodically", () => {
+    const otherLighthouse = "http://notimportant2:8888";
 
-  })
+    const peer = new Peer(DEFAULT_LIGHTHOUSE, "peer", messageHandler, {
+      socketBuilder: () => {
+        i++;
+        return sockets[i];
+      },
+    });
 
-  it("requests network optimization on heartbeat periodically", () => {
+    assignId(sockets[0], "bar");
 
-  })
+    await peer.setLayer("blue");
+    await peer.joinRoom("room");
 
-  it("adds known peers when joining layers", () => {
+    peer.setLighthouseUrl(otherLighthouse);
 
-  })
+    assignId(sockets[1]);
 
-  it("adds room when joining room", () => {
+    expect(sockets[0].closed).toBe(true);
+    expect(sockets[1].closed).toBe(false);
 
-  })
+    // We don't rejoin rooms and layers by default when setting lighthouse url
+    expect(getLighthouse(otherLighthouse).layerPeers["blue"]).toBeUndefined();
+    expect(getLighthouse(otherLighthouse).roomPeers["room"]).toBeUndefined();
 
-  it("connects to close peers when updating network", () => {
+    expect(peer.peerIdOrFail()).toEqual("assigned");
+  });
 
-  })
+  it("retries connection when disconnected", async () => {
+    let sockets: SocketMock[] = [];
 
-  it("disconnects when over connected when updating network", () => {
+    const peer = new Peer(DEFAULT_LIGHTHOUSE, undefined, messageHandler, {
+      socketBuilder: () => {
+        sockets.push(new SocketMock([]));
+        return sockets[sockets.length - 1];
+      },
+      backoffMs: 10,
+      logLevel: "DEBUG",
+    });
 
-  })
+    assignId(sockets[0], "bar");
+    await peer.setLayer("blue");
+    await peer.joinRoom("room");
 
-  it("disconnects from distant peers when updating network", () => {
+    // We clear lighthouse state to see if it is reconstructed after reconnection
+    lighthouses = {};
 
-  })
+    sockets[0].onclose();
 
-  it("removes local room representation when leaving room", () => {
+    await delay(500);
 
-  })
+    assignId(sockets[1], "foo");
+    openConnection(sockets[1]);
 
-  it("set peers position when updating known peers if their positions are old", () => {
+    await delay(2000);
 
-  })
+    expectPeerInRoom(peer, "room");
+    expectPeerInLayer(peer, "blue");
 
-  it("performs only one network update at a time", () => {
+    expect(sockets.length).toEqual(2);
+    expect(peer.peerIdOrFail()).toEqual("foo");
+  });
 
-  })
+  it("expires messages periodically", () => {});
 
-  it("perform various network updates in succession", () => {
-    
-  })
+  it("expires peers periodically", () => {});
 
-  it("selects valid connection candidates for network updates", () => {
-    
-  })
+  it("requests network optimization on heartbeat periodically", () => {});
 
-  it("finds the worst connected peer by distance", () => {
+  it("adds known peers when joining layers", () => {});
 
-  })
+  it("adds room when joining room", () => {});
 
-  it("counts packet with statstics when received", () => {
-    
-  })
+  it("connects to close peers when updating network", () => {});
 
-  it("marks a packet as received", () => {
+  it("disconnects when over connected when updating network", () => {});
 
-  })
+  it("disconnects from distant peers when updating network", () => {});
 
-  it("marks a peer as reachable through when receiving a relayed packet", () => {
+  it("removes local room representation when leaving room", () => {});
 
-  })
+  it("set peers position when updating known peers if their positions are old", () => {});
 
-  it("updates peer and room based on the packet", () => {
-    
-  })
-  
-  it("doesn't process a package expired or duplicate and requests relay suspension", () => {
-    
-  })
+  it("performs only one network update at a time", () => {});
 
-  it("processes a message packet", () => {
-    
-  })
+  it("perform various network updates in succession", () => {});
 
-  it("processes a relay suspension packet", () => {
-    
-  })
+  it("selects valid connection candidates for network updates", () => {});
 
-  it("consolidates relay suspension request adding pending suspension", () => {
-    
-  })
+  it("finds the worst connected peer by distance", () => {});
 
-  it("ignores relay suspension request if only one link remains", () => {
-    
-  })
+  it("counts packet with statstics when received", () => {});
 
-  it("sends pending succession requests at its interval", () => {
-    
-  })
+  it("marks a packet as received", () => {});
 
-  it("sends the corresponding packet for a message", () => {
-    
-  })
+  it("marks a peer as reachable through when receiving a relayed packet", () => {});
 
-  it("sends the corresponding packet to valid peers", () => {
-    
-  })
+  it("updates peer and room based on the packet", () => {});
 
-  it("rejects a connection from a peer of another lighthouse or layer", () => {
-    
-  })
+  it("doesn't process a package expired or duplicate and requests relay suspension", () => {});
 
-  it("rejects a connection from a peer with another protocol version", () => {
-    
-  })
+  it("processes a message packet", () => {});
 
-  it("rejects a connection from a peer when it has too many connections", () => {
-    
-  })
+  it("processes a relay suspension packet", () => {});
 
-  it("updates known peers and rooms with notifications from lighthouse", () => {
-    
-  })
+  it("consolidates relay suspension request adding pending suspension", () => {});
+
+  it("ignores relay suspension request if only one link remains", () => {});
+
+  it("sends pending succession requests at its interval", () => {});
+
+  it("sends the corresponding packet for a message", () => {});
+
+  it("sends the corresponding packet to valid peers", () => {});
+
+  it("rejects a connection from a peer of another lighthouse or layer", () => {});
+
+  it("rejects a connection from a peer with another protocol version", () => {});
+
+  it("rejects a connection from a peer when it has too many connections", () => {});
+
+  it("updates known peers and rooms with notifications from lighthouse", () => {});
+
+  it("handles authentication", () => {});
 
   function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
     expectPeerToBeInRoomWith(peer, roomId, otherPeer);
@@ -563,6 +613,15 @@ describe("Peer Integration Test", function () {
   }
 });
 
+function assignId(socket: SocketMock, id: string = "assigned") {
+  socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id } }) });
+}
+
+function openConnection(socket: SocketMock) {
+  socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.Open }) });
+  socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.ValidationOk }) });
+}
+
 function expectPeerToHaveNoConnections(peer: Peer) {
   expectPeerToHaveNConnections(0, peer);
 }
@@ -581,4 +640,8 @@ function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
   for (const other of others) {
     expect(peers.some(($: any) => $.id === other.peerId)).toBeTrue();
   }
+}
+
+function delay(time: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, time));
 }
