@@ -184,11 +184,11 @@ describe("Peer Integration Test", function () {
           const segments = url.pathname.split("/");
           if (segments.length === 7) {
             const roomId = segments[segments.length - 3];
-            const userId = segments[segments.length - 1];
+            const userId = decodeURI(segments[segments.length - 1]);
             return leaveRoom(userId, roomId);
           } else {
             const layerId = segments[segments.length - 3];
-            const userId = segments[segments.length - 1];
+            const userId = decodeURI(segments[segments.length - 1]);
             return leaveLayer(userId, layerId);
           }
         }
@@ -341,6 +341,22 @@ describe("Peer Integration Test", function () {
     expect(peer.currentRooms.length).toBe(0);
   });
 
+  it("leaves a room successfully using a URI clashing peer id", async () => {
+    const [socket, mock] = await createPeer("mock");
+    await mock.joinRoom("room");
+
+    const [, peer] = await createPeer("peer%", layer, [socket]);
+
+    await peer.joinRoom("room");
+
+    expectPeerToBeInRoomWith(peer, "room", mock);
+
+    await peer.leaveRoom("room");
+
+    expect(roomPeers["room"].length).toBe(1);
+    expect(peer.currentRooms.length).toBe(0);
+  });
+
   it("leaves a room idempotently", async () => {
     const [, peer] = await createPeer("peer");
 
@@ -402,7 +418,7 @@ describe("Peer Integration Test", function () {
       socketBuilder: () => socket,
     });
 
-    socket.onmessage({data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id: "assigned" } })});
+    socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id: "assigned" } }) });
 
     expect(peer.peerIdOrFail()).toBe("assigned");
   });
