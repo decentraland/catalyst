@@ -3,7 +3,8 @@ import { MinPeerData, PacketCallback } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
 import { ServerMessageType } from "../src/peerjs-server-connector/enums";
-import { PeerMessageTypes } from "../src/messageTypes";
+import { PeerMessageTypes, PeerMessageType } from "../src/messageTypes";
+import { Packet } from "../src/proto/peer_protobuf";
 
 declare var global: any;
 
@@ -264,15 +265,7 @@ describe("Peer Integration Test", function () {
   it("Sends and receives data", async () => {
     const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
 
-    const peer1MessagePromise = new Promise((resolve) => {
-      peer1.callback = (sender, room, payload) => {
-        resolve({ sender, room, payload });
-      };
-    });
-
-    await peer2.sendMessage("room", { hello: "world" }, PeerMessageTypes.reliable("reliable"));
-
-    const received = await peer1MessagePromise;
+    const received = await sendMessage(peer2, peer1, "room", { hello: "world" });
 
     expect(received).toEqual({
       sender: "peer2",
@@ -501,7 +494,6 @@ describe("Peer Integration Test", function () {
         return sockets[sockets.length - 1];
       },
       backoffMs: 10,
-      logLevel: "DEBUG",
     });
 
     assignId(sockets[0], "bar");
@@ -513,12 +505,12 @@ describe("Peer Integration Test", function () {
 
     sockets[0].onclose();
 
-    await delay(500);
+    await whileTrue(() => sockets.length === 1);
 
     assignId(sockets[1], "foo");
     openConnection(sockets[1]);
 
-    await delay(2000);
+    await whileTrue(() => !getLighthouse().layerPeers["blue"]?.length);
 
     expectPeerInRoom(peer, "room");
     expectPeerInLayer(peer, "blue");
@@ -526,8 +518,6 @@ describe("Peer Integration Test", function () {
     expect(sockets.length).toEqual(2);
     expect(peer.peerIdOrFail()).toEqual("foo");
   });
-
-  it("expires messages periodically", () => {});
 
   it("expires peers periodically", () => {});
 
@@ -563,7 +553,47 @@ describe("Peer Integration Test", function () {
 
   it("updates peer and room based on the packet", () => {});
 
-  it("doesn't process a package expired or duplicate and requests relay suspension", () => {});
+  it("doesn't process a package expired or duplicate and requests relay suspension", async () => {
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    const receivedMessages: { sender: string; room: string; payload: any }[] = [];
+
+    peer2.callback = (sender, room, payload) => {
+      receivedMessages.push({ sender, room, payload });
+    };
+
+    const message = "hello";
+
+    const packet = createPacketForMessage(peer1, message, "room");
+
+    // We send the same packet twice
+    sendPacketThroughPeer(peer1, packet);
+    sendPacketThroughPeer(peer1, packet);
+
+    await whileTrue(() => receivedMessages.length === 0);
+
+    // Only one packet should be processed
+    expect(receivedMessages.length).toBe(1);
+    expect(receivedMessages[0].payload).toEqual(message);
+    expect(peer2.stats.tagged.duplicate.totalPackets).toEqual(1);
+
+    // We create a packet but send it later, effectively expiring it
+    const expiredPacket = createPacketForMessage(peer1, "expired", "room", PeerMessageTypes.unreliable("unreliable"));
+
+    const okPacket = createPacketForMessage(peer1, "ok", "room", PeerMessageTypes.unreliable("unreliable"));
+
+    expiredPacket.timestamp = okPacket.timestamp - 100;
+
+    sendPacketThroughPeer(peer1, okPacket);
+    sendPacketThroughPeer(peer1, expiredPacket);
+
+    await whileTrue(() => receivedMessages.length === 1);
+
+    // Only one of those should be processed
+    expect(receivedMessages.length).toBe(2);
+    expect(receivedMessages[1].payload).toEqual("ok");
+    expect(peer2.stats.tagged.expired.totalPackets).toEqual(1);
+  });
 
   it("processes a message packet", () => {});
 
@@ -613,6 +643,21 @@ describe("Peer Integration Test", function () {
   }
 });
 
+function sendPacketThroughPeer(peer1: Peer, packet: Packet) {
+  // @ts-ignore
+  peer1.sendPacket(packet);
+}
+
+function createPacketForMessage(peer: Peer, message: any, room: string, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
+  // @ts-ignore
+  const [encoding, payload] = peer.getEncodedPayload(message);
+
+  // @ts-ignore
+  return peer.buildPacketWithData(messageType, {
+    messageData: { room, encoding, payload, dst: [] },
+  });
+}
+
 function assignId(socket: SocketMock, id: string = "assigned") {
   socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id } }) });
 }
@@ -645,3 +690,25 @@ function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
 function delay(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
+
+async function whileTrue(condition: () => boolean) {
+  while (condition()) {
+    await delay(10);
+  }
+}
+
+async function sendMessage(peer1: Peer, peer2: Peer, room: string, message: any, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
+  const peer2MessagePromise = new Promise((resolve) => {
+    peer2.callback = (sender, room, payload) => {
+      resolve({ sender, room, payload });
+    };
+  });
+
+  await peer1.sendMessage(room, message, messageType);
+
+  return await peer2MessagePromise;
+}
+
+// async function untilTrue(condition: () => boolean) {
+//   await whileTrue(() => !condition())
+// }
