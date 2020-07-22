@@ -918,9 +918,9 @@ export class Peer implements IPeer {
     }
   }
 
-  private isRelayFromConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()) {
+  private isRelayFromConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()): boolean {
     const connectedPeer = this.connectedPeers[connectedPeerId];
-    return (
+    return !!(
       connectedPeer &&
       (connectedPeer.pendingSuspensionRequests.includes(srcId) ||
         // Relays are suspended only if they are not expired
@@ -928,9 +928,9 @@ export class Peer implements IPeer {
     );
   }
 
-  private isRelayToConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()) {
+  private isRelayToConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()): boolean {
     const connectedPeer = this.connectedPeers[connectedPeerId];
-    return connectedPeer && connectedPeer.ownSuspendedRelays[srcId] && now < connectedPeer.ownSuspendedRelays[srcId];
+    return !!connectedPeer && !!connectedPeer.ownSuspendedRelays[srcId] && now < connectedPeer.ownSuspendedRelays[srcId];
   }
 
   private countRelay(peerId: string, packet: Packet, expired: boolean, alreadyReceived: boolean) {

@@ -1,5 +1,5 @@
 import { Peer } from "../src/Peer";
-import { MinPeerData, PacketCallback } from "../src/types";
+import { MinPeerData, PacketCallback, PeerConfig } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
 import { ServerMessageType } from "../src/peerjs-server-connector/enums";
@@ -24,7 +24,7 @@ class SocketMock implements SocketType {
 
   readyState: number = 1;
 
-  constructor(private destinations: SocketMock[]) {
+  constructor(public destinations: SocketMock[]) {
     for (const destination of destinations) {
       destination.destinations.push(this);
     }
@@ -55,6 +55,8 @@ describe("Peer Integration Test", function () {
 
   let sockets: Record<string, SocketMock>;
 
+  let extraPeersConfig: Partial<PeerConfig>;
+
   function getLighthouse(lighthouse: string = DEFAULT_LIGHTHOUSE) {
     let aLighthouse = lighthouses[lighthouse];
     if (!aLighthouse) {
@@ -69,6 +71,7 @@ describe("Peer Integration Test", function () {
 
     const peer = new Peer(DEFAULT_LIGHTHOUSE, peerId, callback, {
       socketBuilder: () => socket,
+      ...extraPeersConfig,
     });
 
     sockets[peerId] = socket;
@@ -90,6 +93,35 @@ describe("Peer Integration Test", function () {
     await peer1.beConnectedTo(peerId2);
 
     return [peer1, peer2];
+  }
+
+  async function createConnectedPeersByQty(room: string, qty: number, layerId: string = layer) {
+    const sockets: SocketMock[] = [];
+    const peers: Peer[] = [];
+    for (let i = 1; i <= qty; i++) {
+      const socket = new SocketMock([]);
+      sockets.push(socket);
+      const peer = new Peer(DEFAULT_LIGHTHOUSE, "peer" + i, messageHandler, {
+        socketBuilder: () => socket,
+        ...extraPeersConfig,
+      });
+
+      peers.push(peer);
+    }
+
+    sockets.forEach((socket) => (socket.destinations = sockets.filter((dst) => dst !== socket)));
+
+    await Promise.all(
+      peers.map(async (it) => {
+        await it.setLayer("layer");
+        await it.joinRoom("room");
+      })
+    );
+
+    console.log("Waiting for peers to be connected...");
+    await whileTrue(() => peers.some((it) => it.connectedCount() === 0));
+
+    return peers;
   }
 
   function setPeerConnectionEstablished(peer: Peer) {
@@ -195,6 +227,7 @@ describe("Peer Integration Test", function () {
   beforeEach(() => {
     lighthouses = {};
     sockets = {};
+    extraPeersConfig = {};
     globalScope.fetch = (input, init) => {
       const url = new URL(input);
       switch (init.method) {
@@ -595,9 +628,31 @@ describe("Peer Integration Test", function () {
     expect(peer2.stats.tagged.expired.totalPackets).toEqual(1);
   });
 
-  it("processes a message packet", () => {});
+  it("suspends relay when receiving duplicate ", async () => {
+    extraPeersConfig = {
+      relaySuspensionConfig: { relaySuspensionDuration: 5000, relaySuspensionInterval: 10 },
+    };
+    const [peer1, peer2, peer3] = await createConnectedPeersByQty("room", 3);
 
-  it("processes a relay suspension packet", () => {});
+    const receivedMessages: { sender: string; room: string; payload: any }[] = [];
+
+    peer2.callback = (sender, room, payload) => {
+      receivedMessages.push({ sender, room, payload });
+    };
+
+    const other = createPacketForMessage(peer3, "other", "room");
+
+    // We send the other packet twice, from different peers. Peer 2 should receive it duplicate from peer1
+    sendPacketThroughPeer(peer3, other);
+    await whileTrue(() => receivedMessages.length === 0);
+    sendPacketThroughPeer(peer1, other);
+
+    // We fail only if we timeout
+    // @ts-ignore
+    await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer1.peerIdOrFail(), peer3.peerIdOrFail()));
+    // @ts-ignore
+    await untilTrue(() => !peer1.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
+  });
 
   it("consolidates relay suspension request adding pending suspension", () => {});
 
@@ -693,7 +748,7 @@ function delay(time: number): Promise<void> {
 
 async function whileTrue(condition: () => boolean) {
   while (condition()) {
-    await delay(10);
+    await delay(5);
   }
 }
 
@@ -709,6 +764,6 @@ async function sendMessage(peer1: Peer, peer2: Peer, room: string, message: any,
   return await peer2MessagePromise;
 }
 
-// async function untilTrue(condition: () => boolean) {
-//   await whileTrue(() => !condition())
-// }
+async function untilTrue(condition: () => boolean) {
+  await whileTrue(() => !condition())
+}
