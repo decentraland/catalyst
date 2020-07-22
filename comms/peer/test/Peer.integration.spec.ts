@@ -628,17 +628,23 @@ describe("Peer Integration Test", function () {
     expect(peer2.stats.tagged.expired.totalPackets).toEqual(1);
   });
 
-  it("suspends relay when receiving duplicate ", async () => {
+  it("suspends relay when receiving duplicate or expired", async () => {
     extraPeersConfig = {
-      relaySuspensionConfig: { relaySuspensionDuration: 5000, relaySuspensionInterval: 10 },
+      relaySuspensionConfig: { relaySuspensionDuration: 5000, relaySuspensionInterval: 0 },
+      logLevel: "DEBUG",
     };
-    const [peer1, peer2, peer3] = await createConnectedPeersByQty("room", 3);
+    const [peer1, peer2, peer3, peer4] = await createConnectedPeersByQty("room", 4);
 
     const receivedMessages: { sender: string; room: string; payload: any }[] = [];
 
     peer2.callback = (sender, room, payload) => {
       receivedMessages.push({ sender, room, payload });
     };
+
+    const expired = createPacketForMessage(peer3, "ok", "room");
+    const ok = createPacketForMessage(peer3, "ok", "room");
+
+    expired.timestamp = ok.timestamp - 100;
 
     const other = createPacketForMessage(peer3, "other", "room");
 
@@ -651,7 +657,16 @@ describe("Peer Integration Test", function () {
     // @ts-ignore
     await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer1.peerIdOrFail(), peer3.peerIdOrFail()));
     // @ts-ignore
-    await untilTrue(() => !peer1.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
+    await untilTrue(() => peer1.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
+
+    sendPacketThroughPeer(peer3, ok);
+    await whileTrue(() => receivedMessages.length === 1);
+    sendPacketThroughPeer(peer4, expired);
+
+    // @ts-ignore
+    await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer4.peerIdOrFail(), peer3.peerIdOrFail()));
+    // @ts-ignore
+    await untilTrue(() => peer4.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
   });
 
   it("consolidates relay suspension request adding pending suspension", () => {});
@@ -765,5 +780,5 @@ async function sendMessage(peer1: Peer, peer2: Peer, room: string, message: any,
 }
 
 async function untilTrue(condition: () => boolean) {
-  await whileTrue(() => !condition())
+  await whileTrue(() => !condition());
 }
