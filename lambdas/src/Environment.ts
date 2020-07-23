@@ -1,6 +1,7 @@
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { SmartContentServerFetcherFactory } from "./SmartContentServerFetcherFactory";
+import { DAOCacheFactory } from "./apis/contracts/DAOCacheFactory";
 
 const DEFAULT_SERVER_PORT = 7070;
 export const DEFAULT_ETH_NETWORK = "ropsten"
@@ -44,7 +45,8 @@ export class Environment {
 export const enum Bean {
   SERVICE,
   CONTROLLER,
-  SMART_CONTENT_SERVER_FETCHER
+  SMART_CONTENT_SERVER_FETCHER,
+  DAO
 }
 
 export const enum EnvironmentConfig {
@@ -92,6 +94,7 @@ export class EnvironmentBuilder {
     // Some beans depend on other beans, so the required beans should be registered before
 
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_FETCHER, () => SmartContentServerFetcherFactory.create(env));
+    this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env));
 
