@@ -1,4 +1,4 @@
-import { Peer } from "../src/Peer";
+import { Peer, TimeKeeper, PEER_CONSTANTS } from "../src/Peer";
 import { MinPeerData, PacketCallback, PeerConfig } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
@@ -228,6 +228,7 @@ describe("Peer Integration Test", function () {
     lighthouses = {};
     sockets = {};
     extraPeersConfig = {};
+    TimeKeeper.now = () => Date.now();
     globalScope.fetch = (input, init) => {
       const url = new URL(input);
       switch (init.method) {
@@ -552,11 +553,72 @@ describe("Peer Integration Test", function () {
     expect(peer.peerIdOrFail()).toEqual("foo");
   });
 
-  it("expires peers periodically", () => {});
+  it("expires peers periodically", async () => {
+    const oldExpirationInterval = PEER_CONSTANTS.EXPIRATION_LOOP_INTERVAL;
 
-  it("requests network optimization on heartbeat periodically", () => {});
+    PEER_CONSTANTS.EXPIRATION_LOOP_INTERVAL = 50;
 
-  it("adds known peers when joining layers", () => {});
+    const [peer1, peer2] = await createConnectedPeers("peer1", "peer2", "room");
+
+    await sendMessage(peer2, peer1, "room", "hello");
+
+    expect(Object.keys(peer1.knownPeers)).toContain("peer2");
+
+    TimeKeeper.now = () => Date.now() + PEER_CONSTANTS.KNOWN_PEERS_EXPIRE_TIME;
+
+    await whileTrue(() => Object.keys(peer1.knownPeers).includes("peer2"));
+
+    PEER_CONSTANTS.EXPIRATION_LOOP_INTERVAL = oldExpirationInterval;
+  });
+
+  it("requests network optimization on heartbeat periodically", async () => {
+    const receiveSocket = new SocketMock([]);
+    const receivedMessages: any[] = [];
+
+    receiveSocket.onmessage = ({ data }) => {
+      receivedMessages.push(JSON.parse(data));
+    };
+
+    const peer = new Peer(DEFAULT_LIGHTHOUSE, "peer1", messageHandler, {
+      socketBuilder: () => new SocketMock([receiveSocket]),
+      targetConnections: 4,
+      positionConfig: {
+        selfPosition: () => [0, 0, 0],
+        maxConnectionDistance: 4,
+        nearbyPeersDistance: 5,
+        disconnectDistance: 5,
+      },
+      optimizeNetworkInterval: 100,
+      heartbeatInterval: 50,
+    });
+
+    await peer.setLayer("layer");
+
+    let request: any;
+    await untilTrue(() => (request = receivedMessages.find((it) => it.type === ServerMessageType.Heartbeat && it.payload.optimizeNetwork)));
+
+    expect(request.payload.targetConnections).toBe(4);
+    expect(request.payload.maxDistance).toBe(5);
+  });
+
+  it("adds known peers when joining layers", async () => {
+    const [socket1, peer1] = await createPeer("peer1");
+    const peer2 = new Peer(DEFAULT_LIGHTHOUSE, "peer2", messageHandler, {
+      socketBuilder: () => {
+        const socket = new SocketMock([socket1])
+        sockets["peer2"] = socket;
+        return socket
+      },
+    });
+
+    expect(Object.keys(peer2.knownPeers)).not.toContain("peer1");
+
+    await peer2.setLayer(layer);
+
+    expect(Object.keys(peer2.knownPeers)).toContain("peer1");
+
+    await untilTrue(() => Object.keys(peer1.knownPeers).includes("peer2"))    
+  });
 
   it("adds room when joining room", () => {});
 
@@ -767,14 +829,14 @@ async function whileTrue(condition: () => boolean) {
   }
 }
 
-async function sendMessage(peer1: Peer, peer2: Peer, room: string, message: any, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
+async function sendMessage(src: Peer, dst: Peer, room: string, message: any, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
   const peer2MessagePromise = new Promise((resolve) => {
-    peer2.callback = (sender, room, payload) => {
+    dst.callback = (sender, room, payload) => {
       resolve({ sender, room, payload });
     };
   });
 
-  await peer1.sendMessage(room, message, messageType);
+  await src.sendMessage(room, message, messageType);
 
   return await peer2MessagePromise;
 }

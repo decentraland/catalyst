@@ -15,8 +15,6 @@ import { GlobalStats } from "./stats";
 
 const PROTOCOL_VERSION = 4;
 
-const KNOWN_PEER_RELAY_EXPIRE_TIME = 30000;
-
 type PacketData = { messageData: MessageData } | { pingData: PingData } | { pongData: PongData } | { suspendRelayData: SuspendRelayData };
 
 type PeerResponse = { id?: string; userId?: string; peerId?: string; position?: Position };
@@ -39,6 +37,30 @@ function toParcel(position: any) {
 }
 
 type NetworkOperation = () => Promise<KnownPeerData[]>;
+
+// This is to be overriden during testing
+export const TimeKeeper = {
+  now: () => Date.now()
+}
+
+export const PEER_CONSTANTS = {
+  EXPIRATION_LOOP_INTERVAL: 2000,
+  KNOWN_PEERS_EXPIRE_TIME: 90000,
+  KNOWN_PEER_RELAY_EXPIRE_TIME: 30000,
+  OVERCONNECTED_NETWORK_UPDATE_DELAY: 500,
+  DEFAULT_OPTIMIZE_NETWORK_INTERVAL: 30000,
+  DEFAULT_TTL: 10,
+  DEFAULT_PING_TIMEOUT: 7000,
+  OLD_POSITION_THRESHOLD: 30000,
+  DEFAULT_STATS_UPDATE_INTERVAL: 1000,
+  DEFAULT_TARGET_CONNECTIONS: 4,
+  DEFAULT_MAX_CONNECTIONS: 7,
+  DEFAULT_PEER_CONNECT_TIMEOUT: 3500,
+  DEFAULT_MESSAGE_EXPIRATION_TIME: 10000,
+  DEFAULT_RECONNECTIONS_ATTEMPTS: 10, 
+  DEFAULT_RECONNECTION_BACKOFF_MS: 2000,
+  DEFAULT_HEARTBEAT_INTERVAL: 5000
+}
 
 export class Peer implements IPeer {
   private peerJsConnection: PeerJSServerConnection;
@@ -87,13 +109,13 @@ export class Peer implements IPeer {
 
     this.config.token = this.config.token ?? util.randomToken();
 
-    this.config.targetConnections = this.config.targetConnections ?? 4;
-    this.config.maxConnections = this.config.maxConnections ?? 7;
-    this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? 3500;
+    this.config.targetConnections = this.config.targetConnections ?? PEER_CONSTANTS.DEFAULT_TARGET_CONNECTIONS;
+    this.config.maxConnections = this.config.maxConnections ?? PEER_CONSTANTS.DEFAULT_MAX_CONNECTIONS;
+    this.config.peerConnectTimeout = this.config.peerConnectTimeout ?? PEER_CONSTANTS.DEFAULT_PEER_CONNECT_TIMEOUT;
     this.config.oldConnectionsTimeout = this.config.oldConnectionsTimeout ?? this.config.peerConnectTimeout! * 10;
-    this.config.messageExpirationTime = this.config.messageExpirationTime ?? 10000;
-    this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? 10;
-    this.config.backoffMs = this.config.backoffMs ?? 2000;
+    this.config.messageExpirationTime = this.config.messageExpirationTime ?? PEER_CONSTANTS.DEFAULT_MESSAGE_EXPIRATION_TIME;
+    this.config.reconnectionAttempts = this.config.reconnectionAttempts ?? PEER_CONSTANTS.DEFAULT_RECONNECTIONS_ATTEMPTS;
+    this.config.backoffMs = this.config.backoffMs ?? PEER_CONSTANTS.DEFAULT_RECONNECTION_BACKOFF_MS;
 
     if (this.config.positionConfig) {
       this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance();
@@ -122,7 +144,7 @@ export class Peer implements IPeer {
         } finally {
           this.expireTimeoutId = scheduleExpiration();
         }
-      }, 2000);
+      }, PEER_CONSTANTS.EXPIRATION_LOOP_INTERVAL);
 
     this.expireTimeoutId = scheduleExpiration();
 
@@ -139,7 +161,7 @@ export class Peer implements IPeer {
       this.pingTimeoutId = schedulePing();
     }
 
-    this.stats = new GlobalStats(this.config.statsUpdateInterval ?? 1000);
+    this.stats = new GlobalStats(this.config.statsUpdateInterval ?? PEER_CONSTANTS.DEFAULT_STATS_UPDATE_INTERVAL);
 
     this.stats.startPeriod();
   }
@@ -160,6 +182,7 @@ export class Peer implements IPeer {
       port: url.port ? parseInt(url.port) : secure ? 443 : 80,
       path: url.pathname,
       secure,
+      pingInterval: this.config.heartbeatInterval ?? PEER_CONSTANTS.DEFAULT_HEARTBEAT_INTERVAL,
       token: this.config.token,
       authHandler: this.config.authHandler,
       heartbeatExtras: () => ({
@@ -194,7 +217,7 @@ export class Peer implements IPeer {
   }
 
   private expireMessages() {
-    const currentTimestamp = Date.now();
+    const currentTimestamp = TimeKeeper.now();
 
     const keys = Object.keys(this.receivedPackets);
 
@@ -207,7 +230,7 @@ export class Peer implements IPeer {
   }
 
   private expirePeers() {
-    const currentTimestamp = Date.now();
+    const currentTimestamp = TimeKeeper.now();
 
     this.expireKnownPeers(currentTimestamp);
     this.expireConnectedPeers(currentTimestamp);
@@ -234,7 +257,7 @@ export class Peer implements IPeer {
   private expireKnownPeers(currentTimestamp: number) {
     Object.keys(this.knownPeers).forEach((id) => {
       const lastUpdate = this.knownPeers[id].timestamp;
-      if (lastUpdate && currentTimestamp - lastUpdate > 90000) {
+      if (lastUpdate && currentTimestamp - lastUpdate > PEER_CONSTANTS.KNOWN_PEERS_EXPIRE_TIME) {
         if (this.isConnectedTo(id)) {
           this.disconnectFrom(id);
         }
@@ -242,7 +265,7 @@ export class Peer implements IPeer {
       } else {
         // We expire reachable through data
         Object.keys(this.knownPeers[id].reachableThrough).forEach((relayId) => {
-          if (currentTimestamp - this.knownPeers[id].reachableThrough[relayId].timestamp > KNOWN_PEER_RELAY_EXPIRE_TIME) {
+          if (currentTimestamp - this.knownPeers[id].reachableThrough[relayId].timestamp > PEER_CONSTANTS.KNOWN_PEER_RELAY_EXPIRE_TIME) {
             delete this.knownPeers[id].reachableThrough[relayId];
           }
         });
@@ -265,7 +288,7 @@ export class Peer implements IPeer {
   }
 
   private optimizeNetworkRequest() {
-    const shouldOptimize = Date.now() > this.timeToRequestOptimumNetwork;
+    const shouldOptimize = TimeKeeper.now() > this.timeToRequestOptimumNetwork;
 
     if (shouldOptimize) {
       this.setUpTimeToRequestOptimumNetwork();
@@ -280,7 +303,7 @@ export class Peer implements IPeer {
   }
 
   private markReceived(packet: Packet) {
-    this.receivedPackets[this.packetKey(packet)] = { timestamp: new Date().getTime(), expirationTime: this.getExpireTime(packet) };
+    this.receivedPackets[this.packetKey(packet)] = { timestamp: TimeKeeper.now(), expirationTime: this.getExpireTime(packet) };
   }
 
   private packetKey(packet: Packet) {
@@ -447,7 +470,7 @@ export class Peer implements IPeer {
     const minPeerData = { id: packet.src };
     this.addKnownPeerIfNotExists(minPeerData);
 
-    this.knownPeers[packet.src].reachableThrough[connectedPeerId] = { id: connectedPeerId, hops: packet.hops + 1, timestamp: Date.now() };
+    this.knownPeers[packet.src].reachableThrough[connectedPeerId] = { id: connectedPeerId, hops: packet.hops + 1, timestamp: TimeKeeper.now() };
 
     if (packet.messageData?.room) {
       this.addUserToRoom(packet.messageData.room, minPeerData);
@@ -519,7 +542,7 @@ export class Peer implements IPeer {
     //Since there may be flows that leave connections that are actually lost, we check if relatively
     //old connections are not connected and discard them.
     Object.keys(this.connectedPeers).forEach((it) => {
-      if (!this.isConnectedTo(it) && Date.now() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
+      if (!this.isConnectedTo(it) && TimeKeeper.now() - this.connectedPeers[it].createTimestamp > this.config.oldConnectionsTimeout!) {
         this.log(LogLevel.WARN, `The connection to ${it} is not in a sane state. Discarding it.`);
         this.disconnectFrom(it, false);
       }
@@ -728,7 +751,7 @@ export class Peer implements IPeer {
 
   setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
     const timestamp = this.knownPeers[peerId]?.timestamp;
-    if (this.knownPeers[peerId] && (!timestamp || Date.now() - timestamp > 30000)) {
+    if (this.knownPeers[peerId] && (!timestamp || TimeKeeper.now() - timestamp > PEER_CONSTANTS.OLD_POSITION_THRESHOLD)) {
       // We assume that if we haven't received a position from a peer in 30 seconds,
       // then we can safely replace the position even if it is not the most updated
       this.knownPeers[peerId].position = position;
@@ -852,7 +875,7 @@ export class Peer implements IPeer {
   private processSuspensionRequest(peerId: string, suspendRelayData: SuspendRelayData) {
     const connectedPeer = this.connectedPeers[peerId];
     if (connectedPeer) {
-      suspendRelayData.relayedPeers.forEach((it) => (connectedPeer.ownSuspendedRelays[it] = Date.now() + suspendRelayData.durationMillis));
+      suspendRelayData.relayedPeers.forEach((it) => (connectedPeer.ownSuspendedRelays[it] = TimeKeeper.now() + suspendRelayData.durationMillis));
     }
   }
 
@@ -862,7 +885,7 @@ export class Peer implements IPeer {
       // First we update pending suspensions requests, adding the new one if needed
       this.consolidateSuspensionRequest(packet, peerId);
 
-      const now = Date.now();
+      const now = TimeKeeper.now();
 
       const connected = this.connectedPeers[peerId];
 
@@ -882,7 +905,7 @@ export class Peer implements IPeer {
         this.sendPacketToPeer(connected.id, packet);
 
         suspendRelayData.relayedPeers.forEach((relayedPeerId) => {
-          connected.theirSuspendedRelays[relayedPeerId] = Date.now() + suspensionConfig.relaySuspensionDuration;
+          connected.theirSuspendedRelays[relayedPeerId] = TimeKeeper.now() + suspensionConfig.relaySuspensionDuration;
         });
 
         connected.pendingSuspensionRequests = [];
@@ -902,11 +925,11 @@ export class Peer implements IPeer {
 
     this.log(LogLevel.DEBUG, `Consolidating suspension for ${packet.src}->${connectedPeerId}`);
 
-    const now = Date.now();
+    const now = TimeKeeper.now();
 
     // We get a list of through which connected peers is this src reachable and are not suspended
     const reachableThrough = Object.values(this.knownPeers[packet.src].reachableThrough).filter(
-      (it) => this.isConnectedTo(it.id) && now - it.timestamp < KNOWN_PEER_RELAY_EXPIRE_TIME && !this.isRelayFromConnectionSuspended(it.id, packet.src, now)
+      (it) => this.isConnectedTo(it.id) && now - it.timestamp < PEER_CONSTANTS.KNOWN_PEER_RELAY_EXPIRE_TIME && !this.isRelayFromConnectionSuspended(it.id, packet.src, now)
     );
 
     this.log(LogLevel.DEBUG, `${packet.src} is reachable through`, reachableThrough);
@@ -918,7 +941,7 @@ export class Peer implements IPeer {
     }
   }
 
-  private isRelayFromConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()): boolean {
+  private isRelayFromConnectionSuspended(connectedPeerId: string, srcId: string, now: number = TimeKeeper.now()): boolean {
     const connectedPeer = this.connectedPeers[connectedPeerId];
     return !!(
       connectedPeer &&
@@ -928,7 +951,7 @@ export class Peer implements IPeer {
     );
   }
 
-  private isRelayToConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()): boolean {
+  private isRelayToConnectionSuspended(connectedPeerId: string, srcId: string, now: number = TimeKeeper.now()): boolean {
     const connectedPeer = this.connectedPeers[connectedPeerId];
     return !!connectedPeer && !!connectedPeer.ownSuspendedRelays[srcId] && now < connectedPeer.ownSuspendedRelays[srcId];
   }
@@ -1095,7 +1118,7 @@ export class Peer implements IPeer {
       subtype: type.name,
       expireTime: type.expirationTime ?? -1,
       discardOlderThan: type.discardOlderThan ?? -1,
-      timestamp: new Date().getTime(),
+      timestamp: TimeKeeper.now(),
       src: this.peerIdOrFail(),
       hops: 0,
       ttl: this.getTTL(sequenceId, type),
@@ -1133,11 +1156,11 @@ export class Peer implements IPeer {
   }
 
   private getPingTimeout() {
-    return this.config.pingTimeout ?? 7000;
+    return this.config.pingTimeout ?? PEER_CONSTANTS.DEFAULT_PING_TIMEOUT;
   }
 
   getTTL(index: number, type: PeerMessageType) {
-    return typeof type.ttl !== "undefined" ? (typeof type.ttl === "number" ? type.ttl : type.ttl(index, type)) : 10;
+    return typeof type.ttl !== "undefined" ? (typeof type.ttl === "number" ? type.ttl : type.ttl(index, type)) : PEER_CONSTANTS.DEFAULT_TTL;
   }
 
   getOptimistic(index: number, type: PeerMessageType) {
@@ -1248,7 +1271,7 @@ export class Peer implements IPeer {
       theirSuspendedRelays: {},
       receivedRelayData: {},
       pendingSuspensionRequests: [],
-      createTimestamp: new Date().getTime(),
+      createTimestamp: TimeKeeper.now(),
       connection: new SimplePeer({
         initiator,
         config: this.connectionConfig,
@@ -1374,7 +1397,7 @@ export class Peer implements IPeer {
     if (this.connectedCount() >= this.config.maxConnections!) {
       if (payload.position && this.selfPosition()) {
         const knownPeer = this.addKnownPeerIfNotExists({ id: peerId });
-        knownPeer.timestamp = Date.now();
+        knownPeer.timestamp = TimeKeeper.now();
         knownPeer.position = payload.position;
 
         const worstPeer = this.getWorstConnectedPeerByDistance();
@@ -1384,7 +1407,7 @@ export class Peer implements IPeer {
           return;
         } else {
           // We are going to be over connected so we trigger a delayed network update to ensure we keep below the max connections
-          setTimeout(() => this.updateNetwork(), 500);
+          setTimeout(() => this.updateNetwork(), PEER_CONSTANTS.OVERCONNECTED_NETWORK_UPDATE_DELAY);
           // This continues below
         }
       } else {
@@ -1398,7 +1421,7 @@ export class Peer implements IPeer {
   }
 
   private processOptimalConnectionsResponse(optimalConnections: PeerConnectionHint[]) {
-    const now = Date.now();
+    const now = TimeKeeper.now();
     optimalConnections.forEach((it) => {
       this.addKnownPeerIfNotExists(it);
 
@@ -1436,7 +1459,7 @@ export class Peer implements IPeer {
   }
 
   private setUpTimeToRequestOptimumNetwork() {
-    this.timeToRequestOptimumNetwork = Date.now() + (this.config.optimizeNetworkInterval ?? 30000);
+    this.timeToRequestOptimumNetwork = TimeKeeper.now() + (this.config.optimizeNetworkInterval ?? PEER_CONSTANTS.DEFAULT_OPTIMIZE_NETWORK_INTERVAL);
   }
 
   async dispose() {

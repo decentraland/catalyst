@@ -87,6 +87,7 @@ export type PeerConfig = {
    * If not set, suspensions won't be requested.
    */
   relaySuspensionConfig?: RelaySuspensionConfig;
+  heartbeatInterval?: number;
 };
 
 export type RelaySuspensionConfig = {
