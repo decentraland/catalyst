@@ -5,6 +5,7 @@ import { future } from "fp-future";
 import { ServerMessageType } from "../src/peerjs-server-connector/enums";
 import { PeerMessageTypes, PeerMessageType } from "../src/messageTypes";
 import { Packet } from "../src/proto/peer_protobuf";
+import { Position3D } from "../src";
 
 declare var global: any;
 
@@ -13,32 +14,6 @@ const globalScope: any = typeof window === "undefined" ? global : window;
 
 const layer = "blue";
 
-class SocketMock implements SocketType {
-  closed: boolean = false;
-  onmessage: any = () => {};
-  onclose: any = () => {};
-
-  set onopen(f: any) {
-    f();
-  }
-
-  readyState: number = 1;
-
-  constructor(public destinations: SocketMock[]) {
-    for (const destination of destinations) {
-      destination.destinations.push(this);
-    }
-  }
-
-  close(code?: number, reason?: string): void {
-    this.closed = true;
-  }
-
-  send(data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView): void {
-    this.destinations.forEach(($) => $.onmessage({ data }));
-  }
-}
-
 const messageHandler: PacketCallback = (sender, room, payload) => {
   // console.log(`Received message from ${sender} in ${room}`, payload);
 };
@@ -46,6 +21,11 @@ const messageHandler: PacketCallback = (sender, room, payload) => {
 type LighthouseState = {
   roomPeers: Record<string, MinPeerData[]>;
   layerPeers: Record<string, MinPeerData[]>;
+};
+
+type PositionedPeer = {
+  position: Position3D;
+  peer: Peer;
 };
 
 describe("Peer Integration Test", function () {
@@ -57,6 +37,75 @@ describe("Peer Integration Test", function () {
 
   let extraPeersConfig: Partial<PeerConfig>;
 
+  // let peerPositions: Record<string, Position3D>;
+
+  class SocketMock implements SocketType {
+    closed: boolean = false;
+    onmessage: any = () => {};
+    onclose: any = () => {};
+
+    set onopen(f: any) {
+      f();
+    }
+
+    readyState: number = 1;
+
+    constructor(public destinations: SocketMock[]) {
+      for (const destination of destinations) {
+        destination.destinations.push(this);
+      }
+    }
+
+    close(code?: number, reason?: string): void {
+      this.closed = true;
+    }
+
+    send(data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView): void {
+      checkHeartbeat(this, data);
+      this.destinations.forEach(($) => $.onmessage({ data }));
+    }
+  }
+
+  function checkHeartbeat(socket: SocketMock, jsonData: any) {
+    if (typeof jsonData === "string") {
+      try {
+        const data = JSON.parse(jsonData);
+        const position = data?.payload?.position;
+        if (data?.type === ServerMessageType.Heartbeat && position) {
+          const peerId = findPeerIdBySocket(socket);
+          if (peerId) {
+            Object.values(lighthouses).forEach((lighthouse) => {
+              Object.keys(lighthouse.layerPeers).forEach((layer) => {
+                const peer = lighthouse.layerPeers[layer].find((it) => it.id === peerId);
+                if (peer) {
+                  // console.log("ASDASDASDSADSADASDASDASDAS setting peer position", peerId, position);
+                  peer.position = position;
+                }
+
+                if (data.payload?.optimizeNetwork) {
+                  socket.onmessage({
+                    data: JSON.stringify({
+                      type: ServerMessageType.OptimalNetworkResponse,
+                      src: "__lighthouse_notification__",
+                      dst: peerId,
+                      payload: { layerId: layer, optimalConnections: lighthouse.layerPeers[layer].filter((it) => it.id !== peerId) },
+                    }),
+                  });
+                }
+              });
+            });
+          }
+        }
+      } catch (e) {
+        // ignored
+      }
+    }
+  }
+
+  function findPeerIdBySocket(socket: SocketMock) {
+    return Object.keys(sockets).find((peerId) => sockets[peerId] === socket);
+  }
+
   function getLighthouse(lighthouse: string = DEFAULT_LIGHTHOUSE) {
     let aLighthouse = lighthouses[lighthouse];
     if (!aLighthouse) {
@@ -66,19 +115,44 @@ describe("Peer Integration Test", function () {
     return aLighthouse;
   }
 
+  function createSocket(peerId: string, destinations: SocketMock[] = []) {
+    const socket = new SocketMock(destinations);
+
+    sockets[peerId] = socket;
+
+    return socket;
+  }
+
   async function createPeer(peerId: string, layerId: string = layer, socketDestination: SocketMock[] = [], callback: PacketCallback = messageHandler): Promise<[SocketMock, Peer]> {
-    const socket = new SocketMock(socketDestination);
+    const socket = createSocket(peerId, socketDestination);
 
     const peer = new Peer(DEFAULT_LIGHTHOUSE, peerId, callback, {
       socketBuilder: () => socket,
       ...extraPeersConfig,
     });
 
-    sockets[peerId] = socket;
-
     await peer.setLayer(layerId);
 
     return [socket, peer];
+  }
+
+  async function connectPeers(someSockets: SocketMock[], peers: Peer[], awaitConnected: boolean = true) {
+    someSockets.forEach((socket, i) => {
+      someSockets.filter((dst) => dst !== socket && !socket.destinations.includes(dst)).forEach((it) => socket.destinations.push(it));
+      sockets[peers[i].peerIdOrFail()] = socket;
+    });
+
+    await Promise.all(
+      peers.map(async (it) => {
+        await it.setLayer("layer");
+        await it.joinRoom("room");
+      })
+    );
+
+    if (awaitConnected) {
+      console.log("Waiting for peers to be connected...");
+      await whileTrue(() => peers.some((it) => it.connectedCount() === 0));
+    }
   }
 
   async function createConnectedPeers(peerId1: string, peerId2: string, room: string) {
@@ -99,9 +173,12 @@ describe("Peer Integration Test", function () {
     const sockets: SocketMock[] = [];
     const peers: Peer[] = [];
     for (let i = 1; i <= qty; i++) {
-      const socket = new SocketMock([]);
+      const peerId = "peer" + i;
+
+      const socket = createSocket(peerId);
+
       sockets.push(socket);
-      const peer = new Peer(DEFAULT_LIGHTHOUSE, "peer" + i, messageHandler, {
+      const peer = new Peer(DEFAULT_LIGHTHOUSE, peerId, messageHandler, {
         socketBuilder: () => socket,
         ...extraPeersConfig,
       });
@@ -109,19 +186,44 @@ describe("Peer Integration Test", function () {
       peers.push(peer);
     }
 
-    sockets.forEach((socket) => (socket.destinations = sockets.filter((dst) => dst !== socket)));
-
-    await Promise.all(
-      peers.map(async (it) => {
-        await it.setLayer("layer");
-        await it.joinRoom("room");
-      })
-    );
-
-    console.log("Waiting for peers to be connected...");
-    await whileTrue(() => peers.some((it) => it.connectedCount() === 0));
+    await connectPeers(sockets, peers);
 
     return peers;
+  }
+
+  async function createPositionedPeers(room: string, layerId: string, awaitConnected: boolean, ...positions: Position3D[]) {
+    const someSockets: SocketMock[] = [];
+    const positionedPeers: PositionedPeer[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const peerId = "peer" + i;
+
+      const socket = createSocket(peerId);
+      someSockets.push(socket);
+
+      const positioned = {
+        position: positions[i],
+        peer: new Peer(DEFAULT_LIGHTHOUSE, peerId, messageHandler, {
+          socketBuilder: () => socket,
+          positionConfig: {
+            selfPosition: () => positioned.position,
+            maxConnectionDistance: 4,
+            nearbyPeersDistance: 5,
+            disconnectDistance: 5,
+          },
+          ...extraPeersConfig,
+        }),
+      };
+
+      positionedPeers.push(positioned);
+    }
+
+    await connectPeers(
+      someSockets,
+      positionedPeers.map((it) => it.peer),
+      awaitConnected
+    );
+
+    return positionedPeers;
   }
 
   function setPeerConnectionEstablished(peer: Peer) {
@@ -228,13 +330,13 @@ describe("Peer Integration Test", function () {
     lighthouses = {};
     sockets = {};
     extraPeersConfig = {};
+    // peerPositions = {};
     TimeKeeper.now = () => Date.now();
     globalScope.fetch = (input, init) => {
       const url = new URL(input);
       switch (init.method) {
         case "PUT": {
           const segments = url.pathname.split("/");
-          console.log(segments.length);
           if (segments.length === 5) {
             const roomId = segments[segments.length - 1];
             const peerPair = JSON.parse(init.body) as MinPeerData;
@@ -604,11 +706,7 @@ describe("Peer Integration Test", function () {
   it("adds known peers when joining layers", async () => {
     const [socket1, peer1] = await createPeer("peer1");
     const peer2 = new Peer(DEFAULT_LIGHTHOUSE, "peer2", messageHandler, {
-      socketBuilder: () => {
-        const socket = new SocketMock([socket1])
-        sockets["peer2"] = socket;
-        return socket
-      },
+      socketBuilder: () => createSocket("peer2", [socket1]),
     });
 
     expect(Object.keys(peer2.knownPeers)).not.toContain("peer1");
@@ -617,12 +715,53 @@ describe("Peer Integration Test", function () {
 
     expect(Object.keys(peer2.knownPeers)).toContain("peer1");
 
-    await untilTrue(() => Object.keys(peer1.knownPeers).includes("peer2"))    
+    await untilTrue(() => Object.keys(peer1.knownPeers).includes("peer2"));
   });
 
-  it("adds room when joining room", () => {});
+  it("connects to close peers when updating network", async () => {
+    extraPeersConfig = {
+      targetConnections: 2,
+      maxConnections: 3,
+      optimizeNetworkInterval: 100,
+      heartbeatInterval: 100,
+    };
 
-  it("connects to close peers when updating network", () => {});
+    const peers = await createPositionedPeers("room", layer, false, [0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 900], [0, 0, 1200], [0, 0, 1500]);
+
+    console.log("###### ###### Awaiting connections 0"); // Since positions are distributed after the peers are created, we could have a couple of connections
+    await untilTrue(() => peers[0].peer.connectedCount() === 0);
+
+    peers[0].position = [0, 0, 300];
+
+    console.log("###### ###### Awaiting connections 1");
+    await untilTrue(() => peers[0].peer.connectedCount() > 0 && peers[0].peer.fullyConnectedPeerIds().includes(peers[1].peer.peerIdOrFail()));
+
+    peers[2].position = [0, 0, 350];
+    peers[3].position = [0, 0, 350];
+
+    console.log("###### ###### Awaiting connections 2");
+    await untilTrue(
+      () =>
+        peers[0].peer.connectedCount() > 2 &&
+        peers[0].peer.fullyConnectedPeerIds().includes(peers[2].peer.peerIdOrFail()) &&
+        peers[0].peer.fullyConnectedPeerIds().includes(peers[3].peer.peerIdOrFail())
+    );
+
+    peers[4].position = [0, 0, 300];
+    peers[5].position = [0, 0, 300];
+
+    console.log("###### ###### Awaiting connections 3");
+    await untilTrue(
+      () =>
+        peers[0].peer.fullyConnectedPeerIds().includes(peers[4].peer.peerIdOrFail()) &&
+        peers[0].peer.fullyConnectedPeerIds().includes(peers[5].peer.peerIdOrFail()) &&
+        peers[0].peer.connectedCount() === 3
+    );
+
+    expect(peers[0].peer.fullyConnectedPeerIds()).not.toContain(peers[2].peer.peerIdOrFail());
+    expect(peers[0].peer.fullyConnectedPeerIds()).not.toContain(peers[3].peer.peerIdOrFail());
+    
+  });
 
   it("disconnects when over connected when updating network", () => {});
 
@@ -773,74 +912,73 @@ describe("Peer Integration Test", function () {
       expect(peerRoom.users.includes(otherPeer.peerIdOrFail())).toBeTrue();
     }
   }
+  function sendPacketThroughPeer(peer1: Peer, packet: Packet) {
+    // @ts-ignore
+    peer1.sendPacket(packet);
+  }
+
+  function createPacketForMessage(peer: Peer, message: any, room: string, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
+    // @ts-ignore
+    const [encoding, payload] = peer.getEncodedPayload(message);
+
+    // @ts-ignore
+    return peer.buildPacketWithData(messageType, {
+      messageData: { room, encoding, payload, dst: [] },
+    });
+  }
+
+  function assignId(socket: SocketMock, id: string = "assigned") {
+    socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id } }) });
+  }
+
+  function openConnection(socket: SocketMock) {
+    socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.Open }) });
+    socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.ValidationOk }) });
+  }
+
+  function expectPeerToHaveNoConnections(peer: Peer) {
+    expectPeerToHaveNConnections(0, peer);
+  }
+
+  function expectPeerToHaveNConnections(n: number, peer: Peer) {
+    //@ts-ignore
+    expect(Object.entries(peer.connectedPeers).length).toBe(n);
+  }
+
+  function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
+    //@ts-ignore
+    const peers = Object.values(peer.connectedPeers);
+
+    expect(peers.length).toBeGreaterThanOrEqual(others.length);
+
+    for (const other of others) {
+      expect(peers.some(($: any) => $.id === other.peerId)).toBeTrue();
+    }
+  }
+
+  function delay(time: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, time));
+  }
+
+  async function whileTrue(condition: () => boolean) {
+    while (condition()) {
+      await delay(5);
+    }
+  }
+
+  async function sendMessage(src: Peer, dst: Peer, room: string, message: any, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
+    const peer2MessagePromise = new Promise((resolve) => {
+      dst.callback = (sender, room, payload) => {
+        resolve({ sender, room, payload });
+      };
+    });
+
+    await src.sendMessage(room, message, messageType);
+
+    return await peer2MessagePromise;
+  }
+
+  async function untilTrue(condition: () => boolean) {
+    await whileTrue(() => !condition());
+  }
 });
-
-function sendPacketThroughPeer(peer1: Peer, packet: Packet) {
-  // @ts-ignore
-  peer1.sendPacket(packet);
-}
-
-function createPacketForMessage(peer: Peer, message: any, room: string, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
-  // @ts-ignore
-  const [encoding, payload] = peer.getEncodedPayload(message);
-
-  // @ts-ignore
-  return peer.buildPacketWithData(messageType, {
-    messageData: { room, encoding, payload, dst: [] },
-  });
-}
-
-function assignId(socket: SocketMock, id: string = "assigned") {
-  socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.AssignedId, payload: { id } }) });
-}
-
-function openConnection(socket: SocketMock) {
-  socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.Open }) });
-  socket.onmessage({ data: JSON.stringify({ type: ServerMessageType.ValidationOk }) });
-}
-
-function expectPeerToHaveNoConnections(peer: Peer) {
-  expectPeerToHaveNConnections(0, peer);
-}
-
-function expectPeerToHaveNConnections(n: number, peer: Peer) {
-  //@ts-ignore
-  expect(Object.entries(peer.connectedPeers).length).toBe(n);
-}
-
-function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
-  //@ts-ignore
-  const peers = Object.values(peer.connectedPeers);
-
-  expect(peers.length).toBeGreaterThanOrEqual(others.length);
-
-  for (const other of others) {
-    expect(peers.some(($: any) => $.id === other.peerId)).toBeTrue();
-  }
-}
-
-function delay(time: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
-
-async function whileTrue(condition: () => boolean) {
-  while (condition()) {
-    await delay(5);
-  }
-}
-
-async function sendMessage(src: Peer, dst: Peer, room: string, message: any, messageType: PeerMessageType = PeerMessageTypes.reliable("reliable")) {
-  const peer2MessagePromise = new Promise((resolve) => {
-    dst.callback = (sender, room, payload) => {
-      resolve({ sender, room, payload });
-    };
-  });
-
-  await src.sendMessage(room, message, messageType);
-
-  return await peer2MessagePromise;
-}
-
-async function untilTrue(condition: () => boolean) {
-  await whileTrue(() => !condition());
-}
