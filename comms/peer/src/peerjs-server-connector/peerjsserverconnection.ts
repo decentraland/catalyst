@@ -6,7 +6,6 @@ import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import { ConnectedPeerData } from "../types";
-import { Position } from "../../../../commons/utils/Positions";
 
 export type MessageHandler = {
   handleMessage(messsage: ServerMessage): void;
@@ -27,15 +26,11 @@ class PeerOptions {
   authHandler?: (msg: string) => Promise<string>;
 }
 
-type HandshakeData = {
+export type HandshakeData = {
   sdp: any;
   connectionId: string;
-  protocolVersion: number;
   sessionId: string;
-  lighthouseUrl: string;
-  layer: string;
-  position?: Position;
-};
+} & Record<string, any>;
 
 export function createOfferMessage(myId: string, peerData: ConnectedPeerData, handshakeData: HandshakeData) {
   return createMessage(myId, peerData.id, ServerMessageType.Offer, handshakeData);

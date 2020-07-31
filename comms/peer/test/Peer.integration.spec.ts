@@ -1,4 +1,4 @@
-import { Peer, TimeKeeper, PEER_CONSTANTS } from "../src/Peer";
+import { Peer } from "../src/Peer";
 import { MinPeerData, PacketCallback, PeerConfig } from "../src/types";
 import { SocketType } from "../src/peerjs-server-connector/socket";
 import { future } from "fp-future";
@@ -6,6 +6,8 @@ import { ServerMessageType } from "../src/peerjs-server-connector/enums";
 import { PeerMessageTypes, PeerMessageType } from "../src/messageTypes";
 import { Packet } from "../src/proto/peer_protobuf";
 import { Position3D } from "../src";
+import { PEER_CONSTANTS } from "../src/constants";
+import { TimeKeeper } from "../src/TimeKeeper";
 
 declare var global: any;
 
@@ -78,7 +80,6 @@ describe("Peer Integration Test", function () {
               Object.keys(lighthouse.layerPeers).forEach((layer) => {
                 const peer = lighthouse.layerPeers[layer].find((it) => it.id === peerId);
                 if (peer) {
-                  // console.log("ASDASDASDSADSADASDASDASDAS setting peer position", peerId, position);
                   peer.position = position;
                 }
 
@@ -228,20 +229,20 @@ describe("Peer Integration Test", function () {
 
   function setPeerConnectionEstablished(peer: Peer) {
     // @ts-ignore
-    peer.peerJsConnection._open = true;
+    peer.wrtcHandler.peerJsConnection._open = true;
     // @ts-ignore
-    peer.peerJsConnection._valid = true;
+    peer.wrtcHandler.peerJsConnection._valid = true;
     // @ts-ignore
-    peer.peerJsConnection._disconnected = false;
+    peer.wrtcHandler.peerJsConnection._disconnected = false;
   }
 
   function setPeerConnectionRejected(peer: Peer) {
     // @ts-ignore
-    peer.peerJsConnection._open = false;
+    peer.wrtcHandler.peerJsConnection._open = false;
     // @ts-ignore
-    peer.peerJsConnection._valid = false;
+    peer.wrtcHandler.peerJsConnection._valid = false;
     // @ts-ignore
-    peer.peerJsConnection._disconnected = true;
+    peer.wrtcHandler.peerJsConnection._disconnected = true;
   }
 
   function expectPeerInLayer(peer: Peer, layer: string, lighthouse: string = DEFAULT_LIGHTHOUSE) {
@@ -678,6 +679,7 @@ describe("Peer Integration Test", function () {
     const receivedMessages: any[] = [];
 
     receiveSocket.onmessage = ({ data }) => {
+      console.log("Received!!", data);
       receivedMessages.push(JSON.parse(data));
     };
 
@@ -760,12 +762,9 @@ describe("Peer Integration Test", function () {
 
     expect(peers[0].peer.fullyConnectedPeerIds()).not.toContain(peers[2].peer.peerIdOrFail());
     expect(peers[0].peer.fullyConnectedPeerIds()).not.toContain(peers[3].peer.peerIdOrFail());
-    
   });
 
   it("disconnects when over connected when updating network", () => {});
-
-  it("disconnects from distant peers when updating network", () => {});
 
   it("removes local room representation when leaving room", () => {});
 
@@ -773,15 +772,11 @@ describe("Peer Integration Test", function () {
 
   it("performs only one network update at a time", () => {});
 
-  it("perform various network updates in succession", () => {});
-
   it("selects valid connection candidates for network updates", () => {});
 
   it("finds the worst connected peer by distance", () => {});
 
   it("counts packet with statstics when received", () => {});
-
-  it("marks a packet as received", () => {});
 
   it("marks a peer as reachable through when receiving a relayed packet", () => {});
 
@@ -890,14 +885,18 @@ describe("Peer Integration Test", function () {
 
   it("handles authentication", () => {});
 
+  function getConnectedPeers(peer: Peer) {
+    //@ts-ignore
+    return peer.wrtcHandler.connectedPeers;
+  }
+
   function expectConnectionInRoom(peer: Peer, otherPeer: Peer, roomId: string) {
     expectPeerToBeInRoomWith(peer, roomId, otherPeer);
     expectPeerToBeConnectedTo(peer, otherPeer);
   }
 
   function expectPeerToBeConnectedTo(peer: Peer, otherPeer: Peer) {
-    //@ts-ignore
-    const peerToPeer = peer.connectedPeers[otherPeer.peerId];
+    const peerToPeer = getConnectedPeers(peer)[otherPeer.peerIdOrFail()];
     expect(peerToPeer.connection).toBeDefined();
     expect(peerToPeer.connection.writable).toBeTrue();
   }
@@ -941,13 +940,11 @@ describe("Peer Integration Test", function () {
   }
 
   function expectPeerToHaveNConnections(n: number, peer: Peer) {
-    //@ts-ignore
-    expect(Object.entries(peer.connectedPeers).length).toBe(n);
+    expect(Object.entries(getConnectedPeers(peer)).length).toBe(n);
   }
 
   function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
-    //@ts-ignore
-    const peers = Object.values(peer.connectedPeers);
+    const peers = Object.values(getConnectedPeers(peer));
 
     expect(peers.length).toBeGreaterThanOrEqual(others.length);
 

@@ -56,6 +56,17 @@ export type PingResult = {
   latency: number;
 };
 
+export type WebRTCProvider = {
+  RTCPeerConnection: any;
+  RTCSessionDescription: any;
+  RTCIceCandidate: any;
+};
+
+export type ValidationResult = {
+  ok: boolean,
+  message?: string
+}
+
 export type PeerConfig = {
   connectionConfig?: any;
   wrtc?: any;
@@ -67,7 +78,7 @@ export type PeerConfig = {
   peerConnectTimeout?: number;
   oldConnectionsTimeout?: number;
   messageExpirationTime?: number;
-  logLevel?: keyof typeof LogLevel;
+  logLevel?: LogLevelString;
   reconnectionAttempts?: number;
   backoffMs?: number;
   optimizeNetworkInterval?: number;
@@ -128,6 +139,9 @@ export type ConnectedPeerData = {
   initiator: boolean;
   createTimestamp: number;
   connection: SimplePeer.Instance;
+};
+
+export type PeerRelayData = {
   lastRelaySuspensionTimestamp?: number;
   /**
    * This is data for relays received from this peer
@@ -152,4 +166,4 @@ export type ConnectedPeerData = {
    * Is the list of the ids of the relayed peers for which to suspend relay
    */
   pendingSuspensionRequests: string[];
-};
+}
