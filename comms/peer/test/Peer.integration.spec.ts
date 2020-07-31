@@ -351,11 +351,11 @@ describe("Peer Integration Test", function () {
           const segments = url.pathname.split("/");
           if (segments.length === 7) {
             const roomId = segments[segments.length - 3];
-            const userId = segments[segments.length - 1];
+            const userId = decodeURI(segments[segments.length - 1]);
             return leaveRoom(url.origin)(userId, roomId);
           } else {
             const layerId = segments[segments.length - 3];
-            const userId = segments[segments.length - 1];
+            const userId = decodeURI(segments[segments.length - 1]);
             return leaveLayer(url.origin)(userId, layerId);
           }
         }
@@ -489,6 +489,22 @@ describe("Peer Integration Test", function () {
     await mock.joinRoom("room");
 
     const [, peer] = await createPeer("peer", layer, [socket]);
+
+    await peer.joinRoom("room");
+
+    expectPeerToBeInRoomWith(peer, "room", mock);
+
+    await peer.leaveRoom("room");
+
+    expect(lighthouses[DEFAULT_LIGHTHOUSE].roomPeers["room"].length).toBe(1);
+    expect(peer.currentRooms.length).toBe(0);
+  });
+
+  it("leaves a room successfully using a URI clashing peer id", async () => {
+    const [socket, mock] = await createPeer("mock");
+    await mock.joinRoom("room");
+
+    const [, peer] = await createPeer("peer%", layer, [socket]);
 
     await peer.joinRoom("room");
 
