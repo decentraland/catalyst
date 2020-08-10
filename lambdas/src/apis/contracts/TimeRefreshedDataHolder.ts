@@ -13,7 +13,7 @@ export class TimeRefreshedDataHolder<T> {
 
     private async updateValue() {
         this.value = await this.provider()
-        setTimeout(this.updateValue, this.refreshTime)
+        setTimeout(() => this.updateValue(), this.refreshTime)
     }
 
 }
