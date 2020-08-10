@@ -82,6 +82,7 @@ export function ConnectForm(props: {
       props.onConnected(peer, layer, room, url);
     } catch (e) {
       setError(e.message ?? e.toString());
+      console.log(e);
       setLoading(false);
     }
   }
