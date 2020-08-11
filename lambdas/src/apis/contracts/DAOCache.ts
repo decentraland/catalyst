@@ -4,7 +4,7 @@ import { DAOContractClient } from "decentraland-katalyst-commons/DAOClient";
 import ms from "ms";
 import { DAOListClient } from "./DAOListsClient";
 
-const REFRESH_TIME: number = ms('15m')
+const REFRESH_TIME: number = ms('30m')
 
 export class DAOCache {
     private servers: TimeRefreshedDataHolder<Set<ServerMetadata>>

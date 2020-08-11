@@ -2,7 +2,7 @@ export class TimeRefreshedDataHolder<T> {
 
     private value: T
 
-    constructor(private readonly provider: ()=>Promise<T>, private readonly refreshTime: number) { }
+    constructor(private readonly provider: () => Promise<T>, private readonly refreshTime: number) { }
 
     async get(): Promise<T> {
         if (!this.value) {

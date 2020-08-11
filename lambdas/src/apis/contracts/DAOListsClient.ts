@@ -11,7 +11,7 @@ export class DAOListContractClient {
   async getAllValues(): Promise<Set<string>> {
     const count = await this.contract.getCount()
     const values: Set<string> = new Set()
-    for (let i = 1; i <= count; i++) {
+    for (let i = 0; i < count; i++) {
         const value = await this.contract.getValueByIndex(i)
         if (value) {
             values.add(value)
