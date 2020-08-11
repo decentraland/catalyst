@@ -11,6 +11,7 @@ import { initializeProfilesRoutes } from "./apis/profiles/routes";
 import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
 import { initializeCryptoRoutes } from "./apis/crypto/routes";
 import { initializeImagesRoutes } from "./apis/images/routes";
+import { initializeContractRoutes } from "./apis/contracts/routes";
 
 export class Server {
   private port: number;
@@ -55,6 +56,9 @@ export class Server {
 
     // Images API for resizing contents
     this.app.use("/images", initializeImagesRoutes(express.Router(), env, fetcher));
+
+    // DAO cached access API
+    this.app.use("/contracts", initializeContractRoutes(express.Router(), env));
 
   }
 

@@ -5,6 +5,11 @@
       "source": "etherscan",
       "net": "mainnet",
       "address": "0xcc054fab08127c19f621ab83ade5962cd10584ec"
-    }
+    },
+    "List": {
+        "source": "etherscan",
+        "net": "mainnet",
+        "address": "0x21b6EFf834d7cc8c12A5Ec924939aa521F0FE83F"
+      }
   }
 }
