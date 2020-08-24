@@ -730,7 +730,7 @@ export class Peer implements IPeer {
     const messageData = packet.messageData;
     if (messageData) {
       if (this.isInRoom(messageData.room)) {
-        this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding));
+        this.callback(packet.src, messageData.room, this.decodePayload(messageData.payload, messageData.encoding), packet.subtype);
       }
     }
 

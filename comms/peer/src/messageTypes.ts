@@ -68,3 +68,13 @@ export const SuspendRelayType: PeerMessageType = {
   optimistic: true,
   discardOlderThan: 0
 }
+
+export const VoiceType: PeerMessageType = {
+  name: "voice",
+  ttl: 5,
+  optimistic: true,
+  discardOlderThan: 0,
+  expirationTime: 6000
+}
+
+

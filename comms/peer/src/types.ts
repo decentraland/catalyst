@@ -29,7 +29,7 @@ export interface IPeer {
   peerIdOrFail(): string;
   currentRooms: Room[];
   logLevel: LogLevelString;
-  callback: (sender: string, room: string, payload: any) => void;
+  callback: (sender: string, room: string, payload: any, subtype?: string) => void;
   setLayer(layer: string): Promise<void>;
   joinRoom(room: string): Promise<void>;
   leaveRoom(roomId: string): Promise<void>;
@@ -125,7 +125,7 @@ export type PositionConfig = {
   disconnectDistance?: number;
 };
 
-export type PacketCallback = (sender: string, room: string, payload: any) => void;
+export type PacketCallback = (sender: string, room: string, payload: any, subtype?: string) => void;
 
 export type ReceivedRelayData = {
   hops: number;

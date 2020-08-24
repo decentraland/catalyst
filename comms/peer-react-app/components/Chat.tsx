@@ -3,6 +3,7 @@ import { IPeer } from "../../peer/src/types";
 import { Button, Radio } from "decentraland-ui";
 import { PeerMessageTypes } from "../../peer/src/messageTypes";
 import { mouse } from "./Mouse";
+import { AudioCommunicator, AudioCommunicatorChannel } from "../../peer/src/audio/AudioCommunicator";
 
 type Message = {
   sender: string;
@@ -25,7 +26,7 @@ function MessageBubble(props: { message: Message; own?: boolean }) {
   );
 }
 
-function CursorComponent(props: { cursor: Cursor, peerId: string }) {
+function CursorComponent(props: { cursor: Cursor; peerId: string }) {
   return (
     <div
       className="other-cursor"
@@ -33,9 +34,11 @@ function CursorComponent(props: { cursor: Cursor, peerId: string }) {
         left: props.cursor.x + "px",
         top: props.cursor.y + "px",
         backgroundColor: props.cursor.color,
-        paddingLeft: "10px"
+        paddingLeft: "10px",
       }}
-    >{props.peerId}</div>
+    >
+      {props.peerId}
+    </div>
   );
 }
 
@@ -51,9 +54,16 @@ type Cursor = {
 
 let intervalId: number | undefined = undefined;
 
+let audioCommunicator: AudioCommunicator | undefined;
+let mediaSource: MediaSource | undefined;
+let sourceBuffer: SourceBuffer | undefined;
+
+// let audioBuffers: Record<string, ArrayBuffer[]> = {};
+
 export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
+  const [audioOn, setAudioOn] = useState<boolean>(false);
   const [cursors, setCursors] = useState<Record<string, Cursor>>({});
   const [updatingCursors, setUpdatingCursors] = useState(!!new URLSearchParams(location.search).get("updatingCursors"));
   const [currentRoom, setCurrentRoom] = useState(props.room);
@@ -61,11 +71,12 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms);
   const [newRoomName, setNewRoomName] = useState("");
   const messagesEndRef: any = useRef();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  document.title = props.peer.peerIdOrFail()
+  document.title = props.peer.peerIdOrFail();
 
-  props.peer.callback = (sender, room, payload) => {
-    if (!joinedRooms.some(joined => joined.id === room)) {
+  props.peer.callback = (sender, room, payload, subtype) => {
+    if (!joinedRooms.some((joined) => joined.id === room)) {
       return;
     }
     switch (payload.type) {
@@ -76,25 +87,74 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
         setCursorPosition(sender, payload.position);
         break;
       default:
-        console.log("Received unknown message type: " + payload.type);
+        if (subtype === "voice") {
+          playAudio(payload);
+        } else {
+          console.log("Received unknown message type: " + payload.type);
+        }
     }
   };
 
   function setCursorPosition(sender: string, position: { x: number; y: number }) {
     if (updatingCursors) {
-      const cursorColor = props.peer.isConnectedTo(sender) ? "green" : "red"
+      const cursorColor = props.peer.isConnectedTo(sender) ? "green" : "red";
 
-      props.peer.setPeerPosition(sender, [position.x, position.y, 0])
-      
+      props.peer.setPeerPosition(sender, [position.x, position.y, 0]);
+
       setCursors({
         ...cursors,
-        [sender]: { color: cursorColor, x: position.x, y: position.y }
+        [sender]: { color: cursorColor, x: position.x, y: position.y },
       });
     }
   }
 
+  function createAudioSource() {
+    mediaSource = new MediaSource();
+
+    console.log("Media source created");
+
+    mediaSource.addEventListener("sourceclose", (ev) => {
+      console.log("source ended", ev);
+      setAudioUrl();
+    });
+
+    mediaSource.addEventListener("sourceopen", () => {
+      console.log("Source opened");
+      createSourceBuffer();
+    });
+
+    setAudioUrl();
+  }
+
+  function setAudioUrl() {
+    audioRef.current!.src = URL.createObjectURL(mediaSource);
+    console.log("Setted audio url");
+  }
+
+  function createSourceBuffer() {
+    sourceBuffer = mediaSource!.addSourceBuffer("audio/webm;codecs=opus");
+    sourceBuffer.addEventListener("error", (e) => {
+      console.log("error", e);
+    });
+    sourceBuffer.addEventListener("abort", (e) => console.log("abort", e));
+  }
+
   function sendCursorMessage() {
     props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, PeerMessageTypes.unreliable("cursorPosition"));
+  }
+
+  function playAudio(payload: Uint8Array) {
+    if (mediaSource) {
+      if (mediaSource?.readyState === "ended") {
+        createAudioSource();
+      } else if (mediaSource?.readyState === "open" && sourceBuffer) {
+        if(!sourceBuffer.updating) {
+          sourceBuffer.appendBuffer(payload);
+        }
+      }
+
+      // audioRef.current?.play().catch((e) => console.log("Error in play: ", e));
+    }
   }
 
   function sendMessage() {
@@ -106,13 +166,17 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   function appendMessage(room: string, sender: string, content: string) {
     setMessages({
       ...messages,
-      [room]: [...(messages[room] ?? []), { sender, content }]
+      [room]: [...(messages[room] ?? []), { sender, content }],
     });
   }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    createAudioSource();
+  }, []);
 
   useEffect(() => {
     window.clearInterval(intervalId);
@@ -124,30 +188,49 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }, [updatingCursors]);
 
   useEffect(() => {
+    if (audioOn) {
+      audioCommunicator?.start();
+    } else {
+      audioCommunicator?.pause();
+    }
+  }, [audioOn]);
+
+  useEffect(() => {
     setInterval(async () => {
       try {
         const response = await fetch(`${props.url}/layers/${props.layer}/rooms`);
         const rooms = await response.json();
-        setAvailableRooms(rooms.filter(room => !joinedRooms.some(joined => joined.id === room)));
+        setAvailableRooms(rooms.filter((room) => !joinedRooms.some((joined) => joined.id === room)));
       } catch (e) {}
     }, 1000);
   }, []);
 
-  const users = [...(joinedRooms.find(r => r.id === currentRoom)?.users?.values() ?? [])];
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(
+      (a) => {
+        audioCommunicator = new AudioCommunicator(a, AudioCommunicatorChannel.fromPeer(props.room, props.peer));
+      },
+      (e) => {
+        console.log("Error requesting audio: ", e);
+        setAudioOn(false);
+      }
+    );
+  }, []);
+
+  const users = [...(joinedRooms.find((r) => r.id === currentRoom)?.users?.values() ?? [])];
 
   async function joinRoom(room: string) {
     try {
       await props.peer.joinRoom(room);
-      setAvailableRooms(availableRooms.filter(r => r !== room));
+      setAvailableRooms(availableRooms.filter((r) => r !== room));
       setJoinedRooms(props.peer.currentRooms);
 
       // @ts-ignore
-      Object.keys(props.peer.knownPeers).forEach(it => {
+      Object.keys(props.peer.knownPeers).forEach((it) => {
         // @ts-ignore
-        const position = {x: props.peer.knownPeers[it].position[0], y: props.peer.knownPeers[it].position[1]}
-        setCursorPosition(it, position)
-      })
-
+        const position = { x: props.peer.knownPeers[it].position[0], y: props.peer.knownPeers[it].position[1] };
+        setCursorPosition(it, position);
+      });
     } catch (e) {
       console.log(`error while joining room ${room}`, e);
     }
@@ -155,6 +238,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
 
   return (
     <div className="chat">
+      <audio ref={audioRef} autoPlay></audio>
       <h2 className="welcome-message">Welcome to the Chat {props.peer.peerId}</h2>
       <div className="side">
         <h3>Available rooms</h3>
@@ -179,7 +263,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
                     onClick={async () => {
                       try {
                         await props.peer.leaveRoom(room.id);
-                        setJoinedRooms(joinedRooms.filter(joined => room.id !== joined.id));
+                        setJoinedRooms(joinedRooms.filter((joined) => room.id !== joined.id));
                       } catch (e) {
                         console.log(`error while trying to leave room ${room.id}`, e);
                       }
@@ -202,7 +286,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
               ))}
             </ul>
             <div className="create-room">
-              <input className="create-room-input" value={newRoomName} onChange={event => setNewRoomName(event.currentTarget.value)} placeholder="roomName"></input>
+              <input className="create-room-input" value={newRoomName} onChange={(event) => setNewRoomName(event.currentTarget.value)} placeholder="roomName"></input>
               <button
                 className="action-create-room"
                 disabled={!newRoomName}
@@ -232,6 +316,9 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
               Now in <i>{currentRoom}</i>
             </h3>
             <Radio toggle label="Sync cursors" checked={updatingCursors} onChange={(ev, data) => setUpdatingCursors(!!data.checked)} />
+            <span style={{ marginLeft: "5px" }}>
+              <Radio toggle label="Send audio" checked={audioOn} onChange={(ev, data) => setAudioOn(!!data.checked)} />
+            </span>
           </div>
           <div className="messages-container">
             {messages[currentRoom]?.map((it, i) => (
@@ -242,8 +329,8 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
           <div className="message-container">
             <textarea
               value={message}
-              onChange={ev => setMessage(ev.currentTarget.value)}
-              onKeyDown={ev => {
+              onChange={(ev) => setMessage(ev.currentTarget.value)}
+              onKeyDown={(ev) => {
                 if (message && ev.keyCode === 13 && ev.ctrlKey) sendMessage();
               }}
             />
@@ -253,7 +340,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
           </div>
         </div>
       </div>
-      {updatingCursors && Object.keys(cursors).map(it => <CursorComponent cursor={cursors[it]} peerId={it} />)}
+      {updatingCursors && Object.keys(cursors).map((it) => <CursorComponent cursor={cursors[it]} peerId={it} />)}
     </div>
   );
 }
