@@ -20,8 +20,8 @@ ts_library(
                     ]),
     tsconfig = "//:tsconfig.json",
     deps = [
-        "//comms/peer",
         "//commons/utils",
+        "//comms/peer",
         "@npm//@types/react",
         "@npm//@types/react-dom",
         "@npm//decentraland-ui",
@@ -45,6 +45,9 @@ ts_devserver(
     static_files = [
         "index.html",
         "static/index.css",
+        "static/lib/libopus.wasm",
+        "static/lib/libopus.wasm.js",
+        "static/audioWorker.js",
     ],
     deps = [
         "static/config.js",

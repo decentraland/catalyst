@@ -3,7 +3,7 @@ import { IPeer } from "../../peer/src/types";
 import { Button, Radio } from "decentraland-ui";
 import { PeerMessageTypes } from "../../peer/src/messageTypes";
 import { mouse } from "./Mouse";
-import { AudioCommunicator, AudioCommunicatorChannel } from "../../peer/src/audio/AudioCommunicator";
+import { AudioCommunicator, AudioCommunicatorChannel } from "../AudioCommunicator";
 
 type Message = {
   sender: string;
@@ -55,8 +55,8 @@ type Cursor = {
 let intervalId: number | undefined = undefined;
 
 let audioCommunicator: AudioCommunicator | undefined;
-let mediaSource: MediaSource | undefined;
-let sourceBuffer: SourceBuffer | undefined;
+// let mediaSource: MediaSource | undefined;
+// let sourceBuffer: SourceBuffer | undefined;
 
 // let audioBuffers: Record<string, ArrayBuffer[]> = {};
 
@@ -88,7 +88,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
         break;
       default:
         if (subtype === "voice") {
-          playAudio(payload);
+          audioCommunicator?.playEncodedAudio(sender, payload).catch((e) => console.log("Error playing audio", e));
         } else {
           console.log("Received unknown message type: " + payload.type);
         }
@@ -108,53 +108,8 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
     }
   }
 
-  function createAudioSource() {
-    mediaSource = new MediaSource();
-
-    console.log("Media source created");
-
-    mediaSource.addEventListener("sourceclose", (ev) => {
-      console.log("source ended", ev);
-      setAudioUrl();
-    });
-
-    mediaSource.addEventListener("sourceopen", () => {
-      console.log("Source opened");
-      createSourceBuffer();
-    });
-
-    setAudioUrl();
-  }
-
-  function setAudioUrl() {
-    audioRef.current!.src = URL.createObjectURL(mediaSource);
-    console.log("Setted audio url");
-  }
-
-  function createSourceBuffer() {
-    sourceBuffer = mediaSource!.addSourceBuffer("audio/webm;codecs=opus");
-    sourceBuffer.addEventListener("error", (e) => {
-      console.log("error", e);
-    });
-    sourceBuffer.addEventListener("abort", (e) => console.log("abort", e));
-  }
-
   function sendCursorMessage() {
     props.peer.sendMessage(currentRoom, { type: "cursorPosition", position: { ...mouse } }, PeerMessageTypes.unreliable("cursorPosition"));
-  }
-
-  function playAudio(payload: Uint8Array) {
-    if (mediaSource) {
-      if (mediaSource?.readyState === "ended") {
-        createAudioSource();
-      } else if (mediaSource?.readyState === "open" && sourceBuffer) {
-        if(!sourceBuffer.updating) {
-          sourceBuffer.appendBuffer(payload);
-        }
-      }
-
-      // audioRef.current?.play().catch((e) => console.log("Error in play: ", e));
-    }
   }
 
   function sendMessage() {
@@ -173,10 +128,6 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    createAudioSource();
-  }, []);
 
   useEffect(() => {
     window.clearInterval(intervalId);
@@ -206,9 +157,9 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }, []);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(
+    navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 48000, sampleSize: 16 }, video: false }).then(
       (a) => {
-        audioCommunicator = new AudioCommunicator(a, AudioCommunicatorChannel.fromPeer(props.room, props.peer));
+        audioCommunicator = new AudioCommunicator(props.peer.peerIdOrFail(), a, AudioCommunicatorChannel.fromPeer(props.room, props.peer));
       },
       (e) => {
         console.log("Error requesting audio: ", e);
