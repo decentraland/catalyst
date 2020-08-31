@@ -1,6 +1,7 @@
 import { IPeer } from "../peer/src/types";
 import { AudioWorkerMain } from "../peer-react-app/audioWorkerMain";
 import { PeerMessageType } from "../peer/src/messageTypes";
+import { RingBuffer } from "decentraland-katalyst-utils/CircularBuffer";
 
 const VoiceType: PeerMessageType = {
   name: "voice",
@@ -28,11 +29,13 @@ export class AudioCommunicator {
   private context: AudioContext;
   private processor: ScriptProcessorNode;
   private input: MediaStreamAudioSourceNode;
-  private buffers: Record<string, Float32Array[]> = {};
-  private outputs: Record<string, ScriptProcessorNode> = {};
+  private buffers: Record<string, RingBuffer<Float32Array>> = {};
+  private outputProcessors: Record<string, ScriptProcessorNode> = {};
+  public readonly outputs: Record<string, MediaStreamAudioDestinationNode> = {};
   private audioWorkerMain: AudioWorkerMain;
 
   private readonly sampleRate = 48000;
+  private readonly channelBufferSize = 0.5;
 
   constructor(selfId: string, stream: MediaStream, channel: AudioCommunicatorChannel) {
     this.context = new AudioContext({ sampleRate: this.sampleRate });
@@ -52,11 +55,11 @@ export class AudioCommunicator {
 
   async playEncodedAudio(src: string, encoded: Uint8Array) {
     if (!this.buffers[src]) {
-      this.buffers[src] = [];
+      this.buffers[src] = new RingBuffer(Math.floor(this.channelBufferSize * this.sampleRate), Float32Array);
     }
 
-    if (!this.outputs[src]) {
-      this.createScriptProcessorFor(src);
+    if (!this.outputProcessors[src]) {
+      this.createAudioOutputFor(src);
     }
 
     let stream = this.audioWorkerMain.decodeStreams[src];
@@ -64,41 +67,26 @@ export class AudioCommunicator {
     if (!stream) {
       stream = this.audioWorkerMain.getOrCreateDecodeStream(src, this.sampleRate);
 
-      stream.addAudioDecodedListener((samples) => this.buffers[src].push(samples));
+      stream.addAudioDecodedListener((samples) => this.buffers[src].write(samples));
     }
 
     stream.decode(encoded);
   }
 
-  createScriptProcessorFor(src: string): ScriptProcessorNode {
-    this.outputs[src] = this.context.createScriptProcessor(16384, 0, 1);
-    this.outputs[src].onaudioprocess = (ev) => {
+  createAudioOutputFor(src: string) {
+    // this.outputs[src] = this.context.createMediaStreamDestination();
+    this.outputProcessors[src] = this.context.createScriptProcessor(8192, 0, 1);
+    this.outputProcessors[src].onaudioprocess = (ev) => {
       const data = ev.outputBuffer.getChannelData(0);
 
       data.fill(0);
 
-      if (this.buffers[src] && this.buffers[src].length > 0) {
-        let currentBuffer = this.buffers[src].shift();
-        let outputBufferConsumed = 0;
-        while (outputBufferConsumed < data.length && currentBuffer) {
-          const remainingBuffer = data.length - outputBufferConsumed;
-
-          if (currentBuffer.length <= remainingBuffer) {
-            data.set(currentBuffer, outputBufferConsumed);
-            outputBufferConsumed += currentBuffer.length;
-            currentBuffer = this.buffers[src].shift();
-          } else {
-            data.set(currentBuffer.slice(0, remainingBuffer), outputBufferConsumed);
-            outputBufferConsumed += remainingBuffer;
-            this.buffers[src].unshift(currentBuffer.slice(remainingBuffer));
-          }
-        }
+      if (this.buffers[src] && this.buffers[src].readAvailableCount() > 0) {
+        data.set(this.buffers[src].read(data.length));
       }
     };
 
-    this.outputs[src].connect(this.context.destination);
-
-    return this.outputs[src];
+    this.outputProcessors[src].connect(this.context.destination);
   }
 
   start() {

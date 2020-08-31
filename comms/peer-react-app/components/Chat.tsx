@@ -60,6 +60,9 @@ let audioCommunicator: AudioCommunicator | undefined;
 
 // let audioBuffers: Record<string, ArrayBuffer[]> = {};
 
+// let idMappings: Record<string, string> = {};
+// let currentId = 1;
+
 export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
@@ -71,7 +74,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms);
   const [newRoomName, setNewRoomName] = useState("");
   const messagesEndRef: any = useRef();
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioContainerRef = useRef<HTMLSpanElement>(null);
 
   document.title = props.peer.peerIdOrFail();
 
@@ -89,11 +92,37 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
       default:
         if (subtype === "voice") {
           audioCommunicator?.playEncodedAudio(sender, payload).catch((e) => console.log("Error playing audio", e));
+          // createAudioElementIfNotExists(sender);
         } else {
           console.log("Received unknown message type: " + payload.type);
         }
     }
   };
+
+  // function createAudioElementIfNotExists(src: string) {
+  //   if (audioContainerRef.current) {
+  //     if (!idMappings[src]) {
+  //       idMappings[src] = currentId.toString();
+  //       currentId++;
+  //     }
+
+  //     const elementId = `audio${idMappings[src]}`;
+
+  //     const existingElement = audioContainerRef.current.querySelector(`#${elementId}`);
+
+  //     const stream = audioCommunicator?.outputs[src]?.stream;
+
+  //     if (!existingElement && stream) {
+  //       const newElement = document.createElement("audio");
+  //       newElement.id = elementId;
+  //       newElement.srcObject = stream;
+
+  //       newElement.autoplay = true;
+
+  //       audioContainerRef.current.appendChild(newElement);
+  //     }
+  //   }
+  // }
 
   function setCursorPosition(sender: string, position: { x: number; y: number }) {
     if (updatingCursors) {
@@ -157,15 +186,34 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
   }, []);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 48000, sampleSize: 16 }, video: false }).then(
-      (a) => {
-        audioCommunicator = new AudioCommunicator(props.peer.peerIdOrFail(), a, AudioCommunicatorChannel.fromPeer(props.room, props.peer));
-      },
-      (e) => {
-        console.log("Error requesting audio: ", e);
-        setAudioOn(false);
-      }
-    );
+    navigator.mediaDevices
+      .getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 48000,
+          echoCancellation: { exact: true },
+          noiseSuppression: { exact: true },
+          autoGainControl: { exact: true },
+          advanced: [
+            { googEchoCancellation: { exact: true } },
+            { googExperimentalEchoCancellation: { exact: true } },
+            { autoGainControl: { exact: true } },
+            { noiseSuppression: { exact: true } },
+            { googHighpassFilter: { exact: true } },
+            { googAudioMirroring: { exact: true } },
+          ] as any,
+        },
+        video: false,
+      })
+      .then(
+        (a) => {
+          audioCommunicator = new AudioCommunicator(props.peer.peerIdOrFail(), a, AudioCommunicatorChannel.fromPeer(props.room, props.peer));
+        },
+        (e) => {
+          console.log("Error requesting audio: ", e);
+          setAudioOn(false);
+        }
+      );
   }, []);
 
   const users = [...(joinedRooms.find((r) => r.id === currentRoom)?.users?.values() ?? [])];
@@ -189,7 +237,7 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
 
   return (
     <div className="chat">
-      <audio ref={audioRef} autoPlay></audio>
+      <span id="audioContainer" ref={audioContainerRef}></span>
       <h2 className="welcome-message">Welcome to the Chat {props.peer.peerId}</h2>
       <div className="side">
         <h3>Available rooms</h3>
