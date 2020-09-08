@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import fetch from "node-fetch"
 import { Environment, EnvironmentConfig } from '../../../Environment'
-import { getOwnedENS } from '../ensFiltering'
+import { filterENS } from '../ensFiltering'
 import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
 
 export async function getProfileById(env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response) {
@@ -28,12 +28,11 @@ export async function getProfileById(env: Environment, fetcher: SmartContentServ
  * We filter ENS to avoid send an ENS that is no longer owned by the user
  */
 async function filterNonOwnedNames(theGraphBaseUrl: string, profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
-    const isThereAnAvatarWithAName: boolean = metadata.avatars.map(profile => profile.name)
+    const avatarsNames: string[] = metadata.avatars.map(profile => profile.name)
         .filter(name => name && name !== '')
-        .length > 0
 
-    if (isThereAnAvatarWithAName) {
-        const ownedENS = await getOwnedENS(theGraphBaseUrl, profileId)
+    if (avatarsNames.length>0) {
+        const ownedENS = await filterENS(theGraphBaseUrl, profileId, avatarsNames)
         const avatars = metadata.avatars.map(profile => (
             {
                 ...profile,
@@ -63,7 +62,7 @@ function addBaseUrlToSnapshots(baseUrl: string, metadata: EntityMetadata): Entit
     const avatars = metadata.avatars.map(profile => {
         const original = profile.avatar.snapshots;
         const snapshots: AvatarSnapshots = {}
-        
+
         for(const key in original)  {
             addBaseUrl(snapshots, original, key)
         }
