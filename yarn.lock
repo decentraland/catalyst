@@ -2634,6 +2634,20 @@ dcl-catalyst-commons@^1.4.2:
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
+dcl-catalyst-commons@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.5.0.tgz#5f041ba9f3024c80fed7fa9491f9384898997933"
+  integrity sha512-i2qceK0dbRCeoGDjIkHS3eP791OkegTNwy2IhlwPlnIXAd9qkwWno/Z4ZjgnWZLNiFgnxry7SP0lqwyFRHHsFg==
+  dependencies:
+    "@types/isomorphic-fetch" "0.0.35"
+    "@types/ms" "^0.7.31"
+    abort-controller "^3.0.0"
+    cids "^0.8.0"
+    cross-fetch "^3.0.5"
+    dcl-crypto "^2.1.0"
+    ms "^2.1.2"
+    multihashing-async "^0.8.1"
+
 dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.2.0.tgz#d9ebb1177caac40f57ae5e3016d0af46c64c4efc"
