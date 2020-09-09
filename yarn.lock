@@ -2634,10 +2634,10 @@ dcl-catalyst-commons@^1.4.2:
     ms "^2.1.2"
     multihashing-async "^0.8.1"
 
-dcl-catalyst-commons@^1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.5.0.tgz#5f041ba9f3024c80fed7fa9491f9384898997933"
-  integrity sha512-i2qceK0dbRCeoGDjIkHS3eP791OkegTNwy2IhlwPlnIXAd9qkwWno/Z4ZjgnWZLNiFgnxry7SP0lqwyFRHHsFg==
+dcl-catalyst-commons@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.6.0.tgz#79be87565c939e81e84db7985f4fee5525ba6791"
+  integrity sha512-iJJ2oyfb4lq8omo9d7AfF6TOC9JG5HctMcl4KAsVDMbWyOt3j+3HzhIhS3A+bmNuk0MshpbtZkjctLDh6UW00A==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
