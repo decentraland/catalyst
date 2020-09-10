@@ -27,31 +27,40 @@ export class AccessCheckerForWearables {
         } else {
             const pointerParts: string[] = pointer.split('-')
             if (pointerParts.length === 2) {
-                const collection: string = pointerParts[0]
-                const itemId: number = parseInt(pointerParts[1], 10)
+                if (pointerParts[0] && pointerParts[0]!==null && pointerParts[1] && pointerParts[1]!==null) {
+                    const collection: string = pointerParts[0]
+                    const itemId: number = parseInt(pointerParts[1], 10)
 
-                // Check that the address has access
-                const hasAccess = await this.checkCollectionAccess(collection, itemId, ethAddress)
-                if (!hasAccess) {
-                    errors.push(`The provided Eth Address does not have access to the following wearable: (${collection}-${itemId})`)
+                    // Check that the address has access
+                    const hasAccess = await this.checkCollectionAccess(collection, itemId, ethAddress)
+                    if (!hasAccess) {
+                        errors.push(`The provided Eth Address does not have access to the following wearable: (${collection}-${itemId})`)
+                    }
+                } else {
+                    errors.push(`Wearable pointers must contain the collection id and the item id separated by a hyphen, for example (0xd148b172f8f64b7a42854447fbc528f41aa2258e-0). Invalid pointer: (${pointer})`)
                 }
             } else {
-                errors.push(`Wearable pointers should only contain the collection id and the item id separated by a hyphen, for example (0xd148b172f8f64b7a42854447fbc528f41aa2258e-0). Invalid pointer: ${pointer}`)
+                errors.push(`Wearable pointers should only contain the collection id and the item id separated by a hyphen, for example (0xd148b172f8f64b7a42854447fbc528f41aa2258e-0). Invalid pointer: (${pointer})`)
             }
         }
         return errors
     }
 
     private async checkCollectionAccess(collection: string, itemId: number, ethAddress: EthAddress): Promise<boolean> {
-        const collectionItems: WerableCollectionItems = await this.getCollectionItems(collection, itemId, ethAddress)
-        return collectionItems.collections[0]?.creator === ethAddress
-            || collectionItems.collections[0]?.managers.includes(ethAddress)
-            || collectionItems.items[0]?.managers.includes(ethAddress)
+        try {
+            const collectionItems: WerableCollectionItems = await this.getCollectionItems(collection, itemId, ethAddress)
+            return collectionItems.collections[0]?.creator === ethAddress
+                || collectionItems.collections[0]?.managers.includes(ethAddress)
+                || collectionItems.items[0]?.managers.includes(ethAddress)
+        } catch (error) {
+            this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
+            return false
+        }
     }
 
     private async getCollectionItems(collection: string, itemId: number, ethAddress: EthAddress): Promise<WerableCollectionItems> {
         const query = `
-         query getCollectionRoles($collection: String) {
+         query getCollectionRoles($collection: String!, $itemId: Int!) {
             collections(where:{id: $collection}) {
               minters
               managers
@@ -64,13 +73,11 @@ export class AccessCheckerForWearables {
             }
         }`
 
-        const variables = {
-            collection: collection,
-            itemId: itemId
-        }
-
         try {
-            return await this.fetcher.queryGraph<WerableCollectionItems>(this.dclCollectionsAccessUrl, query, variables)
+            return await this.fetcher.queryGraph<WerableCollectionItems>(
+                this.dclCollectionsAccessUrl,
+                query,
+                { collection: collection, itemId: itemId})
         } catch (error) {
             this.LOGGER.error(`Error fetching wearable: (${collection}-${itemId})`, error)
             throw error

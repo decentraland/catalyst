@@ -26,19 +26,19 @@ describe("Integration - AccessCheckerImpl", function () {
     it(`When access URL is wrong while checking wearable access it reports an error`, async () => {
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), "Unused URL", "Wrong URL");
 
-        const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ["some-collection:0"], Date.now(), "Some-address-without-permissions");
+        const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ["some_collection-0"], Date.now(), "Some-address-without-permissions");
 
         expect(errors.length).toBe(1)
-        expect(errors[0]).toEqual("The provided Eth Address does not have access to the following wearable: (some-collection:0)")
+        expect(errors[0]).toEqual("The provided Eth Address does not have access to the following wearable: (some_collection-0)")
     })
 
     it(`When an address without permissions tries to deploy a wearable it fails`, async () => {
         const accessChecker = new AccessCheckerImpl(new ContentAuthenticator(),new Fetcher(), "Unused URL", DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN);
 
-        const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ["some-collection:0"], Date.now(), "Some-address-without-permissions");
+        const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ["some_collection-0"], Date.now(), "Some-address-without-permissions");
 
         expect(errors.length).toBe(1)
-        expect(errors[0]).toEqual("The provided Eth Address does not have access to the following wearable: (some-collection:0)")
+        expect(errors[0]).toEqual("The provided Eth Address does not have access to the following wearable: (some_collection-0)")
     })
 
 })
