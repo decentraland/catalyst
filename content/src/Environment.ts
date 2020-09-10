@@ -32,6 +32,8 @@ const DEFAULT_SERVER_PORT = 6969
 export const DEFAULT_ETH_NETWORK = "ropsten"
 export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
 export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
+export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN = 'https://api.thegraph.com/subgraphs/name/decentraland/collections_ropsten/graphql'
+export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/collections/graphql'
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? "Unknown"
 export const DEFAULT_DATABASE_CONFIG = {
     password: '12345678',
@@ -131,6 +133,7 @@ export enum EnvironmentConfig {
     BOOTSTRAP_FROM_SCRATCH,
     REQUEST_TTL_BACKWARDS,
     DCL_PARCEL_ACCESS_URL,
+    DCL_COLLECTIONS_ACCESS_URL,
     SQS_QUEUE_URL_REPORTING,
     SQS_ACCESS_KEY_ID,
     SQS_SECRET_ACCESS_KEY,
@@ -189,7 +192,8 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE     , () => process.env.USE_COMPRESSION_MIDDLEWARE === "true");
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH         , () => process.env.BOOTSTRAP_FROM_SCRATCH === 'true');
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS          , () => ms('20m'));
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_PARCEL_ACCESS_URL          , () => process.env.DCL_PARCEL_ACCESS_URL      ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET      : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DCL_COLLECTIONS_ACCESS_URL     , () => process.env.DCL_COLLECTIONS_ACCESS_URL ?? (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet' ? DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET : DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_QUEUE_URL_REPORTING        , () => process.env.SQS_QUEUE_URL_REPORTING)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_ACCESS_KEY_ID              , () => process.env.SQS_ACCESS_KEY_ID)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_SECRET_ACCESS_KEY          , () => process.env.SQS_SECRET_ACCESS_KEY)
@@ -201,7 +205,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PSQL_PORT                      , () => process.env.POSTGRES_PORT ?? DEFAULT_DATABASE_CONFIG.port)
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION             , () => process.env.GARBAGE_COLLECTION === 'true')
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL    , () => ms('6h'))
-        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SNAPSHOT_FREQUENCY             , () => new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500], [EntityType.WEARABLE, 100]]))
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SNAPSHOT_FREQUENCY             , () => new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500], [EntityType.WEARABLE, 50]]))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO                     , () => process.env.CUSTOM_DAO)
 
         // Please put special attention on the bean registration order.

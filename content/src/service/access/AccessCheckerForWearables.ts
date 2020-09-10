@@ -8,7 +8,7 @@ export class AccessCheckerForWearables {
     constructor(
         private readonly authenticator: ContentAuthenticator,
         private readonly fetcher: Fetcher,
-        private readonly dclParcelAccessUrl: string,
+        private readonly dclCollectionsAccessUrl: string,
         private readonly LOGGER: log4js.Logger) { }
 
     public async checkAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
@@ -39,7 +39,6 @@ export class AccessCheckerForWearables {
                 errors.push(`Wearable pointers should only contain the collection id and the item id separated by a hyphen, for example (0xd148b172f8f64b7a42854447fbc528f41aa2258e-0). Invalid pointer: ${pointer}`)
             }
         }
-
         return errors
     }
 
@@ -71,14 +70,12 @@ export class AccessCheckerForWearables {
         }
 
         try {
-            return await this.fetcher.queryGraph<WerableCollectionItems>(this.dclParcelAccessUrl, query, variables)
+            return await this.fetcher.queryGraph<WerableCollectionItems>(this.dclCollectionsAccessUrl, query, variables)
         } catch (error) {
             this.LOGGER.error(`Error fetching wearable: (${collection}-${itemId})`, error)
             throw error
         }
-
     }
-
 }
 
 type WerableCollectionItems = {

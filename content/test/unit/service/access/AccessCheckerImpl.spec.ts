@@ -37,8 +37,24 @@ describe("AccessCheckerImpl", function () {
         expect(errors.length).toBe(0)
     })
 
+    it(`When a non-decentraland address tries to deploy an default wearable, then an error is returned`, async () => {
+        const accessChecker = buildAccessChecker()
+
+        const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ["Default10"], Date.now(), "0xAddress");
+
+        expect(errors).toContain("Only Decentraland can add or modify default wearables")
+    })
+
+    it(`When a decentraland address tries to deploy an default wearable, then it is allowed`, async () => {
+        const accessChecker = buildAccessChecker();
+
+        const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ["Default10"], Date.now(), DECENTRALAND_ADDRESS);
+
+        expect(errors.length).toBe(0)
+    })
+
     function buildAccessChecker() {
-        return new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), 'unused_url');
+        return new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), 'unused_url', 'unused_url');
     }
 
 })

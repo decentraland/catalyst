@@ -15,10 +15,10 @@ export class AccessCheckerImpl implements AccessChecker {
     private readonly accessCheckerForProfiles: AccessCheckerForProfiles;
     private readonly accessCheckerForWearables: AccessCheckerForWearables;
 
-    constructor(authenticator: ContentAuthenticator, fetcher: Fetcher, dclParcelAccessUrl: string) {
+    constructor(authenticator: ContentAuthenticator, fetcher: Fetcher, dclParcelAccessUrl: string, dclCollectionsAccessUrl: string) {
             this.accessCheckerForScenes = new AccessCheckerForScenes(authenticator, fetcher, dclParcelAccessUrl, AccessCheckerImpl.LOGGER)
             this.accessCheckerForProfiles = new AccessCheckerForProfiles(authenticator)
-            this.accessCheckerForWearables = new AccessCheckerForWearables(authenticator, fetcher, dclParcelAccessUrl, AccessCheckerImpl.LOGGER)
+            this.accessCheckerForWearables = new AccessCheckerForWearables(authenticator, fetcher, dclCollectionsAccessUrl, AccessCheckerImpl.LOGGER)
     }
 
     async hasAccess(entityType: EntityType, pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {

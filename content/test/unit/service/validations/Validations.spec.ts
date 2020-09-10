@@ -366,7 +366,7 @@ function buildEntity(options?: { timestamp?: Timestamp, content?: Map<string, st
 
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator();
-  return new Validations(new AccessCheckerImpl(authenticator, new Fetcher(), "unused_url"),
+  return new Validations(new AccessCheckerImpl(authenticator, new Fetcher(), "unused_url", "unused_url"),
     authenticator,
     "ropsten",
     ms('10m')).getInstance();
