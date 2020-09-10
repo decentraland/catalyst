@@ -31,6 +31,7 @@ ts_library(
         "@npm//@types/web3",
         "@npm//aws-sdk",
         "@npm//dcl-crypto",
+        "@npm//dcl-catalyst-commons",
     ],
 )
 
@@ -72,6 +73,7 @@ ts_library(
         "@npm//@types/jasmine",
         "@npm//node-fetch",
         "@npm//@types/node-fetch",
+        "@npm//dcl-catalyst-commons",
     ],
 )
 
