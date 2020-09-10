@@ -39,7 +39,7 @@ export class Server {
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT);
 
     this.app = express();
-    const upload = multer({ dest: "uploads/" });
+    const upload = multer({ dest: "uploads/", preservePath: true });
     const controller: Controller = env.getBean(Bean.CONTROLLER);
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER);
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);

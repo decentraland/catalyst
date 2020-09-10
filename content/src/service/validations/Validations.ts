@@ -1,5 +1,5 @@
 import ms from "ms"
-import { EntityType, EntityId, ContentFileHash, Timestamp, ContentFile, Pointer, ENTITY_FILE_NAME, EntityVersion, DeploymentFilters } from "dcl-catalyst-commons";
+import { EntityType, EntityId, ContentFileHash, Timestamp, Pointer, ENTITY_FILE_NAME, EntityVersion, DeploymentFilters } from "dcl-catalyst-commons";
 import { Entity } from "../Entity";
 import { AccessChecker } from "../access/AccessChecker";
 import { ValidationContext, Validation } from "./ValidationContext";
@@ -10,6 +10,7 @@ import { httpProviderForNetwork } from '../../../../contracts/utils';
 import { LocalDeploymentAuditInfo } from "../Service";
 import { happenedBefore } from "../time/TimeSorting";
 import { Deployment } from "../deployments/DeploymentManager";
+import { ContentFile } from "../../controller/Controller";
 
 export class Validations {
 

@@ -1,7 +1,7 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, ContentFile, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
@@ -95,6 +95,7 @@ export class Controller {
         const migrationInformation  = JSON.parse(req.body.migration_data);
         const files                 = req.files
 
+        let deployFiles: ContentFile[] = []
         try {
             const auditInfo: LocalDeploymentAuditInfo = {
                 authChain,
@@ -105,7 +106,6 @@ export class Controller {
                 }
             }
 
-            let deployFiles: ContentFile[] = []
             if (files instanceof Array) {
                 deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
             }
@@ -116,6 +116,8 @@ export class Controller {
         } catch (error) {
             Controller.LOGGER.warn(`Returning error '${error.message}'`)
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+        } finally {
+            await this.deleteUploadedFiles(deployFiles)
         }
     }
 
@@ -131,12 +133,12 @@ export class Controller {
         const origin                = req.header('x-upload-origin') ?? "unknown"
         const fixAttempt: boolean   = req.query.fix === 'true'
 
+        let deployFiles: ContentFile[] = []
         try {
             if (!authChain && ethAddress && signature) {
                 authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
             }
 
-            let deployFiles: ContentFile[] = []
             if (files instanceof Array) {
                 deployFiles = await Promise.all(files.map(f => this.readFile(f.fieldname, f.path)))
             }
@@ -152,14 +154,30 @@ export class Controller {
         } catch (error) {
             Controller.LOGGER.warn(`Returning error '${error.message}'`)
             res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+        } finally {
+            await this.deleteUploadedFiles(deployFiles)
         }
     }
 
     private async readFile(name: string, path: string): Promise<ContentFile> {
         return {
             name: name,
+            path: path,
             content: await fs.promises.readFile(path)
         }
+    }
+
+    private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void>{
+        await Promise.all(deployFiles.map(deployFile => {
+            if (deployFile.path) {
+                try {
+                    return fs.promises.unlink(deployFile.path)
+                } catch (error) {
+                    // Ignore these errors
+                }
+            }
+            return Promise.resolve()
+        }))
     }
 
     async getContent(req: express.Request, res: express.Response) {
@@ -475,6 +493,12 @@ export type ControllerDenylistData = {
         timestamp: Timestamp,
         authChain: AuthChain,
     }
+}
+
+export type ContentFile = {
+    name: string,
+    path?: string,
+    content: Buffer
 }
 
 const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]
