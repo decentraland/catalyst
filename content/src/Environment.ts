@@ -211,7 +211,7 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY                  , () => repository)
         this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER   , () => SystemPropertiesManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR        , () => new ChallengeSupervisor())
-        this.registerBeanIfNotAlreadySet(env, Bean.FETCHER                , () => FetcherFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.FETCHER                     , () => FetcherFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_REPORTER         , () => DeploymentReporterFactory.create(env))
