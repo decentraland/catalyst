@@ -12,6 +12,7 @@ import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
 import { initializeCryptoRoutes } from "./apis/crypto/routes";
 import { initializeImagesRoutes } from "./apis/images/routes";
 import { initializeContractRoutes } from "./apis/contracts/routes";
+import { initializeCollectionsRoutes } from "./apis/collections/routes";
 
 export class Server {
   private port: number;
@@ -46,19 +47,30 @@ export class Server {
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
 
     // Backwards compatibility for older Content API
-    this.app.use("/contentv2", initializeContentV2Routes(express.Router(), fetcher));
+    this.app.use("/contentv2", initializeContentV2Routes(express.Router(),
+        fetcher));
 
     // Profile API implementation
-    this.app.use("/profile", initializeProfilesRoutes(express.Router(), env, fetcher));
+    this.app.use("/profile", initializeProfilesRoutes(express.Router(),
+        fetcher,
+        env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)));
 
     // DCL-Crypto API implementation
-    this.app.use("/crypto", initializeCryptoRoutes(express.Router(), env));
+    this.app.use("/crypto", initializeCryptoRoutes(express.Router(),
+        env.getConfig(EnvironmentConfig.ETH_NETWORK)));
 
     // Images API for resizing contents
-    this.app.use("/images", initializeImagesRoutes(express.Router(), env, fetcher));
+    this.app.use("/images", initializeImagesRoutes(express.Router(),
+        fetcher,
+        env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION)));
 
     // DAO cached access API
-    this.app.use("/contracts", initializeContractRoutes(express.Router(), env));
+    this.app.use("/contracts", initializeContractRoutes(express.Router(),
+        env.getBean(Bean.DAO)));
+
+    // DAO Collections access API
+    this.app.use("/collections", initializeCollectionsRoutes(express.Router(),
+        fetcher));
 
   }
 
@@ -88,3 +100,56 @@ export class Server {
     }
   }
 }
+
+/*
+
+https://peers.decentraland.org/lambdas/wearables/erc721/<contract>/<option>/<emission>
+
+Ejemplo:
+contract: moonshot_2020
+option: ms_ethermon_upper_body
+emission: none
+{
+"id": "dcl://moonshot_2020/ms_ethermon_upper_body",
+"name": "Ethermon Soccer T-Shirt",
+"description": "",
+"language": "en-US",
+"image": "http://wearable-api.decentraland.org/v2/collections/moonshot_2020/wearables/ms_ethermon_upper_body/image",
+"thumbnail": "http://wearable-api.decentraland.org/v2/collections/moonshot_2020/wearables/ms_ethermon_upper_body/thumbnail"
+}
+
+Ejemplo:
+contract: moonshot_2020
+option: ms_ethermon_upper_body
+emission: 22
+{
+"id": "dcl://moonshot_2020/ms_ethermon_upper_body",
+"name": "Ethermon Soccer T-Shirt",
+"description": "DCL Wearable 22/100",
+"language": "en-US",
+"image": "http://wearable-api.decentraland.org/v2/collections/moonshot_2020/wearables/ms_ethermon_upper_body/image",
+"thumbnail": "http://wearable-api.decentraland.org/v2/collections/moonshot_2020/wearables/ms_ethermon_upper_body/thumbnail"
+}
+
+
+https://peers.decentraland.org/lambdas/collections/standard/erc721/<contract>/<option>
+{
+    "id": "dcl://<contract>/<option>",
+    "name": "<???>",
+    "description": "",
+    "language": "en-US",
+    "image": "http://wearable-api.decentraland.org/v2/collections/<contract>/wearables/<option>/image",
+    "thumbnail": "http://wearable-api.decentraland.org/v2/collections/<contract>/wearables/<option>/thumbnail"
+}
+
+https://peers.decentraland.org/lambdas/collections/standard/erc721/<contract>/<option>/<emission>
+{
+    "id": "dcl://<contract>/<option>",
+    "name": "<???-1>",
+    "description": "DCL Wearable <emission>/<???-2>",
+    "language": "en-US",
+    "image": "http://wearable-api.decentraland.org/v2/collections/<contract>/wearables/<option>/image",
+    "thumbnail": "http://wearable-api.decentraland.org/v2/collections/<contract>/wearables/<option>/thumbnail"
+}
+
+*/

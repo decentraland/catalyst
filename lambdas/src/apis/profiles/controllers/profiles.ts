@@ -1,35 +1,28 @@
 import { Request, Response } from 'express'
-import fetch from "node-fetch"
-import { Environment, EnvironmentConfig, Bean } from '../../../Environment'
 import { filterENS } from '../ensFiltering'
 import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
-import { Fetcher } from 'dcl-catalyst-commons'
 
-export async function getProfileById(env: Environment, smartContentServerFetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function getProfileById(fetcher: SmartContentServerFetcher, ensOwnerProviderUrl: string, req: Request, res: Response) {
     // Method: GET
     // Path: /:id
     const profileId:string = req.params.id
-    const v3Url = (await smartContentServerFetcher.getContentServerUrl()) + `/entities/profile?pointer=${profileId}`
-    const response = await fetch(v3Url)
     let returnProfile: EntityMetadata = { avatars:[] }
-    if (response.ok) {
-        const entities:V3ControllerEntity[] = await response.json()
+    try {
+        const entities:V3ControllerEntity[] = await fetcher.fetchJsonFromContentServer(`/entities/profile?pointer=${profileId}`)
         if (entities && entities.length > 0 && entities[0].metadata) {
-            const fetcher: Fetcher = env.getBean(Bean.FETCHER)
-            const theGraphBaseUrl:string = env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL);
             const profile = entities[0].metadata
             returnProfile = profile
-            returnProfile = await filterNonOwnedNames(fetcher, theGraphBaseUrl, profileId, returnProfile)
-            returnProfile = addBaseUrlToSnapshots(smartContentServerFetcher.getExternalContentServerUrl(), returnProfile)
+            returnProfile = await filterNonOwnedNames(fetcher, ensOwnerProviderUrl, profileId, returnProfile)
+            returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
         }
-    }
+    } catch { }
     res.send(returnProfile)
 }
 
 /**
  * We filter ENS to avoid send an ENS that is no longer owned by the user
  */
-async function filterNonOwnedNames(fetcher: Fetcher, theGraphBaseUrl: string, profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
+async function filterNonOwnedNames(fetcher: SmartContentServerFetcher, theGraphBaseUrl: string, profileId: string, metadata: EntityMetadata): Promise<EntityMetadata> {
     const avatarsNames: string[] = metadata.avatars.map(profile => profile.name)
         .filter(name => name && name !== '')
 
@@ -83,7 +76,7 @@ function addBaseUrlToSnapshots(baseUrl: string, metadata: EntityMetadata): Entit
     return { avatars }
 }
 
-interface V3ControllerEntity {
+type V3ControllerEntity = {
     id: string
     type: string
     pointers: string[]
@@ -92,7 +85,7 @@ interface V3ControllerEntity {
     metadata?: EntityMetadata
 }
 
-interface V3ControllerEntityContent {
+type V3ControllerEntityContent = {
     file: string,
     hash: string,
 }

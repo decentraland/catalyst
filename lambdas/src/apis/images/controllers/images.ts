@@ -1,7 +1,6 @@
 import log4js from "log4js";
 import { Request, Response } from "express";
 import { SmartContentServerFetcher } from "../../../SmartContentServerFetcher";
-import { Environment, EnvironmentConfig } from "../../../Environment";
 import fs from "fs";
 import sharp from "sharp";
 import fetch from "node-fetch";
@@ -29,9 +28,7 @@ function validateSize(size: string) {
   }
 }
 
-async function getStorageLocation(env: Environment) {
-  let root = env.getConfig<string>(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION);
-
+async function getStorageLocation(root: string): Promise<string> {
   while (root.endsWith("/")) {
     root = root.slice(0, -1);
   }
@@ -41,7 +38,7 @@ async function getStorageLocation(env: Environment) {
   return root;
 }
 
-export async function getResizedImage(env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function getResizedImage(fetcher: SmartContentServerFetcher, rooStorageLocation: string, req: Request, res: Response) {
   // Method: GET
   // Path: /images/:cid/:size
 
@@ -106,7 +103,7 @@ export async function getResizedImage(env: Environment, fetcher: SmartContentSer
   }
 
   async function getStreamFor(cid: string, size: string) {
-    const storageLocation = await getStorageLocation(env);
+    const storageLocation = await getStorageLocation(rooStorageLocation);
     const filePath = `${storageLocation}/${cid}_${size}`;
 
     await existingDownloadOf(filePath);
