@@ -1,5 +1,5 @@
 import log4js from "log4js"
-import { ContentFile, ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
+import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from "dcl-catalyst-commons";
 import { Readable } from "stream";
 import { ContentServerClient } from "./clients/ContentServerClient";
 import { Entity } from "../Entity";
@@ -9,6 +9,7 @@ import { tryOnCluster } from "./ClusterUtils";
 import { EntityFactory } from "../EntityFactory";
 import { EventStreamProcessor } from "./streaming/EventStreamProcessor";
 import { FailureReason } from "../errors/FailedDeploymentsManager";
+import { ContentFile } from "../../controller/Controller";
 
 export class EventDeployer {
 

@@ -1,5 +1,5 @@
 import { random } from "faker"
-import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, ContentFile, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
+import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "@katalyst/content/service/Service"
 import { Entity } from "@katalyst/content/service/Entity"
 import { buildEntityAndFile } from "./EntityTestFactory"
@@ -9,6 +9,7 @@ import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/Conten
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
 import { Deployment, PointerChangesFilters, DeploymentPointerChanges } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
+import { ContentFile } from "@katalyst/content/controller/Controller"
 
 export class MockedMetaverseContentService implements MetaverseContentService {
 

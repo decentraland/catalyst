@@ -1,7 +1,8 @@
-import { ContentFile, EntityType, EntityId } from "dcl-catalyst-commons";
+import { EntityType, EntityId } from "dcl-catalyst-commons";
 import { EntityFactory } from "@katalyst/content/service/EntityFactory";
 import { Entity } from "@katalyst/content/service/Entity";
 import { buildEntityAndFile, entityToFile } from "@katalyst/test-helpers/service/EntityTestFactory";
+import { ContentFile } from "@katalyst/content/controller/Controller";
 
 describe("Service", () => {
 

@@ -1,5 +1,5 @@
 import log4js from "log4js"
-import { Hashing, ContentFileHash, ContentFile, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo, Pointer } from "dcl-catalyst-commons";
+import { Hashing, ContentFileHash, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, LegacyPartialDeploymentHistory, AuditInfo, Pointer } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
 import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, DeploymentListener } from "./Service";
 import { EntityFactory } from "./EntityFactory";
@@ -11,12 +11,13 @@ import { CURRENT_CONTENT_VERSION } from "../Environment";
 import { Validations } from "./validations/Validations";
 import { ValidationContext } from "./validations/ValidationContext";
 import { ContentAuthenticator } from "./auth/Authenticator";
-import { ContentItem } from "../storage/ContentStorage";
+import { ContentItem, StorageContent, fromBuffer } from "../storage/ContentStorage";
 import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeploymentsManager";
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
 import { DeploymentManager, Deployment, PartialDeploymentPointerChanges, PointerChangesFilters } from "./deployments/DeploymentManager";
 import { happenedBefore } from "./time/TimeSorting";
+import { ContentFile } from "../controller/Controller";
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
 
@@ -218,9 +219,16 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // If entity was committed, then store all it's content (that isn't already stored)
         const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
             .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
-            .map(([fileHash, file]) => this.storage.storeContent(fileHash, file.content))
+            .map(([fileHash, file]) => this.storage.storeContent(fileHash, this.toStorageContent(file)))
 
         return Promise.all(contentStorageActions)
+    }
+
+    private toStorageContent(contentFile: ContentFile): StorageContent {
+        return {
+            path: contentFile.path,
+            data: contentFile.content
+        }
     }
 
     static findEntityFile(files: ContentFile[]): ContentFile {
@@ -257,7 +265,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
 
     storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
-        return this.storage.storeContent(fileHash, content)
+        return this.storage.storeContent(fileHash, fromBuffer(content))
     }
 
     async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void> {

@@ -1,5 +1,6 @@
-import { ContentFile, EntityId, EntityType, ContentFileHash, Pointer } from "dcl-catalyst-commons";
+import { EntityId, EntityType, ContentFileHash, Pointer } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
+import { ContentFile } from "../controller/Controller";
 
 export class EntityFactory {
 
