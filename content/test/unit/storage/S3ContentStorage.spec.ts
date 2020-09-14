@@ -1,4 +1,4 @@
-import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
+import { ContentStorage, fromBuffer } from "@katalyst/content/storage/ContentStorage";
 import { S3ContentStorage } from "@katalyst/content/storage/S3ContentStorage";
 import AWS from 'aws-sdk'
 
@@ -66,14 +66,14 @@ xdescribe("S3ContentStorage", () => {
     }
 
     it(`When content is stored, then it can be retrieved`, async () => {
-        await storage.store(id, content)
+        await storage.store(id, fromBuffer(content))
 
         const retrievedContent = await storage.retrieve(id)
         expect(await retrievedContent?.asBuffer()).toEqual(content);
     });
 
     it(`When content is stored, then we can check if it exists`, async function () {
-        await storage.store(id, content)
+        await storage.store(id, fromBuffer(content))
 
         const exists = await storage.exist([id])
 
@@ -83,15 +83,15 @@ xdescribe("S3ContentStorage", () => {
     it(`When content is stored on already existing id, then it overwrites the previous content`, async function () {
         const newContent = Buffer.from("456")
 
-        await storage.store(id, content)
-        await storage.store(id, newContent)
+        await storage.store(id, fromBuffer(content))
+        await storage.store(id, fromBuffer(newContent))
 
         const retrievedContent = await storage.retrieve(id)
         expect(await retrievedContent?.asBuffer()).toEqual(newContent);
     });
 
     it(`When content is deleted, then it is no longer available`, async function () {
-        await storage.store(id, content)
+        await storage.store(id, fromBuffer(content))
 
         var exists = await storage.exist([id])
         expect(exists.get(id)).toBe(true)

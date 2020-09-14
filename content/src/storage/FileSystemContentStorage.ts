@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { ContentStorage, ContentItem, SimpleContentItem } from "./ContentStorage";
+import { ContentStorage, ContentItem, SimpleContentItem, StorageContent } from "./ContentStorage";
 import { ensureDirectoryExists, existPath } from 'decentraland-katalyst-commons/fsutils';
 
 export class FileSystemContentStorage implements ContentStorage {
@@ -15,8 +15,11 @@ export class FileSystemContentStorage implements ContentStorage {
         return new FileSystemContentStorage(root)
     }
 
-    store(id: string, content: Buffer): Promise<void> {
-        return fs.promises.writeFile(this.getFilePath(id), content)
+    store(id: string, content: StorageContent): Promise<void> {
+        if (content.path) {
+            return fs.promises.rename(content.path, this.getFilePath(id))
+        }
+        return fs.promises.writeFile(this.getFilePath(id), content.data)
     }
 
     async delete(ids: string[]): Promise<void> {
@@ -49,6 +52,6 @@ export class FileSystemContentStorage implements ContentStorage {
     private getFilePath(id: string): string {
         return path.join(this.root, id)
     }
-    
+
 }
 

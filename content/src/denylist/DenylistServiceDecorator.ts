@@ -1,4 +1,4 @@
-import { EntityType, Pointer, EntityId, ContentFileHash, ContentFile, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFileHash, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
@@ -10,6 +10,7 @@ import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { Repository } from "../storage/Repository";
 import { DenylistRepository } from "../storage/repositories/DenylistRepository";
 import { Deployment, PointerChangesFilters } from "../service/deployments/DeploymentManager";
+import { ContentFile } from "../controller/Controller";
 
 /**
  * This decorator takes a MetaverseContentService and adds denylisting functionality to it

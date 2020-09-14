@@ -1,10 +1,18 @@
 import { Readable, Duplex } from "stream";
 
 export interface ContentStorage {
-    store(id: string, content: Buffer): Promise<void>;
+    store(id: string, content: StorageContent): Promise<void>;
     delete(ids: string[]): Promise<void>;
     retrieve(id: string): Promise<ContentItem | undefined>;
     exist(ids: string[]): Promise<Map<string, boolean>>;
+}
+
+export type StorageContent = {
+    path?: string,
+    data: Buffer
+}
+export function fromBuffer(buffer: Buffer): StorageContent {
+    return { data: buffer }
 }
 
 export interface ContentItem {
