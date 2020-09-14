@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
+import { Entity } from 'dcl-catalyst-commons';
 
 export async function getStandardErc721(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
@@ -7,9 +8,9 @@ export async function getStandardErc721(fetcher: SmartContentServerFetcher, req:
     const { contract, option, emission } = req.params;
 
     try {
-        const entities:WearableEntity[] = await fetcher.fetchJsonFromContentServer(`/entities/wearable?pointer=${contract}-${option}`)
+        const entities:Entity[] = await fetcher.fetchJsonFromContentServer(`/entities/wearable?pointer=${contract}-${option}`)
         if (entities && entities.length > 0 && entities[0].metadata) {
-            const wearableMetadata = entities[0].metadata
+            const wearableMetadata: WearableMetadata = entities[0].metadata
             const id = `dcl://${contract}/${option}`
             const name = wearableMetadata.i18n[0]?.text // TODO: should we ensure it's the english description?
             const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
@@ -43,22 +44,8 @@ const RARITIES_EMISSIONS = {
     "unique"   : 1
 }
 
-type WearableEntity = {
-    id: string
-    type: string
-    pointers: string[]
-    timestamp: number
-    content?: EntityContent[]
-    metadata?: WearableMetadata
-}
-
-type EntityContent = {
-    file: string,
-    hash: string,
-}
-
 type WearableMetadata = {
-    i18n: { code: string, text: string}[]
+    i18n: { code: string, text: string }[]
     rarity: string
     image: string
     thumbnail: string
