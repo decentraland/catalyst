@@ -2,7 +2,6 @@ import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { SmartContentServerFetcherFactory } from "./SmartContentServerFetcherFactory";
 import { DAOCacheFactory } from "./apis/contracts/DAOCacheFactory";
-import { Fetcher } from "dcl-catalyst-commons";
 
 const DEFAULT_SERVER_PORT = 7070;
 export const DEFAULT_ETH_NETWORK = "ropsten"
@@ -48,7 +47,6 @@ export const enum Bean {
   CONTROLLER,
   SMART_CONTENT_SERVER_FETCHER,
   DAO,
-  FETCHER
 }
 
 export const enum EnvironmentConfig {
@@ -99,7 +97,6 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO                         , () => DAOCacheFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env));
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER                  , () => ControllerFactory.create(env));
-    this.registerBeanIfNotAlreadySet(env, Bean.FETCHER                     , () => new Fetcher())
 
     return env;
   }

@@ -12,6 +12,7 @@ import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
 import { initializeCryptoRoutes } from "./apis/crypto/routes";
 import { initializeImagesRoutes } from "./apis/images/routes";
 import { initializeContractRoutes } from "./apis/contracts/routes";
+import { initializeCollectionsRoutes } from "./apis/collections/routes";
 
 export class Server {
   private port: number;
@@ -46,19 +47,30 @@ export class Server {
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
 
     // Backwards compatibility for older Content API
-    this.app.use("/contentv2", initializeContentV2Routes(express.Router(), fetcher));
+    this.app.use("/contentv2", initializeContentV2Routes(express.Router(),
+        fetcher));
 
     // Profile API implementation
-    this.app.use("/profile", initializeProfilesRoutes(express.Router(), env, fetcher));
+    this.app.use("/profile", initializeProfilesRoutes(express.Router(),
+        fetcher,
+        env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)));
 
     // DCL-Crypto API implementation
-    this.app.use("/crypto", initializeCryptoRoutes(express.Router(), env));
+    this.app.use("/crypto", initializeCryptoRoutes(express.Router(),
+        env.getConfig(EnvironmentConfig.ETH_NETWORK)));
 
     // Images API for resizing contents
-    this.app.use("/images", initializeImagesRoutes(express.Router(), env, fetcher));
+    this.app.use("/images", initializeImagesRoutes(express.Router(),
+        fetcher,
+        env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION)));
 
     // DAO cached access API
-    this.app.use("/contracts", initializeContractRoutes(express.Router(), env));
+    this.app.use("/contracts", initializeContractRoutes(express.Router(),
+        env.getBean(Bean.DAO)));
+
+    // DAO Collections access API
+    this.app.use("/collections", initializeCollectionsRoutes(express.Router(),
+        fetcher));
 
   }
 

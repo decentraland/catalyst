@@ -1,17 +1,16 @@
 import { Router, Request, Response } from "express";
 import { getResizedImage } from "./controllers/images";
 import { SmartContentServerFetcher } from "../../SmartContentServerFetcher";
-import { Environment } from  "../../Environment";
 
-export function initializeImagesRoutes(router: Router, env: Environment, fetcher: SmartContentServerFetcher): Router {
-  router.get("/:cid/:size", createHandler(env, fetcher, getResizedImage));
+export function initializeImagesRoutes(router: Router, fetcher: SmartContentServerFetcher, rootStorageLocation: string): Router {
+  router.get("/:cid/:size", createHandler(fetcher, rootStorageLocation, getResizedImage));
   return router;
 }
 
 function createHandler(
-  env: Environment,
-  fetcher: SmartContentServerFetcher,
-  originalHandler: (env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response) => void
+    fetcher: SmartContentServerFetcher,
+    rootStorageLocation: string,
+    originalHandler: (fetcher: SmartContentServerFetcher, rootStorageLocation: string, req: Request, res: Response) => void
 ): (req: Request, res: Response) => void {
-  return (req: Request, res: Response) => originalHandler(env, fetcher, req, res);
+  return (req: Request, res: Response) => originalHandler(fetcher, rootStorageLocation, req, res);
 }
