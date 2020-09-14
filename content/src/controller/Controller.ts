@@ -161,17 +161,17 @@ export class Controller {
 
     private async readFile(name: string, path: string): Promise<ContentFile> {
         return {
-            name: name,
-            path: path,
+            name,
+            path,
             content: await fs.promises.readFile(path)
         }
     }
 
     private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void>{
-        await Promise.all(deployFiles.map(deployFile => {
+        await Promise.all(deployFiles.map(async deployFile => {
             if (deployFile.path) {
                 try {
-                    return fs.promises.unlink(deployFile.path)
+                    return await fs.promises.unlink(deployFile.path)
                 } catch (error) {
                     // Ignore these errors
                 }
