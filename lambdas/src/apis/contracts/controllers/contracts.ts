@@ -1,29 +1,27 @@
 import { Request, Response } from 'express'
-import { Environment, Bean } from '../../../Environment'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata';
 import { DAOCache } from '../DAOCache';
 
-export async function getCatalystServersList(env: Environment, req: Request, res: Response) {
+export async function getCatalystServersList(dao: DAOCache, req: Request, res: Response) {
     // Method: GET
     // Path: /servers
-    return getValuesList<ServerMetadata>(env, dao => dao.getServers(), req, res)
+    return getValuesList<ServerMetadata>(dao, dao => dao.getServers(), req, res)
 }
 
-export async function getPOIsList(env: Environment, req: Request, res: Response) {
+export async function getPOIsList(dao: DAOCache, req: Request, res: Response) {
     // Method: GET
     // Path: /pois
-    return getValuesList(env, dao => dao.getPOIs(), req, res)
+    return getValuesList(dao, dao => dao.getPOIs(), req, res)
 }
 
-export async function getDenylistedNamesList(env: Environment, req: Request, res: Response) {
+export async function getDenylistedNamesList(dao: DAOCache, req: Request, res: Response) {
     // Method: GET
     // Path: /denylisted-names
-    return getValuesList(env, dao => dao.getDenylistedNames(), req, res)
+    return getValuesList(dao, dao => dao.getDenylistedNames(), req, res)
 }
 
-async function getValuesList<T>(env: Environment, valuesListFunction: (DAOCache) => Set<T>, req: Request, res: Response) {
+async function getValuesList<T>(dao: DAOCache, valuesListFunction: (DAOCache) => Set<T>, req: Request, res: Response) {
     try {
-        const dao: DAOCache = env.getBean(Bean.DAO)
         const values: Set<T> = await valuesListFunction(dao)
         res.send(Array.from(values))
     } catch (e) {

@@ -1,10 +1,11 @@
-import { EntityType, Entity as ControllerEntity, ContentFile } from "dcl-catalyst-commons"
+import { EntityType, Entity as ControllerEntity } from "dcl-catalyst-commons"
 import { Bean } from "@katalyst/content/Environment"
 import { MockedSynchronizationManager } from "@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager"
 import { buildDeployData, DeployData } from "./E2ETestUtils"
 import { TestServer } from "./TestServer"
 import { loadTestEnvironment } from "./E2ETestEnvironment"
 import { assertHistoryOnServerHasEvents, buildEventWithName, assertDeploymentsAreReported, buildDeployment, assertDeploymentFailsWith } from "./E2EAssertions"
+import { ContentFile } from "@katalyst/content/controller/Controller"
 
 describe("End 2 end deploy test", () => {
 

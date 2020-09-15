@@ -1,7 +1,8 @@
 import { random } from "faker"
-import { buildEntityAndFile as buildEntityAndFileHelper, EntityType, Pointer, Timestamp, ContentFile, ContentFileHash } from "dcl-catalyst-commons";
+import { buildEntityAndFile as buildEntityAndFileHelper, EntityType, Pointer, Timestamp, ContentFileHash } from "dcl-catalyst-commons";
 import { Entity } from "@katalyst/content/service/Entity";
 import { EntityFactory } from "@katalyst/content/service/EntityFactory";
+import { ContentFile } from "@katalyst/content/controller/Controller";
 
 /** Builds an entity with the given params, and also the file what represents it */
 export async function buildEntityAndFile(type: EntityType, pointers: Pointer[], timestamp: Timestamp,

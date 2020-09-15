@@ -1,14 +1,14 @@
 import { Router, Request, Response } from 'express'
-import { Environment } from '../../Environment'
 import { getCatalystServersList, getPOIsList, getDenylistedNamesList } from './controllers/contracts'
+import { DAOCache } from './DAOCache'
 
-export function initializeContractRoutes(router: Router, env: Environment): Router {
-    router.get("/servers", createHandler(env, getCatalystServersList))
-    router.get("/pois", createHandler(env, getPOIsList))
-    router.get("/denylisted-names", createHandler(env, getDenylistedNamesList))
+export function initializeContractRoutes(router: Router, dao: DAOCache): Router {
+    router.get("/servers", createHandler(dao, getCatalystServersList))
+    router.get("/pois", createHandler(dao, getPOIsList))
+    router.get("/denylisted-names", createHandler(dao, getDenylistedNamesList))
     return router
 }
 
-function createHandler(env: Environment, originalHandler: (env: Environment, req: Request, res: Response)=>void): (req: Request, res: Response)=>void {
-    return (req: Request, res: Response) => originalHandler(env, req, res)
+function createHandler(dao: DAOCache, originalHandler: (dao: DAOCache, req: Request, res: Response)=>void): (req: Request, res: Response)=>void {
+    return (req: Request, res: Response) => originalHandler(dao, req, res)
 }

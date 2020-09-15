@@ -6,6 +6,8 @@ import compression from "compression";
 import morgan from "morgan";
 import multer from "multer";
 import http from "http";
+import fs from 'fs';
+import path from 'path';
 import { Controller } from "./controller/Controller";
 import { Metrics } from "decentraland-katalyst-commons/metrics";
 import { Environment, Bean, EnvironmentConfig } from "./Environment";
@@ -17,6 +19,7 @@ import { SnapshotManager } from "./service/snapshots/SnapshotManager";
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger("Server");
+  private static readonly UPLOADS_DIRECTORY = "uploads/";
 
   private port: number;
   private app: express.Express;
@@ -39,7 +42,7 @@ export class Server {
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT);
 
     this.app = express();
-    const upload = multer({ dest: "uploads/" });
+    const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true });
     const controller: Controller = env.getBean(Bean.CONTROLLER);
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER);
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER);
@@ -122,6 +125,7 @@ export class Server {
   }
 
   async start(): Promise<void> {
+    this.purgeUploadsDirectory()
     await this.migrationManager.run()
     await this.validateHistory()
     this.httpServer = this.app.listen(this.port);
@@ -151,7 +155,21 @@ export class Server {
             process.exit(1)
         }
     }
-}
+  }
+
+  private purgeUploadsDirectory(): void {
+    Server.LOGGER.info("Cleaning up the Server's uploads directory...")
+    try {
+      const directory = Server.UPLOADS_DIRECTORY
+      fs.readdirSync(directory).forEach(file => {
+        fs.unlinkSync(path.join(directory, file))
+      })
+      Server.LOGGER.info("Cleaned up!")
+    } catch(e) {
+      Server.LOGGER.error("There was an error while cleaning up the upload directory: ", e)
+    }
+  }
+
 }
 
 enum HttpMethod {

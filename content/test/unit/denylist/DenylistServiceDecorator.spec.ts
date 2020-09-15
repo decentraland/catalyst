@@ -1,6 +1,6 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { Pointer, ContentFile, EntityVersion } from "dcl-catalyst-commons";
+import { Pointer, EntityVersion } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
@@ -11,6 +11,7 @@ import { Authenticator } from "dcl-crypto";
 import { MockedRepository } from "../storage/MockedRepository";
 import { Deployment } from "@katalyst/content/service/deployments/DeploymentManager";
 import { LocalDeploymentAuditInfo } from "@katalyst/content/service/Service";
+import { ContentFile } from "@katalyst/content/controller/Controller";
 
 describe("DenylistServiceDecorator", () => {
 

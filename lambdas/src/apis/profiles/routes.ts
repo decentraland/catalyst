@@ -1,14 +1,12 @@
 import { Router, Request, Response } from 'express'
 import { getProfileById } from './controllers/profiles'
-import { Environment } from '../../Environment'
 import { SmartContentServerFetcher } from '../../SmartContentServerFetcher'
 
-export function initializeProfilesRoutes(router: Router, env: Environment, fetcher: SmartContentServerFetcher): Router {
-    router.get("/:id", createHandler(env, fetcher, getProfileById))
+export function initializeProfilesRoutes(router: Router, fetcher: SmartContentServerFetcher, ensOwnerProviderUrl: string): Router {
+    router.get("/:id", createHandler(fetcher, ensOwnerProviderUrl, getProfileById))
     return router
 }
 
-
-function createHandler(env: Environment, fetcher: SmartContentServerFetcher, originalHandler: (env: Environment, fetcher: SmartContentServerFetcher, req: Request, res: Response)=>void): (req: Request, res: Response)=>void {
-    return (req: Request, res: Response) => originalHandler(env, fetcher, req, res)
+function createHandler(fetcher: SmartContentServerFetcher, ensOwnerProviderUrl: string, originalHandler: (fetcher: SmartContentServerFetcher, ensOwnerProviderUrl: string, req: Request, res: Response)=>void): (req: Request, res: Response)=>void {
+    return (req: Request, res: Response) => originalHandler(fetcher, ensOwnerProviderUrl, req, res)
 }

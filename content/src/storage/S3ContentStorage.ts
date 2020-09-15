@@ -1,4 +1,4 @@
-import { ContentStorage, ContentItem, streamToBuffer } from "./ContentStorage";
+import { ContentStorage, ContentItem, streamToBuffer, StorageContent } from "./ContentStorage";
 import AWS from 'aws-sdk'
 import { Readable } from "stream";
 
@@ -17,12 +17,11 @@ export class S3ContentStorage implements ContentStorage {
         return new S3ContentStorage(accessKeyId, secretAccessKey, bucket)
     }
 
-
-    async store(id: string, content: Buffer): Promise<void> {
+    async store(id: string, content: StorageContent): Promise<void> {
         const request: AWS.S3.Types.PutObjectRequest = {
             Bucket: this.bucket,
             Key: id,
-            Body: content,
+            Body: content.data,
         }
 
         return new Promise((resolve, reject) => {
