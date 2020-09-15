@@ -1,6 +1,6 @@
-import { RingBuffer } from "decentraland-katalyst-utils/CircularBuffer";
+import { RingBuffer } from "decentraland-katalyst-utils/RingBuffer";
 
-describe("CircularBuffer", () => {
+describe("RingBuffer", () => {
   let buffer: RingBuffer<Float32Array>;
   beforeEach(() => {
     buffer = new RingBuffer(20, Float32Array);

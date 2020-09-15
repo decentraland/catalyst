@@ -1,7 +1,7 @@
 import { IPeer } from "../peer/src/types";
 import { AudioWorkerMain } from "../peer-react-app/audioWorkerMain";
 import { PeerMessageType } from "../peer/src/messageTypes";
-import { RingBuffer } from "decentraland-katalyst-utils/CircularBuffer";
+import { RingBuffer } from "decentraland-katalyst-utils/RingBuffer";
 
 const VoiceType: PeerMessageType = {
   name: "voice",
