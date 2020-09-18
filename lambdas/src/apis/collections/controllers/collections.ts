@@ -12,7 +12,7 @@ export async function getStandardErc721(fetcher: SmartContentServerFetcher, req:
         if (entities && entities.length > 0 && entities[0].metadata) {
             const wearableMetadata: WearableMetadata = entities[0].metadata
             const id = `dcl://${contract}/${option}`
-            const name = wearableMetadata.i18n[0]?.text // TODO: should we ensure it's the english description?
+            const name = wearableMetadata.name
             const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
             const description =  emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
             const image = fetcher.getExternalContentServerUrl() + '/contents/' + wearableMetadata.image
@@ -45,7 +45,7 @@ const RARITIES_EMISSIONS = {
 }
 
 type WearableMetadata = {
-    i18n: { code: string, text: string }[]
+    name: string
     rarity: string
     image: string
     thumbnail: string
