@@ -1,7 +1,7 @@
-import { ContentFileHash, ContentFile, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp, EntityVersion } from "dcl-catalyst-commons";
+import { ContentFileHash, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp, EntityVersion } from "dcl-catalyst-commons";
 import { Bean, Environment } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
-import { ContentStorage } from "@katalyst/content/storage/ContentStorage";
+import { ContentStorage, StorageContent } from "@katalyst/content/storage/ContentStorage";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "@katalyst/content/service/Service";
 import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
 import { Entity } from "@katalyst/content/service/Entity";
@@ -19,6 +19,7 @@ import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOp
 import { NoOpPointerManager } from "./pointers/NoOpPointerManager";
 import { NoOpDeploymentManager } from "./deployments/NoOpDeploymentManager";
 import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
+import { ContentFile } from "@katalyst/content/controller/Controller";
 
 describe("Service", function () {
 
@@ -66,8 +67,8 @@ describe("Service", function () {
         const deltaMilliseconds = Date.now() - timestamp
         expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
         expect(deltaMilliseconds).toBeLessThanOrEqual(10)
-        expect(storageSpy).toHaveBeenCalledWith(entity.id, entityFile.content)
-        expect(storageSpy).toHaveBeenCalledWith(randomFileHash, randomFile.content)
+        expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
+        expect(storageSpy).toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
         expect(historySpy).toHaveBeenCalled()
     });
 
@@ -78,8 +79,8 @@ describe("Service", function () {
 
         await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
 
-        expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile.content)
-        expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile.content)
+        expect(storeSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
+        expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
     });
 
     async function buildService() {
@@ -96,6 +97,17 @@ describe("Service", function () {
             .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
         return ServiceFactory.create(env);
+    }
+
+    function equalDataOnStorageContent(data: Buffer): jasmine.AsymmetricMatcher<StorageContent> {
+        return {
+            asymmetricMatch: function(compareTo) {
+                return compareTo.data === data;
+            },
+            jasmineToString: function() {
+                return `<StorageContent with Data: ${data}>`
+            }
+        }
     }
 
 })

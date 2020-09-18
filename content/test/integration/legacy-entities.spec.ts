@@ -8,8 +8,8 @@ import { assertResponseIsOkOrThrow } from "./E2EAssertions"
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions"
 import { loadTestEnvironment } from "./E2ETestEnvironment"
 import { Authenticator } from "dcl-crypto"
-import { ContentFile } from "dcl-catalyst-commons"
 import { addModelToFormData } from "dcl-catalyst-client"
+import { ContentFile } from "@katalyst/content/controller/Controller"
 
 describe("End 2 end - Legacy Entities", () => {
 
