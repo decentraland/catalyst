@@ -28,7 +28,7 @@ describe("Integration - Concurrent deployments", () => {
         service = await testEnv.buildService()
     })
 
-    fit(`When deployments are executed concurrently, then only one remains active`, async () => {
+    it(`When deployments are executed concurrently, then only one remains active`, async () => {
         // Perform all the deployments concurrently
         await Promise.all(entities.map(entityCombo => deployEntity(entityCombo)))
 
