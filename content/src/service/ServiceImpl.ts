@@ -98,37 +98,36 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // Validate the entity's content property
         validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
-        try {
-            const { auditInfoComplete, wasEntityDeployed } = await repository.txIf(async transaction => {
-                const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
+        const { auditInfoComplete, wasEntityDeployed } = await repository.txIf(async transaction => {
+            const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
-                // Validate if the entity can be re deployed
-                await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
+            // Validate if the entity can be re deployed
+            await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
-                // Validate that there is no entity with a higher version
-                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, transaction), validationContext)
+            // Validate that there is no entity with a higher version
+            await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, transaction), validationContext)
 
-                // Validate that there are no newer entities on pointers
-                await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
+            // Validate that there are no newer entities on pointers
+            await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
 
-                // Validate that if the entity was already deployed, the status it was left is what we expect
-                await validation.validateThatEntityFailedBefore(entity, (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id), validationContext)
+            // Validate that if the entity was already deployed, the status it was left is what we expect
+            await validation.validateThatEntityFailedBefore(entity, (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id), validationContext)
 
-                if (validation.getErrors().length > 0) {
-                    throw new Error(validation.getErrors().join('\n'))
-                }
+            if (validation.getErrors().length > 0) {
+                throw new Error(validation.getErrors().join('\n'))
+            }
 
-                // Validate that the entity's pointers are not being modified by a concurrent transaction
-                const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
-                const overlappingPointers = entity.pointers.filter(pointer => pointersCurrentlyBeingDeployed.has(pointer))
-                if (overlappingPointers.length > 0) {
-                    throw new Error(`The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`)
-                }
+            // Validate that the entity's pointers are not being modified by a concurrent transaction
+            const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
+            const overlappingPointers = entity.pointers.filter(pointer => pointersCurrentlyBeingDeployed.has(pointer))
+            if (overlappingPointers.length > 0) {
+                throw new Error(`The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`)
+            }
 
-                // Update the current list of pointers being deployed
-                entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.add(pointer))
-                this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
-
+            // Update the current list of pointers being deployed
+            entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.add(pointer))
+            this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
+            try {
                 const localTimestamp = Date.now()
 
                 let auditInfoComplete: AuditInfo;
@@ -185,20 +184,21 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                 await this.failedDeploymentsManager.reportSuccessfulDeployment(transaction.failedDeployments, entity.type, entity.id)
 
                 return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
-            })
-
-            // Report deployment to listeners
-            if (wasEntityDeployed) {
-                await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
+            } catch (error) {
+                throw error
+            } finally {
+                // Update the current list of pointers being deployed
+                const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!!
+                entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.delete(pointer))
             }
+        })
 
-            return auditInfoComplete.localTimestamp
-
-        } finally {
-            // Update the current list of pointers being deployed
-            const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!!
-            entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.delete(pointer))
+        // Report deployment to listeners
+        if (wasEntityDeployed) {
+            await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
         }
+
+        return auditInfoComplete.localTimestamp
 
     }
 
