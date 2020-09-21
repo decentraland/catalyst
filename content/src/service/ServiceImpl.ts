@@ -98,104 +98,108 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // Validate the entity's content property
         validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
-        const { auditInfoComplete, wasEntityDeployed } = await repository.txIf(async transaction => {
-            const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
+        try {
+            const { auditInfoComplete, wasEntityDeployed } = await repository.txIf(async transaction => {
+                const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
-            // Validate if the entity can be re deployed
-            await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
+                // Validate if the entity can be re deployed
+                await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
-            // Validate that there is no entity with a higher version
-            await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, transaction), validationContext)
+                // Validate that there is no entity with a higher version
+                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, transaction), validationContext)
 
-            // Validate that there are no newer entities on pointers
-            await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
+                // Validate that there are no newer entities on pointers
+                await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
 
-            // Validate that if the entity was already deployed, the status it was left is what we expect
-            await validation.validateThatEntityFailedBefore(entity, (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id), validationContext)
+                // Validate that if the entity was already deployed, the status it was left is what we expect
+                await validation.validateThatEntityFailedBefore(entity, (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id), validationContext)
 
-            if (validation.getErrors().length > 0) {
-                throw new Error(validation.getErrors().join('\n'))
+                if (validation.getErrors().length > 0) {
+                    throw new Error(validation.getErrors().join('\n'))
+                }
+
+                // Validate that the entity's pointers are not being modified by a concurrent transaction
+                const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
+                const overlappingPointers = entity.pointers.filter(pointer => pointersCurrentlyBeingDeployed.has(pointer))
+                if (overlappingPointers.length > 0) {
+                    throw new Error(`The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`)
+                }
+
+                // Update the current list of pointers being deployed
+                entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.add(pointer))
+                this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
+
+                const localTimestamp = Date.now()
+
+                let auditInfoComplete: AuditInfo;
+
+                if (fix) {
+                    const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(transaction.failedDeployments, entity.type, entity.id))!!
+                    auditInfoComplete = {
+                        ...auditInfo,
+                        originTimestamp: failedDeployment.originTimestamp,
+                        originServerUrl: failedDeployment.originServerUrl,
+                        localTimestamp,
+                    }
+                } else {
+                    auditInfoComplete = {
+                        originTimestamp: localTimestamp,
+                        originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
+                        ...auditInfo,
+                        localTimestamp,
+                    }
+                }
+
+                if (!isEntityAlreadyDeployed) {
+                    // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
+
+                    // Calculate overwrites
+                    const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
+
+                    // Store the deployment
+                    const deploymentId = await this.deploymentManager.saveDeployment(transaction.deployments, transaction.migrationData, transaction.content, entity, auditInfoComplete, overwrittenBy)
+
+                    // Modify active pointers
+                    const result = await this.pointerManager.referenceEntityFromPointers(transaction.lastDeployedPointers, deploymentId, entity)
+
+                    // Save deployment pointer changes
+                    await this.deploymentManager.savePointerChanges(transaction.deploymentPointerChanges, deploymentId, result)
+
+                    // Add to pointer history
+                    await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
+
+                    // Set who overwrote who
+                    await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
+
+                    // Store the entity's content
+                    await this.storeEntityContent(hashes, alreadyStoredContent)
+
+                    // Since we are still reporting the history size, add one to it
+                    await this.historyManager.reportDeployment(transaction.deployments)
+
+                    // Record deployment for analytics
+                    this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
+                }
+
+                // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
+                await this.failedDeploymentsManager.reportSuccessfulDeployment(transaction.failedDeployments, entity.type, entity.id)
+
+                return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
+            })
+
+            // Report deployment to listeners
+            if (wasEntityDeployed) {
+                await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
             }
 
-            // Validate that the entity's pointers are not being modified by a concurrent transaction
-            const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
-            const overlappingPointers = entity.pointers.filter(pointer => pointersCurrentlyBeingDeployed.has(pointer))
-            if (overlappingPointers.length > 0) {
-                throw new Error(`The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`)
-            }
+            return auditInfoComplete.localTimestamp
 
+        } finally {
             // Update the current list of pointers being deployed
-            entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.add(pointer))
-            this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
-
-            const localTimestamp = Date.now()
-
-            let auditInfoComplete: AuditInfo;
-
-            if (fix) {
-                const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(transaction.failedDeployments, entity.type, entity.id))!!
-                auditInfoComplete = {
-                    ...auditInfo,
-                    originTimestamp: failedDeployment.originTimestamp,
-                    originServerUrl: failedDeployment.originServerUrl,
-                    localTimestamp,
-                }
-            } else {
-                auditInfoComplete = {
-                    originTimestamp: localTimestamp,
-                    originServerUrl: this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
-                    ...auditInfo,
-                    localTimestamp,
-                }
-            }
-
-            if (!isEntityAlreadyDeployed) {
-                // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
-
-                // Calculate overwrites
-                const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(transaction.pointerHistory, entity)
-
-                // Store the deployment
-                const deploymentId = await this.deploymentManager.saveDeployment(transaction.deployments, transaction.migrationData, transaction.content, entity, auditInfoComplete, overwrittenBy)
-
-                // Modify active pointers
-                const result = await this.pointerManager.referenceEntityFromPointers(transaction.lastDeployedPointers, deploymentId, entity)
-
-                // Save deployment pointer changes
-                await this.deploymentManager.savePointerChanges(transaction.deploymentPointerChanges, deploymentId, result)
-
-                // Add to pointer history
-                await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
-
-                // Set who overwrote who
-                await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
-
-                // Store the entity's content
-                await this.storeEntityContent(hashes, alreadyStoredContent)
-
-                // Since we are still reporting the history size, add one to it
-                await this.historyManager.reportDeployment(transaction.deployments)
-
-                // Record deployment for analytics
-                this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
-            }
-
-            // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-            await this.failedDeploymentsManager.reportSuccessfulDeployment(transaction.failedDeployments, entity.type, entity.id)
-
-            return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
-        })
-
-        // Report deployment to listeners
-        if (wasEntityDeployed) {
-            await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
+            const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!!
+            entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.delete(pointer))
         }
 
-        // Update the current list of pointers being deployed
-        const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!!
-        entity.pointers.forEach(pointer => pointersCurrentlyBeingDeployed.delete(pointer))
-
-        return auditInfoComplete.localTimestamp
     }
 
     reportErrorDuringSync(entityType: EntityType, entityId: EntityId, originTimestamp: Timestamp, originServerUrl: ServerAddress, reason: FailureReason, errorDescription?: string): Promise<null> {

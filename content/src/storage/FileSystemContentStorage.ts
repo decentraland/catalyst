@@ -15,9 +15,13 @@ export class FileSystemContentStorage implements ContentStorage {
         return new FileSystemContentStorage(root)
     }
 
-    store(id: string, content: StorageContent): Promise<void> {
+    async store(id: string, content: StorageContent): Promise<void> {
         if (content.path) {
-            return fs.promises.rename(content.path, this.getFilePath(id))
+            try {
+                return await fs.promises.rename(content.path, this.getFilePath(id))
+            } catch {
+                // Failed to move the file. Will try to write it instead
+            }
         }
         return fs.promises.writeFile(this.getFilePath(id), content.data)
     }
