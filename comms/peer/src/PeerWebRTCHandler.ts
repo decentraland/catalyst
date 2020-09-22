@@ -460,8 +460,8 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
   sendPacketToPeer(peerId: string, data: Uint8Array) {
     const conn = this.connectedPeers[peerId]?.connection;
     if (conn) {
+      conn.send(data);
     }
-    conn.send(data);
   }
 
   private log(level: LogLevel, ...entries: any[]) {
