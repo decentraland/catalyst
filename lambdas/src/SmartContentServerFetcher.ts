@@ -35,11 +35,13 @@ export class SmartContentServerFetcher extends Fetcher {
     }
 
     async fetchJsonFromContentServer(relativeUrl: string, options?: RequestOptions): Promise<any> {
-        return this.fetchJson(this.getContentServerUrl() + this.slash(relativeUrl), options)
+        const contentServerUrl = await this.getContentServerUrl()
+        return this.fetchJson(contentServerUrl + this.slash(relativeUrl), options)
     }
 
     async fetchBufferFromContentServer(relativeUrl: string, options?: RequestOptions): Promise<Buffer> {
-        return this.fetchBuffer(this.getContentServerUrl() + this.slash(relativeUrl), options)
+        const contentServerUrl = await this.getContentServerUrl()
+        return this.fetchBuffer(contentServerUrl + this.slash(relativeUrl), options)
     }
 
     private slash(url: string): string {
