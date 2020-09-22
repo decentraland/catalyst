@@ -2,6 +2,7 @@ import { PeerMessageType } from "./messageTypes";
 import { Position } from "../../../commons/utils/Positions";
 import { SocketBuilder } from "./peerjs-server-connector/socket";
 import SimplePeer from "simple-peer";
+import { Packet } from "./proto/peer_protobuf";
 
 type PacketSubtypeData = {
   lastTimestamp: number;
@@ -29,7 +30,7 @@ export interface IPeer {
   peerIdOrFail(): string;
   currentRooms: Room[];
   logLevel: LogLevelString;
-  callback: (sender: string, room: string, payload: any) => void;
+  callback: PacketCallback;
   setLayer(layer: string): Promise<void>;
   joinRoom(room: string): Promise<void>;
   leaveRoom(roomId: string): Promise<void>;
@@ -125,7 +126,7 @@ export type PositionConfig = {
   disconnectDistance?: number;
 };
 
-export type PacketCallback = (sender: string, room: string, payload: any) => void;
+export type PacketCallback = (sender: string, room: string, payload: any, packet: Packet) => void;
 
 export type ReceivedRelayData = {
   hops: number;
