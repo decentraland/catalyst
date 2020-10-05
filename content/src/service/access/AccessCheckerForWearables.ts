@@ -67,8 +67,7 @@ export class AccessCheckerForWearables {
               managers
               creator
             }
-            items(where:{collection: $collection, itemId: $itemId}) {
-              itemId
+            items(where:{collection: $collection, blockchainId: $itemId}) {
               minters
               managers
             }
