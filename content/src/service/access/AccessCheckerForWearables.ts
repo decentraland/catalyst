@@ -48,10 +48,11 @@ export class AccessCheckerForWearables {
 
     private async checkCollectionAccess(collection: string, itemId: number, ethAddress: EthAddress): Promise<boolean> {
         try {
-            const collectionItems: WerableCollectionItems = await this.getCollectionItems(collection, itemId, ethAddress)
-            return collectionItems.collections[0]?.creator === ethAddress
-                || collectionItems.collections[0]?.managers.includes(ethAddress)
-                || collectionItems.items[0]?.managers.includes(ethAddress)
+            const ethAddressLowercase = ethAddress.toLocaleLowerCase()
+            const collectionItems: WerableCollectionItems = await this.getCollectionItems(collection, itemId, ethAddressLowercase)
+            return collectionItems.collections[0]?.creator === ethAddressLowercase
+                || collectionItems.collections[0]?.managers.includes(ethAddressLowercase)
+                || collectionItems.items[0]?.managers.includes(ethAddressLowercase)
         } catch (error) {
             this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
             return false
