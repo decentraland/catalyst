@@ -1,11 +1,12 @@
 import { Request, Response } from 'express'
 import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
-import { Entity } from 'dcl-catalyst-commons';
+import { Entity, EntityContentItemReference } from 'dcl-catalyst-commons';
 
 export async function getStandardErc721(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
     // Method: GET
     // Path: /standard/erc721/:contract/:option/:emission
-    const { contract, option, emission } = req.params;
+    const { contract, option } = req.params;
+    const emission : string | undefined = req.params.emission;
 
     try {
         const entities:Entity[] = await fetcher.fetchJsonFromContentServer(`/entities/wearable?pointer=${contract}-${option}`)
@@ -15,8 +16,8 @@ export async function getStandardErc721(fetcher: SmartContentServerFetcher, req:
             const name = wearableMetadata.name
             const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
             const description =  emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-            const image = fetcher.getExternalContentServerUrl() + '/contents/' + wearableMetadata.image
-            const thumbnail = fetcher.getExternalContentServerUrl() + '/contents/' + wearableMetadata.thumbnail
+            const image = createContentUrl(fetcher, entities[0], wearableMetadata.image)
+            const thumbnail = createContentUrl(fetcher, entities[0], wearableMetadata.thumbnail)
             const standardErc721 = {
                 id,
                 name,
@@ -34,6 +35,16 @@ export async function getStandardErc721(fetcher: SmartContentServerFetcher, req:
     }
 }
 
+function createContentUrl(fetcher: SmartContentServerFetcher, entity: Entity, fileName: string | undefined): string | undefined {
+    if (fileName) {
+        const imageHash = entity.content?.find(item => item.file===fileName)?.hash
+        if (imageHash) {
+            return fetcher.getExternalContentServerUrl() + '/contents/' + imageHash
+        }
+    }
+    return undefined
+}
+
 const RARITIES_EMISSIONS = {
     "common"   : 100000,
     "uncommon" : 10000,
@@ -47,6 +58,6 @@ const RARITIES_EMISSIONS = {
 type WearableMetadata = {
     name: string
     rarity: string
-    image: string
-    thumbnail: string
+    image?: string
+    thumbnail?: string
 }
