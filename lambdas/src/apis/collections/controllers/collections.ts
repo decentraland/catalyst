@@ -31,6 +31,7 @@ export async function getStandardErc721(fetcher: SmartContentServerFetcher, req:
             res.status(404).send()
         }
     } catch(e) {
+        console.log(e)
         res.status(500).send(e.messsge);
     }
 }

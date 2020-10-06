@@ -3,7 +3,7 @@ import { getStandardErc721 } from './controllers/collections'
 import { SmartContentServerFetcher } from '../../SmartContentServerFetcher'
 
 export function initializeCollectionsRoutes(router: Router, fetcher: SmartContentServerFetcher): Router {
-    router.get("/standard/erc721/:contract/:option/:emission", createHandler(fetcher, getStandardErc721))
+    router.get("/standard/erc721/:contract/:option/:emission?", createHandler(fetcher, getStandardErc721))
     return router
 }
 
