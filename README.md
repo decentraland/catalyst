@@ -11,7 +11,8 @@ If you just want to run a Catalyst server, please check the [Catalyst Owner](htt
 
 ## Services
 
-- [Content Server](content/README.md)
+- [Content Server](content)
+- [Lighthouse](comms)
 
 ## Monitoring
 
