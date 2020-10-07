@@ -1,4 +1,4 @@
-# Comms
+# Lighthouse / Comms Server
 Comms is comprised of two distinct modules: One for Catalyst server called "Lighthouse" and other for clients & P2P network called "Peer Library".
 
 The Lighthouse is an server that tracks peers in different "layers" and "rooms" in order to enable them to make the necessary connections. It also handles authentication.
