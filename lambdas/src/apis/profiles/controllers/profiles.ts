@@ -21,7 +21,7 @@ export async function getProfileById(fetcher: SmartContentServerFetcher, ensOwne
 }
 
 /**
- * We filter ENS to avoid send an ENS that is no longer owned by the user
+ * Checks the ENSs and mark them that are owned by the user
  */
 async function markOwnedNames(fetcher: SmartContentServerFetcher, theGraphBaseUrl: string, profileId: string, metadata: ProfileMetadata): Promise<ProfileMetadata> {
     const avatarsNames: string[] = metadata.avatars.map(profile => profile.name)
