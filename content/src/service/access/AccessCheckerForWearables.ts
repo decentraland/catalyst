@@ -48,36 +48,41 @@ export class AccessCheckerForWearables {
 
     private async checkCollectionAccess(collection: string, itemId: number, ethAddress: EthAddress): Promise<boolean> {
         try {
-            const collectionItems: WerableCollectionItems = await this.getCollectionItems(collection, itemId, ethAddress)
-            return collectionItems.collections[0]?.creator === ethAddress
-                || collectionItems.collections[0]?.managers.includes(ethAddress)
-                || collectionItems.items[0]?.managers.includes(ethAddress)
+            const ethAddressLowercase = ethAddress.toLocaleLowerCase()
+            const permissions: WearableItemPermissionsData = await this.getCollectionItems(collection, itemId, ethAddressLowercase)
+            return (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase)
+                || (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase))
+                || (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
         } catch (error) {
             this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
             return false
         }
     }
 
-    private async getCollectionItems(collection: string, itemId: number, ethAddress: EthAddress): Promise<WerableCollectionItems> {
+    private async getCollectionItems(collection: string, itemId: number, ethAddress: EthAddress): Promise<WearableItemPermissionsData> {
         const query = `
          query getCollectionRoles($collection: String!, $itemId: Int!) {
             collections(where:{id: $collection}) {
-              minters
-              managers
               creator
-            }
-            items(where:{collection: $collection, itemId: $itemId}) {
-              itemId
-              minters
               managers
+              minters
+            }
+            items(where:{collection: $collection, blockchainId: $itemId}) {
+              managers
+              minters
             }
         }`
 
         try {
-            return await this.fetcher.queryGraph<WerableCollectionItems>(
+            const wearableCollectionsAndItems = await this.fetcher.queryGraph<WearableCollectionsAndItems>(
                 this.dclCollectionsAccessUrl,
                 query,
                 { collection: collection, itemId: itemId})
+            return {
+                collectionCreator : wearableCollectionsAndItems.collections[0]?.creator,
+                collectionManagers: wearableCollectionsAndItems.collections[0]?.managers,
+                itemManagers      : wearableCollectionsAndItems.items[0]?.managers
+            }
         } catch (error) {
             this.LOGGER.error(`Error fetching wearable: (${collection}-${itemId})`, error)
             throw error
@@ -85,9 +90,15 @@ export class AccessCheckerForWearables {
     }
 }
 
-type WerableCollectionItems = {
+type WearableItemPermissionsData = {
+    collectionCreator: string,
+    collectionManagers: string[],
+    itemManagers: string[]
+}
+
+type WearableCollectionsAndItems = {
     collections: WearableCollection[],
-    items: WearableCollectionItem
+    items: WearableCollectionItem[]
 }
 
 type WearableCollection = {
@@ -97,7 +108,6 @@ type WearableCollection = {
 }
 
 type WearableCollectionItem = {
-    itemId: string,
     managers: string[],
     minters: string[]
 }
