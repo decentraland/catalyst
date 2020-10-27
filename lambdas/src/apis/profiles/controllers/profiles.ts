@@ -32,7 +32,7 @@ async function filterNonOwnedNames(fetcher: SmartContentServerFetcher, theGraphB
         const avatars = metadata.avatars.map(profile => (
             {
                 ...profile,
-                name: ownsENS(ownedENS, profile.name) ? profile.name : '',
+                ownsName: ownsENS(ownedENS, profile.name),
             }))
         return { avatars }
     }
