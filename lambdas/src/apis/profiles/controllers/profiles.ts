@@ -13,7 +13,7 @@ export async function getProfileById(fetcher: SmartContentServerFetcher, ensOwne
         if (entities && entities.length > 0 && entities[0].metadata) {
             const profile: ProfileMetadata = entities[0].metadata
             returnProfile = profile
-            returnProfile = await filterNonOwnedNames(fetcher, ensOwnerProviderUrl, profileId, returnProfile)
+            returnProfile = await markOwnedNames(fetcher, ensOwnerProviderUrl, profileId, returnProfile)
             returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
         }
     } catch { }
@@ -23,7 +23,7 @@ export async function getProfileById(fetcher: SmartContentServerFetcher, ensOwne
 /**
  * We filter ENS to avoid send an ENS that is no longer owned by the user
  */
-async function filterNonOwnedNames(fetcher: SmartContentServerFetcher, theGraphBaseUrl: string, profileId: string, metadata: ProfileMetadata): Promise<ProfileMetadata> {
+async function markOwnedNames(fetcher: SmartContentServerFetcher, theGraphBaseUrl: string, profileId: string, metadata: ProfileMetadata): Promise<ProfileMetadata> {
     const avatarsNames: string[] = metadata.avatars.map(profile => profile.name)
         .filter(name => name && name !== '')
 
@@ -32,7 +32,7 @@ async function filterNonOwnedNames(fetcher: SmartContentServerFetcher, theGraphB
         const avatars = metadata.avatars.map(profile => (
             {
                 ...profile,
-                ownsName: ownsENS(ownedENS, profile.name),
+                hasClaimedName: ownsENS(ownedENS, profile.name),
             }))
         return { avatars }
     }
