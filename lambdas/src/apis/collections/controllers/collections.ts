@@ -60,7 +60,7 @@ async function internalContents(fetcher: SmartContentServerFetcher, res: Respons
             const wearableMetadata: WearableMetadata = entities[0].metadata
             const relativeContentUrl = createRelativeContentUrl(fetcher, entities[0], selector(wearableMetadata))
             if (relativeContentUrl) {
-                contentBuffer = await fetcher.fetchBufferFromContentServer(relativeContentUrl) // TODO: fetch a stream instead of a Buffer
+                contentBuffer = await fetcher.fetchBufferFromContentServer(relativeContentUrl) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
             }
         }
         if (contentBuffer) {

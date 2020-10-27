@@ -50,9 +50,9 @@ export class AccessCheckerForWearables {
         try {
             const ethAddressLowercase = ethAddress.toLocaleLowerCase()
             const permissions: WearableItemPermissionsData = await this.getCollectionItems(collection, itemId, ethAddressLowercase)
-            return permissions.collectionCreator === ethAddressLowercase
-                || permissions.collectionManagers.includes(ethAddressLowercase)
-                || permissions.itemManagers.includes(ethAddressLowercase)
+            return (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase)
+                || (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase))
+                || (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
         } catch (error) {
             this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
             return false
