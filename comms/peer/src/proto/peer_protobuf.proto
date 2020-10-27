@@ -42,8 +42,8 @@ message Packet {
   string subtype = 5;
   //If negative, it means it is not set.
   int32 discardOlderThan = 6;
-  //If negative, it means it is not set.
   bool optimistic = 14;
+  //If negative, it means it is not set.
   int32 expireTime = 7;
   uint32 hops = 8;
   uint32 ttl = 9;
