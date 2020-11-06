@@ -189,8 +189,8 @@ export class Controller {
 
         if (data) {
             res.contentType('application/octet-stream')
-            res.setHeader('ETag', hashId)
-            res.setHeader('Access-Control-Expose-Headers', '*')
+            res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
+            res.setHeader('Access-Control-Expose-Headers', 'ETag')
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
 
             if(data.getLength()) {
