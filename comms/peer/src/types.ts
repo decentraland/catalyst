@@ -15,7 +15,8 @@ export type PeerRelay = { id: string; hops: number; timestamp: number };
 
 export type KnownPeerData = {
   id: string;
-  timestamp?: number;
+  lastUpdated?: number // Local timestamp used for registering if the peer is alive
+  timestamp?: number; // Their local timestamp used for handling packets
   subtypeData: Record<string, PacketSubtypeData>;
   position?: Position;
   latency?: number;

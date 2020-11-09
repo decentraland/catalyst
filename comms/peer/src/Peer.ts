@@ -114,7 +114,7 @@ export class Peer implements IPeer {
       oldConnectionsTimeout: this.config.oldConnectionsTimeout,
       peerConnectTimeout: this.config.peerConnectTimeout,
       receivedOfferValidator: this.validateReceivedOffer.bind(this),
-      heartbeatInterval: this.config.heartbeatInterval
+      heartbeatInterval: this.config.heartbeatInterval,
     });
 
     this.wrtcHandler.on(PeerWebRTCEvent.ConnectionRequestRejected, this.handleConnectionRequestRejected.bind(this));
@@ -126,7 +126,6 @@ export class Peer implements IPeer {
     });
 
     this.setUpTimeToRequestOptimumNetwork();
-    
 
     this.setLighthouseUrl(lighthouseUrl);
 
@@ -220,7 +219,7 @@ export class Peer implements IPeer {
 
   private expireKnownPeers(currentTimestamp: number) {
     Object.keys(this.knownPeers).forEach((id) => {
-      const lastUpdate = this.knownPeers[id].timestamp;
+      const lastUpdate = this.knownPeers[id].lastUpdated;
       if (lastUpdate && currentTimestamp - lastUpdate > PEER_CONSTANTS.KNOWN_PEERS_EXPIRE_TIME) {
         if (this.isConnectedTo(id)) {
           this.disconnectFrom(id);
@@ -672,6 +671,7 @@ export class Peer implements IPeer {
 
   private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number, sequenceId: number) {
     const knownPeer = this.knownPeers[peerId];
+    knownPeer.lastUpdated = TimeKeeper.now();
     knownPeer.timestamp = Math.max(knownPeer.timestamp ?? Number.MIN_SAFE_INTEGER, timestamp);
     if (subtype) {
       const lastData = knownPeer.subtypeData[subtype];
@@ -1124,7 +1124,7 @@ export class Peer implements IPeer {
       this.addKnownPeerIfNotExists(it);
 
       this.knownPeers[it.id].position = it.position;
-      this.knownPeers[it.id].timestamp = now;
+      this.knownPeers[it.id].lastUpdated = now;
     });
 
     this.updateNetwork().catch((e) => this.log(LogLevel.WARN, "Error updating network for optimization", e));
@@ -1180,7 +1180,7 @@ export class Peer implements IPeer {
     if (this.connectedCount() >= this.config.maxConnections!) {
       if (payload.position && this.selfPosition()) {
         const knownPeer = this.addKnownPeerIfNotExists({ id: peerId });
-        knownPeer.timestamp = TimeKeeper.now();
+        knownPeer.lastUpdated = TimeKeeper.now();
         knownPeer.position = payload.position;
 
         const worstPeer = this.getWorstConnectedPeerByDistance();
