@@ -879,7 +879,7 @@ describe("Peer Integration Test", function () {
     await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer4.peerIdOrFail(), peer3.peerIdOrFail()));
     // @ts-ignore
     await untilTrue(() => peer4.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
-  });
+  }, 10000);
 
   it("consolidates relay suspension request adding pending suspension", () => {});
 
