@@ -1,6 +1,10 @@
 image: decentraland/ci-node:12
 
 build:
+  only:
+    - master
+    - staging
+    - release
   script:
     - cd status && yarn install && PUBLIC_URL=https://catalysts.decentraland.io yarn build && cd ..
     - dcl-lock-sync
