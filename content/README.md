@@ -31,8 +31,9 @@ There are many ways to configure the content server. You can provide these confi
 `CONFIG_NAME1=CONFIG_VALUE1 CONFIG_NAME2=CONFIG_VALUE2 yarn bazel run content:server`
 
 These are some of the more important configuration values:
+
 | Name | Description | Default |
-|------|-------------|:-----:|:-----:|
+|------|-------------|:-----:|
 | ETH_NETWORK | Which Ethereum network you want to use. Usually is `ropsten` for testing or `mainnet` for production | 'ropsten' |
 | STORAGE_ROOT_FOLDER | Folder where all content will be stored | 'storage' |
 | SERVER_PORT | Port to be used by the service | 6969 |
