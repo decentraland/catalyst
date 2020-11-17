@@ -43,7 +43,6 @@ export class SQSDeploymentReporter implements DeploymentReporter {
 
 
     reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
-        SQSDeploymentReporter.LOGGER.debug("Sending SQS message.")
         if (entity.type !== EntityType.SCENE) {
             // Only send SCENE notifications to SQS
             return
