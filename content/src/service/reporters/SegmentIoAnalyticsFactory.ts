@@ -7,7 +7,7 @@ export class SegmentIoAnalyticsFactory {
 
     static create(env: Environment): DeploymentReporter {
 
-        let service: MetaverseContentService = env.getBean(Bean.SERVICE)
+        const service: MetaverseContentService = env.getBean(Bean.SERVICE)
 
         return new SegmentIoAnalytics(env, service)
     }
