@@ -15,7 +15,6 @@ import { MockedRepository } from "../storage/MockedRepository";
 import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { MockedContentCluster } from "@katalyst/test-helpers/service/synchronization/MockedContentCluster";
 import { NoOpFailedDeploymentsManager } from "./errors/NoOpFailedDeploymentsManager";
-import { NoOpDeploymentReporter } from "@katalyst/content/service/reporters/NoOpDeploymentReporter";
 import { NoOpPointerManager } from "./pointers/NoOpPointerManager";
 import { NoOpDeploymentManager } from "./deployments/NoOpDeploymentManager";
 import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
@@ -94,7 +93,6 @@ describe("Service", function () {
             .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
             .registerBean(Bean.POINTER_MANAGER, NoOpPointerManager.build())
             .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
-            .registerBean(Bean.SEGMENT_IO_ANALYTICS, new NoOpDeploymentReporter())
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
         return ServiceFactory.create(env);
     }
