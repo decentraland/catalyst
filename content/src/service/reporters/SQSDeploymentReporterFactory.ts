@@ -7,7 +7,7 @@ export class SQSDeploymentReporterFactory {
 
     static create(env: Environment): DeploymentReporter {
 
-        let service: MetaverseContentService = env.getBean(Bean.SERVICE)
+        const service: MetaverseContentService = env.getBean(Bean.SERVICE)
 
         return new SQSDeploymentReporter(env, service)
     }
