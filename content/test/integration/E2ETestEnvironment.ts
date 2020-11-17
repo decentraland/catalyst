@@ -7,7 +7,6 @@ import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
 import { Repository } from '@katalyst/content/storage/Repository'
 import { TestServer } from './TestServer'
 import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
-import { NoOpDeploymentReporter } from '@katalyst/content/service/reporters/NoOpDeploymentReporter'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { Container } from 'testcontainers/dist/container'
@@ -45,7 +44,6 @@ export class E2ETestEnvironment {
             .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
             .setConfig(EnvironmentConfig.LOG_LEVEL, "debug")
             .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
-            .registerBean(Bean.SEGMENT_IO_ANALYTICS, new NoOpDeploymentReporter())
             .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
         this.repository = await RepositoryFactory.create(this.sharedEnv)
     }
