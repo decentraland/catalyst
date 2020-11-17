@@ -45,7 +45,7 @@ export class E2ETestEnvironment {
             .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
             .setConfig(EnvironmentConfig.LOG_LEVEL, "debug")
             .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
-            .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
+            .registerBean(Bean.SEGMENT_IO_ANALYTICS, new NoOpDeploymentReporter())
             .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
         this.repository = await RepositoryFactory.create(this.sharedEnv)
     }

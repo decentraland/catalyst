@@ -94,7 +94,7 @@ describe("Service", function () {
             .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
             .registerBean(Bean.POINTER_MANAGER, NoOpPointerManager.build())
             .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
-            .registerBean(Bean.DEPLOYMENT_REPORTER, new NoOpDeploymentReporter())
+            .registerBean(Bean.SEGMENT_IO_ANALYTICS, new NoOpDeploymentReporter())
             .registerBean(Bean.REPOSITORY, MockedRepository.build())
         return ServiceFactory.create(env);
     }

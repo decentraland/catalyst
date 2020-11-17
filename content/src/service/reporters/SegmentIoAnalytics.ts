@@ -2,7 +2,9 @@ import log4js from "log4js"
 import Analytics from "analytics-node"
 import { Entity } from "../Entity";
 import { DeploymentReporter } from "./DeploymentReporter";
-import { EthAddress } from "dcl-crypto";
+import { Authenticator, EthAddress } from "dcl-crypto";
+import { DeploymentEvent, MetaverseContentService } from "../Service";
+import { Environment, EnvironmentConfig } from "../../Environment";
 
 export class SegmentIoAnalytics implements DeploymentReporter {
 
@@ -10,8 +12,22 @@ export class SegmentIoAnalytics implements DeploymentReporter {
 
     private segmentClient: Analytics;
 
-    constructor(writeKey: string) {
-        this.segmentClient = new Analytics(writeKey);
+    constructor(
+        env: Environment,
+        service: MetaverseContentService) {
+
+            let segmentWriteKey: string = env.getConfig(EnvironmentConfig.SEGMENT_WRITE_KEY)
+            if (segmentWriteKey) {
+                this.segmentClient = new Analytics(segmentWriteKey);
+                service.listenToDeployments((deployment) => this.onDeployment(deployment));
+            }
+    }
+
+
+    private async onDeployment(deploymentEvent: DeploymentEvent): Promise<void> {
+        this.reportDeployment(deploymentEvent.entity,
+            Authenticator.ownerAddress(deploymentEvent.auditInfo.authChain),
+            deploymentEvent.origin)
     }
 
     reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
@@ -22,7 +38,8 @@ export class SegmentIoAnalytics implements DeploymentReporter {
                     SegmentIoAnalytics.LOGGER.warn(`There was an error while reporting metrics: ${err.message}`)
                 }
             })
-	}
+    }
+
 
     static createRecordEvent(entity: Entity, ethAddress: EthAddress, origin: string): any {
         return {
@@ -32,13 +49,15 @@ export class SegmentIoAnalytics implements DeploymentReporter {
                 type: entity.type,
                 cid: entity.id,
                 pointers: entity.pointers,
-                files: Array.from(entity.content?.entries()||[]).map(entry => {return {
-                    path: entry[0],
-                    cid: entry[1]
-                }}),
+                files: Array.from(entity.content?.entries() || []).map(entry => {
+                    return {
+                        path: entry[0],
+                        cid: entry[1]
+                    }
+                }),
                 origin: origin,
             }
         }
-	}
+    }
 
 }
