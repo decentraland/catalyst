@@ -134,6 +134,7 @@ export class Server {
     await this.snapshotManager.start();
     await this.synchronizationManager.start();
     await this.garbageCollectionManager.start();
+    await this.service.start();
   }
 
   async stop(): Promise<void> {

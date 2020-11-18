@@ -60,7 +60,6 @@ describe("Service", function () {
 
     it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
         const storageSpy = spyOn(storage, "store").and.callThrough()
-        const historySpy = spyOn(historyManager, "reportDeployment")
 
         const timestamp: Timestamp = await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
         const deltaMilliseconds = Date.now() - timestamp
@@ -68,7 +67,6 @@ describe("Service", function () {
         expect(deltaMilliseconds).toBeLessThanOrEqual(10)
         expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
         expect(storageSpy).toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
-        expect(historySpy).toHaveBeenCalled()
     });
 
     it(`When a file is already uploaded, then don't try to upload it again`, async () => {
@@ -99,10 +97,10 @@ describe("Service", function () {
 
     function equalDataOnStorageContent(data: Buffer): jasmine.AsymmetricMatcher<StorageContent> {
         return {
-            asymmetricMatch: function(compareTo) {
+            asymmetricMatch: function (compareTo) {
                 return compareTo.data === data;
             },
-            jasmineToString: function() {
+            jasmineToString: function () {
                 return `<StorageContent with Data: ${data}>`
             }
         }

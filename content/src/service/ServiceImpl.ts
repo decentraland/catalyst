@@ -24,6 +24,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
     private readonly listeners: DeploymentListener[] = []
     private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
+    private historySize: number = 0
 
     constructor(
         private readonly storage: ServiceStorage,
@@ -34,6 +35,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         private readonly deploymentManager: DeploymentManager,
         private readonly validations: Validations,
         private readonly repository: Repository) {
+    }
+
+    async start() {
+        this.historySize = await this.repository.task(task => task.deployments.getAmountOfDeployments())
     }
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository: RepositoryTask | Repository = this.repository): Promise<Timestamp> {
@@ -88,7 +93,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
         // Hash all files, and validate them
         const hashEntries: { hash: ContentFileHash, file: ContentFile }[] = await Hashing.calculateHashes(files)
-        const hashes: Map<ContentFileHash, ContentFile> = new Map(hashEntries.map(({ hash, file }) => [ hash, file ]))
+        const hashes: Map<ContentFileHash, ContentFile> = new Map(hashEntries.map(({ hash, file }) => [hash, file]))
 
         // Check for if content is already stored
         const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(Array.from(entity.content?.values() ?? []));
@@ -172,8 +177,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                     await this.storeEntityContent(hashes, alreadyStoredContent)
 
                     // Since we are still reporting the history size, add one to it
-                    await this.historyManager.reportDeployment(transaction.deployments)
-
+                    this.historySize++
                 }
 
                 // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
@@ -195,7 +199,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         }
 
         return auditInfoComplete.localTimestamp
-
     }
 
     reportErrorDuringSync(entityType: EntityType, entityId: EntityId, originTimestamp: Timestamp, originServerUrl: ServerAddress, reason: FailureReason, errorDescription?: string): Promise<null> {
@@ -238,7 +241,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         } else if (filesWithName.length > 1) {
             throw new Error(`Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`)
         }
-
         return filesWithName[0];
     }
 
@@ -256,7 +258,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             version: CURRENT_CONTENT_VERSION,
             currentTime: Date.now(),
             lastImmutableTime: 0,
-            historySize: this.historyManager.getHistorySize(),
+            historySize: this.historySize,
         }
     }
 

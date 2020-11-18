@@ -40,6 +40,9 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         this.pointerChanges = builder.pointerChanges
     }
 
+    start() {
+    }
+
     deleteContent(fileHashes: string[]): Promise<void> {
         throw new Error("Method not implemented.")
     }
