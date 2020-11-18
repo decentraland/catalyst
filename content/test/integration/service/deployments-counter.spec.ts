@@ -1,11 +1,11 @@
-import { AuditInfo, EntityType, EntityVersion, Timestamp } from "dcl-catalyst-commons";
+import { EntityType, Timestamp } from "dcl-catalyst-commons";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from "../E2ETestUtils";
+import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployWithAuditInfo } from "../E2ETestUtils";
 
 
 /**
- * This test verifies that the counter of deployments is correctly initialized and updated
+ * This test verifies that the counter of deployments is correctly updated
  */
 describe("Integration - Deployments counter", () => {
 
@@ -28,7 +28,7 @@ describe("Integration - Deployments counter", () => {
         service = await testEnv.buildService()
     })
 
-    it(`When the service is initialized then the deployment counter has the total of deployments`, async () => {
+    it(`When a new deployment is done, then the counter is updated`, async () => {
         // Deploy E1 and E2
         const [] = await deploy(E1, E2)
 
@@ -51,18 +51,6 @@ describe("Integration - Deployments counter", () => {
 
 
     async function deploy(...entities: EntityCombo[]): Promise<Timestamp[]> {
-        return deployWithAuditInfo(entities, {})
+        return deployWithAuditInfo(service, entities, {})
     }
-
-    async function deployWithAuditInfo(entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
-        const result: Timestamp[] = []
-        for (const { deployData } of entities) {
-            const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
-            const deploymentTimestamp = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, newAuditInfo, '')
-            result.push(deploymentTimestamp)
-        }
-        return result
-    }
-
-
 })

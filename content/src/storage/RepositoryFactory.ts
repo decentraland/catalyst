@@ -5,7 +5,6 @@ export class RepositoryFactory {
 
     static async create(env: Environment): Promise<Repository> {
 
-        console.log("AGUS")
         const connection = {
             port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
             host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),

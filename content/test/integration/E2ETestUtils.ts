@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 import EthCrypto from "eth-crypto"
-import { Pointer, EntityType , Entity as ControllerEntity, EntityId, Timestamp, ContentFileHash, EntityVersion} from "dcl-catalyst-commons"
+import { Pointer, EntityType, Entity as ControllerEntity, EntityId, Timestamp, ContentFileHash, EntityVersion, AuditInfo } from "dcl-catalyst-commons"
 import { Authenticator, EthAddress, AuthChain } from "dcl-crypto"
 import { retry } from "@katalyst/content/helpers/RetryHelper"
 import { Entity } from "@katalyst/content/service/Entity"
@@ -21,7 +21,7 @@ export async function buildDeployDataAfterEntity(afterEntity: ({ timestamp: Time
 export async function buildDeployData(pointers: Pointer[], options?: DeploymentOptions): Promise<EntityCombo> {
     const opts = Object.assign({ type: EntityType.SCENE, timestamp: Date.now(), metadata: "metadata", contentPaths: [], identity: createIdentity() }, options)
     const buffers: Map<string, Buffer> | undefined = opts.contentPaths.length > 0 ?
-        new Map(opts.contentPaths.map(filePath => ([path.basename(filePath), fs.readFileSync(filePath) ]))) :
+        new Map(opts.contentPaths.map(filePath => ([path.basename(filePath), fs.readFileSync(filePath)]))) :
         undefined
 
     const deploymentPreparationData = await DeploymentBuilder.buildEntity(opts.type, pointers, buffers, opts.metadata, opts.timestamp)
@@ -84,6 +84,16 @@ export async function deployEntitiesCombo(service: MetaverseContentService, ...e
         timestamp = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, { authChain: deployData.authChain, version: EntityVersion.V2 }, '')
     }
     return timestamp
+}
+
+export async function deployWithAuditInfo(service: MetaverseContentService, entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
+    const result: Timestamp[] = []
+    for (const { deployData } of entities) {
+        const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
+        const deploymentTimestamp = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, newAuditInfo, '')
+        result.push(deploymentTimestamp)
+    }
+    return result
 }
 
 export type DeployData = {
