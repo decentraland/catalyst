@@ -1,36 +1,28 @@
 import log4js from "log4js"
 import Analytics from "analytics-node"
 import { Entity } from "../Entity";
-import { DeploymentReporter } from "./DeploymentReporter";
 import { Authenticator, EthAddress } from "dcl-crypto";
-import { DeploymentEvent, MetaverseContentService } from "../Service";
-import { Environment, EnvironmentConfig } from "../../Environment";
+import { MetaverseContentService } from "../Service";
 
-export class SegmentIoAnalytics implements DeploymentReporter {
+export class SegmentIoAnalytics {
 
     private static readonly LOGGER = log4js.getLogger('ContentAnalyticsWithSegment');
 
     private segmentClient: Analytics;
 
     constructor(
-        env: Environment,
+        segmentWriteKey: string | undefined,
         service: MetaverseContentService) {
 
-            let segmentWriteKey: string = env.getConfig(EnvironmentConfig.SEGMENT_WRITE_KEY)
-            if (segmentWriteKey) {
-                this.segmentClient = new Analytics(segmentWriteKey);
-                service.listenToDeployments((deployment) => this.onDeployment(deployment));
-            }
+        if (segmentWriteKey) {
+            this.segmentClient = new Analytics(segmentWriteKey);
+            service.listenToDeployments((deployment) => this.reportDeployment(deployment.entity,
+                Authenticator.ownerAddress(deployment.auditInfo.authChain),
+                deployment.origin));
+        }
     }
 
-
-    private async onDeployment(deploymentEvent: DeploymentEvent): Promise<void> {
-        this.reportDeployment(deploymentEvent.entity,
-            Authenticator.ownerAddress(deploymentEvent.auditInfo.authChain),
-            deploymentEvent.origin)
-    }
-
-    reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
+    private reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
         this.segmentClient.track(
             SegmentIoAnalytics.createRecordEvent(entity, ethAddress, origin),
             (err: Error, data: any) => {
@@ -41,7 +33,7 @@ export class SegmentIoAnalytics implements DeploymentReporter {
     }
 
 
-    static createRecordEvent(entity: Entity, ethAddress: EthAddress, origin: string): any {
+    private static createRecordEvent(entity: Entity, ethAddress: EthAddress, origin: string): any {
         return {
             userId: ethAddress,
             event: 'Catalyst Content Upload',

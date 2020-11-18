@@ -1,14 +1,12 @@
 import log4js from "log4js";
 import { EntityType } from "dcl-catalyst-commons";
 import { Entity } from "../Entity";
-import { DeploymentReporter } from "./DeploymentReporter";
 import { Authenticator, EthAddress } from "dcl-crypto";
 import SQS, { SendMessageRequest } from "aws-sdk/clients/sqs";
 import { AWSError, Credentials } from "aws-sdk";
-import { Environment, EnvironmentConfig } from "../../Environment";
-import { DeploymentEvent, MetaverseContentService } from '../Service';
+import { MetaverseContentService } from '../Service';
 
-export class SQSDeploymentReporter implements DeploymentReporter {
+export class SQSDeploymentReporter {
 
     private static readonly LOGGER = log4js.getLogger('SQSDeploymentReporter');
 
@@ -16,33 +14,26 @@ export class SQSDeploymentReporter implements DeploymentReporter {
     private queueURL: string;
 
     constructor(
-        env: Environment,
         service: MetaverseContentService,
+        sqsKey: string | undefined,
+        sqsSecret: string | undefined,
+        queueURL: string | undefined,
         private readonly callback?: (error?: string, messageId?: string) => void) {
 
-        const sqsKey: string = env.getConfig(EnvironmentConfig.SQS_ACCESS_KEY_ID)
-        const sqsSecret: string = env.getConfig(EnvironmentConfig.SQS_SECRET_ACCESS_KEY)
-        this.queueURL = env.getConfig(EnvironmentConfig.SQS_QUEUE_URL_REPORTING)
-
-        if (sqsKey && sqsSecret && this.queueURL) {
+        if (sqsKey && sqsSecret && queueURL) {
+            this.queueURL = queueURL
             this.sqsClient = new SQS({
                 region: "us-east-1",
                 credentials: new Credentials(sqsKey, sqsSecret)
             })
-            service.listenToDeployments((deployment) => this.onDeployment(deployment))
+            service.listenToDeployments((deployment) => this.reportDeployment(deployment.entity,
+                Authenticator.ownerAddress(deployment.auditInfo.authChain),
+                deployment.origin))
         }
-
     }
 
 
-    private async onDeployment(deploymentEvent: DeploymentEvent): Promise<void> {
-        this.reportDeployment(deploymentEvent.entity,
-            Authenticator.ownerAddress(deploymentEvent.auditInfo.authChain),
-            deploymentEvent.origin)
-    }
-
-
-    reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
+    private reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
         if (entity.type !== EntityType.SCENE) {
             // Only send SCENE notifications to SQS
             return
