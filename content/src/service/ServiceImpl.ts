@@ -4,7 +4,6 @@ import { Entity } from "./Entity";
 import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, DeploymentListener } from "./Service";
 import { EntityFactory } from "./EntityFactory";
 import { HistoryManager } from "./history/HistoryManager";
-import { DeploymentReporter } from "./reporters/DeploymentReporter";
 import { PointerManager } from "./pointers/PointerManager";
 import { ServiceStorage } from "./ServiceStorage";
 import { CURRENT_CONTENT_VERSION } from "../Environment";
@@ -31,7 +30,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         private readonly historyManager: HistoryManager,
         private readonly pointerManager: PointerManager,
         private readonly identityProvider: IdentityProvider,
-        private readonly deploymentReporter: DeploymentReporter,
         private readonly failedDeploymentsManager: FailedDeploymentsManager,
         private readonly deploymentManager: DeploymentManager,
         private readonly validations: Validations,
@@ -176,8 +174,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                     // Since we are still reporting the history size, add one to it
                     await this.historyManager.reportDeployment(transaction.deployments)
 
-                    // Record deployment for analytics
-                    this.deploymentReporter.reportDeployment(entity, ownerAddress, origin)
                 }
 
                 // Mark deployment as successful (this does nothing it if hadn't failed on the first place)

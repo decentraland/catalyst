@@ -5,7 +5,6 @@ import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
 import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
-import { DeploymentReporterFactory } from "./service/reporters/DeploymentReporterFactory";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
@@ -25,6 +24,8 @@ import { DECENTRALAND_ADDRESS } from "decentraland-katalyst-commons/addresses";
 import { SystemPropertiesManagerFactory } from "./service/system-properties/SystemPropertiesManagerFactory";
 import { GarbageCollectionManagerFactory } from "./service/garbage-collection/GarbageCollectionManagerFactory";
 import { SnapshotManagerFactory } from "./service/snapshots/SnapshotManagerFactory";
+import { SQSDeploymentReporterFactory } from "./service/reporters/SQSDeploymentReporterFactory";
+import { SegmentIoAnalyticsFactory } from "./service/reporters/SegmentIoAnalyticsFactory";
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = "storage"
@@ -95,7 +96,8 @@ export const enum Bean {
     CONTROLLER,
     HISTORY_MANAGER,
     POINTER_MANAGER,
-    DEPLOYMENT_REPORTER,
+    SEGMENT_IO_ANALYTICS,
+    SQS_DEPLOYMENT_REPORTER,
     SYNCHRONIZATION_MANAGER,
     DAO_CLIENT,
     ACCESS_CHECKER,
@@ -218,7 +220,6 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.FETCHER                     , () => FetcherFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT                  , () => DAOClientFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR               , () => AuthenticatorFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_REPORTER         , () => DeploymentReporterFactory.create(env))
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
         this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER             , () => ContentClusterFactory.create(env))
@@ -230,6 +231,8 @@ export class EnvironmentBuilder {
         this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER  , () => new FailedDeploymentsManager())
         this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS                 , () => ValidationsFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SERVICE                     , () => ServiceFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.SEGMENT_IO_ANALYTICS        , () => SegmentIoAnalyticsFactory.create(env))
+        this.registerBeanIfNotAlreadySet(env, Bean.SQS_DEPLOYMENT_REPORTER     , () => SQSDeploymentReporterFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER            , () => SnapshotManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER  , () => GarbageCollectionManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER              , () => EventDeployerFactory.create(env))

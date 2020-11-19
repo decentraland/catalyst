@@ -1,20 +1,28 @@
 import log4js from "log4js"
 import Analytics from "analytics-node"
 import { Entity } from "../Entity";
-import { DeploymentReporter } from "./DeploymentReporter";
-import { EthAddress } from "dcl-crypto";
+import { Authenticator, EthAddress } from "dcl-crypto";
+import { MetaverseContentService } from "../Service";
 
-export class SegmentIoAnalytics implements DeploymentReporter {
+export class SegmentIoAnalytics {
 
     private static readonly LOGGER = log4js.getLogger('ContentAnalyticsWithSegment');
 
     private segmentClient: Analytics;
 
-    constructor(writeKey: string) {
-        this.segmentClient = new Analytics(writeKey);
+    constructor(
+        segmentWriteKey: string | undefined,
+        service: MetaverseContentService) {
+
+        if (segmentWriteKey) {
+            this.segmentClient = new Analytics(segmentWriteKey);
+            service.listenToDeployments((deployment) => this.reportDeployment(deployment.entity,
+                Authenticator.ownerAddress(deployment.auditInfo.authChain),
+                deployment.origin));
+        }
     }
 
-    reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
+    private reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
         this.segmentClient.track(
             SegmentIoAnalytics.createRecordEvent(entity, ethAddress, origin),
             (err: Error, data: any) => {
@@ -22,9 +30,10 @@ export class SegmentIoAnalytics implements DeploymentReporter {
                     SegmentIoAnalytics.LOGGER.warn(`There was an error while reporting metrics: ${err.message}`)
                 }
             })
-	}
+    }
 
-    static createRecordEvent(entity: Entity, ethAddress: EthAddress, origin: string): any {
+
+    private static createRecordEvent(entity: Entity, ethAddress: EthAddress, origin: string): any {
         return {
             userId: ethAddress,
             event: 'Catalyst Content Upload',
@@ -32,13 +41,15 @@ export class SegmentIoAnalytics implements DeploymentReporter {
                 type: entity.type,
                 cid: entity.id,
                 pointers: entity.pointers,
-                files: Array.from(entity.content?.entries()||[]).map(entry => {return {
-                    path: entry[0],
-                    cid: entry[1]
-                }}),
+                files: Array.from(entity.content?.entries() || []).map(entry => {
+                    return {
+                        path: entry[0],
+                        cid: entry[1]
+                    }
+                }),
                 origin: origin,
             }
         }
-	}
+    }
 
 }
