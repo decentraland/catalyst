@@ -39,6 +39,7 @@ type Layer = {
 
 type ServerStatus = {
   name: string;
+  url: string;
   layers: Layer[];
 };
 
@@ -79,6 +80,7 @@ async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
     .flatMap((server) =>
       server.layers.map((layer) => ({
         serverName: server.name,
+        url: server.url,
         layer: layer.name,
         usersCount: layer.usersCount,
         usersMax: layer.maxUsers,
@@ -175,5 +177,5 @@ async function fetchStatuses(nodes: Set<ServerMetadata>): Promise<ServerStatus[]
 async function fetchStatus(serverData: ServerMetadata) {
   // TODO: Create a CommsClient and replace this plain json call
   const fetcher = new Fetcher();
-  return noReject(fetcher.fetchJson(`${serverData.address}/comms/status?includeLayers=true`, { timeout: "10s" }));
+  return noReject(fetcher.fetchJson(`${serverData.address}/comms/status?includeLayers=true`, { timeout: "10s" }).then((value) => ({ ...value, url: serverData.address })));
 }

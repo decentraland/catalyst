@@ -1,21 +1,24 @@
 export class TimeRefreshedDataHolder<T> {
+  private value: T;
+  private valuePromise: Promise<T>;
 
-    private value: T
-    private valuePromise: Promise<T>
+  constructor(private readonly provider: () => Promise<T>, private readonly refreshTime: number) {}
 
-    constructor(private readonly provider: () => Promise<T>, private readonly refreshTime: number) { }
-
-    async get(): Promise<T> {
-        if (!this.valuePromise) {
-            await this.updateValue()
-        }
-        return this.value
+  async get(): Promise<T> {
+    if (!this.valuePromise) {
+      await this.updateValue();
     }
 
-    private async updateValue() {
-        this.valuePromise = this.provider()
-        this.value = await this.valuePromise
-        setTimeout(() => this.updateValue(), this.refreshTime)
+    if (!this.value) {
+      return await this.valuePromise;
+    } else {
+      return this.value;
     }
+  }
 
+  private async updateValue() {
+    this.valuePromise = this.provider();
+    this.value = await this.valuePromise;
+    setTimeout(() => this.updateValue(), this.refreshTime);
+  }
 }
