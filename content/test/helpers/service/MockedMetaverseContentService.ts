@@ -40,7 +40,8 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         this.pointerChanges = builder.pointerChanges
     }
 
-    start() {
+    start(): Promise<void> {
+        return Promise.resolve()
     }
 
     deleteContent(fileHashes: string[]): Promise<void> {

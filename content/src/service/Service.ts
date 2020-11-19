@@ -11,7 +11,7 @@ import { ContentFile } from "../controller/Controller";
  * were done directly to it, and it is not aware that the service lives inside a cluster.
  */
 export interface MetaverseContentService {
-    start();
+    start(): Promise<void>;
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;
     deployLocalLegacy(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, repository?: RepositoryTask | Repository): Promise<Timestamp>;
     deployToFix(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo, origin: string, repository?: RepositoryTask | Repository): Promise<Timestamp>;

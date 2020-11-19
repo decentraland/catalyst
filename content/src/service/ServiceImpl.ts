@@ -37,7 +37,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         private readonly repository: Repository) {
     }
 
-    async start() {
+    async start(): Promise<void> {
         this.historySize = await this.repository.task(task => task.deployments.getAmountOfDeployments())
     }
 

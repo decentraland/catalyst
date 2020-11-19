@@ -81,10 +81,10 @@ describe("Service", function () {
     });
 
     fit(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
+        await service.start()
 
-        service.start()
-
-        expect(service.getStatus().historySize).toBe(20)
+        const status = service.getStatus();
+        expect(status.historySize).toBe(20)
     });
 
     async function buildService() {

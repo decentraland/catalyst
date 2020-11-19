@@ -22,7 +22,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     private readonly denylist: Denylist,
     private readonly repository: Repository) { }
 
-  start() {
+  start(): Promise<void> {
+      return this.service.start()
   }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
