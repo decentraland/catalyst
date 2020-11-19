@@ -1,8 +1,8 @@
 import { Authenticator } from "dcl-crypto";
-import { EntityType, Timestamp } from "dcl-catalyst-commons";
+import { EntityType, Timestamp, EntityVersion, AuditInfo } from "dcl-catalyst-commons";
 import { MetaverseContentService } from "@katalyst/content/service/Service";
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
-import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployWithAuditInfo } from "../../E2ETestUtils";
+import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from "../../E2ETestUtils";
 import { ExtendedDeploymentFilters } from "@katalyst/content/service/deployments/DeploymentManager";
 
 /**
@@ -30,30 +30,30 @@ describe("Integration - Deployment Filters", () => {
 
     it('When local timestamp filter is set, then results are calculated correctly', async () => {
         // Deploy E1 and E2
-        const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
+        const [ E1Timestamp, E2Timestamp ] = await deploy(E1, E2)
 
         // Deploy E3 with origin timestamp set between E1 and E2
-        const [E3Timestamp] = await deployWithOrigin((E1Timestamp + E2Timestamp) / 2, '', E3)
+        const [ E3Timestamp ] = await deployWithOrigin((E1Timestamp + E2Timestamp) / 2, '', E3)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2, E3)
+        await assertDeploymentsWithFilterAre({ }, E1, E2, E3)
         await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp }, E1, E2)
         await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E2Timestamp }, E2, E3)
-        await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E3Timestamp + 1 },)
+        await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E3Timestamp + 1 }, )
     })
 
     it('When origin timestamp filter is set, then results are calculated correctly', async () => {
         // Deploy E1 and E2
-        const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
+        const [ E1Timestamp, E2Timestamp ] = await deploy(E1, E2)
 
         // Deploy E3 with origin timestamp set between E1 and E2
         const betweenE1AndE2 = (E1Timestamp + E2Timestamp) / 2;
         await deployWithOrigin(betweenE1AndE2, '', E3)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2, E3)
+        await assertDeploymentsWithFilterAre({ }, E1, E2, E3)
         await assertDeploymentsWithFilterAre({ fromOriginTimestamp: E1Timestamp, toOriginTimestamp: E2Timestamp }, E1, E2, E3)
         await assertDeploymentsWithFilterAre({ fromOriginTimestamp: betweenE1AndE2 }, E2, E3)
         await assertDeploymentsWithFilterAre({ fromOriginTimestamp: betweenE1AndE2 }, E2, E3)
-        await assertDeploymentsWithFilterAre({ fromOriginTimestamp: E2Timestamp + 1 },)
+        await assertDeploymentsWithFilterAre({ fromOriginTimestamp: E2Timestamp + 1 }, )
     })
 
     it('When origin server url filter is set, then results are calculated correctly', async () => {
@@ -65,8 +65,8 @@ describe("Integration - Deployment Filters", () => {
         // Deploy E2
         await deployWithOrigin(Date.now(), serverUrl, E2)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2)
-        await assertDeploymentsWithFilterAre({ originServerUrl: 'something' },)
+        await assertDeploymentsWithFilterAre({ }, E1, E2)
+        await assertDeploymentsWithFilterAre({ originServerUrl: 'something' }, )
         await assertDeploymentsWithFilterAre({ originServerUrl: serverUrl }, E2)
     })
 
@@ -74,20 +74,20 @@ describe("Integration - Deployment Filters", () => {
         // Deploy E1 and E2
         await deploy(E1, E2)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2)
-        await assertDeploymentsWithFilterAre({ entityTypes: [EntityType.PROFILE] }, E1)
-        await assertDeploymentsWithFilterAre({ entityTypes: [EntityType.SCENE] }, E2)
-        await assertDeploymentsWithFilterAre({ entityTypes: [EntityType.PROFILE, EntityType.SCENE] }, E1, E2)
+        await assertDeploymentsWithFilterAre({ }, E1, E2)
+        await assertDeploymentsWithFilterAre({ entityTypes: [ EntityType.PROFILE ] }, E1)
+        await assertDeploymentsWithFilterAre({ entityTypes: [ EntityType.SCENE ] }, E2)
+        await assertDeploymentsWithFilterAre({ entityTypes: [ EntityType.PROFILE, EntityType.SCENE ] }, E1, E2)
     })
 
     it('When entity ids filter is set, then results are calculated correctly', async () => {
         // Deploy E1 and E2
         await deploy(E1, E2)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2)
-        await assertDeploymentsWithFilterAre({ entityIds: [E1.entity.id] }, E1)
-        await assertDeploymentsWithFilterAre({ entityIds: [E2.entity.id] }, E2)
-        await assertDeploymentsWithFilterAre({ entityIds: [E1.entity.id, E2.entity.id] }, E1, E2)
+        await assertDeploymentsWithFilterAre({ }, E1, E2)
+        await assertDeploymentsWithFilterAre({ entityIds: [ E1.entity.id ] }, E1)
+        await assertDeploymentsWithFilterAre({ entityIds: [ E2.entity.id ] }, E2)
+        await assertDeploymentsWithFilterAre({ entityIds: [ E1.entity.id, E2.entity.id ] }, E1, E2)
     })
 
     it('When deployed by filter is set, then results are calculated correctly', async () => {
@@ -98,17 +98,17 @@ describe("Integration - Deployment Filters", () => {
         await deployWithIdentity(identity1, E1)
         await deployWithIdentity(identity2, E2)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2)
-        await assertDeploymentsWithFilterAre({ deployedBy: [identity1] }, E1)
-        await assertDeploymentsWithFilterAre({ deployedBy: [identity2] }, E2)
-        await assertDeploymentsWithFilterAre({ deployedBy: [identity1, identity2] }, E1, E2)
-        await assertDeploymentsWithFilterAre({ deployedBy: ['not-and-identity'] },)
+        await assertDeploymentsWithFilterAre({ }, E1, E2)
+        await assertDeploymentsWithFilterAre({ deployedBy: [ identity1 ] }, E1)
+        await assertDeploymentsWithFilterAre({ deployedBy: [ identity2 ] }, E2)
+        await assertDeploymentsWithFilterAre({ deployedBy: [ identity1, identity2 ] }, E1, E2)
+        await assertDeploymentsWithFilterAre({ deployedBy: [ 'not-and-identity' ] }, )
     })
 
     it('When deployed by filter is set, then results are calculated correctly', async () => {
         await deploy(E1, E2, E3)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2, E3)
+        await assertDeploymentsWithFilterAre({ }, E1, E2, E3)
         await assertDeploymentsWithFilterAre({ onlyCurrentlyPointed: true }, E2, E3)
         await assertDeploymentsWithFilterAre({ onlyCurrentlyPointed: false }, E1, E2, E3)
     })
@@ -116,11 +116,11 @@ describe("Integration - Deployment Filters", () => {
     it('When pointers filter is set, then results are calculated correctly', async () => {
         await deploy(E1, E2, E3)
 
-        await assertDeploymentsWithFilterAre({}, E1, E2, E3)
-        await assertDeploymentsWithFilterAre({ pointers: [P1] }, E1, E3)
-        await assertDeploymentsWithFilterAre({ pointers: [P2] }, E2, E3)
-        await assertDeploymentsWithFilterAre({ pointers: [P3] }, E3)
-        await assertDeploymentsWithFilterAre({ pointers: [P1, P2, P3] }, E1, E2, E3)
+        await assertDeploymentsWithFilterAre({ }, E1, E2, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ P1 ] }, E1, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ P2 ] }, E2, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ P3 ] }, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ P1, P2, P3 ] }, E1, E2, E3)
     })
 
     async function assertDeploymentsWithFilterAre(filter: ExtendedDeploymentFilters, ...expectedEntities: EntityCombo[]) {
@@ -131,16 +131,26 @@ describe("Integration - Deployment Filters", () => {
     }
 
     async function deploy(...entities: EntityCombo[]): Promise<Timestamp[]> {
-        return deployWithAuditInfo(service, entities, {})
+        return deployWithAuditInfo(entities, { })
     }
 
     async function deployWithOrigin(originTimestamp: Timestamp, originServerUrl: string, ...entities: EntityCombo[]): Promise<Timestamp[]> {
-        return deployWithAuditInfo(service, entities, { originTimestamp, originServerUrl })
+        return deployWithAuditInfo(entities, { originTimestamp, originServerUrl  })
     }
 
     async function deployWithIdentity(deployedBy: string, ...entities: EntityCombo[]): Promise<Timestamp[]> {
         const authChain = Authenticator.createSimpleAuthChain('', deployedBy, '')
-        return deployWithAuditInfo(service, entities, { authChain })
+        return deployWithAuditInfo(entities, { authChain })
+    }
+
+    async function deployWithAuditInfo(entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
+        const result: Timestamp[] = []
+        for (const { deployData } of entities) {
+            const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
+            const deploymentTimestamp = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, newAuditInfo, '')
+            result.push(deploymentTimestamp)
+        }
+        return result
     }
 
 })

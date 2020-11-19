@@ -27,6 +27,8 @@ describe("Service", function () {
         version: EntityVersion.V3,
     }
 
+    const initialAmountOfDeployments: number = 15
+
     let randomFile: { name: string, content: Buffer }
     let randomFileHash: ContentFileHash
     let entity: Entity
@@ -80,11 +82,31 @@ describe("Service", function () {
         expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
     });
 
-    fit(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
+    it(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
         await service.start()
 
         const status = service.getStatus();
-        expect(status.historySize).toBe(20)
+
+        expect(status.historySize).toBe(initialAmountOfDeployments)
+    });
+
+    it(`When a new deployment is made, then the amount of deployments is increased`, async () => {
+        await service.start()
+        await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+
+        const status = service.getStatus();
+
+        expect(status.historySize).toBe(initialAmountOfDeployments + 1)
+    });
+
+
+    it(`When a new deployment is made and fails, then the amount of deployments is not modified`, async () => {
+        await service.start()
+        try { await service.deployEntity([randomFile], randomFileHash, auditInfo, '') } catch { }
+
+        const status = service.getStatus();
+
+        expect(status.historySize).toBe(initialAmountOfDeployments)
     });
 
     async function buildService() {
@@ -98,7 +120,7 @@ describe("Service", function () {
             .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
             .registerBean(Bean.POINTER_MANAGER, NoOpPointerManager.build())
             .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
-            .registerBean(Bean.REPOSITORY, MockedRepository.build())
+            .registerBean(Bean.REPOSITORY, MockedRepository.build(initialAmountOfDeployments))
         return ServiceFactory.create(env);
     }
 
