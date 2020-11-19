@@ -1,29 +1,39 @@
 import log4js from "log4js";
 import { EntityType } from "dcl-catalyst-commons";
 import { Entity } from "../Entity";
-import { DeploymentReporter } from "./DeploymentReporter";
-import { EthAddress } from "dcl-crypto";
+import { Authenticator, EthAddress } from "dcl-crypto";
 import SQS, { SendMessageRequest } from "aws-sdk/clients/sqs";
 import { AWSError, Credentials } from "aws-sdk";
+import { MetaverseContentService } from '../Service';
 
-export class SQSDeploymentReporter implements DeploymentReporter {
+export class SQSDeploymentReporter {
 
     private static readonly LOGGER = log4js.getLogger('SQSDeploymentReporter');
 
     private sqsClient: SQS;
+    private queueURL: string;
 
     constructor(
-        accessKeyId: string,
-        secretAccessKey,
-        private readonly queueURL: string,
-        private readonly callback?: (error?:string, messageId?:string) => void) {
+        service: MetaverseContentService,
+        sqsKey: string | undefined,
+        sqsSecret: string | undefined,
+        queueURL: string | undefined,
+        private readonly callback?: (error?: string, messageId?: string) => void) {
 
-        this.sqsClient = new SQS({
-            region: "us-east-1",
-            credentials: new Credentials(accessKeyId, secretAccessKey)})
+        if (sqsKey && sqsSecret && queueURL) {
+            this.queueURL = queueURL
+            this.sqsClient = new SQS({
+                region: "us-east-1",
+                credentials: new Credentials(sqsKey, sqsSecret)
+            })
+            service.listenToDeployments((deployment) => this.reportDeployment(deployment.entity,
+                Authenticator.ownerAddress(deployment.auditInfo.authChain),
+                deployment.origin))
+        }
     }
 
-    reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
+
+    private reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
         if (entity.type !== EntityType.SCENE) {
             // Only send SCENE notifications to SQS
             return
