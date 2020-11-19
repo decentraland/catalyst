@@ -26,6 +26,7 @@ export type HotSceneInfo = {
   thumbnail?: string;
   projectId?: string;
   creator?: string;
+  description?: string;
   realms: RealmInfo[];
 };
 
@@ -112,13 +113,14 @@ function getOccupiedTiles(statuses: ServerStatus[]) {
 function getHotSceneRecordFor(scene: Entity): HotSceneInfo {
   return {
     id: scene.id,
-    name: scene.metadata?.display.title,
+    name: scene.metadata?.display?.title,
     baseCoords: getCoords(scene.metadata?.scene.base),
     usersTotalCount: 0,
     parcels: scene.metadata?.scene.parcels.map(getCoords),
     thumbnail: scene.metadata?.display?.navmapThumbnail,
     creator: scene.metadata?.contact?.name,
     projectId: scene.metadata?.source?.projectId,
+    description: scene.metadata?.display?.description,
     realms: [],
   };
 }
