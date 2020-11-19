@@ -8,11 +8,12 @@ import { Environment, Bean, EnvironmentConfig } from "./Environment";
 import http from "http";
 import { initializeContentV2Routes } from "./apis/content-v2/routes";
 import { initializeProfilesRoutes } from "./apis/profiles/routes";
-import { SmartContentServerFetcher } from "./SmartContentServerFetcher";
+import { SmartContentServerFetcher } from "./utils/SmartContentServerFetcher";
 import { initializeCryptoRoutes } from "./apis/crypto/routes";
 import { initializeImagesRoutes } from "./apis/images/routes";
 import { initializeContractRoutes } from "./apis/contracts/routes";
 import { initializeCollectionsRoutes } from "./apis/collections/routes";
+import { initializeExploreRoutes } from "./apis/explore/routes";
 
 export class Server {
   private port: number;
@@ -71,6 +72,9 @@ export class Server {
     // DAO Collections access API
     this.app.use("/collections", initializeCollectionsRoutes(express.Router(),
         fetcher));
+
+    // Functionality for Explore use case
+    this.app.use("/explore", initializeExploreRoutes(express.Router(),env.getBean(Bean.DAO), fetcher))
 
   }
 

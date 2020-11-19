@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { getResizedImage } from "./controllers/images";
-import { SmartContentServerFetcher } from "../../SmartContentServerFetcher";
+import { SmartContentServerFetcher } from "../../utils/SmartContentServerFetcher";
 
 export function initializeImagesRoutes(router: Router, fetcher: SmartContentServerFetcher, rootStorageLocation: string): Router {
   router.get("/:cid/:size", createHandler(fetcher, rootStorageLocation, getResizedImage));

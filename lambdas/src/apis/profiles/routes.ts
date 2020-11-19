@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { getProfileById } from './controllers/profiles'
-import { SmartContentServerFetcher } from '../../SmartContentServerFetcher'
+import { SmartContentServerFetcher } from '../../utils/SmartContentServerFetcher'
 
 export function initializeProfilesRoutes(router: Router, fetcher: SmartContentServerFetcher, ensOwnerProviderUrl: string): Router {
     router.get("/:id", createHandler(fetcher, ensOwnerProviderUrl, getProfileById))

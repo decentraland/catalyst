@@ -1,4 +1,4 @@
-import { Environment, EnvironmentConfig } from "./Environment"
+import { Environment, EnvironmentConfig } from "../Environment"
 import { SmartContentServerFetcher } from "./SmartContentServerFetcher"
 
 export class SmartContentServerFetcherFactory {
