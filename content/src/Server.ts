@@ -128,6 +128,7 @@ export class Server {
     this.purgeUploadsDirectory()
     await this.migrationManager.run()
     await this.validateHistory()
+    await this.service.start();
     this.httpServer = this.app.listen(this.port);
     await once(this.httpServer, "listening");
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`);

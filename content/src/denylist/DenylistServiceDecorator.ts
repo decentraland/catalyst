@@ -20,7 +20,11 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   constructor(private readonly service: MetaverseContentService,
     private readonly denylist: Denylist,
-    private readonly repository: Repository) {}
+    private readonly repository: Repository) { }
+
+  start(): Promise<void> {
+      return this.service.start()
+  }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
     const isDenylisted = await this.areDenylisted(this.repository.denylist, ...this.getHashTargets(fileHash));
@@ -35,11 +39,11 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
     const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes);
     const onlyAvailable: ContentFileHash[] = Array.from(availability.entries())
-        .filter(([, available]) => available)
-        .map(([hash]) => hash)
+      .filter(([, available]) => available)
+      .map(([hash]) => hash)
     const hashToTargets = new Map(onlyAvailable.map(hash => [hash, this.getHashTargets(hash)]))
     const allTargets = Array.from(hashToTargets.values())
-        .reduce((curr, next) => curr.concat(next), [])
+      .reduce((curr, next) => curr.concat(next), [])
     const result = await this.denylist.areTargetsDenylisted(this.repository.denylist, allTargets)
 
     for (const [fileHash, targets] of hashToTargets) {
@@ -140,25 +144,25 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
         const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
         const denylistedContent = Array.from(contentTargets.entries())
-            .map(([ hash, target ]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
-            .filter(({ isDenylisted }) => isDenylisted)
-            .map(({ hash }) => hash)
+          .map(([hash, target]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
+          .filter(({ isDenylisted }) => isDenylisted)
+          .map(({ hash }) => hash)
 
         const { auditInfo } = deployment
         const result = {
-            ...deployment,
-            content: isEntityDenylisted ? undefined : deployment.content,
-            metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
-            auditInfo: {
-                ...auditInfo,
+          ...deployment,
+          content: isEntityDenylisted ? undefined : deployment.content,
+          metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
+          auditInfo: {
+            ...auditInfo,
 
-            },
+          },
         }
         if (denylistedContent.length > 0) {
-            result.auditInfo.denylistedContent = denylistedContent
+          result.auditInfo.denylistedContent = denylistedContent
         }
         if (isEntityDenylisted) {
-            result.auditInfo.isDenylisted = true
+          result.auditInfo.isDenylisted = true
         }
         return result
       })
@@ -238,5 +242,5 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 }
 
 function isTargetDenylisted(target: DenylistTarget, queryResult: Map<DenylistTargetType, Map<DenylistTargetId, boolean>>): boolean {
-    return queryResult.get(target.getType())?.get(target.getId()) ?? false
+  return queryResult.get(target.getType())?.get(target.getId()) ?? false
 }

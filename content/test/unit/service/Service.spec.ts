@@ -27,6 +27,8 @@ describe("Service", function () {
         version: EntityVersion.V3,
     }
 
+    const initialAmountOfDeployments: number = 15
+
     let randomFile: { name: string, content: Buffer }
     let randomFileHash: ContentFileHash
     let entity: Entity
@@ -60,7 +62,6 @@ describe("Service", function () {
 
     it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
         const storageSpy = spyOn(storage, "store").and.callThrough()
-        const historySpy = spyOn(historyManager, "reportDeployment")
 
         const timestamp: Timestamp = await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
         const deltaMilliseconds = Date.now() - timestamp
@@ -68,7 +69,6 @@ describe("Service", function () {
         expect(deltaMilliseconds).toBeLessThanOrEqual(10)
         expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
         expect(storageSpy).toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
-        expect(historySpy).toHaveBeenCalled()
     });
 
     it(`When a file is already uploaded, then don't try to upload it again`, async () => {
@@ -82,6 +82,33 @@ describe("Service", function () {
         expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
     });
 
+    it(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
+        await service.start()
+
+        const status = service.getStatus();
+
+        expect(status.historySize).toBe(initialAmountOfDeployments)
+    });
+
+    it(`When a new deployment is made, then the amount of deployments is increased`, async () => {
+        await service.start()
+        await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+
+        const status = service.getStatus();
+
+        expect(status.historySize).toBe(initialAmountOfDeployments + 1)
+    });
+
+
+    it(`When a new deployment is made and fails, then the amount of deployments is not modified`, async () => {
+        await service.start()
+        try { await service.deployEntity([randomFile], randomFileHash, auditInfo, '') } catch { }
+
+        const status = service.getStatus();
+
+        expect(status.historySize).toBe(initialAmountOfDeployments)
+    });
+
     async function buildService() {
         const env = new Environment()
             .registerBean(Bean.STORAGE, storage)
@@ -93,16 +120,16 @@ describe("Service", function () {
             .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
             .registerBean(Bean.POINTER_MANAGER, NoOpPointerManager.build())
             .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
-            .registerBean(Bean.REPOSITORY, MockedRepository.build())
+            .registerBean(Bean.REPOSITORY, MockedRepository.build(initialAmountOfDeployments))
         return ServiceFactory.create(env);
     }
 
     function equalDataOnStorageContent(data: Buffer): jasmine.AsymmetricMatcher<StorageContent> {
         return {
-            asymmetricMatch: function(compareTo) {
+            asymmetricMatch: function (compareTo) {
                 return compareTo.data === data;
             },
-            jasmineToString: function() {
+            jasmineToString: function () {
                 return `<StorageContent with Data: ${data}>`
             }
         }
