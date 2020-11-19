@@ -175,9 +175,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
                     // Store the entity's content
                     await this.storeEntityContent(hashes, alreadyStoredContent)
-
-                    // Since we are still reporting the history size, add one to it
-                    this.historySize++
                 }
 
                 // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
@@ -193,9 +190,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             }
         })
 
-        // Report deployment to listeners
         if (wasEntityDeployed) {
+            // Report deployment to listeners
             await Promise.all(this.listeners.map(listener => listener({ entity, auditInfo: auditInfoComplete, origin })))
+            // Since we are still reporting the history size, add one to it
+            this.historySize++
         }
 
         return auditInfoComplete.localTimestamp
