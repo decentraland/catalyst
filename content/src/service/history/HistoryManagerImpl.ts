@@ -6,22 +6,9 @@ import { ContentCluster } from "../synchronization/ContentCluster"
 export class HistoryManagerImpl implements HistoryManager {
 
     static UNKNOWN_NAME = 'UNKNOWN_NAME'
-    private historySize: number | undefined
 
     constructor(private readonly cluster: ContentCluster) { }
 
-    async reportDeployment(deploymentsRepo: DeploymentsRepository): Promise<void> {
-        if (!this.historySize) {
-            // Since this is called after the deployment is added to the table, there is no need to add one
-            this.historySize = await deploymentsRepo.getAmountOfDeployments()
-        } else {
-            this.historySize++
-        }
-    }
-
-    getHistorySize(): number {
-        return this.historySize ?? 0
-    }
 
     private static MAX_HISTORY_LIMIT = 500
     private static DEFAULT_HISTORY_LIMIT = 500
