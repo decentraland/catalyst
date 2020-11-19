@@ -80,6 +80,13 @@ describe("Service", function () {
         expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
     });
 
+    fit(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
+
+        service.start()
+
+        expect(service.getStatus().historySize).toBe(20)
+    });
+
     async function buildService() {
         const env = new Environment()
             .registerBean(Bean.STORAGE, storage)
