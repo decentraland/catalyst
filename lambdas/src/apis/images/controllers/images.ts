@@ -1,6 +1,6 @@
 import log4js from "log4js";
 import { Request, Response } from "express";
-import { SmartContentServerFetcher } from "../../../SmartContentServerFetcher";
+import { SmartContentServerFetcher } from "../../../utils/SmartContentServerFetcher";
 import fs from "fs";
 import sharp from "sharp";
 import fetch from "node-fetch";

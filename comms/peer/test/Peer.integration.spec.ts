@@ -862,24 +862,30 @@ describe("Peer Integration Test", function () {
 
     // We send the other packet twice, from different peers. Peer 2 should receive it duplicate from peer1
     sendPacketThroughPeer(peer3, other);
-    await whileTrue(() => receivedMessages.length === 0);
+    await whileTrue(() => receivedMessages.length === 0, "Awaiting peer2 to receive at least a message");
     sendPacketThroughPeer(peer1, other);
 
     // We fail only if we timeout
     // @ts-ignore
-    await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer1.peerIdOrFail(), peer3.peerIdOrFail()));
-    // @ts-ignore
-    await untilTrue(() => peer1.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
+    await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer1.peerIdOrFail(), peer3.peerIdOrFail()), "Awaiting for peer2 to have asked peer1 to suspend relays for peer3");
+    await untilTrue(
+      // @ts-ignore
+      () => peer1.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()),
+      "Awaiting for peer1 to have received request from peer2 to suspend relays for peer3"
+    );
 
     sendPacketThroughPeer(peer3, ok);
-    await whileTrue(() => receivedMessages.length === 1);
+    await whileTrue(() => receivedMessages.length === 1, "Awaiting peer2 to receive another message from peer3");
     sendPacketThroughPeer(peer4, expired);
 
     // @ts-ignore
-    await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer4.peerIdOrFail(), peer3.peerIdOrFail()));
-    // @ts-ignore
-    await untilTrue(() => peer4.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()));
-  }, 10000);
+    await untilTrue(() => peer2.isRelayFromConnectionSuspended(peer4.peerIdOrFail(), peer3.peerIdOrFail()), "Awaiting for peer2 to have asked peer4 to suspend relays for peer3");
+    await untilTrue(
+      // @ts-ignore
+      () => peer4.isRelayToConnectionSuspended(peer2.peerIdOrFail(), peer3.peerIdOrFail()),
+      "Awaiting for peer4 to have received a request from peer2 to suspend relays for peer3"
+    );
+  });
 
   it("consolidates relay suspension request adding pending suspension", () => {});
 
@@ -973,8 +979,12 @@ describe("Peer Integration Test", function () {
     return new Promise((resolve) => setTimeout(resolve, time));
   }
 
-  async function whileTrue(condition: () => boolean) {
+  async function whileTrue(condition: () => boolean, messageIfFailed: string = "no message specified", timeout: number = 5000) {
+    const started = Date.now();
     while (condition()) {
+      if (Date.now() - started > timeout) {
+        throw new Error("Timed out awaiting condition: " + messageIfFailed);
+      }
       await delay(5);
     }
   }
@@ -991,7 +1001,7 @@ describe("Peer Integration Test", function () {
     return await peer2MessagePromise;
   }
 
-  async function untilTrue(condition: () => boolean) {
-    await whileTrue(() => !condition());
+  async function untilTrue(condition: () => boolean, messageIfFailed: string = "no message specified", timeout: number = 5000) {
+    await whileTrue(() => !condition(), messageIfFailed, timeout);
   }
 });

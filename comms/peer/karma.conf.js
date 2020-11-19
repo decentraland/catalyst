@@ -12,6 +12,11 @@ module.exports = config => {
       showSpecTiming: true, // print the time elapsed for each spec
       failFast: true // test would finish with error when a first fail occurs.
     },
-    plugins: ["karma-spec-reporter", "karma-mocha-reporter"]
+    plugins: ["karma-spec-reporter", "karma-mocha-reporter"],
+    client: {
+      jasmine: {
+        timeoutInterval: 60000
+      }
+    }
   });
 };

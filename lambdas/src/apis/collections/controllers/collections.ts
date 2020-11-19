@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
+import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 import { Entity } from 'dcl-catalyst-commons';
 
 export async function getStandardErc721(fetcher: SmartContentServerFetcher, req: Request, res: Response) {

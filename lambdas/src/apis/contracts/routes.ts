@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { getCatalystServersList, getPOIsList, getDenylistedNamesList } from './controllers/contracts'
-import { DAOCache } from './DAOCache'
+import { DAOCache } from '../../service/dao/DAOCache';
 
 export function initializeContractRoutes(router: Router, dao: DAOCache): Router {
     router.get("/servers", createHandler(dao, getCatalystServersList))
