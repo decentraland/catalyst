@@ -30,25 +30,66 @@ export type HotSceneInfo = {
   realms: RealmInfo[];
 };
 
+type Layer = {
+  name: string;
+  usersCount: number;
+  maxUsers: number;
+  usersParcels: ParcelCoord[];
+};
 
-let exploreCache: TimeRefreshedDataHolder<HotSceneInfo[]>;
+type ServerStatus = {
+  name: string;
+  layers: Layer[];
+};
+
+let realmsStatusCache: TimeRefreshedDataHolder<RealmInfo[]>;
+
+export async function realmsStatus(daoCache: DAOCache, req: Request, res: Response) {
+  // Method: GET
+  // Path: /realms
+
+  if (!realmsStatusCache) {
+    realmsStatusCache = new TimeRefreshedDataHolder(() => fetchRealmsData(daoCache), ms("1m"));
+  }
+
+  const realmsStatusData = await realmsStatusCache.get();
+
+  res.status(200).send(realmsStatusData);
+}
+
+let hotSceneCache: TimeRefreshedDataHolder<HotSceneInfo[]>;
 
 export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentClient, req: Request, res: Response) {
   // Method: GET
   // Path: /hot-scenes
 
-  if (!exploreCache) {
-    exploreCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), ms("1m"));
+  if (!hotSceneCache) {
+    hotSceneCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), ms("1m"));
   }
 
-  const hotScenesData = await exploreCache.get();
+  const hotScenesData = await hotSceneCache.get();
 
   res.status(200).send(hotScenesData);
 }
 
+async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
+  const statuses = await fetchCatalystStatuses(daoCache);
+
+  return statuses
+    .flatMap((server) =>
+      server.layers.map((layer) => ({
+        serverName: server.name,
+        layer: layer.name,
+        usersCount: layer.usersCount,
+        usersMax: layer.maxUsers,
+        userParcels: layer.usersParcels,
+      }))
+    )
+    .sort((realm1, realm2) => realm2.usersCount - realm1.usersCount);
+}
+
 async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartContentClient): Promise<HotSceneInfo[]> {
-  const nodes = await daoCache.getServers();
-  const statuses = await fetchStatuses(nodes);
+  const statuses = await fetchCatalystStatuses(daoCache);
   const tiles = getOccupiedTiles(statuses);
 
   if (tiles.length > 0) {
@@ -66,17 +107,11 @@ async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartConten
   }
 }
 
-type Layer = {
-  name: string;
-  usersCount: number;
-  maxUsers: number;
-  usersParcels: ParcelCoord[];
-};
-
-type ServerStatus = {
-  name: string;
-  layers: Layer[];
-};
+async function fetchCatalystStatuses(daoCache: DAOCache) {
+  const nodes = await daoCache.getServers();
+  const statuses = await fetchStatuses(nodes);
+  return statuses;
+}
 
 function countUsers(hotScenes: HotSceneInfo[], statuses: ServerStatus[]) {
   statuses.forEach((server) =>
