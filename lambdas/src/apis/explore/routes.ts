@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { hotScenes } from "./controllers/explore";
 import { DAOCache } from "../../service/dao/DAOCache";
-import { SmartContentClient } from "lambdas/src/utils/SmartContentClient";
+import { SmartContentClient } from "../../utils/SmartContentClient";
 
 export function initializeExploreRoutes(router: Router, daoCache: DAOCache, contentClient: SmartContentClient): Router {
   router.get("/hot-scenes", createHandler(daoCache, contentClient, hotScenes));
