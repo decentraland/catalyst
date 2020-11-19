@@ -1,17 +1,17 @@
 import { Router, Request, Response } from "express";
 import { hotScenes } from "./controllers/explore";
 import { DAOCache } from "../../service/dao/DAOCache";
-import { SmartContentServerFetcher } from "../../utils/SmartContentServerFetcher";
+import { SmartContentClient } from "lambdas/src/utils/SmartContentClient";
 
-export function initializeExploreRoutes(router: Router, daoCache: DAOCache, fetcher: SmartContentServerFetcher): Router {
-  router.get("/hot-scenes", createHandler(daoCache, fetcher, hotScenes));
+export function initializeExploreRoutes(router: Router, daoCache: DAOCache, contentClient: SmartContentClient): Router {
+  router.get("/hot-scenes", createHandler(daoCache, contentClient, hotScenes));
   return router;
 }
 
 function createHandler(
   dao: DAOCache,
-  fetcher: SmartContentServerFetcher,
-  originalHandler: (daoCache: DAOCache, fetcher: SmartContentServerFetcher, req: Request, res: Response) => any
+  contentClient: SmartContentClient,
+  originalHandler: (daoCache: DAOCache, contentClient: SmartContentClient, req: Request, res: Response) => any
 ): (req: Request, res: Response) => void {
-  return (req: Request, res: Response) => originalHandler(dao, fetcher, req, res);
+  return (req: Request, res: Response) => originalHandler(dao, contentClient, req, res);
 }

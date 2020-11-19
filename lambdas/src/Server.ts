@@ -14,6 +14,7 @@ import { initializeImagesRoutes } from "./apis/images/routes";
 import { initializeContractRoutes } from "./apis/contracts/routes";
 import { initializeCollectionsRoutes } from "./apis/collections/routes";
 import { initializeExploreRoutes } from "./apis/explore/routes";
+import { SmartContentClient } from "./utils/SmartContentClient";
 
 export class Server {
   private port: number;
@@ -46,6 +47,7 @@ export class Server {
     this.registerRoute("/status", controller, controller.getStatus);
 
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
+    const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
 
     // Backwards compatibility for older Content API
     this.app.use("/contentv2", initializeContentV2Routes(express.Router(),
@@ -74,7 +76,7 @@ export class Server {
         fetcher));
 
     // Functionality for Explore use case
-    this.app.use("/explore", initializeExploreRoutes(express.Router(),env.getBean(Bean.DAO), fetcher))
+    this.app.use("/explore", initializeExploreRoutes(express.Router(),env.getBean(Bean.DAO), contentClient))
 
   }
 

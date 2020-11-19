@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import { DAOCache } from "../../../service/dao/DAOCache";
 import { ServerMetadata } from "decentraland-katalyst-commons/ServerMetadata";
-import { SmartContentServerFetcher } from "../../../utils/SmartContentServerFetcher";
 import { EntityType, Fetcher, Entity } from "dcl-catalyst-commons";
 import { noReject } from "decentraland-katalyst-utils/util";
 import { TimeRefreshedDataHolder } from "../../../utils/TimeRefreshedDataHolder";
+import { SmartContentClient } from "lambdas/src/utils/SmartContentClient";
+import ms from "ms";
 
 type ParcelCoord = [number, number];
 
@@ -35,12 +36,12 @@ export type HotSceneInfo = {
 
 let exploreCache: TimeRefreshedDataHolder<HotSceneInfo[]>;
 
-export async function hotScenes(daoCache: DAOCache, fetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentClient, req: Request, res: Response) {
   // Method: GET
   // Path: /hot-scenes
 
   if (!exploreCache) {
-    exploreCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, fetcher), 60 * 1000);
+    exploreCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), ms('1m'));
   }
 
   const hotScenesData = await exploreCache.get();
@@ -48,11 +49,10 @@ export async function hotScenes(daoCache: DAOCache, fetcher: SmartContentServerF
   res.status(200).send(hotScenesData);
 }
 
-async function fetchHotScenesData(daoCache: DAOCache, fetcher: SmartContentServerFetcher): Promise<HotSceneInfo[]> {
-  const contentClient = await fetcher.getContentClient();
+async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartContentClient): Promise<HotSceneInfo[]> {
 
   const nodes = await daoCache.getServers();
-  const statuses = await fetchStatuses(nodes, fetcher);
+  const statuses = await fetchStatuses(nodes);
   const tiles = getOccupiedTiles(statuses);
 
   if (tiles.length > 0) {
@@ -131,10 +131,12 @@ function getCoords(coordsAsString: string): ParcelCoord {
   return coordsAsString.split(",").map((part) => parseInt(part, 10)) as ParcelCoord;
 }
 
-async function fetchStatuses(nodes: Set<ServerMetadata>, fetcher: SmartContentServerFetcher): Promise<ServerStatus[]> {
-  return (await Promise.all([...nodes].map((it) => fetchStatus(it, fetcher)))).filter((it) => it[0] !== "rejected").map((it) => it[1]);
+async function fetchStatuses(nodes: Set<ServerMetadata>): Promise<ServerStatus[]> {
+  return (await Promise.all([...nodes].map((it) => fetchStatus(it)))).filter((it) => it[0] !== "rejected").map((it) => it[1]);
 }
 
-export async function fetchStatus(serverData: ServerMetadata, fetcher: Fetcher) {
+async function fetchStatus(serverData: ServerMetadata) {
+  // TODO: Create a CommsClient and replace this plain json call
+  const fetcher = new Fetcher()
   return noReject(fetcher.fetchJson(`${serverData.address}/comms/status?includeLayers=true`, { timeout: "10s" }));
 }
