@@ -1,4 +1,4 @@
-import { EntityType, Pointer, EntityId, ContentFileHash, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, LegacyPartialDeploymentHistory } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFileHash, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, SortingCondition } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
@@ -23,7 +23,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     private readonly repository: Repository) { }
 
   start(): Promise<void> {
-      return this.service.start()
+    return this.service.start()
   }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
@@ -86,18 +86,13 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-
-  getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: string, offset?: number, limit?: number | undefined): Promise<LegacyPartialDeploymentHistory> {
-    return this.service.getLegacyHistory(from, to, serverName, offset, limit)
-  }
-
   deleteContent(fileHashes: string[]): Promise<void> {
     return this.service.deleteContent(fileHashes)
   }
 
-  async getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
+  async getDeployments(sortingCondition: SortingCondition, filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(async task => {
-      const deploymentHistory = await this.service.getDeployments(filters, offset, limit, task)
+      const deploymentHistory = await this.service.getDeployments(sortingCondition, filters, offset, limit, task)
 
       // Prepare holders
       const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()

@@ -1,6 +1,6 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { Pointer, EntityVersion } from "dcl-catalyst-commons";
+import { Pointer, EntityVersion, SortingCondition } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
@@ -40,7 +40,7 @@ describe("DenylistServiceDecorator", () => {
 
     beforeAll(async () => {
         [entity1, entityFile1] = await buildEntity([P1, P3], content1);
-        [entity2, ] = await buildEntity([P2], content2);
+        [entity2,] = await buildEntity([P2], content2);
 
         P1Target = buildPointerTarget(entity1.type, P1);
         content1Target = buildContentTarget(content1.hash);
@@ -48,21 +48,21 @@ describe("DenylistServiceDecorator", () => {
         ethAddressTarget = buildAddressTarget(ethAddress);
 
         service = new MockedMetaverseContentServiceBuilder()
-                .withContent(content1)
-                .withContent(content2)
-                .withEntity(entity1)
-                .withEntity(entity2)
-                .build()
+            .withContent(content1)
+            .withContent(content2)
+            .withEntity(entity1)
+            .withEntity(entity2)
+            .build()
     })
 
     it(`When an entity is not denylisted, then the audit info is not modified`, async () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments();
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP);
 
         expect(deployments.length).toBe(2)
-        const [ deployment1 ] = deployments
+        const [deployment1] = deployments
 
         expect(deployment1.auditInfo).toEqual(MockedMetaverseContentService.AUDIT_INFO)
     })
@@ -71,10 +71,10 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments();
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP);
 
         expect(deployments.length).toBe(2)
-        const [ deployment1, deployment2 ] = deployments
+        const [deployment1, deployment2] = deployments
 
         // Assert deployment 1 is not denylisted
         deploymentEquals(entity1, deployment1)
@@ -91,10 +91,10 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments();
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP);
 
         expect(deployments.length).toBe(2)
-        const [ deployment1, deployment2 ] = deployments
+        const [deployment1, deployment2] = deployments
 
         // Assert content is marked as denylisted
         deploymentEquals(entity1, deployment1)
@@ -109,7 +109,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { pointers: [P1] });
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { pointers: [P1] });
 
         expect(deployments.length).toBe(0)
     })
@@ -118,7 +118,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { pointers: entity1.pointers });
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { pointers: entity1.pointers });
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -128,7 +128,9 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { pointers: entity2.pointers });
+        console.log("Hola "+ SortingCondition.ORIGIN_TIMESTAMP)
+
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { pointers: entity2.pointers });
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity2, deployments[0])
@@ -138,7 +140,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { entityIds: [ entity1.id ] });
+        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { entityIds: [entity1.id] });
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -152,7 +154,9 @@ describe("DenylistServiceDecorator", () => {
         expect(content).toBeUndefined()
     })
 
-    it(`When content is not denylisted, then it can be returned correctly`, async () => {
+    fit(`When content is not denylisted, then it can be returned correctly`, async () => {
+console.log("Hola " + SortingCondition.ORIGIN_TIMESTAMP)
+
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 

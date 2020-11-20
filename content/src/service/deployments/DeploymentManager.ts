@@ -1,4 +1,4 @@
-import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
+import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo, SortingCondition } from "dcl-catalyst-commons";
 import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
@@ -18,13 +18,19 @@ export class DeploymentManager {
         deploymentsRepository: DeploymentsRepository,
         contentFilesRepository: ContentFilesRepository,
         migrationDataRepository: MigrationDataRepository,
+        sortingCondition: SortingCondition,
         filters?: ExtendedDeploymentFilters,
         offset?: number,
         limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
+        let deploymentsWithExtra 
+        if (sortingCondition == SortingCondition.ORIGIN_TIMESTAMP) {
+            deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByOriginTimestamp(curatedOffset, curatedLimit + 1, filters)
+        } else {
+            deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
+        }
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
@@ -69,17 +75,17 @@ export class DeploymentManager {
         entity: Entity,
         auditInfo: AuditInfo,
         overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
-            const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
-            if (auditInfo.migrationData) {
-                await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.migrationData)
-            }
+        const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
+        if (auditInfo.migrationData) {
+            await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.migrationData)
+        }
 
-            if (entity.content) {
-                await contentRepository.saveContentFiles(deploymentId, entity.content)
-            }
+        if (entity.content) {
+            await contentRepository.saveContentFiles(deploymentId, entity.content)
+        }
 
 
-            return deploymentId
+        return deploymentId
     }
 
     setEntitiesAsOverwritten(deploymentsRepository: DeploymentsRepository, overwritten: Set<DeploymentId>, overwrittenBy: DeploymentId) {
@@ -115,12 +121,12 @@ export class DeploymentManager {
     }
 
     savePointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentId: DeploymentId, result: DeploymentResult) {
-       return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
+        return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
     }
 
     private transformPointerChanges(deployedEntity: EntityId, input: Map<Pointer, { before: EntityId | undefined, after: DELTA_POINTER_RESULT }>): PointerChanges {
         const newEntries = Array.from(input.entries())
-            .map<[Pointer, { before: EntityId | undefined, after: EntityId | undefined }]>(([ pointer, { before, after } ]) => [ pointer, { before, after: after ===  DELTA_POINTER_RESULT.SET ? deployedEntity : undefined } ])
+            .map<[Pointer, { before: EntityId | undefined, after: EntityId | undefined }]>(([pointer, { before, after }]) => [pointer, { before, after: after === DELTA_POINTER_RESULT.SET ? deployedEntity : undefined }])
         return new Map(newEntries)
     }
 

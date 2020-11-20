@@ -7,6 +7,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { Repository } from "../storage/Repository";
 import { SnapshotManager } from "../service/snapshots/SnapshotManager";
+import { ContentCluster } from "../service/synchronization/ContentCluster";
 
 export class ControllerFactory {
     static create(env: Environment): Controller {
@@ -17,10 +18,11 @@ export class ControllerFactory {
         const challengeSupervisor: ChallengeSupervisor = env.getBean(Bean.CHALLENGE_SUPERVISOR);
         const snapshotManager: SnapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER);
         const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK);
+        const contentCluster: ContentCluster = env.getBean(Bean.CONTENT_CLUSTER)
         if (denylist && repository) {
-            return new Controller(new DenylistServiceDecorator(service, denylist, repository), denylist, synchronizationManager, challengeSupervisor, snapshotManager, ethNetwork);
+            return new Controller(new DenylistServiceDecorator(service, denylist, repository), denylist, synchronizationManager, challengeSupervisor, snapshotManager, ethNetwork, contentCluster);
         } else {
-            return new Controller(service, denylist, synchronizationManager, challengeSupervisor, snapshotManager, ethNetwork);
+            return new Controller(service, denylist, synchronizationManager, challengeSupervisor, snapshotManager, ethNetwork, contentCluster);
         }
     }
 }

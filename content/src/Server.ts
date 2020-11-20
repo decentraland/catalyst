@@ -16,6 +16,7 @@ import { MigrationManager } from "./migrations/MigrationManager";
 import { MetaverseContentService } from "./service/Service";
 import { GarbageCollectionManager } from "./service/garbage-collection/GarbageCollectionManager";
 import { SnapshotManager } from "./service/snapshots/SnapshotManager";
+import { SortingCondition } from "dcl-catalyst-commons";
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger("Server");
@@ -148,7 +149,7 @@ export class Server {
 
   private async validateHistory() {
     // Validate last history entry is before Date.now()
-    const lastDeployments = await this.service.getDeployments({ }, 0, 1)
+    const lastDeployments = await this.service.getDeployments(SortingCondition.LOCAL_TIMPESTAMP, { }, 0, 1)
     if (lastDeployments.deployments.length > 0) {
         const currentTimestamp = Date.now()
         if (lastDeployments.deployments[0].auditInfo.localTimestamp > currentTimestamp) {

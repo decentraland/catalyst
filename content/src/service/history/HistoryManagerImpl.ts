@@ -13,7 +13,8 @@ export class HistoryManagerImpl implements HistoryManager {
     private static MAX_HISTORY_LIMIT = 500
     private static DEFAULT_HISTORY_LIMIT = 500
     /** Returns the history sorted from newest to oldest */
-    async getHistory(deploymentsRepository: DeploymentsRepository, from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
+    async getHistory(deploymentsRepository: DeploymentsRepository, 
+        from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory> {
         let address: ServerAddress | undefined
         if (serverName) {
             address = this.cluster.getAddressForServerName(serverName) ?? 'UNKNOWN_NAME'
