@@ -5,7 +5,9 @@ import { EntityType, Fetcher, Entity } from "dcl-catalyst-commons";
 import { noReject } from "decentraland-katalyst-utils/util";
 import { TimeRefreshedDataHolder } from "../../../utils/TimeRefreshedDataHolder";
 import { SmartContentClient } from "../../../utils/SmartContentClient";
-import ms from "ms";
+
+// The maximum amount of hot scenes returned
+const HOT_SCENES_LIMIT = 100
 
 type ParcelCoord = [number, number];
 
@@ -50,7 +52,7 @@ export async function realmsStatus(daoCache: DAOCache, req: Request, res: Respon
   // Path: /realms
 
   if (!realmsStatusCache) {
-    realmsStatusCache = new TimeRefreshedDataHolder(() => fetchRealmsData(daoCache), ms("1m"));
+    realmsStatusCache = new TimeRefreshedDataHolder(() => fetchRealmsData(daoCache), "1m");
   }
 
   const realmsStatusData = await realmsStatusCache.get();
@@ -65,7 +67,7 @@ export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentC
   // Path: /hot-scenes
 
   if (!hotSceneCache) {
-    hotSceneCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), ms("1m"));
+    hotSceneCache = new TimeRefreshedDataHolder(() => fetchHotScenesData(daoCache, contentClient), "1m");
   }
 
   const hotScenesData = await hotSceneCache.get();
@@ -103,7 +105,7 @@ async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartConten
 
     const value = hotScenes.sort((scene1, scene2) => scene2.usersTotalCount - scene1.usersTotalCount);
 
-    return value;
+    return value.slice(0, HOT_SCENES_LIMIT);
   } else {
     return [];
   }

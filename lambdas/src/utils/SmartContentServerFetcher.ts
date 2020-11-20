@@ -1,6 +1,5 @@
 import log4js from "log4js"
 import { Fetcher, RequestOptions } from "dcl-catalyst-commons";
-import { ContentClient } from "dcl-catalyst-client";
 
 /**
  * This fetcher tries to use the internal docker network to connect lambdas with the content server.
@@ -12,7 +11,6 @@ export class SmartContentServerFetcher extends Fetcher {
     private static LOGGER = log4js.getLogger('SmartContentServerFetcher');
 
     private contentServerUrl: string | undefined
-    private contentClient: ContentClient | undefined
 
     constructor(private readonly externalContentServerUrl: string) {
         super()
@@ -30,15 +28,6 @@ export class SmartContentServerFetcher extends Fetcher {
             this.contentServerUrl = this.externalContentServerUrl
         }
         return this.contentServerUrl
-    }
-
-    async getContentClient(): Promise<ContentClient> {
-        if(!this.contentClient) {
-            const url = await this.getContentServerUrl()
-            this.contentClient = new ContentClient(url, "lambdas-smart-fetcher")
-        }
-
-        return this.contentClient;
     }
 
     getExternalContentServerUrl(): string {
