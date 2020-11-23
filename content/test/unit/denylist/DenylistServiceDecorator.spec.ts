@@ -59,7 +59,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({});
+        const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
         const [deployment1] = deployments
@@ -71,7 +71,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({});
+        const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
         const [deployment1, deployment2] = deployments
@@ -91,7 +91,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({});
+        const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
         const [deployment1, deployment2] = deployments

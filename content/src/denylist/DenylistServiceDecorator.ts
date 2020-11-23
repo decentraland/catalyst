@@ -90,9 +90,9 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.deleteContent(fileHashes)
   }
 
-  async getDeployments(options: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+  async getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(async task => {
-      const deploymentHistory = await this.service.getDeployments({ filters: options.filters, sortBy: options.sortBy, offset: options.offset, limit: options.limit }, task)
+      const deploymentHistory = await this.service.getDeployments({ filters: options?.filters, sortBy: options?.sortBy, offset: options?.offset, limit: options?.limit }, task)
 
       // Prepare holders
       const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
@@ -117,7 +117,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
       // Filter out deployments with blacklisted pointers
       const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
-        if (options.filters?.pointers && options.filters.pointers.length > 0) {
+        if (options?.filters?.pointers && options.filters.pointers.length > 0) {
           // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
           const intersection = options.filters.pointers.filter(pointer => pointers.includes(pointer))
           const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId)!!

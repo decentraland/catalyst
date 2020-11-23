@@ -18,11 +18,11 @@ export class DeploymentManager {
         deploymentsRepository: DeploymentsRepository,
         contentFilesRepository: ContentFilesRepository,
         migrationDataRepository: MigrationDataRepository,
-        options: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
-        const curatedOffset = (options.offset && options.offset >= 0) ? options.offset : 0
-        const curatedLimit = (options.limit && options.limit > 0 && options.limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? options.limit : DeploymentManager.MAX_HISTORY_LIMIT
+        options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+        const curatedOffset = (options?.offset && options.offset >= 0) ? options.offset : 0
+        const curatedLimit = (options?.limit && options.limit > 0 && options.limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? options.limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, options.filters, options.sortBy)
+        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, options?.filters, options?.sortBy)
 
         const moreData = deploymentsWithExtra.length > curatedLimit
 
@@ -52,7 +52,7 @@ export class DeploymentManager {
         return {
             deployments: deployments,
             filters: {
-                ...options.filters,
+                ...options?.filters,
             },
             pagination: {
                 offset: curatedOffset,

@@ -20,7 +20,7 @@ export interface MetaverseContentService {
     deleteContent(fileHashes: ContentFileHash[]): Promise<void>;
     storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>;
     getStatus(): ServerStatus;
-    getDeployments(options: DeploymentOptions, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
+    getDeployments(options?: DeploymentOptions, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
     getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentPointerChanges>;
     listenToDeployments(listener: DeploymentListener): void;
