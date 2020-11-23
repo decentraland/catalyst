@@ -259,10 +259,7 @@ export class Controller {
         const offset              = this.asInt(req.query.offset)
         const limit               = this.asInt(req.query.limit)
 
-        let originServerUrl: ServerAddress | undefined
-        if (serverName) {
-            originServerUrl = this.cluster.getAddressForServerName(serverName) ?? 'UNKNOWN_NAME'
-        }
+        const originServerUrl: ServerAddress | undefined = serverName ? decodeURIComponent(serverName) : undefined
 
         const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
         const deployments = await this.service.getDeployments(requestFilters, { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }, offset, limit)
