@@ -269,7 +269,7 @@ export class Controller {
                 entityType: deployment.entityType,
                 entityId: deployment.entityId,
                 timestamp: deployment.auditInfo.originTimestamp,
-                serverName: this.cluster.getServerNameForAddress(deployment.auditInfo.originServerUrl) ?? 'UNKNOWN_NAME'
+                serverName: encodeURIComponent(deployment.auditInfo.originServerUrl)
             }))
 
         const legacyHistory: LegacyPartialDeploymentHistory = {
