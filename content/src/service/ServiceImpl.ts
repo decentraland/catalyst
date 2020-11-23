@@ -118,7 +118,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                 await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
                 // Validate that there is no entity with a higher version
-                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, transaction), validationContext)
+                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, undefined, transaction), validationContext)
 
                 // Validate that there are no newer entities on pointers
                 await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
