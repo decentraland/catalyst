@@ -2,7 +2,7 @@ import { Authenticator } from 'dcl-crypto';
 import { EntityId, AuditInfo, EntityType, Timestamp, Pointer } from 'dcl-catalyst-commons';
 import { Entity } from '@katalyst/content/service/Entity';
 import { Repository } from '@katalyst/content/storage/Repository';
-import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager';
+import { ExtendedDeploymentFilters, SortBy, SortingField, SortingOrder } from '@katalyst/content/service/deployments/DeploymentManager';
 
 export class DeploymentsRepository {
 
@@ -21,12 +21,9 @@ export class DeploymentsRepository {
         return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], row => parseInt(row.count));
     }
 
-    getHistoricalDeploymentsByOriginTimestamp(offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
-        return this.getDeploymentsBy('origin_timestamp', offset, limit, filters)
-    }
-
-    getHistoricalDeploymentsByLocalTimestamp(offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
-        return this.getDeploymentsBy('local_timestamp', offset, limit, filters)
+    getHistoricalDeployments(offset: number, limit: number, filters?: ExtendedDeploymentFilters, sortBy?: SortBy) {
+        const sorting = Object.assign({field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING}, sortBy)
+        return this.getDeploymentsBy(sorting.field, offset, limit, filters)
     }
 
     private getDeploymentsBy(timestampField: string, offset: number, limit: number, filters?: ExtendedDeploymentFilters) {

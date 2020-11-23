@@ -4,7 +4,6 @@ import { EntityVersion, EntityType } from "dcl-catalyst-commons";
 import { ContentStorageFactory } from "./storage/ContentStorageFactory";
 import { ServiceFactory } from "./service/ServiceFactory";
 import { ControllerFactory } from "./controller/ControllerFactory";
-import { HistoryManagerFactory } from "./service/history/HistoryManagerFactory";
 import { ClusterSynchronizationManagerFactory } from "./service/synchronization/ClusterSynchronizationManagerFactory";
 import { PointerManagerFactory } from "./service/pointers/PointerManagerFactory";
 import { ContentClusterFactory } from "./service/synchronization/ContentClusterFactory";
@@ -223,7 +222,6 @@ export class EnvironmentBuilder {
         const localStorage = await ContentStorageFactory.local(env)
         this.registerBeanIfNotAlreadySet(env, Bean.STORAGE                     , () => localStorage)
         this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER             , () => ContentClusterFactory.create(env))
-        this.registerBeanIfNotAlreadySet(env, Bean.HISTORY_MANAGER             , () => HistoryManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER          , () => DeploymentManagerFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.DENYLIST                    , () => DenylistFactory.create(env))
         this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER             , () => PointerManagerFactory.create(env))

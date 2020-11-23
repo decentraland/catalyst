@@ -1,4 +1,4 @@
-import { EntityType, Pointer, EntityId, ContentFileHash, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus, SortingCondition } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, ContentFileHash, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerStatus } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "../service/Service";
 import { Entity } from "../service/Entity";
 import { Denylist } from "./Denylist";
@@ -9,7 +9,7 @@ import { ContentItem } from "../storage/ContentStorage";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { Repository } from "../storage/Repository";
 import { DenylistRepository } from "../storage/repositories/DenylistRepository";
-import { Deployment, PointerChangesFilters } from "../service/deployments/DeploymentManager";
+import { Deployment, PointerChangesFilters, SortBy } from "../service/deployments/DeploymentManager";
 import { ContentFile } from "../controller/Controller";
 
 /**
@@ -90,9 +90,9 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.deleteContent(fileHashes)
   }
 
-  async getDeployments(sortingCondition: SortingCondition, filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
+  async getDeployments(filters?: DeploymentFilters, sortingCondition?: SortBy, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(async task => {
-      const deploymentHistory = await this.service.getDeployments(sortingCondition, filters, offset, limit, task)
+      const deploymentHistory = await this.service.getDeployments(filters, sortingCondition, offset, limit, task)
 
       // Prepare holders
       const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()

@@ -1,6 +1,6 @@
 import { random } from "faker"
 import { mock, instance, when, anything } from "ts-mockito"
-import { Pointer, EntityVersion, SortingCondition } from "dcl-catalyst-commons";
+import { Pointer, EntityVersion } from "dcl-catalyst-commons";
 import { DenylistTarget, buildPointerTarget, buildContentTarget, buildEntityTarget, buildAddressTarget, DenylistTargetType, DenylistTargetId } from "@katalyst/content/denylist/DenylistTarget";
 import { Denylist } from "@katalyst/content/denylist/Denylist";
 import { DenylistServiceDecorator } from "@katalyst/content/denylist/DenylistServiceDecorator";
@@ -59,7 +59,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP);
+        const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
         const [deployment1] = deployments
@@ -71,7 +71,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP);
+        const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
         const [deployment1, deployment2] = deployments
@@ -91,7 +91,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP);
+        const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
         const [deployment1, deployment2] = deployments
@@ -109,7 +109,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { pointers: [P1] });
+        const { deployments } = await decorator.getDeployments({ pointers: [P1] });
 
         expect(deployments.length).toBe(0)
     })
@@ -118,7 +118,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { pointers: entity1.pointers });
+        const { deployments } = await decorator.getDeployments({ pointers: entity1.pointers });
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -128,9 +128,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        console.log("Hola "+ SortingCondition.ORIGIN_TIMESTAMP)
-
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { pointers: entity2.pointers });
+        const { deployments } = await decorator.getDeployments({ pointers: entity2.pointers });
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity2, deployments[0])
@@ -140,7 +138,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments(SortingCondition.ORIGIN_TIMESTAMP, { entityIds: [entity1.id] });
+        const { deployments } = await decorator.getDeployments({ entityIds: [entity1.id] });
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -154,14 +152,11 @@ describe("DenylistServiceDecorator", () => {
         expect(content).toBeUndefined()
     })
 
-    fit(`When content is not denylisted, then it can be returned correctly`, async () => {
-console.log("Hola " + SortingCondition.ORIGIN_TIMESTAMP)
-
+    it(`When content is not denylisted, then it can be returned correctly`, async () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 
         const buffer = await (await decorator.getContent(content2.hash))?.asBuffer()
-
         expect(buffer).toBe(content2.buffer)
     })
 

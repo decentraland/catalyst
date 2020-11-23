@@ -1,8 +1,8 @@
-import { ContentFileHash, ServerStatus, EntityType, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo, SortingCondition } from "dcl-catalyst-commons";
+import { ContentFileHash, ServerStatus, EntityType, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
-import { Deployment, PartialDeploymentPointerChanges, PointerChangesFilters } from "./deployments/DeploymentManager";
+import { Deployment, PartialDeploymentPointerChanges, PointerChangesFilters, SortBy } from "./deployments/DeploymentManager";
 import { Entity } from "./Entity";
 import { ContentFile } from "../controller/Controller";
 
@@ -20,7 +20,7 @@ export interface MetaverseContentService {
     deleteContent(fileHashes: ContentFileHash[]): Promise<void>;
     storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>;
     getStatus(): ServerStatus;
-    getDeployments(sortCondition: SortingCondition, filters?: DeploymentFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
+    getDeployments(filters?: DeploymentFilters, sortCondition?: SortBy, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
     getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentPointerChanges>;
     listenToDeployments(listener: DeploymentListener): void;

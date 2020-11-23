@@ -16,7 +16,7 @@ import { MigrationManager } from "./migrations/MigrationManager";
 import { MetaverseContentService } from "./service/Service";
 import { GarbageCollectionManager } from "./service/garbage-collection/GarbageCollectionManager";
 import { SnapshotManager } from "./service/snapshots/SnapshotManager";
-import { SortingCondition } from "dcl-catalyst-commons";
+import { SortingField, SortingOrder } from "./service/deployments/DeploymentManager";
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger("Server");
@@ -139,7 +139,7 @@ export class Server {
   }
 
   async stop(): Promise<void> {
-    await Promise.all([ this.garbageCollectionManager.stop(), this.synchronizationManager.stop() ]);
+    await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()]);
     if (this.httpServer) {
       this.httpServer.close(() => {
         Server.LOGGER.info(`Content Server stopped.`);
@@ -149,13 +149,13 @@ export class Server {
 
   private async validateHistory() {
     // Validate last history entry is before Date.now()
-    const lastDeployments = await this.service.getDeployments(SortingCondition.LOCAL_TIMPESTAMP, { }, 0, 1)
+    const lastDeployments = await this.service.getDeployments({}, { field: SortingField.LOCAL_TIMPESTAMP, order: SortingOrder.DESCENDING }, 0, 1)
     if (lastDeployments.deployments.length > 0) {
-        const currentTimestamp = Date.now()
-        if (lastDeployments.deployments[0].auditInfo.localTimestamp > currentTimestamp) {
-            console.error("Last stored timestamp for this server is newer than current time. The server can not be started.")
-            process.exit(1)
-        }
+      const currentTimestamp = Date.now()
+      if (lastDeployments.deployments[0].auditInfo.localTimestamp > currentTimestamp) {
+        console.error("Last stored timestamp for this server is newer than current time. The server can not be started.")
+        process.exit(1)
+      }
     }
   }
 
@@ -167,7 +167,7 @@ export class Server {
         fs.unlinkSync(path.join(directory, file))
       })
       Server.LOGGER.info("Cleaned up!")
-    } catch(e) {
+    } catch (e) {
       Server.LOGGER.error("There was an error while cleaning up the upload directory: ", e)
     }
   }
