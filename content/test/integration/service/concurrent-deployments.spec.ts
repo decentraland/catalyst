@@ -10,7 +10,7 @@ import { EntityCombo, buildDeployData, deployEntitiesCombo } from "../E2ETestUti
 describe("Integration - Concurrent deployments", () => {
 
     const P1 = "x1,y1"
-    const AMOUNT_OF_DEPLOYMENTS = 10
+    const AMOUNT_OF_DEPLOYMENTS = 500
     const type = EntityType.PROFILE
     const testEnv = loadTestEnvironment()
 

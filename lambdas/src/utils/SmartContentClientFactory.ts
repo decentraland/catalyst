@@ -1,11 +1,11 @@
-import { Environment, EnvironmentConfig } from "./Environment"
-import { SmartContentServerFetcher } from "./SmartContentServerFetcher"
+import { Environment, EnvironmentConfig } from "../Environment"
+import { SmartContentClient } from "./SmartContentClient"
 
-export class SmartContentServerFetcherFactory {
+export class SmartContentClientFactory {
 
-    static create(env: Environment): SmartContentServerFetcher {
-        const externalUrl = SmartContentServerFetcherFactory.baseContentServerUrl(env)
-        return new SmartContentServerFetcher(externalUrl)
+    static create(env: Environment): SmartContentClient {
+        const externalUrl = SmartContentClientFactory.baseContentServerUrl(env)
+        return new SmartContentClient(externalUrl)
     }
 
     private static baseContentServerUrl(env: Environment): string {

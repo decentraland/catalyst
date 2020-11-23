@@ -10,6 +10,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//contracts",
+        "//commons/utils",
         "//commons/servers",
         "@npm//@types",
         "@npm//@types/node",
@@ -32,6 +33,7 @@ ts_library(
         "@npm//aws-sdk",
         "@npm//dcl-crypto",
         "@npm//dcl-catalyst-commons",
+        "@npm//dcl-catalyst-client",
     ],
 )
 

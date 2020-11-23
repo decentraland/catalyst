@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { filterENS } from '../ensFiltering'
-import { SmartContentServerFetcher } from '../../../SmartContentServerFetcher'
+import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 import { Entity } from 'dcl-catalyst-commons'
 
 export async function getProfileById(fetcher: SmartContentServerFetcher, ensOwnerProviderUrl: string, req: Request, res: Response) {
