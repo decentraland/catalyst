@@ -22,7 +22,7 @@ export class DeploymentsRepository {
     }
 
     getHistoricalDeployments(offset: number, limit: number, filters?: ExtendedDeploymentFilters, sortBy?: SortBy) {
-        const sorting = Object.assign({field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING}, sortBy)
+        const sorting = Object.assign({field: SortingField.LOCAL_TIMPESTAMP, order: SortingOrder.DESCENDING}, sortBy)
         return this.getDeploymentsBy(sorting.field, offset, limit, filters)
     }
 

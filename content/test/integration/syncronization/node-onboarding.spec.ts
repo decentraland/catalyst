@@ -15,7 +15,7 @@ describe("End 2 end - Node onboarding", function () {
             .andBuildMany(3)
     })
 
-    fit('When a node starts, it gets all the previous history', async () => {
+    it('When a node starts, it gets all the previous history', async () => {
         // Start server 1 and 2
         await Promise.all([server1.start(), server2.start()])
 

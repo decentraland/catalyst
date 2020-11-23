@@ -91,8 +91,7 @@ export class DeploymentManager {
     async getPointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentsRepo: DeploymentsRepository, filters?: PointerChangesFilters, offset?: number, limit?: number): Promise<PartialDeploymentPointerChanges> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeployments(curatedOffset, curatedLimit + 1, filters,
-            { field: SortingField.LOCAL_TIMPESTAMP, order: SortingOrder.DESCENDING })
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeployments(curatedOffset, curatedLimit + 1, filters)
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deployments = deploymentsWithExtra.slice(0, curatedLimit)

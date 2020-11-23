@@ -34,10 +34,10 @@ export class Controller {
         // Method: GET
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
-        const type: EntityType = this.parseEntityType(req.params.type)
+        const type: EntityType    = this.parseEntityType(req.params.type)
         const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer) ?? []
-        const ids: EntityId[] = this.asArray<EntityId>(req.query.id) ?? []
-        const fields: string = req.query.fields
+        const ids: EntityId[]     = this.asArray<EntityId>(req.query.id) ?? []
+        const fields: string      = req.query.fields
 
         // Validate type is valid
         if (!type) {
@@ -91,11 +91,11 @@ export class Controller {
         // Method: POST
         // Path: /legacy-entities
         // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
-        const entityId: EntityId = req.body.entityId;
-        const authChain: AuthChain = req.body.authChain;
+        const entityId: EntityId             = req.body.entityId;
+        const authChain: AuthChain           = req.body.authChain;
         const originalVersion: EntityVersion = EntityVersion[req.body.version.toUpperCase().trim()];
-        const migrationInformation = JSON.parse(req.body.migration_data);
-        const files = req.files
+        const migrationInformation           = JSON.parse(req.body.migration_data);
+        const files                          = req.files
 
         let deployFiles: ContentFile[] = []
         try {
@@ -127,13 +127,13 @@ export class Controller {
         // Method: POST
         // Path: /entities
         // Body: JSON with entityId,ethAddress,signature; and a set of files
-        const entityId: EntityId = req.body.entityId;
-        let authChain: AuthLink[] = req.body.authChain;
+        const entityId: EntityId     = req.body.entityId;
+        let authChain: AuthLink[]    = req.body.authChain;
         const ethAddress: EthAddress = req.body.ethAddress;
-        const signature: Signature = req.body.signature;
-        const files = req.files
-        const origin = req.header('x-upload-origin') ?? "unknown"
-        const fixAttempt: boolean = req.query.fix === 'true'
+        const signature: Signature   = req.body.signature;
+        const files                  = req.files
+        const origin                 = req.header('x-upload-origin') ?? "unknown"
+        const fixAttempt: boolean    = req.query.fix === 'true'
 
         let deployFiles: ContentFile[] = []
         try {
@@ -221,7 +221,7 @@ export class Controller {
     async getAudit(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /audit/:type/:entityId
-        const type = this.parseEntityType(req.params.type)
+        const type     = this.parseEntityType(req.params.type)
         const entityId = req.params.entityId;
 
         // Validate type is valid
@@ -254,10 +254,10 @@ export class Controller {
         // Path: /history
         // Query String: ?from={timestamp}&to={timestamp}&serverName={string}
         const fromOriginTimestamp = req.query.from
-        const toOriginTimestamp = req.query.to
-        const serverName = req.query.serverName
-        const offset = this.asInt(req.query.offset)
-        const limit = this.asInt(req.query.limit)
+        const toOriginTimestamp   = req.query.to
+        const serverName          = req.query.serverName
+        const offset              = this.asInt(req.query.offset)
+        const limit               = this.asInt(req.query.limit)
 
         let originServerUrl: ServerAddress | undefined
         if (serverName) {
@@ -265,7 +265,7 @@ export class Controller {
         }
 
         const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
-        const deployments = await this.service.getDeployments(requestFilters, { field: SortingField.LOCAL_TIMPESTAMP, order: SortingOrder.DESCENDING }, offset, limit)
+        const deployments = await this.service.getDeployments(requestFilters, { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }, offset, limit)
 
         const finalDeployments: LegacyDeploymentEvent[] = deployments.deployments.slice(0, deployments.pagination.limit)
             .map(deployment => ({
@@ -296,12 +296,12 @@ export class Controller {
         // Method: GET
         // Path: /pointerChanges
         // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}&entityType={entityType}
-        const stringEntityTypes = this.asArray<string>(req.query.entityType);
+        const stringEntityTypes                                   = this.asArray<string>(req.query.entityType);
         const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
-        const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
-        const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
-        const offset: number | undefined = this.asInt(req.query.offset)
-        const limit: number | undefined = this.asInt(req.query.limit)
+        const fromLocalTimestamp: Timestamp | undefined           = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: Timestamp | undefined             = this.asInt(req.query.toLocalTimestamp)
+        const offset: number | undefined                          = this.asInt(req.query.offset)
+        const limit: number | undefined                           = this.asInt(req.query.limit)
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -320,18 +320,18 @@ export class Controller {
         // Path: /deployments
         // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-        const stringEntityTypes = this.asArray<string>(req.query.entityType);
+        const stringEntityTypes                                   = this.asArray<string>(req.query.entityType);
         const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
-        const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
-        const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-        const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
-        const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-        const showAudit: boolean = this.asBoolean(req.query.showAudit) ?? false
-        const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)
-        const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)
-        const offset: number | undefined = this.asInt(req.query.offset)
-        const limit: number | undefined = this.asInt(req.query.limit)
-        const fields: string | undefined = req.query.fields
+        const entityIds: EntityId[] | undefined                   = this.asArray<EntityId>(req.query.entityId)
+        const fromLocalTimestamp: number | undefined              = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: number | undefined                = this.asInt(req.query.toLocalTimestamp)
+        const onlyCurrentlyPointed: boolean | undefined           = this.asBoolean(req.query.onlyCurrentlyPointed)
+        const showAudit: boolean                                  = this.asBoolean(req.query.showAudit) ?? false
+        const deployedBy: EthAddress[] | undefined                = this.asArray<EthAddress>(req.query.deployedBy)
+        const pointers: Pointer[] | undefined                     = this.asArray<Pointer>(req.query.pointer)
+        const offset: number | undefined                          = this.asInt(req.query.offset)
+        const limit: number | undefined                           = this.asInt(req.query.limit)
+        const fields: string | undefined                          = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -407,10 +407,10 @@ export class Controller {
         // Path: /denylist/{type}/{id}
         // Body: JSON with ethAddress, signature and timestamp
 
-        const blocker: EthAddress = req.body.blocker;
+        const blocker: EthAddress  = req.body.blocker;
         const timestamp: Timestamp = req.body.timestamp;
         const signature: Signature = req.body.signature;
-        let authChain: AuthChain = req.body.authChain
+        let authChain: AuthChain   = req.body.authChain
 
         const type = req.params.type
         const id = req.params.id;
@@ -435,7 +435,7 @@ export class Controller {
         // Path: /denylist/{type}/{id}
         // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
 
-        const blocker: EthAddress = req.query.blocker;
+        const blocker: EthAddress  = req.query.blocker;
         const timestamp: Timestamp = req.query.timestamp;
         const signature: Signature = req.query.signature;
 
@@ -470,7 +470,7 @@ export class Controller {
         // Path: /denylist/{type}/{id}
 
         const type = req.params.type
-        const id = req.params.id;
+        const id   = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
         const isDenylisted = await this.denylist.isTargetDenylisted(target)
