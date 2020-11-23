@@ -1,5 +1,5 @@
 import log4js from "log4js"
-import { Hashing, ContentFileHash, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, DeploymentFilters, PartialDeploymentHistory, ServerAddress, ServerName, AuditInfo, Pointer } from "dcl-catalyst-commons";
+import { Hashing, ContentFileHash, EntityType, EntityId, Timestamp, ENTITY_FILE_NAME, ServerStatus, PartialDeploymentHistory, ServerAddress, ServerName, AuditInfo, Pointer } from "dcl-catalyst-commons";
 import { Entity } from "./Entity";
 import { MetaverseContentService, ClusterDeploymentsService, LocalDeploymentAuditInfo, DeploymentListener } from "./Service";
 import { EntityFactory } from "./EntityFactory";
@@ -13,7 +13,7 @@ import { ContentItem, StorageContent, fromBuffer } from "../storage/ContentStora
 import { FailedDeploymentsManager, FailureReason } from "./errors/FailedDeploymentsManager";
 import { IdentityProvider } from "./synchronization/ContentCluster";
 import { Repository, RepositoryTask } from "../storage/Repository";
-import { DeploymentManager, Deployment, PartialDeploymentPointerChanges, PointerChangesFilters, SortBy } from "./deployments/DeploymentManager";
+import { DeploymentManager, Deployment, PartialDeploymentPointerChanges, PointerChangesFilters, DeploymentOptions } from "./deployments/DeploymentManager";
 import { happenedBefore } from "./time/TimeSorting";
 import { ContentFile } from "../controller/Controller";
 
@@ -118,7 +118,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                 await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
                 // Validate that there is no entity with a higher version
-                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments(filters, undefined, undefined, undefined, transaction), validationContext)
+                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments({ filters: filters }, transaction), validationContext)
 
                 // Validate that there are no newer entities on pointers
                 await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
@@ -209,7 +209,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     /** Check if there are newer entities on the given entity's pointers */
     private async areThereNewerEntitiesOnPointers(entity: Entity, transaction: RepositoryTask): Promise<boolean> {
         // Validate that pointers aren't referring to an entity with a higher timestamp
-        const { deployments: lastDeployments } = await this.getDeployments({ entityTypes: [entity.type], pointers: entity.pointers }, undefined, undefined, undefined, transaction)
+        const { deployments: lastDeployments } = await this.getDeployments({ filters: { entityTypes: [entity.type], pointers: entity.pointers }}, transaction)
         for (const lastDeployment of lastDeployments) {
             if (happenedBefore(entity, lastDeployment)) {
                 return true
@@ -284,8 +284,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return this.deploymentManager.areEntitiesDeployed(repository.deployments, entityIds)
     }
 
-    getDeployments(filters?: DeploymentFilters, sortCondition?: SortBy, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory<Deployment>> {
-        return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, filters, sortCondition, offset, limit))
+    getDeployments(options: DeploymentOptions, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory<Deployment>> {
+        return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options))
     }
 
     getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentPointerChanges> {

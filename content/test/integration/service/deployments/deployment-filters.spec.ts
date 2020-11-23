@@ -124,7 +124,7 @@ describe("Integration - Deployment Filters", () => {
     })
 
     async function assertDeploymentsWithFilterAre(filter: ExtendedDeploymentFilters, ...expectedEntities: EntityCombo[]) {
-        const actualDeployments = await service.getDeployments(filter)
+        const actualDeployments = await service.getDeployments({filters: filter})
         const expectedEntityIds = expectedEntities.map(entityCombo => entityCombo.entity.id).sort()
         const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
         expect(actualEntityIds).toEqual(expectedEntityIds)

@@ -60,7 +60,7 @@ describe("Integration - Same Timestamp Check", () => {
     })
 
     async function assertIsActive(entityCombo: EntityCombo) {
-        const { deployments } = await service.getDeployments( { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true} )
+        const { deployments } = await service.getDeployments( {filters: { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true}} )
         expect(deployments.length).toEqual(1)
         const [ activeEntity ] = deployments
         expect(activeEntity.entityId).toEqual(entityCombo.entity.id)
@@ -77,7 +77,7 @@ describe("Integration - Same Timestamp Check", () => {
     }
 
     async function getAuditInfo(entity: EntityCombo): Promise<AuditInfo> {
-        const { deployments } = await service.getDeployments({ entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] })
+        const { deployments } = await service.getDeployments({filters: { entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] }})
         return deployments[0].auditInfo
     }
 

@@ -75,14 +75,14 @@ describe("End 2 end - Node onboarding", function () {
         await assertFileIsOnServer(server1, entityContentHash)
         await assertFileIsOnServer(server2, entityContentHash)
 
-        // Remove server 1 from the dAO
+        // Remove server 1 from the DAO
         testEnv.removeFromDAO(server1.getAddress())
 
         // Start server 3
         await server3.start()
 
-        // Assert server 3 has all the history, but since the server is not available anymore, the name and origin server url are unknown
-        const deploymentEventWithoutName = buildEventWithName(entity, 'UNKNOWN_NAME', deploymentTimestamp)
+        // Assert server 3 has all the history, the name and origin server url remain the same
+        const deploymentEventWithoutName = buildEventWithName(entity, encodeURIComponent(server1.getAddress()), deploymentTimestamp)
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEventWithoutName))
         await awaitUntil(() => assertDeploymentsAreReported(server3, deployment))
 

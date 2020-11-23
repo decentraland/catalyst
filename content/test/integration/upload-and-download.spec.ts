@@ -37,9 +37,10 @@ describe("End 2 end deploy test", () => {
         const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["0,0", "0,1"], { metadata: 'this is just some metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png', 'content/test/integration/resources/some-text-file.txt'] })
 
         const creationTimestamp = await server.deploy(deployData)
-        const deploymentEvent = buildEventWithName(entityBeingDeployed, 'UNKNOWN_NAME', creationTimestamp)
+        const serverUrl = 'https://peer.decentraland.org/content'
+        const deploymentEvent = buildEventWithName(entityBeingDeployed, encodeURIComponent(serverUrl), creationTimestamp)
         const deployment = buildDeployment(deployData, entityBeingDeployed, server, creationTimestamp)
-        deployment.auditInfo.originServerUrl = 'https://peer.decentraland.org/content'
+        deployment.auditInfo.originServerUrl = serverUrl
         const deltaTimestamp = Date.now() - creationTimestamp
         expect(deltaTimestamp).toBeLessThanOrEqual(100)
         expect(deltaTimestamp).toBeGreaterThanOrEqual(0)

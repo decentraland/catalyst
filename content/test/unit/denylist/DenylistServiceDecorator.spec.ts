@@ -59,7 +59,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments();
+        const { deployments } = await decorator.getDeployments({});
 
         expect(deployments.length).toBe(2)
         const [deployment1] = deployments
@@ -71,7 +71,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(entity2Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments();
+        const { deployments } = await decorator.getDeployments({});
 
         expect(deployments.length).toBe(2)
         const [deployment1, deployment2] = deployments
@@ -91,7 +91,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(content1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments();
+        const { deployments } = await decorator.getDeployments({});
 
         expect(deployments.length).toBe(2)
         const [deployment1, deployment2] = deployments
@@ -109,7 +109,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({ pointers: [P1] });
+        const { deployments } = await decorator.getDeployments({filters: { pointers: [P1] }});
 
         expect(deployments.length).toBe(0)
     })
@@ -118,7 +118,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({ pointers: entity1.pointers });
+        const { deployments } = await decorator.getDeployments({filters: { pointers: entity1.pointers }});
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -128,7 +128,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({ pointers: entity2.pointers });
+        const { deployments } = await decorator.getDeployments({filters: { pointers: entity2.pointers }});
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity2, deployments[0])
@@ -138,7 +138,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments({ entityIds: [entity1.id] });
+        const { deployments } = await decorator.getDeployments({filters: { entityIds: [entity1.id] }});
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])

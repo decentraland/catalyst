@@ -18,14 +18,11 @@ export class DeploymentManager {
         deploymentsRepository: DeploymentsRepository,
         contentFilesRepository: ContentFilesRepository,
         migrationDataRepository: MigrationDataRepository,
-        filters?: ExtendedDeploymentFilters,
-        sortBy?: SortBy,
-        offset?: number,
-        limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
-        const curatedOffset = (offset && offset >= 0) ? offset : 0
-        const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
+        options: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+        const curatedOffset = (options.offset && options.offset >= 0) ? options.offset : 0
+        const curatedLimit = (options.limit && options.limit > 0 && options.limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? options.limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, filters, sortBy)
+        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, options.filters, options.sortBy)
 
         const moreData = deploymentsWithExtra.length > curatedLimit
 
@@ -55,7 +52,7 @@ export class DeploymentManager {
         return {
             deployments: deployments,
             filters: {
-                ...filters,
+                ...options.filters,
             },
             pagination: {
                 offset: curatedOffset,
@@ -151,6 +148,13 @@ export type PartialDeploymentPointerChanges = {
         limit: number;
         moreData: boolean;
     };
+};
+
+export type DeploymentOptions = {
+    filters?: DeploymentFilters, 
+    sortBy?: SortBy, 
+    offset?: number, 
+    limit?: number 
 };
 
 export enum SortingField {

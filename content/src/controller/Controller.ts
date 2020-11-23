@@ -16,7 +16,6 @@ import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
 import { Deployment, DeploymentPointerChanges, ExtendedDeploymentFilters, SortingField, SortingOrder } from "../service/deployments/DeploymentManager";
 import { SnapshotManager } from "../service/snapshots/SnapshotManager";
-import { ContentCluster } from "../service/synchronization/ContentCluster";
 
 export class Controller {
 
@@ -27,8 +26,7 @@ export class Controller {
         private readonly synchronizationManager: SynchronizationManager,
         private readonly challengeSupervisor: ChallengeSupervisor,
         private readonly snapshotManager: SnapshotManager,
-        private readonly ethNetwork: string,
-        private readonly cluster: ContentCluster) { }
+        private readonly ethNetwork: string) { }
 
     async getEntities(req: express.Request, res: express.Response) {
         // Method: GET
@@ -60,9 +58,9 @@ export class Controller {
         // Calculate and mask entities
         let history: PartialDeploymentHistory<Deployment>
         if (ids.length > 0) {
-            history = await this.service.getDeployments({ entityTypes: [type], entityIds: ids })
+            history = await this.service.getDeployments({ filters: { entityTypes: [type], entityIds: ids }})
         } else {
-            history = await this.service.getDeployments({ entityTypes: [type], pointers, onlyCurrentlyPointed: true })
+            history = await this.service.getDeployments({ filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }})
         }
         const maskedEntities: ControllerEntity[] = history.deployments.map(fullDeployment => ControllerEntityFactory.maskDeployment(fullDeployment, enumFields))
         res.send(maskedEntities)
@@ -230,7 +228,7 @@ export class Controller {
             return
         }
 
-        const { deployments } = await this.service.getDeployments({ entityIds: [entityId], entityTypes: [type] })
+        const { deployments } = await this.service.getDeployments({filters: { entityIds: [entityId], entityTypes: [type] }})
 
         if (deployments.length > 0) {
             const { auditInfo } = deployments[0]
@@ -262,7 +260,11 @@ export class Controller {
         const originServerUrl: ServerAddress | undefined = serverName ? decodeURIComponent(serverName) : undefined
 
         const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
-        const deployments = await this.service.getDeployments(requestFilters, { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }, offset, limit)
+        const deployments = await this.service.getDeployments(
+            {filters: requestFilters,
+            sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING },
+            offset: offset,
+            limit: limit})
 
         const finalDeployments: LegacyDeploymentEvent[] = deployments.deployments.slice(0, deployments.pagination.limit)
             .map(deployment => ({
@@ -348,7 +350,7 @@ export class Controller {
         }
 
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]), entityIds, deployedBy, onlyCurrentlyPointed }
-        const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, undefined, offset, limit)
+        const { deployments, filters, pagination } = await this.service.getDeployments({filters: requestFilters, offset: offset, limit: limit})
         const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
         res.send({ deployments: controllerDeployments, filters, pagination })

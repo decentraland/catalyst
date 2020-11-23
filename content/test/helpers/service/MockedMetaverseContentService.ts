@@ -1,5 +1,5 @@
 import { random } from "faker"
-import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
+import { ServerStatus, PartialDeploymentHistory, EntityType, EntityId, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "@katalyst/content/service/Service"
 import { Entity } from "@katalyst/content/service/Entity"
 import { buildEntityAndFile } from "./EntityTestFactory"
@@ -7,7 +7,7 @@ import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
-import { Deployment, PointerChangesFilters, DeploymentPointerChanges, SortBy } from "@katalyst/content/service/deployments/DeploymentManager"
+import { Deployment, PointerChangesFilters, DeploymentPointerChanges, DeploymentOptions } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { ContentFile } from "@katalyst/content/controller/Controller"
 
@@ -60,10 +60,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         })
     }
 
-    getDeployments(filters?: DeploymentFilters, sorting?: SortBy, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
+    getDeployments(options: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
         return Promise.resolve({
             deployments: this.entities.map(entity => this.entityToDeployment(entity))
-                .filter(deployment => !filters?.entityIds || filters.entityIds.includes(deployment.entityId)),
+                .filter(deployment => !options.filters?.entityIds || options.filters.entityIds.includes(deployment.entityId)),
             filters: {},
             pagination: {
                 offset: 0,

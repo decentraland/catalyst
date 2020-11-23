@@ -59,7 +59,7 @@ describe("Integration - Order Check", () => {
     }
 
     async function getActiveDeployments() {
-        const { deployments } = await service.getDeployments({ onlyCurrentlyPointed: true })
+        const { deployments } = await service.getDeployments({filters: { onlyCurrentlyPointed: true }})
         return deployments
     }
 
@@ -74,7 +74,7 @@ describe("Integration - Order Check", () => {
     }
 
     async function getAuditInfo(entity: EntityCombo): Promise<AuditInfo> {
-        const { deployments } = await service.getDeployments({ entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] })
+        const { deployments } = await service.getDeployments({filters: { entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] }})
         return deployments[0].auditInfo
     }
 
