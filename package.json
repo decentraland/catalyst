@@ -43,6 +43,7 @@
     "karma-requirejs": "^1.1.0",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-spec-reporter": "^0.0.32",
+    "prettier": "^2.2.0",
     "protobufjs": "^6.8.8",
     "puppeteer": "^2.0.0",
     "requirejs": "^2.3.6",
@@ -62,7 +63,7 @@
     "yargs": "^15.0.2"
   },
   "prettier": {
-    "printWidth": 180
+    "printWidth": 120
   },
   "scripts": {
     "startClient": "ibazel run comms/peer-react-app:devserver",
