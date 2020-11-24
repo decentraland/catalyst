@@ -40,7 +40,7 @@ describe("DenylistServiceDecorator", () => {
 
     beforeAll(async () => {
         [entity1, entityFile1] = await buildEntity([P1, P3], content1);
-        [entity2, ] = await buildEntity([P2], content2);
+        [entity2,] = await buildEntity([P2], content2);
 
         P1Target = buildPointerTarget(entity1.type, P1);
         content1Target = buildContentTarget(content1.hash);
@@ -48,11 +48,11 @@ describe("DenylistServiceDecorator", () => {
         ethAddressTarget = buildAddressTarget(ethAddress);
 
         service = new MockedMetaverseContentServiceBuilder()
-                .withContent(content1)
-                .withContent(content2)
-                .withEntity(entity1)
-                .withEntity(entity2)
-                .build()
+            .withContent(content1)
+            .withContent(content2)
+            .withEntity(entity1)
+            .withEntity(entity2)
+            .build()
     })
 
     it(`When an entity is not denylisted, then the audit info is not modified`, async () => {
@@ -62,7 +62,7 @@ describe("DenylistServiceDecorator", () => {
         const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
-        const [ deployment1 ] = deployments
+        const [deployment1] = deployments
 
         expect(deployment1.auditInfo).toEqual(MockedMetaverseContentService.AUDIT_INFO)
     })
@@ -74,7 +74,7 @@ describe("DenylistServiceDecorator", () => {
         const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
-        const [ deployment1, deployment2 ] = deployments
+        const [deployment1, deployment2] = deployments
 
         // Assert deployment 1 is not denylisted
         deploymentEquals(entity1, deployment1)
@@ -94,7 +94,7 @@ describe("DenylistServiceDecorator", () => {
         const { deployments } = await decorator.getDeployments();
 
         expect(deployments.length).toBe(2)
-        const [ deployment1, deployment2 ] = deployments
+        const [deployment1, deployment2] = deployments
 
         // Assert content is marked as denylisted
         deploymentEquals(entity1, deployment1)
@@ -109,7 +109,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { pointers: [P1] });
+        const { deployments } = await decorator.getDeployments({filters: { pointers: [P1] }});
 
         expect(deployments.length).toBe(0)
     })
@@ -118,7 +118,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { pointers: entity1.pointers });
+        const { deployments } = await decorator.getDeployments({filters: { pointers: entity1.pointers }});
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -128,7 +128,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { pointers: entity2.pointers });
+        const { deployments } = await decorator.getDeployments({filters: { pointers: entity2.pointers }});
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity2, deployments[0])
@@ -138,7 +138,7 @@ describe("DenylistServiceDecorator", () => {
         const denylist = denylistWith(P1Target)
         const decorator = getDecorator(denylist)
 
-        const { deployments } = await decorator.getDeployments( { entityIds: [ entity1.id ] });
+        const { deployments } = await decorator.getDeployments({filters: { entityIds: [entity1.id] }});
 
         expect(deployments.length).toBe(1)
         deploymentEquals(entity1, deployments[0])
@@ -157,7 +157,6 @@ describe("DenylistServiceDecorator", () => {
         const decorator = getDecorator(denylist)
 
         const buffer = await (await decorator.getContent(content2.hash))?.asBuffer()
-
         expect(buffer).toBe(content2.buffer)
     })
 

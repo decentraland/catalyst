@@ -1,5 +1,5 @@
 import { random } from "faker"
-import { ServerStatus, DeploymentFilters, PartialDeploymentHistory, EntityType, EntityId, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
+import { ServerStatus, PartialDeploymentHistory, EntityType, EntityId, Timestamp, Pointer, ContentFileHash, LegacyPartialDeploymentHistory, AuditInfo, LegacyAuditInfo } from "dcl-catalyst-commons"
 import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from "@katalyst/content/service/Service"
 import { Entity } from "@katalyst/content/service/Entity"
 import { buildEntityAndFile } from "./EntityTestFactory"
@@ -7,7 +7,7 @@ import { CURRENT_CONTENT_VERSION } from "@katalyst/content/Environment"
 import { AuthLinkType } from "dcl-crypto"
 import { ContentItem, SimpleContentItem } from "@katalyst/content/storage/ContentStorage"
 import { RepositoryTask, Repository } from "@katalyst/content/storage/Repository"
-import { Deployment, PointerChangesFilters, DeploymentPointerChanges } from "@katalyst/content/service/deployments/DeploymentManager"
+import { Deployment, PointerChangesFilters, DeploymentPointerChanges, DeploymentOptions } from "@katalyst/content/service/deployments/DeploymentManager"
 import { FailedDeployment } from "@katalyst/content/service/errors/FailedDeploymentsManager"
 import { ContentFile } from "@katalyst/content/controller/Controller"
 
@@ -26,7 +26,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         originTimestamp: Date.now(),
         deployedTimestamp: Date.now(),
         originServerUrl: 'http://localhost',
-        authChain: [{type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature:random.alphaNumeric(10), payload:random.alphaNumeric(10)}],
+        authChain: [{ type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY, signature: random.alphaNumeric(10), payload: random.alphaNumeric(10) }],
         version: CURRENT_CONTENT_VERSION,
     }
 
@@ -60,10 +60,11 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         })
     }
 
-    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
+    getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
         return Promise.resolve({
-            deployments: this.entities.map(entity => this.entityToDeployment(entity)).filter(deployment => !filters?.entityIds || filters.entityIds.includes(deployment.entityId)),
-            filters: { },
+            deployments: this.entities.map(entity => this.entityToDeployment(entity))
+                .filter(deployment => !options?.filters?.entityIds || options.filters.entityIds.includes(deployment.entityId)),
+            filters: {},
             pagination: {
                 offset: 0,
                 limit: 100,
@@ -71,6 +72,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
             }
         })
     }
+
 
     deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
         return Promise.resolve(Date.now())
@@ -134,7 +136,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
     private isThereAnEntityWithId(entityId: EntityId): boolean {
         return this.entities.map(entity => entity.id == entityId)
-            .reduce((accum,  currentValue) => accum || currentValue)
+            .reduce((accum, currentValue) => accum || currentValue)
     }
 
 }
@@ -151,7 +153,7 @@ export class MockedMetaverseContentServiceBuilder {
     }
 
     withContent(...content: { hash: ContentFileHash, buffer: Buffer }[]): MockedMetaverseContentServiceBuilder {
-        content.forEach(({hash, buffer}) => this.content.set(hash, buffer))
+        content.forEach(({ hash, buffer }) => this.content.set(hash, buffer))
         return this
     }
 
@@ -166,9 +168,9 @@ export class MockedMetaverseContentServiceBuilder {
 
 }
 
-export function buildEntity(pointers: Pointer[], ...content: { hash: ContentFileHash, buffer: Buffer }[]): Promise<[Entity, ContentFile]>  {
+export function buildEntity(pointers: Pointer[], ...content: { hash: ContentFileHash, buffer: Buffer }[]): Promise<[Entity, ContentFile]> {
     const entityContent: Map<string, ContentFileHash> = new Map(content.map(aContent => [random.alphaNumeric(10), aContent.hash]))
-    return buildEntityAndFile(EntityType.PROFILE, pointers, random.number({min:5, max:10}), entityContent, random.alphaNumeric(10))
+    return buildEntityAndFile(EntityType.PROFILE, pointers, random.number({ min: 5, max: 10 }), entityContent, random.alphaNumeric(10))
 }
 
 export function buildContent(): { hash: ContentFileHash, buffer: Buffer } {

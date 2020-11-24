@@ -3,7 +3,6 @@ import { Bean, Environment } from "@katalyst/content/Environment";
 import { ServiceFactory } from "@katalyst/content/service/ServiceFactory";
 import { ContentStorage, StorageContent } from "@katalyst/content/storage/ContentStorage";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "@katalyst/content/service/Service";
-import { HistoryManager } from "@katalyst/content/service/history/HistoryManager";
 import { Entity } from "@katalyst/content/service/Entity";
 import { assertPromiseRejectionIs } from "@katalyst/test-helpers/PromiseAssertions";
 import { buildEntityAndFile } from "@katalyst/test-helpers/service/EntityTestFactory";
@@ -12,7 +11,6 @@ import { MockedAccessChecker } from "@katalyst/test-helpers/service/access/Mocke
 import { Authenticator } from "dcl-crypto";
 import { ContentAuthenticator } from "@katalyst/content/service/auth/Authenticator";
 import { MockedRepository } from "../storage/MockedRepository";
-import { MockedHistoryManager } from "./history/MockedHistoryManager";
 import { MockedContentCluster } from "@katalyst/test-helpers/service/synchronization/MockedContentCluster";
 import { NoOpFailedDeploymentsManager } from "./errors/NoOpFailedDeploymentsManager";
 import { NoOpPointerManager } from "./pointers/NoOpPointerManager";
@@ -33,7 +31,6 @@ describe("Service", function () {
     let randomFileHash: ContentFileHash
     let entity: Entity
     let entityFile: ContentFile
-    let historyManager: HistoryManager
     let storage: ContentStorage
     let service: MetaverseContentService
 
@@ -45,7 +42,6 @@ describe("Service", function () {
 
     beforeEach(async () => {
         storage = new MockedStorage()
-        historyManager = new MockedHistoryManager()
         service = await buildService();
     })
 
@@ -112,7 +108,6 @@ describe("Service", function () {
     async function buildService() {
         const env = new Environment()
             .registerBean(Bean.STORAGE, storage)
-            .registerBean(Bean.HISTORY_MANAGER, historyManager)
             .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
             .registerBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
             .registerBean(Bean.VALIDATIONS, new NoOpValidations())

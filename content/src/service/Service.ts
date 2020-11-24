@@ -1,8 +1,8 @@
-import { ContentFileHash, ServerStatus, EntityType, EntityId, Timestamp, DeploymentFilters, PartialDeploymentHistory, ServerName, ServerAddress, LegacyPartialDeploymentHistory, AuditInfo } from "dcl-catalyst-commons";
+import { ContentFileHash, ServerStatus, EntityType, EntityId, Timestamp, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
 import { ContentItem } from "../storage/ContentStorage";
 import { FailureReason, FailedDeployment } from "./errors/FailedDeploymentsManager";
 import { RepositoryTask, Repository } from "../storage/Repository";
-import { Deployment, PartialDeploymentPointerChanges, PointerChangesFilters } from "./deployments/DeploymentManager";
+import { Deployment, DeploymentOptions, PartialDeploymentPointerChanges, PointerChangesFilters } from "./deployments/DeploymentManager";
 import { Entity } from "./Entity";
 import { ContentFile } from "../controller/Controller";
 
@@ -20,8 +20,7 @@ export interface MetaverseContentService {
     deleteContent(fileHashes: ContentFileHash[]): Promise<void>;
     storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>;
     getStatus(): ServerStatus;
-    getLegacyHistory(from?: Timestamp, to?: Timestamp, serverName?: ServerName, offset?: number, limit?: number): Promise<LegacyPartialDeploymentHistory>;
-    getDeployments(filters?: DeploymentFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
+    getDeployments(options?: DeploymentOptions, repository?: RepositoryTask | Repository): Promise<PartialDeploymentHistory<Deployment>>;
     getAllFailedDeployments(): Promise<FailedDeployment[]>;
     getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, repository?: RepositoryTask | Repository): Promise<PartialDeploymentPointerChanges>;
     listenToDeployments(listener: DeploymentListener): void;
@@ -39,7 +38,7 @@ export interface ClusterDeploymentsService {
     areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>;
 }
 
-export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'version'| 'authChain' | 'migrationData'>
+export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'version' | 'authChain' | 'migrationData'>
 
 export type DeploymentEvent = {
     entity: Entity,

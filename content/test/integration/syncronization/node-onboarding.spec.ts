@@ -3,16 +3,15 @@ import { TestServer } from "../TestServer"
 import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from "../E2ETestUtils"
 import { assertHistoryOnServerHasEvents, buildEvent, assertFileIsOnServer, assertFileIsNotOnServer, assertEntityIsOverwrittenBy, buildEventWithName, assertDeploymentsAreReported, buildDeployment } from "../E2EAssertions"
 import { loadTestEnvironment } from "../E2ETestEnvironment"
-import { HistoryManagerImpl } from "@katalyst/content/service/history/HistoryManagerImpl"
 
 
-describe("End 2 end - Node onboarding", function() {
+describe("End 2 end - Node onboarding", function () {
 
     const testEnv = loadTestEnvironment()
     let server1: TestServer, server2: TestServer, server3: TestServer
 
     beforeEach(async () => {
-        [ server1, server2, server3 ] = await testEnv.configServer('1s')
+        [server1, server2, server3] = await testEnv.configServer('1s')
             .andBuildMany(3)
     })
 
@@ -22,7 +21,7 @@ describe("End 2 end - Node onboarding", function() {
 
         // Prepare data to be deployed
         const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: 'metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
-        const entity1ContentHash: ContentFileHash  = entity1.content!![0].hash
+        const entity1ContentHash: ContentFileHash = entity1.content!![0].hash
         const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(entity1, ["X2,Y2"], { metadata: "metadata2" })
 
         // Deploy entity1 on server 1
@@ -61,7 +60,7 @@ describe("End 2 end - Node onboarding", function() {
 
         // Prepare data to be deployed
         const { deployData, controllerEntity: entity } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: 'metadata', contentPaths: ['content/test/integration/resources/some-binary-file.png'] })
-        const entityContentHash: ContentFileHash  = entity.content!![0].hash
+        const entityContentHash: ContentFileHash = entity.content!![0].hash
 
         // Deploy entity on server 1
         const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
@@ -76,14 +75,14 @@ describe("End 2 end - Node onboarding", function() {
         await assertFileIsOnServer(server1, entityContentHash)
         await assertFileIsOnServer(server2, entityContentHash)
 
-        // Remove server 1 from the dAO
+        // Remove server 1 from the DAO
         testEnv.removeFromDAO(server1.getAddress())
 
         // Start server 3
         await server3.start()
 
-        // Assert server 3 has all the history, but since the server is not available anymore, the name and origin server url are unknown
-        const deploymentEventWithoutName = buildEventWithName(entity, HistoryManagerImpl.UNKNOWN_NAME, deploymentTimestamp)
+        // Assert server 3 has all the history, the name and origin server url remain the same
+        const deploymentEventWithoutName = buildEventWithName(entity, encodeURIComponent(server1.getAddress()), deploymentTimestamp)
         await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEventWithoutName))
         await awaitUntil(() => assertDeploymentsAreReported(server3, deployment))
 

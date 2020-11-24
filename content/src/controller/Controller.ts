@@ -1,7 +1,7 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory, ServerAddress, LegacyPartialDeploymentHistory, LegacyDeploymentEvent } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
@@ -14,7 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
-import { Deployment, DeploymentPointerChanges } from "../service/deployments/DeploymentManager";
+import { Deployment, DeploymentPointerChanges, ExtendedDeploymentFilters, SortingField, SortingOrder } from "../service/deployments/DeploymentManager";
 import { SnapshotManager } from "../service/snapshots/SnapshotManager";
 
 export class Controller {
@@ -32,10 +32,10 @@ export class Controller {
         // Method: GET
         // Path: /entities/:type
         // Query String: ?{filter}&fields={fieldList}
-        const type:EntityType    = this.parseEntityType(req.params.type)
-        const pointers:Pointer[] = this.asArray<Pointer>(req.query.pointer) ?? []
-        const ids:EntityId[]     = this.asArray<EntityId>(req.query.id) ?? []
-        const fields:string      = req.query.fields
+        const type: EntityType    = this.parseEntityType(req.params.type)
+        const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer) ?? []
+        const ids: EntityId[]     = this.asArray<EntityId>(req.query.id) ?? []
+        const fields: string      = req.query.fields
 
         // Validate type is valid
         if (!type) {
@@ -44,13 +44,13 @@ export class Controller {
         }
 
         // Validate pointers or ids are present, but not both
-        if ((ids.length>0 && pointers.length>0) || (ids.length==0 && pointers.length==0)) {
+        if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
             res.status(400).send({ error: 'ids or pointers must be present, but not both' });
             return
         }
 
         // Validate fields are correct or empty
-        let enumFields: EntityField[]|undefined = undefined
+        let enumFields: EntityField[] | undefined = undefined
         if (fields) {
             enumFields = fields.split(',').map(f => (<any>EntityField)[f.toUpperCase().trim()])
         }
@@ -58,9 +58,9 @@ export class Controller {
         // Calculate and mask entities
         let history: PartialDeploymentHistory<Deployment>
         if (ids.length > 0) {
-            history = await this.service.getDeployments({ entityTypes: [type], entityIds: ids })
+            history = await this.service.getDeployments({ filters: { entityTypes: [type], entityIds: ids }})
         } else {
-            history = await this.service.getDeployments({ entityTypes: [type], pointers, onlyCurrentlyPointed: true })
+            history = await this.service.getDeployments({ filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }})
         }
         const maskedEntities: ControllerEntity[] = history.deployments.map(fullDeployment => ControllerEntityFactory.maskDeployment(fullDeployment, enumFields))
         res.send(maskedEntities)
@@ -89,11 +89,11 @@ export class Controller {
         // Method: POST
         // Path: /legacy-entities
         // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
-        const entityId:EntityId     = req.body.entityId;
-        const authChain:AuthChain   = req.body.authChain;
-        const originalVersion:EntityVersion = EntityVersion[req.body.version.toUpperCase().trim()];
-        const migrationInformation  = JSON.parse(req.body.migration_data);
-        const files                 = req.files
+        const entityId: EntityId             = req.body.entityId;
+        const authChain: AuthChain           = req.body.authChain;
+        const originalVersion: EntityVersion = EntityVersion[req.body.version.toUpperCase().trim()];
+        const migrationInformation           = JSON.parse(req.body.migration_data);
+        const files                          = req.files
 
         let deployFiles: ContentFile[] = []
         try {
@@ -125,13 +125,13 @@ export class Controller {
         // Method: POST
         // Path: /entities
         // Body: JSON with entityId,ethAddress,signature; and a set of files
-        const entityId:EntityId     = req.body.entityId;
-        let   authChain: AuthLink[] = req.body.authChain;
-        const ethAddress:EthAddress = req.body.ethAddress;
-        const signature:Signature   = req.body.signature;
-        const files                 = req.files
-        const origin                = req.header('x-upload-origin') ?? "unknown"
-        const fixAttempt: boolean   = req.query.fix === 'true'
+        const entityId: EntityId     = req.body.entityId;
+        let authChain: AuthLink[]    = req.body.authChain;
+        const ethAddress: EthAddress = req.body.ethAddress;
+        const signature: Signature   = req.body.signature;
+        const files                  = req.files
+        const origin                 = req.header('x-upload-origin') ?? "unknown"
+        const fixAttempt: boolean    = req.query.fix === 'true'
 
         let deployFiles: ContentFile[] = []
         try {
@@ -167,7 +167,7 @@ export class Controller {
         }
     }
 
-    private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void>{
+    private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void> {
         await Promise.all(deployFiles.map(async deployFile => {
             if (deployFile.path) {
                 try {
@@ -193,7 +193,7 @@ export class Controller {
             res.setHeader('Access-Control-Expose-Headers', 'ETag')
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
 
-            if(data.getLength()) {
+            if (data.getLength()) {
                 res.setHeader('Content-Length', data.getLength()!.toString())
             }
             data.asStream().pipe(res)
@@ -228,7 +228,7 @@ export class Controller {
             return
         }
 
-        const { deployments } = await this.service.getDeployments({ entityIds: [entityId], entityTypes: [type] })
+        const { deployments } = await this.service.getDeployments({filters: { entityIds: [entityId], entityTypes: [type] }})
 
         if (deployments.length > 0) {
             const { auditInfo } = deployments[0]
@@ -251,26 +251,56 @@ export class Controller {
         // Method: GET
         // Path: /history
         // Query String: ?from={timestamp}&to={timestamp}&serverName={string}
-        const from       = req.query.from
-        const to         = req.query.to
-        const serverName = req.query.serverName
-        const offset     = this.asInt(req.query.offset)
-        const limit      = this.asInt(req.query.limit)
+        const fromOriginTimestamp = req.query.from
+        const toOriginTimestamp   = req.query.to
+        const serverName          = req.query.serverName
+        const offset              = this.asInt(req.query.offset)
+        const limit               = this.asInt(req.query.limit)
 
-        const history = await this.service.getLegacyHistory(from, to, serverName, offset, limit)
-        res.send(history)
+        const originServerUrl: ServerAddress | undefined = serverName ? decodeURIComponent(serverName) : undefined
+
+        const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
+        const deployments = await this.service.getDeployments(
+            {filters: requestFilters,
+            sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING },
+            offset: offset,
+            limit: limit})
+
+        const finalDeployments: LegacyDeploymentEvent[] = deployments.deployments.slice(0, deployments.pagination.limit)
+            .map(deployment => ({
+                entityType: deployment.entityType,
+                entityId: deployment.entityId,
+                timestamp: deployment.auditInfo.originTimestamp,
+                serverName: encodeURIComponent(deployment.auditInfo.originServerUrl)
+            }))
+
+        const legacyHistory: LegacyPartialDeploymentHistory = {
+            events: finalDeployments,
+            filters: {
+                from: fromOriginTimestamp,
+                to: toOriginTimestamp,
+                serverName: serverName
+            },
+            pagination: {
+                offset: deployments.pagination.offset,
+                limit: deployments.pagination.limit,
+                moreData: deployments.pagination.moreData
+            }
+        }
+
+        res.send(legacyHistory)
     }
 
     async getPointerChanges(req: express.Request, res: express.Response) {
         // Method: GET
         // Path: /pointerChanges
         // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}&entityType={entityType}
-        const stringEntityTypes = this.asArray<string>(req.query.entityType);
-        const entityTypes:(EntityType|undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
-        const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
-        const toLocalTimestamp: Timestamp | undefined   = this.asInt(req.query.toLocalTimestamp)
-        const offset: number | undefined                = this.asInt(req.query.offset)
-        const limit: number | undefined                 = this.asInt(req.query.limit)
+        const stringEntityTypes                                   = this.asArray<string>(req.query.entityType);
+        const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
+        const fromLocalTimestamp: Timestamp | undefined           = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: Timestamp | undefined             = this.asInt(req.query.toLocalTimestamp)
+        const offset: number | undefined                          = this.asInt(req.query.offset)
+        const limit: number | undefined                           = this.asInt(req.query.limit)
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -281,7 +311,7 @@ export class Controller {
         const requestFilters = { entityTypes: (entityTypes as EntityType[] | undefined), fromLocalTimestamp, toLocalTimestamp }
         const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(requestFilters, offset, limit)
         const controllerPointerChanges: ControllerPointerChanges[] = deltas.map(delta => ({ ...delta, changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after })) }))
-        res.send( { deltas: controllerPointerChanges, filters, pagination })
+        res.send({ deltas: controllerPointerChanges, filters, pagination })
     }
 
     async getDeployments(req: express.Request, res: express.Response) {
@@ -289,18 +319,18 @@ export class Controller {
         // Path: /deployments
         // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-        const stringEntityTypes = this.asArray<string>(req.query.entityType);
-        const entityTypes:(EntityType|undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
-        const entityIds:EntityId[] | undefined       = this.asArray<EntityId>(req.query.entityId)
-        const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-        const toLocalTimestamp: number | undefined   = this.asInt(req.query.toLocalTimestamp)
-        const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-        const showAudit: boolean                     = this.asBoolean(req.query.showAudit) ?? false
-        const deployedBy: EthAddress[] | undefined   = this.asArray<EthAddress>(req.query.deployedBy)
-        const pointers: Pointer[] | undefined        = this.asArray<Pointer>(req.query.pointer)
-        const offset: number | undefined             = this.asInt(req.query.offset)
-        const limit: number | undefined              = this.asInt(req.query.limit)
-        const fields: string | undefined             = req.query.fields
+        const stringEntityTypes                                   = this.asArray<string>(req.query.entityType);
+        const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes ? stringEntityTypes.map(type => this.parseEntityType(type)) : undefined
+        const entityIds: EntityId[] | undefined                   = this.asArray<EntityId>(req.query.entityId)
+        const fromLocalTimestamp: number | undefined              = this.asInt(req.query.fromLocalTimestamp)
+        const toLocalTimestamp: number | undefined                = this.asInt(req.query.toLocalTimestamp)
+        const onlyCurrentlyPointed: boolean | undefined           = this.asBoolean(req.query.onlyCurrentlyPointed)
+        const showAudit: boolean                                  = this.asBoolean(req.query.showAudit) ?? false
+        const deployedBy: EthAddress[] | undefined                = this.asArray<EthAddress>(req.query.deployedBy)
+        const pointers: Pointer[] | undefined                     = this.asArray<Pointer>(req.query.pointer)
+        const offset: number | undefined                          = this.asInt(req.query.offset)
+        const limit: number | undefined                           = this.asInt(req.query.limit)
+        const fields: string | undefined                          = req.query.fields
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -319,11 +349,11 @@ export class Controller {
             enumFields.push(DeploymentField.AUDIT_INFO)
         }
 
-        const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]) , entityIds, deployedBy, onlyCurrentlyPointed }
-        const { deployments, filters, pagination } = await this.service.getDeployments(requestFilters, offset, limit)
+        const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]), entityIds, deployedBy, onlyCurrentlyPointed }
+        const { deployments, filters, pagination } = await this.service.getDeployments({filters: requestFilters, offset: offset, limit: limit})
         const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
-        res.send( { deployments: controllerDeployments, filters, pagination })
+        res.send({ deployments: controllerDeployments, filters, pagination })
     }
 
     private asInt(value: any): number | undefined {
@@ -342,11 +372,12 @@ export class Controller {
 
         const synchronizationStatus = this.synchronizationManager.getStatus()
 
-        res.send({ ...serverStatus,
+        res.send({
+            ...serverStatus,
             synchronizationStatus,
             commitHash: CURRENT_COMMIT_HASH,
             ethNetwork: this.ethNetwork,
-         })
+        })
     }
 
     getSnapshot(req: express.Request, res: express.Response) {
@@ -375,10 +406,10 @@ export class Controller {
         // Path: /denylist/{type}/{id}
         // Body: JSON with ethAddress, signature and timestamp
 
-        const blocker: EthAddress = req.body.blocker;
+        const blocker: EthAddress  = req.body.blocker;
         const timestamp: Timestamp = req.body.timestamp;
         const signature: Signature = req.body.signature;
-        let authChain: AuthChain = req.body.authChain
+        let authChain: AuthChain   = req.body.authChain
 
         const type = req.params.type
         const id = req.params.id;
@@ -403,7 +434,7 @@ export class Controller {
         // Path: /denylist/{type}/{id}
         // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
 
-        const blocker: EthAddress = req.query.blocker;
+        const blocker: EthAddress  = req.query.blocker;
         const timestamp: Timestamp = req.query.timestamp;
         const signature: Signature = req.query.signature;
 
@@ -438,7 +469,7 @@ export class Controller {
         // Path: /denylist/{type}/{id}
 
         const type = req.params.type
-        const id = req.params.id;
+        const id   = req.params.id;
 
         const target = parseDenylistTypeAndId(type, id)
         const isDenylisted = await this.denylist.isTargetDenylisted(target)
@@ -501,4 +532,4 @@ export type ContentFile = {
     content: Buffer
 }
 
-const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [ DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA ]
+const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [DeploymentField.POINTERS, DeploymentField.CONTENT, DeploymentField.METADATA]

@@ -18,13 +18,12 @@ export class DeploymentManager {
         deploymentsRepository: DeploymentsRepository,
         contentFilesRepository: ContentFilesRepository,
         migrationDataRepository: MigrationDataRepository,
-        filters?: ExtendedDeploymentFilters,
-        offset?: number,
-        limit?: number): Promise<PartialDeploymentHistory<Deployment>> {
-        const curatedOffset = (offset && offset >= 0) ? offset : 0
-        const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
+        options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+        const curatedOffset = (options?.offset && options.offset >= 0) ? options.offset : 0
+        const curatedLimit = (options?.limit && options.limit > 0 && options.limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? options.limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
+        const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, options?.filters, options?.sortBy)
+
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
@@ -53,7 +52,7 @@ export class DeploymentManager {
         return {
             deployments: deployments,
             filters: {
-                ...filters,
+                ...options?.filters,
             },
             pagination: {
                 offset: curatedOffset,
@@ -69,17 +68,17 @@ export class DeploymentManager {
         entity: Entity,
         auditInfo: AuditInfo,
         overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
-            const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
-            if (auditInfo.migrationData) {
-                await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.migrationData)
-            }
+        const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
+        if (auditInfo.migrationData) {
+            await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.migrationData)
+        }
 
-            if (entity.content) {
-                await contentRepository.saveContentFiles(deploymentId, entity.content)
-            }
+        if (entity.content) {
+            await contentRepository.saveContentFiles(deploymentId, entity.content)
+        }
 
 
-            return deploymentId
+        return deploymentId
     }
 
     setEntitiesAsOverwritten(deploymentsRepository: DeploymentsRepository, overwritten: Set<DeploymentId>, overwrittenBy: DeploymentId) {
@@ -89,7 +88,7 @@ export class DeploymentManager {
     async getPointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentsRepo: DeploymentsRepository, filters?: PointerChangesFilters, offset?: number, limit?: number): Promise<PartialDeploymentPointerChanges> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeploymentsByLocalTimestamp(curatedOffset, curatedLimit + 1, filters)
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeployments(curatedOffset, curatedLimit + 1, filters)
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deployments = deploymentsWithExtra.slice(0, curatedLimit)
@@ -115,12 +114,12 @@ export class DeploymentManager {
     }
 
     savePointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentId: DeploymentId, result: DeploymentResult) {
-       return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
+        return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
     }
 
     private transformPointerChanges(deployedEntity: EntityId, input: Map<Pointer, { before: EntityId | undefined, after: DELTA_POINTER_RESULT }>): PointerChanges {
         const newEntries = Array.from(input.entries())
-            .map<[Pointer, { before: EntityId | undefined, after: EntityId | undefined }]>(([ pointer, { before, after } ]) => [ pointer, { before, after: after ===  DELTA_POINTER_RESULT.SET ? deployedEntity : undefined } ])
+            .map<[Pointer, { before: EntityId | undefined, after: EntityId | undefined }]>(([pointer, { before, after }]) => [pointer, { before, after: after === DELTA_POINTER_RESULT.SET ? deployedEntity : undefined }])
         return new Map(newEntries)
     }
 
@@ -141,7 +140,7 @@ export type DeploymentPointerChanges = {
     changes: PointerChanges,
 }
 
-export declare type PartialDeploymentPointerChanges = {
+export type PartialDeploymentPointerChanges = {
     pointerChanges: DeploymentPointerChanges[],
     filters: Omit<PointerChangesFilters, 'entityType'>,
     pagination: {
@@ -149,6 +148,28 @@ export declare type PartialDeploymentPointerChanges = {
         limit: number;
         moreData: boolean;
     };
+};
+
+export type DeploymentOptions = {
+    filters?: DeploymentFilters, 
+    sortBy?: SortBy, 
+    offset?: number, 
+    limit?: number 
+};
+
+export enum SortingField {
+    ORIGIN_TIMESTAMP = 'origin_timestamp',
+    LOCAL_TIMPESTAMP = 'local_timestamp'
+};
+
+export enum SortingOrder {
+    ASCENDING = 'ASC',
+    DESCENDING = 'DESC'
+};
+
+export type SortBy = {
+    field?: SortingField,
+    order?: SortingOrder
 };
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
