@@ -14,7 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
-import { Deployment, DeploymentPointerChanges, ExtendedDeploymentFilters, SortingField, SortingOrder } from "../service/deployments/DeploymentManager";
+import { Deployment, DeploymentPointerChanges, ExtendedDeploymentFilters } from "../service/deployments/DeploymentManager";
 import { SnapshotManager } from "../service/snapshots/SnapshotManager";
 
 export class Controller {
@@ -262,7 +262,6 @@ export class Controller {
         const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
         const deployments = await this.service.getDeployments(
             {filters: requestFilters,
-            sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING },
             offset: offset,
             limit: limit})
 
@@ -331,6 +330,8 @@ export class Controller {
         const offset: number | undefined                          = this.asInt(req.query.offset)
         const limit: number | undefined                           = this.asInt(req.query.limit)
         const fields: string | undefined                          = req.query.fields
+        const sortingField                                        = req.query.sortingField
+        const sortingOrder                                        = req.query.sortingOrder
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -350,7 +351,12 @@ export class Controller {
         }
 
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]), entityIds, deployedBy, onlyCurrentlyPointed }
-        const { deployments, filters, pagination } = await this.service.getDeployments({filters: requestFilters, offset: offset, limit: limit})
+        
+        const { deployments, filters, pagination } = await this.service.getDeployments({
+            filters: requestFilters, 
+            sortBy: { field: sortingField, order: sortingOrder },
+            offset: offset, 
+            limit: limit})
         const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
         res.send({ deployments: controllerDeployments, filters, pagination })

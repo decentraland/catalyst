@@ -1,4 +1,4 @@
-import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo } from "dcl-catalyst-commons";
+import { EntityId, EntityType, Pointer, Timestamp, ContentFileHash, Deployment as ControllerDeployment, DeploymentFilters, PartialDeploymentHistory, ServerAddress, AuditInfo, SortingField, DeploymentSorting } from "dcl-catalyst-commons";
 import { Entity } from "@katalyst/content/service/Entity";
 import { DeploymentsRepository, DeploymentId } from "@katalyst/content/storage/repositories/DeploymentsRepository";
 import { ContentFilesRepository } from "@katalyst/content/storage/repositories/ContentFilesRepository";
@@ -21,6 +21,8 @@ export class DeploymentManager {
         options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
         const curatedOffset = (options?.offset && options.offset >= 0) ? options.offset : 0
         const curatedLimit = (options?.limit && options.limit > 0 && options.limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? options.limit : DeploymentManager.MAX_HISTORY_LIMIT
+
+        console.log("OPTIONS: sortby ", options?.sortBy)
 
         const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, options?.filters, options?.sortBy)
 
@@ -88,7 +90,7 @@ export class DeploymentManager {
     async getPointerChanges(deploymentPointerChangesRepo: DeploymentPointerChangesRepository, deploymentsRepo: DeploymentsRepository, filters?: PointerChangesFilters, offset?: number, limit?: number): Promise<PartialDeploymentPointerChanges> {
         const curatedOffset = (offset && offset >= 0) ? offset : 0
         const curatedLimit = (limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? limit : DeploymentManager.MAX_HISTORY_LIMIT
-        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeployments(curatedOffset, curatedLimit + 1, filters)
+        const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeployments(curatedOffset, curatedLimit + 1, filters, { field: SortingField.LOCAL_TIMESTAMP })
         const moreData = deploymentsWithExtra.length > curatedLimit
 
         const deployments = deploymentsWithExtra.slice(0, curatedLimit)
@@ -152,25 +154,11 @@ export type PartialDeploymentPointerChanges = {
 
 export type DeploymentOptions = {
     filters?: DeploymentFilters, 
-    sortBy?: SortBy, 
+    sortBy?: DeploymentSorting, 
     offset?: number, 
     limit?: number 
 };
 
-export enum SortingField {
-    ORIGIN_TIMESTAMP = 'origin_timestamp',
-    LOCAL_TIMPESTAMP = 'local_timestamp'
-};
-
-export enum SortingOrder {
-    ASCENDING = 'ASC',
-    DESCENDING = 'DESC'
-};
-
-export type SortBy = {
-    field?: SortingField,
-    order?: SortingOrder
-};
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
 

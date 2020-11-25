@@ -32,6 +32,7 @@ export class ContentServerClient {
         // Fetch the deployments
         const stream = this.client.streamAllDeployments(
             { fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 },
+            undefined,
             DeploymentFields.AUDIT_INFO,
             (errorMessage) => {
                 error = true

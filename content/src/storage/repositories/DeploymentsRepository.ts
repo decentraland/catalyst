@@ -1,8 +1,8 @@
 import { Authenticator } from 'dcl-crypto';
-import { EntityId, AuditInfo, EntityType, Timestamp, Pointer } from 'dcl-catalyst-commons';
+import { EntityId, AuditInfo, EntityType, Timestamp, Pointer, DeploymentSorting, SortingOrder, SortingField } from 'dcl-catalyst-commons';
 import { Entity } from '@katalyst/content/service/Entity';
 import { Repository } from '@katalyst/content/storage/Repository';
-import { ExtendedDeploymentFilters, SortBy, SortingField, SortingOrder } from '@katalyst/content/service/deployments/DeploymentManager';
+import { ExtendedDeploymentFilters} from '@katalyst/content/service/deployments/DeploymentManager';
 
 export class DeploymentsRepository {
 
@@ -21,12 +21,13 @@ export class DeploymentsRepository {
         return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], row => parseInt(row.count));
     }
 
-    getHistoricalDeployments(offset: number, limit: number, filters?: ExtendedDeploymentFilters, sortBy?: SortBy) {
-        const sorting = Object.assign({field: SortingField.LOCAL_TIMPESTAMP, order: SortingOrder.DESCENDING}, sortBy)
-        return this.getDeploymentsBy(sorting.field, offset, limit, filters)
+    getHistoricalDeployments(offset: number, limit: number, filters?: ExtendedDeploymentFilters, sortBy?: DeploymentSorting) {
+        console.log("Sorting: field ", sortBy?.field, ". order ", sortBy?.order)
+        const sorting = Object.assign({field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING}, sortBy)
+        return this.getDeploymentsBy(sorting.field, sorting.order, offset, limit, filters)
     }
 
-    private getDeploymentsBy(timestampField: string, offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
+    private getDeploymentsBy(timestampField: string, order: string, offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
         let query = `
             SELECT
                 dep1.id,
@@ -107,7 +108,9 @@ export class DeploymentsRepository {
             ''
 
         query += where
-        query += ` ORDER BY dep1.${timestampField} DESC, dep1.entity_id DESC LIMIT $(limit) OFFSET $(offset)`
+        query += ` ORDER BY dep1.${timestampField} ${order}, dep1.entity_id ${order} LIMIT $(limit) OFFSET $(offset)`
+
+        console.log(query)
 
         return this.db.map(query, values, row => ({
             deploymentId: row.id,

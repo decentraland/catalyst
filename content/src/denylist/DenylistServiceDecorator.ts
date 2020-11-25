@@ -92,7 +92,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   async getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(async task => {
-      const deploymentHistory = await this.service.getDeployments({ filters: options?.filters, sortBy: options?.sortBy, offset: options?.offset, limit: options?.limit }, task)
+      const deploymentHistory = await this.service.getDeployments(options, task)
 
       // Prepare holders
       const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
