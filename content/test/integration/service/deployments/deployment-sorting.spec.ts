@@ -130,6 +130,4 @@ describe("Integration - Deployment Filters", () => {
 async function deployToServer(server: TestServer) {
   const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["X1,Y1"], { metadata: "metadata" });
   const deploymentTimestamp: Timestamp = await server.deploy(deployData);
-  buildEvent(entityBeingDeployed, server, deploymentTimestamp);
-  buildDeployment(deployData, entityBeingDeployed, server, deploymentTimestamp);
 }
