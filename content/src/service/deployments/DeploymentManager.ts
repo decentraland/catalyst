@@ -22,8 +22,6 @@ export class DeploymentManager {
         const curatedOffset = (options?.offset && options.offset >= 0) ? options.offset : 0
         const curatedLimit = (options?.limit && options.limit > 0 && options.limit <= DeploymentManager.MAX_HISTORY_LIMIT) ? options.limit : DeploymentManager.MAX_HISTORY_LIMIT
 
-        console.log("OPTIONS: sortby ", options?.sortBy)
-
         const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(curatedOffset, curatedLimit + 1, options?.filters, options?.sortBy)
 
         const moreData = deploymentsWithExtra.length > curatedLimit
