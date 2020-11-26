@@ -62,7 +62,7 @@ export class TestServer extends Server {
     }
 
     getDeployments(filters?: DeploymentFilters, sort?: DeploymentSorting): Promise<ControllerDeployment[]> {
-        return this.client.fetchAllDeployments(filters, sort, DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO)
+        return this.client.fetchAllDeployments({ filters: filters, sortBy: sort, fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO})
     }
 
     getStatus(): Promise<ServerStatus> {

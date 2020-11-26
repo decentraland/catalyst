@@ -9,7 +9,7 @@ import { SortingField, SortingOrder, Timestamp } from "dcl-catalyst-commons";
 /**
  * This test verifies that all deployment sorting params are working correctly
  */
-fdescribe("Integration - Deployment Filters", () => {
+describe("Integration - Deployment Filters", () => {
   const SYNC_INTERVAL: number = ms("1s");
   const testEnv = loadTestEnvironment();
   let server: TestServer;

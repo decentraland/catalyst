@@ -55,7 +55,7 @@ export class SmartContentClient implements ContentAPI {
 
     async fetchAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(filters?: DeploymentFilters, fields?: DeploymentFields<T>, options?: RequestOptions): Promise<T[]> {
         const client = await this.getClient();
-        return client.fetchAllDeployments(filters, fields, options);
+        return client.fetchAllDeployments({filters: filters, fields: fields}, options);
     }
 
     streamAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(filters?: DeploymentFilters, fields?: DeploymentFields<T>, errorListener?: (errorMessage: string) => void, options?: RequestOptions): Readable {

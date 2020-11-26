@@ -22,9 +22,7 @@ export class DeploymentsRepository {
     }
 
     getHistoricalDeployments(offset: number, limit: number, filters?: ExtendedDeploymentFilters, sortBy?: DeploymentSorting) {
-        console.log("Sorting: field ", sortBy?.field, ". order ", sortBy?.order)
-        const sorting = Object.assign({field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING}, sortBy)
-        return this.getDeploymentsBy(sorting.field, sorting.order, offset, limit, filters)
+        return this.getDeploymentsBy(sortBy?.field?.toString() || SortingField.LOCAL_TIMESTAMP, sortBy?.order?.toString() || SortingOrder.DESCENDING, offset, limit, filters)
     }
 
     private getDeploymentsBy(timestampField: string, order: string, offset: number, limit: number, filters?: ExtendedDeploymentFilters) {
@@ -109,8 +107,6 @@ export class DeploymentsRepository {
 
         query += where
         query += ` ORDER BY dep1.${timestampField} ${order}, dep1.entity_id ${order} LIMIT $(limit) OFFSET $(offset)`
-
-        console.log(query)
 
         return this.db.map(query, values, row => ({
             deploymentId: row.id,

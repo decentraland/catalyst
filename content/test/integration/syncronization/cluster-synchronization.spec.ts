@@ -107,7 +107,7 @@ describe("End 2 end synchronization tests", function() {
 
         // Stop server 2
         await server2.stop({ deleteStorage: false })
-
+  
         // Deploy entity 3
         const deploymentTimestamp3: Timestamp = await server3.deploy(deployData3)
         const deploymentEvent3 = buildEvent(entity3, server3, deploymentTimestamp3)

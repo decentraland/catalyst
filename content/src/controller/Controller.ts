@@ -1,7 +1,7 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory, ServerAddress, LegacyPartialDeploymentHistory, LegacyDeploymentEvent } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory, ServerAddress, LegacyPartialDeploymentHistory, LegacyDeploymentEvent, SortingField, SortingOrder } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
@@ -262,6 +262,7 @@ export class Controller {
         const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
         const deployments = await this.service.getDeployments(
             {filters: requestFilters,
+            sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING},
             offset: offset,
             limit: limit})
 
