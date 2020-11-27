@@ -1,6 +1,6 @@
 import fetch from "node-fetch"
-import { ServerAddress, Timestamp, EntityType, Pointer, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash, LegacyAuditInfo, DeploymentSorting, DeploymentFilters } from "dcl-catalyst-commons"
-import { ContentClient, DeploymentFields } from "dcl-catalyst-client"
+import { ServerAddress, Timestamp, EntityType, Pointer, ServerStatus, EntityId, Entity as ControllerEntity, LegacyPartialDeploymentHistory, Deployment as ControllerDeployment, ContentFileHash, LegacyAuditInfo, DeploymentBase } from "dcl-catalyst-commons"
+import { ContentClient, DeploymentFields, DeploymentOptions, DeploymentWithMetadataContentAndPointers } from "dcl-catalyst-client"
 import { Server } from "@katalyst/content/Server"
 import { Environment, EnvironmentConfig, Bean } from "@katalyst/content/Environment"
 import { ControllerDenylistData } from "@katalyst/content/controller/Controller"
@@ -61,8 +61,8 @@ export class TestServer extends Server {
         return this.client.fetchHistory()
     }
 
-    getDeployments(filters?: DeploymentFilters, sortBy?: DeploymentSorting): Promise<ControllerDeployment[]> {
-        return this.client.fetchAllDeployments({ filters, sortBy, fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO})
+    getDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(options?: DeploymentOptions<T>): Promise<ControllerDeployment[]> {
+        return this.client.fetchAllDeployments(Object.assign({fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO}, options))
     }
 
     getStatus(): Promise<ServerStatus> {

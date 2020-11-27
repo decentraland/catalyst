@@ -1,133 +1,101 @@
 import { loadTestEnvironment } from "../../E2ETestEnvironment";
-import { buildDeployData } from "../../E2ETestUtils";
-import { buildDeployment, buildEvent } from "../../E2EAssertions";
-import assert from "assert";
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from "../../E2ETestUtils";
 import { TestServer } from "../../TestServer";
 import ms from "ms";
-import { SortingField, SortingOrder, Timestamp } from "dcl-catalyst-commons";
+import { Deployment, SortingField, SortingOrder, Timestamp } from "dcl-catalyst-commons";
+import { assertDeploymentsCount } from "../../E2EAssertions";
 
 /**
  * This test verifies that all deployment sorting params are working correctly
  */
-describe("Integration - Deployment Filters", () => {
-  const SYNC_INTERVAL: number = ms("1s");
+describe("Integration - Deployment Sorting", () => {
+  const SYNC_INTERVAL: number = ms("0.5s");
   const testEnv = loadTestEnvironment();
-  let server: TestServer;
+  let server1: TestServer, server2: TestServer;
 
   beforeEach(async () => {
-    [server] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(3);
+    [server1, server2] = await testEnv.configServer(SYNC_INTERVAL)
+        .andBuildMany(2)
+      // Start server 1, 2 and 3
+      await Promise.all([server1.start(), server2.start()])
+
+      // Prepare data to be deployed
+      const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: "metadata" })
+      const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(entity1, ["X2,Y2", "X3,Y3"], { metadata: "metadata2" })
+      const { deployData: deployData3 } = await buildDeployDataAfterEntity(entity2, ["X3,Y3", "X4,Y4"], { metadata: "metadata3" })
+
+      // Deploy the entities 1 and 2
+      await server1.deploy(deployData1)
+      await server2.deploy(deployData2)
+      await server1.deploy(deployData3)
+
+      await awaitUntil(() => assertDeploymentsCount(server1, 3))
   });
 
+
+  it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => { 
+  
+    const deploymentsFromServer1 = await server1.getDeployments();
+
+    assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.DESCENDING);
+})
+
   it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
-    // Start server
-    await Promise.all([server.start()]);
+    const deploymentsFromServer1 = await server1.getDeployments();
 
-    // Prepare data to be deployed
-    await deployToServer(server);
-    await deployToServer(server);
-    await deployToServer(server);
-
-    const deployments = await server.getDeployments();
-    assert.equal(3, deployments.length, `Expected to find 3 deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`);
-
-    // Make sure that deployments are sorted per descending local timestamp
-    for (let i = 1; i < deployments.length; i++) {
-      assert.ok(deployments[i - 1].auditInfo.localTimestamp > deployments[i].auditInfo.localTimestamp);
-    }
+    assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.DESCENDING);
   });
 
   it(`When getting all deployments with sortby by local and asc then the order is correct`, async () => {
-    // Start server
-    await Promise.all([server.start()]);
+    const deploymentsFromServer1 = await server1.getDeployments({ sortBy: { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING } });
 
-    // Prepare data to be deployed
-    await deployToServer(server);
-    await deployToServer(server);
-    await deployToServer(server);
-
-    const deployments = await server.getDeployments(undefined, { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING });
-    assert.equal(3, deployments.length, `Expected to find 3 deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`);
-
-    // Make sure that deployments are sorted per descending local timestamp
-    for (let i = 1; i < deployments.length; i++) {
-      assert.ok(deployments[i - 1].auditInfo.localTimestamp < deployments[i].auditInfo.localTimestamp);
-    }
+    assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.ASCENDING);
   });
 
   it(`When getting all deployments with sortby by origin and asc then the order is correct`, async () => {
-    // Start server
-    await Promise.all([server.start()]);
+    const deploymentsFromServer1 = await server1.getDeployments({ sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.ASCENDING } });
 
-    // Prepare data to be deployed
-    await deployToServer(server);
-    await deployToServer(server);
-    await deployToServer(server);
-
-    const deployments = await server.getDeployments(undefined, { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.ASCENDING });
-    assert.equal(3, deployments.length, `Expected to find 3 deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`);
-
-    // Make sure that deployments are sorted per descending local timestamp
-    for (let i = 1; i < deployments.length; i++) {
-      assert.ok(deployments[i - 1].auditInfo.originTimestamp < deployments[i].auditInfo.originTimestamp);
-    }
+    assertSortedBy(deploymentsFromServer1, SortingField.ORIGIN_TIMESTAMP, SortingOrder.ASCENDING);
   });
 
   it(`When getting all deployments with sortby by origin and desc then the order is correct`, async () => {
-    // Start server
-    await Promise.all([server.start()]);
+    const deploymentsFromServer1 = await server1.getDeployments({ sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING } });
 
-    // Prepare data to be deployed
-    await deployToServer(server);
-    await deployToServer(server);
-    await deployToServer(server);
-
-    const deployments = await server.getDeployments(undefined, { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING });
-    assert.equal(3, deployments.length, `Expected to find 3 deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`);
-
-    // Make sure that deployments are sorted per descending local timestamp
-    for (let i = 1; i < deployments.length; i++) {
-      assert.ok(deployments[i - 1].auditInfo.originTimestamp > deployments[i].auditInfo.originTimestamp);
-    }
+    assertSortedBy(deploymentsFromServer1, SortingField.ORIGIN_TIMESTAMP, SortingOrder.DESCENDING);
   });
 
   it(`When getting all deployments with sortby by entity and asc then the order is correct`, async () => {
-    // Start server
-    await Promise.all([server.start()]);
+    const deploymentsFromServer1 = await server1.getDeployments({ sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.ASCENDING } });
 
-    // Prepare data to be deployed
-    await deployToServer(server);
-    await deployToServer(server);
-    await deployToServer(server);
-
-    const deployments = await server.getDeployments(undefined, { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.ASCENDING });
-    assert.equal(3, deployments.length, `Expected to find 3 deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`);
-
-    // Make sure that deployments are sorted per descending local timestamp
-    for (let i = 1; i < deployments.length; i++) {
-      assert.ok(deployments[i - 1].entityTimestamp < deployments[i].entityTimestamp);
-    }
+    assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.ASCENDING);
   });
 
   it(`When getting all deployments with sortby by entity and desc then the order is correct`, async () => {
-    // Start server
-    await Promise.all([server.start()]);
+    const deploymentsFromServer1 = await server1.getDeployments({ sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING } });
 
-    // Prepare data to be deployed
-    await deployToServer(server);
-    await deployToServer(server);
-    await deployToServer(server);
-
-    const deployments = await server.getDeployments(undefined, { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING });
-    assert.equal(3, deployments.length, `Expected to find 3 deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`);
-
-    // Make sure that deployments are sorted per descending local timestamp
-    for (let i = 1; i < deployments.length; i++) {
-      assert.ok(deployments[i - 1].entityTimestamp > deployments[i].entityTimestamp);
-    }
+    assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.DESCENDING);
   });
 });
 
-async function deployToServer(server: TestServer) {
-  const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(["X1,Y1"], { metadata: "metadata" });
-  const deploymentTimestamp: Timestamp = await server.deploy(deployData);
+
+const timestampExtractorMap: Map<SortingField, (deployment: Deployment) => Timestamp> = new Map([
+  [SortingField.ORIGIN_TIMESTAMP, (deployment) => deployment.auditInfo.originTimestamp],
+  [SortingField.LOCAL_TIMESTAMP, (deployment) => deployment.auditInfo.localTimestamp],
+  [SortingField.ENTITY_TIMESTAMP, (deployment) => deployment.entityTimestamp],
+]);
+
+const compareTimestampMap: Map<SortingOrder, (timestamp1: Timestamp, timestamp2: Timestamp) => void> = new Map([
+  [SortingOrder.ASCENDING, (timestamp1, timestamp2) => expect(timestamp1).toBeLessThanOrEqual(timestamp2)],
+  [SortingOrder.DESCENDING, (timestamp1, timestamp2) => expect(timestamp1).toBeGreaterThanOrEqual(timestamp2)],
+]);
+
+function assertSortedBy(deployments: Deployment[], field: SortingField, order: SortingOrder) {
+  let timestampExtractor: (deployment: Deployment) => Timestamp = timestampExtractorMap.get(field)!!;
+  let compareAssertion: (timestamp1: Timestamp, timestamp2: Timestamp) => void = compareTimestampMap.get(order)!!;
+
+  for (let i = 1; i < deployments.length; i++) {
+    const timestamp1 = timestampExtractor(deployments[i - 1]);
+    const timestamp2 = timestampExtractor(deployments[i]);
+    compareAssertion(timestamp1, timestamp2);
+  }
 }

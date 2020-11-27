@@ -331,8 +331,8 @@ export class Controller {
         const offset: number | undefined                          = this.asInt(req.query.offset)
         const limit: number | undefined                           = this.asInt(req.query.limit)
         const fields: string | undefined                          = req.query.fields
-        const sortingField                                        = req.query.sortingField
-        const sortingOrder                                        = req.query.sortingOrder
+        const sortingField: string | undefined                    = req.query.sortingField
+        const sortingOrder: string | undefined                    = req.query.sortingOrder
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -351,16 +351,44 @@ export class Controller {
             enumFields.push(DeploymentField.AUDIT_INFO)
         }
 
+        const sortFieldEnum: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, sortingField)
+        const sortOrderEnum: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, sortingOrder)
+        const sortBy: {field?: SortingField, order?: SortingOrder} = {}
+
+        if (sortFieldEnum) {
+            if (sortFieldEnum == 'unknown') {
+                res.status(400).send({ error: `Found an unrecognized sort field param` });
+                return
+            } else {
+                sortBy.field = sortFieldEnum
+            }
+        }
+        if (sortOrderEnum) {
+            if (sortOrderEnum == 'unknown') {
+                res.status(400).send({ error: `Found an unrecognized sort order param` });
+                return
+            } else {
+                sortBy.order = sortOrderEnum
+            }
+        }
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]), entityIds, deployedBy, onlyCurrentlyPointed }
-        
+         
         const { deployments, filters, pagination } = await this.service.getDeployments({
             filters: requestFilters, 
-            sortBy: { field: sortingField, order: sortingOrder },
+            sortBy: sortBy,
             offset: offset, 
             limit: limit})
         const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
         res.send({ deployments: controllerDeployments, filters, pagination })
+    }
+    
+    private asEnumValue<T extends {[key: number]: string}>(enumType: T, stringToMap?: string): T[keyof T] | undefined | 'unknown' {
+        if (stringToMap) {
+            const validEnumValues: Set<string> = new Set(Object.values(enumType))
+            const match = validEnumValues.has(stringToMap)
+            return match ? stringToMap as T[keyof T] : 'unknown'
+        }
     }
 
     private asInt(value: any): number | undefined {
