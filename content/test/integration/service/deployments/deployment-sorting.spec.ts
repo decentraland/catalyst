@@ -14,31 +14,22 @@ describe("Integration - Deployment Sorting", () => {
   let server1: TestServer, server2: TestServer;
 
   beforeEach(async () => {
-    [server1, server2] = await testEnv.configServer(SYNC_INTERVAL)
-        .andBuildMany(2)
-      // Start server 1, 2 and 3
-      await Promise.all([server1.start(), server2.start()])
+    [server1, server2] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(2);
+    // Start server 1, 2 and 3
+    await Promise.all([server1.start(), server2.start()]);
 
-      // Prepare data to be deployed
-      const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: "metadata" })
-      const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(entity1, ["X2,Y2", "X3,Y3"], { metadata: "metadata2" })
-      const { deployData: deployData3 } = await buildDeployDataAfterEntity(entity2, ["X3,Y3", "X4,Y4"], { metadata: "metadata3" })
+    // Prepare data to be deployed
+    const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(["X1,Y1", "X2,Y2"], { metadata: "metadata" });
+    const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(entity1, ["X2,Y2", "X3,Y3"], { metadata: "metadata2" });
+    const { deployData: deployData3 } = await buildDeployDataAfterEntity(entity2, ["X3,Y3", "X4,Y4"], { metadata: "metadata3" });
 
-      // Deploy the entities 1 and 2
-      await server1.deploy(deployData1)
-      await server2.deploy(deployData2)
-      await server1.deploy(deployData3)
+    // Deploy the entities 1, 2 and 3
+    await server1.deploy(deployData1);
+    await server2.deploy(deployData2);
+    await server1.deploy(deployData3);
 
-      await awaitUntil(() => assertDeploymentsCount(server1, 3))
+    await awaitUntil(() => assertDeploymentsCount(server1, 3));
   });
-
-
-  it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => { 
-  
-    const deploymentsFromServer1 = await server1.getDeployments();
-
-    assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.DESCENDING);
-})
 
   it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments();
@@ -76,7 +67,6 @@ describe("Integration - Deployment Sorting", () => {
     assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.DESCENDING);
   });
 });
-
 
 const timestampExtractorMap: Map<SortingField, (deployment: Deployment) => Timestamp> = new Map([
   [SortingField.ORIGIN_TIMESTAMP, (deployment) => deployment.auditInfo.originTimestamp],

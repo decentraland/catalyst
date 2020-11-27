@@ -331,8 +331,8 @@ export class Controller {
         const offset: number | undefined                          = this.asInt(req.query.offset)
         const limit: number | undefined                           = this.asInt(req.query.limit)
         const fields: string | undefined                          = req.query.fields
-        const sortingField: string | undefined                    = req.query.sortingField
-        const sortingOrder: string | undefined                    = req.query.sortingOrder
+        const sortingField: SortingField | undefined | 'unknown'  = this.asEnumValue(SortingField, req.query.sortingField)
+        const sortingOrder: SortingOrder | undefined | 'unknown'  = this.asEnumValue(SortingOrder, req.query.sortingOrder)
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -351,24 +351,22 @@ export class Controller {
             enumFields.push(DeploymentField.AUDIT_INFO)
         }
 
-        const sortFieldEnum: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, sortingField)
-        const sortOrderEnum: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, sortingOrder)
+        // Validate sorting fields and create sortBy
         const sortBy: {field?: SortingField, order?: SortingOrder} = {}
-
-        if (sortFieldEnum) {
-            if (sortFieldEnum == 'unknown') {
+        if (sortingField) {
+            if (sortingField == 'unknown') {
                 res.status(400).send({ error: `Found an unrecognized sort field param` });
                 return
             } else {
-                sortBy.field = sortFieldEnum
+                sortBy.field = sortingField
             }
         }
-        if (sortOrderEnum) {
-            if (sortOrderEnum == 'unknown') {
+        if (sortingOrder) {
+            if (sortingOrder == 'unknown') {
                 res.status(400).send({ error: `Found an unrecognized sort order param` });
                 return
             } else {
-                sortBy.order = sortOrderEnum
+                sortBy.order = sortingOrder
             }
         }
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]), entityIds, deployedBy, onlyCurrentlyPointed }
