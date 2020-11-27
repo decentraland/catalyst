@@ -14,8 +14,6 @@ export interface IdentityProvider {
     getIdentityInDAO(): ServerIdentity | undefined;
 }
 
-const UNREACHABLE = 'UNREACHABLE'
-
 export class ContentCluster implements IdentityProvider {
 
     private static readonly LOGGER = log4js.getLogger('ContentCluster');
@@ -28,8 +26,6 @@ export class ContentCluster implements IdentityProvider {
     private serverClients: Map<ServerAddress, ContentServerClient> = new Map()
     // All the servers on the DAO. Renewed with each sync
     private allServersInDAO: Set<ServerMetadata>
-    // Server name for each address
-    private serverNames: Map<ServerAddress, ServerName> = new Map()
     // Time of last sync with the DAO
     private timeOfLastSync: Timestamp = 0
 
@@ -93,16 +89,6 @@ export class ContentCluster implements IdentityProvider {
 
             // Handle the possibility that some servers where removed from the DAO. If so, remove them from the list
             this.handleRemovalsFromDAO(allAddresses);
-
-            // Update server names
-            // TODO: Remove this when everyone is calculating its own name based on the server url
-            const names = await Promise.all(allAddresses
-                .map(async address => ({ address, name: await this.getServerName(address) })))
-            for (const { address, name } of names) {
-                if (name !== UNREACHABLE) {
-                    this.serverNames.set(address, name)
-                }
-            }
 
             // Detect new servers
             const newAddresses = allAddresses.filter(address => !this.serverClients.has(address))
@@ -205,16 +191,6 @@ export class ContentCluster implements IdentityProvider {
 
         // We are sorting the array, so when we query the servers, we will choose a different one each time
         return shuffleArray(addresses)
-    }
-
-    /** Return the server's name, or the text "UNREACHABLE" if it couldn't be reached */
-    private async getServerName(address: ServerAddress): Promise<ServerName> {
-        try {
-            const { name } = await this.fetcher.fetchJson(`${address}/status`)
-            return name
-        } catch (error) {
-            return UNREACHABLE
-        }
     }
 
     /** Return the server's challenge text, or undefined if it couldn't be reached */

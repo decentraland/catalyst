@@ -1,7 +1,7 @@
 import log4js from "log4js";
-import { ContentAPI, ContentClient, DeploymentData, DeploymentFields, DeploymentWithMetadataContentAndPointers } from "dcl-catalyst-client";
+import { ContentAPI, ContentClient, DeploymentData, DeploymentOptions, DeploymentWithMetadataContentAndPointers } from "dcl-catalyst-client";
 import future, { IFuture } from "fp-future";
-import { EntityType, Pointer, RequestOptions, Entity, EntityId, LegacyAuditInfo, Timestamp, ServerName, LegacyDeploymentHistory, LegacyPartialDeploymentHistory, ServerStatus, DeploymentBase, DeploymentFilters, ContentFileHash, AvailableContentResult, Fetcher } from "dcl-catalyst-commons";
+import { EntityType, Pointer, RequestOptions, Entity, EntityId, LegacyAuditInfo, Timestamp, ServerName, LegacyDeploymentHistory, LegacyPartialDeploymentHistory, ServerStatus, DeploymentBase, ContentFileHash, AvailableContentResult, Fetcher } from "dcl-catalyst-commons";
 import { Readable } from "stream";
 
 /**
@@ -53,12 +53,12 @@ export class SmartContentClient implements ContentAPI {
         return client.fetchStatus(options);
     }
 
-    async fetchAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(filters?: DeploymentFilters, fields?: DeploymentFields<T>, options?: RequestOptions): Promise<T[]> {
+    async fetchAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(deploymentOptions?: DeploymentOptions<T>, options?: RequestOptions): Promise<T[]> {
         const client = await this.getClient();
-        return client.fetchAllDeployments(filters, fields, options);
+        return client.fetchAllDeployments(deploymentOptions, options);
     }
 
-    streamAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(filters?: DeploymentFilters, fields?: DeploymentFields<T>, errorListener?: (errorMessage: string) => void, options?: RequestOptions): Readable {
+    streamAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(deploymentOptions?: DeploymentOptions<T>, options?: RequestOptions): Readable {
         throw new Error('Deployments streaming is currently not supported')
     }
 

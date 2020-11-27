@@ -19,7 +19,7 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
 
     // Deployments check
     const entityIds = entities.map(({ id }) => id)
-    const deployments = await server.getDeployments({ entityIds })
+    const deployments = await server.getDeployments({filters: { entityIds }})
     assert.equal(deployments.length, entities.length)
     for (const deployment of deployments) {
         assert.notEqual(deployment.auditInfo.overwrittenBy, undefined)
@@ -37,7 +37,7 @@ export async function assertEntityWasNotDeployed(server: TestServer, entity: Con
     assert.equal(entities.length, 0)
 
     // Deployments check
-    const deployments = await server.getDeployments({ entityIds: [entity.id] })
+    const deployments = await server.getDeployments({filters: { entityIds: [entity.id] }})
     assert.equal(deployments.length, 0)
 }
 
@@ -52,7 +52,7 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
     // Deployments check
     const entitiesById = new Map(entities.map((entity) => [ entity.id, entity ]))
     const allPointers = entities.map(({ pointers }) => pointers).reduce((accum, curr) => accum.concat(curr), [])
-    const deployments = await server.getDeployments({ pointers: allPointers, onlyCurrentlyPointed: true })
+    const deployments = await server.getDeployments({filters: { pointers: allPointers, onlyCurrentlyPointed: true }})
     assert.equal(deployments.length, entities.length)
     for (const deployment of deployments) {
         assertEntityIsTheSameAsDeployment(entitiesById.get(deployment.entityId)!!, deployment)
@@ -72,6 +72,11 @@ export async function assertHistoryOnServerHasEvents(server: TestServer, ...expe
         const actualEvent: LegacyDeploymentEvent = deploymentHistory[i]
         assertEqualsDeploymentEvent(actualEvent, expectedEvent)
     }
+}
+
+export async function assertDeploymentsCount(server: TestServer,count: number) {
+    const deployments = await server.getDeployments()
+    assert.equal(deployments.length, count, `Expected to find ${count} deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`)
 }
 
 export async function assertDeploymentsAreReported(server: TestServer, ...expectedDeployments: ControllerDeployment[]) {
@@ -284,7 +289,7 @@ function assertEntityIsTheSameAsDeployment(entity: ControllerEntity, deployment:
 }
 
 async function getEntitysDeployment(server: TestServer, entity: ControllerEntity): Promise<ControllerDeployment> {
-    const deployments = await server.getDeployments({ entityIds: [ entity.id ] })
+    const deployments = await server.getDeployments({filters: {entityIds: [ entity.id ] }})
     assert.equal(deployments.length, 1)
     const [ deployment ] = deployments
     return deployment
