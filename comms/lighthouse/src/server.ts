@@ -105,7 +105,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK;
         // client not registered
         return false;
       }
-      if (client.getIdType() === IdType.SELF_ASSIGNED && client.getId().toLocaleLowerCase() !== message.payload[0]?.payload?.toLocaleLowerCase()) {
+      if (client.getIdType() === IdType.SELF_ASSIGNED && client.getId().toLowerCase() !== message.payload[0]?.payload?.toLowerCase()) {
         // client id mistmaches with auth signer
         return false;
       }

@@ -51,7 +51,7 @@ export class EntityFactory {
         return {
             id,
             type,
-            pointers: object.pointers.map((pointer: Pointer) => pointer.toLocaleLowerCase()),
+            pointers: object.pointers.map((pointer: Pointer) => pointer.toLowerCase()),
             timestamp: object.timestamp,
             content,
             metadata: object.metadata

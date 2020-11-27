@@ -13,13 +13,13 @@ export class AccessCheckerForProfiles {
             errors.push(`Only one pointer is allowed when you create a Profile. Received: ${pointers}`)
         }
 
-        const pointer: Pointer = pointers[0].toLocaleLowerCase()
+        const pointer: Pointer = pointers[0].toLowerCase()
 
         if (pointer.startsWith("default")) {
             if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
                 errors.push(`Only Decentraland can add or modify default profiles`)
             }
-        } else if (pointer !== ethAddress.toLocaleLowerCase()) {
+        } else if (pointer !== ethAddress.toLowerCase()) {
             errors.push(`You can only alter your own profile. The pointer address and the signer address are different.`)
         }
 

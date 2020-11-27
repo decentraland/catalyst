@@ -18,7 +18,7 @@ export class AccessCheckerForWearables {
             errors.push(`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`)
         }
 
-        const pointer: Pointer = pointers[0].toLocaleLowerCase()
+        const pointer: Pointer = pointers[0].toLowerCase()
 
         if (pointer.startsWith("default")) {
             if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
@@ -48,7 +48,7 @@ export class AccessCheckerForWearables {
 
     private async checkCollectionAccess(collection: string, itemId: number, ethAddress: EthAddress): Promise<boolean> {
         try {
-            const ethAddressLowercase = ethAddress.toLocaleLowerCase()
+            const ethAddressLowercase = ethAddress.toLowerCase()
             const permissions: WearableItemPermissionsData = await this.getCollectionItems(collection, itemId, ethAddressLowercase)
             return (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase)
                 || (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase))

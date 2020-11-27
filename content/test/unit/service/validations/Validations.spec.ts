@@ -208,7 +208,7 @@ describe("Validations", function() {
 
     const message = `Decentraland Login\nEphemeral address: ${identity.address}\nExpiration: ${expiration}`;
     const signature = ContentAuthenticator.createSignature(identity, message);
-    const expectedSigner = identity.address.toLocaleLowerCase();
+    const expectedSigner = identity.address.toLowerCase();
     validateExpectedAddress(message, signature, expectedSigner);
   });
 
@@ -223,7 +223,7 @@ describe("Validations", function() {
     const identity = EthCrypto.createIdentity();
     const message = "Decentraland Login\nEphemeral";
     const signature = ContentAuthenticator.createSignature(identity, message);
-    const expectedSigner = identity.address.toLocaleLowerCase();
+    const expectedSigner = identity.address.toLowerCase();
     validateExpectedAddress(message, signature, expectedSigner);
   });
 
@@ -238,7 +238,7 @@ describe("Validations", function() {
     const identity = EthCrypto.createIdentity();
     const message = "Decentraland Login Ephemeral";
     const signature = ContentAuthenticator.createSignature(identity, message);
-    const expectedSigner = identity.address.toLocaleLowerCase();
+    const expectedSigner = identity.address.toLowerCase();
     validateExpectedAddress(message, signature, expectedSigner);
   });
 
@@ -252,7 +252,7 @@ describe("Validations", function() {
   function validateExpectedAddress(message: string, signature: string, expectedSigner: string) {
     const messageHash = ContentAuthenticator.createEthereumMessageHash(message);
 
-    const signer = EthCrypto.recover(signature, messageHash).toLocaleLowerCase();
+    const signer = EthCrypto.recover(signature, messageHash).toLowerCase();
 
     expect(signer).toBe(expectedSigner);
   }
