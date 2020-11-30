@@ -123,6 +123,21 @@ describe("Integration - Deployment Filters", () => {
         await assertDeploymentsWithFilterAre({ pointers: [ P1, P2, P3 ] }, E1, E2, E3)
     })
 
+
+
+    fit('When pointers filter is set, then results are calculated case insensitive', async () => {
+        await deploy(E1, E2, E3)
+
+        const upperP1 = "X1,Y1"
+        const upperP2 = "X2,Y2"
+        const upperP3 = "X3,Y3"
+
+        await assertDeploymentsWithFilterAre({ pointers: [ upperP1 ] }, E1, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ upperP2 ] }, E2, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ upperP3 ] }, E3)
+        await assertDeploymentsWithFilterAre({ pointers: [ upperP1, upperP2, upperP3 ] }, E1, E2, E3)
+    })
+
     async function assertDeploymentsWithFilterAre(filter: ExtendedDeploymentFilters, ...expectedEntities: EntityCombo[]) {
         const actualDeployments = await service.getDeployments({filters: filter})
         const expectedEntityIds = expectedEntities.map(entityCombo => entityCombo.entity.id).sort()
