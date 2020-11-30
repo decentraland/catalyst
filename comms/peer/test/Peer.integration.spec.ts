@@ -840,7 +840,7 @@ describe("Peer Integration Test", function () {
     expect(peer2.stats.tagged.expired.totalPackets).toEqual(1);
   });
 
-  it("suspends relay when receiving duplicate or expired", async () => {
+  xit("suspends relay when receiving duplicate or expired", async () => {
     extraPeersConfig = {
       relaySuspensionConfig: { relaySuspensionDuration: 5000, relaySuspensionInterval: 0 },
       logLevel: "DEBUG",
