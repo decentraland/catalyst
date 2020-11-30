@@ -123,9 +123,7 @@ describe("Integration - Deployment Filters", () => {
         await assertDeploymentsWithFilterAre({ pointers: [ P1, P2, P3 ] }, E1, E2, E3)
     })
 
-
-
-    fit('When pointers filter is set, then results are calculated case insensitive', async () => {
+    it('When pointers filter is set, then results are calculated case insensitive', async () => {
         await deploy(E1, E2, E3)
 
         const upperP1 = "X1,Y1"
