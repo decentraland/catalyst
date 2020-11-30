@@ -69,8 +69,8 @@ ts_library(
         "@npm//cors",
         "@npm//dcl-crypto",
         "@npm//express",
-        "@npm//fp-future",
         "@npm//fast-deep-equal",
+        "@npm//fp-future",
         "@npm//isomorphic-fetch",
         "@npm//morgan",
         "@npm//peerjs-server",
@@ -110,7 +110,10 @@ ts_library(
         ":lighthouse",
         "//commons/servers",
         "//commons/utils",
+        "@npm//@types/express",
         "@npm//@types/jasmine",
+        "@npm//isomorphic-fetch",
+        "@npm//express",
     ],
 )
 
