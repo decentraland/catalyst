@@ -99,7 +99,7 @@ async function fetchHotScenesData(daoCache: DAOCache, contentClient: SmartConten
   if (tiles.length > 0) {
     const scenes = await contentClient.fetchEntitiesByPointers(EntityType.SCENE as any, tiles);
 
-    const hotScenes: HotSceneInfo[] = scenes.map(getHotSceneRecordFor);
+    const hotScenes: HotSceneInfo[] = scenes.map(scene => getHotSceneRecordFor(scene, contentClient.getExternalContentServerUrl()));
 
     countUsers(hotScenes, statuses);
 
@@ -149,19 +149,38 @@ function getOccupiedTiles(statuses: ServerStatus[]) {
   return [...new Set(statuses.flatMap((it) => it.layers.flatMap((layer) => layer.usersParcels.map((parcel) => `${parcel[0]},${parcel[1]}`))))];
 }
 
-function getHotSceneRecordFor(scene: Entity): HotSceneInfo {
+function getHotSceneRecordFor(scene: Entity, externalContentUrl: string): HotSceneInfo {
   return {
     id: scene.id,
     name: scene.metadata?.display?.title,
     baseCoords: getCoords(scene.metadata?.scene.base),
     usersTotalCount: 0,
     parcels: scene.metadata?.scene.parcels.map(getCoords),
-    thumbnail: scene.metadata?.display?.navmapThumbnail,
+    thumbnail: calculateThumbnail(scene, externalContentUrl),
     creator: scene.metadata?.contact?.name,
     projectId: scene.metadata?.source?.projectId,
     description: scene.metadata?.display?.description,
     realms: [],
   };
+}
+
+/**
+ * The thumbnail could either be a url or the path of one of the uploaded files.
+ * In here, we are converting the path to a url that points to the content server
+ */
+function calculateThumbnail(scene: Entity, externalContentUrl: string): string | undefined {
+  let thumbnail: string | undefined = scene.metadata?.display?.navmapThumbnail;
+  if (thumbnail && !thumbnail.startsWith('http')) {
+    // We are assuming that the thumbnail is an uploaded file. We will try to find the matching hash
+    const thumbnailHash = scene.content?.find(({ file }) => file === thumbnail)?.hash;
+    if (thumbnailHash) {
+      thumbnail = `${externalContentUrl}/contents/${thumbnailHash}`;
+    } else {
+      // If we couldn't find a file with the correct path, then we ignore whatever was set on the thumbnail property
+      thumbnail = undefined;
+    }
+  }
+  return thumbnail
 }
 
 function parcelEqual(parcel1: ParcelCoord, parcel2: ParcelCoord) {
