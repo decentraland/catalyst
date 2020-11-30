@@ -9,7 +9,7 @@ export class ContentAuthenticator extends Authenticator {
 
   /** Return whether the given address used is owned by Decentraland */
   isAddressOwnedByDecentraland(address: EthAddress) {
-    return address.toLocaleLowerCase() === this.decentralandAddress.toLocaleLowerCase();
+    return address.toLowerCase() === this.decentralandAddress.toLowerCase();
   }
 
   /** Validate that the signature belongs to the Ethereum address */

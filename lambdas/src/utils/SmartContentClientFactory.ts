@@ -10,7 +10,7 @@ export class SmartContentClientFactory {
 
     private static baseContentServerUrl(env: Environment): string {
         let configAddress: string = env.getConfig(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
-        configAddress = configAddress.toLocaleLowerCase()
+        configAddress = configAddress.toLowerCase()
         if (!configAddress.startsWith('http')) {
             configAddress = 'http://' + configAddress
         }
