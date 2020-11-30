@@ -4,10 +4,18 @@ import express from "express";
 require("isomorphic-fetch");
 
 describe("id service generation", function () {
+  let originalTimeout;
+
   let idService: IdService;
 
   beforeEach(() => {
+    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
     idService = new IdService();
+  });
+
+  afterEach(function () {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
   });
 
   it("generates an id", () => {
@@ -36,8 +44,6 @@ describe("id service generation", function () {
   });
 
   it("can use all ids in urls", (done) => {
-    let originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000;
     const app = express();
 
     const requestedIds: string[] = [];
@@ -62,9 +68,7 @@ describe("id service generation", function () {
       }
 
       expect(requestedIds).toEqual(receivedIds);
-      jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
       done();
     });
-
   });
 });
