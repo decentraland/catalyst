@@ -19,7 +19,7 @@ export class AccessCheckerForScenes {
 
         await Promise.all(
             pointers
-                .map(pointer => pointer.toLocaleLowerCase())
+                .map(pointer => pointer.toLowerCase())
                 .map(async pointer => {
                     if (pointer.startsWith("default")) {
                         if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {

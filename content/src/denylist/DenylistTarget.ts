@@ -4,7 +4,7 @@ import { ContentFileHash, EntityType, Pointer, EntityId } from "dcl-catalyst-com
 export class DenylistTarget {
     private readonly id: DenylistTargetId;
     constructor(private readonly type: DenylistTargetType, id: DenylistTargetId) {
-        this.id = id.toLocaleLowerCase()
+        this.id = id.toLowerCase()
     }
 
     asString(): string {

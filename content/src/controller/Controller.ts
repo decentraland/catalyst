@@ -1,7 +1,7 @@
 import express from "express";
 import log4js from "log4js"
 import fs from "fs"
-import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory, ServerAddress, LegacyPartialDeploymentHistory, LegacyDeploymentEvent } from "dcl-catalyst-commons";
+import { EntityType, Pointer, EntityId, Timestamp, Entity as ControllerEntity, EntityVersion, ContentFileHash, LegacyAuditInfo, PartialDeploymentHistory, ServerAddress, LegacyPartialDeploymentHistory, LegacyDeploymentEvent, SortingField, SortingOrder } from "dcl-catalyst-commons";
 import { MetaverseContentService, LocalDeploymentAuditInfo } from "../service/Service";
 import { ControllerEntityFactory } from "./ControllerEntityFactory";
 import { Denylist } from "../denylist/Denylist";
@@ -14,7 +14,7 @@ import { SynchronizationManager } from "../service/synchronization/Synchronizati
 import { ChallengeSupervisor } from "../service/synchronization/ChallengeSupervisor";
 import { ContentAuthenticator } from "../service/auth/Authenticator";
 import { ControllerDeploymentFactory } from "./ControllerDeploymentFactory";
-import { Deployment, DeploymentPointerChanges, ExtendedDeploymentFilters, SortingField, SortingOrder } from "../service/deployments/DeploymentManager";
+import { Deployment, DeploymentPointerChanges, ExtendedDeploymentFilters } from "../service/deployments/DeploymentManager";
 import { SnapshotManager } from "../service/snapshots/SnapshotManager";
 
 export class Controller {
@@ -262,7 +262,7 @@ export class Controller {
         const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
         const deployments = await this.service.getDeployments(
             {filters: requestFilters,
-            sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING },
+            sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING},
             offset: offset,
             limit: limit})
 
@@ -331,6 +331,8 @@ export class Controller {
         const offset: number | undefined                          = this.asInt(req.query.offset)
         const limit: number | undefined                           = this.asInt(req.query.limit)
         const fields: string | undefined                          = req.query.fields
+        const sortingField: SortingField | undefined | 'unknown'  = this.asEnumValue(SortingField, req.query.sortingField)
+        const sortingOrder: SortingOrder | undefined | 'unknown'  = this.asEnumValue(SortingOrder, req.query.sortingOrder)
 
         // Validate type is valid
         if (entityTypes && entityTypes.some(type => !type)) {
@@ -349,11 +351,42 @@ export class Controller {
             enumFields.push(DeploymentField.AUDIT_INFO)
         }
 
+        // Validate sorting fields and create sortBy
+        const sortBy: {field?: SortingField, order?: SortingOrder} = {}
+        if (sortingField) {
+            if (sortingField == 'unknown') {
+                res.status(400).send({ error: `Found an unrecognized sort field param` });
+                return
+            } else {
+                sortBy.field = sortingField
+            }
+        }
+        if (sortingOrder) {
+            if (sortingOrder == 'unknown') {
+                res.status(400).send({ error: `Found an unrecognized sort order param` });
+                return
+            } else {
+                sortBy.order = sortingOrder
+            }
+        }
         const requestFilters = { pointers, fromLocalTimestamp, toLocalTimestamp, entityTypes: (entityTypes as EntityType[]), entityIds, deployedBy, onlyCurrentlyPointed }
-        const { deployments, filters, pagination } = await this.service.getDeployments({filters: requestFilters, offset: offset, limit: limit})
+         
+        const { deployments, filters, pagination } = await this.service.getDeployments({
+            filters: requestFilters, 
+            sortBy: sortBy,
+            offset: offset, 
+            limit: limit})
         const controllerDeployments = deployments.map(deployment => ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields))
 
         res.send({ deployments: controllerDeployments, filters, pagination })
+    }
+    
+    private asEnumValue<T extends {[key: number]: string}>(enumType: T, stringToMap?: string): T[keyof T] | undefined | 'unknown' {
+        if (stringToMap) {
+            const validEnumValues: Set<string> = new Set(Object.values(enumType))
+            const match = validEnumValues.has(stringToMap)
+            return match ? stringToMap as T[keyof T] : 'unknown'
+        }
     }
 
     private asInt(value: any): number | undefined {

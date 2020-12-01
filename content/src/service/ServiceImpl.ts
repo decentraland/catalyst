@@ -118,7 +118,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
                 await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
                 // Validate that there is no entity with a higher version
-                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments({ filters: filters }, transaction), validationContext)
+                await validation.validateLegacyEntity(entity, auditInfo, (filters) => this.getDeployments({ filters }, transaction), validationContext)
 
                 // Validate that there are no newer entities on pointers
                 await validation.validateNoNewerEntitiesOnPointers(entity, (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction), validationContext)
@@ -284,7 +284,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return this.deploymentManager.areEntitiesDeployed(repository.deployments, entityIds)
     }
 
-    getDeployments(options: DeploymentOptions, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory<Deployment>> {
+    getDeployments(options?: DeploymentOptions, repository: RepositoryTask | Repository = this.repository): Promise<PartialDeploymentHistory<Deployment>> {
         return repository.taskIf(task => this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options))
     }
 

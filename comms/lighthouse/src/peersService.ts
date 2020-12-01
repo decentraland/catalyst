@@ -72,7 +72,7 @@ export class PeersService implements IPeersService {
   existsPeerWithAddress(address: string) {
     return this.realmProvider()
       .getClientsIds()
-      .some((it) => this.getPeerInfo(it)?.address?.toLocaleLowerCase() === address.toLocaleLowerCase());
+      .some((it) => this.getPeerInfo(it)?.address?.toLowerCase() === address.toLowerCase());
   }
 
   peerExistsInRealm(peerId: string) {

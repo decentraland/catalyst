@@ -630,7 +630,7 @@ export class Peer implements IPeer {
   async leaveRoom(roomId: string) {
     this.assertPeerInLayer();
 
-    await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}/users/${encodeURI(this.peerIdOrFail())}`, { method: "DELETE" });
+    await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}/users/${encodeURIComponent(this.peerIdOrFail())}`, { method: "DELETE" });
 
     const index = this.currentRooms.findIndex((room) => room.id === roomId);
 
