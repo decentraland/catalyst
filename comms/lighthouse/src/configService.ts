@@ -1,41 +1,41 @@
-import { SimpleStorage } from "./simpleStorage";
+import { SimpleStorage } from './simpleStorage'
 
 export type ConfigKeyValue = {
-  key: string;
-  value?: any;
-};
+  key: string
+  value?: any
+}
 
 export class ConfigService {
-  private storage: SimpleStorage;
+  private storage: SimpleStorage
 
   constructor(storage: SimpleStorage) {
-    this.storage = storage;
+    this.storage = storage
   }
 
   async updateConfigs(configs: ConfigKeyValue[]) {
-    for(const it of configs) {
-      if (typeof it.value !== "undefined") {
-        await this.storage.setString(it.key, JSON.stringify(it.value));
+    for (const it of configs) {
+      if (typeof it.value !== 'undefined') {
+        await this.storage.setString(it.key, JSON.stringify(it.value))
       } else {
-        await this.storage.deleteKey(it.key);
+        await this.storage.deleteKey(it.key)
       }
     }
-    
-    return await this.getConfig();
+
+    return await this.getConfig()
   }
 
   async getConfig() {
-    const items = await this.storage.getAll();
-    Object.keys(items).forEach((key) => (items[key] = JSON.parse(items[key])));
-    return items;
+    const items = await this.storage.getAll()
+    Object.keys(items).forEach((key) => (items[key] = JSON.parse(items[key])))
+    return items
   }
 
   async get(key: string, ifNotPresent: () => any): Promise<any> {
-    const item = await this.storage.getString(key);
-    return typeof item !== "undefined" ? JSON.parse(item) : ifNotPresent();
+    const item = await this.storage.getString(key)
+    return typeof item !== 'undefined' ? JSON.parse(item) : ifNotPresent()
   }
 
   async getMaxPeersPerLayer(): Promise<number | undefined> {
-    return await this.get("maxPeersPerLayer", () => parseInt(process.env.MAX_PER_LAYER ?? "50"))
+    return await this.get('maxPeersPerLayer', () => parseInt(process.env.MAX_PER_LAYER ?? '50'))
   }
 }

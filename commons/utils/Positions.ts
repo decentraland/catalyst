@@ -1,18 +1,18 @@
-export const DISCRETIZE_POSITION_INTERVALS = [32, 64, 80, 128, 160];
+export const DISCRETIZE_POSITION_INTERVALS = [32, 64, 80, 128, 160]
 
-export type Position3D = [number, number, number];
-export type Position2D = [number, number];
+export type Position3D = [number, number, number]
+export type Position2D = [number, number]
 
-export type Quaternion = [number, number, number, number];
+export type Quaternion = [number, number, number, number]
 
-export type Position = Position2D | Position3D;
+export type Position = Position2D | Position3D
 
 export function isPosition3D(position: any): position is Position3D {
-  return position instanceof Array && position.length === 3;
+  return position instanceof Array && position.length === 3
 }
 
 export function isPosition2D(position: any): position is Position2D {
-  return position instanceof Array && position.length === 2;
+  return position instanceof Array && position.length === 2
 }
 
 /**
@@ -30,27 +30,27 @@ export function isPosition2D(position: any): position is Position2D {
  */
 export function discretizedPositionDistance(intervals: number[] = DISCRETIZE_POSITION_INTERVALS) {
   return (a: Position, b: Position) => {
-    let dx = 0;
-    let dy = 0;
-    let dz = 0;
+    let dx = 0
+    let dy = 0
+    let dz = 0
 
-    dx = a[0] - b[0];
-    dy = a[1] - b[1];
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
 
     if (isPosition3D(a) && isPosition3D(b)) {
-      dz = a[2] - b[2];
+      dz = a[2] - b[2]
     }
 
-    const squaredDistance = dx * dx + dy * dy + dz * dz;
+    const squaredDistance = dx * dx + dy * dy + dz * dz
 
-    const intervalIndex = intervals.findIndex((it) => squaredDistance <= it * it);
+    const intervalIndex = intervals.findIndex((it) => squaredDistance <= it * it)
 
-    return intervalIndex !== -1 ? intervalIndex : intervals.length;
-  };
+    return intervalIndex !== -1 ? intervalIndex : intervals.length
+  }
 }
 
 export type PeerConnectionHint = {
-  id: string;
-  distance: number;
-  position: Position;
-};
+  id: string
+  distance: number
+  position: Position
+}

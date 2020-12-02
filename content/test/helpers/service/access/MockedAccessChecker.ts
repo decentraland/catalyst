@@ -1,25 +1,28 @@
-import { EntityType, Pointer, Timestamp } from "dcl-catalyst-commons";
-import { AccessChecker } from "@katalyst/content/service/access/AccessChecker";
-import { EthAddress } from "dcl-crypto";
+import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { AccessChecker } from '@katalyst/content/service/access/AccessChecker'
+import { EthAddress } from 'dcl-crypto'
 
 export class MockedAccessChecker implements AccessChecker {
+  private returnErrors: boolean = false
 
-    private returnErrors: boolean = false
-
-    hasAccess(entityType: EntityType, pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
-        if (this.returnErrors) {
-            return Promise.resolve(['Some errors']);
-        } else {
-            return Promise.resolve([]);
-        }
+  hasAccess(
+    entityType: EntityType,
+    pointers: Pointer[],
+    timestamp: Timestamp,
+    ethAddress: EthAddress
+  ): Promise<string[]> {
+    if (this.returnErrors) {
+      return Promise.resolve(['Some errors'])
+    } else {
+      return Promise.resolve([])
     }
+  }
 
-    startReturningErrors() {
-        this.returnErrors = true
-    }
+  startReturningErrors() {
+    this.returnErrors = true
+  }
 
-    stopReturningErrors() {
-        this.returnErrors = false
-    }
-
+  stopReturningErrors() {
+    this.returnErrors = false
+  }
 }

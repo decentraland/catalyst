@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
-import { EthAddress, Authenticator } from "dcl-crypto";
-import { EthereumProvider } from "web3x/providers";
-import { SignerData, SignatureValidator, validateSignature } from "./signatures";
+import { Request, Response, NextFunction, RequestHandler } from 'express-serve-static-core'
+import { EthAddress, Authenticator } from 'dcl-crypto'
+import { EthereumProvider } from 'web3x/providers'
+import { SignerData, SignatureValidator, validateSignature } from './signatures'
 
 /**
  * @param messageToSignBuilder Function to build the signature payload to test against. Keep in mind that the timestamp will be appended to the result.
@@ -17,16 +17,16 @@ export function validateSignatureHandler(
   signatureValidator: SignatureValidator = Authenticator.validateSignature
 ): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const signerData = signerDataBuilder(req.body);
+    const signerData = signerDataBuilder(req.body)
 
     await validateSignature(
       signerData,
       `${messageToSignBuilder(req.body)}${signerData.timestamp}`,
       next,
-      (message) => res.status(401).send({ status: "unauthorized", message }),
+      (message) => res.status(401).send({ status: 'unauthorized', message }),
       (signer) => authorizedSignerPredicate(signer, req.body),
       networkOrProvider,
       signatureValidator
-    );
-  };
+    )
+  }
 }

@@ -1,4 +1,4 @@
-import { Fetcher } from "dcl-catalyst-commons";
+import { Fetcher } from 'dcl-catalyst-commons'
 
 const query = `
     query FilterNamesByOwner($owner: String, $names: [String]) {
@@ -11,16 +11,21 @@ const query = `
         }
     }`
 
-export async function filterENS(fetcher: Fetcher, theGraphBaseUrl: string, ethAddress: string, namesToFilter: string[]): Promise<string[]> {
-    const variables = {
-        owner: ethAddress.toLowerCase(),
-        names: namesToFilter
-    }
-    try {
-        const response = fetcher.queryGraph<{nfts: {name: string}[]}>(theGraphBaseUrl, query, variables)
-        return (await response).nfts.map(nft => nft.name)
-    } catch (error) {
-        console.log(`Could not retrieve ENSs for address ${ethAddress}.`, error)
-    }
-    return []
+export async function filterENS(
+  fetcher: Fetcher,
+  theGraphBaseUrl: string,
+  ethAddress: string,
+  namesToFilter: string[]
+): Promise<string[]> {
+  const variables = {
+    owner: ethAddress.toLowerCase(),
+    names: namesToFilter
+  }
+  try {
+    const response = fetcher.queryGraph<{ nfts: { name: string }[] }>(theGraphBaseUrl, query, variables)
+    return (await response).nfts.map((nft) => nft.name)
+  } catch (error) {
+    console.log(`Could not retrieve ENSs for address ${ethAddress}.`, error)
+  }
+  return []
 }

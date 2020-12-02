@@ -1,59 +1,57 @@
-import { ContentStorageFactory } from "@katalyst/content/storage/ContentStorageFactory";
-import { FileSystemUtils as fsu } from "./FileSystemUtils";
-import { Environment, EnvironmentConfig } from "@katalyst/content/Environment";
-import { ContentStorage, fromBuffer } from "@katalyst/content/storage/ContentStorage";
+import { ContentStorageFactory } from '@katalyst/content/storage/ContentStorageFactory'
+import { FileSystemUtils as fsu } from './FileSystemUtils'
+import { Environment, EnvironmentConfig } from '@katalyst/content/Environment'
+import { ContentStorage, fromBuffer } from '@katalyst/content/storage/ContentStorage'
 
-describe("ContentStorage", () => {
+describe('ContentStorage', () => {
+  let env: Environment
+  let storage: ContentStorage
+  let id: string
+  let content: Buffer
 
-    let env: Environment
-    let storage: ContentStorage
-    let id: string
-    let content: Buffer
+  beforeAll(async () => {
+    env = new Environment()
+    env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
+    storage = await ContentStorageFactory.local(env)
 
-    beforeAll(async () => {
-        env = new Environment()
-        env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
-        storage = await ContentStorageFactory.local(env)
+    id = 'some-id'
+    content = Buffer.from('123')
+  })
 
-        id = "some-id"
-        content = Buffer.from("123")
-    })
+  it(`When content is stored, then it can be retrieved`, async () => {
+    await storage.store(id, fromBuffer(content))
 
-    it(`When content is stored, then it can be retrieved`, async () => {
-        await storage.store(id, fromBuffer(content))
+    const retrievedContent = await storage.retrieve(id)
+    expect(await retrievedContent?.asBuffer()).toEqual(content)
+  })
 
-        const retrievedContent = await storage.retrieve(id)
-        expect(await retrievedContent?.asBuffer()).toEqual(content);
-    });
+  it(`When content is stored, then we can check if it exists`, async function () {
+    await storage.store(id, fromBuffer(content))
 
-    it(`When content is stored, then we can check if it exists`, async function () {
-        await storage.store(id, fromBuffer(content))
+    const exists = await storage.exist([id])
 
-        const exists = await storage.exist([id])
+    expect(exists.get(id)).toBe(true)
+  })
 
-        expect(exists.get(id)).toBe(true)
-    });
+  it(`When content is stored on already existing id, then it overwrites the previous content`, async function () {
+    const newContent = Buffer.from('456')
 
-    it(`When content is stored on already existing id, then it overwrites the previous content`, async function () {
-        const newContent = Buffer.from("456")
+    await storage.store(id, fromBuffer(content))
+    await storage.store(id, fromBuffer(newContent))
 
-        await storage.store(id, fromBuffer(content))
-        await storage.store(id, fromBuffer(newContent))
+    const retrievedContent = await storage.retrieve(id)
+    expect(await retrievedContent?.asBuffer()).toEqual(newContent)
+  })
 
-        const retrievedContent = await storage.retrieve(id)
-        expect(await retrievedContent?.asBuffer()).toEqual(newContent);
-    });
+  it(`When content is deleted, then it is no longer available`, async function () {
+    await storage.store(id, fromBuffer(content))
 
-    it(`When content is deleted, then it is no longer available`, async function () {
-        await storage.store(id, fromBuffer(content))
+    var exists = await storage.exist([id])
+    expect(exists.get(id)).toBe(true)
 
-        var exists = await storage.exist([id])
-        expect(exists.get(id)).toBe(true)
+    await storage.delete([id])
 
-        await storage.delete([id])
-
-        exists = await storage.exist([id])
-        expect(exists.get(id)).toBe(false)
-    });
-
-});
+    exists = await storage.exist([id])
+    expect(exists.get(id)).toBe(false)
+  })
+})

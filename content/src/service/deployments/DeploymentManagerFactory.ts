@@ -1,9 +1,8 @@
-import { Environment } from "../../Environment"
-import { DeploymentManager } from "./DeploymentManager"
+import { Environment } from '../../Environment'
+import { DeploymentManager } from './DeploymentManager'
 
 export class DeploymentManagerFactory {
-
-    static create(env: Environment): DeploymentManager {
-        return new DeploymentManager()
-    }
+  static create(env: Environment): DeploymentManager {
+    return new DeploymentManager()
+  }
 }

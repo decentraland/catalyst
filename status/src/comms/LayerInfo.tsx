@@ -18,10 +18,7 @@ export function LayerInfo(
       <h4>
         <strong>{props.name}:</strong> {props.usersCount} user{props.usersCount === 1 ? '' : 's'}
       </h4>
-      {users &&
-        users.map((user: string) => (
-          <User key={user} address={user} layer={props.name} {...props} />
-        ))}
+      {users && users.map((user: string) => <User key={user} address={user} layer={props.name} {...props} />)}
     </div>
   )
 }

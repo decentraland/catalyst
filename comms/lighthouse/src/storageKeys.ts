@@ -1,3 +1,3 @@
 export const StorageKeys = {
-  PEER_TOKEN: "peerToken"
+  PEER_TOKEN: 'peerToken'
 }

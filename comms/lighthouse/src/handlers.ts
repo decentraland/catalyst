@@ -1,60 +1,70 @@
-import { Request, Response, NextFunction, RequestHandler } from "express-serve-static-core";
-import { IRealm } from "peerjs-server";
-import { ReadyStateService } from "./readyStateService";
+import { Request, Response, NextFunction, RequestHandler } from 'express-serve-static-core'
+import { IRealm } from 'peerjs-server'
+import { ReadyStateService } from './readyStateService'
 
 enum PeerHeaders {
-  PeerToken = "X-Peer-Token"
+  PeerToken = 'X-Peer-Token'
 }
 
 //Validations
-export function requireAll(paramNames: string[], objectGetter: (req: Request, res: Response) => object): RequestHandler {
+export function requireAll(
+  paramNames: string[],
+  objectGetter: (req: Request, res: Response) => object
+): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
-    const missing = paramNames.filter(param => typeof objectGetter(req, res)[param] === "undefined");
+    const missing = paramNames.filter((param) => typeof objectGetter(req, res)[param] === 'undefined')
 
     if (missing.length > 0) {
       res.status(400).send({
-        status: "bad-request",
-        message: `Missing required parameters: ${missing.join(", ")}`
-      });
+        status: 'bad-request',
+        message: `Missing required parameters: ${missing.join(', ')}`
+      })
     } else {
-      next();
+      next()
     }
-  };
+  }
 }
 
-export function requireOneOf(paramNames: string[], objectGetter: (req: Request, res: Response) => object): RequestHandler {
+export function requireOneOf(
+  paramNames: string[],
+  objectGetter: (req: Request, res: Response) => object
+): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
-    const hasOne = paramNames.some(param => typeof objectGetter(req, res)[param] !== "undefined");
+    const hasOne = paramNames.some((param) => typeof objectGetter(req, res)[param] !== 'undefined')
 
     if (!hasOne) {
       res.status(400).send({
-        status: "bad-request",
-        message: `Missing required parameters: Must have at least one of ${paramNames.join(", ")}`
-      });
+        status: 'bad-request',
+        message: `Missing required parameters: Must have at least one of ${paramNames.join(', ')}`
+      })
     } else {
-      next();
+      next()
     }
-  };
+  }
 }
 
 export function validatePeerToken(realmProvider: () => IRealm): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.body.userId ?? req.params.userId;
-    const existingClient = realmProvider().getClientById(userId);
-    if (!existingClient || !existingClient.isAuthenticated() || existingClient.getToken() !== req.header(PeerHeaders.PeerToken)) {
-      res.status(401).send({ status: "unauthorized" });
+    const userId = req.body.userId ?? req.params.userId
+    const existingClient = realmProvider().getClientById(userId)
+    if (
+      !existingClient ||
+      !existingClient.isAuthenticated() ||
+      existingClient.getToken() !== req.header(PeerHeaders.PeerToken)
+    ) {
+      res.status(401).send({ status: 'unauthorized' })
     } else {
-      next();
+      next()
     }
-  };
+  }
 }
 
 export function requireServerReady(readyStateService: ReadyStateService): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
-    if(readyStateService.isReady()) {
-      next();
+    if (readyStateService.isReady()) {
+      next()
     } else {
-      res.status(503).send({ status: "server-not-ready" })
+      res.status(503).send({ status: 'server-not-ready' })
     }
-  };
+  }
 }

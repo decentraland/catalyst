@@ -12,7 +12,11 @@ export function Header(props: ServerAware) {
   return (
     <div className="catalyst-header">
       <select onChange={(ev: any) => setServer(ev.target.value)}>
-        {catalysts.map(_ => <option selected={_.domain === server} value={_.domain} key={_.domain}>{_.domain}</option>)}
+        {catalysts.map((_) => (
+          <option selected={_.domain === server} value={_.domain} key={_.domain}>
+            {_.domain}
+          </option>
+        ))}
       </select>
       {comms && `: ${comms.name}`}
     </div>
