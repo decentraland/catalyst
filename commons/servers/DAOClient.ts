@@ -1,9 +1,9 @@
-import { ServerMetadata } from "./ServerMetadata";
-import { DAOContract, CatalystId, CatalystData } from "decentraland-katalyst-contracts/DAOContract";
+import { ServerMetadata } from './ServerMetadata'
+import { DAOContract, CatalystId, CatalystData } from 'decentraland-katalyst-contracts/DAOContract'
 
 export interface DAOClient {
-    getAllContentServers(): Promise<Set<ServerMetadata>>;
-    getAllServers(): Promise<Set<ServerMetadata>>;
+  getAllContentServers(): Promise<Set<ServerMetadata>>
+  getAllServers(): Promise<Set<ServerMetadata>>
 }
 
 export class DAOContractClient {
@@ -16,7 +16,7 @@ export class DAOContractClient {
 
   async getAllContentServers(): Promise<Set<ServerMetadata>> {
     const servers: Set<ServerMetadata> = await this.getAllServers()
-    return new Set(Array.from(servers.values()).map(server => ({ ...server, address: server.address + '/content' })))
+    return new Set(Array.from(servers.values()).map((server) => ({ ...server, address: server.address + '/content' })))
   }
 
   async getAllServers(): Promise<Set<ServerMetadata>> {
@@ -58,16 +58,15 @@ export class DAOContractClient {
 
     let address = domain.trim()
 
-    if (address.startsWith("http://")) {
-      console.warn(`Catalyst node domain using http protocol, skipping ${address}`);
+    if (address.startsWith('http://')) {
+      console.warn(`Catalyst node domain using http protocol, skipping ${address}`)
       return undefined
     }
 
-    if (!address.startsWith("https://")) {
-      address = "https://" + address;
+    if (!address.startsWith('https://')) {
+      address = 'https://' + address
     }
 
-    return { address, owner, id };
+    return { address, owner, id }
   }
-
 }

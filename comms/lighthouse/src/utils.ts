@@ -1,9 +1,9 @@
-import { NotificationType, IPeersService } from "./peersService";
-import { PeerRequest } from "./types";
+import { NotificationType, IPeersService } from './peersService'
+import { PeerRequest } from './types'
 
 type PeerContainer = {
-  peers: string[];
-};
+  peers: string[]
+}
 
 //This function seems to signal the need for an abstraction, but it may be added later in a refactor
 export function removePeerAndNotify<T extends PeerContainer>(
@@ -15,28 +15,28 @@ export function removePeerAndNotify<T extends PeerContainer>(
   peersService?: IPeersService,
   deleteIfEmpty: boolean = true
 ): T {
-  let container = containers[containerId];
+  let container = containers[containerId]
   if (container) {
-    const index = container.peers.indexOf(peerId);
+    const index = container.peers.indexOf(peerId)
     if (index !== -1) {
-      container.peers.splice(index, 1);
+      container.peers.splice(index, 1)
 
       peersService?.notifyPeersById(container.peers, notificationType, {
         id: peerId,
         userId: peerId,
         peerId,
         [containerKey]: containerId
-      });
+      })
     }
 
     if (container.peers.length === 0 && deleteIfEmpty) {
-      delete containers[containerId];
+      delete containers[containerId]
     }
   }
 
-  return container;
+  return container
 }
 
 export function getPeerId(peer: PeerRequest): string {
-  return (peer.id ?? peer.peerId)!;
+  return (peer.id ?? peer.peerId)!
 }

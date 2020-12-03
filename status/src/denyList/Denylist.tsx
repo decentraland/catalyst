@@ -135,8 +135,8 @@ export function Denylist(props: ServerAware) {
             ))}
         </ul>
       ) : (
-          <h5>Empty</h5>
-        )}
+        <h5>Empty</h5>
+      )}
       {provider ? (
         provider.selectedAddress.toLowerCase() === catalystOwner.toLowerCase() ? (
           <>
@@ -162,19 +162,19 @@ export function Denylist(props: ServerAware) {
             </form>
           </>
         ) : (
-            <>
-              <h4>Log in as the catalyst owner to access the denylist</h4>
-              <h5>The current address is {provider.selectedAddress}</h5>
-            </>
-          )
-      ) : (
           <>
-            <h4>Login to manage the denylists</h4>
-            <form onSubmit={connect}>
-              <button type="submit">Connect</button>
-            </form>
+            <h4>Log in as the catalyst owner to access the denylist</h4>
+            <h5>The current address is {provider.selectedAddress}</h5>
           </>
-        )}
+        )
+      ) : (
+        <>
+          <h4>Login to manage the denylists</h4>
+          <form onSubmit={connect}>
+            <button type="submit">Connect</button>
+          </form>
+        </>
+      )}
     </div>
   )
 }

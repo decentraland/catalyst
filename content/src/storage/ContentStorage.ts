@@ -1,68 +1,68 @@
-import { Readable, Duplex } from "stream";
+import { Readable, Duplex } from 'stream'
 
 export interface ContentStorage {
-    store(id: string, content: StorageContent): Promise<void>;
-    delete(ids: string[]): Promise<void>;
-    retrieve(id: string): Promise<ContentItem | undefined>;
-    exist(ids: string[]): Promise<Map<string, boolean>>;
+  store(id: string, content: StorageContent): Promise<void>
+  delete(ids: string[]): Promise<void>
+  retrieve(id: string): Promise<ContentItem | undefined>
+  exist(ids: string[]): Promise<Map<string, boolean>>
 }
 
 export type StorageContent = {
-    path?: string,
-    data: Buffer
+  path?: string
+  data: Buffer
 }
 export function fromBuffer(buffer: Buffer): StorageContent {
-    return { data: buffer }
+  return { data: buffer }
 }
 
 export interface ContentItem {
-    getLength(): number | undefined
-    asBuffer(): Promise<Buffer>
-    asStream(): Readable
+  getLength(): number | undefined
+  asBuffer(): Promise<Buffer>
+  asStream(): Readable
 }
 
 export class SimpleContentItem implements ContentItem {
-    private constructor(private buffer?: Buffer, private stream?: Readable, private length?: number) { }
+  private constructor(private buffer?: Buffer, private stream?: Readable, private length?: number) {}
 
-    static fromBuffer(buffer: Buffer): SimpleContentItem {
-        return new SimpleContentItem(buffer, undefined, buffer.length)
-    }
+  static fromBuffer(buffer: Buffer): SimpleContentItem {
+    return new SimpleContentItem(buffer, undefined, buffer.length)
+  }
 
-    static fromStream(stream: Readable, length?: number): SimpleContentItem {
-        return new SimpleContentItem(undefined, stream, length)
-    }
+  static fromStream(stream: Readable, length?: number): SimpleContentItem {
+    return new SimpleContentItem(undefined, stream, length)
+  }
 
-    async asBuffer(): Promise<Buffer> {
-        if (this.buffer) {
-            return this.buffer
-        }
-        return streamToBuffer(this.stream)
+  async asBuffer(): Promise<Buffer> {
+    if (this.buffer) {
+      return this.buffer
     }
+    return streamToBuffer(this.stream)
+  }
 
-    asStream(): Readable {
-        if (this.stream) {
-            return this.stream
-        }
-        return bufferToStream(this.buffer)
+  asStream(): Readable {
+    if (this.stream) {
+      return this.stream
     }
+    return bufferToStream(this.buffer)
+  }
 
-    getLength(): number | undefined {
-        return this.length;
-    }
+  getLength(): number | undefined {
+    return this.length
+  }
 }
 
 export function bufferToStream(buffer): Readable {
-    let streamDuplex = new Duplex();
-    streamDuplex.push(buffer);
-    streamDuplex.push(null);
-    return streamDuplex;
+  let streamDuplex = new Duplex()
+  streamDuplex.push(buffer)
+  streamDuplex.push(null)
+  return streamDuplex
 }
 
 export function streamToBuffer(stream): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        let buffers: any[] = [];
-        stream.on('error', reject)
-        stream.on('data', (data) => buffers.push(data))
-        stream.on('end', () => resolve(Buffer.concat(buffers)))
-    });
+  return new Promise((resolve, reject) => {
+    let buffers: any[] = []
+    stream.on('error', reject)
+    stream.on('data', (data) => buffers.push(data))
+    stream.on('end', () => resolve(Buffer.concat(buffers)))
+  })
 }

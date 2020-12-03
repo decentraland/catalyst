@@ -6,7 +6,9 @@
         "dist/**/*": true
     },
     "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.formatOnSave": true,
     "cSpell.words": [
         "Ethereum"
-    ]
+    ],
+    "editor.rulers": [120]
 }

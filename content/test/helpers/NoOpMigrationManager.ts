@@ -1,13 +1,12 @@
-import { MigrationManager } from "@katalyst/content/migrations/MigrationManager";
+import { MigrationManager } from '@katalyst/content/migrations/MigrationManager'
 
 export class NoOpMigrationManager extends MigrationManager {
+  constructor() {
+    super({})
+  }
 
-    constructor() {
-        super({})
-    }
-
-    // No nothing
-    run(): Promise<void> {
-        return Promise.resolve()
-    }
+  // No nothing
+  run(): Promise<void> {
+    return Promise.resolve()
+  }
 }

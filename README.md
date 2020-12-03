@@ -8,7 +8,6 @@ A Catalyst is a server that runs different services. These services currently wo
 
 If you just want to run a Catalyst server, please check the [Catalyst Owner](https://github.com/decentraland/catalyst-owner) repository. This repository is mostly used for developing.
 
-
 ## Services
 
 - [Content Server](content)
@@ -17,3 +16,7 @@ If you just want to run a Catalyst server, please check the [Catalyst Owner](htt
 ## Monitoring
 
 For monitoring see [the following doc](docs/MONITORING.md)
+
+## Contributions
+
+If using Visual Studio, please download the `prettier` plugin: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode

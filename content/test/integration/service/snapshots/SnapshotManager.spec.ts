@@ -1,98 +1,100 @@
-import { EntityType, EntityId, Pointer } from "dcl-catalyst-commons";
-import { loadTestEnvironment } from "../../E2ETestEnvironment";
-import { MetaverseContentService } from "@katalyst/content/service/Service";
-import { EnvironmentBuilder, Bean, EnvironmentConfig } from "@katalyst/content/Environment";
-import { NoOpValidations } from "@katalyst/test-helpers/service/validations/NoOpValidations";
-import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from "../../E2ETestUtils";
-import { SnapshotManager, SnapshotMetadata } from "@katalyst/content/service/snapshots/SnapshotManager";
+import { EntityType, EntityId, Pointer } from 'dcl-catalyst-commons'
+import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { MetaverseContentService } from '@katalyst/content/service/Service'
+import { EnvironmentBuilder, Bean, EnvironmentConfig } from '@katalyst/content/Environment'
+import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from '../../E2ETestUtils'
+import { SnapshotManager, SnapshotMetadata } from '@katalyst/content/service/snapshots/SnapshotManager'
 
-describe("Integration - Snapshot Manager", () => {
+describe('Integration - Snapshot Manager', () => {
+  const P1 = 'X1,Y1',
+    P2 = 'X2,Y2'
+  let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
-    const P1 = "X1,Y1", P2 = "X2,Y2"
-    let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
+  const testEnv = loadTestEnvironment()
+  let service: MetaverseContentService
+  let snapshotManager: SnapshotManager
 
-    const testEnv = loadTestEnvironment()
-    let service: MetaverseContentService
-    let snapshotManager: SnapshotManager
+  beforeAll(async () => {
+    E1 = await buildDeployData([P1], { type: EntityType.SCENE })
+    E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE })
+    ;(E3 = await buildDeployDataAfterEntity(E2, [P1])), { type: EntityType.SCENE }
+  })
 
-    beforeAll(async () => {
-        E1 = await buildDeployData([P1], { type: EntityType.SCENE })
-        E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE });
-        E3 = await buildDeployDataAfterEntity(E2, [P1]), { type: EntityType.SCENE };
-    })
+  beforeEach(async () => {
+    const baseEnv = await testEnv.getEnvForNewDatabase()
+    const env = await new EnvironmentBuilder(baseEnv)
+      .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
+      .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
+      .withBean(Bean.VALIDATIONS, new NoOpValidations())
+      .build()
 
-    beforeEach(async () => {
-        const baseEnv = await testEnv.getEnvForNewDatabase()
-        const env = await new EnvironmentBuilder(baseEnv)
-            .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
-            .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
-            .withBean(Bean.VALIDATIONS, new NoOpValidations())
-            .build()
+    service = env.getBean(Bean.SERVICE)
+    snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
+  })
 
-        service = env.getBean(Bean.SERVICE)
-        snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
-    })
+  it(`When snapshot manager starts, then a snapshot is generated if there wasn't one`, async () => {
+    // Deploy E1 and E2
+    const lastDeploymentTimestamp = await deployEntitiesCombo(service, E1, E2)
 
-    it(`When snapshot manager starts, then a snapshot is generated if there wasn't one`, async () => {
-        // Deploy E1 and E2
-        const lastDeploymentTimestamp = await deployEntitiesCombo(service, E1, E2)
+    // Assert there is no snapshot
+    expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
 
-        // Assert there is no snapshot
-        expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
+    // Start the snapshot manager
+    await snapshotManager.start()
 
-        // Start the snapshot manager
-        await snapshotManager.start()
+    // Assert snapshot was created
+    const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
+    expect(snapshotMetadata).toBeDefined()
+    expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
 
-        // Assert snapshot was created
-        const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
-        expect(snapshotMetadata).toBeDefined()
-        expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    // Assert snapshot content is correct
+    await assertSnapshotContains(snapshotMetadata, E1, E2)
+  })
 
-        // Assert snapshot content is correct
-        await assertSnapshotContains(snapshotMetadata, E1, E2)
-    })
+  it(`When snapshot manager starts, if there were no entities deployed, then the generated snapshot is empty`, async () => {
+    // Assert there is no snapshot
+    expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
 
-    it(`When snapshot manager starts, if there were no entities deployed, then the generated snapshot is empty`, async () => {
-        // Assert there is no snapshot
-        expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
+    // Start the snapshot manager
+    await snapshotManager.start()
 
-        // Start the snapshot manager
-        await snapshotManager.start()
+    // Assert snapshot was created
+    const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
+    expect(snapshotMetadata).toBeDefined()
+    expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(0)
 
-        // Assert snapshot was created
-        const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
-        expect(snapshotMetadata).toBeDefined()
-        expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(0)
+    // Assert snapshot content is empty
+    await assertSnapshotContains(snapshotMetadata)
+  })
 
-        // Assert snapshot content is empty
-        await assertSnapshotContains(snapshotMetadata)
-    })
+  it(`When snapshot manager learns that the frequency of deployments is reached, then a new snapshot is generated`, async () => {
+    // Start the snapshot manager
+    await snapshotManager.start()
 
-    it(`When snapshot manager learns that the frequency of deployments is reached, then a new snapshot is generated`, async () => {
-        // Start the snapshot manager
-        await snapshotManager.start()
+    // Deploy E1, E2 and E3
+    const lastDeploymentTimestamp = await deployEntitiesCombo(service, E1, E2, E3)
 
-        // Deploy E1, E2 and E3
-        const lastDeploymentTimestamp = await deployEntitiesCombo(service, E1, E2, E3)
+    // Assert snapshot was created
+    const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
+    expect(snapshotMetadata).toBeDefined()
+    expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
 
-        // Assert snapshot was created
-        const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
-        expect(snapshotMetadata).toBeDefined()
-        expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    // Assert snapshot content is empty
+    await assertSnapshotContains(snapshotMetadata, E2, E3)
+  })
 
-        // Assert snapshot content is empty
-        await assertSnapshotContains(snapshotMetadata, E2, E3)
-    })
-
-    async function assertSnapshotContains(snapshotMetadata: SnapshotMetadata | undefined, ...entitiesCombo: EntityCombo[]) {
-        const { hash } = snapshotMetadata!!
-        const content = (await service.getContent(hash))!!
-        const buffer = await content.asBuffer()
-        const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
-        expect(snapshot.size).toBe(entitiesCombo.length)
-        for (const { entity } of entitiesCombo) {
-            expect(snapshot.get(entity.id)).toEqual(entity.pointers)
-        }
+  async function assertSnapshotContains(
+    snapshotMetadata: SnapshotMetadata | undefined,
+    ...entitiesCombo: EntityCombo[]
+  ) {
+    const { hash } = snapshotMetadata!!
+    const content = (await service.getContent(hash))!!
+    const buffer = await content.asBuffer()
+    const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
+    expect(snapshot.size).toBe(entitiesCombo.length)
+    for (const { entity } of entitiesCombo) {
+      expect(snapshot.get(entity.id)).toEqual(entity.pointers)
     }
-
+  }
 })

@@ -13,7 +13,7 @@ export function Scenes(props: ServerAware) {
     <div>
       {data && (
         <SceneGrid
-          { ...props }
+          {...props}
           scenes={data.events
             .filter((_: any) => _.entityType === 'scene')
             .slice(0, 10)

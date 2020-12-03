@@ -1,176 +1,176 @@
-import { requireAll, validatePeerToken, requireOneOf } from "../src/handlers";
+import { requireAll, validatePeerToken, requireOneOf } from '../src/handlers'
 
-describe("require parameters", () => {
-  let request: any;
-  let response: any;
-  let next: any;
+describe('require parameters', () => {
+  let request: any
+  let response: any
+  let next: any
 
   beforeEach(() => {
     request = {
       body: {}
-    };
+    }
 
-    response = createResponse();
+    response = createResponse()
 
-    next = jasmine.createSpy();
-  });
+    next = jasmine.createSpy()
+  })
 
-  describe("requireAll", () => {
-    it("should respond 400 when parameters are missing", () => {
-      const handler = requireAll(["name", "age"], (req, res) => req.body);
+  describe('requireAll', () => {
+    it('should respond 400 when parameters are missing', () => {
+      const handler = requireAll(['name', 'age'], (req, res) => req.body)
 
-      handler(request, response, next);
+      handler(request, response, next)
 
-      expectMissingParameters(response, "name, age", next);
-    });
+      expectMissingParameters(response, 'name, age', next)
+    })
 
-    it("should respond 400 when some parameters are missing", () => {
-      const handler = requireAll(["name", "age", "surname"], (req, res) => req.body);
+    it('should respond 400 when some parameters are missing', () => {
+      const handler = requireAll(['name', 'age', 'surname'], (req, res) => req.body)
 
-      request.body = { name: "pepe" };
+      request.body = { name: 'pepe' }
 
-      handler(request, response, next);
+      handler(request, response, next)
 
-      expectMissingParameters(response, "age, surname", next);
-    });
+      expectMissingParameters(response, 'age, surname', next)
+    })
 
-    it("should work when all parameters are provided", () => {
-      const handler = requireAll(["name", "age"], (req, res) => req.body);
+    it('should work when all parameters are provided', () => {
+      const handler = requireAll(['name', 'age'], (req, res) => req.body)
 
-      request.body = { name: "pepe", age: 33 };
+      request.body = { name: 'pepe', age: 33 }
 
-      handler(request, response, next);
+      handler(request, response, next)
 
-      expect(next).toHaveBeenCalled();
-    });
+      expect(next).toHaveBeenCalled()
+    })
 
     function expectMissingParameters(response: any, parameters: string, next: any) {
-      expectBadRequest(response, `Missing required parameters: ${parameters}`, next);
+      expectBadRequest(response, `Missing required parameters: ${parameters}`, next)
     }
-  });
+  })
 
-  describe("requireOneOf", () => {
-    it("should respond 400 when all parameters are missing", () => {
-      const handler = requireOneOf(["id", "userId"], (req, res) => req.body);
+  describe('requireOneOf', () => {
+    it('should respond 400 when all parameters are missing', () => {
+      const handler = requireOneOf(['id', 'userId'], (req, res) => req.body)
 
-      handler(request, response, next);
+      handler(request, response, next)
 
-      expectRequireOneOf(response, "id, userId", next);
-    });
+      expectRequireOneOf(response, 'id, userId', next)
+    })
 
-    it("should respond ok when any of the parameters is included", () => {
-      const handler = requireOneOf(["id", "userId"], (req, res) => req.body);
+    it('should respond ok when any of the parameters is included', () => {
+      const handler = requireOneOf(['id', 'userId'], (req, res) => req.body)
 
-      request.body = { id: "id" };
-      handler(request, response, next);
-      expect(next).toHaveBeenCalled();
+      request.body = { id: 'id' }
+      handler(request, response, next)
+      expect(next).toHaveBeenCalled()
 
-      next = jasmine.createSpy();
-      request.body = { userId: "userId" };
-      handler(request, response, next);
-      expect(next).toHaveBeenCalled();
-    });
+      next = jasmine.createSpy()
+      request.body = { userId: 'userId' }
+      handler(request, response, next)
+      expect(next).toHaveBeenCalled()
+    })
 
     function expectRequireOneOf(response: any, parameters: string, next: any) {
-      expectBadRequest(response, `Missing required parameters: Must have at least one of ${parameters}`, next);
+      expectBadRequest(response, `Missing required parameters: Must have at least one of ${parameters}`, next)
     }
-  });
+  })
 
   function expectBadRequest(response: any, message: string, next: any) {
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(400)
     expect(response.sent).toEqual({
-      status: "bad-request",
+      status: 'bad-request',
       message
-    });
-    expect(next).not.toHaveBeenCalled();
+    })
+    expect(next).not.toHaveBeenCalled()
   }
-});
+})
 
-describe("Validate token", () => {
-  let request: any;
-  let response: any;
-  let realm: any;
-  let next: any;
-  let authenticated: boolean = true;
+describe('Validate token', () => {
+  let request: any
+  let response: any
+  let realm: any
+  let next: any
+  let authenticated: boolean = true
 
-  const validToken = "valid-token";
+  const validToken = 'valid-token'
 
   beforeEach(() => {
-    authenticated = true;
+    authenticated = true
     request = {
       header(header: string) {
-        return this._token;
+        return this._token
       },
-      body: { userId: "userId" }
-    };
-    response = createResponse();
+      body: { userId: 'userId' }
+    }
+    response = createResponse()
     realm = {
       getClientById(id) {
         return {
           getToken: () => validToken,
           isAuthenticated: () => authenticated
-        };
+        }
       }
-    };
-    next = jasmine.createSpy();
-  });
+    }
+    next = jasmine.createSpy()
+  })
 
-  it("should reject when no token is provided", () => {
-    const handler = validatePeerToken(() => realm);
+  it('should reject when no token is provided', () => {
+    const handler = validatePeerToken(() => realm)
 
-    handler(request, response, next);
+    handler(request, response, next)
 
-    expectInvalidToken(response);
-  });
+    expectInvalidToken(response)
+  })
 
-  it("should reject when the token is not the one in the realm", () => {
-    const handler = validatePeerToken(() => realm);
+  it('should reject when the token is not the one in the realm', () => {
+    const handler = validatePeerToken(() => realm)
 
-    request._token = "not-valid-token";
+    request._token = 'not-valid-token'
 
-    handler(request, response, next);
+    handler(request, response, next)
 
-    expectInvalidToken(response);
-  });
+    expectInvalidToken(response)
+  })
 
-  it("should allow when the token is the one in the realm", () => {
-    const handler = validatePeerToken(() => realm);
+  it('should allow when the token is the one in the realm', () => {
+    const handler = validatePeerToken(() => realm)
 
-    request._token = validToken;
+    request._token = validToken
 
-    handler(request, response, next);
+    handler(request, response, next)
 
-    expect(next).toHaveBeenCalled();
-  });
+    expect(next).toHaveBeenCalled()
+  })
 
-  it("should reject when the user is not authenticated", () => {
-    const handler = validatePeerToken(() => realm);
+  it('should reject when the user is not authenticated', () => {
+    const handler = validatePeerToken(() => realm)
 
-    request._token = validToken;
+    request._token = validToken
 
-    authenticated = false;
+    authenticated = false
 
-    handler(request, response, next);
+    handler(request, response, next)
 
-    expectInvalidToken(response);
-  });
+    expectInvalidToken(response)
+  })
 
   function expectInvalidToken(response: any) {
-    expect(response.statusCode).toBe(401);
-    expect(response.sent).toEqual({ status: "unauthorized" });
-    expect(next).not.toHaveBeenCalled();
+    expect(response.statusCode).toBe(401)
+    expect(response.sent).toEqual({ status: 'unauthorized' })
+    expect(next).not.toHaveBeenCalled()
   }
-});
+})
 
 function createResponse(): any {
   return {
     status(code: number) {
-      this.statusCode = code;
-      return this;
+      this.statusCode = code
+      return this
     },
     send(obj: any) {
-      this.sent = obj;
-      return this;
+      this.sent = obj
+      return this
     }
-  };
+  }
 }

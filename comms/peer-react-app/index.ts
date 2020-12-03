@@ -1,3 +1,3 @@
-import renderApp from "./App";
+import renderApp from './App'
 
-renderApp();
+renderApp()
