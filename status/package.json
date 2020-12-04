@@ -41,9 +41,6 @@
     "eject": "react-scripts eject",
     "contracts": "web3x-codegen"
   },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
   "prettier": {
     "printWidth": 120,
     "singleQuote": true,

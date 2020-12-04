@@ -2,7 +2,7 @@ version: 2.1
 
 commands:
   update_node_version:
-    description: "A very simple command to update the node version"
+    description: 'A very simple command to update the node version'
     steps:
       - run:
           name: Link nvm
@@ -60,6 +60,8 @@ jobs:
             - v1-dependencies-{{ checksum "package.json" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
+
+      - run: yarn lint:check
 
       - run: yarn install
 

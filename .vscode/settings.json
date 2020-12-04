@@ -10,5 +10,14 @@
     "cSpell.words": [
         "Ethereum"
     ],
-    "editor.rulers": [120]
+    "editor.rulers": [120],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "eslint.validate": [
+        "typescript"
+    ],
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
 }

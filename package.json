@@ -32,7 +32,12 @@
     "@types/web3": "^1.2.2",
     "@types/ws": "^6.0.4",
     "@types/yargs": "^13.0.3",
+    "@typescript-eslint/eslint-plugin": "^4.9.0",
+    "@typescript-eslint/parser": "^4.9.0",
     "@wessberg/rollup-plugin-ts": "^1.1.83",
+    "eslint": "^7.14.0",
+    "eslint-config-prettier": "^6.15.0",
+    "eslint-plugin-prettier": "^3.2.0",
     "jasmine": "^3.5.0",
     "jasmine-core": "^3.5.0",
     "karma": "^4.4.1",
@@ -43,7 +48,7 @@
     "karma-requirejs": "^1.1.0",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-spec-reporter": "^0.0.32",
-    "prettier": "^2.2.0",
+    "prettier": "^2.2.1",
     "protobufjs": "^6.8.8",
     "puppeteer": "^2.0.0",
     "requirejs": "^2.3.6",
@@ -56,8 +61,6 @@
     "tree-kill": "^1.2.2",
     "ts-proto": "^1.8.0",
     "ts-protoc-gen": "^0.12.0",
-    "tslint": "^6.0.0",
-    "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.7.2",
     "web3x-codegen": "^4.0.6",
     "yargs": "^15.0.2"
@@ -69,8 +72,8 @@
     "trailingComma": "none"
   },
   "lint-staged": {
-    "**/*.{ts,tsx}": [
-      "yarn prettier --write"
+    "**/*.{js,ts,tsx}": [
+      "yarn lint:fix"
     ]
   },
   "husky": {
@@ -83,11 +86,11 @@
     "startServer": "yarn ibazel run comms/lighthouse:server",
     "startContentServer": "yarn ibazel run content:server",
     "startLambdasServer": "yarn ibazel run lambdas:server",
-    "lint": "yarn tslint -c tslint.json --project tsconfig.json",
+    "lint:fix": "yarn eslint '**/*.{js,ts,tsx}' --quiet --fix",
+    "lint:check": "yarn eslint '**/*.{js,ts,tsx}' --quiet",
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "dependencies": {
-    "@jedmao/tslint": "^0.4.2",
     "@types/log4js": "^2.3.5",
     "@types/merge-stream": "^1.1.2",
     "@types/node-pg-migrate": "^2.3.1",
@@ -102,7 +105,6 @@
     "dcl-catalyst-client": "^3.0.0",
     "dcl-catalyst-commons": "^1.7.0",
     "dcl-crypto": "^2.3.0",
-    "dcl-tslint-config-standard": "^1.0.1",
     "decentraland-commons": "^5.2.0",
     "decentraland-ui": "^2.23.0",
     "eth-crypto": "^1.6.0",
