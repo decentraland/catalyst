@@ -75,6 +75,7 @@ jobs:
             - .
 
   linter:
+    <<: *base_env
     steps:
       - run: yarn lint:check
 
