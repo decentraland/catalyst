@@ -203,7 +203,7 @@ workflows:
       - build-peer:
           <<: *all_branches_and_tags
           requires:
-            - lint
+            - linter
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
@@ -215,11 +215,11 @@ workflows:
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
-            - lint
+            - linter
       - build-commons:
           <<: *all_branches_and_tags
           requires:
-            - lint
+            - linter
 
       # publish peer library
       - accept-publish-peer:
