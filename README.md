@@ -19,4 +19,7 @@ For monitoring see [the following doc](docs/MONITORING.md)
 
 ## Contributions
 
-If using Visual Studio, please download the `prettier` plugin: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
+If using Visual Studio, please download:
+
+- [`prettier` extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+- [`eslint` extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
