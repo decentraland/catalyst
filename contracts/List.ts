@@ -23,10 +23,10 @@ export type RecoverToVaultEvent = {
   token: Address
   amount: string
 }
-export interface AddEventLog extends EventLog<AddEvent, 'Add'> {}
-export interface RemoveEventLog extends EventLog<RemoveEvent, 'Remove'> {}
-export interface ScriptResultEventLog extends EventLog<ScriptResultEvent, 'ScriptResult'> {}
-export interface RecoverToVaultEventLog extends EventLog<RecoverToVaultEvent, 'RecoverToVault'> {}
+export type AddEventLog = EventLog<AddEvent, 'Add'>
+export type RemoveEventLog = EventLog<RemoveEvent, 'Remove'>
+export type ScriptResultEventLog = EventLog<ScriptResultEvent, 'ScriptResult'>
+export type RecoverToVaultEventLog = EventLog<RecoverToVaultEvent, 'RecoverToVault'>
 interface ListEvents {
   Add: EventSubscriptionFactory<AddEventLog>
   Remove: EventSubscriptionFactory<RemoveEventLog>
@@ -45,7 +45,7 @@ interface ListTxEventLogs {
   ScriptResult: ScriptResultEventLog[]
   RecoverToVault: RecoverToVaultEventLog[]
 }
-export interface ListTransactionReceipt extends TransactionReceipt<ListTxEventLogs> {}
+export type ListTransactionReceipt = TransactionReceipt<ListTxEventLogs>
 interface ListMethods {
   ADD_ROLE(): TxCall<string>
   name(): TxCall<string>

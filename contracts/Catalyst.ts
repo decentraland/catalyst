@@ -25,10 +25,10 @@ export type RecoverToVaultEvent = {
   token: Address
   amount: string
 }
-export interface AddCatalystEventLog extends EventLog<AddCatalystEvent, 'AddCatalyst'> {}
-export interface RemoveCatalystEventLog extends EventLog<RemoveCatalystEvent, 'RemoveCatalyst'> {}
-export interface ScriptResultEventLog extends EventLog<ScriptResultEvent, 'ScriptResult'> {}
-export interface RecoverToVaultEventLog extends EventLog<RecoverToVaultEvent, 'RecoverToVault'> {}
+export type AddCatalystEventLog = EventLog<AddCatalystEvent, 'AddCatalyst'>
+export type RemoveCatalystEventLog = EventLog<RemoveCatalystEvent, 'RemoveCatalyst'>
+export type ScriptResultEventLog = EventLog<ScriptResultEvent, 'ScriptResult'>
+export type RecoverToVaultEventLog = EventLog<RecoverToVaultEvent, 'RecoverToVault'>
 interface CatalystEvents {
   AddCatalyst: EventSubscriptionFactory<AddCatalystEventLog>
   RemoveCatalyst: EventSubscriptionFactory<RemoveCatalystEventLog>
@@ -47,7 +47,7 @@ interface CatalystTxEventLogs {
   ScriptResult: ScriptResultEventLog[]
   RecoverToVault: RecoverToVaultEventLog[]
 }
-export interface CatalystTransactionReceipt extends TransactionReceipt<CatalystTxEventLogs> {}
+export type CatalystTransactionReceipt = TransactionReceipt<CatalystTxEventLogs>
 interface CatalystMethods {
   owners(a0: Address): TxCall<boolean>
   hasInitialized(): TxCall<boolean>

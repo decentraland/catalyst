@@ -1,17 +1,17 @@
-const json = require("rollup-plugin-json");
-import npm from "@rollup/plugin-node-resolve";
-import ts from "@wessberg/rollup-plugin-ts";
-import commonjs from "@rollup/plugin-commonjs";
-import globals from "rollup-plugin-node-globals";
-import react from "react";
-import reactDom from "react-dom";
+require('rollup-plugin-json')
+import npm from '@rollup/plugin-node-resolve'
+import ts from '@wessberg/rollup-plugin-ts'
+import commonjs from '@rollup/plugin-commonjs'
+import globals from 'rollup-plugin-node-globals'
+import react from 'react'
+import reactDom from 'react-dom'
 
-const allExternals = [];
+const allExternals = []
 
 export default {
   external: allExternals,
   output: {
-    name: "bundle"
+    name: 'bundle'
   },
   plugins: [
     json(),
@@ -20,11 +20,11 @@ export default {
       browser: true,
       namedExports: {
         react: Object.keys(react),
-        "react-dom": Object.keys(reactDom)
+        'react-dom': Object.keys(reactDom)
       }
     }),
     globals(),
     ,
     ts({})
   ]
-};
+}

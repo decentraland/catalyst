@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { EventEmitter } from 'eventemitter3'
 import { util } from './util'
 import logger, { LogLevel } from './logger'

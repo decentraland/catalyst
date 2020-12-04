@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { RoomsService } from '../src/roomsService'
 import { IPeersService, NotificationType } from '../src/peersService'
 import { PeerRequest, PeerInfo } from '../src/types'

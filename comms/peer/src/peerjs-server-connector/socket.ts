@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { EventEmitter } from 'eventemitter3'
 import logger from './logger'
 import { SocketEventType, ServerMessageType } from './enums'

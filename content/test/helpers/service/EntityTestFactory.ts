@@ -25,7 +25,7 @@ export async function buildEntityAndFile(
 
 /** Build a file with the given entity as the content */
 export function entityToFile(entity: Entity, fileName?: string): ContentFile {
-  let copy: any = Object.assign({}, entity)
+  const copy: any = Object.assign({}, entity)
   copy.content =
     !copy.content || !(copy.content instanceof Map)
       ? copy.content

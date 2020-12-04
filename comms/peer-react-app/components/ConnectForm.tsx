@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useState, useEffect } from 'react'
 import { Field, Button } from 'decentraland-ui'
 
@@ -22,8 +23,8 @@ export function ConnectForm(props: {
     new (url: string, peerId: string, callback: any, config: any): IPeer
   }
 }) {
-  let [nickname, setNickname] = useState('')
-  let [room, setRoom] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [room, setRoom] = useState('')
   const [isLoading, setLoading] = useState(false)
   const [error, setError] = useState('')
 

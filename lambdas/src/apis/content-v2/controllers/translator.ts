@@ -119,7 +119,7 @@ export async function getInfo(fetcher: SmartContentServerFetcher, req: Request, 
   await fetch(v3Url)
     .then((response) => response.json())
     .then((entities: V3ControllerEntity[]) => {
-      let parcelInfoResult: ParcelInfoResult = { data: [] }
+      const parcelInfoResult: ParcelInfoResult = { data: [] }
       entities.forEach((entity: V3ControllerEntity) => {
         parcelInfoResult.data.push({
           root_cid: entity.id,

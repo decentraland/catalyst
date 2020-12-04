@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useState, useRef, useEffect } from 'react'
 import { IPeer } from '../../peer/src/types'
 import { Button, Radio } from 'decentraland-ui'

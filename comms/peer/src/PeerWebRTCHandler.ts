@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import EventEmitter from 'eventemitter3'
 import { ServerMessage } from './peerjs-server-connector/servermessage'
 import { LogLevel, ConnectedPeerData, WebRTCProvider, ValidationResult } from './types'

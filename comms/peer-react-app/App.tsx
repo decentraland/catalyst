@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // currently third part packages frmo npm are not available due to issue:
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -10,10 +11,10 @@ import { Chat } from './components/Chat'
 type ScreenEnum = 'connect' | 'chat'
 
 class App extends React.Component<
-  {},
+  unknown,
   { screen: ScreenEnum; peer?: IPeer; room?: string; url?: string; layer?: string }
 > {
-  constructor(props: {}) {
+  constructor(props: unknown) {
     super(props)
     this.state = { screen: 'connect' }
   }

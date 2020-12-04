@@ -147,7 +147,7 @@ export class EventDeployer {
 
   private async filterOutKnownFiles(hashes: ContentFileHash[]): Promise<ContentFileHash[]> {
     // Check if we already have any of the files
-    const availableContent: Map<ContentFileHash, Boolean> = await this.service.isContentAvailable(hashes)
+    const availableContent: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(hashes)
 
     // Filter out files that we already have
     return Array.from(availableContent.entries())

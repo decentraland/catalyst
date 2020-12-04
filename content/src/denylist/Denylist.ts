@@ -74,7 +74,7 @@ export class Denylist {
       if (!result.has(type)) {
         result.set(type, new Map())
       }
-      result.get(type)!!.set(id, isDenylisted)
+      result.get(type)!.set(id, isDenylisted)
     })
 
     return result

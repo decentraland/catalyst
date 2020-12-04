@@ -68,7 +68,7 @@ describe('End 2 end - Denylist handling', () => {
       metadata: 'metadata',
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const contentHash: ContentFileHash = entityBeingDeployed.content!![0].hash
+    const contentHash: ContentFileHash = entityBeingDeployed.content![0].hash
 
     // Deploy the entity
     await server1.deploy(deployData)
@@ -140,7 +140,7 @@ describe('End 2 end - Denylist handling', () => {
       metadata: 'metadata',
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const contentHash: ContentFileHash = entityBeingDeployed.content!![0].hash
+    const contentHash: ContentFileHash = entityBeingDeployed.content![0].hash
 
     // Deploy the entity
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)

@@ -11,7 +11,7 @@ import { Deployment } from '@katalyst/content/service/deployments/DeploymentMana
 
 describe('Validations', function () {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
-    let entity = buildEntity({
+    const entity = buildEntity({
       content: new Map([
         ['name-1', 'hash-1'],
         ['name-2', 'hash-2']
@@ -192,7 +192,7 @@ describe('Validations', function () {
   })
 
   it(`When a non available hash is referenced, it is reported`, () => {
-    let entity = buildEntity({
+    const entity = buildEntity({
       content: new Map([
         ['name-1', 'hash-1'],
         ['name-2', 'hash-2']
@@ -206,7 +206,7 @@ describe('Validations', function () {
   })
 
   it(`When a hash is uploaded but not referenced, it is reported`, () => {
-    let entity = buildEntity({ content: new Map([['name-1', 'hash-1']]) })
+    const entity = buildEntity({ content: new Map([['name-1', 'hash-1']]) })
     const validation = getValidatorWithMockedAccess()
     validation.validateContent(
       entity,
@@ -223,8 +223,8 @@ describe('Validations', function () {
   })
 
   it(`Already available but not referenced hashes are not reported`, () => {
-    let entity = buildEntity()
-    let validation = getValidatorWithMockedAccess()
+    const entity = buildEntity()
+    const validation = getValidatorWithMockedAccess()
     validation.validateContent(
       entity,
       new Map([['hash-1', { name: 'name-1', content: Buffer.from([]) }]]),
@@ -266,7 +266,7 @@ describe('Validations', function () {
 
   it(`signature test on human readable message 2`, async () => {
     const identity = EthCrypto.createIdentity()
-    let expiration = new Date()
+    const expiration = new Date()
     expiration.setMinutes(expiration.getMinutes() + 30)
 
     const message = `Decentraland Login\nEphemeral address: ${identity.address}\nExpiration: ${expiration}`

@@ -30,7 +30,7 @@ describe('End 2 end - Node onboarding', function () {
       metadata: 'metadata',
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const entity1ContentHash: ContentFileHash = entity1.content!![0].hash
+    const entity1ContentHash: ContentFileHash = entity1.content![0].hash
     const { deployData: deployData2, controllerEntity: entity2 } = await buildDeployDataAfterEntity(
       entity1,
       ['X2,Y2'],
@@ -76,7 +76,7 @@ describe('End 2 end - Node onboarding', function () {
       metadata: 'metadata',
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const entityContentHash: ContentFileHash = entity.content!![0].hash
+    const entityContentHash: ContentFileHash = entity.content![0].hash
 
     // Deploy entity on server 1
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)

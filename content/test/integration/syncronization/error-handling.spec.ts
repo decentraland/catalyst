@@ -23,7 +23,7 @@ describe('End 2 end - Error handling', () => {
   const identity = createIdentity()
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer
-  let accessChecker = new MockedAccessChecker()
+  const accessChecker = new MockedAccessChecker()
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv
@@ -39,7 +39,7 @@ describe('End 2 end - Error handling', () => {
   })
 
   it(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    await runTest(FailureReason.FETCH_PROBLEM, (entity) => server1.denylistContent(entity.content!![0].hash, identity))
+    await runTest(FailureReason.FETCH_PROBLEM, (entity) => server1.denylistContent(entity.content![0].hash, identity))
   })
 
   it(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
@@ -65,7 +65,7 @@ describe('End 2 end - Error handling', () => {
       metadata: 'metadata',
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const entity1Content = entityBeingDeployed1.content!![0].hash
+    const entity1Content = entityBeingDeployed1.content![0].hash
 
     // Deploy entity 1
     await server1.deploy(deployData1)

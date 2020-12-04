@@ -52,7 +52,7 @@ export class SimpleContentItem implements ContentItem {
 }
 
 export function bufferToStream(buffer): Readable {
-  let streamDuplex = new Duplex()
+  const streamDuplex = new Duplex()
   streamDuplex.push(buffer)
   streamDuplex.push(null)
   return streamDuplex
@@ -60,7 +60,7 @@ export function bufferToStream(buffer): Readable {
 
 export function streamToBuffer(stream): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    let buffers: any[] = []
+    const buffers: any[] = []
     stream.on('error', reject)
     stream.on('data', (data) => buffers.push(data))
     stream.on('end', () => resolve(Buffer.concat(buffers)))

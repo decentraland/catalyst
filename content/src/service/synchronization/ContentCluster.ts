@@ -160,7 +160,7 @@ export class ContentCluster implements IdentityProvider {
         const challengeResults = await Promise.all(challenges)
         challengeResults
           .filter(({ challengeText }) => !!challengeText)
-          .forEach(({ address, challengeText }) => challengesByAddress.set(address, challengeText!!))
+          .forEach(({ address, challengeText }) => challengesByAddress.set(address, challengeText!))
 
         // Check if I was any of the servers who responded
         const serversWithMyChallengeText = Array.from(challengesByAddress.entries()).filter(([, challengeText]) =>
@@ -171,7 +171,7 @@ export class ContentCluster implements IdentityProvider {
           const [address] = serversWithMyChallengeText[0]
           const name = encodeURIComponent(address)
           this.myIdentity = {
-            ...serversByAddresses.get(address)!!,
+            ...serversByAddresses.get(address)!,
             name
           }
           ContentCluster.LOGGER.info(`Calculated my identity. My address is ${address} and my name is '${name}'`)

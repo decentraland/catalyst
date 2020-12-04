@@ -87,11 +87,11 @@ describe('End 2 end deploy test', () => {
     expect(scene.pointers[1]).toBe('0,1')
 
     expect(scene.content).toBeDefined()
-    expect(scene.content!!.length).toBe(2)
+    expect(scene.content!.length).toBe(2)
     expect(findInArray(scene.content, Array.from(deployData.files.values())[0].name)).toBeDefined()
     expect(findInArray(scene.content, Array.from(deployData.files.values())[1].name)).toBeDefined()
 
-    for (const contentElement of scene.content!!) {
+    for (const contentElement of scene.content!) {
       const downloadedContent = await server.downloadContent(contentElement.hash)
       expect(downloadedContent).toEqual(
         findInFileArray(Array.from(deployData.files.values()), contentElement.file)?.content ?? Buffer.from([])

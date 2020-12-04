@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import fs from 'fs'
 import os from 'os'
 import { future, IFuture } from 'fp-future'

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Request, Response, NextFunction, RequestHandler } from 'express-serve-static-core'
 import { IRealm } from 'peerjs-server'
 import { ReadyStateService } from './readyStateService'

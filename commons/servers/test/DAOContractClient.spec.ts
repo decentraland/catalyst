@@ -94,7 +94,7 @@ describe('DAOContractClient', () => {
     when(mockedContract.getCount()).thenReturn(Promise.resolve(servers.length))
     when(mockedContract.getCatalystIdByIndex(anyNumber())).thenCall((index) => Promise.resolve(servers[index][0]))
     when(mockedContract.getServerData(anyString())).thenCall((id) =>
-      Promise.resolve(servers.find(([catalystId]) => catalystId === id)!![1])
+      Promise.resolve(servers.find(([catalystId]) => catalystId === id)![1])
     )
     return [mockedContract, instance(mockedContract)]
   }

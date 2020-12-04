@@ -46,7 +46,7 @@ describe('ContentStorage', () => {
   it(`When content is deleted, then it is no longer available`, async function () {
     await storage.store(id, fromBuffer(content))
 
-    var exists = await storage.exist([id])
+    let exists = await storage.exist([id])
     expect(exists.get(id)).toBe(true)
 
     await storage.delete([id])

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { spawn, ChildProcess } from 'child_process'
 import puppeteer, { Browser } from 'puppeteer'
 import treekill from 'tree-kill'

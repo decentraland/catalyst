@@ -9,9 +9,9 @@ xdescribe('S3ContentStorage', () => {
   let id: string
   let content: Buffer
 
-  let accessKeyId: string = '***REMOVED***'
-  let secretAccessKey: string = '***REMOVED***'
-  let bucket: string = 'marcosnc.decentraland.zone'
+  const accessKeyId: string = '***REMOVED***'
+  const secretAccessKey: string = '***REMOVED***'
+  const bucket: string = 'marcosnc.decentraland.zone'
 
   beforeAll(async () => {
     await deleteAllInsideBucket()
@@ -94,7 +94,7 @@ xdescribe('S3ContentStorage', () => {
   it(`When content is deleted, then it is no longer available`, async function () {
     await storage.store(id, fromBuffer(content))
 
-    var exists = await storage.exist([id])
+    let exists = await storage.exist([id])
     expect(exists.get(id)).toBe(true)
 
     await storage.delete([id])
