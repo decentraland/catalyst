@@ -193,11 +193,16 @@ workflows:
       - checkout:
           <<: *all_branches_and_tags
 
+      - lint:
+          <<: *all_branches_and_tags
+          requires:
+            - checkout
+
       # build packages
       - build-peer:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - lint
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
@@ -209,11 +214,11 @@ workflows:
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - lint
       - build-commons:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - lint
 
       # publish peer library
       - accept-publish-peer:
