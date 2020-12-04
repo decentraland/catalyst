@@ -1,2 +1,3 @@
+ # We need to skip that file as it makes eslint to hang
 comms/peer/src/Peer.ts
 status/**/*

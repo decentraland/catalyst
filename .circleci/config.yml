@@ -61,8 +61,6 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
-      - run: yarn lint:check
-
       - run: yarn install
 
       - save_cache:
@@ -75,6 +73,10 @@ jobs:
           root: *workspace_root
           paths:
             - .
+
+  linter:
+    steps:
+      - run: yarn lint:check
 
   build-lighthouse:
     <<: *base_env
