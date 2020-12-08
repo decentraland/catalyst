@@ -23,14 +23,11 @@ export class SegmentIoAnalytics {
   }
 
   private reportDeployment(entity: Entity, ethAddress: EthAddress, origin: string): void {
-    this.segmentClient.track(
-      SegmentIoAnalytics.createRecordEvent(entity, ethAddress, origin),
-      (err: Error, data: any) => {
-        if (err) {
-          SegmentIoAnalytics.LOGGER.warn(`There was an error while reporting metrics: ${err.message}`)
-        }
+    this.segmentClient.track(SegmentIoAnalytics.createRecordEvent(entity, ethAddress, origin), (err: Error) => {
+      if (err) {
+        SegmentIoAnalytics.LOGGER.warn(`There was an error while reporting metrics: ${err.message}`)
       }
-    )
+    })
   }
 
   private static createRecordEvent(entity: Entity, ethAddress: EthAddress, origin: string): any {
@@ -40,13 +37,6 @@ export class SegmentIoAnalytics {
       properties: {
         type: entity.type,
         cid: entity.id,
-        pointers: entity.pointers,
-        files: Array.from(entity.content?.entries() || []).map((entry) => {
-          return {
-            path: entry[0],
-            cid: entry[1]
-          }
-        }),
         origin: origin
       }
     }
