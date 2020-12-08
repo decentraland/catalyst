@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { PeerHeaders } from './peerjs-server-connector/enums'
 
 interface PeerRequestInit extends RequestInit {

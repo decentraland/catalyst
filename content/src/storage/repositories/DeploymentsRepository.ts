@@ -68,7 +68,7 @@ export class DeploymentsRepository {
             FROM deployments AS dep1
             LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
 
-    let whereClause: string[] = []
+    const whereClause: string[] = []
 
     const values: any = {
       timestampField,

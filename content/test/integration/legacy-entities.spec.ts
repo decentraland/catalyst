@@ -66,6 +66,7 @@ describe('End 2 end - Legacy Entities', () => {
 async function deployLegacy(server: TestServer, deployData: DeployData) {
   const form = new FormData()
   form.append('entityId', deployData.entityId)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   addModelToFormData(deployData.authChain, form, 'authChain')
   form.append('version', 'v2')

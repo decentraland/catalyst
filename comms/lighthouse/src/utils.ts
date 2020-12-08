@@ -15,7 +15,7 @@ export function removePeerAndNotify<T extends PeerContainer>(
   peersService?: IPeersService,
   deleteIfEmpty: boolean = true
 ): T {
-  let container = containers[containerId]
+  const container = containers[containerId]
   if (container) {
     const index = container.peers.indexOf(peerId)
     if (index !== -1) {

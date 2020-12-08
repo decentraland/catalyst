@@ -198,7 +198,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             transaction.failedDeployments,
             entity.type,
             entity.id
-          ))!!
+          ))!
           auditInfoComplete = {
             ...auditInfo,
             originTimestamp: failedDeployment.originTimestamp,
@@ -277,7 +277,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       throw error
     } finally {
       // Update the current list of pointers being deployed
-      const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!!
+      const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
       entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
     }
   }
@@ -319,7 +319,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   private storeEntityContent(
     hashes: Map<ContentFileHash, ContentFile>,
-    alreadyStoredHashes: Map<ContentFileHash, Boolean>
+    alreadyStoredHashes: Map<ContentFileHash, boolean>
   ): Promise<any> {
     // If entity was committed, then store all it's content (that isn't already stored)
     const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
@@ -437,7 +437,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   private async isEntityAlreadyDeployed(entityId: EntityId, transaction: RepositoryTask): Promise<boolean> {
     const result = await this.areEntitiesAlreadyDeployed([entityId], transaction)
-    return result.get(entityId)!!
+    return result.get(entityId)!
   }
 
   private getOwnName(): ServerName {

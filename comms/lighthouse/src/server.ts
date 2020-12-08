@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import cors from 'cors'
 import express from 'express'
 import morgan from 'morgan'

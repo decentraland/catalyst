@@ -106,7 +106,7 @@ describe('Integration - Denylist', () => {
       metadata,
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const contentHash = entityBeingDeployed.content!![0].hash
+    const contentHash = entityBeingDeployed.content![0].hash
 
     // Deploy the entity
     await server.deploy(deployData)
@@ -189,7 +189,7 @@ describe('Integration - Denylist', () => {
       metadata,
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const contentHash = entityBeingDeployed.content!![0].hash
+    const contentHash = entityBeingDeployed.content![0].hash
 
     // Deploy the entity
     await server.deploy(deployData)
@@ -218,7 +218,7 @@ describe('Integration - Denylist', () => {
       metadata,
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
-    const contentHash = entityBeingDeployed.content!![0].hash
+    const contentHash = entityBeingDeployed.content![0].hash
 
     // Deploy the entity
     await server.deploy(deployData)

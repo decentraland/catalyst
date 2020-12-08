@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Peer } from '../src/Peer'
 import { MinPeerData, PacketCallback, PeerConfig } from '../src/types'
 import { SocketType } from '../src/peerjs-server-connector/socket'
@@ -9,7 +10,7 @@ import { Position3D } from '../src'
 import { PEER_CONSTANTS } from '../src/constants'
 import { TimeKeeper } from '../src/TimeKeeper'
 
-declare var global: any
+declare let global: any
 
 const oldFetch = fetch
 const globalScope: any = typeof window === 'undefined' ? global : window
@@ -678,7 +679,7 @@ describe('Peer Integration Test', function () {
   })
 
   it('retries connection when disconnected', async () => {
-    let sockets: SocketMock[] = []
+    const sockets: SocketMock[] = []
 
     const peer = new Peer(DEFAULT_LIGHTHOUSE, undefined, messageHandler, {
       socketBuilder: () => {

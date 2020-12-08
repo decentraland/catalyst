@@ -2,7 +2,7 @@ version: 2.1
 
 commands:
   update_node_version:
-    description: "A very simple command to update the node version"
+    description: 'A very simple command to update the node version'
     steps:
       - run:
           name: Link nvm
@@ -73,6 +73,12 @@ jobs:
           root: *workspace_root
           paths:
             - .
+
+  linter:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run: yarn lint:check
 
   build-lighthouse:
     <<: *base_env
@@ -188,11 +194,16 @@ workflows:
       - checkout:
           <<: *all_branches_and_tags
 
+      - linter:
+          <<: *all_branches_and_tags
+          requires:
+            - checkout
+
       # build packages
       - build-peer:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - linter
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
@@ -204,11 +215,11 @@ workflows:
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - linter
       - build-commons:
           <<: *all_branches_and_tags
           requires:
-            - checkout
+            - linter
 
       # publish peer library
       - accept-publish-peer:

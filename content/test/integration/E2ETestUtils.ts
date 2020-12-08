@@ -61,7 +61,7 @@ export async function buildDeployData(pointers: Pointer[], options?: DeploymentO
   )
 
   const entity: Entity = EntityFactory.fromFile(
-    deploymentPreparationData.files.get(deploymentPreparationData.entityId)!!,
+    deploymentPreparationData.files.get(deploymentPreparationData.entityId)!,
     deploymentPreparationData.entityId
   )
 

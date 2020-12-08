@@ -98,8 +98,8 @@ const compareTimestampMap: Map<SortingOrder, (timestamp1: Timestamp, timestamp2:
 ])
 
 function assertSortedBy(deployments: Deployment[], field: SortingField, order: SortingOrder) {
-  let timestampExtractor: (deployment: Deployment) => Timestamp = timestampExtractorMap.get(field)!!
-  let compareAssertion: (timestamp1: Timestamp, timestamp2: Timestamp) => void = compareTimestampMap.get(order)!!
+  const timestampExtractor: (deployment: Deployment) => Timestamp = timestampExtractorMap.get(field)!
+  const compareAssertion: (timestamp1: Timestamp, timestamp2: Timestamp) => void = compareTimestampMap.get(order)!
 
   for (let i = 1; i < deployments.length; i++) {
     const timestamp1 = timestampExtractor(deployments[i - 1])

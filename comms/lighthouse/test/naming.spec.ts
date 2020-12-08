@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // Because of Bazel sandboxing, we need this for the time being
 process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 
@@ -6,7 +7,7 @@ import { pickName, defaultNames } from '../src/naming'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 import { lighthouseStorage } from '../src/simpleStorage'
 
-declare var global: any
+declare let global: any
 
 const oldFetch = global.fetch
 

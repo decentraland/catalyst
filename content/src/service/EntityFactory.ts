@@ -74,11 +74,11 @@ export class EntityFactory {
     return new Map(entries)
   }
 
-  private static isPointerArray<T>(array: T[]): Boolean {
+  private static isPointerArray<T>(array: T[]): boolean {
     return array.every(this.isString)
   }
 
-  private static isString(value: any): Boolean {
+  private static isString(value: any): boolean {
     return typeof value === 'string' || value instanceof String
   }
 }

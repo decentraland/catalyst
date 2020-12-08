@@ -18,7 +18,7 @@ export async function tryOnCluster<T>(
   const servers = reorderAccordingToPreference(cluster.getAllServersInCluster(), options?.preferred)
 
   // Calculate amount of retries. Default is one
-  let retries = options?.retries ?? 1
+  const retries = options?.retries ?? 1
 
   return retry(
     async () => {

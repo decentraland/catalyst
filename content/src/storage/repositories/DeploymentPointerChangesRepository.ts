@@ -39,7 +39,7 @@ export class DeploymentPointerChangesRepository {
       if (!result.has(deployment)) {
         result.set(deployment, new Map())
       }
-      result.get(deployment)!!.set(pointer, { before: before ?? undefined, after })
+      result.get(deployment)!.set(pointer, { before: before ?? undefined, after })
     })
     return result
   }

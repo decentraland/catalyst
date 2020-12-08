@@ -46,7 +46,7 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
 
     // Assert snapshot content is correct
     await assertSnapshotContains(snapshotMetadata, E1, E2)
@@ -62,7 +62,7 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(0)
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(0)
 
     // Assert snapshot content is empty
     await assertSnapshotContains(snapshotMetadata)
@@ -78,7 +78,7 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
 
     // Assert snapshot content is empty
     await assertSnapshotContains(snapshotMetadata, E2, E3)
@@ -88,8 +88,8 @@ describe('Integration - Snapshot Manager', () => {
     snapshotMetadata: SnapshotMetadata | undefined,
     ...entitiesCombo: EntityCombo[]
   ) {
-    const { hash } = snapshotMetadata!!
-    const content = (await service.getContent(hash))!!
+    const { hash } = snapshotMetadata!
+    const content = (await service.getContent(hash))!
     const buffer = await content.asBuffer()
     const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
     expect(snapshot.size).toBe(entitiesCombo.length)

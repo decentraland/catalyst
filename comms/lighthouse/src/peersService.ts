@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from './types'
 import { Position, discretizedPositionDistance, PeerConnectionHint } from 'decentraland-katalyst-utils/Positions'

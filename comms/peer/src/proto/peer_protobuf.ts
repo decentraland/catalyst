@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/no-namespace */
+/* eslint-disable @typescript-eslint/ban-types */
 import * as Long from 'long'
 import { Writer, Reader } from 'protobufjs/minimal'
 
@@ -175,7 +178,7 @@ export const MessageData = {
     return writer
   },
   decode(reader: Reader, length?: number): MessageData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(baseMessageData) as MessageData
     message.dst = []
     while (reader.pos < end) {
@@ -268,7 +271,7 @@ export const PingData = {
     return writer
   },
   decode(reader: Reader, length?: number): PingData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(basePingData) as PingData
     while (reader.pos < end) {
       const tag = reader.uint32()
@@ -314,7 +317,7 @@ export const PongData = {
     return writer
   },
   decode(reader: Reader, length?: number): PongData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(basePongData) as PongData
     while (reader.pos < end) {
       const tag = reader.uint32()
@@ -363,7 +366,7 @@ export const SuspendRelayData = {
     return writer
   },
   decode(reader: Reader, length?: number): SuspendRelayData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(baseSuspendRelayData) as SuspendRelayData
     message.relayedPeers = []
     while (reader.pos < end) {
@@ -454,7 +457,7 @@ export const Packet = {
     return writer
   },
   decode(reader: Reader, length?: number): Packet {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(basePacket) as Packet
     message.receivedBy = []
     while (reader.pos < end) {

@@ -13,7 +13,7 @@ import ms from 'ms'
 import { Fetcher } from 'dcl-catalyst-commons'
 
 describe('Failed Deployments validations.', () => {
-  var MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1
+  const MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1
 
   it(
     'Deployment Errors.',
@@ -264,8 +264,8 @@ function countAndSort<V>(
   associativeArray: AssociativeArray<V>,
   ascending: boolean = true
 ): { key: string; count: number }[] {
-  let array: { key: string; count: number }[] = []
-  for (let key in associativeArray) {
+  const array: { key: string; count: number }[] = []
+  for (const key in associativeArray) {
     array.push({ key, count: associativeArray[key].length })
   }
   array.sort((a, b) => (ascending ? a.count - b.count : b.count - a.count))

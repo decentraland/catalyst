@@ -14,7 +14,7 @@ import { ServerAware } from '../layout/ServerAware'
 import { onConnect } from '../web3/onConnect'
 
 export function getFromStorage(key: string): any {
-  let raw = window.localStorage.getItem(key)
+  const raw = window.localStorage.getItem(key)
   if (!raw) {
     return null
   }
@@ -25,7 +25,7 @@ export function saveToStorage(key: string, value: any): any {
 }
 
 function getEphemeralIdentity(): IdentityType {
-  let privateKey = window.localStorage.getItem('dcl-crypto-ephemeral')
+  const privateKey = window.localStorage.getItem('dcl-crypto-ephemeral')
   let account
   if (!privateKey) {
     const buffer = new Buffer(32)

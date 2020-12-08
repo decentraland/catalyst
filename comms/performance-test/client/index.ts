@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Peer } from '../../peer/src/Peer'
 import { randomBetween } from 'decentraland-katalyst-utils/util'
 import { PeerMessageTypes } from '../../peer/src/messageTypes'
@@ -38,8 +39,8 @@ function testOngoing() {
 
 function uuid(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    let r = (Math.random() * 16) | 0
-    let v = c === 'x' ? r : (r & 0x3) | 0x8
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
     return v.toString(16)
   })
 }
@@ -100,7 +101,7 @@ class PeriodicAction {
 }
 
 function runLoops(startingPosition: Position3D, speed: number = 5): Routine {
-  let periodicPosition = new PeriodicAction(timeBetweenPositionMessages, (a, b, peer) => {
+  const periodicPosition = new PeriodicAction(timeBetweenPositionMessages, (a, b, peer) => {
     peer.peer.sendMessage(
       'room',
       createAndEncodeCommsMessage(createPositionData(peer.position, peer.rotation), 'positionData'),
@@ -108,7 +109,7 @@ function runLoops(startingPosition: Position3D, speed: number = 5): Routine {
     )
   })
 
-  let periodicProfile = new PeriodicAction(timeBetweenProfileMessages, (a, b, peer) => {
+  const periodicProfile = new PeriodicAction(timeBetweenProfileMessages, (a, b, peer) => {
     peer.peer.sendMessage(
       'room',
       createAndEncodeCommsMessage(createProfileData(peer.peer.peerId), 'profileData'),
@@ -116,7 +117,7 @@ function runLoops(startingPosition: Position3D, speed: number = 5): Routine {
     )
   })
 
-  let periodicChat = new PeriodicAction(timeBetweenChatMessages, (a, b, peer) => {
+  const periodicChat = new PeriodicAction(timeBetweenChatMessages, (a, b, peer) => {
     peer.peer.sendMessage(
       'room',
       createAndEncodeCommsMessage(createChatData(peer), 'chatData'),

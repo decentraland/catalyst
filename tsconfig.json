@@ -23,11 +23,6 @@
     "emitDecoratorMetadata": true,
     "noUnusedLocals": true,
     "jsx": "react",
-    "plugins": [
-      {
-        "name": "tslint-language-service"
-      }
-    ],
     "baseUrl": ".",
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
     "paths": {

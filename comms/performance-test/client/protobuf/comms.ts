@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Writer, Reader } from 'protobufjs/minimal'
 
 export interface CommsMessage {
@@ -80,7 +81,7 @@ export const CommsMessage = {
     return writer
   },
   decode(reader: Reader, length?: number): CommsMessage {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(baseCommsMessage) as CommsMessage
     while (reader.pos < end) {
       const tag = reader.uint32()
@@ -188,7 +189,7 @@ export const PositionData = {
     return writer
   },
   decode(reader: Reader, length?: number): PositionData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(basePositionData) as PositionData
     while (reader.pos < end) {
       const tag = reader.uint32()
@@ -319,7 +320,7 @@ export const ProfileData = {
     return writer
   },
   decode(reader: Reader, length?: number): ProfileData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(baseProfileData) as ProfileData
     while (reader.pos < end) {
       const tag = reader.uint32()
@@ -380,7 +381,7 @@ export const ChatData = {
     return writer
   },
   decode(reader: Reader, length?: number): ChatData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(baseChatData) as ChatData
     while (reader.pos < end) {
       const tag = reader.uint32()
@@ -441,7 +442,7 @@ export const SceneData = {
     return writer
   },
   decode(reader: Reader, length?: number): SceneData {
-    let end = length === undefined ? reader.len : reader.pos + length
+    const end = length === undefined ? reader.len : reader.pos + length
     const message = Object.create(baseSceneData) as SceneData
     while (reader.pos < end) {
       const tag = reader.uint32()

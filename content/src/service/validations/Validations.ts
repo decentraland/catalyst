@@ -113,7 +113,7 @@ export class ValidatorInstance {
   private static MAX_UPLOAD_SIZE_PER_POINTER = ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER_MB * 1024 * 1024
   validateRequestSize(files: ContentFile[], pointers: Pointer[], validationContext: ValidationContext): void {
     if (validationContext.shouldValidate(Validation.REQUEST_SIZE)) {
-      var totalSize = 0
+      let totalSize = 0
       files.forEach((file) => (totalSize += file.content.byteLength))
       const sizePerPointer = totalSize / pointers.length
       if (sizePerPointer > ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER) {
@@ -236,12 +236,12 @@ export class ValidatorInstance {
   validateContent(
     entity: Entity,
     hashes: Map<ContentFileHash, ContentFile>,
-    alreadyStoredHashes: Map<ContentFileHash, Boolean>,
+    alreadyStoredHashes: Map<ContentFileHash, boolean>,
     validationContext: ValidationContext
   ) {
     if (validationContext.shouldValidate(Validation.CONTENT)) {
       if (entity.content) {
-        let entityHashes: string[] = Array.from(entity.content?.values() ?? [])
+        const entityHashes: string[] = Array.from(entity.content?.values() ?? [])
 
         // Validate that all hashes in entity were uploaded, or were already stored on the service
         entityHashes

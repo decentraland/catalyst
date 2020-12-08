@@ -2,7 +2,7 @@ import { Entity, EntityType } from '@katalyst/content/service/Entity'
 import { SQSDeploymentReporter } from '@katalyst/content/service/reporters/SQSDeploymentReporter'
 
 describe('SQS Deployment Reporter', () => {
-  var MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1
+  const MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1
 
   fit(
     `Simple event reporting`,

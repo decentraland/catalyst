@@ -71,7 +71,7 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
   const deployments = await server.getDeployments({ filters: { pointers: allPointers, onlyCurrentlyPointed: true } })
   assert.equal(deployments.length, entities.length)
   for (const deployment of deployments) {
-    assertEntityIsTheSameAsDeployment(entitiesById.get(deployment.entityId)!!, deployment)
+    assertEntityIsTheSameAsDeployment(entitiesById.get(deployment.entityId)!, deployment)
     assert.equal(deployment.auditInfo.overwrittenBy, undefined)
     await assertFileIsOnServer(server, deployment.entityId)
   }
@@ -282,11 +282,11 @@ export async function assertContentIsDenylisted(
 ) {
   // Legacy check
   const auditInfo: LegacyAuditInfo = await server.getAuditInfo(entity)
-  assert.ok(auditInfo.denylistedContent!!.includes(contentHash))
+  assert.ok(auditInfo.denylistedContent!.includes(contentHash))
 
   // Deployments check
   const deployment = await getEntitysDeployment(server, entity)
-  assert.ok(deployment.auditInfo.denylistedContent!!.includes(contentHash))
+  assert.ok(deployment.auditInfo.denylistedContent!.includes(contentHash))
 }
 
 export function buildDeployment(

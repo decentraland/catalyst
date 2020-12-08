@@ -28,7 +28,7 @@ describe('ContentCluster', function () {
     await contentCluster.detectMyIdentity()
 
     // Check that identity was detected
-    const identity = contentCluster.getIdentityInDAO()!!
+    const identity = contentCluster.getIdentityInDAO()!
     expect(identity.address).toEqual(address1)
   })
 
