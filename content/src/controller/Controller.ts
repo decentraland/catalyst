@@ -53,7 +53,7 @@ export class Controller {
     // Path: /entities/:type
     // Query String: ?{filter}&fields={fieldList}
     const type: EntityType = this.parseEntityType(req.params.type)
-    const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer) ?? []
+    const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase()) ?? []
     const ids: EntityId[] = this.asArray<EntityId>(req.query.id) ?? []
     const fields: string = req.query.fields
 
@@ -376,8 +376,10 @@ export class Controller {
     const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
     const showAudit: boolean = this.asBoolean(req.query.showAudit) ?? false
-    const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)
-    const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)
+    const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)?.map((p) =>
+      p.toLowerCase()
+    )
+    const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase())
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const fields: string | undefined = req.query.fields
