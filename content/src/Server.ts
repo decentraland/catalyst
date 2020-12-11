@@ -17,7 +17,6 @@ import { MetaverseContentService } from './service/Service'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { Repository } from './storage/Repository'
-import util from 'util'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -144,8 +143,7 @@ export class Server {
   async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
     if (this.httpServer) {
-      const serverClose = util.promisify(this.httpServer.close)
-      await serverClose()
+      await this.closeHTTPServer()
     }
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
@@ -178,6 +176,18 @@ export class Server {
     } catch (e) {
       Server.LOGGER.error('There was an error while cleaning up the upload directory: ', e)
     }
+  }
+
+  private closeHTTPServer(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.httpServer.close((error) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 }
 
