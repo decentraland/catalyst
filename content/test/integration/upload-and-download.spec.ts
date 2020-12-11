@@ -16,6 +16,8 @@ import { ContentFile } from '@katalyst/content/controller/Controller'
 describe('End 2 end deploy test', () => {
   const testEnv = loadTestEnvironment()
   let server: TestServer
+  const POINTER0 = 'X0,Y0'
+  const POINTER1 = 'X1,Y1'
 
   beforeEach(async () => {
     server = await testEnv
@@ -27,7 +29,7 @@ describe('End 2 end deploy test', () => {
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {
     // Build data for deployment
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'this is just some metadata"' })
+    const { deployData } = await buildDeployData([POINTER0, POINTER1], { metadata: 'this is just some metadata"' })
 
     // Execute first deploy
     await server.deploy(deployData)
@@ -39,11 +41,11 @@ describe('End 2 end deploy test', () => {
     )
   })
 
-  it(`Deploy and retrieve some content`, async () => {
+  fit(`Deploy and retrieve some content`, async () => {
     //------------------------------
     // Deploy the content
     //------------------------------
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
+    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
       metadata: 'this is just some metadata',
       contentPaths: [
         'content/test/integration/resources/some-binary-file.png',
@@ -69,7 +71,7 @@ describe('End 2 end deploy test', () => {
     //------------------------------
     // Retrieve the entity by pointer
     //------------------------------
-    const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, ['0,0'])
+    const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
     await validateReceivedData(scenesByPointer, deployData)
 
     await assertHistoryOnServerHasEvents(server, deploymentEvent)
@@ -83,8 +85,8 @@ describe('End 2 end deploy test', () => {
     expect(scene.metadata).toBe('this is just some metadata')
 
     expect(scene.pointers.length).toBe(2)
-    expect(scene.pointers[0]).toBe('0,0')
-    expect(scene.pointers[1]).toBe('0,1')
+    expect(equalsCaseInsensitive(scene.pointers[0], POINTER0)).toBeTruthy()
+    expect(equalsCaseInsensitive(scene.pointers[1], POINTER1)).toBeTruthy()
 
     expect(scene.content).toBeDefined()
     expect(scene.content!.length).toBe(2)
@@ -99,6 +101,10 @@ describe('End 2 end deploy test', () => {
     }
   }
 })
+
+function equalsCaseInsensitive(text1: string, text2: string): boolean {
+  return text1.toLowerCase() === text2.toLowerCase()
+}
 
 function findInArray<T extends { file: string }>(elements: T[] | undefined, key: string): T | undefined {
   return elements?.find((e) => e.file === key)
