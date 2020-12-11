@@ -140,14 +140,16 @@ export class Server {
     await this.garbageCollectionManager.start()
   }
 
-  async stop(): Promise<void> {
+  async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
     if (this.httpServer) {
       this.httpServer.close(() => {
         Server.LOGGER.info(`Content Server stopped.`)
       })
     }
-    await this.repository.$pool.end()
+    if (options.endDbConnection) {
+      await this.repository.$pool.end()
+    }
   }
 
   private async validateHistory() {

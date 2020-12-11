@@ -130,7 +130,7 @@ describe('End 2 end synchronization tests', function () {
     const deployment2 = buildDeployment(deployData2, entity2, server2, deploymentTimestamp2)
 
     // Stop server 2
-    await server2.stop({ deleteStorage: false })
+    await server2.stop({ deleteStorage: false, endDbConnection: false })
 
     // Start servers 1 and 3
     await Promise.all([server1.start(), server3.start()])
