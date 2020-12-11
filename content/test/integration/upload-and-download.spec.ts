@@ -41,7 +41,7 @@ describe('End 2 end deploy test', () => {
     )
   })
 
-  fit(`Deploy and retrieve some content`, async () => {
+  it(`Deploy and retrieve some content`, async () => {
     //------------------------------
     // Deploy the content
     //------------------------------
