@@ -16,6 +16,7 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { MetaverseContentService } from './service/Service'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
+import { Repository } from './storage/Repository'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -29,6 +30,7 @@ export class Server {
   private readonly snapshotManager: SnapshotManager
   private readonly migrationManager: MigrationManager
   private readonly service: MetaverseContentService
+  private readonly repository: Repository
 
   constructor(env: Environment) {
     // Set logger
@@ -49,6 +51,7 @@ export class Server {
     this.snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
     this.service = env.getBean(Bean.SERVICE)
     this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
+    this.repository = env.getBean(Bean.REPOSITORY)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))
@@ -144,6 +147,7 @@ export class Server {
         Server.LOGGER.info(`Content Server stopped.`)
       })
     }
+    await this.repository.$pool.end()
   }
 
   private async validateHistory() {

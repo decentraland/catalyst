@@ -19,7 +19,6 @@ import { Container } from 'testcontainers/dist/container'
 import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
-import pgPromise from 'pg-promise'
 
 export class E2ETestEnvironment {
   private static TEST_SCHEMA = 'e2etest'
@@ -55,8 +54,7 @@ export class E2ETestEnvironment {
   }
 
   async stop(): Promise<void> {
-    const pgp = pgPromise()
-    await pgp.end()
+    await this.repository.$pool.end()
     await this.postgresContainer.stop()
   }
 
