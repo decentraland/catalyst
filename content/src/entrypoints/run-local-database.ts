@@ -11,7 +11,7 @@ exec(
     -e POSTGRES_DB=${DEFAULT_DATABASE_CONFIG.database} \
     -p ${DEFAULT_DATABASE_CONFIG.port}:5432 \
     -v psql-vol:/var/lib/postgresql/data \
-    -d postgres`,
+    -d postgres:12`,
   (error, stdout, stderr) => {
     console.log('ERROR', error)
     console.log('STDOUT', stdout)

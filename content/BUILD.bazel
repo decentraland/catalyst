@@ -83,7 +83,6 @@ ts_library(
         "@npm//@types/ms",
         "@npm//@types/node",
         "@npm//@types/node-fetch",
-        "@npm//@types/pg-promise",
         "@npm//dcl-catalyst-commons",
         "@npm//dcl-catalyst-client",
         "@npm//dcl-crypto",
@@ -94,7 +93,6 @@ ts_library(
         "@npm//node-fetch",
         "@npm//testcontainers",
         "@npm//ts-mockito",
-        "@npm//pg-promise",
     ],
 )
 
