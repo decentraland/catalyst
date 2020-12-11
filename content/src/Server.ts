@@ -17,6 +17,7 @@ import { MetaverseContentService } from './service/Service'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { Repository } from './storage/Repository'
+import util from 'util'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -143,10 +144,10 @@ export class Server {
   async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
     if (this.httpServer) {
-      this.httpServer.close(() => {
-        Server.LOGGER.info(`Content Server stopped.`)
-      })
+      const serverClose = util.promisify(this.httpServer.close)
+      await serverClose()
     }
+    Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.$pool.end()
     }
