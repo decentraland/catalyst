@@ -57,6 +57,7 @@ export class E2ETestEnvironment {
   async stop(): Promise<void> {
     // const pgp = pgPromise()
     // pgp.end()
+    await this.repository.$pool.end()
     await this.postgresContainer.stop()
   }
 
