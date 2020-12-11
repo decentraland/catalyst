@@ -121,7 +121,7 @@ export class DeploymentsRepository {
     }
 
     if (filters?.pointers && filters.pointers.length > 0) {
-      values.pointers = filters.pointers
+      values.pointers = filters.pointers.map((p) => p.toLowerCase())
       whereClause.push(`dep1.entity_pointers && ARRAY[$(pointers:list)]`)
     }
 
