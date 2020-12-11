@@ -16,6 +16,7 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { MetaverseContentService } from './service/Service'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
+import { Repository } from './storage/Repository'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -29,6 +30,7 @@ export class Server {
   private readonly snapshotManager: SnapshotManager
   private readonly migrationManager: MigrationManager
   private readonly service: MetaverseContentService
+  private readonly repository: Repository
 
   constructor(env: Environment) {
     // Set logger
@@ -49,6 +51,7 @@ export class Server {
     this.snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
     this.service = env.getBean(Bean.SERVICE)
     this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
+    this.repository = env.getBean(Bean.REPOSITORY)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))
@@ -137,12 +140,14 @@ export class Server {
     await this.garbageCollectionManager.start()
   }
 
-  async stop(): Promise<void> {
+  async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
     if (this.httpServer) {
-      this.httpServer.close(() => {
-        Server.LOGGER.info(`Content Server stopped.`)
-      })
+      await this.closeHTTPServer()
+    }
+    Server.LOGGER.info(`Content Server stopped.`)
+    if (options.endDbConnection) {
+      await this.repository.$pool.end()
     }
   }
 
@@ -171,6 +176,18 @@ export class Server {
     } catch (e) {
       Server.LOGGER.error('There was an error while cleaning up the upload directory: ', e)
     }
+  }
+
+  private closeHTTPServer(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.httpServer.close((error) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 }
 

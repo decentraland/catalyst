@@ -15,6 +15,7 @@ import { NoOpGarbageCollectionManager } from '@katalyst/test-helpers/service/gar
 import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
 import { ControllerPointerChanges } from '@katalyst/content/controller/Controller'
 import { NoOpSnapshotManager } from '@katalyst/test-helpers/service/snapshots/NoOpGarbageCollectionManager'
+import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
 
 describe('Integration - Server', function () {
   let server: Server
@@ -38,6 +39,7 @@ describe('Integration - Server', function () {
       .withContent(content)
       .build()
     const env = new Environment()
+      .registerBean(Bean.REPOSITORY, MockedRepository.build())
       .registerBean(Bean.SERVICE, service)
       .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
       .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())

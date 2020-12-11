@@ -30,7 +30,7 @@ export class E2ETestEnvironment {
   private dao: MockedDAOClient
 
   async start(): Promise<void> {
-    this.postgresContainer = await new GenericContainer('postgres')
+    this.postgresContainer = await new GenericContainer('postgres', '12')
       .withName('postgres_test')
       .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
       .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
@@ -54,6 +54,7 @@ export class E2ETestEnvironment {
   }
 
   async stop(): Promise<void> {
+    await this.repository.$pool.end()
     await this.postgresContainer.stop()
   }
 

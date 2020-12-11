@@ -52,10 +52,12 @@ export class TestServer extends Server {
     return super.start()
   }
 
-  async stop(options: { deleteStorage: boolean } = { deleteStorage: true }): Promise<void> {
+  async stop(
+    options: { deleteStorage: boolean; endDbConnection: boolean } = { deleteStorage: true, endDbConnection: true }
+  ): Promise<void> {
     if (this.started) {
       this.started = false
-      await super.stop()
+      await super.stop({ endDbConnection: options.endDbConnection })
     }
     if (options.deleteStorage) {
       deleteFolderRecursive(this.storageFolder)
