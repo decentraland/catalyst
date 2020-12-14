@@ -21,10 +21,10 @@ import {
 } from '@katalyst/test-helpers/service/MockedMetaverseContentService'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
 import { Authenticator } from 'dcl-crypto'
-import { MockedRepository } from '../storage/MockedRepository'
 import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
 import { LocalDeploymentAuditInfo } from '@katalyst/content/service/Service'
 import { ContentFile } from '@katalyst/content/controller/Controller'
+import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
 
 describe('DenylistServiceDecorator', () => {
   const P1: Pointer = 'p1'

@@ -10,6 +10,7 @@ export class MockedRepository {
     when(mockedRepository.taskIf(anything())).thenCall((call) => call(mockedRepository))
     when(mockedRepository.tx(anything())).thenCall((call) => call(mockedRepository))
     when(mockedRepository.txIf(anything())).thenCall((call) => call(mockedRepository))
+    when(mockedRepository.$pool).thenReturn({ end: () => {} })
     return instance(mockedRepository)
   }
 

@@ -10,13 +10,13 @@ import { MockedStorage } from '../storage/MockedStorage'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { Authenticator } from 'dcl-crypto'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import { MockedRepository } from '../storage/MockedRepository'
 import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
 import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsManager'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { ContentFile } from '@katalyst/content/controller/Controller'
+import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
 
 describe('Service', function () {
   const auditInfo: LocalDeploymentAuditInfo = {
