@@ -129,7 +129,7 @@ export class TestServer extends Server {
 
   private async denylistTarget(target: DenylistTarget, identity: Identity) {
     const timestamp = Date.now()
-    const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
+    const [address, signature] = hashAndSignMessage(`block-${target.asString()}-${timestamp}`, identity)
 
     const body = {
       timestamp: timestamp,
@@ -147,7 +147,7 @@ export class TestServer extends Server {
 
   private async undenylistTarget(target: DenylistTarget, identity: Identity) {
     const timestamp = Date.now()
-    const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
+    const [address, signature] = hashAndSignMessage(`unblock-${target.asString()}-${timestamp}`, identity)
     const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
     const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}?${query}`, {
       method: 'DELETE',

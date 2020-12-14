@@ -15,13 +15,20 @@ export class Denylist {
     private readonly network: string
   ) {}
 
-  static buildMessageToSign(target: DenylistTarget, timestamp: Timestamp) {
-    return `${target.asString()}${timestamp}`
+  static buildBlockMessageToSign(target: DenylistTarget, timestamp: Timestamp) {
+    return this.internalBuildMessageToSign(DenylistAction.ADDITION, target, timestamp)
+  }
+  static buildUnblockMessageToSign(target: DenylistTarget, timestamp: Timestamp) {
+    return this.internalBuildMessageToSign(DenylistAction.REMOVAL, target, timestamp)
+  }
+  private static internalBuildMessageToSign(action: DenylistAction, target: DenylistTarget, timestamp: Timestamp) {
+    const actionMessage = action == DenylistAction.ADDITION ? 'block' : 'unblock'
+    return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
   async addTarget(target: DenylistTarget, metadata: DenylistMetadata) {
     // Validate blocker and signature
-    await this.validateSignature(target, metadata)
+    await this.validateSignature(DenylistAction.ADDITION, target, metadata)
 
     await this.repository.tx(async (transaction) => {
       // Add denylist
@@ -34,7 +41,7 @@ export class Denylist {
 
   async removeTarget(target: DenylistTarget, metadata: DenylistMetadata) {
     // Validate blocker and signature
-    await this.validateSignature(target, metadata)
+    await this.validateSignature(DenylistAction.REMOVAL, target, metadata)
 
     await this.repository.tx(async (transaction) => {
       // Remove denylist
@@ -80,9 +87,9 @@ export class Denylist {
     return result
   }
 
-  private async validateSignature(target: DenylistTarget, metadata: DenylistMetadata) {
+  private async validateSignature(action: DenylistAction, target: DenylistTarget, metadata: DenylistMetadata) {
     const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
-    const messageToSign = Denylist.buildMessageToSign(target, metadata.timestamp)
+    const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
     try {
       await new Promise((resolve, reject) => {
         validateSignature(
