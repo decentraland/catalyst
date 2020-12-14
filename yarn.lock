@@ -2035,6 +2035,11 @@ blakejs@^1.1.0:
   resolved "https://registry.yarnpkg.com/blakejs/-/blakejs-1.1.0.tgz#69df92ef953aa88ca51a32df6ab1c54a155fc7a5"
   integrity sha1-ad+S75U6qIylGjLfarHFShVfx6U=
 
+blob-to-buffer@^1.2.9:
+  version "1.2.9"
+  resolved "https://registry.yarnpkg.com/blob-to-buffer/-/blob-to-buffer-1.2.9.tgz#a17fd6c1c564011408f8971e451544245daaa84a"
+  integrity sha512-BF033y5fN6OCofD3vgHmNtwZWRcq9NLyyxyILx9hfMy1sXYy4ojFl765hJ2lP0YaN2fuxPaLO2Vzzoxy0FLFFA==
+
 blob@0.0.5:
   version "0.0.5"
   resolved "https://registry.yarnpkg.com/blob/-/blob-0.0.5.tgz#d680eeef25f8cd91ad533f5b01eed48e64caf683"
@@ -2857,29 +2862,36 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.0.0.tgz#03f242514db62a658d563a050feba69834fd03be"
-  integrity sha512-2GPNSD445Na//SqlACEpDqF2MmYrwezcyq2ZDuD+e7PtWEdoGugkdDYcXipvENAGMKGHXJIQc9OiWKLvFWXW4A==
+dcl-catalyst-client@3.1.3:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.3.tgz#92dbe0ce021249170e9bfa6ac38ec5f14673c0e9"
+  integrity sha512-+2K7ZkLkTM4NQHzk23igSwnAvd6Y3bu1AuuT16CFP9NG+94l8rqDllF6Wtrz6h6g124oQZ/4KYljnVtdiPGU1Q==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^1.7.0"
+    dcl-catalyst-commons "^2.0.2"
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
 
-dcl-catalyst-commons@^1.7.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-1.7.0.tgz#66bfe7934a8b193400f5cb1af73bfa2b7603f22e"
-  integrity sha512-Lt1ldzVu73dpDX7OjBsl0ELVWnZ4ZkQ0eA/xq/0KPHhV70vK/+2bXMjLPAxLkCF6P7B+zJ356cscotv0zFazqA==
+dcl-catalyst-commons@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.2.tgz#bda956d305c194801dc0ee921f2d525cd71a6cf9"
+  integrity sha512-8ljsK6cf1Ila3pJt6ZZ+iGrfJD0mopC5iDYk1tHxW0no3rugrXXMAWDN0Uzsg2EpaNJ2ozW7nvPZgP06fV/R1g==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
+    "@typescript-eslint/eslint-plugin" "^4.9.0"
+    "@typescript-eslint/parser" "^4.9.0"
     abort-controller "^3.0.0"
+    blob-to-buffer "^1.2.9"
     cids "^0.8.0"
     cross-fetch "^3.0.5"
     dcl-crypto "^2.1.0"
+    eslint "^7.14.0"
+    eslint-config-prettier "^6.15.0"
+    eslint-plugin-prettier "^3.2.0"
     ms "^2.1.2"
     multihashing-async "^0.8.1"
+    prettier "^2.2.1"
 
 dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
   version "2.2.0"
