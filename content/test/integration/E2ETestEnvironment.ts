@@ -171,6 +171,7 @@ export class ServerBuilder {
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
+        .withConfig(EnvironmentConfig.LOG_REQUESTS, 'true')
         .build()
       servers[i] = new TestServer(env)
     }
