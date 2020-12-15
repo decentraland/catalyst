@@ -518,7 +518,7 @@ export class Controller {
     const target = parseDenylistTypeAndId(type, id)
 
     if (!authChain && blocker && signature) {
-      const messageToSign = Denylist.buildMessageToSign(target, timestamp)
+      const messageToSign = Denylist.buildBlockMessageToSign(target, timestamp)
       authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
     }
 
@@ -543,7 +543,7 @@ export class Controller {
     const id = req.params.id
 
     const target = parseDenylistTypeAndId(type, id)
-    const messageToSign = Denylist.buildMessageToSign(target, timestamp)
+    const messageToSign = Denylist.buildUnblockMessageToSign(target, timestamp)
     const authChain: AuthChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
 
     // TODO: Based on the error, return 400 or 404

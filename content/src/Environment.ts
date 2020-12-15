@@ -130,8 +130,7 @@ export enum EnvironmentConfig {
   DECENTRALAND_ADDRESS,
   ETH_NETWORK,
   LOG_LEVEL,
-  JSON_REQUEST_TIMEOUT,
-  FILE_DOWNLOAD_REQUEST_TIMEOUT,
+  FETCH_REQUEST_TIMEOUT,
   USE_COMPRESSION_MIDDLEWARE,
   BOOTSTRAP_FROM_SCRATCH,
   REQUEST_TTL_BACKWARDS,
@@ -216,13 +215,8 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_LEVEL, () => process.env.LOG_LEVEL ?? 'info')
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.JSON_REQUEST_TIMEOUT,
-      () => process.env.JSON_REQUEST_TIMEOUT ?? '1m'
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.FILE_DOWNLOAD_REQUEST_TIMEOUT,
-      () => process.env.FILE_DOWNLOAD_REQUEST_TIMEOUT ?? '5m'
+      EnvironmentConfig.FETCH_REQUEST_TIMEOUT,
+      () => process.env.FETCH_REQUEST_TIMEOUT ?? '2m'
     )
     this.registerConfigIfNotAlreadySet(
       env,

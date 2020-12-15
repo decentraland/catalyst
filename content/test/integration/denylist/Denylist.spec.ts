@@ -229,6 +229,34 @@ describe('Integration - Denylist', () => {
     // Assert that audit info marks content entity as denylisted
     await assertContentIsDenylisted(server, entityBeingDeployed, contentHash)
   })
+
+  it(`When wrong block signature is sent, then an error is thrown`, async () => {
+    // Prepare entity to deploy
+    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], { metadata })
+
+    // Deploy the entity
+    await server.deploy(deployData)
+
+    // Denylist the entity
+    await assertPromiseIsRejected(() => server.denylistEntity(entityBeingDeployed, ownerIdentity, 'wrong-signature'))
+  })
+
+  it(`When wrong unblock signature is sent, then an error is thrown`, async () => {
+    // Prepare entity to deploy
+    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], { metadata })
+
+    // Deploy the entity
+    await server.deploy(deployData)
+
+    // Denylist the content
+    await server.denylistEntity(entityBeingDeployed, ownerIdentity)
+
+    // Assert that audit info marks content entity as denylisted
+    await assertEntityIsDenylisted(server, entityBeingDeployed)
+
+    // Denylist the entity
+    await assertPromiseIsRejected(() => server.undenylistEntity(entityBeingDeployed, ownerIdentity, 'wrong-signature'))
+  })
 })
 
 function getTargetIdFromEntity(entity: ControllerEntity) {
