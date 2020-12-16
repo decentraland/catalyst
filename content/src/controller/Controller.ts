@@ -165,9 +165,7 @@ export class Controller {
       creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
     }
 
-    console.log('MARTA')
     if (typeof creationTimestamp === 'number') {
-      console.log('es number')
       res.send({ creationTimestamp })
     } else {
       Controller.LOGGER.warn(`Returning error '${creationTimestamp.join()}'`)
