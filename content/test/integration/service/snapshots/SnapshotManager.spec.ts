@@ -1,4 +1,4 @@
-import { EntityType, EntityId, Pointer } from 'dcl-catalyst-commons'
+import { EntityType, EntityId, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { EnvironmentBuilder, Bean, EnvironmentConfig } from '@katalyst/content/Environment'
@@ -46,7 +46,8 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    expect(lastDeploymentTimestamp).toBeTruthy((a) => !(a instanceof Error))
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp as Timestamp)
 
     // Assert snapshot content is correct
     await assertSnapshotContains(snapshotMetadata, E1, E2)
@@ -78,7 +79,8 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    expect(lastDeploymentTimestamp).toBeTruthy((a) => !(a instanceof Error))
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp as Timestamp)
 
     // Assert snapshot content is empty
     await assertSnapshotContains(snapshotMetadata, E2, E3)

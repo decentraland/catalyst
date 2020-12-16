@@ -1,9 +1,9 @@
 import log4js from 'log4js'
-import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
+import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo, Timestamp } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { Entity } from '../Entity'
-import { ClusterDeploymentsService } from '../Service'
+import { ClusterDeploymentsService, ErrorList } from '../Service'
 import { ContentCluster } from './ContentCluster'
 import { tryOnCluster } from './ClusterUtils'
 import { EntityFactory } from '../EntityFactory'
@@ -170,7 +170,7 @@ export class EventDeployer {
 
   private buildDeploymentExecution(
     deploymentEvent: DeploymentWithAuditInfo,
-    execution: () => Promise<void>
+    execution: () => Promise<Timestamp | ErrorList>
   ): DeploymentExecution {
     return {
       metadata: {
@@ -185,7 +185,15 @@ export class EventDeployer {
     const deploymentExecution = await deploymentPreparation
     return async () => {
       try {
-        await deploymentExecution.execution()
+        const response: Timestamp | ErrorList = await deploymentExecution.execution()
+        if (typeof response != 'number') {
+          // The deployment failed, so we report it
+          await this.reportError(
+            deploymentExecution.metadata.deploymentEvent,
+            FailureReason.DEPLOYMENT_ERROR,
+            response.join()
+          )
+        }
       } catch (error) {
         // The deployment failed, so we report it
         await this.reportError(
@@ -218,7 +226,7 @@ export type DeploymentExecution = {
   metadata: {
     deploymentEvent: DeploymentWithAuditInfo
   }
-  execution: () => Promise<void>
+  execution: () => Promise<Timestamp | ErrorList>
 }
 
 export type HistoryDeploymentOptions = {

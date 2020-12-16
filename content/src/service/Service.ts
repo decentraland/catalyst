@@ -32,20 +32,20 @@ export interface MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     repository?: RepositoryTask | Repository
-  ): Promise<Timestamp>
+  ): Promise<Timestamp | ErrorList>
   deployLocalLegacy(
     files: ContentFile[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     repository?: RepositoryTask | Repository
-  ): Promise<Timestamp>
+  ): Promise<Timestamp | ErrorList>
   deployToFix(
     files: ContentFile[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     repository?: RepositoryTask | Repository
-  ): Promise<Timestamp>
+  ): Promise<Timestamp | ErrorList>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
@@ -78,8 +78,16 @@ export interface ClusterDeploymentsService {
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null>
-  deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void>
-  deployOverwrittenEntityFromCluster(entityFile: ContentFile, entityId: EntityId, auditInfo: AuditInfo): Promise<void>
+  deployEntityFromCluster(
+    files: ContentFile[],
+    entityId: EntityId,
+    auditInfo: AuditInfo
+  ): Promise<Timestamp | ErrorList>
+  deployOverwrittenEntityFromCluster(
+    entityFile: ContentFile,
+    entityId: EntityId,
+    auditInfo: AuditInfo
+  ): Promise<Timestamp | ErrorList>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
 }
@@ -93,3 +101,5 @@ export type DeploymentEvent = {
 }
 
 export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>
+
+export type ErrorList = string[]

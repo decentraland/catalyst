@@ -41,9 +41,10 @@ describe('End 2 end synchronization tests', function () {
     await assertDeploymentsAreReported(server2)
 
     // Deploy the entity to server 1
-    const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
+    const deploymentTimestamp: Timestamp | Error = await server1.deploy(deployData)
+    expect(typeof deploymentTimestamp).toBe('number')
+    const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp as Timestamp)
+    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp as Timestamp)
 
     // Assert that the entity was deployed on server 1
     await assertHistoryOnServerHasEvents(server1, deploymentEvent)

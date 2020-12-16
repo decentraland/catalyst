@@ -17,7 +17,7 @@ import {
   SortingField,
   SortingOrder
 } from 'dcl-catalyst-commons'
-import { MetaverseContentService, LocalDeploymentAuditInfo } from '../service/Service'
+import { MetaverseContentService, LocalDeploymentAuditInfo, ErrorList } from '../service/Service'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 import { Denylist } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
@@ -109,7 +109,7 @@ export class Controller {
     return [elements]
   }
 
-  async createLegacyEntity(req: express.Request, res: express.Response) {
+  async createLegacyEntity(req: express.Request, res: express.Response): Promise<void> {
     // Method: POST
     // Path: /legacy-entities
     // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
@@ -119,76 +119,80 @@ export class Controller {
     const migrationInformation = JSON.parse(req.body.migration_data)
     const files = req.files
 
-    let deployFiles: ContentFile[] = []
-    try {
-      const auditInfo: LocalDeploymentAuditInfo = {
-        authChain,
-        version: CURRENT_CONTENT_VERSION,
-        migrationData: {
-          originalVersion,
-          data: migrationInformation
-        }
+    const auditInfo: LocalDeploymentAuditInfo = {
+      authChain,
+      version: CURRENT_CONTENT_VERSION,
+      migrationData: {
+        originalVersion,
+        data: migrationInformation
       }
-
-      if (files instanceof Array) {
-        deployFiles = await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
-      }
-      const creationTimestamp = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
-      res.send({
-        creationTimestamp: creationTimestamp
-      })
-    } catch (error) {
-      Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
-    } finally {
-      await this.deleteUploadedFiles(deployFiles)
     }
+
+    const deployFiles: ContentFile[] = await this.readFiles(files)
+    const creationTimestamp: Timestamp | ErrorList = await this.service.deployLocalLegacy(
+      deployFiles,
+      entityId,
+      auditInfo
+    )
+
+    if (typeof creationTimestamp === 'number') {
+      res.send({ creationTimestamp: creationTimestamp })
+    } else {
+      Controller.LOGGER.warn(`Returning error '${creationTimestamp.join()}'`)
+      res.status(400).send(creationTimestamp.join())
+    }
+    await this.deleteUploadedFiles(deployFiles)
   }
 
-  async createEntity(req: express.Request, res: express.Response) {
+  async createEntity(req: express.Request, res: express.Response): Promise<void> {
     // Method: POST
     // Path: /entities
     // Body: JSON with entityId,ethAddress,signature; and a set of files
     const entityId: EntityId = req.body.entityId
-    let authChain: AuthLink[] = req.body.authChain
+    const authChain: AuthLink[] = req.body.authChain
     const ethAddress: EthAddress = req.body.ethAddress
     const signature: Signature = req.body.signature
     const files = req.files
     const origin = req.header('x-upload-origin') ?? 'unknown'
     const fixAttempt: boolean = req.query.fix === 'true'
 
-    let deployFiles: ContentFile[] = []
-    try {
-      if (!authChain && ethAddress && signature) {
-        authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-      }
+    const deployFiles: ContentFile[] = await this.readFiles(files)
+    const auditInfo: LocalDeploymentAuditInfo = this.getAuditInfo(authChain, ethAddress, signature, entityId)
+    let creationTimestamp: Timestamp | ErrorList = []
+    if (fixAttempt) {
+      creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+    } else {
+      creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+    }
 
-      if (files instanceof Array) {
-        deployFiles = await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
-      }
-
-      const auditInfo: LocalDeploymentAuditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
-      let creationTimestamp: Timestamp
-      if (fixAttempt) {
-        creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
-      } else {
-        creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
-      }
+    console.log('MARTA')
+    if (typeof creationTimestamp === 'number') {
+      console.log('es number')
       res.send({ creationTimestamp })
-    } catch (error) {
-      Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
-    } finally {
-      await this.deleteUploadedFiles(deployFiles)
+    } else {
+      Controller.LOGGER.warn(`Returning error '${creationTimestamp.join()}'`)
+      res.status(400).send(creationTimestamp.join())
+    }
+    await this.deleteUploadedFiles(deployFiles)
+  }
+
+  private getAuditInfo(authChain: AuthLink[], ethAddress: string, signature: string, entityId: string) {
+    if (!authChain && ethAddress && signature) {
+      authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
+    }
+    return { authChain, version: CURRENT_CONTENT_VERSION }
+  }
+
+  private async readFiles(files: { [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[]) {
+    if (files instanceof Array) {
+      return await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
+    } else {
+      return []
     }
   }
 
   private async readFile(name: string, path: string): Promise<ContentFile> {
-    return {
-      name,
-      path,
-      content: await fs.promises.readFile(path)
-    }
+    return { name, path, content: await fs.promises.readFile(path) }
   }
 
   private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void> {
