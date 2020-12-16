@@ -1,5 +1,7 @@
-require('rollup-plugin-json')
 import ts from '@wessberg/rollup-plugin-ts'
+
+/* eslint-disable @typescript-eslint/no-var-requires */
+const json = require('rollup-plugin-json')
 
 const allExternals = []
 
