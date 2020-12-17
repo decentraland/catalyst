@@ -26,9 +26,12 @@ export class Denylist {
     return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
-  async addTarget(target: DenylistTarget, metadata: DenylistMetadata) {
+  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
     // Validate blocker and signature
-    await this.validateSignature(DenylistAction.ADDITION, target, metadata)
+    const operationResult: OperationResult = await this.validateSignature(DenylistAction.ADDITION, target, metadata)
+    if (operationResult.status != OperationStatus.OK) {
+      return operationResult
+    }
 
     await this.repository.tx(async (transaction) => {
       // Add denylist
@@ -37,11 +40,15 @@ export class Denylist {
       // Add to history
       await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.ADDITION)
     })
+    return { status: OperationStatus.OK }
   }
 
-  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata) {
+  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
     // Validate blocker and signature
-    await this.validateSignature(DenylistAction.REMOVAL, target, metadata)
+    const operationResult: OperationResult = await this.validateSignature(DenylistAction.REMOVAL, target, metadata)
+    if (operationResult.status != OperationStatus.OK) {
+      return operationResult
+    }
 
     await this.repository.tx(async (transaction) => {
       // Remove denylist
@@ -50,6 +57,7 @@ export class Denylist {
       // Add to history
       await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.REMOVAL)
     })
+    return { status: OperationStatus.OK }
   }
 
   getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
@@ -87,7 +95,11 @@ export class Denylist {
     return result
   }
 
-  private async validateSignature(action: DenylistAction, target: DenylistTarget, metadata: DenylistMetadata) {
+  private async validateSignature(
+    action: DenylistAction,
+    target: DenylistTarget,
+    metadata: DenylistMetadata
+  ): Promise<OperationResult> {
     const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
     const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
     try {
@@ -101,8 +113,9 @@ export class Denylist {
           this.network
         )
       })
+      return { status: OperationStatus.OK }
     } catch (error) {
-      throw new Error(`Failed to authenticate the blocker. Error was: ${error}`)
+      return { status: OperationStatus.ERROR, message: `Failed to authenticate the blocker. Error was: ${error}` }
     }
   }
 }
@@ -115,4 +128,14 @@ export type DenylistMetadata = {
 export enum DenylistAction {
   ADDITION = 'addition',
   REMOVAL = 'removal'
+}
+
+export enum OperationStatus {
+  OK,
+  ERROR
+}
+
+export type OperationResult = {
+  status: OperationStatus
+  message?: string
 }

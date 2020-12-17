@@ -8,7 +8,7 @@ export class ContentAuthenticator extends Authenticator {
   }
 
   /** Return whether the given address used is owned by Decentraland */
-  isAddressOwnedByDecentraland(address: EthAddress) {
+  isAddressOwnedByDecentraland(address: EthAddress): boolean {
     return address.toLowerCase() === this.decentralandAddress.toLowerCase()
   }
 
