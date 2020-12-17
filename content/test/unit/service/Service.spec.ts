@@ -2,7 +2,12 @@ import { ContentFileHash, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp, Enti
 import { Bean, Environment } from '@katalyst/content/Environment'
 import { ServiceFactory } from '@katalyst/content/service/ServiceFactory'
 import { ContentStorage, StorageContent } from '@katalyst/content/storage/ContentStorage'
-import { MetaverseContentService, LocalDeploymentAuditInfo, ErrorList } from '@katalyst/content/service/Service'
+import {
+  MetaverseContentService,
+  LocalDeploymentAuditInfo,
+  DeploymentResult,
+  isSuccessfullDeployment
+} from '@katalyst/content/service/Service'
 import { Entity } from '@katalyst/content/service/Entity'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
@@ -68,14 +73,14 @@ describe('Service', function () {
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     const storageSpy = spyOn(storage, 'store').and.callThrough()
 
-    const timestamp: Timestamp | ErrorList = await service.deployEntity(
+    const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
       entity.id,
       auditInfo,
       ''
     )
-    expect(timestamp).toBeTruthy((a) => !(a instanceof Error))
-    const deltaMilliseconds = Date.now() - (timestamp as Timestamp)
+    expect(deploymentResult).toBeTruthy((result) => isSuccessfullDeployment(result))
+    const deltaMilliseconds = Date.now() - (deploymentResult as Timestamp)
     expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
     expect(deltaMilliseconds).toBeLessThanOrEqual(10)
     expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))

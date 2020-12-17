@@ -17,7 +17,13 @@ import {
   SortingField,
   SortingOrder
 } from 'dcl-catalyst-commons'
-import { MetaverseContentService, LocalDeploymentAuditInfo, ErrorList } from '../service/Service'
+import {
+  MetaverseContentService,
+  LocalDeploymentAuditInfo,
+  DeploymentResult,
+  isSuccessfullDeployment,
+  InvalidResult
+} from '../service/Service'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 import { Denylist } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
@@ -119,29 +125,33 @@ export class Controller {
     const migrationInformation = JSON.parse(req.body.migration_data)
     const files = req.files
 
-    const auditInfo: LocalDeploymentAuditInfo = {
-      authChain,
-      version: CURRENT_CONTENT_VERSION,
-      migrationData: {
-        originalVersion,
-        data: migrationInformation
+    let deployFiles: ContentFile[] = []
+    try {
+      deployFiles = await this.readFiles(files)
+      const auditInfo: LocalDeploymentAuditInfo = {
+        authChain,
+        version: CURRENT_CONTENT_VERSION,
+        migrationData: {
+          originalVersion,
+          data: migrationInformation
+        }
       }
-    }
 
-    const deployFiles: ContentFile[] = await this.readFiles(files)
-    const creationTimestamp: Timestamp | ErrorList = await this.service.deployLocalLegacy(
-      deployFiles,
-      entityId,
-      auditInfo
-    )
+      const deploymentResult: DeploymentResult = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
 
-    if (typeof creationTimestamp === 'number') {
-      res.send({ creationTimestamp: creationTimestamp })
-    } else {
-      Controller.LOGGER.warn(`Returning error '${creationTimestamp.join()}'`)
-      res.status(400).send(creationTimestamp.join())
+      if (isSuccessfullDeployment(deploymentResult)) {
+        res.send({ creationTimestamp: deploymentResult })
+      } else {
+        const invalidResult: InvalidResult = deploymentResult as InvalidResult
+        Controller.LOGGER.warn(`Returning error '${invalidResult.errors.join('\n')}'`)
+        res.status(400).send(invalidResult.errors.join('\n'))
+      }
+    } catch (error) {
+      Controller.LOGGER.warn(`Returning error '${error.message}'`)
+      res.status(500).send(error.message)
+    } finally {
+      await this.deleteUploadedFiles(deployFiles)
     }
-    await this.deleteUploadedFiles(deployFiles)
   }
 
   async createEntity(req: express.Request, res: express.Response): Promise<void> {
@@ -156,25 +166,34 @@ export class Controller {
     const origin = req.header('x-upload-origin') ?? 'unknown'
     const fixAttempt: boolean = req.query.fix === 'true'
 
-    const deployFiles: ContentFile[] = await this.readFiles(files)
-    const auditInfo: LocalDeploymentAuditInfo = this.getAuditInfo(authChain, ethAddress, signature, entityId)
-    let creationTimestamp: Timestamp | ErrorList = []
-    if (fixAttempt) {
-      creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
-    } else {
-      creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
-    }
+    let deployFiles: ContentFile[] = []
+    try {
+      deployFiles = await this.readFiles(files)
+      const auditInfo: LocalDeploymentAuditInfo = this.buildAuditInfo(authChain, ethAddress, signature, entityId)
 
-    if (typeof creationTimestamp === 'number') {
-      res.send({ creationTimestamp })
-    } else {
-      Controller.LOGGER.warn(`Returning error '${creationTimestamp.join()}'`)
-      res.status(400).send(creationTimestamp.join())
+      let deploymentResult: DeploymentResult = { errors: [] }
+      if (fixAttempt) {
+        deploymentResult = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+      } else {
+        deploymentResult = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+      }
+
+      if (isSuccessfullDeployment(deploymentResult)) {
+        res.send({ creationTimestamp: deploymentResult })
+      } else {
+        const invalidResult: InvalidResult = deploymentResult as InvalidResult
+        Controller.LOGGER.warn(`Returning error '${invalidResult.errors.join('\n')}'`)
+        res.status(400).send(invalidResult.errors.join('\n'))
+      }
+    } catch (error) {
+      Controller.LOGGER.warn(`Returning error '${error.message}'`)
+      res.status(500).send(error.message)
+    } finally {
+      await this.deleteUploadedFiles(deployFiles)
     }
-    await this.deleteUploadedFiles(deployFiles)
   }
 
-  private getAuditInfo(authChain: AuthLink[], ethAddress: string, signature: string, entityId: string) {
+  private buildAuditInfo(authChain: AuthLink[], ethAddress: string, signature: string, entityId: string) {
     if (!authChain && ethAddress && signature) {
       authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
     }

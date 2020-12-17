@@ -1,6 +1,6 @@
 import { Authenticator } from 'dcl-crypto'
 import { EntityType, Timestamp, EntityVersion, AuditInfo } from 'dcl-catalyst-commons'
-import { ErrorList, MetaverseContentService } from '@katalyst/content/service/Service'
+import { DeploymentResult, isSuccessfullDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
 import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
 import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager'
@@ -168,14 +168,14 @@ describe('Integration - Deployment Filters', () => {
     const result: Timestamp[] = []
     for (const { deployData } of entities) {
       const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
-      const deploymentTimestamp: Timestamp | ErrorList = await service.deployEntity(
+      const deploymentResult: DeploymentResult = await service.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,
         newAuditInfo,
         ''
       )
-      if (typeof deploymentTimestamp === 'number') {
-        result.push(deploymentTimestamp as Timestamp)
+      if (isSuccessfullDeployment(deploymentResult)) {
+        result.push(deploymentResult as Timestamp)
       }
     }
     return result

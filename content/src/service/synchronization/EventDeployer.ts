@@ -1,9 +1,9 @@
 import log4js from 'log4js'
-import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo, Timestamp } from 'dcl-catalyst-commons'
+import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { Entity } from '../Entity'
-import { ClusterDeploymentsService, ErrorList } from '../Service'
+import { ClusterDeploymentsService, DeploymentResult, InvalidResult, isSuccessfullDeployment } from '../Service'
 import { ContentCluster } from './ContentCluster'
 import { tryOnCluster } from './ClusterUtils'
 import { EntityFactory } from '../EntityFactory'
@@ -170,7 +170,7 @@ export class EventDeployer {
 
   private buildDeploymentExecution(
     deploymentEvent: DeploymentWithAuditInfo,
-    execution: () => Promise<Timestamp | ErrorList>
+    execution: () => Promise<DeploymentResult>
   ): DeploymentExecution {
     return {
       metadata: {
@@ -185,13 +185,20 @@ export class EventDeployer {
     const deploymentExecution = await deploymentPreparation
     return async () => {
       try {
-        const response: Timestamp | ErrorList = await deploymentExecution.execution()
-        if (typeof response != 'number') {
+        const deploymentResult: DeploymentResult = await deploymentExecution.execution()
+        if (isSuccessfullDeployment(deploymentResult)) {
           // The deployment failed, so we report it
           await this.reportError(
             deploymentExecution.metadata.deploymentEvent,
             FailureReason.DEPLOYMENT_ERROR,
-            response.join()
+            (deploymentResult as InvalidResult).errors.join('\n')
+          )
+        } else {
+          // The deployment failed, so we report it
+          await this.reportError(
+            deploymentExecution.metadata.deploymentEvent,
+            FailureReason.DEPLOYMENT_ERROR,
+            (deploymentResult as InvalidResult).errors.join('\n')
           )
         }
       } catch (error) {
@@ -226,7 +233,7 @@ export type DeploymentExecution = {
   metadata: {
     deploymentEvent: DeploymentWithAuditInfo
   }
-  execution: () => Promise<Timestamp | ErrorList>
+  execution: () => Promise<DeploymentResult>
 }
 
 export type HistoryDeploymentOptions = {

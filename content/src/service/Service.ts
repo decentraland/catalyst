@@ -32,20 +32,20 @@ export interface MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     repository?: RepositoryTask | Repository
-  ): Promise<Timestamp | ErrorList>
+  ): Promise<DeploymentResult>
   deployLocalLegacy(
     files: ContentFile[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     repository?: RepositoryTask | Repository
-  ): Promise<Timestamp | ErrorList>
+  ): Promise<DeploymentResult>
   deployToFix(
     files: ContentFile[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     repository?: RepositoryTask | Repository
-  ): Promise<Timestamp | ErrorList>
+  ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
@@ -78,16 +78,12 @@ export interface ClusterDeploymentsService {
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null>
-  deployEntityFromCluster(
-    files: ContentFile[],
-    entityId: EntityId,
-    auditInfo: AuditInfo
-  ): Promise<Timestamp | ErrorList>
+  deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult>
   deployOverwrittenEntityFromCluster(
     entityFile: ContentFile,
     entityId: EntityId,
     auditInfo: AuditInfo
-  ): Promise<Timestamp | ErrorList>
+  ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
 }
@@ -102,4 +98,14 @@ export type DeploymentEvent = {
 
 export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>
 
-export type ErrorList = string[]
+export type InvalidResult = { errors: string[] }
+
+export type DeploymentResult = Timestamp | InvalidResult
+
+export function isSuccessfullDeployment(deploymentResult: DeploymentResult): boolean {
+  return typeof deploymentResult === 'number'
+}
+
+export function isInvalidDeployment(deploymentResult: DeploymentResult): boolean {
+  return !isSuccessfullDeployment(deploymentResult)
+}
