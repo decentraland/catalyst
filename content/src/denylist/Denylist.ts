@@ -29,7 +29,7 @@ export class Denylist {
   async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
     // Validate blocker and signature
     const operationResult: OperationResult = await this.validateSignature(DenylistAction.ADDITION, target, metadata)
-    if (operationResult.status != OperationStatus.OK) {
+    if (isSuccessfulOperation(operationResult)) {
       return operationResult
     }
 
@@ -46,7 +46,7 @@ export class Denylist {
   async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
     // Validate blocker and signature
     const operationResult: OperationResult = await this.validateSignature(DenylistAction.REMOVAL, target, metadata)
-    if (operationResult.status != OperationStatus.OK) {
+    if (isSuccessfulOperation(operationResult)) {
       return operationResult
     }
 
@@ -138,4 +138,8 @@ export enum OperationStatus {
 export type OperationResult = {
   status: OperationStatus
   message?: string
+}
+
+export function isSuccessfulOperation(operation: OperationResult): boolean {
+  return operation.status === OperationStatus.OK
 }

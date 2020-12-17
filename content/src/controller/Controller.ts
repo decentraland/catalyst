@@ -18,7 +18,7 @@ import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-c
 import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
-import { Denylist, OperationResult, OperationStatus } from '../denylist/Denylist'
+import { Denylist, isSuccessfulOperation, OperationResult } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
@@ -541,7 +541,7 @@ export class Controller {
 
     try {
       const result: OperationResult = await this.denylist.addTarget(target, { timestamp, authChain })
-      if (result.status === OperationStatus.OK) {
+      if (isSuccessfulOperation(result)) {
         res.status(201).send()
       } else {
         res.status(400).send(result.message)
@@ -569,7 +569,7 @@ export class Controller {
 
     try {
       const result: OperationResult = await this.denylist.removeTarget(target, { timestamp, authChain })
-      if (result.status === OperationStatus.OK) {
+      if (isSuccessfulOperation(result)) {
         res.status(200).send()
       } else {
         res.status(400).send(result.message)
