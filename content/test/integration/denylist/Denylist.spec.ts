@@ -113,7 +113,7 @@ describe('Integration - Denylist', () => {
     // Undenylist the entity
     await server.undenylistEntity(entityBeingDeployed, decentralandIdentity)
 
-    // Assert that audit info marks the entity as denylisted
+    // Assert that audit info marks the entity as not denylisted
     await assertEntityIsNotDenylisted(server, entityBeingDeployed)
 
     // Assert that the entity is not sanitized
