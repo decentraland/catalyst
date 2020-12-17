@@ -1,12 +1,11 @@
 import { EntityType, EntityId, Pointer } from 'dcl-catalyst-commons'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
-import { isInvalidDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
+import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { EnvironmentBuilder, Bean, EnvironmentConfig } from '@katalyst/content/Environment'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from '../../E2ETestUtils'
 import { SnapshotManager, SnapshotMetadata } from '@katalyst/content/service/snapshots/SnapshotManager'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
-import assert from 'assert'
 
 describe('Integration - Snapshot Manager', () => {
   const P1 = 'X1,Y1',
@@ -81,12 +80,7 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-
-    if (isInvalidDeployment(lastDeploymentResult)) {
-      assert.fail('The deployment result: ' + lastDeploymentResult + ' should be successful, it was invalid instead.')
-    } else {
-      expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentResult)
-    }
+    assertResultIsSuccessfulWithTimestamp(lastDeploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
 
     // Assert snapshot content is empty
     await assertSnapshotContains(snapshotMetadata, E2, E3)
