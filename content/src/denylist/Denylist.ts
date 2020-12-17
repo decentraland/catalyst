@@ -29,7 +29,7 @@ export class Denylist {
   async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
     // Validate blocker and signature
     const operationResult: OperationResult = await this.validateSignature(DenylistAction.ADDITION, target, metadata)
-    if (isSuccessfulOperation(operationResult)) {
+    if (isErrorOperation(operationResult)) {
       return operationResult
     }
 
@@ -142,4 +142,8 @@ export type OperationResult = {
 
 export function isSuccessfulOperation(operation: OperationResult): boolean {
   return operation.status === OperationStatus.OK
+}
+
+export function isErrorOperation(operation: OperationResult): boolean {
+  return isSuccessfulOperation(operation)
 }
