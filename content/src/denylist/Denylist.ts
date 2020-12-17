@@ -26,9 +26,13 @@ export class Denylist {
     return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
-  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
+  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
     // Validate blocker and signature
-    const operationResult: OperationResult = await this.validateSignature(DenylistAction.ADDITION, target, metadata)
+    const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
+      DenylistAction.ADDITION,
+      target,
+      metadata
+    )
     if (isErrorOperation(operationResult)) {
       return operationResult
     }
@@ -40,13 +44,17 @@ export class Denylist {
       // Add to history
       await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.ADDITION)
     })
-    return { status: OperationStatus.OK }
+    return { status: DenylistSignatureValidationStatus.OK }
   }
 
-  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<OperationResult> {
+  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
     // Validate blocker and signature
-    const operationResult: OperationResult = await this.validateSignature(DenylistAction.REMOVAL, target, metadata)
-    if (isSuccessfulOperation(operationResult)) {
+    const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
+      DenylistAction.REMOVAL,
+      target,
+      metadata
+    )
+    if (isErrorOperation(operationResult)) {
       return operationResult
     }
 
@@ -57,7 +65,7 @@ export class Denylist {
       // Add to history
       await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.REMOVAL)
     })
-    return { status: OperationStatus.OK }
+    return { status: DenylistSignatureValidationStatus.OK }
   }
 
   getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
@@ -99,24 +107,26 @@ export class Denylist {
     action: DenylistAction,
     target: DenylistTarget,
     metadata: DenylistMetadata
-  ): Promise<OperationResult> {
+  ): Promise<DenylistSignatureValidationResult> {
     const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
     const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
-    try {
-      await new Promise((resolve, reject) => {
-        validateSignature(
-          metadata,
-          messageToSign,
-          resolve,
-          reject,
-          (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
-          this.network
-        )
-      })
-      return { status: OperationStatus.OK }
-    } catch (error) {
-      return { status: OperationStatus.ERROR, message: `Failed to authenticate the blocker. Error was: ${error}` }
-    }
+
+    return new Promise((resolve) => {
+      validateSignature(
+        metadata,
+        messageToSign,
+        () => {
+          status: DenylistSignatureValidationStatus.OK
+        },
+        (errorMessage) =>
+          resolve({
+            status: DenylistSignatureValidationStatus.ERROR,
+            message: `Failed to authenticate the blocker. Error was: ${errorMessage}`
+          }),
+        (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
+        this.network
+      )
+    })
   }
 }
 
@@ -130,20 +140,20 @@ export enum DenylistAction {
   REMOVAL = 'removal'
 }
 
-export enum OperationStatus {
+export enum DenylistSignatureValidationStatus {
   OK,
   ERROR
 }
 
-export type OperationResult = {
-  status: OperationStatus
+export type DenylistSignatureValidationResult = {
+  status: DenylistSignatureValidationStatus
   message?: string
 }
 
-export function isSuccessfulOperation(operation: OperationResult): boolean {
-  return operation.status === OperationStatus.OK
+export function isSuccessfulOperation(operation: DenylistSignatureValidationResult): boolean {
+  return operation.status === DenylistSignatureValidationStatus.OK
 }
 
-export function isErrorOperation(operation: OperationResult): boolean {
+export function isErrorOperation(operation: DenylistSignatureValidationResult): boolean {
   return isSuccessfulOperation(operation)
 }
