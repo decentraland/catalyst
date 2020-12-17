@@ -100,6 +100,27 @@ describe('Integration - Denylist', () => {
     expect(entityOnServer).toEqual(entityBeingDeployed)
   })
 
+  it(`When a not existing item is undenylisted, then it does not fail`, async () => {
+    // Prepare entity to deploy
+    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
+      metadata,
+      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy the entity
+    await server.deploy(deployData)
+
+    // Undenylist the entity
+    await server.undenylistEntity(entityBeingDeployed, decentralandIdentity)
+
+    // Assert that audit info marks the entity as denylisted
+    await assertEntityIsNotDenylisted(server, entityBeingDeployed)
+
+    // Assert that the entity is not sanitized
+    const entityOnServer = await server.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
+    expect(entityOnServer).toEqual(entityBeingDeployed)
+  })
+
   it(`When content is denylisted, then the entity that contains it says so`, async () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
