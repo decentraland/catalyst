@@ -1,23 +1,23 @@
-import { Entity as ControllerEntity } from 'dcl-catalyst-commons'
-import { EnvironmentConfig, Bean } from '@katalyst/content/Environment'
+import { ControllerDenylistData } from '@katalyst/content/controller/Controller'
 import { DenylistServiceDecorator } from '@katalyst/content/denylist/DenylistServiceDecorator'
-import { buildDeployData, createIdentity } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { buildEntityTarget, DenylistTargetType } from '@katalyst/content/denylist/DenylistTarget'
+import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
+import { assertPromiseIsRejected } from '@katalyst/test-helpers/PromiseAssertions'
+import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
+import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
+import { Entity as ControllerEntity } from 'dcl-catalyst-commons'
 import {
-  assertFileIsOnServer,
-  assertEntityIsNotDenylisted,
-  assertEntityIsDenylisted,
-  assertFileIsNotOnServer,
-  assertContentNotIsDenylisted,
   assertContentIsDenylisted,
+  assertContentNotIsDenylisted,
+  assertEntityIsDenylisted,
+  assertEntityIsNotDenylisted,
+  assertFileIsNotOnServer,
+  assertFileIsOnServer,
   assertRequiredFieldsOnEntitiesAreEqual
 } from '../E2EAssertions'
-import { ControllerDenylistData } from '@katalyst/content/controller/Controller'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
-import { assertPromiseIsRejected } from '@katalyst/test-helpers/PromiseAssertions'
-import { DenylistTargetType, buildEntityTarget } from '@katalyst/content/denylist/DenylistTarget'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
+import { buildDeployData, createIdentity } from '../E2ETestUtils'
+import { TestServer } from '../TestServer'
 
 describe('Integration - Denylist', () => {
   const metadata: string = 'Some metadata'

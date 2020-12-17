@@ -1,5 +1,5 @@
-import log4js from 'log4js'
 import { Fetcher, RequestOptions } from 'dcl-catalyst-commons'
+import log4js from 'log4js'
 
 /**
  * This fetcher tries to use the internal docker network to connect lambdas with the content server.

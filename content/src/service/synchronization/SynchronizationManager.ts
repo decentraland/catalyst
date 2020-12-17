@@ -1,12 +1,12 @@
-import { setTimeout, clearTimeout } from 'timers'
-import ms from 'ms'
+import { ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { delay } from 'decentraland-katalyst-utils/util'
 import log4js from 'log4js'
+import ms from 'ms'
+import { clearTimeout, setTimeout } from 'timers'
+import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
-import { delay } from 'decentraland-katalyst-utils/util'
-import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
-import { ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 
 export interface SynchronizationManager {
   start(): Promise<void>

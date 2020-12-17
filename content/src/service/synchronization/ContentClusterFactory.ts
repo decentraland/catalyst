@@ -1,4 +1,4 @@
-import { Environment, Bean, EnvironmentConfig } from '../../Environment'
+import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 import { ContentCluster } from './ContentCluster'
 
 export class ContentClusterFactory {

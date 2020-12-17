@@ -1,6 +1,6 @@
-import log4js from 'log4js'
-import { Pointer, Fetcher } from 'dcl-catalyst-commons'
+import { Fetcher, Pointer } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
+import log4js from 'log4js'
 import { ContentAuthenticator } from '../auth/Authenticator'
 
 export class AccessCheckerForWearables {

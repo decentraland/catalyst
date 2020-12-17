@@ -1,6 +1,6 @@
-import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
 
 describe('AccessCheckerImpl', function () {

@@ -1,5 +1,5 @@
 import { Environment, EnvironmentConfig } from '../Environment'
-import { Repository, build, DBCredentials } from './Repository'
+import { build, DBCredentials, Repository } from './Repository'
 
 export class RepositoryFactory {
   static async create(env: Environment): Promise<Repository> {

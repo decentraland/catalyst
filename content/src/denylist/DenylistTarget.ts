@@ -1,5 +1,5 @@
+import { ContentFileHash, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
-import { ContentFileHash, EntityType, Pointer, EntityId } from 'dcl-catalyst-commons'
 
 export class DenylistTarget {
   private readonly id: DenylistTargetId

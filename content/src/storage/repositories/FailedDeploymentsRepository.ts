@@ -1,6 +1,6 @@
-import { EntityType, EntityId, Timestamp, ServerAddress } from 'dcl-catalyst-commons'
+import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import { Repository } from '@katalyst/content/storage/Repository'
-import { FailureReason, FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
+import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 
 export class FailedDeploymentsRepository {
   constructor(private readonly db: Repository) {}

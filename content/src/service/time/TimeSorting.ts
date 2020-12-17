@@ -1,6 +1,6 @@
-import { Entity } from '../Entity'
-import { Timestamp, EntityId } from 'dcl-catalyst-commons'
+import { EntityId, Timestamp } from 'dcl-catalyst-commons'
 import { Deployment } from '../deployments/DeploymentManager'
+import { Entity } from '../Entity'
 
 /** Sort comparable objects from oldest to newest */
 export function sortFromOldestToNewest<T extends EntityComparable>(comparableArray: T[]): T[] {

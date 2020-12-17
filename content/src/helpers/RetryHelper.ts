@@ -1,5 +1,5 @@
-import log4js from 'log4js'
 import { retry as externalRetry } from 'dcl-catalyst-commons'
+import log4js from 'log4js'
 
 const LOGGER = log4js.getLogger('RetryHelper')
 

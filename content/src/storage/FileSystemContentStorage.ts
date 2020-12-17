@@ -1,7 +1,7 @@
-import path from 'path'
-import fs from 'fs'
-import { ContentStorage, ContentItem, SimpleContentItem, StorageContent } from './ContentStorage'
 import { ensureDirectoryExists, existPath } from 'decentraland-katalyst-commons/fsutils'
+import fs from 'fs'
+import path from 'path'
+import { ContentItem, ContentStorage, SimpleContentItem, StorageContent } from './ContentStorage'
 
 export class FileSystemContentStorage implements ContentStorage {
   private constructor(private root: string) {}

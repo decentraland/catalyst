@@ -1,7 +1,7 @@
-import { PeerMessageType } from './messageTypes'
-import { Position } from '../../../commons/utils/Positions'
-import { SocketBuilder } from './peerjs-server-connector/socket'
 import SimplePeer from 'simple-peer'
+import { Position } from '../../../commons/utils/Positions'
+import { PeerMessageType } from './messageTypes'
+import { SocketBuilder } from './peerjs-server-connector/socket'
 import { Packet } from './proto/peer_protobuf'
 
 type PacketSubtypeData = {

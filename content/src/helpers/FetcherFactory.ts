@@ -1,5 +1,5 @@
 import { Fetcher } from 'dcl-catalyst-commons'
-import { EnvironmentConfig, Environment, CURRENT_COMMIT_HASH } from '../Environment'
+import { CURRENT_COMMIT_HASH, Environment, EnvironmentConfig } from '../Environment'
 
 export class FetcherFactory {
   static create(env: Environment): Fetcher {

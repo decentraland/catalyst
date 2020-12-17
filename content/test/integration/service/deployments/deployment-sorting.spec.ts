@@ -1,9 +1,9 @@
+import { Deployment, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
+import ms from 'ms'
+import { assertDeploymentsCount } from '../../E2EAssertions'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
 import { TestServer } from '../../TestServer'
-import ms from 'ms'
-import { Deployment, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
-import { assertDeploymentsCount } from '../../E2EAssertions'
 
 /**
  * This test verifies that all deployment sorting params are working correctly

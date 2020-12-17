@@ -1,30 +1,30 @@
-import { random } from 'faker'
-import { mock, instance, when, anything } from 'ts-mockito'
-import { Pointer, EntityVersion } from 'dcl-catalyst-commons'
-import {
-  DenylistTarget,
-  buildPointerTarget,
-  buildContentTarget,
-  buildEntityTarget,
-  buildAddressTarget,
-  DenylistTargetType,
-  DenylistTargetId
-} from '@katalyst/content/denylist/DenylistTarget'
+import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Denylist } from '@katalyst/content/denylist/Denylist'
 import { DenylistServiceDecorator } from '@katalyst/content/denylist/DenylistServiceDecorator'
-import { Entity } from '@katalyst/content/service/Entity'
 import {
-  MockedMetaverseContentService,
-  MockedMetaverseContentServiceBuilder,
-  buildEntity,
-  buildContent as buildRandomContent
-} from '@katalyst/test-helpers/service/MockedMetaverseContentService'
-import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
-import { Authenticator } from 'dcl-crypto'
+  buildAddressTarget,
+  buildContentTarget,
+  buildEntityTarget,
+  buildPointerTarget,
+  DenylistTarget,
+  DenylistTargetId,
+  DenylistTargetType
+} from '@katalyst/content/denylist/DenylistTarget'
 import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
+import { Entity } from '@katalyst/content/service/Entity'
 import { LocalDeploymentAuditInfo } from '@katalyst/content/service/Service'
-import { ContentFile } from '@katalyst/content/controller/Controller'
+import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
+import {
+  buildContent as buildRandomContent,
+  buildEntity,
+  MockedMetaverseContentService,
+  MockedMetaverseContentServiceBuilder
+} from '@katalyst/test-helpers/service/MockedMetaverseContentService'
 import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
+import { EntityVersion, Pointer } from 'dcl-catalyst-commons'
+import { Authenticator } from 'dcl-crypto'
+import { random } from 'faker'
+import { anything, instance, mock, when } from 'ts-mockito'
 
 describe('DenylistServiceDecorator', () => {
   const P1: Pointer = 'p1'

@@ -1,9 +1,9 @@
-import { Authenticator } from 'dcl-crypto'
-import { EntityType, Timestamp, EntityVersion, AuditInfo } from 'dcl-catalyst-commons'
-import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
-import { loadTestEnvironment } from '../../E2ETestEnvironment'
-import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
 import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager'
+import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
+import { AuditInfo, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
+import { Authenticator } from 'dcl-crypto'
+import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that all deployment filters are working correctly

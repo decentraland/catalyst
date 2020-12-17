@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { Writer, Reader } from 'protobufjs/minimal'
+import { Reader, Writer } from 'protobufjs/minimal'
 
 export interface CommsMessage {
   time: number

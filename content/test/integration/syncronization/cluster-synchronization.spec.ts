@@ -1,18 +1,18 @@
-import ms from 'ms'
 import { Timestamp } from 'dcl-catalyst-commons'
-import { TestServer } from '../TestServer'
-import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from '../E2ETestUtils'
+import ms from 'ms'
 import {
+  assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
   assertEntitiesAreDeployedButNotActive,
-  assertHistoryOnServerHasEvents,
-  assertEntityIsOverwrittenBy,
   assertEntityIsNotOverwritten,
-  buildEvent,
+  assertEntityIsOverwrittenBy,
+  assertHistoryOnServerHasEvents,
   buildDeployment,
-  assertDeploymentsAreReported
+  buildEvent
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { TestServer } from '../TestServer'
 
 describe('End 2 end synchronization tests', function () {
   const SYNC_INTERVAL: number = ms('1s')

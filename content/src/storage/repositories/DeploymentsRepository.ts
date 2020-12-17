@@ -1,17 +1,17 @@
-import { Authenticator } from 'dcl-crypto'
-import {
-  EntityId,
-  AuditInfo,
-  EntityType,
-  Timestamp,
-  Pointer,
-  DeploymentSorting,
-  SortingOrder,
-  SortingField
-} from 'dcl-catalyst-commons'
+import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
 import { Repository } from '@katalyst/content/storage/Repository'
-import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager'
+import {
+  AuditInfo,
+  DeploymentSorting,
+  EntityId,
+  EntityType,
+  Pointer,
+  SortingField,
+  SortingOrder,
+  Timestamp
+} from 'dcl-catalyst-commons'
+import { Authenticator } from 'dcl-crypto'
 
 export class DeploymentsRepository {
   constructor(private readonly db: Repository) {}

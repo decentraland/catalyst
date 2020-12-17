@@ -1,4 +1,4 @@
-import { EntityType, Pointer, EntityId, Timestamp } from 'dcl-catalyst-commons'
+import { EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { Repository } from '../Repository'
 import { DeploymentId } from './DeploymentsRepository'
 

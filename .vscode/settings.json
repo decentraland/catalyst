@@ -12,7 +12,8 @@
     ],
     "editor.rulers": [120],
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
+        "source.fixAll.eslint": true,
+        "source.organizeImports": true
     },
     "eslint.validate": [
         "typescript"

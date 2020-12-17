@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import EventEmitter from 'eventemitter3'
-import { ServerMessage } from './peerjs-server-connector/servermessage'
-import { LogLevel, ConnectedPeerData, WebRTCProvider, ValidationResult } from './types'
-import { PeerJSServerConnection, HandshakeData } from './peerjs-server-connector/peerjsserverconnection'
-import { ServerMessageType, PeerEventType } from './peerjs-server-connector/enums'
-import { PEER_CONSTANTS, PeerSignals } from './constants'
-import { util, connectionIdFor } from './peerjs-server-connector/util'
-import { SocketBuilder } from './peerjs-server-connector/socket'
-import SimplePeer, { SignalData } from 'simple-peer'
-import { TimeKeeper } from './TimeKeeper'
 import { future } from 'fp-future'
+import SimplePeer, { SignalData } from 'simple-peer'
+import { PeerSignals, PEER_CONSTANTS } from './constants'
+import { PeerEventType, ServerMessageType } from './peerjs-server-connector/enums'
+import { HandshakeData, PeerJSServerConnection } from './peerjs-server-connector/peerjsserverconnection'
+import { ServerMessage } from './peerjs-server-connector/servermessage'
+import { SocketBuilder } from './peerjs-server-connector/socket'
+import { connectionIdFor, util } from './peerjs-server-connector/util'
+import { TimeKeeper } from './TimeKeeper'
+import { ConnectedPeerData, LogLevel, ValidationResult, WebRTCProvider } from './types'
 
 type Logger = {
   log: (level: LogLevel, ...entries: any[]) => any

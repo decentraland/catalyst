@@ -1,7 +1,6 @@
-import log4js from 'log4js'
 import { Request, Response } from 'express'
-import fetch from 'node-fetch'
-import { Response as NodeFetchResponse } from 'node-fetch'
+import log4js from 'log4js'
+import fetch, { Response as NodeFetchResponse } from 'node-fetch'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
 const LOGGER = log4js.getLogger('ContentTranslator')

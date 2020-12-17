@@ -1,47 +1,47 @@
-import log4js from 'log4js'
 import {
-  Hashing,
+  AuditInfo,
   ContentFileHash,
-  EntityType,
   EntityId,
-  Timestamp,
+  EntityType,
   ENTITY_FILE_NAME,
-  ServerStatus,
+  Hashing,
   PartialDeploymentHistory,
+  Pointer,
   ServerAddress,
   ServerName,
-  AuditInfo,
-  Pointer
+  ServerStatus,
+  Timestamp
 } from 'dcl-catalyst-commons'
-import { Entity } from './Entity'
-import {
-  MetaverseContentService,
-  ClusterDeploymentsService,
-  LocalDeploymentAuditInfo,
-  DeploymentListener,
-  InvalidResult,
-  DeploymentResult
-} from './Service'
-import { EntityFactory } from './EntityFactory'
-import { PointerManager } from './pointers/PointerManager'
-import { ServiceStorage } from './ServiceStorage'
-import { CURRENT_CONTENT_VERSION } from '../Environment'
-import { Validations } from './validations/Validations'
-import { ValidationContext } from './validations/ValidationContext'
-import { ContentAuthenticator } from './auth/Authenticator'
-import { ContentItem, StorageContent, fromBuffer } from '../storage/ContentStorage'
-import { FailedDeploymentsManager, FailureReason } from './errors/FailedDeploymentsManager'
-import { IdentityProvider } from './synchronization/ContentCluster'
-import { Repository, RepositoryTask } from '../storage/Repository'
-import {
-  DeploymentManager,
-  Deployment,
-  PartialDeploymentPointerChanges,
-  PointerChangesFilters,
-  DeploymentOptions
-} from './deployments/DeploymentManager'
-import { happenedBefore } from './time/TimeSorting'
+import log4js from 'log4js'
 import { ContentFile } from '../controller/Controller'
+import { CURRENT_CONTENT_VERSION } from '../Environment'
+import { ContentItem, fromBuffer, StorageContent } from '../storage/ContentStorage'
+import { Repository, RepositoryTask } from '../storage/Repository'
+import { ContentAuthenticator } from './auth/Authenticator'
+import {
+  Deployment,
+  DeploymentManager,
+  DeploymentOptions,
+  PartialDeploymentPointerChanges,
+  PointerChangesFilters
+} from './deployments/DeploymentManager'
+import { Entity } from './Entity'
+import { EntityFactory } from './EntityFactory'
+import { FailedDeploymentsManager, FailureReason } from './errors/FailedDeploymentsManager'
+import { PointerManager } from './pointers/PointerManager'
+import {
+  ClusterDeploymentsService,
+  DeploymentListener,
+  DeploymentResult,
+  InvalidResult,
+  LocalDeploymentAuditInfo,
+  MetaverseContentService
+} from './Service'
+import { ServiceStorage } from './ServiceStorage'
+import { IdentityProvider } from './synchronization/ContentCluster'
+import { happenedBefore } from './time/TimeSorting'
+import { ValidationContext } from './validations/ValidationContext'
+import { Validations } from './validations/Validations'
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
   private static readonly LOGGER = log4js.getLogger('ServiceImpl')

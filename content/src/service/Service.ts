@@ -1,16 +1,16 @@
 import {
+  AuditInfo,
   ContentFileHash,
-  ServerStatus,
-  EntityType,
   EntityId,
-  Timestamp,
+  EntityType,
   PartialDeploymentHistory,
   ServerAddress,
-  AuditInfo
+  ServerStatus,
+  Timestamp
 } from 'dcl-catalyst-commons'
+import { ContentFile } from '../controller/Controller'
 import { ContentItem } from '../storage/ContentStorage'
-import { FailureReason, FailedDeployment } from './errors/FailedDeploymentsManager'
-import { RepositoryTask, Repository } from '../storage/Repository'
+import { Repository, RepositoryTask } from '../storage/Repository'
 import {
   Deployment,
   DeploymentOptions,
@@ -18,7 +18,7 @@ import {
   PointerChangesFilters
 } from './deployments/DeploymentManager'
 import { Entity } from './Entity'
-import { ContentFile } from '../controller/Controller'
+import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments

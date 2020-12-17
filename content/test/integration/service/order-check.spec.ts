@@ -1,7 +1,7 @@
+import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { AuditInfo } from 'dcl-catalyst-commons'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { EntityCombo, deployEntitiesCombo, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that the active entity and overwrites are calculated correctly, regardless of the order in which the entities where deployed.

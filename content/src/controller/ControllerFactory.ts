@@ -1,12 +1,12 @@
-import { Environment, Bean, EnvironmentConfig } from '../Environment'
-import { Controller } from './Controller'
-import { DenylistServiceDecorator } from '../denylist/DenylistServiceDecorator'
 import { Denylist } from '../denylist/Denylist'
+import { DenylistServiceDecorator } from '../denylist/DenylistServiceDecorator'
+import { Bean, Environment, EnvironmentConfig } from '../Environment'
 import { MetaverseContentService } from '../service/Service'
-import { SynchronizationManager } from '../service/synchronization/SynchronizationManager'
-import { ChallengeSupervisor } from '../service/synchronization/ChallengeSupervisor'
-import { Repository } from '../storage/Repository'
 import { SnapshotManager } from '../service/snapshots/SnapshotManager'
+import { ChallengeSupervisor } from '../service/synchronization/ChallengeSupervisor'
+import { SynchronizationManager } from '../service/synchronization/SynchronizationManager'
+import { Repository } from '../storage/Repository'
+import { Controller } from './Controller'
 
 export class ControllerFactory {
   static create(env: Environment): Controller {

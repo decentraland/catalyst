@@ -1,8 +1,8 @@
-import { Pointer } from 'dcl-catalyst-commons'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { PointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
+import { MetaverseContentService } from '@katalyst/content/service/Service'
+import { Pointer } from 'dcl-catalyst-commons'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
-import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from '../../E2ETestUtils'
+import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that the pointer changes are calculated correctly

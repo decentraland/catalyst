@@ -1,5 +1,5 @@
-import { Request, Response } from 'express'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
+import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
 
 export async function getCatalystServersList(dao: DAOCache, req: Request, res: Response) {

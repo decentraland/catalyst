@@ -1,7 +1,7 @@
-import { EntityType, AuditInfo } from 'dcl-catalyst-commons'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { EntityCombo, buildDeployData, deployEntitiesCombo } from '../E2ETestUtils'
+import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
+import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that the entities with the same entity timestamp are deployed correctly

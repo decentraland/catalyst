@@ -1,6 +1,6 @@
+import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Transform } from 'stream'
-import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 
 /**
  * Expose a stream transform that filters out already deployed entities.

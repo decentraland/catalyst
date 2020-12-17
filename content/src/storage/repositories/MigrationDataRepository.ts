@@ -1,5 +1,5 @@
-import { DeploymentId } from './DeploymentsRepository'
 import { Repository } from '@katalyst/content/storage/Repository'
+import { DeploymentId } from './DeploymentsRepository'
 
 export class MigrationDataRepository {
   constructor(private readonly db: Repository) {}

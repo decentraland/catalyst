@@ -1,6 +1,6 @@
 import { ServerAddress } from 'dcl-catalyst-commons'
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
+import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 
 export class DAOHardcodedClient implements DAOClient {
   constructor(private readonly servers: ServerAddress[]) {}

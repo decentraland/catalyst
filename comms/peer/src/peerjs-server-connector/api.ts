@@ -1,5 +1,5 @@
-import { util } from './util'
 import logger from './logger'
+import { util } from './util'
 
 export class API {
   constructor(private readonly _options: any) {}

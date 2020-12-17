@@ -1,8 +1,8 @@
-import { ServiceFactory } from './service/ServiceFactory'
 import { ControllerFactory } from './controller/ControllerFactory'
-import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
+import { ServiceFactory } from './service/ServiceFactory'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
+import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 
 const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'ropsten'

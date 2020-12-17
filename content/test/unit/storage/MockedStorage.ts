@@ -1,6 +1,6 @@
 import {
-  ContentStorage,
   ContentItem,
+  ContentStorage,
   SimpleContentItem,
   StorageContent
 } from '@katalyst/content/storage/ContentStorage'

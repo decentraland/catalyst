@@ -1,35 +1,35 @@
-import { random } from 'faker'
-import {
-  ServerStatus,
-  PartialDeploymentHistory,
-  EntityType,
-  EntityId,
-  Timestamp,
-  Pointer,
-  ContentFileHash,
-  LegacyPartialDeploymentHistory,
-  AuditInfo,
-  LegacyAuditInfo
-} from 'dcl-catalyst-commons'
-import {
-  MetaverseContentService,
-  LocalDeploymentAuditInfo,
-  DeploymentListener
-} from '@katalyst/content/service/Service'
-import { Entity } from '@katalyst/content/service/Entity'
-import { buildEntityAndFile } from './EntityTestFactory'
+import { ContentFile } from '@katalyst/content/controller/Controller'
 import { CURRENT_CONTENT_VERSION } from '@katalyst/content/Environment'
-import { AuthLinkType } from 'dcl-crypto'
-import { ContentItem, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
-import { RepositoryTask, Repository } from '@katalyst/content/storage/Repository'
 import {
   Deployment,
-  PointerChangesFilters,
+  DeploymentOptions,
   DeploymentPointerChanges,
-  DeploymentOptions
+  PointerChangesFilters
 } from '@katalyst/content/service/deployments/DeploymentManager'
+import { Entity } from '@katalyst/content/service/Entity'
 import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { ContentFile } from '@katalyst/content/controller/Controller'
+import {
+  DeploymentListener,
+  LocalDeploymentAuditInfo,
+  MetaverseContentService
+} from '@katalyst/content/service/Service'
+import { ContentItem, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
+import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
+import {
+  AuditInfo,
+  ContentFileHash,
+  EntityId,
+  EntityType,
+  LegacyAuditInfo,
+  LegacyPartialDeploymentHistory,
+  PartialDeploymentHistory,
+  Pointer,
+  ServerStatus,
+  Timestamp
+} from 'dcl-catalyst-commons'
+import { AuthLinkType } from 'dcl-crypto'
+import { random } from 'faker'
+import { buildEntityAndFile } from './EntityTestFactory'
 
 export class MockedMetaverseContentService implements MetaverseContentService {
   static readonly STATUS: ServerStatus = {

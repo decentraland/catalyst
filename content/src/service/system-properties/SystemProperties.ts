@@ -1,7 +1,7 @@
-import { Timestamp, ServerAddress, EntityType } from 'dcl-catalyst-commons'
 import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
-import { IntPropertyMapper, SystemPropertyMapper, JSONPropertyMapper } from './SystemPropertyMappers'
+import { EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { SnapshotMetadata } from '../snapshots/SnapshotManager'
+import { IntPropertyMapper, JSONPropertyMapper, SystemPropertyMapper } from './SystemPropertyMappers'
 
 export class SystemProperty<PropertyType> {
   static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerAddress, Timestamp][]> = new SystemProperty(

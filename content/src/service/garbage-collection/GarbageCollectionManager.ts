@@ -1,7 +1,7 @@
-import log4js from 'log4js'
-import { ContentFileHash, Timestamp, delay } from 'dcl-catalyst-commons'
-import { Repository } from '@katalyst/content/storage/Repository'
 import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
+import { Repository } from '@katalyst/content/storage/Repository'
+import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
+import log4js from 'log4js'
 import { MetaverseContentService } from '../Service'
 
 export class GarbageCollectionManager {

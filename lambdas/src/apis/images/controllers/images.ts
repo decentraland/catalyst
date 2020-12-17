@@ -1,11 +1,11 @@
-import log4js from 'log4js'
-import { Request, Response } from 'express'
-import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
-import fs from 'fs'
-import sharp from 'sharp'
-import fetch from 'node-fetch'
-import future, { IFuture } from 'fp-future'
 import { ensureDirectoryExists } from 'decentraland-katalyst-commons/fsutils'
+import { Request, Response } from 'express'
+import future, { IFuture } from 'fp-future'
+import fs from 'fs'
+import log4js from 'log4js'
+import fetch from 'node-fetch'
+import sharp from 'sharp'
+import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
 const LOGGER = log4js.getLogger('ImagesController')
 

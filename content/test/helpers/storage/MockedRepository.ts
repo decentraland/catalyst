@@ -1,6 +1,6 @@
 import { DeploymentsRepository } from '@katalyst/content/storage/repositories/DeploymentsRepository'
 import { Repository } from '@katalyst/content/storage/Repository'
-import { mock, when, instance, anything } from 'ts-mockito'
+import { anything, instance, mock, when } from 'ts-mockito'
 
 export class MockedRepository {
   static build(initialAmountOfDeployments: number = 0): Repository {

@@ -1,6 +1,6 @@
-import { Environment, Bean, EnvironmentConfig } from '../../Environment'
-import { SQSDeploymentReporter } from './SQSDeploymentReporter'
+import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 import { MetaverseContentService } from '../Service'
+import { SQSDeploymentReporter } from './SQSDeploymentReporter'
 
 export class SQSDeploymentReporterFactory {
   static create(env: Environment): SQSDeploymentReporter {

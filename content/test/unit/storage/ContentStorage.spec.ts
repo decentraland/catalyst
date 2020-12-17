@@ -1,7 +1,7 @@
-import { ContentStorageFactory } from '@katalyst/content/storage/ContentStorageFactory'
-import { FileSystemUtils as fsu } from './FileSystemUtils'
 import { Environment, EnvironmentConfig } from '@katalyst/content/Environment'
 import { ContentStorage, fromBuffer } from '@katalyst/content/storage/ContentStorage'
+import { ContentStorageFactory } from '@katalyst/content/storage/ContentStorageFactory'
+import { FileSystemUtils as fsu } from './FileSystemUtils'
 
 describe('ContentStorage', () => {
   let env: Environment

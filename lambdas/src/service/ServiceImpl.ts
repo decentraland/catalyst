@@ -1,5 +1,5 @@
-import { LambdasService, ServerStatus } from './Service'
 import { Environment, EnvironmentConfig } from '../Environment'
+import { LambdasService, ServerStatus } from './Service'
 
 export class ServiceImpl implements LambdasService {
   constructor(private readonly env: Environment) {}

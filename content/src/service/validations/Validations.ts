@@ -1,25 +1,25 @@
-import ms from 'ms'
 import {
-  EntityType,
-  EntityId,
   ContentFileHash,
-  Timestamp,
-  Pointer,
-  ENTITY_FILE_NAME,
+  DeploymentFilters,
+  EntityId,
+  EntityType,
   EntityVersion,
-  DeploymentFilters
+  ENTITY_FILE_NAME,
+  Pointer,
+  Timestamp
 } from 'dcl-catalyst-commons'
-import { Entity } from '../Entity'
-import { AccessChecker } from '../access/AccessChecker'
-import { ValidationContext, Validation } from './ValidationContext'
 import { AuthChain, EthAddress } from 'dcl-crypto'
-import { ContentAuthenticator } from '../auth/Authenticator'
-import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
+import ms from 'ms'
 import { httpProviderForNetwork } from '../../../../contracts/utils'
+import { ContentFile } from '../../controller/Controller'
+import { AccessChecker } from '../access/AccessChecker'
+import { ContentAuthenticator } from '../auth/Authenticator'
+import { Deployment } from '../deployments/DeploymentManager'
+import { Entity } from '../Entity'
+import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
 import { LocalDeploymentAuditInfo } from '../Service'
 import { happenedBefore } from '../time/TimeSorting'
-import { Deployment } from '../deployments/DeploymentManager'
-import { ContentFile } from '../../controller/Controller'
+import { Validation, ValidationContext } from './ValidationContext'
 
 export class Validations {
   constructor(

@@ -1,29 +1,28 @@
-import { ContentFileHash, Hashing, EntityType, ENTITY_FILE_NAME, EntityVersion } from 'dcl-catalyst-commons'
+import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean, Environment } from '@katalyst/content/Environment'
+import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { Entity } from '@katalyst/content/service/Entity'
+import {
+  DeploymentResult,
+  isInvalidDeployment,
+  LocalDeploymentAuditInfo,
+  MetaverseContentService
+} from '@katalyst/content/service/Service'
 import { ServiceFactory } from '@katalyst/content/service/ServiceFactory'
 import { ContentStorage, StorageContent } from '@katalyst/content/storage/ContentStorage'
-import {
-  MetaverseContentService,
-  LocalDeploymentAuditInfo,
-  DeploymentResult,
-  isInvalidDeployment
-} from '@katalyst/content/service/Service'
-import { Entity } from '@katalyst/content/service/Entity'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
-import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
-import { MockedStorage } from '../storage/MockedStorage'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { Authenticator } from 'dcl-crypto'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
+import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
+import assert from 'assert'
+import { ContentFileHash, EntityType, EntityVersion, ENTITY_FILE_NAME, Hashing } from 'dcl-catalyst-commons'
+import { Authenticator } from 'dcl-crypto'
+import { MockedStorage } from '../storage/MockedStorage'
+import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
 import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsManager'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
-import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
-import { ContentFile } from '@katalyst/content/controller/Controller'
-import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
-
-import assert from 'assert'
 
 describe('Service', function () {
   const auditInfo: LocalDeploymentAuditInfo = {

@@ -1,5 +1,5 @@
+import { CatalystData, CatalystId, DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
 import { ServerMetadata } from './ServerMetadata'
-import { DAOContract, CatalystId, CatalystData } from 'decentraland-katalyst-contracts/DAOContract'
 
 export interface DAOClient {
   getAllContentServers(): Promise<Set<ServerMetadata>>

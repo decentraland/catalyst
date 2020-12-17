@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Peer } from '../../peer/src/Peer'
-import { randomBetween } from 'decentraland-katalyst-utils/util'
-import { PeerMessageTypes } from '../../peer/src/messageTypes'
 import { Position3D, Quaternion } from 'decentraland-katalyst-utils/Positions'
-import { PeerConfig } from '../../peer/src'
-import { PositionData, CommsMessage, ProfileData, ChatData } from './protobuf/comms'
-import { util } from '../../peer/src/peerjs-server-connector/util'
-import { GlobalStats, buildCatalystPeerStatsData } from '../../peer/src/stats'
+import { randomBetween } from 'decentraland-katalyst-utils/util'
 import { Reader } from 'protobufjs'
+import { PeerConfig } from '../../peer/src'
+import { PeerMessageTypes } from '../../peer/src/messageTypes'
+import { Peer } from '../../peer/src/Peer'
+import { util } from '../../peer/src/peerjs-server-connector/util'
+import { buildCatalystPeerStatsData, GlobalStats } from '../../peer/src/stats'
+import { ChatData, CommsMessage, PositionData, ProfileData } from './protobuf/comms'
 
 const urlParams = new URLSearchParams(location.search)
 

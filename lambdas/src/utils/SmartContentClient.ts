@@ -1,4 +1,3 @@
-import log4js from 'log4js'
 import {
   ContentAPI,
   ContentClient,
@@ -6,24 +5,25 @@ import {
   DeploymentOptions,
   DeploymentWithMetadataContentAndPointers
 } from 'dcl-catalyst-client'
-import future, { IFuture } from 'fp-future'
 import {
-  EntityType,
-  Pointer,
-  RequestOptions,
+  AvailableContentResult,
+  ContentFileHash,
+  DeploymentBase,
   Entity,
   EntityId,
+  EntityType,
+  Fetcher,
   LegacyAuditInfo,
-  Timestamp,
-  ServerName,
   LegacyDeploymentHistory,
   LegacyPartialDeploymentHistory,
+  Pointer,
+  RequestOptions,
+  ServerName,
   ServerStatus,
-  DeploymentBase,
-  ContentFileHash,
-  AvailableContentResult,
-  Fetcher
+  Timestamp
 } from 'dcl-catalyst-commons'
+import future, { IFuture } from 'fp-future'
+import log4js from 'log4js'
 import { Readable } from 'stream'
 
 /**

@@ -1,6 +1,6 @@
-import { Router, Request, Response } from 'express'
-import { getResizedImage } from './controllers/images'
+import { Request, Response, Router } from 'express'
 import { SmartContentServerFetcher } from '../../utils/SmartContentServerFetcher'
+import { getResizedImage } from './controllers/images'
 
 export function initializeImagesRoutes(
   router: Router,

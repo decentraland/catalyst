@@ -1,6 +1,6 @@
-import { Request, Response } from 'express'
-import { AuthLink, Authenticator, ValidationResult } from 'dcl-crypto'
+import { Authenticator, AuthLink, ValidationResult } from 'dcl-crypto'
 import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
+import { Request, Response } from 'express'
 
 export async function validateSignature(networkKey: string, req: Request, res: Response) {
   // Method: POST

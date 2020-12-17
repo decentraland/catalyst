@@ -1,5 +1,5 @@
-import { runClients } from './test-client'
 import { Browser } from 'puppeteer'
+import { runClients } from './test-client'
 
 function requireParams(...names: string[]) {
   const missingValues = names.filter((it) => !process.env[it])

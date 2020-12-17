@@ -1,5 +1,5 @@
-import { mock, instance, when } from 'ts-mockito'
 import { SnapshotManager } from '@katalyst/content/service/snapshots/SnapshotManager'
+import { instance, mock, when } from 'ts-mockito'
 
 export class NoOpSnapshotManager {
   static build(): SnapshotManager {

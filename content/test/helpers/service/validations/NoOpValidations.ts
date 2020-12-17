@@ -1,5 +1,5 @@
-import { mock, when, instance } from 'ts-mockito'
 import { ValidatorInstance } from '@katalyst/content/service/validations/Validations'
+import { instance, mock, when } from 'ts-mockito'
 
 export class NoOpValidations {
   getInstance(): ValidatorInstance {

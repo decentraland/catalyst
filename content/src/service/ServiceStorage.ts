@@ -1,5 +1,5 @@
 import { ContentFileHash } from 'dcl-catalyst-commons'
-import { ContentStorage, ContentItem, StorageContent } from '../storage/ContentStorage'
+import { ContentItem, ContentStorage, StorageContent } from '../storage/ContentStorage'
 
 export class ServiceStorage {
   constructor(private storage: ContentStorage) {}

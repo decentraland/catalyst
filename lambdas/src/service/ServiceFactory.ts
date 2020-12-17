@@ -1,6 +1,6 @@
 import { Environment } from '../Environment'
-import { ServiceImpl } from './ServiceImpl'
 import { LambdasService } from './Service'
+import { ServiceImpl } from './ServiceImpl'
 
 export class ServiceFactory {
   static create(env: Environment): LambdasService {

@@ -1,7 +1,7 @@
 import path from 'path'
+import { Environment, EnvironmentConfig } from '../Environment'
 import { ContentStorage } from './ContentStorage'
 import { FileSystemContentStorage } from './FileSystemContentStorage'
-import { Environment, EnvironmentConfig } from '../Environment'
 
 export class ContentStorageFactory {
   static local(env: Environment): Promise<ContentStorage> {

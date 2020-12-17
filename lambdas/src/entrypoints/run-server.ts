@@ -1,5 +1,5 @@
-import { Server } from '../Server'
 import { Environment } from '../Environment'
+import { Server } from '../Server'
 
 Environment.getInstance()
   .then(async (env) => {

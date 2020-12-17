@@ -1,4 +1,4 @@
-import { requireAll, validatePeerToken, requireOneOf } from '../src/handlers'
+import { requireAll, requireOneOf, validatePeerToken } from '../src/handlers'
 
 describe('require parameters', () => {
   let request: any

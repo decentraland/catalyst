@@ -1,31 +1,31 @@
-import fetch from 'node-fetch'
-import {
-  ServerAddress,
-  Timestamp,
-  EntityType,
-  Pointer,
-  ServerStatus,
-  EntityId,
-  Entity as ControllerEntity,
-  LegacyPartialDeploymentHistory,
-  Deployment as ControllerDeployment,
-  ContentFileHash,
-  LegacyAuditInfo,
-  DeploymentBase
-} from 'dcl-catalyst-commons'
+import { ControllerDenylistData } from '@katalyst/content/controller/Controller'
+import { buildContentTarget, buildEntityTarget, DenylistTarget } from '@katalyst/content/denylist/DenylistTarget'
+import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
+import { Server } from '@katalyst/content/Server'
+import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import {
   ContentClient,
   DeploymentFields,
   DeploymentOptions,
   DeploymentWithMetadataContentAndPointers
 } from 'dcl-catalyst-client'
-import { Server } from '@katalyst/content/Server'
-import { Environment, EnvironmentConfig, Bean } from '@katalyst/content/Environment'
-import { ControllerDenylistData } from '@katalyst/content/controller/Controller'
-import { DeployData, hashAndSignMessage, Identity, deleteFolderRecursive } from './E2ETestUtils'
-import { buildEntityTarget, DenylistTarget, buildContentTarget } from '@katalyst/content/denylist/DenylistTarget'
-import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
+import {
+  ContentFileHash,
+  Deployment as ControllerDeployment,
+  DeploymentBase,
+  Entity as ControllerEntity,
+  EntityId,
+  EntityType,
+  LegacyAuditInfo,
+  LegacyPartialDeploymentHistory,
+  Pointer,
+  ServerAddress,
+  ServerStatus,
+  Timestamp
+} from 'dcl-catalyst-commons'
+import fetch from 'node-fetch'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
+import { deleteFolderRecursive, DeployData, hashAndSignMessage, Identity } from './E2ETestUtils'
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
