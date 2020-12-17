@@ -3,8 +3,8 @@
 process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 
 import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
-import { pickName, defaultNames } from '../src/naming'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
+import { defaultNames, pickName } from '../src/naming'
 import { lighthouseStorage } from '../src/simpleStorage'
 
 declare let global: any

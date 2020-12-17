@@ -1,6 +1,6 @@
-import { Router, Request, Response } from 'express'
-import { contentsImage, contentsThumbnail, getStandardErc721 } from './controllers/collections'
+import { Request, Response, Router } from 'express'
 import { SmartContentServerFetcher } from '../../utils/SmartContentServerFetcher'
+import { contentsImage, contentsThumbnail, getStandardErc721 } from './controllers/collections'
 
 export function initializeCollectionsRoutes(router: Router, fetcher: SmartContentServerFetcher): Router {
   router.get('/standard/erc721/:contract/:option/:emission?', createHandler(fetcher, getStandardErc721))

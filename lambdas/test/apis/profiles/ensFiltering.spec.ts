@@ -1,6 +1,6 @@
+import { Fetcher } from 'dcl-catalyst-commons'
 import { filterENS } from '../../../src/apis/profiles/ensFiltering'
 import { DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN } from '../../../src/Environment'
-import { Fetcher } from 'dcl-catalyst-commons'
 
 describe('Ensure ENS filtering work as expected', () => {
   it(`Ensure Address case is ignored when retrieving ENS`, async () => {

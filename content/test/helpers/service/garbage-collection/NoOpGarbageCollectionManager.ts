@@ -1,5 +1,5 @@
-import { mock, instance, when } from 'ts-mockito'
 import { GarbageCollectionManager } from '@katalyst/content/service/garbage-collection/GarbageCollectionManager'
+import { instance, mock, when } from 'ts-mockito'
 
 export class NoOpGarbageCollectionManager {
   static build(): GarbageCollectionManager {

@@ -1,36 +1,36 @@
 import {
-  EntityType,
-  Pointer,
-  EntityId,
   ContentFileHash,
+  EntityId,
+  EntityType,
   PartialDeploymentHistory,
+  Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
-import {
-  MetaverseContentService,
-  LocalDeploymentAuditInfo,
-  DeploymentListener,
-  DeploymentResult
-} from '../service/Service'
+import { ContentFile } from '../controller/Controller'
+import { ContentAuthenticator } from '../service/auth/Authenticator'
+import { Deployment, DeploymentOptions, PointerChangesFilters } from '../service/deployments/DeploymentManager'
 import { Entity } from '../service/Entity'
-import { Denylist } from './Denylist'
-import {
-  buildPointerTarget,
-  buildEntityTarget,
-  DenylistTarget,
-  buildContentTarget,
-  buildAddressTarget,
-  DenylistTargetType,
-  DenylistTargetId
-} from './DenylistTarget'
 import { EntityFactory } from '../service/EntityFactory'
+import {
+  DeploymentListener,
+  DeploymentResult,
+  LocalDeploymentAuditInfo,
+  MetaverseContentService
+} from '../service/Service'
 import { ServiceImpl } from '../service/ServiceImpl'
 import { ContentItem } from '../storage/ContentStorage'
-import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Repository } from '../storage/Repository'
 import { DenylistRepository } from '../storage/repositories/DenylistRepository'
-import { Deployment, DeploymentOptions, PointerChangesFilters } from '../service/deployments/DeploymentManager'
-import { ContentFile } from '../controller/Controller'
+import { Repository } from '../storage/Repository'
+import { Denylist } from './Denylist'
+import {
+  buildAddressTarget,
+  buildContentTarget,
+  buildEntityTarget,
+  buildPointerTarget,
+  DenylistTarget,
+  DenylistTargetId,
+  DenylistTargetType
+} from './DenylistTarget'
 
 /**
  * This decorator takes a MetaverseContentService and adds denylisting functionality to it

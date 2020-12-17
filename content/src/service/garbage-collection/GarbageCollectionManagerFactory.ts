@@ -1,4 +1,4 @@
-import { Environment, Bean, EnvironmentConfig } from '@katalyst/content/Environment'
+import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
 import { GarbageCollectionManager } from './GarbageCollectionManager'
 
 export class GarbageCollectionManagerFactory {

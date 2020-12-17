@@ -1,7 +1,7 @@
-import log4js from 'log4js'
 import Analytics from 'analytics-node'
-import { Entity } from '../Entity'
 import { Authenticator, EthAddress } from 'dcl-crypto'
+import log4js from 'log4js'
+import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 
 export class SegmentIoAnalytics {

@@ -1,5 +1,5 @@
-import { handlerForNetwork } from 'decentraland-katalyst-contracts/utils'
 import { List } from 'decentraland-katalyst-contracts/List'
+import { handlerForNetwork } from 'decentraland-katalyst-contracts/utils'
 
 export class DAOListContract {
   private constructor(private readonly contract: List) {}

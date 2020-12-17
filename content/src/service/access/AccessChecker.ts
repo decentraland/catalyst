@@ -1,5 +1,5 @@
-import { EthAddress } from 'dcl-crypto'
 import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { EthAddress } from 'dcl-crypto'
 
 export interface AccessChecker {
   hasAccess(

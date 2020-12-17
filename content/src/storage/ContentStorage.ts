@@ -1,4 +1,4 @@
-import { Readable, Duplex } from 'stream'
+import { Duplex, Readable } from 'stream'
 
 export interface ContentStorage {
   store(id: string, content: StorageContent): Promise<void>

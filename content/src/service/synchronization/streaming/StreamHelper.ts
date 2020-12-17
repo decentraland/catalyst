@@ -1,5 +1,5 @@
-import { pipeline, Transform, Readable, PassThrough } from 'stream'
 import mergeStream from 'merge-stream'
+import { PassThrough, pipeline, Readable, Transform } from 'stream'
 import util from 'util'
 
 export const awaitablePipeline = util.promisify(pipeline)

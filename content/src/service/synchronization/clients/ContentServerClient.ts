@@ -1,9 +1,9 @@
+import { ContentClient, DeploymentFields } from 'dcl-catalyst-client'
+import { ContentFileHash, DeploymentWithAuditInfo, Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
-import { Timestamp, ContentFileHash, ServerAddress, Fetcher, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
-import { ContentClient, DeploymentFields } from 'dcl-catalyst-client'
-import { passThrough } from '../streaming/StreamHelper'
 import { ContentFile } from '../../../controller/Controller'
+import { passThrough } from '../streaming/StreamHelper'
 
 export class ContentServerClient {
   private static readonly LOGGER = log4js.getLogger('ContentServerClient')

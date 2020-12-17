@@ -1,23 +1,23 @@
+import { Entity } from '@katalyst/content/service/Entity'
+import { ContentFilesRepository } from '@katalyst/content/storage/repositories/ContentFilesRepository'
+import { DeploymentPointerChangesRepository } from '@katalyst/content/storage/repositories/DeploymentPointerChangesRepository'
+import { DeploymentId, DeploymentsRepository } from '@katalyst/content/storage/repositories/DeploymentsRepository'
+import { MigrationDataRepository } from '@katalyst/content/storage/repositories/MigrationDataRepository'
 import {
-  EntityId,
-  EntityType,
-  Pointer,
-  Timestamp,
+  AuditInfo,
   ContentFileHash,
   Deployment as ControllerDeployment,
   DeploymentFilters,
+  DeploymentSorting,
+  EntityId,
+  EntityType,
   PartialDeploymentHistory,
+  Pointer,
   ServerAddress,
-  AuditInfo,
   SortingField,
-  DeploymentSorting
+  Timestamp
 } from 'dcl-catalyst-commons'
-import { Entity } from '@katalyst/content/service/Entity'
-import { DeploymentsRepository, DeploymentId } from '@katalyst/content/storage/repositories/DeploymentsRepository'
-import { ContentFilesRepository } from '@katalyst/content/storage/repositories/ContentFilesRepository'
-import { MigrationDataRepository } from '@katalyst/content/storage/repositories/MigrationDataRepository'
-import { DeploymentResult, DELTA_POINTER_RESULT } from '../pointers/PointerManager'
-import { DeploymentPointerChangesRepository } from '@katalyst/content/storage/repositories/DeploymentPointerChangesRepository'
+import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
   private static MAX_HISTORY_LIMIT = 500

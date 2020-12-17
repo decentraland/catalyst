@@ -1,5 +1,5 @@
-import log4js from 'log4js'
 import { retry } from '@katalyst/content/helpers/RetryHelper'
+import log4js from 'log4js'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 

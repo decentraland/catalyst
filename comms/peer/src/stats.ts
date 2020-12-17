@@ -1,6 +1,6 @@
-import { Packet } from './proto/peer_protobuf'
-import { Peer } from './Peer'
 import { average } from '../../../commons/utils/util'
+import { Peer } from './Peer'
+import { Packet } from './proto/peer_protobuf'
 
 type PeriodicValue = {
   accumulatedInPeriod: number

@@ -1,13 +1,13 @@
-import * as EthCrypto from 'eth-crypto'
-import { EntityType, Timestamp, EntityVersion, Entity, AuditInfo, Fetcher } from 'dcl-catalyst-commons'
+import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
+import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
+import { ValidationContext } from '@katalyst/content/service/validations/ValidationContext'
 import { Validations } from '@katalyst/content/service/validations/Validations'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { ValidationContext } from '@katalyst/content/service/validations/ValidationContext'
-import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
+import { AuditInfo, Entity, EntityType, EntityVersion, Fetcher, Timestamp } from 'dcl-catalyst-commons'
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
-import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
 
 describe('Validations', function () {
   it(`When a non uploaded hash is referenced, it is reported`, () => {

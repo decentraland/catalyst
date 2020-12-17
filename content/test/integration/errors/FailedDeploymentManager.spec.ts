@@ -1,14 +1,14 @@
-import { random, internet } from 'faker'
-import { EntityType, ServerAddress, Timestamp, EntityId } from 'dcl-catalyst-commons'
 import {
+  FailedDeployment,
   FailedDeploymentsManager,
   FailureReason,
-  FailedDeployment,
   NoFailure
 } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { Repository } from '@katalyst/content/storage/Repository'
 import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
+import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { internet, random } from 'faker'
+import { loadTestEnvironment } from '../E2ETestEnvironment'
 
 describe('Integration - Failed Deployments Manager', function () {
   const testEnv = loadTestEnvironment()

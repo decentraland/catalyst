@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Peer } from '../src/Peer'
-import { MinPeerData, PacketCallback, PeerConfig } from '../src/types'
-import { SocketType } from '../src/peerjs-server-connector/socket'
 import { future } from 'fp-future'
-import { ServerMessageType } from '../src/peerjs-server-connector/enums'
-import { PeerMessageTypes, PeerMessageType } from '../src/messageTypes'
-import { Packet } from '../src/proto/peer_protobuf'
 import { Position3D } from '../src'
 import { PEER_CONSTANTS } from '../src/constants'
+import { PeerMessageType, PeerMessageTypes } from '../src/messageTypes'
+import { Peer } from '../src/Peer'
+import { ServerMessageType } from '../src/peerjs-server-connector/enums'
+import { SocketType } from '../src/peerjs-server-connector/socket'
+import { Packet } from '../src/proto/peer_protobuf'
 import { TimeKeeper } from '../src/TimeKeeper'
+import { MinPeerData, PacketCallback, PeerConfig } from '../src/types'
 
 declare let global: any
 

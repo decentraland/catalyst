@@ -1,45 +1,44 @@
-import express from 'express'
-import log4js from 'log4js'
-import fs from 'fs'
 import {
-  EntityType,
-  Pointer,
-  EntityId,
-  Timestamp,
-  Entity as ControllerEntity,
-  EntityVersion,
   ContentFileHash,
+  Entity as ControllerEntity,
+  EntityId,
+  EntityType,
+  EntityVersion,
   LegacyAuditInfo,
-  PartialDeploymentHistory,
-  ServerAddress,
-  LegacyPartialDeploymentHistory,
   LegacyDeploymentEvent,
+  LegacyPartialDeploymentHistory,
+  PartialDeploymentHistory,
+  Pointer,
+  ServerAddress,
   SortingField,
-  SortingOrder
+  SortingOrder,
+  Timestamp
 } from 'dcl-catalyst-commons'
-import {
-  MetaverseContentService,
-  LocalDeploymentAuditInfo,
-  DeploymentResult,
-  isSuccessfulDeployment
-} from '../service/Service'
-import { ControllerEntityFactory } from './ControllerEntityFactory'
+import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
+import express from 'express'
+import fs from 'fs'
+import log4js from 'log4js'
 import { Denylist } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
-import { CURRENT_CONTENT_VERSION, CURRENT_COMMIT_HASH } from '../Environment'
-import { EthAddress, Signature, AuthLink, AuthChain } from 'dcl-crypto'
-import { Authenticator } from 'dcl-crypto'
-import { ContentItem } from '../storage/ContentStorage'
-import { SynchronizationManager } from '../service/synchronization/SynchronizationManager'
-import { ChallengeSupervisor } from '../service/synchronization/ChallengeSupervisor'
+import { CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import {
   Deployment,
   DeploymentPointerChanges,
   ExtendedDeploymentFilters
 } from '../service/deployments/DeploymentManager'
+import {
+  DeploymentResult,
+  isSuccessfulDeployment,
+  LocalDeploymentAuditInfo,
+  MetaverseContentService
+} from '../service/Service'
 import { SnapshotManager } from '../service/snapshots/SnapshotManager'
+import { ChallengeSupervisor } from '../service/synchronization/ChallengeSupervisor'
+import { SynchronizationManager } from '../service/synchronization/SynchronizationManager'
+import { ContentItem } from '../storage/ContentStorage'
+import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
+import { ControllerEntityFactory } from './ControllerEntityFactory'
 
 export class Controller {
   private static readonly LOGGER = log4js.getLogger('Controller')

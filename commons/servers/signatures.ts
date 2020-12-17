@@ -1,6 +1,6 @@
-import { EthAddress, Signature, AuthChain, Authenticator, ValidationResult } from 'dcl-crypto'
-import { EthereumProvider } from 'web3x/providers'
+import { AuthChain, Authenticator, EthAddress, Signature, ValidationResult } from 'dcl-crypto'
 import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
+import { EthereumProvider } from 'web3x/providers'
 
 // We want all signatures to be "current". We consider "current" to be the current time,
 // with a 10 minute tolerance to account for network delays and possibly unsynched clocks

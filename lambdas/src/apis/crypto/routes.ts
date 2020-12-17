@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express'
+import { Request, Response, Router } from 'express'
 import { validateSignature } from './controllers/crypto'
 
 export function initializeCryptoRoutes(router: Router, networkKey: string): Router {

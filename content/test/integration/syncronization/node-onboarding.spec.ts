@@ -1,17 +1,17 @@
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
-import { TestServer } from '../TestServer'
-import { buildDeployData, buildDeployDataAfterEntity, awaitUntil } from '../E2ETestUtils'
 import {
-  assertHistoryOnServerHasEvents,
-  buildEvent,
-  assertFileIsOnServer,
-  assertFileIsNotOnServer,
-  assertEntityIsOverwrittenBy,
-  buildEventWithName,
   assertDeploymentsAreReported,
-  buildDeployment
+  assertEntityIsOverwrittenBy,
+  assertFileIsNotOnServer,
+  assertFileIsOnServer,
+  assertHistoryOnServerHasEvents,
+  buildDeployment,
+  buildEvent,
+  buildEventWithName
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { TestServer } from '../TestServer'
 
 describe('End 2 end - Node onboarding', function () {
   const testEnv = loadTestEnvironment()

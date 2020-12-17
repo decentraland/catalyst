@@ -1,9 +1,9 @@
-import { ServerAddress } from 'dcl-catalyst-commons'
-import { EnvironmentConfig, Bean, Environment } from '@katalyst/content/Environment'
-import { ContentClusterFactory } from '@katalyst/content/service/synchronization/ContentClusterFactory'
+import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
 import { ChallengeText } from '@katalyst/content/service/synchronization/ChallengeSupervisor'
-import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
 import { ContentCluster } from '@katalyst/content/service/synchronization/ContentCluster'
+import { ContentClusterFactory } from '@katalyst/content/service/synchronization/ContentClusterFactory'
+import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
+import { ServerAddress } from 'dcl-catalyst-commons'
 import { MockedFetcher } from '../../helpers/MockedFetcher'
 
 describe('ContentCluster', function () {

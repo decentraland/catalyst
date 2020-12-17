@@ -1,6 +1,6 @@
+import { fromBuffer } from '@katalyst/content/storage/ContentStorage'
 import { FileSystemContentStorage } from '@katalyst/content/storage/FileSystemContentStorage'
 import { FileSystemUtils as fsu } from './FileSystemUtils'
-import { fromBuffer } from '@katalyst/content/storage/ContentStorage'
 
 describe('FileSystemContentStorage', () => {
   let tmpRootDir: string

@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { EventEmitter } from 'eventemitter3'
-import { util } from './util'
-import logger, { LogLevel } from './logger'
-import { Socket, SocketBuilder } from './socket'
-import { PeerErrorType, PeerEventType, SocketEventType, ServerMessageType } from './enums'
-import { ServerMessage } from './servermessage'
-import { API } from './api'
 import { ConnectedPeerData } from '../types'
+import { API } from './api'
+import { PeerErrorType, PeerEventType, ServerMessageType, SocketEventType } from './enums'
+import logger, { LogLevel } from './logger'
+import { ServerMessage } from './servermessage'
+import { Socket, SocketBuilder } from './socket'
+import { util } from './util'
 
 export type MessageHandler = {
   handleMessage(messsage: ServerMessage): void

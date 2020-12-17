@@ -1,6 +1,6 @@
-import { join } from 'path'
 import runner from 'node-pg-migrate'
-import { MigrationDirection, RunnerOption, ClientConfig } from 'node-pg-migrate/dist/types'
+import { ClientConfig, MigrationDirection, RunnerOption } from 'node-pg-migrate/dist/types'
+import { join } from 'path'
 
 export class MigrationManager {
   private readonly options: RunnerOption

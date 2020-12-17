@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import equal from 'fast-deep-equal'
+import { future, IFuture } from 'fp-future'
 import fs from 'fs'
 import os from 'os'
-import { future, IFuture } from 'fp-future'
-import equal from 'fast-deep-equal'
 import v8 from 'v8'
 
 const deepCopy = (obj: any) => {

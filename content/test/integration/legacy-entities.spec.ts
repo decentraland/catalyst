@@ -1,15 +1,15 @@
-import fetch from 'node-fetch'
+import { ContentFile } from '@katalyst/content/controller/Controller'
+import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
+import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
+import { addModelToFormData } from 'dcl-catalyst-client'
+import { Authenticator } from 'dcl-crypto'
 import FormData from 'form-data'
-import { EnvironmentConfig, Bean } from '@katalyst/content/Environment'
-import { createIdentity, DeployData, buildDeployData } from './E2ETestUtils'
-import { TestServer } from './TestServer'
+import fetch from 'node-fetch'
 import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
-import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
 import { loadTestEnvironment } from './E2ETestEnvironment'
-import { Authenticator } from 'dcl-crypto'
-import { addModelToFormData } from 'dcl-catalyst-client'
-import { ContentFile } from '@katalyst/content/controller/Controller'
+import { buildDeployData, createIdentity, DeployData } from './E2ETestUtils'
+import { TestServer } from './TestServer'
 
 describe('End 2 end - Legacy Entities', () => {
   const identity = createIdentity()

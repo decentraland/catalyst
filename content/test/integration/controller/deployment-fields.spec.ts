@@ -1,10 +1,10 @@
-import { Deployment, Fetcher } from 'dcl-catalyst-commons'
+import { DeploymentField } from '@katalyst/content/controller/Controller'
 import { Bean } from '@katalyst/content/Environment'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
+import { Deployment, Fetcher } from 'dcl-catalyst-commons'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { TestServer } from '../TestServer'
 import { buildDeployData } from '../E2ETestUtils'
-import { DeploymentField } from '@katalyst/content/controller/Controller'
+import { TestServer } from '../TestServer'
 
 describe('Integration - Deployment Fields', () => {
   const testEnv = loadTestEnvironment()

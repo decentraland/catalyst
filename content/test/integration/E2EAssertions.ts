@@ -1,23 +1,23 @@
-import { Authenticator } from 'dcl-crypto'
+import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
+import { DeploymentResult, isSuccessfulDeployment } from '@katalyst/content/service/Service'
 import assert from 'assert'
-import { Response } from 'node-fetch'
 import {
-  LegacyDeploymentEvent,
-  Timestamp,
-  ServerAddress,
   ContentFileHash,
-  Hashing,
   Deployment as ControllerDeployment,
   Entity as ControllerEntity,
   EntityContentItemReference,
   EntityVersion,
-  LegacyAuditInfo
+  Hashing,
+  LegacyAuditInfo,
+  LegacyDeploymentEvent,
+  ServerAddress,
+  Timestamp
 } from 'dcl-catalyst-commons'
-import { TestServer } from './TestServer'
+import { Authenticator } from 'dcl-crypto'
+import { Response } from 'node-fetch'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { DeployData } from './E2ETestUtils'
-import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { DeploymentResult, isSuccessfulDeployment } from '@katalyst/content/service/Service'
+import { TestServer } from './TestServer'
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
   // Legacy check

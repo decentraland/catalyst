@@ -1,6 +1,6 @@
-import { ContentStorage, ContentItem, streamToBuffer, StorageContent } from './ContentStorage'
 import AWS from 'aws-sdk'
 import { Readable } from 'stream'
+import { ContentItem, ContentStorage, StorageContent, streamToBuffer } from './ContentStorage'
 
 export class S3ContentStorage implements ContentStorage {
   private s3Client: AWS.S3

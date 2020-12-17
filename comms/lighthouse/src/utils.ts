@@ -1,4 +1,4 @@
-import { NotificationType, IPeersService } from './peersService'
+import { IPeersService, NotificationType } from './peersService'
 import { PeerRequest } from './types'
 
 type PeerContainer = {

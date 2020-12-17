@@ -1,4 +1,4 @@
-import { Environment, Bean } from '../../Environment'
+import { Bean, Environment } from '../../Environment'
 import { EventDeployer } from './EventDeployer'
 
 export class EventDeployerFactory {

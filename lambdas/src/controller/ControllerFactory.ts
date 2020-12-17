@@ -1,4 +1,4 @@
-import { Environment, Bean } from '../Environment'
+import { Bean, Environment } from '../Environment'
 import { Controller } from './Controller'
 
 export class ControllerFactory {

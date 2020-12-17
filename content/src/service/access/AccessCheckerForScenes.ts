@@ -1,9 +1,9 @@
-import ms from 'ms'
-import log4js from 'log4js'
-import { Pointer, Timestamp, Fetcher } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
-import { ContentAuthenticator } from '../auth/Authenticator'
 import { retry } from '@katalyst/content/helpers/RetryHelper'
+import { Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { EthAddress } from 'dcl-crypto'
+import log4js from 'log4js'
+import ms from 'ms'
+import { ContentAuthenticator } from '../auth/Authenticator'
 
 export class AccessCheckerForScenes {
   private static readonly SCENE_LOOKBACK_TIME = ms('5m')

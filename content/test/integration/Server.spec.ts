@@ -1,21 +1,21 @@
-import fetch from 'node-fetch'
-import { EntityType, Entity as ControllerEntity } from 'dcl-catalyst-commons'
-import { Environment, EnvironmentConfig, Bean } from '@katalyst/content/Environment'
-import { Server } from '@katalyst/content/Server'
-import { Entity } from '@katalyst/content/service/Entity'
-import {
-  MockedMetaverseContentServiceBuilder,
-  buildContent
-} from '@katalyst/test-helpers/service/MockedMetaverseContentService'
-import { randomEntity } from '@katalyst/test-helpers/service/EntityTestFactory'
-import { ControllerFactory } from '@katalyst/content/controller/ControllerFactory'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
-import { NoOpMigrationManager } from '@katalyst/test-helpers/NoOpMigrationManager'
-import { NoOpGarbageCollectionManager } from '@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager'
-import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
 import { ControllerPointerChanges } from '@katalyst/content/controller/Controller'
+import { ControllerFactory } from '@katalyst/content/controller/ControllerFactory'
+import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
+import { Server } from '@katalyst/content/Server'
+import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
+import { Entity } from '@katalyst/content/service/Entity'
+import { NoOpMigrationManager } from '@katalyst/test-helpers/NoOpMigrationManager'
+import { randomEntity } from '@katalyst/test-helpers/service/EntityTestFactory'
+import { NoOpGarbageCollectionManager } from '@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager'
+import {
+  buildContent,
+  MockedMetaverseContentServiceBuilder
+} from '@katalyst/test-helpers/service/MockedMetaverseContentService'
 import { NoOpSnapshotManager } from '@katalyst/test-helpers/service/snapshots/NoOpGarbageCollectionManager'
+import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
+import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
+import fetch from 'node-fetch'
 
 describe('Integration - Server', function () {
   let server: Server

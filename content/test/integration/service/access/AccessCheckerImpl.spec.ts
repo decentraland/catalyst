@@ -1,10 +1,10 @@
-import { EntityType, Fetcher } from 'dcl-catalyst-commons'
+import {
+  DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN,
+  DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN
+} from '@katalyst/content/Environment'
 import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import {
-  DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN,
-  DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN
-} from '@katalyst/content/Environment'
+import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 
 describe('Integration - AccessCheckerImpl', function () {
   it(`When access URL is wrong while checking scene access it reports an error`, async () => {

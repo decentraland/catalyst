@@ -1,21 +1,21 @@
-import ms from 'ms'
+import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
+import { delay } from 'decentraland-katalyst-utils/util'
+import ms from 'ms'
 import {
-  buildEvent,
-  assertHistoryOnServerHasEvents,
-  assertEntityIsNotDenylisted,
   assertContentNotIsDenylisted,
+  assertDeploymentsAreReported,
+  assertEntityIsNotDenylisted,
+  assertEntityWasNotDeployed,
   assertFieldsOnEntitiesExceptIdsAreEqual,
   assertFileIsOnServer,
-  assertEntityWasNotDeployed,
-  assertDeploymentsAreReported,
-  buildDeployment
+  assertHistoryOnServerHasEvents,
+  buildDeployment,
+  buildEvent
 } from '../E2EAssertions'
-import { EnvironmentConfig } from '@katalyst/content/Environment'
-import { TestServer } from '../TestServer'
-import { buildDeployData, createIdentity, awaitUntil } from '../E2ETestUtils'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { delay } from 'decentraland-katalyst-utils/util'
+import { awaitUntil, buildDeployData, createIdentity } from '../E2ETestUtils'
+import { TestServer } from '../TestServer'
 
 describe('End 2 end - Denylist handling', () => {
   const identity = createIdentity()

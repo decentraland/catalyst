@@ -1,35 +1,35 @@
-import { HandshakeData } from './peerjs-server-connector/peerjsserverconnection'
-import { ServerMessage } from './peerjs-server-connector/servermessage'
-import { ServerMessageType } from './peerjs-server-connector/enums'
-import { pickRandom, delay, pickBy } from './peerjs-server-connector/util'
-import {
-  KnownPeerData,
-  IPeer,
-  Room,
-  MinPeerData,
-  LogLevel,
-  PingResult,
-  PeerConfig,
-  PacketCallback,
-  ConnectedPeerData,
-  PeerRelayData
-} from './types'
-import { PeerHttpClient } from './PeerHttpClient'
-import { PeerMessageType, PingMessageType, PongMessageType, SuspendRelayType } from './messageTypes'
-import { Packet, PayloadEncoding, MessageData, PingData, PongData, SuspendRelayData } from './proto/peer_protobuf'
-import { Reader } from 'protobufjs/minimal'
 import { future, IFuture } from 'fp-future'
+import { Reader } from 'protobufjs/minimal'
 import {
-  Position,
-  PeerConnectionHint,
   discretizedPositionDistance,
-  DISCRETIZE_POSITION_INTERVALS
+  DISCRETIZE_POSITION_INTERVALS,
+  PeerConnectionHint,
+  Position
 } from '../../../commons/utils/Positions'
 import { randomUint32 } from '../../../commons/utils/util'
+import { ConnectionRejectReasons, PEER_CONSTANTS } from './constants'
+import { PeerMessageType, PingMessageType, PongMessageType, SuspendRelayType } from './messageTypes'
+import { PeerHttpClient } from './PeerHttpClient'
+import { ServerMessageType } from './peerjs-server-connector/enums'
+import { HandshakeData } from './peerjs-server-connector/peerjsserverconnection'
+import { ServerMessage } from './peerjs-server-connector/servermessage'
+import { delay, pickBy, pickRandom } from './peerjs-server-connector/util'
+import { PeerWebRTCEvent, PeerWebRTCHandler } from './PeerWebRTCHandler'
+import { MessageData, Packet, PayloadEncoding, PingData, PongData, SuspendRelayData } from './proto/peer_protobuf'
 import { GlobalStats } from './stats'
-import { PEER_CONSTANTS, ConnectionRejectReasons } from './constants'
 import { TimeKeeper } from './TimeKeeper'
-import { PeerWebRTCHandler, PeerWebRTCEvent } from './PeerWebRTCHandler'
+import {
+  ConnectedPeerData,
+  IPeer,
+  KnownPeerData,
+  LogLevel,
+  MinPeerData,
+  PacketCallback,
+  PeerConfig,
+  PeerRelayData,
+  PingResult,
+  Room
+} from './types'
 
 const PROTOCOL_VERSION = 4
 

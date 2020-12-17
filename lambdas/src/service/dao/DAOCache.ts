@@ -1,6 +1,6 @@
+import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
-import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
 import { DAOListClient } from './DAOListsClient'
 
 const REFRESH_TIME: string = '30m'

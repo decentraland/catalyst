@@ -1,14 +1,14 @@
-import { Writable, Readable } from 'stream'
-import parallelTransform from 'parallel-transform'
-import log4js from 'log4js'
-import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
+import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
 import {
   awaitablePipeline,
-  streamMap,
+  mergeStreams,
   streamFilter,
-  mergeStreams
+  streamMap
 } from '@katalyst/content/service/synchronization/streaming/StreamHelper'
-import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
+import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
+import log4js from 'log4js'
+import parallelTransform from 'parallel-transform'
+import { Readable, Writable } from 'stream'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
 import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'

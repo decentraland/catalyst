@@ -1,9 +1,9 @@
-import log4js from 'log4js'
-import { ContentFileHash, Timestamp, EntityType, Hashing } from 'dcl-catalyst-commons'
-import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
 import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
-import { MetaverseContentService } from '../Service'
+import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
+import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
+import log4js from 'log4js'
 import { Entity } from '../Entity'
+import { MetaverseContentService } from '../Service'
 
 export class SnapshotManager {
   private static readonly LOGGER = log4js.getLogger('SnapshotManager')

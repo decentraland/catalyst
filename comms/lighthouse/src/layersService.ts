@@ -1,9 +1,9 @@
-import { PeerInfo, Layer, PeerRequest } from './types'
-import { RoomsService } from './roomsService'
-import { PeersService, NotificationType } from './peersService'
-import { removePeerAndNotify, getPeerId } from './utils'
-import { UserMustBeInLayerError as PeerMustBeInLayerError, LayerIsFullError, RequestError } from './errors'
 import { ConfigService } from './configService'
+import { LayerIsFullError, RequestError, UserMustBeInLayerError as PeerMustBeInLayerError } from './errors'
+import { NotificationType, PeersService } from './peersService'
+import { RoomsService } from './roomsService'
+import { Layer, PeerInfo, PeerRequest } from './types'
+import { getPeerId, removePeerAndNotify } from './utils'
 
 type LayersServiceConfig = {
   peersService: PeersService

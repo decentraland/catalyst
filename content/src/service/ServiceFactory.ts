@@ -1,5 +1,5 @@
-import { MetaverseContentService, ClusterDeploymentsService } from './Service'
-import { Environment, Bean } from '../Environment'
+import { Bean, Environment } from '../Environment'
+import { ClusterDeploymentsService, MetaverseContentService } from './Service'
 import { ServiceImpl } from './ServiceImpl'
 import { ServiceStorage } from './ServiceStorage'
 

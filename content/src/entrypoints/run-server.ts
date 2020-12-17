@@ -1,5 +1,5 @@
-import { Server } from '../Server'
 import { EnvironmentBuilder } from '../Environment'
+import { Server } from '../Server'
 ;(async function () {
   try {
     const env = await new EnvironmentBuilder().build()

@@ -1,6 +1,6 @@
 import { EthAddress } from 'dcl-crypto'
-import { handlerForNetwork } from 'decentraland-katalyst-contracts/utils'
 import { Catalyst } from 'decentraland-katalyst-contracts/Catalyst'
+import { handlerForNetwork } from 'decentraland-katalyst-contracts/utils'
 
 export class DAOContract {
   private constructor(private readonly contract: Catalyst) {}

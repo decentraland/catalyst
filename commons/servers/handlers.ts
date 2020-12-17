@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express-serve-static-core'
-import { EthAddress, Authenticator } from 'dcl-crypto'
+import { Authenticator, EthAddress } from 'dcl-crypto'
+import { NextFunction, Request, RequestHandler, Response } from 'express-serve-static-core'
 import { EthereumProvider } from 'web3x/providers'
-import { SignerData, SignatureValidator, validateSignature } from './signatures'
+import { SignatureValidator, SignerData, validateSignature } from './signatures'
 
 /**
  * @param messageToSignBuilder Function to build the signature payload to test against. Keep in mind that the timestamp will be appended to the result.

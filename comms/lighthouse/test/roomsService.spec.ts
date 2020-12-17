@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { RoomsService } from '../src/roomsService'
-import { IPeersService, NotificationType } from '../src/peersService'
-import { PeerRequest, PeerInfo } from '../src/types'
 import { PeerConnectionHint } from 'decentraland-katalyst-utils/Positions'
+import { IPeersService, NotificationType } from '../src/peersService'
+import { RoomsService } from '../src/roomsService'
+import { PeerInfo, PeerRequest } from '../src/types'
 
 const { arrayWithExactContents } = jasmine
 

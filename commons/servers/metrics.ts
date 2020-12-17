@@ -1,6 +1,6 @@
 import express from 'express'
+import { collectDefaultMetrics, Counter, register as Register, Summary } from 'prom-client'
 import ResponseTime from 'response-time'
-import { register as Register, Counter, Summary, collectDefaultMetrics } from 'prom-client'
 
 const pathsTaken = new Counter({
   name: 'paths_taken',

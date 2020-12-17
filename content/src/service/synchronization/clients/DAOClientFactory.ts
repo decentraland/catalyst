@@ -1,6 +1,6 @@
-import { Environment, EnvironmentConfig } from '../../../Environment'
 import { DAOClient, DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
 import { DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
+import { Environment, EnvironmentConfig } from '../../../Environment'
 import { DAOHardcodedClient } from './HardcodedDAOClient'
 
 export class DAOClientFactory {

@@ -1,7 +1,7 @@
+import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { EntityType } from 'dcl-catalyst-commons'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { EntityCombo, buildDeployData, deployEntitiesCombo } from '../E2ETestUtils'
+import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that if concurrent deployments are made, then only one remains as active

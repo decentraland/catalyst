@@ -1,10 +1,10 @@
-import log4js from 'log4js'
-import { EntityType, Pointer, Timestamp, Fetcher } from 'dcl-catalyst-commons'
-import { AccessChecker } from './AccessChecker'
+import { EntityType, Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
+import log4js from 'log4js'
 import { ContentAuthenticator } from '../auth/Authenticator'
-import { AccessCheckerForScenes } from './AccessCheckerForScenes'
+import { AccessChecker } from './AccessChecker'
 import { AccessCheckerForProfiles } from './AccessCheckerForProfiles'
+import { AccessCheckerForScenes } from './AccessCheckerForScenes'
 import { AccessCheckerForWearables } from './AccessCheckerForWearables'
 
 export class AccessCheckerImpl implements AccessChecker {

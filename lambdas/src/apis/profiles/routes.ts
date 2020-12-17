@@ -1,6 +1,6 @@
-import { Router, Request, Response } from 'express'
-import { getProfileById } from './controllers/profiles'
+import { Request, Response, Router } from 'express'
 import { SmartContentServerFetcher } from '../../utils/SmartContentServerFetcher'
+import { getProfileById } from './controllers/profiles'
 
 export function initializeProfilesRoutes(
   router: Router,

@@ -1,10 +1,10 @@
+import { Entity, EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
+import { noReject } from 'decentraland-katalyst-utils/util'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
-import { EntityType, Fetcher, Entity } from 'dcl-catalyst-commons'
-import { noReject } from 'decentraland-katalyst-utils/util'
-import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 
 // The maximum amount of hot scenes returned
 const HOT_SCENES_LIMIT = 100

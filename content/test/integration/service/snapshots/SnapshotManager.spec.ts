@@ -1,11 +1,11 @@
-import { EntityType, EntityId, Pointer } from 'dcl-catalyst-commons'
-import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { Bean, EnvironmentBuilder, EnvironmentConfig } from '@katalyst/content/Environment'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { EnvironmentBuilder, Bean, EnvironmentConfig } from '@katalyst/content/Environment'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
-import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from '../../E2ETestUtils'
 import { SnapshotManager, SnapshotMetadata } from '@katalyst/content/service/snapshots/SnapshotManager'
+import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
+import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 describe('Integration - Snapshot Manager', () => {
   const P1 = 'X1,Y1',

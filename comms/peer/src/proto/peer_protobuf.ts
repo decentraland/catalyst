@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/ban-types */
 import * as Long from 'long'
-import { Writer, Reader } from 'protobufjs/minimal'
+import { Reader, Writer } from 'protobufjs/minimal'
 
 export enum PacketType {
   UKNOWN_PACKET_TYPE = 0,

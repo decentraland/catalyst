@@ -1,7 +1,7 @@
-import { Pointer, EntityId } from 'dcl-catalyst-commons'
+import { DELTA_POINTER_RESULT, DeploymentResult } from '@katalyst/content/service/pointers/PointerManager'
 import { Repository } from '@katalyst/content/storage/Repository'
+import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { DeploymentId } from './DeploymentsRepository'
-import { DeploymentResult, DELTA_POINTER_RESULT } from '@katalyst/content/service/pointers/PointerManager'
 
 export class DeploymentPointerChangesRepository {
   constructor(private readonly db: Repository) {}

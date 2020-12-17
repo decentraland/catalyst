@@ -1,18 +1,18 @@
-import ms from 'ms'
+import { Bean, EnvironmentBuilder, EnvironmentConfig } from '@katalyst/content/Environment'
+import { GarbageCollectionManager } from '@katalyst/content/service/garbage-collection/GarbageCollectionManager'
+import { MetaverseContentService } from '@katalyst/content/service/Service'
+import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import { delay } from 'decentraland-katalyst-utils/util'
+import ms from 'ms'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { EnvironmentBuilder, Bean, EnvironmentConfig } from '@katalyst/content/Environment'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
-import { GarbageCollectionManager } from '@katalyst/content/service/garbage-collection/GarbageCollectionManager'
 import {
-  EntityCombo,
   awaitUntil,
   buildDeployData,
   buildDeployDataAfterEntity,
-  deployEntitiesCombo
+  deployEntitiesCombo,
+  EntityCombo
 } from '../../E2ETestUtils'
 
 describe('Integration - Garbage Collection', () => {

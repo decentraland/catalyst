@@ -1,23 +1,23 @@
-import fs from 'fs'
-import path from 'path'
-import EthCrypto from 'eth-crypto'
-import {
-  Pointer,
-  EntityType,
-  Entity as ControllerEntity,
-  EntityId,
-  Timestamp,
-  ContentFileHash,
-  EntityVersion
-} from 'dcl-catalyst-commons'
-import { Authenticator, EthAddress, AuthChain } from 'dcl-crypto'
+import { ContentFile } from '@katalyst/content/controller/Controller'
+import { ControllerEntityFactory } from '@katalyst/content/controller/ControllerEntityFactory'
 import { retry } from '@katalyst/content/helpers/RetryHelper'
 import { Entity } from '@katalyst/content/service/Entity'
-import { DeploymentBuilder } from 'dcl-catalyst-client'
 import { EntityFactory } from '@katalyst/content/service/EntityFactory'
-import { ControllerEntityFactory } from '@katalyst/content/controller/ControllerEntityFactory'
 import { DeploymentResult, MetaverseContentService } from '@katalyst/content/service/Service'
-import { ContentFile } from '@katalyst/content/controller/Controller'
+import { DeploymentBuilder } from 'dcl-catalyst-client'
+import {
+  ContentFileHash,
+  Entity as ControllerEntity,
+  EntityId,
+  EntityType,
+  EntityVersion,
+  Pointer,
+  Timestamp
+} from 'dcl-catalyst-commons'
+import { AuthChain, Authenticator, EthAddress } from 'dcl-crypto'
+import EthCrypto from 'eth-crypto'
+import fs from 'fs'
+import path from 'path'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },

@@ -1,23 +1,23 @@
-import ms from 'ms'
-import { Timestamp, Entity as ControllerEntity } from 'dcl-catalyst-commons'
-import {
-  buildEvent,
-  assertEntityWasNotDeployed,
-  assertEntitiesAreActiveOnServer,
-  assertHistoryOnServerHasEvents,
-  assertEntitiesAreDeployedButNotActive,
-  assertDeploymentFailed,
-  assertThereIsAFailedDeployment,
-  assertDeploymentsAreReported,
-  buildDeployment,
-  assertDeploymentFailsWith
-} from '../E2EAssertions'
-import { EnvironmentConfig, Bean } from '@katalyst/content/Environment'
-import { TestServer } from '../TestServer'
-import { buildDeployData, createIdentity, awaitUntil, buildDeployDataAfterEntity } from '../E2ETestUtils'
+import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
 import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
+import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
+import ms from 'ms'
+import {
+  assertDeploymentFailed,
+  assertDeploymentFailsWith,
+  assertDeploymentsAreReported,
+  assertEntitiesAreActiveOnServer,
+  assertEntitiesAreDeployedButNotActive,
+  assertEntityWasNotDeployed,
+  assertHistoryOnServerHasEvents,
+  assertThereIsAFailedDeployment,
+  buildDeployment,
+  buildEvent
+} from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
+import { TestServer } from '../TestServer'
 
 describe('End 2 end - Error handling', () => {
   const identity = createIdentity()

@@ -1,8 +1,7 @@
-import { Router, Request, Response } from 'express'
-import { hotScenes } from './controllers/explore'
-import { realmsStatus } from './controllers/explore'
+import { Request, Response, Router } from 'express'
 import { DAOCache } from '../../service/dao/DAOCache'
 import { SmartContentClient } from '../../utils/SmartContentClient'
+import { hotScenes, realmsStatus } from './controllers/explore'
 
 export function initializeExploreRoutes(router: Router, daoCache: DAOCache, contentClient: SmartContentClient): Router {
   router.get('/hot-scenes', createHotScenesHandler(daoCache, contentClient, hotScenes))

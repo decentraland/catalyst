@@ -1,9 +1,9 @@
-import { Environment, EnvironmentConfig } from '../../Environment'
-import { DAOCache } from './DAOCache'
 import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
 import { DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
-import { DAOListContractClient } from './DAOListsClient'
 import { DAOListContract, DAOListContractsKeys } from 'decentraland-katalyst-contracts/DAOListContract'
+import { Environment, EnvironmentConfig } from '../../Environment'
+import { DAOCache } from './DAOCache'
+import { DAOListContractClient } from './DAOListsClient'
 
 export class DAOCacheFactory {
   static create(env: Environment): DAOCache {

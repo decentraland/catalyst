@@ -1,24 +1,24 @@
-import ms from 'ms'
-import { random } from 'faker'
-import { StartedTestContainer, GenericContainer } from 'testcontainers'
-import { ServerAddress } from 'dcl-catalyst-commons'
 import {
+  Bean,
   DEFAULT_DATABASE_CONFIG,
   Environment,
-  EnvironmentConfig,
-  Bean,
-  EnvironmentBuilder
+  EnvironmentBuilder,
+  EnvironmentConfig
 } from '@katalyst/content/Environment'
-import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
-import { Repository } from '@katalyst/content/storage/Repository'
-import { TestServer } from './TestServer'
-import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
-import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
-import { Container } from 'testcontainers/dist/container'
 import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
+import { Repository } from '@katalyst/content/storage/Repository'
+import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
+import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
+import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
+import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { ServerAddress } from 'dcl-catalyst-commons'
+import { random } from 'faker'
+import ms from 'ms'
+import { GenericContainer, StartedTestContainer } from 'testcontainers'
+import { Container } from 'testcontainers/dist/container'
+import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
+import { TestServer } from './TestServer'
 
 export class E2ETestEnvironment {
   private static TEST_SCHEMA = 'e2etest'

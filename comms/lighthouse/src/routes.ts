@@ -1,13 +1,13 @@
-import express from 'express'
-import { validatePeerToken, requireOneOf, requireAll, requireServerReady } from './handlers'
-import { LayersService } from './layersService'
-import { IRealm } from 'peerjs-server'
-import { RequestError } from './errors'
-import { PeerInfo, Layer } from './types'
-import { PeersService } from './peersService'
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
+import express from 'express'
+import { IRealm } from 'peerjs-server'
 import { ConfigService } from './configService'
+import { RequestError } from './errors'
+import { requireAll, requireOneOf, requireServerReady, validatePeerToken } from './handlers'
+import { LayersService } from './layersService'
+import { PeersService } from './peersService'
 import { ReadyStateService } from './readyStateService'
+import { Layer, PeerInfo } from './types'
 
 export type RoutesOptions = {
   env?: any

@@ -1,5 +1,5 @@
 import { IPeersService, NotificationType } from './peersService'
-import { Room, PeerInfo } from './types'
+import { PeerInfo, Room } from './types'
 import { removePeerAndNotify } from './utils'
 
 type RoomsFilter = Partial<{

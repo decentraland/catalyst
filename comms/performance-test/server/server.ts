@@ -1,9 +1,9 @@
 import cors from 'cors'
 import express from 'express'
-import morgan from 'morgan'
 import fs from 'fs'
-import os from 'os'
 import fetch from 'isomorphic-fetch'
+import morgan from 'morgan'
+import os from 'os'
 
 const port = parseInt(process.env.PORT ?? '9904')
 const localDir = process.env.TEST_RESULTS_LOCATION ?? `${os.homedir()}/peer-performance-tests`

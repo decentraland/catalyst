@@ -1,5 +1,5 @@
 import { PointerManager } from '@katalyst/content/service/pointers/PointerManager'
-import { mock, instance, when, anything } from 'ts-mockito'
+import { anything, instance, mock, when } from 'ts-mockito'
 
 export class NoOpPointerManager {
   static build(): PointerManager {

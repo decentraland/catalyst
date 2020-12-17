@@ -1,5 +1,5 @@
-import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { AccessChecker } from '@katalyst/content/service/access/AccessChecker'
+import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 
 export class MockedAccessChecker implements AccessChecker {

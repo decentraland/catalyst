@@ -1,8 +1,8 @@
 import BN from 'bn.js'
 import { Address } from 'web3x/address'
-import { EventLog, TransactionReceipt } from 'web3x/formatters'
-import { Contract, ContractOptions, TxCall, TxSend, EventSubscriptionFactory } from 'web3x/contract'
+import { Contract, ContractOptions, EventSubscriptionFactory, TxCall, TxSend } from 'web3x/contract'
 import { Eth } from 'web3x/eth'
+import { EventLog, TransactionReceipt } from 'web3x/formatters'
 import abi from './CatalystAbi'
 export type AddCatalystEvent = {
   _id: string

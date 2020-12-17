@@ -1,11 +1,11 @@
 import { Timestamp } from 'dcl-catalyst-commons'
-import { DenylistTarget, DenylistTargetType, DenylistTargetId } from './DenylistTarget'
-import { ContentCluster } from '../service/synchronization/ContentCluster'
-import { EthAddress, AuthChain } from 'dcl-crypto'
-import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Repository } from '../storage/Repository'
-import { DenylistRepository } from '../storage/repositories/DenylistRepository'
+import { AuthChain, EthAddress } from 'dcl-crypto'
 import { validateSignature } from 'decentraland-katalyst-commons/signatures'
+import { ContentAuthenticator } from '../service/auth/Authenticator'
+import { ContentCluster } from '../service/synchronization/ContentCluster'
+import { DenylistRepository } from '../storage/repositories/DenylistRepository'
+import { Repository } from '../storage/Repository'
+import { DenylistTarget, DenylistTargetId, DenylistTargetType } from './DenylistTarget'
 
 export class Denylist {
   constructor(
