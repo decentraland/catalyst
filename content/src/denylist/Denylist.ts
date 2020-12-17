@@ -115,9 +115,10 @@ export class Denylist {
       validateSignature(
         metadata,
         messageToSign,
-        () => {
-          status: DenylistSignatureValidationStatus.OK
-        },
+        () =>
+          resolve({
+            status: DenylistSignatureValidationStatus.OK
+          }),
         (errorMessage) =>
           resolve({
             status: DenylistSignatureValidationStatus.ERROR,
@@ -155,5 +156,5 @@ export function isSuccessfulOperation(operation: DenylistSignatureValidationResu
 }
 
 export function isErrorOperation(operation: DenylistSignatureValidationResult): boolean {
-  return isSuccessfulOperation(operation)
+  return !isSuccessfulOperation(operation)
 }
