@@ -1,8 +1,13 @@
-import { ContentFileHash, Hashing, EntityType, ENTITY_FILE_NAME, Timestamp, EntityVersion } from 'dcl-catalyst-commons'
+import { ContentFileHash, Hashing, EntityType, ENTITY_FILE_NAME, EntityVersion } from 'dcl-catalyst-commons'
 import { Bean, Environment } from '@katalyst/content/Environment'
 import { ServiceFactory } from '@katalyst/content/service/ServiceFactory'
 import { ContentStorage, StorageContent } from '@katalyst/content/storage/ContentStorage'
-import { MetaverseContentService, LocalDeploymentAuditInfo } from '@katalyst/content/service/Service'
+import {
+  MetaverseContentService,
+  LocalDeploymentAuditInfo,
+  DeploymentResult,
+  isInvalidDeployment
+} from '@katalyst/content/service/Service'
 import { Entity } from '@katalyst/content/service/Entity'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
@@ -17,6 +22,8 @@ import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { ContentFile } from '@katalyst/content/controller/Controller'
 import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
+
+import assert from 'assert'
 
 describe('Service', function () {
   const auditInfo: LocalDeploymentAuditInfo = {
@@ -68,12 +75,23 @@ describe('Service', function () {
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     const storageSpy = spyOn(storage, 'store').and.callThrough()
 
-    const timestamp: Timestamp = await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
-    const deltaMilliseconds = Date.now() - timestamp
-    expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
-    expect(deltaMilliseconds).toBeLessThanOrEqual(10)
-    expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
-    expect(storageSpy).toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
+    const deploymentResult: DeploymentResult = await service.deployEntity(
+      [entityFile, randomFile],
+      entity.id,
+      auditInfo,
+      ''
+    )
+    if (isInvalidDeployment(deploymentResult)) {
+      assert.fail(
+        'The deployment result: ' + deploymentResult + ' was expected to be successful, it was invalid instead.'
+      )
+    } else {
+      const deltaMilliseconds = Date.now() - deploymentResult
+      expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
+      expect(deltaMilliseconds).toBeLessThanOrEqual(10)
+      expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
+      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
+    }
   })
 
   it(`When a file is already uploaded, then don't try to upload it again`, async () => {

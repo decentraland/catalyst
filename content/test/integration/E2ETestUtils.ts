@@ -16,7 +16,7 @@ import { Entity } from '@katalyst/content/service/Entity'
 import { DeploymentBuilder } from 'dcl-catalyst-client'
 import { EntityFactory } from '@katalyst/content/service/EntityFactory'
 import { ControllerEntityFactory } from '@katalyst/content/controller/ControllerEntityFactory'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
+import { DeploymentResult, MetaverseContentService } from '@katalyst/content/service/Service'
 import { ContentFile } from '@katalyst/content/controller/Controller'
 
 export async function buildDeployDataAfterEntity(
@@ -122,17 +122,17 @@ export function awaitUntil(
 export async function deployEntitiesCombo(
   service: MetaverseContentService,
   ...entitiesCombo: EntityCombo[]
-): Promise<Timestamp> {
-  let timestamp: Timestamp = 0
+): Promise<DeploymentResult> {
+  let deploymentResult: DeploymentResult = { errors: [] }
   for (const { deployData } of entitiesCombo) {
-    timestamp = await service.deployEntity(
+    deploymentResult = await service.deployEntity(
       Array.from(deployData.files.values()),
       deployData.entityId,
       { authChain: deployData.authChain, version: EntityVersion.V2 },
       ''
     )
   }
-  return timestamp
+  return deploymentResult
 }
 
 export type DeployData = {

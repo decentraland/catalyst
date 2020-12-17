@@ -3,11 +3,15 @@ import {
   Pointer,
   EntityId,
   ContentFileHash,
-  Timestamp,
   PartialDeploymentHistory,
   ServerStatus
 } from 'dcl-catalyst-commons'
-import { MetaverseContentService, LocalDeploymentAuditInfo, DeploymentListener } from '../service/Service'
+import {
+  MetaverseContentService,
+  LocalDeploymentAuditInfo,
+  DeploymentListener,
+  DeploymentResult
+} from '../service/Service'
 import { Entity } from '../service/Entity'
 import { Denylist } from './Denylist'
 import {
@@ -78,7 +82,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string
-  ): Promise<Timestamp> {
+  ): Promise<DeploymentResult> {
     return this.repository.task(async (task) => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)
@@ -93,7 +97,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string
-  ): Promise<Timestamp> {
+  ): Promise<DeploymentResult> {
     return this.repository.task(async (task) => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)
@@ -107,7 +111,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     files: ContentFile[],
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo
-  ): Promise<Timestamp> {
+  ): Promise<DeploymentResult> {
     return this.repository.task(async (task) => {
       // Validate the deployment
       await this.validateDeployment(task.denylist, files, entityId, auditInfo)

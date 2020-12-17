@@ -3,7 +3,7 @@ import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from 'dcl-
 import { Readable } from 'stream'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { Entity } from '../Entity'
-import { ClusterDeploymentsService } from '../Service'
+import { ClusterDeploymentsService, DeploymentResult, isInvalidDeployment } from '../Service'
 import { ContentCluster } from './ContentCluster'
 import { tryOnCluster } from './ClusterUtils'
 import { EntityFactory } from '../EntityFactory'
@@ -170,7 +170,7 @@ export class EventDeployer {
 
   private buildDeploymentExecution(
     deploymentEvent: DeploymentWithAuditInfo,
-    execution: () => Promise<void>
+    execution: () => Promise<DeploymentResult>
   ): DeploymentExecution {
     return {
       metadata: {
@@ -185,7 +185,15 @@ export class EventDeployer {
     const deploymentExecution = await deploymentPreparation
     return async () => {
       try {
-        await deploymentExecution.execution()
+        const deploymentResult: DeploymentResult = await deploymentExecution.execution()
+        if (isInvalidDeployment(deploymentResult)) {
+          // The deployment failed, so we report it
+          await this.reportError(
+            deploymentExecution.metadata.deploymentEvent,
+            FailureReason.DEPLOYMENT_ERROR,
+            deploymentResult.errors.join('\n')
+          )
+        }
       } catch (error) {
         // The deployment failed, so we report it
         await this.reportError(
@@ -218,7 +226,7 @@ export type DeploymentExecution = {
   metadata: {
     deploymentEvent: DeploymentWithAuditInfo
   }
-  execution: () => Promise<void>
+  execution: () => Promise<DeploymentResult>
 }
 
 export type HistoryDeploymentOptions = {

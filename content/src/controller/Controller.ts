@@ -17,7 +17,12 @@ import {
   SortingField,
   SortingOrder
 } from 'dcl-catalyst-commons'
-import { MetaverseContentService, LocalDeploymentAuditInfo } from '../service/Service'
+import {
+  MetaverseContentService,
+  LocalDeploymentAuditInfo,
+  DeploymentResult,
+  isSuccessfulDeployment
+} from '../service/Service'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 import { Denylist } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
@@ -109,7 +114,7 @@ export class Controller {
     return [elements]
   }
 
-  async createLegacyEntity(req: express.Request, res: express.Response) {
+  async createLegacyEntity(req: express.Request, res: express.Response): Promise<void> {
     // Method: POST
     // Path: /legacy-entities
     // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
@@ -121,6 +126,7 @@ export class Controller {
 
     let deployFiles: ContentFile[] = []
     try {
+      deployFiles = await this.readFiles(files)
       const auditInfo: LocalDeploymentAuditInfo = {
         authChain,
         version: CURRENT_CONTENT_VERSION,
@@ -130,27 +136,28 @@ export class Controller {
         }
       }
 
-      if (files instanceof Array) {
-        deployFiles = await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
+      const deploymentResult: DeploymentResult = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
+
+      if (isSuccessfulDeployment(deploymentResult)) {
+        res.send({ creationTimestamp: deploymentResult })
+      } else {
+        Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
+        res.status(400).send(deploymentResult.errors.join('\n'))
       }
-      const creationTimestamp = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
-      res.send({
-        creationTimestamp: creationTimestamp
-      })
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+      res.status(500).send(error.message)
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
   }
 
-  async createEntity(req: express.Request, res: express.Response) {
+  async createEntity(req: express.Request, res: express.Response): Promise<void> {
     // Method: POST
     // Path: /entities
     // Body: JSON with entityId,ethAddress,signature; and a set of files
     const entityId: EntityId = req.body.entityId
-    let authChain: AuthLink[] = req.body.authChain
+    const authChain: AuthLink[] = req.body.authChain
     const ethAddress: EthAddress = req.body.ethAddress
     const signature: Signature = req.body.signature
     const files = req.files
@@ -159,36 +166,47 @@ export class Controller {
 
     let deployFiles: ContentFile[] = []
     try {
-      if (!authChain && ethAddress && signature) {
-        authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
-      }
+      deployFiles = await this.readFiles(files)
+      const auditInfo: LocalDeploymentAuditInfo = this.buildAuditInfo(authChain, ethAddress, signature, entityId)
 
-      if (files instanceof Array) {
-        deployFiles = await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
-      }
-
-      const auditInfo: LocalDeploymentAuditInfo = { authChain, version: CURRENT_CONTENT_VERSION }
-      let creationTimestamp: Timestamp
+      let deploymentResult: DeploymentResult = { errors: [] }
       if (fixAttempt) {
-        creationTimestamp = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+        deploymentResult = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
       } else {
-        creationTimestamp = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+        deploymentResult = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
       }
-      res.send({ creationTimestamp })
+
+      if (isSuccessfulDeployment(deploymentResult)) {
+        res.send({ creationTimestamp: deploymentResult })
+      } else {
+        Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
+        res.status(400).send(deploymentResult.errors.join('\n'))
+      }
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+      res.status(500).send(error.message)
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
   }
 
-  private async readFile(name: string, path: string): Promise<ContentFile> {
-    return {
-      name,
-      path,
-      content: await fs.promises.readFile(path)
+  private buildAuditInfo(authChain: AuthLink[], ethAddress: string, signature: string, entityId: string) {
+    if (!authChain && ethAddress && signature) {
+      authChain = Authenticator.createSimpleAuthChain(entityId, ethAddress, signature)
     }
+    return { authChain, version: CURRENT_CONTENT_VERSION }
+  }
+
+  private async readFiles(files: { [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[]) {
+    if (files instanceof Array) {
+      return await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
+    } else {
+      return []
+    }
+  }
+
+  private async readFile(name: string, path: string): Promise<ContentFile> {
+    return { name, path, content: await fs.promises.readFile(path) }
   }
 
   private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void> {

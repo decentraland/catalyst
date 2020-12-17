@@ -135,8 +135,8 @@ describe('End 2 end - Error handling', () => {
     causeOfFailure: (entity: ControllerEntity) => Promise<void>,
     removeCauseOfFailure?: () => Promise<void>
   ) {
-    // Start servers
-    await Promise.all([server1.start(), server2.start()])
+    // Start server1
+    await server1.start()
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
@@ -151,6 +151,9 @@ describe('End 2 end - Error handling', () => {
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)
+
+    // Start server2
+    await server2.start()
 
     // Assert deployment is marked as failed
     await awaitUntil(() =>

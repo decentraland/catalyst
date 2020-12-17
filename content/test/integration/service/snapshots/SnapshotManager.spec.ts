@@ -5,6 +5,7 @@ import { EnvironmentBuilder, Bean, EnvironmentConfig } from '@katalyst/content/E
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { EntityCombo, buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo } from '../../E2ETestUtils'
 import { SnapshotManager, SnapshotMetadata } from '@katalyst/content/service/snapshots/SnapshotManager'
+import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 
 describe('Integration - Snapshot Manager', () => {
   const P1 = 'X1,Y1',
@@ -35,7 +36,7 @@ describe('Integration - Snapshot Manager', () => {
 
   it(`When snapshot manager starts, then a snapshot is generated if there wasn't one`, async () => {
     // Deploy E1 and E2
-    const lastDeploymentTimestamp = await deployEntitiesCombo(service, E1, E2)
+    const deploymentResult = await deployEntitiesCombo(service, E1, E2)
 
     // Assert there is no snapshot
     expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
@@ -46,7 +47,8 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+
+    assertResultIsSuccessfulWithTimestamp(deploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
 
     // Assert snapshot content is correct
     await assertSnapshotContains(snapshotMetadata, E1, E2)
@@ -73,12 +75,12 @@ describe('Integration - Snapshot Manager', () => {
     await snapshotManager.start()
 
     // Deploy E1, E2 and E3
-    const lastDeploymentTimestamp = await deployEntitiesCombo(service, E1, E2, E3)
+    const lastDeploymentResult = await deployEntitiesCombo(service, E1, E2, E3)
 
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(lastDeploymentTimestamp)
+    assertResultIsSuccessfulWithTimestamp(lastDeploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
 
     // Assert snapshot content is empty
     await assertSnapshotContains(snapshotMetadata, E2, E3)

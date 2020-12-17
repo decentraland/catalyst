@@ -18,7 +18,9 @@ import {
   MetaverseContentService,
   ClusterDeploymentsService,
   LocalDeploymentAuditInfo,
-  DeploymentListener
+  DeploymentListener,
+  InvalidResult,
+  DeploymentResult
 } from './Service'
 import { EntityFactory } from './EntityFactory'
 import { PointerManager } from './pointers/PointerManager'
@@ -68,7 +70,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     repository: RepositoryTask | Repository = this.repository
-  ): Promise<Timestamp> {
+  ): Promise<DeploymentResult> {
     return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, origin, repository)
   }
 
@@ -78,7 +80,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     repository: RepositoryTask | Repository = this.repository
-  ): Promise<Timestamp> {
+  ): Promise<DeploymentResult> {
     return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, origin, repository, true)
   }
 
@@ -87,7 +89,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     repository: RepositoryTask | Repository = this.repository
-  ): Promise<number> {
+  ): Promise<DeploymentResult> {
     return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, 'legacy', repository)
   }
 
@@ -99,7 +101,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     origin: string,
     repository: RepositoryTask | Repository = this.repository,
     fix: boolean = false
-  ): Promise<Timestamp> {
+  ): Promise<DeploymentResult> {
     const validation = this.validations.getInstance()
 
     // Find entity file and make sure its hash is the expected
@@ -147,9 +149,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
     const overlappingPointers = entity.pointers.filter((pointer) => pointersCurrentlyBeingDeployed.has(pointer))
     if (overlappingPointers.length > 0) {
-      throw new Error(
-        `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
-      )
+      return {
+        errors: [
+          `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
+        ]
+      }
     }
 
     // Update the current list of pointers being deployed
@@ -157,7 +161,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
     try {
-      const { auditInfoComplete, wasEntityDeployed } = await repository.txIf(async (transaction) => {
+      const response:
+        | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }
+        | InvalidResult = await repository.txIf(async (transaction) => {
         const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
         // Validate if the entity can be re deployed
@@ -186,7 +192,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         )
 
         if (validation.getErrors().length > 0) {
-          throw new Error(validation.getErrors().join('\n'))
+          return { errors: validation.getErrors() }
         }
 
         const localTimestamp = Date.now()
@@ -264,15 +270,18 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
       })
 
-      if (wasEntityDeployed) {
+      if (!('auditInfoComplete' in response)) {
+        return response
+      } else if (response.wasEntityDeployed) {
         // Report deployment to listeners
-        await Promise.all(this.listeners.map((listener) => listener({ entity, auditInfo: auditInfoComplete, origin })))
+        await Promise.all(
+          this.listeners.map((listener) => listener({ entity, auditInfo: response.auditInfoComplete, origin }))
+        )
 
         // Since we are still reporting the history size, add one to it
         this.historySize++
       }
-
-      return auditInfoComplete.localTimestamp
+      return response.auditInfoComplete.localTimestamp
     } catch (error) {
       throw error
     } finally {
@@ -374,9 +383,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     return this.storage.storeContent(fileHash, fromBuffer(content))
   }
 
-  async deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<void> {
+  async deployEntityFromCluster(
+    files: ContentFile[],
+    entityId: EntityId,
+    auditInfo: AuditInfo
+  ): Promise<DeploymentResult> {
     const legacy = !!auditInfo.migrationData
-    await this.deployInternal(
+    return await this.deployInternal(
       files,
       entityId,
       auditInfo,
@@ -389,9 +402,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityFile: ContentFile,
     entityId: EntityId,
     auditInfo: AuditInfo
-  ): Promise<void> {
+  ): Promise<DeploymentResult> {
     const legacy = !!auditInfo.migrationData
-    await this.deployInternal(
+    return await this.deployInternal(
       [entityFile],
       entityId,
       auditInfo,
