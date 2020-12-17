@@ -112,14 +112,22 @@ export class TestServer extends Server {
     return this.makeRequest(`${this.getAddress()}/denylist`)
   }
 
-  denylistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
+  denylistEntity(
+    entity: ControllerEntity,
+    identity: Identity,
+    signatureOverwrite: string | undefined = undefined
+  ): Promise<void> {
     const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-    return this.denylistTarget(entityTarget, identity)
+    return this.denylistTarget(entityTarget, identity, signatureOverwrite)
   }
 
-  undenylistEntity(entity: ControllerEntity, identity: Identity): Promise<void> {
+  undenylistEntity(
+    entity: ControllerEntity,
+    identity: Identity,
+    signatureOverwrite: string | undefined = undefined
+  ): Promise<void> {
     const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-    return this.undenylistTarget(entityTarget, identity)
+    return this.undenylistTarget(entityTarget, identity, signatureOverwrite)
   }
 
   async denylistContent(fileHash: ContentFileHash, identity: Identity): Promise<void> {
@@ -127,9 +135,14 @@ export class TestServer extends Server {
     return this.denylistTarget(contentTarget, identity)
   }
 
-  private async denylistTarget(target: DenylistTarget, identity: Identity) {
+  private async denylistTarget(
+    target: DenylistTarget,
+    identity: Identity,
+    signatureOverwrite: string | undefined = undefined
+  ) {
     const timestamp = Date.now()
-    const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
+    const [address, calculatedSignature] = hashAndSignMessage(`block-${target.asString()}-${timestamp}`, identity)
+    const signature = signatureOverwrite ?? calculatedSignature
 
     const body = {
       timestamp: timestamp,
@@ -145,9 +158,15 @@ export class TestServer extends Server {
     await assertResponseIsOkOrThrow(deployResponse)
   }
 
-  private async undenylistTarget(target: DenylistTarget, identity: Identity) {
+  private async undenylistTarget(
+    target: DenylistTarget,
+    identity: Identity,
+    signatureOverwrite: string | undefined = undefined
+  ) {
     const timestamp = Date.now()
-    const [address, signature] = hashAndSignMessage(`${target.asString()}${timestamp}`, identity)
+    const [address, calculatedSignature] = hashAndSignMessage(`unblock-${target.asString()}-${timestamp}`, identity)
+    const signature = signatureOverwrite ?? calculatedSignature
+
     const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
     const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}?${query}`, {
       method: 'DELETE',

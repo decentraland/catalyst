@@ -6,11 +6,16 @@ export async function validateSignature(networkKey: string, req: Request, res: R
   // Method: POST
   // Path: /validate-signature
   try {
-    const timestamp: string = req.body.timestamp
+    const timestamp: string | undefined = req.body.timestamp
+    const signedMessage: string | undefined = req.body.signedMessage
     const authChain: AuthLink[] = req.body.authChain
+    const finalAuthority: string | undefined = signedMessage ?? timestamp
+    if (!finalAuthority) {
+      return res.status(400).send(`Expected 'signedMessage' property to be set`)
+    }
 
     const result: ValidationResult = await Authenticator.validateSignature(
-      timestamp,
+      finalAuthority,
       authChain,
       httpProviderForNetwork(networkKey)
     )
