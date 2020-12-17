@@ -3,7 +3,7 @@ import { ENTITY_FILE_NAME, ContentFileHash, DeploymentWithAuditInfo } from 'dcl-
 import { Readable } from 'stream'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { Entity } from '../Entity'
-import { ClusterDeploymentsService, DeploymentResult, InvalidResult, isSuccessfullDeployment } from '../Service'
+import { ClusterDeploymentsService, DeploymentResult, isInvalidDeployment } from '../Service'
 import { ContentCluster } from './ContentCluster'
 import { tryOnCluster } from './ClusterUtils'
 import { EntityFactory } from '../EntityFactory'
@@ -186,19 +186,12 @@ export class EventDeployer {
     return async () => {
       try {
         const deploymentResult: DeploymentResult = await deploymentExecution.execution()
-        if (isSuccessfullDeployment(deploymentResult)) {
+        if (isInvalidDeployment(deploymentResult)) {
           // The deployment failed, so we report it
           await this.reportError(
             deploymentExecution.metadata.deploymentEvent,
             FailureReason.DEPLOYMENT_ERROR,
-            (deploymentResult as InvalidResult).errors.join('\n')
-          )
-        } else {
-          // The deployment failed, so we report it
-          await this.reportError(
-            deploymentExecution.metadata.deploymentEvent,
-            FailureReason.DEPLOYMENT_ERROR,
-            (deploymentResult as InvalidResult).errors.join('\n')
+            deploymentResult.errors.join('\n')
           )
         }
       } catch (error) {

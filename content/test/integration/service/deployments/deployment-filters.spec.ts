@@ -1,6 +1,6 @@
 import { Authenticator } from 'dcl-crypto'
 import { EntityType, Timestamp, EntityVersion, AuditInfo } from 'dcl-catalyst-commons'
-import { DeploymentResult, isSuccessfullDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
+import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
 import { EntityCombo, buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
 import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager'
@@ -174,8 +174,8 @@ describe('Integration - Deployment Filters', () => {
         newAuditInfo,
         ''
       )
-      if (isSuccessfullDeployment(deploymentResult)) {
-        result.push(deploymentResult as Timestamp)
+      if (isSuccessfulDeployment(deploymentResult)) {
+        result.push(deploymentResult)
       }
     }
     return result

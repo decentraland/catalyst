@@ -17,6 +17,7 @@ import { TestServer } from './TestServer'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { DeployData } from './E2ETestUtils'
 import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
+import { DeploymentResult, isSuccessfulDeployment } from '@katalyst/content/service/Service'
 
 export async function assertEntitiesAreDeployedButNotActive(server: TestServer, ...entities: ControllerEntity[]) {
   // Legacy check
@@ -368,5 +369,13 @@ async function getEntitysDeployment(server: TestServer, entity: ControllerEntity
 export async function assertResponseIsOkOrThrow(response: Response) {
   if (!response.ok) {
     throw new Error(await response.text())
+  }
+}
+
+export function assertResultIsSuccessfulWithTimestamp(result: DeploymentResult, expectedTimestamp: Timestamp): void {
+  if (isSuccessfulDeployment(result)) {
+    expect(result).toEqual(expectedTimestamp)
+  } else {
+    assert.fail('The deployment result: ' + result + ' was expected to be successful, it was invalid instead.')
   }
 }

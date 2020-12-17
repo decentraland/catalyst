@@ -21,8 +21,7 @@ import {
   MetaverseContentService,
   LocalDeploymentAuditInfo,
   DeploymentResult,
-  isSuccessfullDeployment,
-  InvalidResult
+  isSuccessfulDeployment
 } from '../service/Service'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 import { Denylist } from '../denylist/Denylist'
@@ -139,12 +138,11 @@ export class Controller {
 
       const deploymentResult: DeploymentResult = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
 
-      if (isSuccessfullDeployment(deploymentResult)) {
+      if (isSuccessfulDeployment(deploymentResult)) {
         res.send({ creationTimestamp: deploymentResult })
       } else {
-        const invalidResult: InvalidResult = deploymentResult as InvalidResult
-        Controller.LOGGER.warn(`Returning error '${invalidResult.errors.join('\n')}'`)
-        res.status(400).send(invalidResult.errors.join('\n'))
+        Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
+        res.status(400).send(deploymentResult.errors.join('\n'))
       }
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)
@@ -178,12 +176,11 @@ export class Controller {
         deploymentResult = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
       }
 
-      if (isSuccessfullDeployment(deploymentResult)) {
+      if (isSuccessfulDeployment(deploymentResult)) {
         res.send({ creationTimestamp: deploymentResult })
       } else {
-        const invalidResult: InvalidResult = deploymentResult as InvalidResult
-        Controller.LOGGER.warn(`Returning error '${invalidResult.errors.join('\n')}'`)
-        res.status(400).send(invalidResult.errors.join('\n'))
+        Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
+        res.status(400).send(deploymentResult.errors.join('\n'))
       }
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)

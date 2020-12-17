@@ -102,10 +102,10 @@ export type InvalidResult = { errors: string[] }
 
 export type DeploymentResult = Timestamp | InvalidResult
 
-export function isSuccessfullDeployment(deploymentResult: DeploymentResult): boolean {
+export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is Timestamp {
   return typeof deploymentResult === 'number'
 }
 
-export function isInvalidDeployment(deploymentResult: DeploymentResult): boolean {
-  return !isSuccessfullDeployment(deploymentResult)
+export function isInvalidDeployment(deploymentResult: DeploymentResult): deploymentResult is InvalidResult {
+  return !isSuccessfulDeployment(deploymentResult)
 }
