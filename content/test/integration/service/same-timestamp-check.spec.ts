@@ -1,6 +1,6 @@
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
-import { loadTestEnvironmentWithoutSynchronization } from '../E2ETestEnvironment'
+import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
@@ -11,7 +11,7 @@ describe('Integration - Same Timestamp Check', () => {
   const type = EntityType.PROFILE
   let oldestEntity: EntityCombo, newestEntity: EntityCombo
 
-  const testEnv = loadTestEnvironmentWithoutSynchronization()
+  const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
 
   beforeAll(async () => {

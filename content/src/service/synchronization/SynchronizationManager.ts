@@ -26,10 +26,15 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly cluster: ContentCluster,
     private readonly systemProperties: SystemPropertiesManager,
     private readonly deployer: EventDeployer,
-    private readonly timeBetweenSyncs: number
+    private readonly timeBetweenSyncs: number,
+    private readonly disableSynchronization: boolean
   ) {}
 
   async start(): Promise<void> {
+    if (this.disableSynchronization) {
+      ClusterSynchronizationManager.LOGGER.warn(`Cluster synchronization has been disabled.`)
+      return
+    }
     // Make sure the stopping flag is set to false
     this.stopping = false
 
@@ -115,20 +120,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       resolve()
     })
   }
-}
-
-export class DisabledSynchronizationManager implements SynchronizationManager {
-  start(): Promise<void> {
-    return new Promise(async (resolve) => {
-      resolve()
-    })
-  }
-  stop(): Promise<void> {
-    return new Promise(async (resolve) => {
-      resolve()
-    })
-  }
-  getStatus() {}
 }
 
 enum SynchronizationState {

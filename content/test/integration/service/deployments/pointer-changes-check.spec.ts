@@ -1,7 +1,7 @@
 import { PointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { Pointer } from 'dcl-catalyst-commons'
-import { loadTestEnvironmentWithoutSynchronization } from '../../E2ETestEnvironment'
+import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
@@ -13,7 +13,7 @@ describe('Integration - Pointer Changes Check', () => {
   const P3 = 'x3,y3'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo, E4: EntityCombo
 
-  const testEnv = loadTestEnvironmentWithoutSynchronization()
+  const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
 
   beforeAll(async () => {

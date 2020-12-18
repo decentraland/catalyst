@@ -223,7 +223,7 @@ class PostgresWaitStrategy extends LogWaitStrategy {
   }
 }
 
-export function loadTestEnvironmentWithoutSynchronization(): E2ETestEnvironment {
+export function loadStandaloneTestEnvironment(): E2ETestEnvironment {
   return loadTestEnvironment(new Map([[EnvironmentConfig.DISABLE_SYNCHRONIZATION, true]]))
 }
 
