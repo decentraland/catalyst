@@ -26,9 +26,16 @@ export class Denylist {
     return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
-  async addTarget(target: DenylistTarget, metadata: DenylistMetadata) {
+  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
     // Validate blocker and signature
-    await this.validateSignature(DenylistAction.ADDITION, target, metadata)
+    const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
+      DenylistAction.ADDITION,
+      target,
+      metadata
+    )
+    if (isErrorOperation(operationResult)) {
+      return operationResult
+    }
 
     await this.repository.tx(async (transaction) => {
       // Add denylist
@@ -37,11 +44,19 @@ export class Denylist {
       // Add to history
       await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.ADDITION)
     })
+    return { status: DenylistSignatureValidationStatus.OK }
   }
 
-  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata) {
+  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
     // Validate blocker and signature
-    await this.validateSignature(DenylistAction.REMOVAL, target, metadata)
+    const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
+      DenylistAction.REMOVAL,
+      target,
+      metadata
+    )
+    if (isErrorOperation(operationResult)) {
+      return operationResult
+    }
 
     await this.repository.tx(async (transaction) => {
       // Remove denylist
@@ -50,6 +65,7 @@ export class Denylist {
       // Add to history
       await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.REMOVAL)
     })
+    return { status: DenylistSignatureValidationStatus.OK }
   }
 
   getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
@@ -87,23 +103,31 @@ export class Denylist {
     return result
   }
 
-  private async validateSignature(action: DenylistAction, target: DenylistTarget, metadata: DenylistMetadata) {
+  private async validateSignature(
+    action: DenylistAction,
+    target: DenylistTarget,
+    metadata: DenylistMetadata
+  ): Promise<DenylistSignatureValidationResult> {
     const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
     const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
-    try {
-      await new Promise((resolve, reject) => {
-        validateSignature(
-          metadata,
-          messageToSign,
-          resolve,
-          reject,
-          (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
-          this.network
-        )
-      })
-    } catch (error) {
-      throw new Error(`Failed to authenticate the blocker. Error was: ${error}`)
-    }
+
+    return new Promise((resolve) => {
+      validateSignature(
+        metadata,
+        messageToSign,
+        () =>
+          resolve({
+            status: DenylistSignatureValidationStatus.OK
+          }),
+        (errorMessage) =>
+          resolve({
+            status: DenylistSignatureValidationStatus.ERROR,
+            message: `Failed to authenticate the blocker. Error was: ${errorMessage}`
+          }),
+        (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
+        this.network
+      )
+    })
   }
 }
 
@@ -115,4 +139,22 @@ export type DenylistMetadata = {
 export enum DenylistAction {
   ADDITION = 'addition',
   REMOVAL = 'removal'
+}
+
+export enum DenylistSignatureValidationStatus {
+  OK,
+  ERROR
+}
+
+export type DenylistSignatureValidationResult = {
+  status: DenylistSignatureValidationStatus
+  message?: string
+}
+
+export function isSuccessfulOperation(operation: DenylistSignatureValidationResult): boolean {
+  return operation.status === DenylistSignatureValidationStatus.OK
+}
+
+export function isErrorOperation(operation: DenylistSignatureValidationResult): boolean {
+  return !isSuccessfulOperation(operation)
 }

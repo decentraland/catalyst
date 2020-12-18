@@ -18,7 +18,7 @@ import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-c
 import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
-import { Denylist } from '../denylist/Denylist'
+import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
@@ -519,7 +519,7 @@ export class Controller {
     }
   }
 
-  async addToDenylist(req: express.Request, res: express.Response) {
+  async addToDenylist(req: express.Request, res: express.Response): Promise<void> {
     // Method: PUT
     // Path: /denylist/{type}/{id}
     // Body: JSON with ethAddress, signature and timestamp
@@ -540,14 +540,18 @@ export class Controller {
     }
 
     try {
-      await this.denylist.addTarget(target, { timestamp, authChain })
-      res.status(201).send()
+      const result: DenylistSignatureValidationResult = await this.denylist.addTarget(target, { timestamp, authChain })
+      if (isSuccessfulOperation(result)) {
+        res.status(201).send()
+      } else {
+        res.status(400).send(result.message)
+      }
     } catch (error) {
-      res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+      res.status(500).send(error.message)
     }
   }
 
-  async removeFromDenylist(req: express.Request, res: express.Response) {
+  async removeFromDenylist(req: express.Request, res: express.Response): Promise<void> {
     // Method: DELETE
     // Path: /denylist/{type}/{id}
     // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
@@ -563,12 +567,18 @@ export class Controller {
     const messageToSign = Denylist.buildUnblockMessageToSign(target, timestamp)
     const authChain: AuthChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
 
-    // TODO: Based on the error, return 400 or 404
     try {
-      await this.denylist.removeTarget(target, { timestamp, authChain })
-      res.status(200).send()
+      const result: DenylistSignatureValidationResult = await this.denylist.removeTarget(target, {
+        timestamp,
+        authChain
+      })
+      if (isSuccessfulOperation(result)) {
+        res.status(200).send()
+      } else {
+        res.status(400).send(result.message)
+      }
     } catch (error) {
-      res.status(500).send(error.message) // TODO: Improve and return 400 if necessary
+      res.status(500).send(error.message)
     }
   }
 
