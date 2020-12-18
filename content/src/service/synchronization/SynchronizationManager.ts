@@ -51,6 +51,10 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   }
 
   stop(): Promise<void> {
+    if (this.disableSynchronization) {
+      // Since it was disabled, there is nothing to stop
+      return Promise.resolve()
+    }
     this.stopping = true
     if (this.syncWithNodesTimeout) clearTimeout(this.syncWithNodesTimeout)
     this.cluster.disconnect()
