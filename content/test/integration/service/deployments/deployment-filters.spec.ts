@@ -2,7 +2,7 @@ import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments
 import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
 import { AuditInfo, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 
 /**
@@ -14,7 +14,7 @@ describe('Integration - Deployment Filters', () => {
   const P3 = 'x3,y3'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
 
   beforeAll(async () => {

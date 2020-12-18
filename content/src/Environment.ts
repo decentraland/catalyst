@@ -148,7 +148,8 @@ export enum EnvironmentConfig {
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
   SNAPSHOT_FREQUENCY,
-  CUSTOM_DAO
+  CUSTOM_DAO,
+  DISABLE_SYNCHRONIZATION
 }
 
 export class EnvironmentBuilder {
@@ -305,6 +306,12 @@ export class EnvironmentBuilder {
         ])
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO, () => process.env.CUSTOM_DAO)
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.DISABLE_SYNCHRONIZATION,
+      () => process.env.DISABLE_SYNCHRONIZATION === 'true'
+    )
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before

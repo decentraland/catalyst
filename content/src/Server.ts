@@ -47,11 +47,11 @@ export class Server {
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
     const controller: Controller = env.getBean(Bean.CONTROLLER)
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
-    this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
     this.snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
     this.service = env.getBean(Bean.SERVICE)
     this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
     this.repository = env.getBean(Bean.REPOSITORY)
+    this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))
