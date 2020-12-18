@@ -4,7 +4,7 @@ import { SnapshotManager, SnapshotMetadata } from '@katalyst/content/service/sna
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
-import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 describe('Integration - Snapshot Manager', () => {
@@ -12,7 +12,7 @@ describe('Integration - Snapshot Manager', () => {
     P2 = 'X2,Y2'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   let service: MetaverseContentService
   let snapshotManager: SnapshotManager
 

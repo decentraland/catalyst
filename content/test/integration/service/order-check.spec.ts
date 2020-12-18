@@ -1,6 +1,6 @@
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { AuditInfo } from 'dcl-catalyst-commons'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from '../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
@@ -15,7 +15,7 @@ describe('Integration - Order Check', () => {
 
   let allEntities: EntityCombo[]
 
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   let service: MetaverseContentService
 
   beforeAll(async () => {

@@ -7,13 +7,13 @@ import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
-import { loadTestEnvironment } from './E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from './E2ETestEnvironment'
 import { buildDeployData, createIdentity, DeployData } from './E2ETestUtils'
 import { TestServer } from './TestServer'
 
 describe('End 2 end - Legacy Entities', () => {
   const identity = createIdentity()
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   let server: TestServer
 
   beforeEach(async () => {

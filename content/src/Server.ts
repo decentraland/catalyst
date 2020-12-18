@@ -15,7 +15,10 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { MetaverseContentService } from './service/Service'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
-import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
+import {
+  DisabledSynchronizationManager,
+  SynchronizationManager
+} from './service/synchronization/SynchronizationManager'
 import { Repository } from './storage/Repository'
 
 export class Server {
@@ -47,11 +50,17 @@ export class Server {
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
     const controller: Controller = env.getBean(Bean.CONTROLLER)
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
-    this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
     this.snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
     this.service = env.getBean(Bean.SERVICE)
     this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
     this.repository = env.getBean(Bean.REPOSITORY)
+
+    if (env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)) {
+      Server.LOGGER.warn(`Cluster synchronization has been disabled.`)
+      this.synchronizationManager = new DisabledSynchronizationManager()
+    } else {
+      this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
+    }
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))

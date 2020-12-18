@@ -6,7 +6,7 @@ import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import { delay } from 'decentraland-katalyst-utils/util'
 import ms from 'ms'
-import { loadTestEnvironment } from '../../E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from '../../E2ETestEnvironment'
 import {
   awaitUntil,
   buildDeployData,
@@ -22,7 +22,7 @@ describe('Integration - Garbage Collection', () => {
   let onlyE1Content: ContentFileHash
   let sharedContent: ContentFileHash
 
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   let service: MetaverseContentService
   let garbageCollector: GarbageCollectionManager
 

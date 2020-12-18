@@ -15,7 +15,7 @@ import {
   assertFileIsOnServer,
   assertRequiredFieldsOnEntitiesAreEqual
 } from '../E2EAssertions'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from '../E2ETestEnvironment'
 import { buildDeployData, createIdentity } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
@@ -23,7 +23,7 @@ describe('Integration - Denylist', () => {
   const metadata: string = 'Some metadata'
   const decentralandIdentity = createIdentity()
   const ownerIdentity = createIdentity()
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   let server: TestServer
 
   beforeEach(async () => {

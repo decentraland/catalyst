@@ -1,6 +1,6 @@
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { EntityType } from 'dcl-catalyst-commons'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
@@ -10,7 +10,7 @@ describe('Integration - Concurrent deployments', () => {
   const P1 = 'x1,y1'
   const AMOUNT_OF_DEPLOYMENTS = 500
   const type = EntityType.PROFILE
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
 
   let entities: EntityCombo[]
   let service: MetaverseContentService

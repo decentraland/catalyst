@@ -9,12 +9,12 @@ import {
   buildDeployment,
   buildEventWithName
 } from './E2EAssertions'
-import { loadTestEnvironment } from './E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from './E2ETestEnvironment'
 import { buildDeployData, DeployData } from './E2ETestUtils'
 import { TestServer } from './TestServer'
 
 describe('End 2 end deploy test', () => {
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   let server: TestServer
   const POINTER0 = 'X0,Y0'
   const POINTER1 = 'X1,Y1'

@@ -8,10 +8,10 @@ import { Repository } from '@katalyst/content/storage/Repository'
 import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
 import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { internet, random } from 'faker'
-import { loadTestEnvironment } from '../E2ETestEnvironment'
+import { loadTestEnvironmentWithoutSynchronization } from '../E2ETestEnvironment'
 
 describe('Integration - Failed Deployments Manager', function () {
-  const testEnv = loadTestEnvironment()
+  const testEnv = loadTestEnvironmentWithoutSynchronization()
   const manager = new FailedDeploymentsManager()
   let repository: Repository
 

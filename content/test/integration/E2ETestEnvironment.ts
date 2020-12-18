@@ -29,7 +29,7 @@ export class E2ETestEnvironment {
   private sharedEnv: Environment
   private dao: MockedDAOClient
 
-  async start(): Promise<void> {
+  async start(overrideConfigs?: Map<EnvironmentConfig, any>): Promise<void> {
     this.postgresContainer = await new GenericContainer('postgres', '12')
       .withName('postgres_test')
       .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
@@ -50,6 +50,12 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
+
+    overrideConfigs?.forEach((value: any, key: EnvironmentConfig) => {
+      console.log('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
+      this.sharedEnv.setConfig(key, value)
+    })
+
     this.repository = await RepositoryFactory.create(this.sharedEnv)
   }
 
@@ -217,14 +223,18 @@ class PostgresWaitStrategy extends LogWaitStrategy {
   }
 }
 
+export function loadTestEnvironmentWithoutSynchronization(): E2ETestEnvironment {
+  return loadTestEnvironment(new Map([[EnvironmentConfig.DISABLE_SYNCHRONIZATION, true]]))
+}
+
 /**
  * This is an easy way to load a test environment into a test suite
  */
-export function loadTestEnvironment(): E2ETestEnvironment {
+export function loadTestEnvironment(overrideConfigs?: Map<EnvironmentConfig, any>): E2ETestEnvironment {
   const testEnv = new E2ETestEnvironment()
 
   beforeAll(async () => {
-    await testEnv.start()
+    await testEnv.start(overrideConfigs)
   })
 
   afterAll(async () => {

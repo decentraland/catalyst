@@ -117,6 +117,20 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   }
 }
 
+export class DisabledSynchronizationManager implements SynchronizationManager {
+  start(): Promise<void> {
+    return new Promise(async (resolve) => {
+      resolve()
+    })
+  }
+  stop(): Promise<void> {
+    return new Promise(async (resolve) => {
+      resolve()
+    })
+  }
+  getStatus() {}
+}
+
 enum SynchronizationState {
   BOOTSTRAPPING = 'Bootstrapping',
   SYNCED = 'Synced',
