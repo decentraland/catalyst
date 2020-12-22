@@ -40,10 +40,6 @@ type Config = {
 
 export type PeerWebRTCConfig = Partial<OptionalConfig> & Config
 
-function signalMessage(peer: ConnectedPeerData, connectionId: string, signal: SignalData) {
-  peer.connection.signal(signal)
-}
-
 export enum PeerWebRTCEvent {
   ConnectionRequestRejected = 'ConnectionRequestRejected',
   PeerConnectionLost = 'PeerConnectionLost',
@@ -216,18 +212,20 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     connection.on('close', () => this.handleDisconnection(peerData))
     connection.on('connect', () => this.handleConnection(peerData))
 
-    connection.on('error', (err) => {
-      this.log(
-        LogLevel.ERROR,
-        'error in peer connection ' + connectionIdFor(this.peerId(), peerData.id, peerData.sessionId),
-        err
-      )
-      connection.removeAllListeners()
-      connection.destroy()
-      this.handleDisconnection(peerData)
-    })
+    connection.on('error', (err) => this.handlePeerError(peerData, err, connection))
 
     connection.on('data', (data) => this.handlePeerPacket(data, peerData.id))
+  }
+
+  private handlePeerError(peerData: ConnectedPeerData, err: Error, connection: SimplePeer.Instance) {
+    this.log(
+      LogLevel.ERROR,
+      'error in peer connection ' + connectionIdFor(this.peerId(), peerData.id, peerData.sessionId),
+      err
+    )
+    connection.removeAllListeners()
+    connection.destroy()
+    this.handleDisconnection(peerData)
   }
 
   private handlePeerPacket(data: Uint8Array, peerId: string) {
@@ -324,7 +322,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
 
     const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId)
 
-    peer.connection.signal(payload.sdp)
+    this.signalMessage(peer, payload.sdp)
   }
 
   private handleOfferPayload(payload: any, peerId: string) {
@@ -372,7 +370,8 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
       return
     }
     const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId)
-    signalMessage(peer, payload.connectionId, {
+
+    this.signalMessage(peer, {
       candidate: payload.candidate
     })
   }
@@ -382,6 +381,17 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     peer?.connection?.destroy()
     delete this.connectedPeers[peerId]
     this.emit(PeerWebRTCEvent.ConnectionRequestRejected, peerId, reason)
+  }
+
+  private signalMessage(peer: ConnectedPeerData, signal: SignalData) {
+    try {
+      peer.connection.signal(signal)
+    } catch (e) {
+      // If this fails, then most likely the connection hasn't been initialized properly (RTCPeerConnection couldn't be created)
+      // We handle it with the same error handler as any other error
+
+      this.handlePeerError(peer, e, peer.connection)
+    }
   }
 
   handleMessage(message: ServerMessage): void {
