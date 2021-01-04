@@ -62,26 +62,28 @@ async function internalContents(
   selector: (WearableMetadata: WearableMetadata) => string | undefined
 ) {
   try {
-    let contentBuffer: Buffer | undefined = undefined
     const entities: Entity[] = await fetcher.fetchJsonFromContentServer(
-      `/entities/wearable?pointer=${contract}-${option}`
+      `/entities/wearable?pointer=${buildPointer(contract, option)}`
     )
     if (entities && entities.length > 0 && entities[0].metadata) {
       const wearableMetadata: WearableMetadata = entities[0].metadata
       const relativeContentUrl = createRelativeContentUrl(fetcher, entities[0], selector(wearableMetadata))
       if (relativeContentUrl) {
-        contentBuffer = await fetcher.fetchBufferFromContentServer(relativeContentUrl) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
+        await fetcher.fetchPipeFromContentServer(relativeContentUrl, res)
       }
-    }
-    if (contentBuffer) {
-      res.send(contentBuffer)
-    } else {
-      res.status(404).send()
     }
   } catch (e) {
     console.log(e)
     res.status(500).send(e.messsge)
   }
+}
+
+function buildPointer(contract: string, option: string): string {
+  let pointer = `${contract}-${option}`
+  if (!contract.startsWith('0x')) {
+    pointer = `dcl://${pointer}`
+  }
+  return pointer
 }
 
 function createExternalContentUrl(
