@@ -1,9 +1,8 @@
 import ms from 'ms'
-import { ProfileMetadata } from './apis/profiles/controllers/profiles'
+import { ENSFilter } from './apis/profiles/ensFiltering'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
-import { Cache } from './utils/Cache'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 
@@ -55,7 +54,7 @@ export const enum Bean {
   SMART_CONTENT_SERVER_FETCHER,
   SMART_CONTENT_SERVER_CLIENT,
   DAO,
-  PROFILE_METADATA_CACHE
+  ENS_FILTER
 }
 
 export const enum EnvironmentConfig {
@@ -68,8 +67,8 @@ export const enum EnvironmentConfig {
   LOG_LEVEL,
   ETH_NETWORK,
   LAMBDAS_STORAGE_LOCATION,
-  PROFILE_METADATA_CACHE_MAX,
-  PROFILE_METADATA_CACHE_TIMEOUT
+  PROFILE_NAMES_CACHE_MAX,
+  PROFILE_NAMES_CACHE_TIMEOUT
 }
 
 export class EnvironmentBuilder {
@@ -141,9 +140,9 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
     this.registerBeanIfNotAlreadySet(
       env,
-      Bean.PROFILE_METADATA_CACHE,
+      Bean.ENS_FILTER,
       () =>
-        new Cache<string, ProfileMetadata>(
+        new ENSFilter(
           parseInt(process.env.PROFILE_METADATA_CACHE_MAX ?? DEFAULT_PROFILE_METADATA_CACHE_MAX),
           ms(process.env.PROFILE_METADATA_CACHE_TIMEOUT ?? DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT)
         )

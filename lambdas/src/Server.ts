@@ -10,11 +10,10 @@ import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
-import { ProfileMetadata } from './apis/profiles/controllers/profiles'
+import { ENSFilter } from './apis/profiles/ensFiltering'
 import { initializeProfilesRoutes } from './apis/profiles/routes'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
-import { Cache } from './utils/Cache'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
 
@@ -48,7 +47,7 @@ export class Server {
     // Base endpoints
     this.registerRoute('/status', controller, controller.getStatus)
 
-    const profileMetadataCache: Cache<string, ProfileMetadata> = env.getBean(Bean.PROFILE_METADATA_CACHE)
+    const filter: ENSFilter = env.getBean(Bean.ENS_FILTER)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
 
@@ -60,8 +59,8 @@ export class Server {
       '/profile',
       initializeProfilesRoutes(
         express.Router(),
-        profileMetadataCache,
         fetcher,
+        filter,
         env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)
       )
     )

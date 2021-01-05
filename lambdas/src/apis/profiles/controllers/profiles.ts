@@ -1,12 +1,11 @@
 import { Entity } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
-import { Cache } from '../../../utils/Cache'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
-import { filterENS } from '../ensFiltering'
+import { ENSFilter } from '../ensFiltering'
 
 export async function getProfileById(
-  cache: Cache<string, ProfileMetadata>,
   fetcher: SmartContentServerFetcher,
+  filter: ENSFilter,
   ensOwnerProviderUrl: string,
   req: Request,
   res: Response
@@ -14,28 +13,17 @@ export async function getProfileById(
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
-  const profileMetadata: ProfileMetadata = await cache.get(profileId, (key) =>
-    calculateProfileMetadataFromProfileId(fetcher, key, ensOwnerProviderUrl)
-  )
-  res.send(profileMetadata)
-}
-
-async function calculateProfileMetadataFromProfileId(
-  fetcher: SmartContentServerFetcher,
-  profileId: string,
-  ensOwnerProviderUrl: string
-): Promise<ProfileMetadata> {
   let returnProfile: ProfileMetadata = { avatars: [] }
   try {
     const entities: Entity[] = await fetcher.fetchJsonFromContentServer(`/entities/profile?pointer=${profileId}`)
     if (entities && entities.length > 0 && entities[0].metadata) {
       const profile: ProfileMetadata = entities[0].metadata
       returnProfile = profile
-      returnProfile = await markOwnedNames(fetcher, ensOwnerProviderUrl, profileId, returnProfile)
+      returnProfile = await markOwnedNames(fetcher, filter, ensOwnerProviderUrl, profileId, returnProfile)
       returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
     }
   } catch {}
-  return returnProfile
+  res.send(returnProfile)
 }
 
 /**
@@ -43,6 +31,7 @@ async function calculateProfileMetadataFromProfileId(
  */
 async function markOwnedNames(
   fetcher: SmartContentServerFetcher,
+  filter: ENSFilter,
   theGraphBaseUrl: string,
   profileId: string,
   metadata: ProfileMetadata
@@ -50,7 +39,7 @@ async function markOwnedNames(
   const avatarsNames: string[] = metadata.avatars.map((profile) => profile.name).filter((name) => name && name !== '')
 
   if (avatarsNames.length > 0) {
-    const ownedENS = await filterENS(fetcher, theGraphBaseUrl, profileId, avatarsNames)
+    const ownedENS = await filter.filter(fetcher, theGraphBaseUrl, profileId, avatarsNames)
     const avatars = metadata.avatars.map((profile) => ({
       ...profile,
       hasClaimedName: ownsENS(ownedENS, profile.name)
@@ -98,7 +87,7 @@ function addBaseUrlToSnapshots(baseUrl: string, metadata: ProfileMetadata): Prof
   return { avatars }
 }
 
-export type ProfileMetadata = {
+type ProfileMetadata = {
   avatars: {
     name: string
     description: string
