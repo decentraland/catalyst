@@ -1,17 +1,30 @@
 import { Entity } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
+import { Cache } from '../../../utils/Cache'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 import { filterENS } from '../ensFiltering'
 
 export async function getProfileById(
+  cache: Cache<string, ProfileMetadata>,
   fetcher: SmartContentServerFetcher,
   ensOwnerProviderUrl: string,
   req: Request,
   res: Response
-) {
+): Promise<void> {
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
+  const profileMetadata: ProfileMetadata = await cache.get(profileId, (key) =>
+    calculateProfileMetadataFromProfileId(fetcher, key, ensOwnerProviderUrl)
+  )
+  res.send(profileMetadata)
+}
+
+async function calculateProfileMetadataFromProfileId(
+  fetcher: SmartContentServerFetcher,
+  profileId: string,
+  ensOwnerProviderUrl: string
+): Promise<ProfileMetadata> {
   let returnProfile: ProfileMetadata = { avatars: [] }
   try {
     const entities: Entity[] = await fetcher.fetchJsonFromContentServer(`/entities/profile?pointer=${profileId}`)
@@ -22,7 +35,7 @@ export async function getProfileById(
       returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
     }
   } catch {}
-  res.send(returnProfile)
+  return returnProfile
 }
 
 /**
@@ -85,7 +98,7 @@ function addBaseUrlToSnapshots(baseUrl: string, metadata: ProfileMetadata): Prof
   return { avatars }
 }
 
-type ProfileMetadata = {
+export type ProfileMetadata = {
   avatars: {
     name: string
     description: string
