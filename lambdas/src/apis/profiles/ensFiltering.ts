@@ -1,4 +1,5 @@
 import { Fetcher } from 'dcl-catalyst-commons'
+import { EthAddress } from 'dcl-crypto'
 import { ENSFilteringCache } from './ENSFilteringCache'
 
 export class ENSFilter {
@@ -21,12 +22,14 @@ export class ENSFilter {
   async filter(
     fetcher: Fetcher,
     theGraphBaseUrl: string,
-    ethAddress: string,
+    ethAddress: EthAddress,
     namesToFilter: string[]
   ): Promise<string[]> {
-    return this.cache.get(ethAddress.toLowerCase(), namesToFilter, async (owner, names) => {
-      return await this.getTheGraph(fetcher, theGraphBaseUrl, owner, names, ethAddress)
-    })
+    return (
+      (await this.cache.get(ethAddress.toLowerCase(), namesToFilter, async (owner, names) => {
+        return await this.getTheGraph(fetcher, theGraphBaseUrl, owner, names, ethAddress)
+      })) ?? []
+    )
   }
 
   private async getTheGraph(
@@ -45,6 +48,5 @@ export class ENSFilter {
     } catch (error) {
       console.log(`Could not retrieve ENSs for address ${ethAddress}.`, error)
     }
-    return []
   }
 }
