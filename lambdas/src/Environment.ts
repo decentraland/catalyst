@@ -1,3 +1,5 @@
+import ms from 'ms'
+import { ENSFilter } from './apis/profiles/ensFiltering'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
@@ -11,6 +13,8 @@ export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
 
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
+const DEFAULT_PROFILE_METADATA_CACHE_MAX = '500'
+const DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT = '3h'
 
 export class Environment {
   private configs: Map<EnvironmentConfig, any> = new Map()
@@ -49,7 +53,8 @@ export const enum Bean {
   CONTROLLER,
   SMART_CONTENT_SERVER_FETCHER,
   SMART_CONTENT_SERVER_CLIENT,
-  DAO
+  DAO,
+  ENS_FILTER
 }
 
 export const enum EnvironmentConfig {
@@ -61,7 +66,9 @@ export const enum EnvironmentConfig {
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
-  LAMBDAS_STORAGE_LOCATION
+  LAMBDAS_STORAGE_LOCATION,
+  PROFILE_NAMES_CACHE_MAX,
+  PROFILE_NAMES_CACHE_TIMEOUT
 }
 
 export class EnvironmentBuilder {
@@ -131,6 +138,15 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
+    this.registerBeanIfNotAlreadySet(
+      env,
+      Bean.ENS_FILTER,
+      () =>
+        new ENSFilter(
+          parseInt(process.env.PROFILE_METADATA_CACHE_MAX ?? DEFAULT_PROFILE_METADATA_CACHE_MAX),
+          ms(process.env.PROFILE_METADATA_CACHE_TIMEOUT ?? DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT)
+        )
+    )
 
     return env
   }

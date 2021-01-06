@@ -1,14 +1,15 @@
 import { Entity } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
-import { filterENS } from '../ensFiltering'
+import { ENSFilter } from '../ensFiltering'
 
 export async function getProfileById(
   fetcher: SmartContentServerFetcher,
+  filter: ENSFilter,
   ensOwnerProviderUrl: string,
   req: Request,
   res: Response
-) {
+): Promise<void> {
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
@@ -18,7 +19,7 @@ export async function getProfileById(
     if (entities && entities.length > 0 && entities[0].metadata) {
       const profile: ProfileMetadata = entities[0].metadata
       returnProfile = profile
-      returnProfile = await markOwnedNames(fetcher, ensOwnerProviderUrl, profileId, returnProfile)
+      returnProfile = await markOwnedNames(fetcher, filter, ensOwnerProviderUrl, profileId, returnProfile)
       returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
     }
   } catch {}
@@ -30,6 +31,7 @@ export async function getProfileById(
  */
 async function markOwnedNames(
   fetcher: SmartContentServerFetcher,
+  filter: ENSFilter,
   theGraphBaseUrl: string,
   profileId: string,
   metadata: ProfileMetadata
@@ -37,7 +39,7 @@ async function markOwnedNames(
   const avatarsNames: string[] = metadata.avatars.map((profile) => profile.name).filter((name) => name && name !== '')
 
   if (avatarsNames.length > 0) {
-    const ownedENS = await filterENS(fetcher, theGraphBaseUrl, profileId, avatarsNames)
+    const ownedENS = await filter.filter(fetcher, theGraphBaseUrl, profileId, avatarsNames)
     const avatars = metadata.avatars.map((profile) => ({
       ...profile,
       hasClaimedName: ownsENS(ownedENS, profile.name)
