@@ -14,7 +14,7 @@ const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgrap
 
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 const DEFAULT_PROFILE_METADATA_CACHE_MAX = '500'
-const DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT = '3d'
+const DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT = '3h'
 
 export class Environment {
   private configs: Map<EnvironmentConfig, any> = new Map()
