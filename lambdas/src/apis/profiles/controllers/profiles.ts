@@ -1,12 +1,11 @@
 import { Entity } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
-import { ENSFilter } from '../ensFiltering'
+import { EnsOwnership } from '../EnsOwnership'
 
 export async function getProfileById(
   fetcher: SmartContentServerFetcher,
-  filter: ENSFilter,
-  ensOwnerProviderUrl: string,
+  ensOwnership: EnsOwnership,
   req: Request,
   res: Response
 ): Promise<void> {
@@ -19,7 +18,7 @@ export async function getProfileById(
     if (entities && entities.length > 0 && entities[0].metadata) {
       const profile: ProfileMetadata = entities[0].metadata
       returnProfile = profile
-      returnProfile = await markOwnedNames(fetcher, filter, ensOwnerProviderUrl, profileId, returnProfile)
+      returnProfile = await markOwnedNames(ensOwnership, profileId, returnProfile)
       returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
     }
   } catch {}
@@ -30,28 +29,22 @@ export async function getProfileById(
  * Checks the ENSs and mark them that are owned by the user
  */
 async function markOwnedNames(
-  fetcher: SmartContentServerFetcher,
-  filter: ENSFilter,
-  theGraphBaseUrl: string,
+  ensOwnership: EnsOwnership,
   profileId: string,
   metadata: ProfileMetadata
 ): Promise<ProfileMetadata> {
   const avatarsNames: string[] = metadata.avatars.map((profile) => profile.name).filter((name) => name && name !== '')
 
   if (avatarsNames.length > 0) {
-    const ownedENS = await filter.filter(fetcher, theGraphBaseUrl, profileId, avatarsNames)
+    const ownedENS = await ensOwnership.areNamesOwned(profileId, avatarsNames)
     const avatars = metadata.avatars.map((profile) => ({
       ...profile,
-      hasClaimedName: ownsENS(ownedENS, profile.name)
+      hasClaimedName: ownedENS.get(profile.name) ?? false
     }))
     return { avatars }
   }
 
   return metadata
-}
-
-function ownsENS(ownedENS: string[], ensToCheck: string): boolean {
-  return ownedENS.findIndex((ens) => ens === ensToCheck) >= 0
 }
 
 /**

@@ -1,5 +1,5 @@
 import ms from 'ms'
-import { ENSFilter } from './apis/profiles/ensFiltering'
+import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
@@ -13,8 +13,6 @@ export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
 
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
-const DEFAULT_PROFILE_METADATA_CACHE_MAX = '500'
-const DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT = '3h'
 
 export class Environment {
   private configs: Map<EnvironmentConfig, any> = new Map()
@@ -54,7 +52,7 @@ export const enum Bean {
   SMART_CONTENT_SERVER_FETCHER,
   SMART_CONTENT_SERVER_CLIENT,
   DAO,
-  ENS_FILTER
+  ENS_OWNERSHIP
 }
 
 export const enum EnvironmentConfig {
@@ -127,6 +125,12 @@ export class EnvironmentBuilder {
       EnvironmentConfig.LAMBDAS_STORAGE_LOCATION,
       () => process.env.LAMBDAS_STORAGE_LOCATION ?? DEFAULT_LAMBDAS_STORAGE_LOCATION
     )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_MAX, () =>
+      parseInt(process.env.PROFILE_METADATA_CACHE_MAX ?? '20000')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_TIMEOUT, () =>
+      ms(process.env.PROFILE_METADATA_CACHE_TIMEOUT ?? '3h')
+    )
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
@@ -138,15 +142,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(
-      env,
-      Bean.ENS_FILTER,
-      () =>
-        new ENSFilter(
-          parseInt(process.env.PROFILE_METADATA_CACHE_MAX ?? DEFAULT_PROFILE_METADATA_CACHE_MAX),
-          ms(process.env.PROFILE_METADATA_CACHE_TIMEOUT ?? DEFAULT_PROFILE_METADATA_CACHE_TIMEOUT)
-        )
-    )
+    this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
 
     return env
   }
