@@ -10,7 +10,7 @@ import { initializeContractRoutes } from './apis/contracts/routes'
 import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
-import { ENSFilter } from './apis/profiles/ensFiltering'
+import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { initializeProfilesRoutes } from './apis/profiles/routes'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
@@ -47,7 +47,7 @@ export class Server {
     // Base endpoints
     this.registerRoute('/status', controller, controller.getStatus)
 
-    const filter: ENSFilter = env.getBean(Bean.ENS_FILTER)
+    const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
 
@@ -55,15 +55,7 @@ export class Server {
     this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
 
     // Profile API implementation
-    this.app.use(
-      '/profile',
-      initializeProfilesRoutes(
-        express.Router(),
-        fetcher,
-        filter,
-        env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL)
-      )
-    )
+    this.app.use('/profile', initializeProfilesRoutes(express.Router(), fetcher, ensOwnership))
 
     // DCL-Crypto API implementation
     this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))

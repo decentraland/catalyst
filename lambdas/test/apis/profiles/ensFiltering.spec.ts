@@ -1,12 +1,12 @@
 import { Fetcher } from 'dcl-catalyst-commons'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
-import { ENSFilter } from '../../../src/apis/profiles/ensFiltering'
+import { EnsOwnership } from '../../../src/apis/profiles/EnsOwnership'
 import { DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN } from '../../../src/Environment'
 
 describe('Ensure ENS filtering work as expected', () => {
   it(`Ensure Address case is ignored when retrieving ENS`, async () => {
     const fetcher: Fetcher = new Fetcher()
-    const ensFilter = new ENSFilter(500, 1000)
+    const ensFilter = new EnsOwnership(500, 1000)
 
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
 
@@ -37,7 +37,7 @@ describe('Ensure ENS filtering work as expected', () => {
     const mockedFetcher: Fetcher = getMockedFetcher()
     const fetcher: Fetcher = instance(mockedFetcher)
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
-    const ensFilter = new ENSFilter(500, 1000)
+    const ensFilter = new EnsOwnership(500, 1000)
 
     await ensFilter.filter(fetcher, DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, originalAddress, [
       'marcosnc',
@@ -51,7 +51,7 @@ describe('Ensure ENS filtering work as expected', () => {
     const mockedFetcher: Fetcher = getMockedFetcher()
     const fetcher: Fetcher = instance(mockedFetcher)
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
-    const ensFilter = new ENSFilter(500, 1000)
+    const ensFilter = new EnsOwnership(500, 1000)
 
     await ensFilter.filter(fetcher, DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, originalAddress, [
       'marcosnc',
@@ -70,7 +70,7 @@ describe('Ensure ENS filtering work as expected', () => {
     const mockedFetcher: Fetcher = getMockedFetcher()
     const fetcher: Fetcher = instance(mockedFetcher)
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
-    const ensFilter = new ENSFilter(500, 1000)
+    const ensFilter = new EnsOwnership(500, 1000)
 
     await ensFilter.filter(fetcher, DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, originalAddress, [
       'marcosnc',
@@ -88,7 +88,7 @@ describe('Ensure ENS filtering work as expected', () => {
     const mockedFetcher: Fetcher = getMockedFetcher()
     const fetcher: Fetcher = instance(mockedFetcher)
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
-    const ensFilter = new ENSFilter(500, 1000)
+    const ensFilter = new EnsOwnership(500, 1000)
 
     await ensFilter.filter(fetcher, DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, originalAddress, [
       'marcosnc',
