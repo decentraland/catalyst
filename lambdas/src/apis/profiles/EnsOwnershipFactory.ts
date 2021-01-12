@@ -1,7 +1,7 @@
 import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 import { EnsOwnership } from './EnsOwnership'
 
-export class ENSOwnershipFactory {
+export class EnsOwnershipFactory {
   static create(env: Environment): EnsOwnership {
     return new EnsOwnership(
       env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL),

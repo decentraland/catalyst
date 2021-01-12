@@ -1,5 +1,5 @@
 import ms from 'ms'
-import { ENSOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
+import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
@@ -142,7 +142,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => ENSOwnershipFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
 
     return env
   }
