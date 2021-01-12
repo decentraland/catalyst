@@ -15,8 +15,6 @@ export class ContentStorageFactory {
 
   static shouldStoreInS3(env: Environment): boolean {
     return (
-      !!env.getConfig<string>(EnvironmentConfig.CONTENT_STORAGE) &&
-      env.getConfig<string>(EnvironmentConfig.CONTENT_STORAGE).toLowerCase() == 's3' &&
       !!env.getConfig(EnvironmentConfig.S3_STORAGE_ACCESS_KEY_ID) &&
       !!env.getConfig(EnvironmentConfig.S3_STORAGE_SECRET_ACCESS_KEY) &&
       !!env.getConfig(EnvironmentConfig.S3_STORAGE_BUCKET)
