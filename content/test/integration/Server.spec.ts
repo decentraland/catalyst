@@ -4,6 +4,7 @@ import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environm
 import { Server } from '@katalyst/content/Server'
 import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
+import { ContentStorageFactory } from '@katalyst/content/storage/ContentStorageFactory'
 import { NoOpMigrationManager } from '@katalyst/test-helpers/NoOpMigrationManager'
 import { randomEntity } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { NoOpGarbageCollectionManager } from '@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager'
@@ -47,9 +48,12 @@ describe('Integration - Server', function () {
       .registerBean(Bean.SNAPSHOT_MANAGER, NoOpSnapshotManager.build())
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
+      .setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'storage')
 
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
+    const storage = ContentStorageFactory.create(env)
+    env.registerBean(Bean.STORAGE, storage)
     server = new Server(env)
     await server.start()
   })

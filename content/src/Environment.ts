@@ -120,6 +120,9 @@ export const enum Bean {
 
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
+  S3_STORAGE_ACCESS_KEY_ID,
+  S3_STORAGE_SECRET_ACCESS_KEY,
+  S3_STORAGE_BUCKET,
   SERVER_PORT,
   METRICS,
   LOG_REQUESTS,
@@ -184,6 +187,17 @@ export class EnvironmentBuilder {
       EnvironmentConfig.STORAGE_ROOT_FOLDER,
       () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER
     )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.S3_STORAGE_ACCESS_KEY_ID,
+      () => process.env.S3_STORAGE_ACCESS_KEY_ID
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.S3_STORAGE_SECRET_ACCESS_KEY,
+      () => process.env.S3_STORAGE_SECRET_ACCESS_KEY
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.S3_STORAGE_BUCKET, () => process.env.S3_STORAGE_BUCKET)
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SERVER_PORT,
@@ -325,8 +339,8 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.FETCHER, () => FetcherFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT, () => DAOClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR, () => AuthenticatorFactory.create(env))
-    const localStorage = await ContentStorageFactory.local(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.STORAGE, () => localStorage)
+    const contentStorage = await ContentStorageFactory.create(env)
+    this.registerBeanIfNotAlreadySet(env, Bean.STORAGE, () => contentStorage)
     this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER, () => ContentClusterFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER, () => DeploymentManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DENYLIST, () => DenylistFactory.create(env))
