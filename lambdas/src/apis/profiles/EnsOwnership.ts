@@ -23,20 +23,25 @@ export class EnsOwnership {
     maxSize: number,
     maxAge: number
   ) {
-    this.cache = new EnsOwnershipCache(maxSize, maxAge, (ethAddress, names) => this.getTheGraph(ethAddress, names))
+    this.cache = new EnsOwnershipCache(maxSize, maxAge, (ethAddress, names) => this.fetchOwnedNames(ethAddress, names))
   }
 
   areNamesOwned(ethAddress: EthAddress, namesToCheck: Name[]): Promise<Map<Name, Owned>> {
     return this.cache.areNamesOwned(ethAddress.toLowerCase(), namesToCheck)
   }
 
-  private async getTheGraph(ethAddress: EthAddress, names: Name[]) {
+  /** This method will take a list of names and return only those that are owned by the given eth address */
+  private async fetchOwnedNames(ethAddress: EthAddress, names: Name[]) {
     try {
-      const response = this.fetcher.queryGraph<{ nfts: { name: string }[] }>(this.theGraphBaseUrl, EnsOwnership.QUERY, {
-        owner: ethAddress,
-        names
-      })
-      return (await response).nfts.map((nft) => nft.name)
+      const response = await this.fetcher.queryGraph<{ nfts: { name: string }[] }>(
+        this.theGraphBaseUrl,
+        EnsOwnership.QUERY,
+        {
+          owner: ethAddress,
+          names
+        }
+      )
+      return response.nfts.map((nft) => nft.name)
     } catch (error) {
       EnsOwnership.LOGGER.error(`Could not retrieve ENSs for address ${ethAddress}.`, error)
       return []
@@ -93,6 +98,9 @@ class EnsOwnershipCache {
   }
 
   private async fetchIfNamesAreOwned(ethAddress: EthAddress, names: string[]): Promise<Map<string, boolean>> {
+    if (names.length === 0) {
+      return new Map()
+    }
     const owned: Set<string> = new Set(await this.filterOutCall(ethAddress, names))
     return new Map(names.map((name) => [name, owned.has(name)]))
   }
