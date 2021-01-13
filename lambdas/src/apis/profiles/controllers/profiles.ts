@@ -1,10 +1,14 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
-import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
+import log4js from 'log4js'
+import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { EnsOwnership } from '../EnsOwnership'
 
-export async function getProfileById(
-  fetcher: SmartContentServerFetcher,
+const LOGGER = log4js.getLogger('profiles')
+
+export async function getIndividualProfileById(
+  client: SmartContentClient,
   ensOwnership: EnsOwnership,
   req: Request,
   res: Response
@@ -12,72 +16,98 @@ export async function getProfileById(
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
-  let returnProfile: ProfileMetadata = { avatars: [] }
-  try {
-    const entities: Entity[] = await fetcher.fetchJsonFromContentServer(`/entities/profile?pointer=${profileId}`)
-    if (entities && entities.length > 0 && entities[0].metadata) {
-      const profile: ProfileMetadata = entities[0].metadata
-      returnProfile = profile
-      returnProfile = await markOwnedNames(ensOwnership, profileId, returnProfile)
-      returnProfile = addBaseUrlToSnapshots(fetcher.getExternalContentServerUrl(), returnProfile)
-    }
-  } catch {}
+  const profiles = await fetchProfiles([profileId], client, ensOwnership)
+  const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [] }
   res.send(returnProfile)
 }
 
-/**
- * Checks the ENSs and mark them that are owned by the user
- */
-async function markOwnedNames(
+export async function getProfilesById(
+  client: SmartContentClient,
   ensOwnership: EnsOwnership,
-  profileId: string,
-  metadata: ProfileMetadata
-): Promise<ProfileMetadata> {
-  const avatarsNames: string[] = metadata.avatars.map((profile) => profile.name).filter((name) => name && name !== '')
-
-  if (avatarsNames.length > 0) {
-    const ownedENS = await ensOwnership.areNamesOwned(profileId, avatarsNames)
-    const avatars = metadata.avatars.map((profile) => ({
-      ...profile,
-      hasClaimedName: ownedENS.get(profile.name) ?? false
-    }))
-    return { avatars }
+  req: Request,
+  res: Response
+) {
+  const profileIds: EthAddress[] | undefined = asArray(req.query.id)
+  if (!profileIds) {
+    return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
-  return metadata
+  const profiles = await fetchProfiles(profileIds, client, ensOwnership)
+  res.send(profiles)
+}
+
+async function fetchProfiles(
+  ethAddresses: EthAddress[],
+  client: SmartContentClient,
+  ensOwnership: EnsOwnership
+): Promise<ProfileMetadata[]> {
+  try {
+    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+    const profiles: Map<EthAddress, ProfileMetadata> = new Map()
+    const names: Map<EthAddress, string[]> = new Map()
+
+    // Group names and profile metadata by ethAddress
+    entities
+      .filter((entity) => !!entity.metadata)
+      .forEach((entity) => {
+        const ethAddress = entity.pointers[0]
+        const metadata: ProfileMetadata = entity.metadata
+        profiles.set(ethAddress, metadata)
+        const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
+        names.set(ethAddress, filteredNames)
+      })
+
+    // Check which names are owned
+    const ownedENS = await ensOwnership.areNamesOwned(names)
+
+    // Add name data and snapshot urls to profiles
+    return Array.from(profiles.entries()).map(([ethAddress, profile]) => {
+      const ensOwnership = ownedENS.get(ethAddress)!
+      const avatars = profile.avatars.map((profileData) => ({
+        ...profileData,
+        hasClaimedName: ensOwnership.get(profileData.name) ?? false,
+        avatar: {
+          ...profileData.avatar,
+          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar)
+        }
+      }))
+      return { avatars }
+    })
+  } catch (error) {
+    LOGGER.warn(error)
+    return []
+  }
 }
 
 /**
  * The content server provides the snapshots' hashes, but clients expect a full url. So in this
  * method, we replace the hashes by urls that would trigger the snapshot download.
  */
-function addBaseUrlToSnapshots(baseUrl: string, metadata: ProfileMetadata): ProfileMetadata {
+function addBaseUrlToSnapshots(baseUrl: string, avatar: Avatar): AvatarSnapshots {
   function addBaseUrl(dst: AvatarSnapshots, src: AvatarSnapshots, key: keyof AvatarSnapshots) {
     if (src[key]) {
       dst[key] = baseUrl + `/contents/${src[key]}`
     }
   }
 
-  const avatars = metadata.avatars.map((profile) => {
-    const original = profile.avatar.snapshots
-    const snapshots: AvatarSnapshots = {}
+  const original = avatar.snapshots
+  const snapshots: AvatarSnapshots = {}
 
-    for (const key in original) {
-      addBaseUrl(snapshots, original, key)
-    }
+  for (const key in original) {
+    addBaseUrl(snapshots, original, key)
+  }
 
-    return {
-      ...profile,
-      name: profile.name,
-      description: profile.description,
-      avatar: {
-        ...profile.avatar,
-        snapshots
-      }
-    }
-  })
+  return snapshots
+}
 
-  return { avatars }
+function asArray<T>(elements: T[]): T[] | undefined {
+  if (!elements) {
+    return undefined
+  }
+  if (elements instanceof Array) {
+    return elements
+  }
+  return [elements]
 }
 
 type ProfileMetadata = {

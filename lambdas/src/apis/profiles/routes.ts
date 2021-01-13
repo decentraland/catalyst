@@ -1,21 +1,31 @@
 import { Request, Response, Router } from 'express'
-import { SmartContentServerFetcher } from '../../utils/SmartContentServerFetcher'
-import { getProfileById } from './controllers/profiles'
+import { SmartContentClient } from '../../utils/SmartContentClient'
+import { getIndividualProfileById, getProfilesById } from './controllers/profiles'
 import { EnsOwnership } from './EnsOwnership'
+
+export function initializeIndividualProfileRoutes(
+  router: Router,
+  client: SmartContentClient,
+  ensOwnership: EnsOwnership
+): Router {
+  router.get('/:id', createHandler(client, ensOwnership, getIndividualProfileById))
+  return router
+}
 
 export function initializeProfilesRoutes(
   router: Router,
-  fetcher: SmartContentServerFetcher,
+  client: SmartContentClient,
   ensOwnership: EnsOwnership
 ): Router {
-  router.get('/:id', createHandler(fetcher, ensOwnership, getProfileById))
+  router.get('/', createHandler(client, ensOwnership, getProfilesById))
+  router.get('/:id', createHandler(client, ensOwnership, getIndividualProfileById))
   return router
 }
 
 function createHandler(
-  fetcher: SmartContentServerFetcher,
+  client: SmartContentClient,
   ensOwnership: EnsOwnership,
-  originalHandler: (fetcher: SmartContentServerFetcher, ensOwnership: EnsOwnership, req: Request, res: Response) => void
+  originalHandler: (client: SmartContentClient, ensOwnership: EnsOwnership, req: Request, res: Response) => void
 ): (req: Request, res: Response) => void {
-  return (req: Request, res: Response) => originalHandler(fetcher, ensOwnership, req, res)
+  return (req: Request, res: Response) => originalHandler(client, ensOwnership, req, res)
 }
