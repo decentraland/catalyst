@@ -11,7 +11,7 @@ import { initializeCryptoRoutes } from './apis/crypto/routes'
 import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
-import { initializeMultipleProfilesRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
+import { initializeProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { SmartContentClient } from './utils/SmartContentClient'
@@ -55,8 +55,8 @@ export class Server {
     this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
 
     // Profile API implementation
-    this.app.use('/profile', initializeProfilesRoutes(express.Router(), contentClient, ensOwnership))
-    this.app.use('/profiles', initializeMultipleProfilesRoutes(express.Router(), contentClient, ensOwnership))
+    this.app.use('/profile', initializeProfileRoutes(express.Router(), contentClient, ensOwnership))
+    this.app.use('/profiles', initializeProfilesRoutes(express.Router(), contentClient, ensOwnership))
 
     // DCL-Crypto API implementation
     this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))

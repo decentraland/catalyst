@@ -39,7 +39,7 @@ export class EnsOwnership {
   async areNamesOwnedByAddress(ethAddress: EthAddress, namesToCheck: Name[]): Promise<Map<Name, Owned>> {
     const map = new Map([[ethAddress, namesToCheck]])
     const result = await this.areNamesOwned(map)
-    return result.get(ethAddress)!
+    return result.get(ethAddress.toLowerCase())!
   }
 
   async areNamesOwned(check: Map<EthAddress, Name[]>): Promise<Map<EthAddress, Map<Name, Owned>>> {

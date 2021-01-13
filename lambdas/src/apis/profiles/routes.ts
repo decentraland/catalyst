@@ -3,7 +3,7 @@ import { SmartContentClient } from '../../utils/SmartContentClient'
 import { getProfileById, getProfilesById } from './controllers/profiles'
 import { EnsOwnership } from './EnsOwnership'
 
-export function initializeProfilesRoutes(
+export function initializeProfileRoutes(
   router: Router,
   client: SmartContentClient,
   ensOwnership: EnsOwnership
@@ -12,12 +12,13 @@ export function initializeProfilesRoutes(
   return router
 }
 
-export function initializeMultipleProfilesRoutes(
+export function initializeProfilesRoutes(
   router: Router,
   client: SmartContentClient,
   ensOwnership: EnsOwnership
 ): Router {
   router.get('/', createHandler(client, ensOwnership, getProfilesById))
+  router.get('/:id', createHandler(client, ensOwnership, getProfileById))
   return router
 }
 
