@@ -10,7 +10,7 @@ export class EnsOwnership {
   private static readonly PAGE_SIZE = 1000 // The graph has a 1000 limit when return the response
   private static LOGGER = log4js.getLogger('EnsOwnership')
   private static readonly QUERY: string = `
-    query FetchNamesByOwner($names: [String]) {
+    query FetchOwnersByName($names: [String]) {
         nfts(
             where: {
                 name_in: $names,
