@@ -7,7 +7,7 @@ import { EnsOwnership } from '../EnsOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
-export async function getProfileById(
+export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   req: Request,

@@ -1,14 +1,14 @@
 import { Request, Response, Router } from 'express'
 import { SmartContentClient } from '../../utils/SmartContentClient'
-import { getProfileById, getProfilesById } from './controllers/profiles'
+import { getIndividualProfileById, getProfilesById } from './controllers/profiles'
 import { EnsOwnership } from './EnsOwnership'
 
-export function initializeProfileRoutes(
+export function initializeIndividualProfileRoutes(
   router: Router,
   client: SmartContentClient,
   ensOwnership: EnsOwnership
 ): Router {
-  router.get('/:id', createHandler(client, ensOwnership, getProfileById))
+  router.get('/:id', createHandler(client, ensOwnership, getIndividualProfileById))
   return router
 }
 
@@ -18,7 +18,7 @@ export function initializeProfilesRoutes(
   ensOwnership: EnsOwnership
 ): Router {
   router.get('/', createHandler(client, ensOwnership, getProfilesById))
-  router.get('/:id', createHandler(client, ensOwnership, getProfileById))
+  router.get('/:id', createHandler(client, ensOwnership, getIndividualProfileById))
   return router
 }
 
