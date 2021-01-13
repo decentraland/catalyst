@@ -10,14 +10,20 @@ describe('Ensure ENS filtering work as expected', () => {
 
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
 
-    const namesOriginal = await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name'])
+    const namesOriginal = await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name'])
     assertNamesAreOwned(namesOriginal, 'marcosnc')
     assertNamesAreNotOwned(namesOriginal, 'invalid_name')
 
-    const namesUpper = await ensOwnership.areNamesOwned(originalAddress.toUpperCase(), ['marcosnc', 'invalid_name'])
+    const namesUpper = await ensOwnership.areNamesOwnedByAddress(originalAddress.toUpperCase(), [
+      'marcosnc',
+      'invalid_name'
+    ])
     expect(namesUpper).toEqual(namesOriginal)
 
-    const namesLower = await ensOwnership.areNamesOwned(originalAddress.toLowerCase(), ['marcosnc', 'invalid_name'])
+    const namesLower = await ensOwnership.areNamesOwnedByAddress(originalAddress.toLowerCase(), [
+      'marcosnc',
+      'invalid_name'
+    ])
     expect(namesLower).toEqual(namesOriginal)
   }, 100000)
 
@@ -27,7 +33,7 @@ describe('Ensure ENS filtering work as expected', () => {
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
     const ensOwnership = buildOwnership(fetcher)
 
-    await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name'])
+    await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name'])
 
     verify(mockedFetcher.queryGraph(anything(), anything(), anything())).once()
   }, 100000)
@@ -38,8 +44,8 @@ describe('Ensure ENS filtering work as expected', () => {
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
     const ensOwnership = buildOwnership(fetcher)
 
-    await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name'])
-    await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name', 'another_name'])
+    await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name'])
+    await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name', 'another_name'])
 
     verify(mockedFetcher.queryGraph(anything(), anything(), anything())).times(2)
   }, 100000)
@@ -50,8 +56,8 @@ describe('Ensure ENS filtering work as expected', () => {
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
     const ensOwnership = buildOwnership(fetcher)
 
-    await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name'])
-    await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name'])
+    await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name'])
+    await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name'])
 
     verify(mockedFetcher.queryGraph(anything(), anything(), anything())).once()
   }, 100000)
@@ -62,8 +68,8 @@ describe('Ensure ENS filtering work as expected', () => {
     const originalAddress = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
     const ensOwnership = buildOwnership(fetcher)
 
-    await ensOwnership.areNamesOwned(originalAddress, ['marcosnc', 'invalid_name'])
-    await ensOwnership.areNamesOwned('anotherAddress', ['marcosnc'])
+    await ensOwnership.areNamesOwnedByAddress(originalAddress, ['marcosnc', 'invalid_name'])
+    await ensOwnership.areNamesOwnedByAddress('anotherAddress', ['marcosnc'])
 
     verify(mockedFetcher.queryGraph(anything(), anything(), anything())).times(2)
   }, 100000)

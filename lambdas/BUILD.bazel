@@ -24,6 +24,8 @@ ts_library(
         "@npm//morgan",
         "@npm//multer",
         "@npm//@types/multer",
+        "@npm//@types/lru-cache",
+        "@npm//lru-cache",
         "@npm//node-fetch",
         "@npm//@types/node-fetch",
         "@npm//decentraland-commons",

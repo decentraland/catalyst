@@ -3,19 +3,29 @@ import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import LRU from 'lru-cache'
 
+/**
+ * This is a custom cache for storing the owner of a given name. It can be configured with a max size of elements
+ */
 export class EnsOwnership {
-  private static LOGGER = log4js.getLogger('ENSOwnership')
+  private static readonly PAGE_SIZE = 1000 // The graph has a 1000 limit when return the response
+  private static LOGGER = log4js.getLogger('EnsOwnership')
   private static readonly QUERY: string = `
-    query FilterNamesByOwner($owner: String, $names: [String]) {
+    query FetchNamesByOwner($names: [String]) {
         nfts(
             where: {
-                owner: $owner,
                 name_in: $names,
-                category: ens }) {
+                category: ens
+            })
+        {
             name
+            owner {
+              address
+            }
         }
     }`
-  private cache: EnsOwnershipCache
+
+  // The cache lib returns undefined when no value was calculated at all. We will set a 'null' value when we checked the blockchain, and there was no owner
+  private internalCache: LRU<Name, EthAddress | null>
 
   constructor(
     private readonly theGraphBaseUrl: string,
@@ -23,89 +33,93 @@ export class EnsOwnership {
     maxSize: number,
     maxAge: number
   ) {
-    this.cache = new EnsOwnershipCache(maxSize, maxAge, (ethAddress, names) => this.fetchOwnedNames(ethAddress, names))
-  }
-
-  areNamesOwned(ethAddress: EthAddress, namesToCheck: Name[]): Promise<Map<Name, Owned>> {
-    return this.cache.areNamesOwned(ethAddress.toLowerCase(), namesToCheck)
-  }
-
-  /** This method will take a list of names and return only those that are owned by the given eth address */
-  private async fetchOwnedNames(ethAddress: EthAddress, names: Name[]) {
-    try {
-      const response = await this.fetcher.queryGraph<{ nfts: { name: string }[] }>(
-        this.theGraphBaseUrl,
-        EnsOwnership.QUERY,
-        {
-          owner: ethAddress,
-          names
-        }
-      )
-      return response.nfts.map((nft) => nft.name)
-    } catch (error) {
-      EnsOwnership.LOGGER.error(`Could not retrieve ENSs for address ${ethAddress}.`, error)
-      return []
-    }
-  }
-}
-
-/**
- * This is a custom cache for storing whether an eth address owns a name or not. It can be configured with a max size of elements
- */
-class EnsOwnershipCache {
-  // The cache lib returns undefined when no value was calculated at all. The value of the LRU, is whether the name was owned or not
-  private internalCache: LRU<EthAddressNamePair, boolean>
-
-  constructor(
-    maxSize: number,
-    maxAge: number,
-    private readonly filterOutCall: (ethAddress: EthAddress, names: Name[]) => Promise<Name[]>
-  ) {
     this.internalCache = new LRU({ max: maxSize, maxAge })
   }
 
-  async areNamesOwned(ethAddress: EthAddress, namesToCheck: Name[]): Promise<Map<Name, Owned>> {
+  async areNamesOwnedByAddress(ethAddress: EthAddress, namesToCheck: Name[]): Promise<Map<Name, Owned>> {
+    const map = new Map([[ethAddress, namesToCheck]])
+    const result = await this.areNamesOwned(map)
+    return result.get(ethAddress)!
+  }
+
+  async areNamesOwned(check: Map<EthAddress, Name[]>): Promise<Map<EthAddress, Map<Name, Owned>>> {
     // Set up result
-    const result: Map<Name, boolean> = new Map()
+    const result: Map<EthAddress, Map<Name, Owned>> = new Map(
+      Array.from(check.keys()).map((ethAddress) => [ethAddress.toLowerCase(), new Map()])
+    )
+
+    // We will keep the unknown names in 2 different structures, so that it is easier to use them later
+    const unknown: Name[] = []
+    const unknownMap: Map<EthAddress, Name[]> = new Map()
 
     // Check what is on the cache
-    const unknown: Name[] = []
-    for (const name of namesToCheck) {
-      const key = this.concat(ethAddress, name)
-      const isOwned: Owned | undefined = this.internalCache.get(key)
-      if (isOwned === undefined) {
-        unknown.push(name)
-      } else {
-        result.set(name, isOwned)
+    for (const [ethAddress, names] of check) {
+      const lowerCaseAddress = ethAddress.toLowerCase()
+      const ethAddressResult = result.get(lowerCaseAddress)!
+      for (const name of names) {
+        const owner = this.internalCache.get(name)
+        if (owner === undefined) {
+          unknown.push(name)
+          const unknownNamesPerAddress = unknownMap.get(lowerCaseAddress)
+          if (!unknownNamesPerAddress) {
+            unknownMap.set(lowerCaseAddress, [name])
+          } else {
+            unknownNamesPerAddress.push(name)
+          }
+        } else {
+          ethAddressResult.set(name, lowerCaseAddress === owner)
+        }
       }
     }
 
-    // Check if unknown names are owned or not
-    const graphFetchResult = await this.fetchIfNamesAreOwned(ethAddress, unknown)
+    // Fetch owners for unknown names
+    const graphFetchResult = await this.fetchActualOwners(unknown)
 
-    // Store result in the cache
-    for (const [name, owned] of graphFetchResult) {
-      const key = this.concat(ethAddress, name)
-      this.internalCache.set(key, owned)
-      result.set(name, owned)
+    // Store fetched data in the cache, and add missing information to the result
+    for (const [ethAddress, names] of unknownMap) {
+      const ethAddressResult = result.get(ethAddress)!
+      for (const name of names) {
+        const owner = graphFetchResult.get(name)
+        this.internalCache.set(name, owner ?? null) // We are setting undefined values to null. This is so that we know we queried the data, and there is no owner
+        ethAddressResult.set(name, owner === ethAddress)
+      }
     }
 
     return result
   }
 
-  private concat(ethAddress: EthAddress, name: Name): EthAddressNamePair {
-    return `${ethAddress}-${name}`
+  private async fetchActualOwners(names: Name[]): Promise<Map<Name, EthAddress>> {
+    const result: Map<Name, EthAddress> = new Map()
+    let offset = 0
+    while (offset < names.length) {
+      const namesSlice = names.slice(offset, EnsOwnership.PAGE_SIZE)
+      const owners = await this.fetchOwnedNames(namesSlice)
+      for (const { name, owner } of owners) {
+        result.set(name, owner)
+      }
+      offset += EnsOwnership.PAGE_SIZE
+    }
+
+    return result
   }
 
-  private async fetchIfNamesAreOwned(ethAddress: EthAddress, names: string[]): Promise<Map<string, boolean>> {
-    if (names.length === 0) {
-      return new Map()
+  /** This method will take a list of names and return only those that are owned by the given eth address */
+  private async fetchOwnedNames(names: Name[]) {
+    try {
+      const response = await this.fetcher.queryGraph<{ nfts: { name: Name; owner: { address: EthAddress } }[] }>(
+        this.theGraphBaseUrl,
+        EnsOwnership.QUERY,
+        {
+          names
+        }
+      )
+      return response.nfts.map(({ name, owner }) => ({ name, owner: owner.address }))
+    } catch (error) {
+      EnsOwnership.LOGGER.error(`Could not retrieve ENSs.`, error)
+      return []
     }
-    const owned: Set<string> = new Set(await this.filterOutCall(ethAddress, names))
-    return new Map(names.map((name) => [name, owned.has(name)]))
   }
 }
 
 type Owned = boolean
 type Name = string
-type EthAddressNamePair = string
