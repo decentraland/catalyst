@@ -92,7 +92,7 @@ export class EnsOwnership {
     const result: Map<Name, EthAddress> = new Map()
     let offset = 0
     while (offset < names.length) {
-      const namesSlice = names.slice(offset, EnsOwnership.PAGE_SIZE)
+      const namesSlice = names.slice(offset, offset + EnsOwnership.PAGE_SIZE)
       const owners = await this.fetchOwnedNames(namesSlice)
       for (const { name, owner } of owners) {
         result.set(name, owner)
