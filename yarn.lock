@@ -2867,36 +2867,15 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^3.1.3:
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.3.tgz#92dbe0ce021249170e9bfa6ac38ec5f14673c0e9"
-  integrity sha512-+2K7ZkLkTM4NQHzk23igSwnAvd6Y3bu1AuuT16CFP9NG+94l8rqDllF6Wtrz6h6g124oQZ/4KYljnVtdiPGU1Q==
+dcl-catalyst-client@tag-pipe-file-v3:
+  version "3.1.4-20210118191553.commit-6650b0f"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210118191553.commit-6650b0f.tgz#6c2e8e456f3c93e0deaaafd233994a15a7106df2"
+  integrity sha512-OtQr1s12zDLQy8VP+5LUx/4dCZp8oDvOf22c7/ONKwmXrZmLdZsk26IGsCO2zuy1SD20Gc/37z9VjYmKox7X3w==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^2.0.2"
+    dcl-catalyst-commons tag-pipe-file
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
-
-dcl-catalyst-commons@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.2.tgz#bda956d305c194801dc0ee921f2d525cd71a6cf9"
-  integrity sha512-8ljsK6cf1Ila3pJt6ZZ+iGrfJD0mopC5iDYk1tHxW0no3rugrXXMAWDN0Uzsg2EpaNJ2ozW7nvPZgP06fV/R1g==
-  dependencies:
-    "@types/isomorphic-fetch" "0.0.35"
-    "@types/ms" "^0.7.31"
-    "@typescript-eslint/eslint-plugin" "^4.9.0"
-    "@typescript-eslint/parser" "^4.9.0"
-    abort-controller "^3.0.0"
-    blob-to-buffer "^1.2.9"
-    cids "^0.8.0"
-    cross-fetch "^3.0.5"
-    dcl-crypto "^2.1.0"
-    eslint "^7.14.0"
-    eslint-config-prettier "^6.15.0"
-    eslint-plugin-prettier "^3.2.0"
-    ms "^2.1.2"
-    multihashing-async "^0.8.1"
-    prettier "^2.2.1"
 
 dcl-catalyst-commons@tag-pipe-file:
   version "2.0.4-20210118161534.commit-0be7e83"
