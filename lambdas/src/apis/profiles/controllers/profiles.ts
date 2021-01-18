@@ -4,19 +4,21 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { EnsOwnership } from '../EnsOwnership'
+import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
 export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
+  wearables: WearablesOwnership,
   req: Request,
   res: Response
 ): Promise<void> {
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
-  const profiles = await fetchProfiles([profileId], client, ensOwnership)
+  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables)
   const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [] }
   res.send(returnProfile)
 }
@@ -24,6 +26,7 @@ export async function getIndividualProfileById(
 export async function getProfilesById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
+  wearables: WearablesOwnership,
   req: Request,
   res: Response
 ) {
@@ -32,14 +35,15 @@ export async function getProfilesById(
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
-  const profiles = await fetchProfiles(profileIds, client, ensOwnership)
+  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
   res.send(profiles)
 }
 
 async function fetchProfiles(
   ethAddresses: EthAddress[],
   client: SmartContentClient,
-  ensOwnership: EnsOwnership
+  ensOwnership: EnsOwnership,
+  wearablesOwnership: WearablesOwnership
 ): Promise<ProfileMetadata[]> {
   try {
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
@@ -58,17 +62,20 @@ async function fetchProfiles(
       })
 
     // Check which names are owned
+    const wearablesByAddress = await wearablesOwnership.getWearablesOwnedByAddresses(ethAddresses)
     const ownedENS = await ensOwnership.areNamesOwned(names)
 
     // Add name data and snapshot urls to profiles
     return Array.from(profiles.entries()).map(([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
+      const { wearables: ownedWearables } = wearablesByAddress.get(ethAddress)!
       const avatars = profile.avatars.map((profileData) => ({
         ...profileData,
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
-          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar)
+          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar),
+          wearables: filterWearables(profileData.avatar.wearables, ownedWearables)
         }
       }))
       return { avatars }
@@ -77,6 +84,12 @@ async function fetchProfiles(
     LOGGER.warn(error)
     return []
   }
+}
+
+function filterWearables(wearablesInProfile: WearableId[], ownedWearables: Set<WearableId>): WearableId[] {
+  return wearablesInProfile.filter(
+    (wearableInProfile) => wearableInProfile.startsWith('dcl://base-avatars') || ownedWearables.has(wearableInProfile)
+  )
 }
 
 /**
@@ -127,5 +140,7 @@ type Avatar = {
   skin: any
   snapshots: AvatarSnapshots
   version: number
-  wearables: any
+  wearables: WearableId[]
 }
+
+export type WearableId = string // These ids are used as pointers on the content server
