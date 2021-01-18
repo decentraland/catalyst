@@ -138,6 +138,8 @@ export class ContentCluster implements IdentityProvider {
   /** Detect my own identity */
   async detectMyIdentity(attempts: number = 1): Promise<void> {
     try {
+      ContentCluster.LOGGER.debug('Attempting to determine my identity')
+
       // Fetch server list from the DAO
       if (!this.allServersInDAO) {
         this.allServersInDAO = await this.dao.getAllContentServers()

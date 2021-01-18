@@ -1,3 +1,5 @@
+import ms from 'ms'
+import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
@@ -49,7 +51,8 @@ export const enum Bean {
   CONTROLLER,
   SMART_CONTENT_SERVER_FETCHER,
   SMART_CONTENT_SERVER_CLIENT,
-  DAO
+  DAO,
+  ENS_OWNERSHIP
 }
 
 export const enum EnvironmentConfig {
@@ -61,7 +64,9 @@ export const enum EnvironmentConfig {
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
-  LAMBDAS_STORAGE_LOCATION
+  LAMBDAS_STORAGE_LOCATION,
+  PROFILE_NAMES_CACHE_MAX,
+  PROFILE_NAMES_CACHE_TIMEOUT
 }
 
 export class EnvironmentBuilder {
@@ -120,6 +125,12 @@ export class EnvironmentBuilder {
       EnvironmentConfig.LAMBDAS_STORAGE_LOCATION,
       () => process.env.LAMBDAS_STORAGE_LOCATION ?? DEFAULT_LAMBDAS_STORAGE_LOCATION
     )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_MAX, () =>
+      parseInt(process.env.PROFILE_METADATA_CACHE_MAX ?? '20000')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_TIMEOUT, () =>
+      ms(process.env.PROFILE_METADATA_CACHE_TIMEOUT ?? '3h')
+    )
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
@@ -131,6 +142,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
 
     return env
   }
