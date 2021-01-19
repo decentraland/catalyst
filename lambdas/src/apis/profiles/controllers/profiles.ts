@@ -3,6 +3,8 @@ import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { WearableId } from '../../collections/controllers/collections'
+import { translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
 import { WearablesOwnership } from '../WearablesOwnership'
 
@@ -75,7 +77,7 @@ async function fetchProfiles(
         avatar: {
           ...profileData.avatar,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar),
-          wearables: filterWearables(profileData.avatar.wearables, ownedWearables)
+          wearables: sanitizeWearables(profileData.avatar.wearables, ownedWearables)
         }
       }))
       return { avatars }
@@ -86,9 +88,16 @@ async function fetchProfiles(
   }
 }
 
-function filterWearables(wearablesInProfile: WearableId[], ownedWearables: Set<WearableId>): WearableId[] {
+/**
+ * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned
+ */
+function sanitizeWearables(wearablesInProfile: WearableId[], ownedWearables: Set<WearableId>): WearableId[] {
+  // TODO: Once we deprecate the wearables-api, migrate from the previous id format into the new one. This will allow us to remove the logic on our APIs
   return wearablesInProfile.filter(
-    (wearableInProfile) => wearableInProfile.startsWith('dcl://base-avatars') || ownedWearables.has(wearableInProfile)
+    (wearable: WearableId) =>
+      wearable.includes('base-avatars') ||
+      ownedWearables.has(wearable) ||
+      ownedWearables.has(translateWearablesIdFormat(wearable))
   )
 }
 
@@ -142,5 +151,3 @@ type Avatar = {
   version: number
   wearables: WearableId[]
 }
-
-export type WearableId = string // These ids are used as pointers on the content server

@@ -2,10 +2,10 @@ import { Fetcher } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import LRU from 'lru-cache'
-import { WearableId } from './controllers/profiles'
+import { WearableId } from '../collections/controllers/collections'
 
 /**
- * This is a custom cache for storing the owner of a given name. It can be configured with a max size of elements
+ * This is a custom cache for the wearables owned by a given user. It can be configured with a max size of elements
  */
 export class WearablesOwnership {
   private static readonly PAGE_SIZE = 1000 // The graph has a 1000 limit when return the response
@@ -75,7 +75,7 @@ export class WearablesOwnership {
       for (const { owner, wearables } of wearablesData) {
         if (wearables.length === WearablesOwnership.PAGE_SIZE) {
           // If the amount of wearables is at the limit, then we need to make another call to get the remaining wearables
-          const previousCall = calls.find((call) => call.ethAddress === owner)!
+          const previousCall = callsToMake.find((call) => call.ethAddress === owner)!
           calls.push({
             ethAddress: owner,
             offset: previousCall.offset + WearablesOwnership.PAGE_SIZE,
@@ -102,9 +102,9 @@ export class WearablesOwnership {
     try {
       const query = `{` + callsToMake.map((call) => this.getFragment(call)).join('\n') + `}`
       const response = await this.fetcher.queryGraph<{
-        data: { [addressWithPrefix: string]: { catalystPointer: WearableId }[] }
+        [addressWithPrefix: string]: { catalystPointer: WearableId }[]
       }>(this.theGraphBaseUrl, query, {})
-      return Object.entries(response.data).map(([addressWithPrefix, wearables]) => ({
+      return Object.entries(response).map(([addressWithPrefix, wearables]) => ({
         owner: addressWithPrefix.substring(1),
         wearables: wearables.map(({ catalystPointer }) => catalystPointer)
       }))
