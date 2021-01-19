@@ -7,6 +7,7 @@ import {
 } from 'dcl-catalyst-client'
 import {
   AvailableContentResult,
+  CompleteRequestOptions,
   ContentFileHash,
   DeploymentBase,
   Entity,
@@ -38,6 +39,14 @@ export class SmartContentClient implements ContentAPI {
   private contentClient: IFuture<ContentAPI> | undefined
 
   constructor(private readonly externalContentServerUrl: string) {}
+  async pipeContent(
+    contentHash: string,
+    responseTo: Response,
+    options?: Partial<CompleteRequestOptions>
+  ): Promise<void> {
+    const client = await this.getClient()
+    return client.pipeContent(contentHash, responseTo, options)
+  }
 
   async fetchEntitiesByPointers(type: EntityType, pointers: Pointer[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
