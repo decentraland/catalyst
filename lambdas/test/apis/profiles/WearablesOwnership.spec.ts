@@ -39,7 +39,7 @@ describe('Wearables Ownership', () => {
   })
 
   it(`When multiple addresses are consulted, then they are grouped is one the graph query`, async () => {
-    const addresses = createArrayWithAddresses({ amount: 5 })
+    const addresses = buildArrayWithAddresses({ amount: 5 })
     const { mock, instance } = getMockedFetcher()
     const wearablesOwnership = buildOwnership(instance)
 
@@ -49,7 +49,7 @@ describe('Wearables Ownership', () => {
   })
 
   it(`When more than WearablesOwnership#REQUESTS_IN_GROUP addresses are consulted, then more than one request is needed`, async () => {
-    const addresses = createArrayWithAddresses({ amount: WearablesOwnership.REQUESTS_IN_GROUP + 1 })
+    const addresses = buildArrayWithAddresses({ amount: WearablesOwnership.REQUESTS_IN_GROUP + 1 })
     const { mock, instance } = getMockedFetcher()
     const wearablesOwnership = buildOwnership(instance)
 
@@ -72,20 +72,20 @@ describe('Wearables Ownership', () => {
 
     verify(mock.queryGraph(anything(), anything(), anything())).once()
   })
-
-  function createArrayWithAddresses(options: { amount: number }): EthAddress[] {
-    return Array.from({ length: options.amount }, () => random.alphaNumeric(10))
-  }
-
-  function assertOwnedWearablesAreAsExpected(returned: OwnedWearables, expected: Map<EthAddress, WearableId[]>) {
-    expect(returned.size).toEqual(expected.size)
-
-    for (const [ethAddress, expectedWearables] of expected) {
-      const returnedWearables = returned.get(ethAddress.toLowerCase())!.wearables // Returned addresses are always lowercase
-      expect(returnedWearables).toEqual(new Set(expectedWearables))
-    }
-  }
 })
+
+function buildArrayWithAddresses(options: { amount: number }): EthAddress[] {
+  return Array.from({ length: options.amount }, () => random.alphaNumeric(10))
+}
+
+function assertOwnedWearablesAreAsExpected(returned: OwnedWearables, expected: Map<EthAddress, WearableId[]>) {
+  expect(returned.size).toEqual(expected.size)
+
+  for (const [ethAddress, expectedWearables] of expected) {
+    const returnedWearables = returned.get(ethAddress.toLowerCase())!.wearables // Returned addresses are always lowercase
+    expect(returnedWearables).toEqual(new Set(expectedWearables))
+  }
+}
 
 function buildOwnership(fetcher: Fetcher) {
   return new WearablesOwnership(DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN, fetcher, 500, 1000)

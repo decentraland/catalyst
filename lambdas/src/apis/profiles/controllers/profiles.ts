@@ -41,7 +41,8 @@ export async function getProfilesById(
   res.send(profiles)
 }
 
-async function fetchProfiles(
+// Visible for testing purposes
+export async function fetchProfiles(
   ethAddresses: EthAddress[],
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
@@ -83,6 +84,7 @@ async function fetchProfiles(
       return { avatars }
     })
   } catch (error) {
+    console.log(error)
     LOGGER.warn(error)
     return []
   }
@@ -132,10 +134,11 @@ function asArray<T>(elements: T[]): T[] | undefined {
   return [elements]
 }
 
-type ProfileMetadata = {
+export type ProfileMetadata = {
   avatars: {
     name: string
     description: string
+    hasClaimedName?: boolean
     avatar: Avatar
   }[]
 }
