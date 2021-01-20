@@ -92,7 +92,7 @@ async function fetchProfiles(
  * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned
  */
 function sanitizeWearables(wearablesInProfile: WearableId[], ownedWearables: Set<WearableId>): WearableId[] {
-  // TODO: Once we deprecate the wearables-api, migrate from the previous id format into the new one. This will allow us to remove the logic on our APIs
+  // TODO: Once we deprecate the wearables-api, migrate from the previous id format into the new one
   return wearablesInProfile.filter(
     (wearable: WearableId) =>
       wearable.includes('base-avatars') ||

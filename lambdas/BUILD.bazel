@@ -3,42 +3,6 @@ package(default_visibility = ["//visibility:public"])
 load("@npm_bazel_typescript//:index.bzl", "ts_library")
 load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 
-ts_library(
-    name = "lambdas",
-    srcs = glob(["src/**/*.ts"]),
-    module_name = "@katalyst/lambdas",
-    tsconfig = "//:tsconfig.json",
-    deps = [
-        "//contracts",
-        "//commons/utils",
-        "//commons/servers",
-        "@npm//@types",
-        "@npm//@types/node",
-        "@npm//@types/compression",
-        "@npm//@types/log4js",
-        "@npm//cors",
-        "@npm//express",
-        "@npm//sharp",
-        "@npm//compression",
-        "@npm//log4js",
-        "@npm//morgan",
-        "@npm//multer",
-        "@npm//@types/multer",
-        "@npm//@types/lru-cache",
-        "@npm//lru-cache",
-        "@npm//node-fetch",
-        "@npm//@types/node-fetch",
-        "@npm//decentraland-commons",
-        "@npm//web3",
-        "@npm//fp-future",
-        "@npm//@types/web3",
-        "@npm//aws-sdk",
-        "@npm//dcl-crypto",
-        "@npm//dcl-catalyst-commons",
-        "@npm//dcl-catalyst-client",
-    ],
-)
-
 filegroup(
     name = "api_resources",
     srcs = glob(["src/**/*.json"])
@@ -47,12 +11,12 @@ filegroup(
 nodejs_binary(
     name = "server",
     data = [
-        ":lambdas",
+        "//lambdas/src:lambdas",
         ":api_resources",
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "src/entrypoints/run-server.ts",
+    entry_point = "entrypoints/run-server.ts",
 )
 
 load("//tools/npm:package.bzl", "dataform_npm_package")
@@ -72,13 +36,17 @@ ts_library(
     srcs = glob(["test/**/*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
-        ":lambdas",
+        "//lambdas/src:lambdas",
+        "//commons/utils",
         "@npm//@types/node",
         "@npm//@types/jasmine",
+        "@npm//@types/faker",
         "@npm//node-fetch",
         "@npm//@types/node-fetch",
         "@npm//dcl-catalyst-commons",
         "@npm//ts-mockito",
+        "@npm//dcl-crypto",
+        "@npm//faker",
     ],
 )
 

@@ -8,8 +8,8 @@ import { WearableId } from '../collections/controllers/collections'
  * This is a custom cache for the wearables owned by a given user. It can be configured with a max size of elements
  */
 export class WearablesOwnership {
+  public static readonly REQUESTS_IN_GROUP = 10 // The amount of wearables requests we will group together
   private static readonly PAGE_SIZE = 1000 // The graph has a 1000 limit when return the response
-  private static readonly REQUESTS_IN_GROUP = 10 // The amount of wearables requests we will group together
   private static LOGGER = log4js.getLogger('WearablesOwnership')
 
   private internalCache: LRU<EthAddress, { owned: Set<WearableId>; lastUpdated: Timestamp }>
@@ -23,11 +23,9 @@ export class WearablesOwnership {
     this.internalCache = new LRU({ max: maxSize, maxAge })
   }
 
-  async getWearablesOwnedByAddresses(
-    ethAddresses: EthAddress[]
-  ): Promise<Map<EthAddress, { wearables: Set<WearableId>; updatedMillisAgo: number }>> {
+  async getWearablesOwnedByAddresses(ethAddresses: EthAddress[]): Promise<OwnedWearables> {
     // Set up result
-    const result: Map<EthAddress, { wearables: Set<WearableId>; updatedMillisAgo: number }> = new Map()
+    const result: OwnedWearables = new Map()
 
     // Check what is on the cache
     const unknown: EthAddress[] = []
@@ -117,14 +115,14 @@ export class WearablesOwnership {
 
   private getFragment(call: GraphCall) {
     // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
-    // TODO: Add filtering so only wearables are searched
     return `
-      P${call.ethAddress}: nfts(where: {owner: "${call.ethAddress}"}, first: ${call.limit}, skip: ${call.offset}) {
+      P${call.ethAddress}: nfts(where: {owner: "${call.ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: ${call.limit}, skip: ${call.offset}) {
         catalystPointer
       }
     `
   }
 }
 
+export type OwnedWearables = Map<EthAddress, { wearables: Set<WearableId>; updatedMillisAgo: number }>
 type GraphCall = { ethAddress: EthAddress; offset: number; limit: number }
 type Timestamp = number

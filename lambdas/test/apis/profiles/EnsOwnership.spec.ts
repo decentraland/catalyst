@@ -1,6 +1,6 @@
 import { Fetcher } from 'dcl-catalyst-commons'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
-import { EnsOwnership } from '../../../src/apis/profiles/EnsOwnership'
+import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
 import { DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN } from '../../../src/Environment'
 
 describe('Ensure ENS filtering work as expected', () => {
