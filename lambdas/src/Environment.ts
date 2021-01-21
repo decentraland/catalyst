@@ -1,5 +1,6 @@
 import ms from 'ms'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
+import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
@@ -11,7 +12,10 @@ export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
-
+export const DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ropsten'
+export const DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections'
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
@@ -52,7 +56,8 @@ export const enum Bean {
   SMART_CONTENT_SERVER_FETCHER,
   SMART_CONTENT_SERVER_CLIENT,
   DAO,
-  ENS_OWNERSHIP
+  ENS_OWNERSHIP,
+  WEARABLES_OWNERSHIP
 }
 
 export const enum EnvironmentConfig {
@@ -60,13 +65,16 @@ export const enum EnvironmentConfig {
   LOG_REQUESTS,
   CONTENT_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
+  COLLECTIONS_PROVIDER_URL,
   COMMIT_HASH,
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
   LAMBDAS_STORAGE_LOCATION,
   PROFILE_NAMES_CACHE_MAX,
-  PROFILE_NAMES_CACHE_TIMEOUT
+  PROFILE_NAMES_CACHE_TIMEOUT,
+  PROFILE_WEARABLES_CACHE_MAX,
+  PROFILE_WEARABLES_CACHE_TIMEOUT
 }
 
 export class EnvironmentBuilder {
@@ -108,6 +116,15 @@ export class EnvironmentBuilder {
           ? DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET
           : DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN)
     )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.COLLECTIONS_PROVIDER_URL,
+      () =>
+        process.env.COLLECTIONS_PROVIDER_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET
+          : DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN)
+    )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')
     this.registerConfigIfNotAlreadySet(
       env,
@@ -126,10 +143,16 @@ export class EnvironmentBuilder {
       () => process.env.LAMBDAS_STORAGE_LOCATION ?? DEFAULT_LAMBDAS_STORAGE_LOCATION
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_MAX, () =>
-      parseInt(process.env.PROFILE_METADATA_CACHE_MAX ?? '20000')
+      parseInt(process.env.PROFILE_NAMES_CACHE_MAX ?? '20000')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_NAMES_CACHE_TIMEOUT, () =>
-      ms(process.env.PROFILE_METADATA_CACHE_TIMEOUT ?? '3h')
+      ms(process.env.PROFILE_NAMES_CACHE_TIMEOUT ?? '3h')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_WEARABLES_CACHE_MAX, () =>
+      parseInt(process.env.PROFILE_WEARABLES_CACHE_MAX ?? '1000')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_WEARABLES_CACHE_TIMEOUT, () =>
+      ms(process.env.PROFILE_WEARABLES_CACHE_TIMEOUT ?? '30m')
     )
 
     // Please put special attention on the bean registration order.
@@ -143,6 +166,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
 
     return env
   }

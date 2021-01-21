@@ -27,6 +27,7 @@
     "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
     "paths": {
       "@katalyst/content/*": ["content/src/*"],
+      "@katalyst/lambdas/*": ["lambdas/src/*"],
       "@katalyst/test-helpers/*": ["content/test/helpers/*"],
       "decentraland-katalyst-contracts/*": ["contracts/*"],
       "decentraland-katalyst-commons/*": ["commons/servers/*"],

@@ -110,6 +110,8 @@ function createRelativeContentUrl(
   return undefined
 }
 
+export type WearableId = string // These ids are used as pointers on the content server
+
 const RARITIES_EMISSIONS = {
   common: 100000,
   uncommon: 10000,
