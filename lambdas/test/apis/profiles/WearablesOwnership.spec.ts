@@ -38,7 +38,7 @@ describe('Wearables Ownership', () => {
     verify(mock.queryGraph(anything(), anything(), anything())).once()
   })
 
-  it(`When multiple addresses are consulted, then they are grouped is one the graph query`, async () => {
+  it(`When multiple addresses are consulted, then they are grouped in one query to the graph`, async () => {
     const addresses = buildArrayWithAddresses({ amount: 5 })
     const { mock, instance } = getMockedFetcher()
     const wearablesOwnership = buildOwnership(instance)
