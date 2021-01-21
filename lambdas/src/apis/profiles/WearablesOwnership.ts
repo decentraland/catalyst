@@ -95,7 +95,6 @@ export class WearablesOwnership {
     return result
   }
 
-  /** This method will take a list of names and return only those that are owned by the given eth address */
   private async fetchWearableData(queries: GraphQuery[]): Promise<{ owner: EthAddress; wearables: WearableId[] }[]> {
     try {
       const query = `{` + queries.map((query) => this.getFragment(query)).join('\n') + `}`
