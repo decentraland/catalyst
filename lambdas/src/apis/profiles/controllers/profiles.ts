@@ -20,7 +20,7 @@ export async function getIndividualProfileById(
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
-  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables)
+  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables, false)
   const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [] }
   res.send(returnProfile)
 }
@@ -46,7 +46,8 @@ export async function fetchProfiles(
   ethAddresses: EthAddress[],
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
-  wearablesOwnership: WearablesOwnership
+  wearablesOwnership: WearablesOwnership,
+  performWearableSanitization: boolean = true
 ): Promise<ProfileMetadata[]> {
   try {
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
@@ -78,7 +79,9 @@ export async function fetchProfiles(
         avatar: {
           ...profileData.avatar,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar),
-          wearables: sanitizeWearables(profileData.avatar.wearables, ownedWearables)
+          wearables: performWearableSanitization
+            ? sanitizeWearables(profileData.avatar.wearables, ownedWearables)
+            : profileData.avatar.wearables
         }
       }))
       return { avatars }

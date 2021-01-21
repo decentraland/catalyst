@@ -50,6 +50,18 @@ describe('profiles', () => {
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
   })
 
+  it(`When some of the worn wearables are not owned but sanitization is off, then they are not filtered out`, async () => {
+    const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
+    const client = contentServer(entity)
+    const ensOwnership = noNames()
+    const wearablesOwnership = ownedWearables(SOME_ADDRESS, 'Some other id')
+
+    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, false)
+
+    expect(profiles.length).toEqual(1)
+    expect(profiles[0].avatars[0].avatar.wearables).toEqual([WEARABLE_ID_1])
+  })
+
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
     const client = contentServer()
     const ensOwnership = noNames()

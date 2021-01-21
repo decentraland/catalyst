@@ -10,7 +10,7 @@ import { WearableId } from '../collections/controllers/collections'
 export class WearablesOwnership {
   public static readonly REQUESTS_IN_GROUP = 10 // The amount of wearables requests we will group together
   private static readonly PAGE_SIZE = 1000 // The graph has a 1000 limit when return the response
-  private static LOGGER = log4js.getLogger('WearablesOwnership')
+  private static readonly LOGGER = log4js.getLogger('WearablesOwnership')
 
   private internalCache: LRU<EthAddress, { owned: Set<WearableId>; lastUpdated: Timestamp }>
 
