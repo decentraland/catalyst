@@ -5,7 +5,7 @@ import LRU from 'lru-cache'
 import { WearableId } from '../collections/controllers/collections'
 
 /**
- * This is a custom cache for the wearables owned by a given user. It can be configured with a max size of elements
+ * This is a custom cache that stores wearables owned by a given user. It can be configured with a max size of elements
  */
 export class WearablesOwnership {
   public static readonly REQUESTS_IN_GROUP = 10 // The amount of wearables requests we will group together
@@ -58,25 +58,25 @@ export class WearablesOwnership {
   private async fetchWearablesForAddresses(addresses: EthAddress[]): Promise<Map<EthAddress, Set<WearableId>>> {
     const result: Map<EthAddress, Set<WearableId>> = new Map()
 
-    const calls: GraphCall[] = addresses.map((ethAddress) => ({
+    const queries: GraphQuery[] = addresses.map((ethAddress) => ({
       ethAddress,
       offset: 0,
       limit: WearablesOwnership.PAGE_SIZE
     }))
 
     let index = 0
-    while (index < calls.length) {
+    while (index < queries.length) {
       // Group many requests together, to reduce the amount of calls to the graph
-      const callsToMake = calls.slice(index, index + WearablesOwnership.REQUESTS_IN_GROUP)
-      const wearablesData = await this.fetchWearableData(callsToMake)
+      const groupedQueries = queries.slice(index, index + WearablesOwnership.REQUESTS_IN_GROUP)
+      const wearablesData = await this.fetchWearableData(groupedQueries)
 
       for (const { owner, wearables } of wearablesData) {
         if (wearables.length === WearablesOwnership.PAGE_SIZE) {
           // If the amount of wearables is at the limit, then we need to make another call to get the remaining wearables
-          const previousCall = callsToMake.find((call) => call.ethAddress === owner)!
-          calls.push({
+          const executedQueryForAddress = groupedQueries.find((call) => call.ethAddress === owner)!
+          queries.push({
             ethAddress: owner,
-            offset: previousCall.offset + WearablesOwnership.PAGE_SIZE,
+            offset: executedQueryForAddress.offset + WearablesOwnership.PAGE_SIZE,
             limit: WearablesOwnership.PAGE_SIZE
           })
         }
@@ -96,9 +96,9 @@ export class WearablesOwnership {
   }
 
   /** This method will take a list of names and return only those that are owned by the given eth address */
-  private async fetchWearableData(callsToMake: GraphCall[]): Promise<{ owner: EthAddress; wearables: WearableId[] }[]> {
+  private async fetchWearableData(queries: GraphQuery[]): Promise<{ owner: EthAddress; wearables: WearableId[] }[]> {
     try {
-      const query = `{` + callsToMake.map((call) => this.getFragment(call)).join('\n') + `}`
+      const query = `{` + queries.map((query) => this.getFragment(query)).join('\n') + `}`
       const response = await this.fetcher.queryGraph<{
         [addressWithPrefix: string]: { catalystPointer: WearableId }[]
       }>(this.theGraphBaseUrl, query, {})
@@ -107,13 +107,13 @@ export class WearablesOwnership {
         wearables: wearables.map(({ catalystPointer }) => catalystPointer)
       }))
     } catch (error) {
-      const fetchedEthAddresses = callsToMake.map(({ ethAddress }) => ethAddress).join(',')
+      const fetchedEthAddresses = queries.map(({ ethAddress }) => ethAddress).join(',')
       WearablesOwnership.LOGGER.error(`Could not retrieve for '${fetchedEthAddresses}'.`, error)
       return []
     }
   }
 
-  private getFragment(call: GraphCall) {
+  private getFragment(call: GraphQuery) {
     // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
     return `
       P${call.ethAddress}: nfts(where: {owner: "${call.ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: ${call.limit}, skip: ${call.offset}) {
@@ -124,5 +124,5 @@ export class WearablesOwnership {
 }
 
 export type OwnedWearables = Map<EthAddress, { wearables: Set<WearableId>; updatedMillisAgo: number }>
-type GraphCall = { ethAddress: EthAddress; offset: number; limit: number }
+type GraphQuery = { ethAddress: EthAddress; offset: number; limit: number }
 type Timestamp = number

@@ -16,7 +16,7 @@ describe('profiles', () => {
 
   it(`When profiles are fetched and NFTs are owned, then the returned profile is the same as the content server`, async () => {
     const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1] })
-    const client = contentServer(entity)
+    const client = contentServerThatReturns(entity)
     const ensOwnership = ownedNames(SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = ownedWearables(SOME_ADDRESS, WEARABLE_ID_1)
 
@@ -28,21 +28,22 @@ describe('profiles', () => {
 
   it(`When the current name is not owned, then it says so in the profile`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { name: SOME_NAME })
-    const client = contentServer(entity)
-    const ensOwnership = ownedNames(SOME_ADDRESS, 'SomeOtherName')
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = noNames()
     const wearablesOwnership = noWearables()
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
     expect(profiles.length).toEqual(1)
+    expect(profiles[0].avatars[0].name).toEqual(SOME_NAME)
     expect(profiles[0].avatars[0].hasClaimedName).toEqual(false)
   })
 
   it(`When some of the worn wearables are not owned, then they are filtered out`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
-    const client = contentServer(entity)
+    const client = contentServerThatReturns(entity)
     const ensOwnership = noNames()
-    const wearablesOwnership = ownedWearables(SOME_ADDRESS, 'Some other id')
+    const wearablesOwnership = noWearables()
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -52,9 +53,9 @@ describe('profiles', () => {
 
   it(`When some of the worn wearables are not owned but sanitization is off, then they are not filtered out`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
-    const client = contentServer(entity)
+    const client = contentServerThatReturns(entity)
     const ensOwnership = noNames()
-    const wearablesOwnership = ownedWearables(SOME_ADDRESS, 'Some other id')
+    const wearablesOwnership = noWearables()
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, false)
 
@@ -63,7 +64,7 @@ describe('profiles', () => {
   })
 
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
-    const client = contentServer()
+    const client = contentServerThatReturns()
     const ensOwnership = noNames()
     const wearablesOwnership = noWearables()
 
@@ -74,7 +75,7 @@ describe('profiles', () => {
 
   it(`When profiles are returned, external urls are added to snapshots`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { snapshots: { aKey: 'aHash' } })
-    const client = contentServer(entity)
+    const client = contentServerThatReturns(entity)
     const ensOwnership = noNames()
     const wearablesOwnership = noWearables()
 
@@ -119,7 +120,7 @@ function profileWith(
   return { entity, metadata }
 }
 
-function contentServer(profile?: Entity): SmartContentClient {
+function contentServerThatReturns(profile?: Entity): SmartContentClient {
   const mockedClient = mock(SmartContentClient)
   when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(profile ? [profile] : [])
   when(mockedClient.getExternalContentServerUrl()).thenReturn(EXTERNAL_URL)
@@ -160,7 +161,7 @@ function ownedWearables(ethAddress: EthAddress, ...wearables: WearableId[]): Wea
 function noWearables(): WearablesOwnership {
   const mockedWearablesOwnership = mock(WearablesOwnership)
   when(mockedWearablesOwnership.getWearablesOwnedByAddresses(anything())).thenCall((addresses) =>
-    Promise.resolve(new Map(addresses.map((address) => [address, { ownedWearables: new Set() }])))
+    Promise.resolve(new Map(addresses.map((address) => [address, { wearables: new Set() }])))
   )
   return instance(mockedWearablesOwnership)
 }
