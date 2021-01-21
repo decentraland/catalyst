@@ -36,6 +36,6 @@ export class ConfigService {
   }
 
   async getMaxPeersPerLayer(): Promise<number | undefined> {
-    return await this.get('maxPeersPerLayer', () => parseInt(process.env.MAX_PER_LAYER ?? '50'))
+    return await this.get('maxPeersPerLayer', () => parseInt(process.env.MAX_PER_LAYER ?? '100'))
   }
 }
