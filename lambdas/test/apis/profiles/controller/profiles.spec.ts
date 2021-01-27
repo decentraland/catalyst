@@ -9,7 +9,7 @@ import { anything, instance, mock, when } from 'ts-mockito'
 
 const EXTERNAL_URL = 'https://content-url.com'
 
-fdescribe('profiles', () => {
+describe('profiles', () => {
   const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
   const SOME_NAME = 'NFTName'
   const WEARABLE_ID_1 = 'someCollection-someWearable'

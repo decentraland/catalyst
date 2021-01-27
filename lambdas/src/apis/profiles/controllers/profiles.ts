@@ -123,11 +123,11 @@ function addBaseUrlToSnapshots(
   for (const key in original) {
     const originalValue = original[key]
     if (content.has(originalValue)) {
-      // Key references a content file
+      // Snapshot references a content file
       const hash = content.get(originalValue)!
       snapshots[key] = baseUrl + `/contents/${hash}`
     } else {
-      // Key is directly a hash
+      // Snapshot is directly a hash
       snapshots[key] = baseUrl + `/contents/${originalValue}`
     }
   }
