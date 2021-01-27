@@ -16,7 +16,7 @@ nodejs_binary(
         "@npm//@bazel/typescript",
         "@npm//typescript",
     ],
-    entry_point = "entrypoints/run-server.ts",
+    entry_point = "//lambdas/src:entrypoints/run-server.ts",
 )
 
 load("//tools/npm:package.bzl", "dataform_npm_package")

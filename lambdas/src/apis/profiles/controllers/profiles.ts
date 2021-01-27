@@ -1,4 +1,4 @@
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { ContentFileHash, Entity, EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
@@ -51,7 +51,7 @@ export async function fetchProfiles(
 ): Promise<ProfileMetadata[]> {
   try {
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
-    const profiles: Map<EthAddress, ProfileMetadata> = new Map()
+    const profiles: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
     const names: Map<EthAddress, string[]> = new Map()
 
     // Group names and profile metadata by ethAddress
@@ -60,7 +60,8 @@ export async function fetchProfiles(
       .forEach((entity) => {
         const ethAddress = entity.pointers[0]
         const metadata: ProfileMetadata = entity.metadata
-        profiles.set(ethAddress, metadata)
+        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
+        profiles.set(ethAddress, { metadata, content })
         const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
         names.set(ethAddress, filteredNames)
       })
@@ -73,12 +74,13 @@ export async function fetchProfiles(
     return Array.from(profiles.entries()).map(([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const { wearables: ownedWearables } = wearablesByAddress.get(ethAddress)!
-      const avatars = profile.avatars.map((profileData) => ({
+      const { metadata, content } = profile
+      const avatars = metadata.avatars.map((profileData) => ({
         ...profileData,
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
-          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar),
+          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
             ? sanitizeWearables(profileData.avatar.wearables, ownedWearables)
             : profileData.avatar.wearables
@@ -110,18 +112,24 @@ function sanitizeWearables(wearablesInProfile: WearableId[], ownedWearables: Set
  * The content server provides the snapshots' hashes, but clients expect a full url. So in this
  * method, we replace the hashes by urls that would trigger the snapshot download.
  */
-function addBaseUrlToSnapshots(baseUrl: string, avatar: Avatar): AvatarSnapshots {
-  function addBaseUrl(dst: AvatarSnapshots, src: AvatarSnapshots, key: keyof AvatarSnapshots) {
-    if (src[key]) {
-      dst[key] = baseUrl + `/contents/${src[key]}`
-    }
-  }
-
+function addBaseUrlToSnapshots(
+  baseUrl: string,
+  avatar: Avatar,
+  content: Map<string, ContentFileHash>
+): AvatarSnapshots {
   const original = avatar.snapshots
   const snapshots: AvatarSnapshots = {}
 
   for (const key in original) {
-    addBaseUrl(snapshots, original, key)
+    const originalValue = original[key]
+    if (content.has(originalValue)) {
+      // Key references a content file
+      const hash = content.get(originalValue)!
+      snapshots[key] = baseUrl + `/contents/${hash}`
+    } else {
+      // Key is directly a hash
+      snapshots[key] = baseUrl + `/contents/${originalValue}`
+    }
   }
 
   return snapshots
