@@ -392,7 +392,6 @@ export class Controller {
     const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
     const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-    const showAudit: boolean = this.asBoolean(req.query.showAudit) ?? false
     const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)?.map((p) =>
       p.toLowerCase()
     )
@@ -417,9 +416,6 @@ export class Controller {
         .split(',')
         .filter((f) => acceptedValues.includes(f))
         .map((f) => f as DeploymentField)
-    } else if (showAudit) {
-      // TODO: Delete after one deployment
-      enumFields.push(DeploymentField.AUDIT_INFO)
     }
 
     // Validate sorting fields and create sortBy
