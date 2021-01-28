@@ -84,11 +84,31 @@ describe('profiles', () => {
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
   })
+
+  it(`When the snapshot references a content file, external urls pointing to the hash are added to snapshots`, async () => {
+    const { entity } = profileWith(SOME_ADDRESS, {
+      snapshots: { aKey: './file' },
+      content: { file: './file', hash: 'fileHash' }
+    })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = noNames()
+    const wearablesOwnership = noWearables()
+
+    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+
+    expect(profiles.length).toEqual(1)
+    expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
+  })
 })
 
 function profileWith(
   ethAddress: EthAddress,
-  options: { name?: string; wearables?: string[]; snapshots?: Record<string, string> }
+  options: {
+    name?: string
+    wearables?: string[]
+    snapshots?: Record<string, string>
+    content?: { file: string; hash: string }
+  }
 ): { entity: Entity; metadata: ProfileMetadata } {
   const metadata = {
     avatars: [
@@ -114,7 +134,8 @@ function profileWith(
     type: EntityType.PROFILE,
     pointers: [ethAddress],
     timestamp: 10,
-    metadata: metadata
+    metadata,
+    content: options.content ? [options.content] : []
   }
 
   return { entity, metadata }
