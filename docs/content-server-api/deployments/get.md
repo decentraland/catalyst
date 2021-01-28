@@ -69,13 +69,6 @@ List all deployments stored in the content server
   - Default value: DESC
   - Description: This value is used as the field to order all the deployments in the collection. If no parameter is sent, then the default order will be desc.
 
-- showAudit
-  - Format: boolean
-  - Value: if show audit
-  - Example: showAudit=true
-  - Default value: false
-  - Description: Stores the deployment with the audit information.
-
 - pointer
   - Format: string array
   - Value: pointers of the entity
@@ -381,5 +374,3 @@ List all deployments stored in the content server
     "moreData": true
   }
 }
-
-## Notes

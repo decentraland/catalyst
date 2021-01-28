@@ -68,6 +68,3 @@ Please avoid using this endpoint, getting to `/history` retrieves the same infor
   }
 }
 ```
-
-
-## Notes
