@@ -1,6 +1,6 @@
 # Get history
 
-Please avoid using this endpoint, getting to `/history` is equivalent to getting to `/deployments?sortingField=origin_timestamp&sortingOrder=DESC`
+Please avoid using this endpoint, getting to `/history` retrieves the same information as `/deployments`
 
 **URL** : `/history`
 

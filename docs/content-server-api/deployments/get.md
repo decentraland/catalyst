@@ -57,8 +57,8 @@ List all deployments stored in the content server
 
 - sortingField
   - Format: string
-  - Value: [origin_timestamp, local_timestamp, entity_timestamp]
-  - Example: sortingField=origin_timestamp
+  - Value: [local_timestamp, entity_timestamp]
+  - Example: sortingField=entity_timestamp
   - Default value: local_timestamp
   - Description: This value is used as the field to order all the deployments in the collection. If no parameter is sent, then the default field to order with will be local_timestamp.
 
