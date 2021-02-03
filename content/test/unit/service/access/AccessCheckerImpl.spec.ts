@@ -42,7 +42,7 @@ describe('AccessCheckerImpl', function () {
     const errors = await accessChecker.hasAccess(EntityType.WEARABLE, ['Invalid_pointer'], Date.now(), 'Unused Address')
 
     expect(errors).toContain(
-      'Wearable pointers should be a urn, for example (decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (invalid_pointer)'
+      'Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (invalid_pointer)'
     )
   })
 
