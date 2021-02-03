@@ -33,7 +33,6 @@ export class WearablesOwnership extends NFTOwnership {
   }
 
   protected async querySubgraph(urns: string[]) {
-    console.log(urns)
     try {
       const response = await this.fetcher.queryGraph<{ nfts: { urn: string; owner: { address: EthAddress } }[] }>(
         this.theGraphBaseUrl,
