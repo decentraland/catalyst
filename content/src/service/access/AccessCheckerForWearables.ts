@@ -18,7 +18,7 @@ export class AccessCheckerForWearables {
     }
 
     const pointer: Pointer = pointers[0].toLowerCase()
-    const parsed: BlockchainCollectionV2Asset | null = await this.parseUrnNoFail(pointer)
+    const parsed = await this.parseUrnNoFail(pointer)
     if (parsed) {
       const { contractAddress: collection, id: itemId } = parsed
 
@@ -35,12 +35,14 @@ export class AccessCheckerForWearables {
     return errors
   }
 
-  private async parseUrnNoFail(urn: string) {
+  private async parseUrnNoFail(urn: string): Promise<BlockchainCollectionV2Asset | null> {
     try {
-      return (await parseUrn(urn)) as BlockchainCollectionV2Asset | null
-    } catch (error) {
-      return null
-    }
+      const parsed = await parseUrn(urn)
+      if (parsed?.type === 'blockchain-collection-v2') {
+        return parsed as BlockchainCollectionV2Asset
+      }
+    } catch {}
+    return null
   }
 
   private async checkCollectionAccess(collection: string, itemId: string, ethAddress: EthAddress): Promise<boolean> {
