@@ -1,6 +1,7 @@
 import { WearableId } from '@katalyst/lambdas/apis/collections/controllers/collections'
 import { fetchProfiles, ProfileMetadata } from '@katalyst/lambdas/apis/profiles/controllers/profiles'
 import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
+import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '@katalyst/lambdas/apis/profiles/WearablesOwnership'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
@@ -17,8 +18,8 @@ describe('profiles', () => {
   it(`When profiles are fetched and NFTs are owned, then the returned profile is the same as the content server`, async () => {
     const { entity, metadata } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1] })
     const client = contentServerThatReturns(entity)
-    const ensOwnership = ownedNames(SOME_ADDRESS, SOME_NAME)
-    const wearablesOwnership = ownedWearables(SOME_ADDRESS, WEARABLE_ID_1)
+    const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
+    const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -29,8 +30,8 @@ describe('profiles', () => {
   it(`When the current name is not owned, then it says so in the profile`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { name: SOME_NAME })
     const client = contentServerThatReturns(entity)
-    const ensOwnership = noNames()
-    const wearablesOwnership = noWearables()
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -42,8 +43,8 @@ describe('profiles', () => {
   it(`When some of the worn wearables are not owned, then they are filtered out`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
     const client = contentServerThatReturns(entity)
-    const ensOwnership = noNames()
-    const wearablesOwnership = noWearables()
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -54,8 +55,8 @@ describe('profiles', () => {
   it(`When some of the worn wearables are not owned but sanitization is off, then they are not filtered out`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { wearables: [WEARABLE_ID_1] })
     const client = contentServerThatReturns(entity)
-    const ensOwnership = noNames()
-    const wearablesOwnership = noWearables()
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, false)
 
@@ -65,8 +66,8 @@ describe('profiles', () => {
 
   it(`When the is no profile with that address, then an empty list is returned`, async () => {
     const client = contentServerThatReturns()
-    const ensOwnership = noNames()
-    const wearablesOwnership = noWearables()
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -76,8 +77,8 @@ describe('profiles', () => {
   it(`When profiles are returned, external urls are added to snapshots`, async () => {
     const { entity } = profileWith(SOME_ADDRESS, { snapshots: { aKey: 'aHash' } })
     const client = contentServerThatReturns(entity)
-    const ensOwnership = noNames()
-    const wearablesOwnership = noWearables()
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -91,8 +92,8 @@ describe('profiles', () => {
       content: { file: './file', hash: 'fileHash' }
     })
     const client = contentServerThatReturns(entity)
-    const ensOwnership = noNames()
-    const wearablesOwnership = noWearables()
+    const ensOwnership = noNFTs(EnsOwnership)
+    const wearablesOwnership = noNFTs(WearablesOwnership)
 
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
@@ -148,41 +149,30 @@ function contentServerThatReturns(profile?: Entity): SmartContentClient {
   return instance(mockedClient)
 }
 
-function noNames(): EnsOwnership {
-  const mockedEnsOwnership = mock(EnsOwnership)
-  when(mockedEnsOwnership.areNamesOwned(anything())).thenCall((names: Map<EthAddress, string[]>) => {
+function noNFTs<T extends NFTOwnership>(clazz: new (...args: any[]) => T): T {
+  const mockedOwnership = mock(clazz)
+  when(mockedOwnership.areNFTsOwned(anything())).thenCall((names: Map<EthAddress, string[]>) => {
     const entries = Array.from(names.entries()).map<[EthAddress, Map<string, boolean>]>(([address, names]) => [
       address,
       new Map(names.map((name) => [name, false]))
     ])
     return Promise.resolve(new Map(entries))
   })
-  return instance(mockedEnsOwnership)
+  return instance(mockedOwnership)
 }
 
-function ownedNames(ethAddress: EthAddress, ...owned: string[]): EnsOwnership {
-  const mockedEnsOwnership = mock(EnsOwnership)
-  when(mockedEnsOwnership.areNamesOwned(anything())).thenCall((names: Map<EthAddress, string[]>) => {
+function ownedNFTs<T extends NFTOwnership>(
+  clazz: new (...args: any[]) => T,
+  ethAddress: EthAddress,
+  ...ownedWearables: WearableId[]
+): T {
+  const mockedOwnership = mock(clazz)
+  when(mockedOwnership.areNFTsOwned(anything())).thenCall((names: Map<EthAddress, string[]>) => {
     const entries = Array.from(names.entries()).map<[EthAddress, Map<string, boolean>]>(([address, names]) => [
       address,
-      new Map(names.map((name) => [name, address === ethAddress && owned.includes(name)]))
+      new Map(names.map((name) => [name, address === ethAddress && ownedWearables.includes(name)]))
     ])
     return Promise.resolve(new Map(entries))
   })
-  return instance(mockedEnsOwnership)
-}
-
-function ownedWearables(ethAddress: EthAddress, ...wearables: WearableId[]): WearablesOwnership {
-  const mockedWearablesOwnership = mock(WearablesOwnership)
-  const result = new Map([[ethAddress, { wearables: new Set(wearables), updatedMillisAgo: 0 }]])
-  when(mockedWearablesOwnership.getWearablesOwnedByAddresses(anything())).thenResolve(result)
-  return instance(mockedWearablesOwnership)
-}
-
-function noWearables(): WearablesOwnership {
-  const mockedWearablesOwnership = mock(WearablesOwnership)
-  when(mockedWearablesOwnership.getWearablesOwnedByAddresses(anything())).thenCall((addresses) =>
-    Promise.resolve(new Map(addresses.map((address) => [address, { wearables: new Set() }])))
-  )
-  return instance(mockedWearablesOwnership)
+  return instance(mockedOwnership)
 }

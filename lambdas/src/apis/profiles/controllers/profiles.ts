@@ -53,8 +53,9 @@ export async function fetchProfiles(
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
     const profiles: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
     const names: Map<EthAddress, string[]> = new Map()
+    const wearables: Map<EthAddress, WearableId[]> = new Map()
 
-    // Group names and profile metadata by ethAddress
+    // Group nfts and profile metadata by ethAddress
     entities
       .filter((entity) => !!entity.metadata)
       .forEach((entity) => {
@@ -64,16 +65,24 @@ export async function fetchProfiles(
         profiles.set(ethAddress, { metadata, content })
         const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
         names.set(ethAddress, filteredNames)
+        const allWearablesInProfile: WearableId[] = []
+        metadata.avatars.forEach(({ avatar }) =>
+          avatar.wearables
+            .filter((wearable) => !isBaseAvatar(wearable))
+            .map(translateWearablesIdFormat)
+            .forEach((wearable) => allWearablesInProfile.push(wearable))
+        )
+        wearables.set(ethAddress, allWearablesInProfile)
       })
 
-    // Check which names are owned
-    const wearablesByAddress = await wearablesOwnership.getWearablesOwnedByAddresses(ethAddresses)
-    const ownedENS = await ensOwnership.areNamesOwned(names)
+    // Check which NFTs are owned
+    const ownedWearables = performWearableSanitization ? await wearablesOwnership.areNFTsOwned(wearables) : new Map()
+    const ownedENS = await ensOwnership.areNFTsOwned(names)
 
     // Add name data and snapshot urls to profiles
     return Array.from(profiles.entries()).map(([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
-      const { wearables: ownedWearables } = wearablesByAddress.get(ethAddress)!
+      const wearablesOwnership = ownedWearables.get(ethAddress)!
       const { metadata, content } = profile
       const avatars = metadata.avatars.map((profileData) => ({
         ...profileData,
@@ -82,7 +91,7 @@ export async function fetchProfiles(
           ...profileData.avatar,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
-            ? sanitizeWearables(profileData.avatar.wearables, ownedWearables)
+            ? sanitizeWearables(profileData.avatar.wearables, wearablesOwnership)
             : profileData.avatar.wearables
         }
       }))
@@ -96,16 +105,16 @@ export async function fetchProfiles(
 }
 
 /**
- * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned
+ * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
  */
-function sanitizeWearables(wearablesInProfile: WearableId[], ownedWearables: Set<WearableId>): WearableId[] {
-  // TODO: Once we deprecate the wearables-api, migrate from the previous id format into the new one
-  return wearablesInProfile.filter(
-    (wearable: WearableId) =>
-      wearable.includes('base-avatars') ||
-      ownedWearables.has(wearable) ||
-      ownedWearables.has(translateWearablesIdFormat(wearable))
-  )
+function sanitizeWearables(wearablesInProfile: WearableId[], ownership: Map<string, boolean>): WearableId[] {
+  return wearablesInProfile
+    .map(translateWearablesIdFormat)
+    .filter((wearable: WearableId) => isBaseAvatar(wearable) || ownership.get(wearable))
+}
+
+function isBaseAvatar(wearable: WearableId): boolean {
+  return wearable.includes('base-avatars')
 }
 
 /**
