@@ -1,7 +1,6 @@
 {
     "files.exclude": {
         "bazel*": true,
-        "node_modules": true,
         "data*": true,
         "dist/**/*": true
     },
