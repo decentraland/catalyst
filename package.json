@@ -93,7 +93,7 @@
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "dependencies": {
-    "@dcl/urn-resolver": "^1.0.0-20210122174808.commit-5d7a9d8",
+    "@dcl/urn-resolver": "^1.0.0",
     "@types/log4js": "^2.3.5",
     "@types/merge-stream": "^1.1.2",
     "@types/node-pg-migrate": "^2.3.1",

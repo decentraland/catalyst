@@ -1,4 +1,4 @@
-import { parseUrn } from '@dcl/urn-resolver'
+import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
 import { Fetcher, Pointer } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
@@ -18,7 +18,7 @@ export class AccessCheckerForWearables {
     }
 
     const pointer: Pointer = pointers[0].toLowerCase()
-    const parsed = await parseUrn<{ contractAddress: string; id: string; url: URL }>(pointer)
+    const parsed: BlockchainCollectionV2Asset | null = await this.parseUrnNoFail(pointer)
     if (parsed) {
       const { contractAddress: collection, id: itemId } = parsed
 
@@ -29,10 +29,18 @@ export class AccessCheckerForWearables {
       }
     } else {
       errors.push(
-        `Wearable pointers should be a urn, for example (decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
+        `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
       )
     }
     return errors
+  }
+
+  private async parseUrnNoFail(urn: string) {
+    try {
+      return (await parseUrn(urn)) as BlockchainCollectionV2Asset | null
+    } catch (error) {
+      return null
+    }
   }
 
   private async checkCollectionAccess(collection: string, itemId: string, ethAddress: EthAddress): Promise<boolean> {
