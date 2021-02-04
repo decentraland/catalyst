@@ -1,27 +1,30 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
+import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
-import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
-export async function getStandardErc721(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
-  // Path: /standard/erc721/:contract/:option/:emission
-  const { contract, option } = req.params
+  // Path: /standard/erc721/:chainId/:contract/:option/:emission
+  const { chainId, contract, option } = req.params
   const emission: string | undefined = req.params.emission
+  const protocol = getProtocol(chainId)
+
+  if (!protocol) {
+    return res.status(400).send(`Invalid chainId '${chainId}'`)
+  }
 
   try {
-    const entities: Entity[] = await fetcher.fetchJsonFromContentServer(
-      `/entities/wearable?pointer=${contract}-${option}`
-    )
-    if (entities && entities.length > 0 && entities[0].metadata) {
-      const wearableMetadata: WearableMetadata = entities[0].metadata
-      const id = `dcl://${contract}/${option}`
+    const urn = buildUrn(protocol, contract, option)
+    const entity = await fetchEntity(client, urn)
+    if (entity) {
+      const wearableMetadata: WearableMetadata = entity.metadata
       const name = wearableMetadata.name
       const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-      const image = createExternalContentUrl(fetcher, entities[0], wearableMetadata.image)
-      const thumbnail = createExternalContentUrl(fetcher, entities[0], wearableMetadata.thumbnail)
+      const image = createExternalContentUrl(client, entity, wearableMetadata.image)
+      const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
       const standardErc721 = {
-        id,
+        id: urn,
         name,
         description,
         language: 'en-US',
@@ -33,44 +36,64 @@ export async function getStandardErc721(fetcher: SmartContentServerFetcher, req:
       res.status(404).send()
     }
   } catch (e) {
-    console.log(e)
-    res.status(500).send(e.messsge)
+    res.status(500).send(e.message)
   }
 }
 
-export async function contentsImage(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function contentsImage(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
-  // Path: /contents/:contract/:option/image
-  const { contract, option } = req.params
+  // Path: /contents/:urn/image
+  const { urn } = req.params
 
-  await internalContents(fetcher, res, contract, option, (wearableMetadata) => wearableMetadata.image)
+  await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.image)
 }
 
-export async function contentsThumbnail(fetcher: SmartContentServerFetcher, req: Request, res: Response) {
+export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
-  // Path: /contents/:contract/:option/thumbnail
-  const { contract, option } = req.params
+  // Path: /contents/:urn/thumbnail
+  const { urn } = req.params
 
-  await internalContents(fetcher, res, contract, option, (wearableMetadata) => wearableMetadata.thumbnail)
+  await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
+}
+
+function getProtocol(chainId: string): string | undefined {
+  switch (chainId) {
+    case '1':
+      return 'ethereum'
+    case '3':
+      return 'ropsten'
+    case '4':
+      return 'rinkeby'
+    case '5':
+      return 'goerli'
+    case '42':
+      return 'kovan'
+    case '89':
+      return 'matic'
+    case '13881':
+      return 'mumbai'
+  }
+}
+
+function buildUrn(protocol: string, contract: string, option: string): string {
+  const version = contract.startsWith('0x') ? 'v2' : 'v1'
+  return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
 }
 
 async function internalContents(
-  fetcher: SmartContentServerFetcher,
+  client: SmartContentClient,
   res: Response,
-  contract: string,
-  option: string,
-  selector: (WearableMetadata: WearableMetadata) => string | undefined
+  urn: string,
+  selector: (metadata: WearableMetadata) => string | undefined
 ) {
   try {
     let contentBuffer: Buffer | undefined = undefined
-    const entities: Entity[] = await fetcher.fetchJsonFromContentServer(
-      `/entities/wearable?pointer=${contract}-${option}`
-    )
-    if (entities && entities.length > 0 && entities[0].metadata) {
-      const wearableMetadata: WearableMetadata = entities[0].metadata
-      const relativeContentUrl = createRelativeContentUrl(fetcher, entities[0], selector(wearableMetadata))
-      if (relativeContentUrl) {
-        contentBuffer = await fetcher.fetchBufferFromContentServer(relativeContentUrl) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
+    const entity = await fetchEntity(client, urn)
+    if (entity) {
+      const wearableMetadata: WearableMetadata = entity.metadata
+      const hash = findHashForFile(entity, selector(wearableMetadata))
+      if (hash) {
+        contentBuffer = await client.downloadContent(hash) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
       }
     }
     if (contentBuffer) {
@@ -79,35 +102,31 @@ async function internalContents(
       res.status(404).send()
     }
   } catch (e) {
-    console.log(e)
-    res.status(500).send(e.messsge)
+    res.status(500).send(e.message)
   }
+}
+
+async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity | undefined> {
+  const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
+  return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
 }
 
 function createExternalContentUrl(
-  fetcher: SmartContentServerFetcher,
+  client: SmartContentClient,
   entity: Entity,
   fileName: string | undefined
 ): string | undefined {
-  const relativeUrl = createRelativeContentUrl(fetcher, entity, fileName)
-  if (relativeUrl) {
-    return fetcher.getExternalContentServerUrl() + relativeUrl
+  const hash = findHashForFile(entity, fileName)
+  if (hash) {
+    return client.getExternalContentServerUrl() + `/contents/` + hash
   }
   return undefined
 }
 
-function createRelativeContentUrl(
-  fetcher: SmartContentServerFetcher,
-  entity: Entity,
-  fileName: string | undefined
-): string | undefined {
+function findHashForFile(entity: Entity, fileName: string | undefined) {
   if (fileName) {
-    const imageHash = entity.content?.find((item) => item.file === fileName)?.hash
-    if (imageHash) {
-      return '/contents/' + imageHash
-    }
+    return entity.content?.find((item) => item.file === fileName)?.hash
   }
-  return undefined
 }
 
 export type WearableId = string // These ids are used as pointers on the content server
