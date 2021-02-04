@@ -1,11 +1,10 @@
+import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
 import { Fetcher, Pointer } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
-import { ContentAuthenticator } from '../auth/Authenticator'
 
 export class AccessCheckerForWearables {
   constructor(
-    private readonly authenticator: ContentAuthenticator,
     private readonly fetcher: Fetcher,
     private readonly dclCollectionsAccessUrl: string,
     private readonly LOGGER: log4js.Logger
@@ -19,47 +18,37 @@ export class AccessCheckerForWearables {
     }
 
     const pointer: Pointer = pointers[0].toLowerCase()
+    const parsed = await this.parseUrnNoFail(pointer)
+    if (parsed) {
+      const { contractAddress: collection, id: itemId } = parsed
 
-    if (pointer.startsWith('default')) {
-      if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
-        errors.push(`Only Decentraland can add or modify default wearables`)
+      // Check that the address has access
+      const hasAccess = await this.checkCollectionAccess(collection, itemId, ethAddress)
+      if (!hasAccess) {
+        errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
       }
     } else {
-      const pointerParts: string[] = pointer.split('-')
-      if (pointerParts.length === 2) {
-        if (pointerParts[0] && pointerParts[0] !== null && pointerParts[1] && pointerParts[1] !== null) {
-          const collection: string = pointerParts[0]
-          const itemId: number = parseInt(pointerParts[1], 10)
-
-          // Check that the address has access
-          const hasAccess = await this.checkCollectionAccess(collection, itemId, ethAddress)
-          if (!hasAccess) {
-            errors.push(
-              `The provided Eth Address does not have access to the following wearable: (${collection}-${itemId})`
-            )
-          }
-        } else {
-          errors.push(
-            `Wearable pointers must contain the collection id and the item id separated by a hyphen, for example (0xd148b172f8f64b7a42854447fbc528f41aa2258e-0). Invalid pointer: (${pointer})`
-          )
-        }
-      } else {
-        errors.push(
-          `Wearable pointers should only contain the collection id and the item id separated by a hyphen, for example (0xd148b172f8f64b7a42854447fbc528f41aa2258e-0). Invalid pointer: (${pointer})`
-        )
-      }
+      errors.push(
+        `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
+      )
     }
     return errors
   }
 
-  private async checkCollectionAccess(collection: string, itemId: number, ethAddress: EthAddress): Promise<boolean> {
+  private async parseUrnNoFail(urn: string): Promise<BlockchainCollectionV2Asset | null> {
+    try {
+      const parsed = await parseUrn(urn)
+      if (parsed?.type === 'blockchain-collection-v2') {
+        return parsed as BlockchainCollectionV2Asset
+      }
+    } catch {}
+    return null
+  }
+
+  private async checkCollectionAccess(collection: string, itemId: string, ethAddress: EthAddress): Promise<boolean> {
     try {
       const ethAddressLowercase = ethAddress.toLowerCase()
-      const permissions: WearableItemPermissionsData = await this.getCollectionItems(
-        collection,
-        itemId,
-        ethAddressLowercase
-      )
+      const permissions: WearableItemPermissionsData = await this.getCollectionItems(collection, itemId)
       return (
         (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
         (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
@@ -71,11 +60,7 @@ export class AccessCheckerForWearables {
     }
   }
 
-  private async getCollectionItems(
-    collection: string,
-    itemId: number,
-    ethAddress: EthAddress
-  ): Promise<WearableItemPermissionsData> {
+  private async getCollectionItems(collection: string, itemId: string): Promise<WearableItemPermissionsData> {
     const query = `
          query getCollectionRoles($collection: String!, $itemId: Int!) {
             collections(where:{id: $collection}) {
