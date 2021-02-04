@@ -758,6 +758,11 @@
     source-map-support "0.5.9"
     tsutils "2.27.2"
 
+"@dcl/urn-resolver@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.0.0.tgz#083e8f2390a4f56a5aa96b1a977a4d03371bdd9d"
+  integrity sha512-ie3ixt/iHIVnG/rYiGX+rc9j5JWGoqdv7nYAo35M+R3CScNjRO0lSNhtrlpEk8YZDSyZ/yTAq51wzJZY4SeRGQ==
+
 "@eslint/eslintrc@^0.2.1":
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.2.1.tgz#f72069c330461a06684d119384435e12a5d76e3c"
