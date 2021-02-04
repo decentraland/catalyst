@@ -1,5 +1,6 @@
 import compression from 'compression'
 import cors from 'cors'
+import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { RequestHandler } from 'express'
 import http from 'http'
 import log4js from 'log4js'
@@ -43,6 +44,10 @@ export class Server {
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
+    }
+
+    if (env.getConfig(EnvironmentConfig.METRICS)) {
+      Metrics.initialize(this.app)
     }
 
     // Base endpoints
