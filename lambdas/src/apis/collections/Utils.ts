@@ -11,5 +11,10 @@ export function translateWearablesIdFormat(wearableId: WearableId): WearableId {
     return wearableId
   }
   const [, , collectionName, wearableName] = wearableId.split('/')
-  return `urn:decentraland:ethereum:collections-v1:${collectionName}:${wearableName}`
+  const protocol = isBaseAvatar(wearableId) ? 'off-chain' : 'ethereum'
+  return `urn:decentraland:${protocol}:collections-v1:${collectionName}:${wearableName}`
+}
+
+export function isBaseAvatar(wearable: WearableId): boolean {
+  return wearable.includes('base-avatars')
 }

@@ -4,7 +4,7 @@ import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { WearableId } from '../../collections/controllers/collections'
-import { translateWearablesIdFormat } from '../../collections/Utils'
+import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
 import { WearablesOwnership } from '../WearablesOwnership'
 
@@ -111,10 +111,6 @@ function sanitizeWearables(wearablesInProfile: WearableId[], ownership: Map<stri
   return wearablesInProfile
     .map(translateWearablesIdFormat)
     .filter((wearable: WearableId) => isBaseAvatar(wearable) || ownership.get(wearable))
-}
-
-function isBaseAvatar(wearable: WearableId): boolean {
-  return wearable.includes('base-avatars')
 }
 
 /**
