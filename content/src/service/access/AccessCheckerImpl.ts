@@ -28,7 +28,6 @@ export class AccessCheckerImpl implements AccessChecker {
     )
     this.accessCheckerForProfiles = new AccessCheckerForProfiles(authenticator)
     this.accessCheckerForWearables = new AccessCheckerForWearables(
-      authenticator,
       fetcher,
       dclCollectionsAccessUrl,
       AccessCheckerImpl.LOGGER
