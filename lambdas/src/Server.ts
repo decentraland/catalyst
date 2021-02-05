@@ -84,7 +84,7 @@ export class Server {
     this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
-    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), fetcher))
+    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), contentClient))
 
     // Functionality for Explore use case
     this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
