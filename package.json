@@ -105,7 +105,7 @@
     "aws-sdk": "^2.704.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
-    "dcl-catalyst-client": "tag-file-piping-0.0.1",
+    "dcl-catalyst-client": "tag-file-piping-0.0.2",
     "dcl-catalyst-commons": "tag-file-piping-0.0.1",
     "dcl-crypto": "^2.3.0",
     "decentraland-commons": "^5.2.0",

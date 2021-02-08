@@ -2872,10 +2872,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-file-piping-0.0.1:
-  version "3.1.4-20210208165536.commit-95170d1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210208165536.commit-95170d1.tgz#9adacffd72e4c07e4f97af52e5d061e2f9aec3f1"
-  integrity sha512-DfO8GhzlbotjVV0ihiOKQx3UYj1bVdVPji1HslOfiLNzwEI/53DCw/bN9ypexyXNbSYbs8bPpyuTvn8d1p/35A==
+dcl-catalyst-client@tag-file-piping-0.0.2:
+  version "3.1.4-20210208171837.commit-0cbe466"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210208171837.commit-0cbe466.tgz#1f0670ebf4ad5a8f38a82427c0854d211490677c"
+  integrity sha512-ijtGpouD6MITBY79J7bGE1AYJcHHkRREdBcS7Yx0XFBy//7wvvkHgt+DLu/9HrDW7z/D4BhW0pWvlv6EGmswmw==
   dependencies:
     async-iterator-to-array "0.0.1"
     dcl-catalyst-commons tag-file-piping-0.0.1
