@@ -23,10 +23,10 @@ import {
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
+import { Response } from 'express'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 import { Readable } from 'stream'
-
 /**
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
@@ -39,14 +39,6 @@ export class SmartContentClient implements ContentAPI {
   private contentClient: IFuture<ContentAPI> | undefined
 
   constructor(private readonly externalContentServerUrl: string) {}
-  async pipeContent(
-    contentHash: string,
-    responseTo: Response,
-    options?: Partial<CompleteRequestOptions>
-  ): Promise<void> {
-    const client = await this.getClient()
-    return client.pipeContent(contentHash, responseTo, options)
-  }
 
   async fetchEntitiesByPointers(type: EntityType, pointers: Pointer[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -107,6 +99,15 @@ export class SmartContentClient implements ContentAPI {
   async downloadContent(contentHash: ContentFileHash, options?: RequestOptions): Promise<Buffer> {
     const client = await this.getClient()
     return client.downloadContent(contentHash, options)
+  }
+
+  async pipeContent(
+    contentHash: string,
+    responseTo: Response,
+    options?: Partial<CompleteRequestOptions>
+  ): Promise<void> {
+    const client = await this.getClient()
+    return client.pipeContent(contentHash, responseTo, options)
   }
 
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {

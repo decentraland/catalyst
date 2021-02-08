@@ -87,13 +87,12 @@ async function internalContents(
   selector: (metadata: WearableMetadata) => string | undefined
 ) {
   try {
-    let contentBuffer: Buffer | undefined = undefined
     const entity = await fetchEntity(client, urn)
     if (entity) {
       const wearableMetadata: WearableMetadata = entity.metadata
       const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
-        contentBuffer = await client.downloadContent(hash) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
+        await client.pipeContent(hash, res)
       }
     }
   } catch (e) {
