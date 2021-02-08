@@ -1387,10 +1387,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/simple-peer@^9.6.0":
-  version "9.6.0"
-  resolved "https://registry.yarnpkg.com/@types/simple-peer/-/simple-peer-9.6.0.tgz#b5828d835b7f42dde27db584ba127e7a9f9072f4"
-  integrity sha512-X2y6s+vE/3j03hkI90oqld2JH2J/m1L7yFCYYPyFV/whrOK1h4neYvJL3GIE+UcACJacXZqzdmDKudwec18RbA==
+"@types/simple-peer@^9.6.1":
+  version "9.6.1"
+  resolved "https://registry.yarnpkg.com/@types/simple-peer/-/simple-peer-9.6.1.tgz#461ff4159cfaca861cb2fe695de6e557881a98c8"
+  integrity sha512-WdXxmHW+m0NaD5XPGlp5AB7raq+NUWX/+/aQvDcoOx0qiP78QmDdk015W29uoyvGhyiJCb9dZJuI2Oi39zGRfg==
   dependencies:
     "@types/node" "*"
 
