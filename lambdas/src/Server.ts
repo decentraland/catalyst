@@ -1,5 +1,6 @@
 import compression from 'compression'
 import cors from 'cors'
+import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { RequestHandler } from 'express'
 import http from 'http'
 import log4js from 'log4js'
@@ -12,6 +13,7 @@ import { initializeExploreRoutes } from './apis/explore/routes'
 import { initializeImagesRoutes } from './apis/images/routes'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
+import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { SmartContentClient } from './utils/SmartContentClient'
@@ -44,10 +46,15 @@ export class Server {
       this.app.use(morgan('combined'))
     }
 
+    if (env.getConfig(EnvironmentConfig.METRICS)) {
+      Metrics.initialize(this.app)
+    }
+
     // Base endpoints
     this.registerRoute('/status', controller, controller.getStatus)
 
     const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
+    const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
 
@@ -55,8 +62,14 @@ export class Server {
     this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
 
     // Profile API implementation
-    this.app.use('/profile', initializeIndividualProfileRoutes(express.Router(), contentClient, ensOwnership))
-    this.app.use('/profiles', initializeProfilesRoutes(express.Router(), contentClient, ensOwnership))
+    this.app.use(
+      '/profile',
+      initializeIndividualProfileRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
+    )
+    this.app.use(
+      '/profiles',
+      initializeProfilesRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
+    )
 
     // DCL-Crypto API implementation
     this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))
@@ -71,7 +84,7 @@ export class Server {
     this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
-    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), fetcher))
+    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), contentClient))
 
     // Functionality for Explore use case
     this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))

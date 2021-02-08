@@ -34,16 +34,19 @@ export class ContentServerClient {
     let error = false
 
     // Fetch the deployments
-    const stream = this.client.streamAllDeployments({
-      filters: { fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 },
-      fields: DeploymentFields.AUDIT_INFO,
-      errorListener: (errorMessage) => {
-        error = true
-        ContentServerClient.LOGGER.error(
-          `Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`
-        )
-      }
-    })
+    const stream = this.client.streamAllDeployments(
+      {
+        filters: { fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 },
+        fields: DeploymentFields.AUDIT_INFO,
+        errorListener: (errorMessage) => {
+          error = true
+          ContentServerClient.LOGGER.error(
+            `Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`
+          )
+        }
+      },
+      { timeout: '20s' }
+    )
 
     // Listen to all deployments passing through, and store the newest one's timestamps
     const passTrough = passThrough(

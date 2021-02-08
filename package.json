@@ -93,6 +93,7 @@
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "dependencies": {
+    "@dcl/urn-resolver": "^1.0.0",
     "@types/log4js": "^2.3.5",
     "@types/merge-stream": "^1.1.2",
     "@types/node-pg-migrate": "^2.3.1",
@@ -119,7 +120,7 @@
     "google-protobuf": "^3.12.2",
     "husky": "^4.3.0",
     "ip": "^1.1.5",
-    "isomorphic-fetch": "^2.2.1",
+    "isomorphic-fetch": "^3.0.0",
     "lint-staged": "^10.5.2",
     "log4js": "^6.3.0",
     "merge-stream": "^2.0.0",

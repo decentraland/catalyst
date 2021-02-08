@@ -70,5 +70,5 @@ describe('id service generation', function () {
       expect(requestedIds).toEqual(receivedIds)
       done()
     })
-  })
+  }, 30000)
 })

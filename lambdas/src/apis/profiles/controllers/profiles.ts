@@ -1,22 +1,26 @@
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { ContentFileHash, Entity, EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { WearableId } from '../../collections/controllers/collections'
+import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
+import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
 export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
+  wearables: WearablesOwnership,
   req: Request,
   res: Response
 ): Promise<void> {
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
-  const profiles = await fetchProfiles([profileId], client, ensOwnership)
+  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables, false)
   const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [] }
   res.send(returnProfile)
 }
@@ -24,6 +28,7 @@ export async function getIndividualProfileById(
 export async function getProfilesById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
+  wearables: WearablesOwnership,
   req: Request,
   res: Response
 ) {
@@ -32,69 +37,104 @@ export async function getProfilesById(
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
-  const profiles = await fetchProfiles(profileIds, client, ensOwnership)
+  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
   res.send(profiles)
 }
 
-async function fetchProfiles(
+// Visible for testing purposes
+export async function fetchProfiles(
   ethAddresses: EthAddress[],
   client: SmartContentClient,
-  ensOwnership: EnsOwnership
+  ensOwnership: EnsOwnership,
+  wearablesOwnership: WearablesOwnership,
+  performWearableSanitization: boolean = true
 ): Promise<ProfileMetadata[]> {
   try {
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
-    const profiles: Map<EthAddress, ProfileMetadata> = new Map()
+    const profiles: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
     const names: Map<EthAddress, string[]> = new Map()
+    const wearables: Map<EthAddress, WearableId[]> = new Map()
 
-    // Group names and profile metadata by ethAddress
+    // Group nfts and profile metadata by ethAddress
     entities
       .filter((entity) => !!entity.metadata)
       .forEach((entity) => {
         const ethAddress = entity.pointers[0]
         const metadata: ProfileMetadata = entity.metadata
-        profiles.set(ethAddress, metadata)
+        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
+        profiles.set(ethAddress, { metadata, content })
         const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
         names.set(ethAddress, filteredNames)
+        const allWearablesInProfile: WearableId[] = []
+        metadata.avatars.forEach(({ avatar }) =>
+          avatar.wearables
+            .filter((wearable) => !isBaseAvatar(wearable))
+            .map(translateWearablesIdFormat)
+            .forEach((wearable) => allWearablesInProfile.push(wearable))
+        )
+        wearables.set(ethAddress, allWearablesInProfile)
       })
 
-    // Check which names are owned
-    const ownedENS = await ensOwnership.areNamesOwned(names)
+    // Check which NFTs are owned
+    const ownedWearables = performWearableSanitization ? await wearablesOwnership.areNFTsOwned(wearables) : new Map()
+    const ownedENS = await ensOwnership.areNFTsOwned(names)
 
     // Add name data and snapshot urls to profiles
     return Array.from(profiles.entries()).map(([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
-      const avatars = profile.avatars.map((profileData) => ({
+      const wearablesOwnership = ownedWearables.get(ethAddress)!
+      const { metadata, content } = profile
+      const avatars = metadata.avatars.map((profileData) => ({
         ...profileData,
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
-          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar)
+          snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
+          wearables: performWearableSanitization
+            ? sanitizeWearables(profileData.avatar.wearables, wearablesOwnership)
+            : profileData.avatar.wearables
         }
       }))
       return { avatars }
     })
   } catch (error) {
+    console.log(error)
     LOGGER.warn(error)
     return []
   }
 }
 
 /**
+ * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
+ */
+function sanitizeWearables(wearablesInProfile: WearableId[], ownership: Map<string, boolean>): WearableId[] {
+  return wearablesInProfile
+    .map(translateWearablesIdFormat)
+    .filter((wearable: WearableId) => isBaseAvatar(wearable) || ownership.get(wearable))
+}
+
+/**
  * The content server provides the snapshots' hashes, but clients expect a full url. So in this
  * method, we replace the hashes by urls that would trigger the snapshot download.
  */
-function addBaseUrlToSnapshots(baseUrl: string, avatar: Avatar): AvatarSnapshots {
-  function addBaseUrl(dst: AvatarSnapshots, src: AvatarSnapshots, key: keyof AvatarSnapshots) {
-    if (src[key]) {
-      dst[key] = baseUrl + `/contents/${src[key]}`
-    }
-  }
-
+function addBaseUrlToSnapshots(
+  baseUrl: string,
+  avatar: Avatar,
+  content: Map<string, ContentFileHash>
+): AvatarSnapshots {
   const original = avatar.snapshots
   const snapshots: AvatarSnapshots = {}
 
   for (const key in original) {
-    addBaseUrl(snapshots, original, key)
+    const originalValue = original[key]
+    if (content.has(originalValue)) {
+      // Snapshot references a content file
+      const hash = content.get(originalValue)!
+      snapshots[key] = baseUrl + `/contents/${hash}`
+    } else {
+      // Snapshot is directly a hash
+      snapshots[key] = baseUrl + `/contents/${originalValue}`
+    }
   }
 
   return snapshots
@@ -110,10 +150,11 @@ function asArray<T>(elements: T[]): T[] | undefined {
   return [elements]
 }
 
-type ProfileMetadata = {
+export type ProfileMetadata = {
   avatars: {
     name: string
     description: string
+    hasClaimedName?: boolean
     avatar: Avatar
   }[]
 }
@@ -127,5 +168,5 @@ type Avatar = {
   skin: any
   snapshots: AvatarSnapshots
   version: number
-  wearables: any
+  wearables: WearableId[]
 }
