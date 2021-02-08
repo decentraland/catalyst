@@ -43,7 +43,7 @@ describe('id service generation', function () {
     expect(idService.nextId()).toBe('00')
   })
 
-  xit('can use all ids in urls', (done) => {
+  it('can use all ids in urls', (done) => {
     const app = express()
 
     const requestedIds: string[] = []
@@ -70,5 +70,5 @@ describe('id service generation', function () {
       expect(requestedIds).toEqual(receivedIds)
       done()
     })
-  })
+  }, 30000)
 })
