@@ -58,7 +58,7 @@
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "sinon": "^7.5.0",
-    "testcontainers": "^2.8.1",
+    "testcontainers": "^7.4.0",
     "tree-kill": "^1.2.2",
     "ts-mockito": "^2.6.1",
     "ts-proto": "^1.8.0",
