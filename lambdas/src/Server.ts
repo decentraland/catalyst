@@ -18,6 +18,7 @@ import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
+import { TheGraphClient } from './utils/TheGraphClient'
 
 export class Server {
   private port: number
@@ -57,6 +58,7 @@ export class Server {
     const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
+    const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
 
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
@@ -84,7 +86,7 @@ export class Server {
     this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
-    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), contentClient))
+    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient))
 
     // Functionality for Explore use case
     this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))

@@ -1,0 +1,96 @@
+import { WearableId } from '@katalyst/lambdas/apis/collections/controllers/collections'
+import { getWearablesByOwner } from '@katalyst/lambdas/apis/collections/controllers/wearables'
+import { WearableMetadata } from '@katalyst/lambdas/apis/collections/types'
+import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
+import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
+import { EntityType } from 'dcl-catalyst-commons'
+import { anything, instance, mock, verify, when } from 'ts-mockito'
+
+const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
+const WEARABLE_ID_1 = 'someCollection-someWearable'
+const WEARABLE_ID_2 = 'someOtherCollection-someOtherWearable'
+const WEARABLE_METADATA: WearableMetadata = { someProperty: 'someValue' } as any
+
+describe('wearables', () => {
+  it(`When user doesn't have any wearables, then the response is empty`, async () => {
+    const { instance: contentClient, mock: contentClientMock } = emptyContentServer()
+    const graphClient = noOwnedWearables()
+
+    const wearables = await getWearablesByOwner(SOME_ADDRESS, false, contentClient, graphClient)
+
+    expect(wearables.length).toEqual(0)
+    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
+  })
+
+  it(`When user has repeated wearables, then they are grouped together`, async () => {
+    const { instance: contentClient, mock: contentClientMock } = emptyContentServer()
+    const graphClient = ownedWearables(WEARABLE_ID_1, WEARABLE_ID_1, WEARABLE_ID_2)
+
+    const wearables = await getWearablesByOwner(SOME_ADDRESS, false, contentClient, graphClient)
+
+    expect(wearables.length).toEqual(2)
+    const [wearable1, wearable2] = wearables
+    expect(wearable1.urn).toBe(WEARABLE_ID_1)
+    expect(wearable1.amount).toBe(2)
+    expect(wearable1.definition).toBeUndefined()
+    expect(wearable2.urn).toBe(WEARABLE_ID_2)
+    expect(wearable2.amount).toBe(1)
+    expect(wearable2.definition).toBeUndefined()
+    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).never()
+  })
+
+  it(`When user requests definitions, then they are included in the response`, async () => {
+    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_METADATA)
+    const graphClient = ownedWearables(WEARABLE_ID_1)
+
+    const wearables = await getWearablesByOwner(SOME_ADDRESS, true, contentClient, graphClient)
+
+    expect(wearables.length).toEqual(1)
+    const [wearable] = wearables
+    expect(wearable.urn).toBe(WEARABLE_ID_1)
+    expect(wearable.amount).toBe(1)
+    expect(wearable.definition).toEqual(WEARABLE_METADATA)
+    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
+  })
+
+  it(`When wearable can't be found, then the definition is not returned`, async () => {
+    const { instance: contentClient, mock: contentClientMock } = emptyContentServer()
+    const graphClient = ownedWearables(WEARABLE_ID_1)
+
+    const wearables = await getWearablesByOwner(SOME_ADDRESS, true, contentClient, graphClient)
+
+    expect(wearables.length).toEqual(1)
+    const [wearable] = wearables
+    expect(wearable.urn).toBe(WEARABLE_ID_1)
+    expect(wearable.amount).toBe(1)
+    expect(wearable.definition).toBeUndefined()
+    verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
+  })
+})
+
+function emptyContentServer() {
+  return contentServerThatReturns()
+}
+
+function contentServerThatReturns(metadata?: any) {
+  const entity = {
+    id: '',
+    type: EntityType.WEARABLE,
+    pointers: [WEARABLE_ID_1],
+    timestamp: 10,
+    metadata
+  }
+  const mockedClient = mock(SmartContentClient)
+  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(metadata ? [entity] : [])
+  return { instance: instance(mockedClient), mock: mockedClient }
+}
+
+function noOwnedWearables() {
+  return ownedWearables()
+}
+
+function ownedWearables(...ownedWearables: WearableId[]): TheGraphClient {
+  const mockedClient = mock(TheGraphClient)
+  when(mockedClient.findWearablesByOwner(anything())).thenResolve(ownedWearables)
+  return instance(mockedClient)
+}
