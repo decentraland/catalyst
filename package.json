@@ -7,7 +7,7 @@
     "@bazel/buildifier": "latest",
     "@bazel/ibazel": "latest",
     "@bazel/jasmine": "^0.42.3",
-    "@bazel/karma": "^0.42.3",
+    "@bazel/karma": "^2.3.2",
     "@bazel/rollup": "0.42.3",
     "@bazel/typescript": "^0.42.3",
     "@rollup/plugin-commonjs": "^11.0.1",

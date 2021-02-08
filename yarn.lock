@@ -736,12 +736,10 @@
     jasmine-core "~3.4.0"
     v8-coverage "1.0.9"
 
-"@bazel/karma@^0.42.3":
-  version "0.42.3"
-  resolved "https://registry.yarnpkg.com/@bazel/karma/-/karma-0.42.3.tgz#6a5c2fd4ac66f1d6ee3a0d46346f41d356143de1"
-  integrity sha512-NAlmxOVyWiP4nYCdGnI2nkhQsb5FDF7g+pPPprOSKFTLbXPE+S3K/VfgBk6XvB1P/X3mTugbiC9HG24BSwP8WA==
-  dependencies:
-    tmp "0.1.0"
+"@bazel/karma@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@bazel/karma/-/karma-2.3.2.tgz#4120618f7edd141b155f6f830fd0f04dc748a37c"
+  integrity sha512-+FFpem1Ul/BtqNrom8y1xPIa1cPEZeBvpao8BRLfQt46r7Nk9u11KI8ylNFk+yIQVhFqAD3JBaL3sbLAU7BJ5Q==
 
 "@bazel/rollup@0.42.3":
   version "0.42.3"
@@ -7288,7 +7286,7 @@ rimraf@2.6.3:
   dependencies:
     glob "^7.1.3"
 
-rimraf@^2.6.0, rimraf@^2.6.1, rimraf@^2.6.2, rimraf@^2.6.3:
+rimraf@^2.6.0, rimraf@^2.6.1, rimraf@^2.6.2:
   version "2.7.1"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.7.1.tgz#35797f13a7fdadc566142c29d4f07ccad483e3ec"
   integrity sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==
@@ -8296,13 +8294,6 @@ tmp@0.0.33, tmp@0.0.x:
   integrity sha512-jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==
   dependencies:
     os-tmpdir "~1.0.2"
-
-tmp@0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.1.0.tgz#ee434a4e22543082e294ba6201dcc6eafefa2877"
-  integrity sha512-J7Z2K08jbGcdA1kkQpJSqLF6T0tdQqpR2pnSUXsIchbPdTI9v3e85cLW0d6WDhwuAleOV71j2xWs8qMPfK7nKw==
-  dependencies:
-    rimraf "^2.6.3"
 
 to-array@0.1.4:
   version "0.1.4"
