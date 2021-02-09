@@ -6,6 +6,7 @@ import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
 import { ServiceFactory } from './service/ServiceFactory'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
+import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
 
 const DEFAULT_SERVER_PORT = 7070
 export const DEFAULT_ETH_NETWORK = 'ropsten'
@@ -57,7 +58,8 @@ export const enum Bean {
   SMART_CONTENT_SERVER_CLIENT,
   DAO,
   ENS_OWNERSHIP,
-  WEARABLES_OWNERSHIP
+  WEARABLES_OWNERSHIP,
+  THE_GRAPH_CLIENT
 }
 
 export const enum EnvironmentConfig {
@@ -164,6 +166,7 @@ export class EnvironmentBuilder {
       SmartContentServerFetcherFactory.create(env)
     )
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_CLIENT, () => SmartContentClientFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
