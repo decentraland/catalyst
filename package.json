@@ -110,7 +110,7 @@
     "dcl-crypto": "^2.3.0",
     "decentraland-commons": "^5.2.0",
     "decentraland-ui": "^2.23.0",
-    "eth-crypto": "^1.6.0",
+    "eth-crypto": "^1.8.0",
     "eventemitter3": "^4.0.4",
     "express": "^4.17.1",
     "faker": "^5.3.1",
