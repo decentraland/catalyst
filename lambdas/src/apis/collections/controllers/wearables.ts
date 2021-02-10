@@ -3,8 +3,8 @@ import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
-import { WearableMetadata } from '../types'
-import { WearableId } from './collections'
+import { Wearable, WearableId } from '../types'
+import { translateEntityIntoWearable } from '../Utils'
 
 // Different versions of the same query param
 const INCLUDE_DEFINITION_VERSIONS = [
@@ -35,7 +35,7 @@ export async function getWearablesByOwner(
   includeDefinition: boolean,
   client: SmartContentClient,
   theGraphClient: TheGraphClient
-): Promise<{ urn: WearableId; amount: number; definition?: WearableMetadata | undefined }[]> {
+): Promise<{ urn: WearableId; amount: number; definition?: Wearable | undefined }[]> {
   // Fetch wearables & definitions (if needed)
   const wearablesByOwner = await theGraphClient.findWearablesByOwner(owner)
   const definitions: Map<WearableId, Wearable> = includeDefinition
@@ -57,21 +57,11 @@ export async function getWearablesByOwner(
   }))
 }
 
-async function fetchDefinitions(
-  wearableIds: WearableId[],
-  client: SmartContentClient
-): Promise<Map<string, WearableMetadata>> {
+async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, Wearable>> {
   const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
   return new Map(
     entities
       .filter((entity) => !!entity.metadata)
-      .map((entity) => [entity.pointers[0], mapMetadataIntoWearable(entity.metadata)])
+      .map((entity) => [entity.pointers[0], translateEntityIntoWearable(client, entity)])
   )
 }
-
-function mapMetadataIntoWearable(metadata: WearableMetadata): Wearable {
-  return metadata
-}
-
-// TODO: Update once we know what the metadata will look like
-type Wearable = WearableMetadata

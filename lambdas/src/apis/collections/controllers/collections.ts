@@ -2,6 +2,7 @@ import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { WearableMetadata } from '../types'
+import { createExternalContentUrl, findHashForFile } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
@@ -111,26 +112,6 @@ async function fetchEntity(client: SmartContentClient, urn: string): Promise<Ent
   const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
   return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
 }
-
-function createExternalContentUrl(
-  client: SmartContentClient,
-  entity: Entity,
-  fileName: string | undefined
-): string | undefined {
-  const hash = findHashForFile(entity, fileName)
-  if (hash) {
-    return client.getExternalContentServerUrl() + `/contents/` + hash
-  }
-  return undefined
-}
-
-function findHashForFile(entity: Entity, fileName: string | undefined) {
-  if (fileName) {
-    return entity.content?.find((item) => item.file === fileName)?.hash
-  }
-}
-
-export type WearableId = string // These ids are used as pointers on the content server
 
 const RARITIES_EMISSIONS = {
   common: 100000,
