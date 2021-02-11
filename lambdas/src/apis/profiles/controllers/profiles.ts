@@ -3,7 +3,7 @@ import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
-import { WearableId } from '../../collections/controllers/collections'
+import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
 import { EnsOwnership } from '../EnsOwnership'
 import { WearablesOwnership } from '../WearablesOwnership'
@@ -56,47 +56,52 @@ export async function fetchProfiles(
     const wearables: Map<EthAddress, WearableId[]> = new Map()
 
     // Group nfts and profile metadata by ethAddress
-    entities
+    const entityPromises = entities
       .filter((entity) => !!entity.metadata)
-      .forEach((entity) => {
+      .map(async (entity) => {
         const ethAddress = entity.pointers[0]
         const metadata: ProfileMetadata = entity.metadata
         const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
         profiles.set(ethAddress, { metadata, content })
         const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
         names.set(ethAddress, filteredNames)
-        const allWearablesInProfile: WearableId[] = []
+        const allWearablesInProfilePromises: Promise<WearableId | undefined>[] = []
         metadata.avatars.forEach(({ avatar }) =>
           avatar.wearables
-            .filter((wearable) => !isBaseAvatar(wearable))
+            .filter((wearableId) => !isBaseAvatar(wearableId))
             .map(translateWearablesIdFormat)
-            .forEach((wearable) => allWearablesInProfile.push(wearable))
+            .forEach((wearableId) => allWearablesInProfilePromises.push(wearableId))
         )
-        wearables.set(ethAddress, allWearablesInProfile)
+        const filtered = (await Promise.all(allWearablesInProfilePromises)).filter(
+          (wearableId): wearableId is WearableId => !!wearableId
+        )
+        wearables.set(ethAddress, filtered)
       })
+    await Promise.all(entityPromises)
 
     // Check which NFTs are owned
     const ownedWearables = performWearableSanitization ? await wearablesOwnership.areNFTsOwned(wearables) : new Map()
     const ownedENS = await ensOwnership.areNFTsOwned(names)
 
     // Add name data and snapshot urls to profiles
-    return Array.from(profiles.entries()).map(([ethAddress, profile]) => {
+    const result = Array.from(profiles.entries()).map(async ([ethAddress, profile]) => {
       const ensOwnership = ownedENS.get(ethAddress)!
       const wearablesOwnership = ownedWearables.get(ethAddress)!
       const { metadata, content } = profile
-      const avatars = metadata.avatars.map((profileData) => ({
+      const avatars = metadata.avatars.map(async (profileData) => ({
         ...profileData,
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
-            ? sanitizeWearables(profileData.avatar.wearables, wearablesOwnership)
+            ? await sanitizeWearables(profileData.avatar.wearables, wearablesOwnership)
             : profileData.avatar.wearables
         }
       }))
-      return { avatars }
+      return { avatars: await Promise.all(avatars) }
     })
+    return await Promise.all(result)
   } catch (error) {
     console.log(error)
     LOGGER.warn(error)
@@ -107,10 +112,14 @@ export async function fetchProfiles(
 /**
  * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
  */
-function sanitizeWearables(wearablesInProfile: WearableId[], ownership: Map<string, boolean>): WearableId[] {
-  return wearablesInProfile
-    .map(translateWearablesIdFormat)
-    .filter((wearable: WearableId) => isBaseAvatar(wearable) || ownership.get(wearable))
+async function sanitizeWearables(
+  wearablesInProfile: WearableId[],
+  ownership: Map<string, boolean>
+): Promise<WearableId[]> {
+  const translated = await Promise.all(wearablesInProfile.map(translateWearablesIdFormat))
+  return translated
+    .filter((wearableId): wearableId is WearableId => !!wearableId)
+    .filter((wearableId: WearableId) => isBaseAvatar(wearableId) || ownership.get(wearableId))
 }
 
 /**

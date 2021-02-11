@@ -1,6 +1,5 @@
-import { WearableId } from '@katalyst/lambdas/apis/collections/controllers/collections'
 import { getWearablesByOwner } from '@katalyst/lambdas/apis/collections/controllers/wearables'
-import { WearableMetadata } from '@katalyst/lambdas/apis/collections/types'
+import { WearableId } from '@katalyst/lambdas/apis/collections/types'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
@@ -9,7 +8,12 @@ import { anything, instance, mock, verify, when } from 'ts-mockito'
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
 const WEARABLE_ID_2 = 'someOtherCollection-someOtherWearable'
-const WEARABLE_METADATA: WearableMetadata = { someProperty: 'someValue' } as any
+const WEARABLE_METADATA = {
+  someProperty: 'someValue',
+  data: { representations: [] },
+  image: undefined,
+  thumbnail: undefined
+} as any
 
 describe('wearables', () => {
   it(`When user doesn't have any wearables, then the response is empty`, async () => {
