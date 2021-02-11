@@ -1,6 +1,7 @@
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
+import { WearableMetadata } from '../types'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
   // Method: GET
@@ -133,11 +134,4 @@ const RARITIES_EMISSIONS = {
   legendary: 100,
   mythic: 10,
   unique: 1
-}
-
-type WearableMetadata = {
-  name: string
-  rarity: string
-  image?: string
-  thumbnail?: string
 }

@@ -4,8 +4,7 @@ import { EnsOwnership } from './EnsOwnership'
 export class EnsOwnershipFactory {
   static create(env: Environment): EnsOwnership {
     return new EnsOwnership(
-      env.getConfig(EnvironmentConfig.ENS_OWNER_PROVIDER_URL),
-      env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER),
+      env.getBean(Bean.THE_GRAPH_CLIENT),
       env.getConfig(EnvironmentConfig.PROFILE_NAMES_CACHE_MAX),
       env.getConfig(EnvironmentConfig.PROFILE_NAMES_CACHE_TIMEOUT)
     )
