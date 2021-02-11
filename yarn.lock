@@ -3105,10 +3105,10 @@ dcl-catalyst-client@^3.1.3:
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
 
-dcl-catalyst-commons@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.2.tgz#bda956d305c194801dc0ee921f2d525cd71a6cf9"
-  integrity sha512-8ljsK6cf1Ila3pJt6ZZ+iGrfJD0mopC5iDYk1tHxW0no3rugrXXMAWDN0Uzsg2EpaNJ2ozW7nvPZgP06fV/R1g==
+dcl-catalyst-commons@^2.0.2, dcl-catalyst-commons@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.3.tgz#190dbc52ee1efb3bd469c3a8c47349f31c5002d7"
+  integrity sha512-Tbp9ielRdif+EWIE4LHXJ2/nLOxf+lVzcJbmQtZj5ad1sOy4npMLmTNFX8N+Bey13yM3I1lV3EAQKV4xp4NpoQ==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
@@ -3126,15 +3126,7 @@ dcl-catalyst-commons@^2.0.2:
     multihashing-async "^0.8.1"
     prettier "^2.2.1"
 
-dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.2.0.tgz#d9ebb1177caac40f57ae5e3016d0af46c64c4efc"
-  integrity sha512-7UUhIue8y4bs85gmW+cm9uSJITwGI9CDBBtfXCCF6MGnkbG5E81iiI68P8jd6tNDPeXV4OfL+0a7X/jGtDSEcQ==
-  dependencies:
-    eth-crypto "^1.5.1"
-    web3x "^4.0.6"
-
-dcl-crypto@^2.3.0:
+dcl-crypto@^2.1.0, dcl-crypto@^2.2.0, dcl-crypto@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.3.0.tgz#a223b1513888a359ff93b302b0d5a045edff5a79"
   integrity sha512-ypsd4XjSWaOj0DtESxpnY+YYQBy43c/uUrNRaVnWGiJehQc+3EC7nONnCy3p8XcLspGAwtes7nwWtRnsNKFvVQ==
