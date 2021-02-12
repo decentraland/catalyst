@@ -10,7 +10,7 @@
     "@bazel/karma": "^0.42.3",
     "@bazel/rollup": "0.42.3",
     "@bazel/typescript": "^0.42.3",
-    "@rollup/plugin-commonjs": "^11.0.1",
+    "@rollup/plugin-commonjs": "^11.1.0",
     "@rollup/plugin-node-resolve": "^11.1.1",
     "@types/analytics-node": "^3.1.2",
     "@types/compression": "^1.0.1",
