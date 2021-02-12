@@ -910,10 +910,10 @@
   dependencies:
     tmp "0.1.0"
 
-"@bazel/rollup@0.42.3":
-  version "0.42.3"
-  resolved "https://registry.yarnpkg.com/@bazel/rollup/-/rollup-0.42.3.tgz#ce35a1035f11abecee547b0bdf34b3eb3f17f8c0"
-  integrity sha512-bxK6GqOKl+EDvLy8boKTE8R3v4A7zzgnMdSQBjr2tsHLER7FpOAVPpumWhI8pMB6zQeLWP3Q9Gz1qE1Ya9hNSA==
+"@bazel/rollup@1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@bazel/rollup/-/rollup-1.7.0.tgz#5c0f0d51d2f3f14e78781a4b9e6a9ffba87f1579"
+  integrity sha512-Pp5aCJw3gwu77zn6/fQgZ39ArrWEI5O3dja5wKadBnfOQ66PImIEr+bf7JgROoWvACH1kGxaS423rq51fiuCsA==
 
 "@bazel/typescript@^0.42.3":
   version "0.42.3"
