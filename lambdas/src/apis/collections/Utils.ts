@@ -24,7 +24,7 @@ export function translateEntityIntoWearable(client: SmartContentClient, entity: 
   const representations = metadata.data.representations.map((representation) =>
     mapRepresentation(representation, client, entity)
   )
-  const image = createExternalContentUrl(client, entity, metadata.image)!
+  const image = createExternalContentUrl(client, entity, metadata.image)
   const thumbnail = createExternalContentUrl(client, entity, metadata.thumbnail)!
 
   return {

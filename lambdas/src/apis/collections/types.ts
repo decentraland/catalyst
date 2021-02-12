@@ -2,10 +2,9 @@ import { EthAddress } from 'dcl-crypto'
 
 export type WearableMetadata = {
   id: WearableId
-  name: string
   description: string
   thumbnail: string
-  image: string
+  image?: string
   collectionAddress?: EthAddress
   rarity: Rarity
   i18n: I18N[]
@@ -33,7 +32,7 @@ type WearableMetadataData = {
 type WearableBodyShape = WearableId
 type WearableCategory = string
 type Rarity = string
-type I18N = {
+export type I18N = {
   code: string
   text: string
 }

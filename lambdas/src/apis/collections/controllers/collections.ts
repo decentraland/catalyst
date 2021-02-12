@@ -1,7 +1,7 @@
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
-import { WearableMetadata } from '../types'
+import { I18N, WearableMetadata } from '../types'
 import { createExternalContentUrl, findHashForFile } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
@@ -20,7 +20,7 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     const entity = await fetchEntity(client, urn)
     if (entity) {
       const wearableMetadata: WearableMetadata = entity.metadata
-      const name = wearableMetadata.name
+      const name = preferEnglish(wearableMetadata.i18n)
       const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
       const image = createExternalContentUrl(client, entity, wearableMetadata.image)
@@ -56,6 +56,12 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
   const { urn } = req.params
 
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
+}
+
+/** We will prioritize the text in english. If not present, then we will choose the first one */
+function preferEnglish(i18ns: I18N[]): string | undefined {
+  const i18nInEnglish = i18ns.filter((i18n) => i18n.code.toLowerCase() === 'en')[0]
+  return (i18nInEnglish ?? i18ns[0])?.text
 }
 
 function getProtocol(chainId: string): string | undefined {

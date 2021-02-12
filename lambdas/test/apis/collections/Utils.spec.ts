@@ -41,11 +41,11 @@ describe('Collection Utils', () => {
   function assertAreEqualExceptProperties<Union, T extends Union, K extends Union>(
     actual: T,
     expected: K,
-    ...propertiesToIgnore: (keyof Union)[]
+    ...propertiesToIgnore: (keyof (T & K))[]
   ) {
     expect(Object.keys(actual)).toEqual(Object.keys(expected))
     for (const key of Object.keys(actual)) {
-      if (!propertiesToIgnore.includes(key as keyof Union)) {
+      if (!propertiesToIgnore.includes(key as keyof (T & K))) {
         expect(actual[key]).toEqual(expected[key])
       }
     }
@@ -79,7 +79,6 @@ function buildEntity(): Entity {
 function buildMetadata(): WearableMetadata {
   return {
     id: 'id',
-    name: 'name',
     description: 'description',
     thumbnail: CONTENT_KEY1,
     image: CONTENT_KEY2,
