@@ -45,7 +45,11 @@ export class SmartContentServerFetcher extends Fetcher {
 
   async fetchPipeFromContentServer(relativeUrl: string, responseTo: Response, options?: RequestOptions): Promise<any> {
     const contentServerUrl = await this.getContentServerUrl()
-    return this.fetchPipe(contentServerUrl + this.slash(relativeUrl), responseTo, options)
+    return this.fetchPipe(
+      contentServerUrl + this.slash(relativeUrl),
+      (responseTo as any) as ReadableStream<Uint8Array>,
+      options
+    )
   }
 
   private slash(url: string): string {

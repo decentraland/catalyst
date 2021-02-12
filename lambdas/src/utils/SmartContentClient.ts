@@ -23,7 +23,6 @@ import {
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { Response } from 'express'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 import { Readable } from 'stream'
@@ -103,11 +102,11 @@ export class SmartContentClient implements ContentAPI {
 
   async pipeContent(
     contentHash: string,
-    responseTo: Response,
+    responseTo: ReadableStream<Uint8Array>,
     options?: Partial<CompleteRequestOptions>
-  ): Promise<void> {
+  ): Promise<Map<string, string>> {
     const client = await this.getClient()
-    return client.pipeContent(contentHash, responseTo, options)
+    return await client.pipeContent(contentHash, (responseTo as any) as ReadableStream<Uint8Array>, options)
   }
 
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {
@@ -135,7 +134,7 @@ export class SmartContentClient implements ContentAPI {
       try {
         const fetcher = new Fetcher()
         await fetcher.fetchJson(`${SmartContentClient.INTERNAL_CONTENT_SERVER_URL}/status`, {
-          attempts: 6,
+          attempts: 1,
           waitTime: '10s'
         })
         SmartContentClient.LOGGER.info('Will use the internal content server url')

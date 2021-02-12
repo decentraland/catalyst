@@ -3095,20 +3095,20 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-file-piping-0.0.2:
-  version "3.1.4-20210208171837.commit-0cbe466"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210208171837.commit-0cbe466.tgz#1f0670ebf4ad5a8f38a82427c0854d211490677c"
-  integrity sha512-ijtGpouD6MITBY79J7bGE1AYJcHHkRREdBcS7Yx0XFBy//7wvvkHgt+DLu/9HrDW7z/D4BhW0pWvlv6EGmswmw==
+dcl-catalyst-client@tag-file-piping-0.0.10:
+  version "3.1.4-20210212202817.commit-3b2ccbc"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210212202817.commit-3b2ccbc.tgz#4b42921ae45072ff4b41617603ba5399572ca5fb"
+  integrity sha512-1YHc+W7KpdDuCy+Pz1ARSidTv3A94WJFp9fCyrYTJYrPyMuBCbhe7EYLhLNJ89ZQ1UJpk2Mfb/UebF6zbrqH4Q==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons tag-file-piping-0.0.1
+    dcl-catalyst-commons tag-file-piping-0.0.9
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
 
-dcl-catalyst-commons@tag-file-piping-0.0.1:
-  version "2.0.4-20210208162628.commit-4af7055"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.4-20210208162628.commit-4af7055.tgz#6ddc0c7ba4dff70580927f3e2769fd8cee4730b7"
-  integrity sha512-83xKAS0ZETHL+Y7f2fO66/VPZLRmcTxCt6z4tWbWKTh57dMcYKttf4D0yJ5ys/cONfhEy71A9f5IEawx41foog==
+dcl-catalyst-commons@tag-file-piping-0.0.9:
+  version "2.0.4-20210212201135.commit-8c2e4ad"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.4-20210212201135.commit-8c2e4ad.tgz#9f22edc8ab234069a8791c88bfbd51608286b899"
+  integrity sha512-uBvy8fFP7fTF0IK2zlpvpnraiTmFDRxOJneyj4UoySQz96w9ScVjJLVUw1ol8feWB2MP+KvYq5QMC6NOGkDycQ==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
@@ -3120,7 +3120,7 @@ dcl-catalyst-commons@tag-file-piping-0.0.1:
     cross-fetch "^3.0.5"
     dcl-crypto "^2.1.0"
     eslint "^7.14.0"
-    eslint-config-prettier "^6.15.0"
+    eslint-config-prettier "^7.2.0"
     eslint-plugin-prettier "^3.2.0"
     ms "^2.1.2"
     multihashing-async "^0.8.1"
@@ -3713,6 +3713,11 @@ eslint-config-prettier@^6.15.0:
   integrity sha512-a1+kOYLR8wMGustcgAjdydMsQ2A/2ipRPwRKUmfYaSxc9ZPcrku080Ctl6zrZzZNs/U82MjSv+qKREkoq3bJaw==
   dependencies:
     get-stdin "^6.0.0"
+
+eslint-config-prettier@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-7.2.0.tgz#f4a4bd2832e810e8cc7c1411ec85b3e85c0c53f9"
+  integrity sha512-rV4Qu0C3nfJKPOAhFujFxB7RMP+URFyQqqOZW9DMRD7ZDTFyjaIlETU3xzHELt++4ugC0+Jm084HQYkkJe+Ivg==
 
 eslint-plugin-prettier@^3.2.0, eslint-plugin-prettier@^3.3.1:
   version "3.3.1"
