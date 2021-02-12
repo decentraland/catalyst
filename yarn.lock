@@ -1266,10 +1266,10 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@types/analytics-node@^3.1.2":
-  version "3.1.2"
-  resolved "https://registry.yarnpkg.com/@types/analytics-node/-/analytics-node-3.1.2.tgz#76a8f4aadcdf8693b6e209629439d147fd0ab3b3"
-  integrity sha512-yyxool6RILSC0364WwqMxesSpzsd/F31jo8oAiQFz4/9tUN3r5vST52gXfXZ8zcMstkvqQJNmyQPRlSCMjcQjQ==
+"@types/analytics-node@^3.1.4":
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/@types/analytics-node/-/analytics-node-3.1.4.tgz#35b25a721b46cbf6964098dae7dc785a4386e7ab"
+  integrity sha512-i6cqjFotMq1dEwXxyXRqnzp/HmWPCskptrVUQ1UzRIGs/zICFWM2bIJyLt6f9A9/+qE98wls1AHWPQ4WXYS0HA==
 
 "@types/babel__core@^7.1.12":
   version "7.1.12"
