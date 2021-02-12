@@ -58,6 +58,7 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
 }
 
+/** We will prioritize the text in english. If not present, then we will choose the first one */
 function preferEnglish(i18ns: I18N[]): string | undefined {
   const i18nInEnglish = i18ns.filter((i18n) => i18n.code.toLowerCase() === 'en')[0]
   return (i18nInEnglish ?? i18ns[0])?.text
