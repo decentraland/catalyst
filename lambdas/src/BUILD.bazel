@@ -35,5 +35,6 @@ ts_library(
         "@npm//dcl-crypto",
         "@npm//dcl-catalyst-commons",
         "@npm//dcl-catalyst-client",
+        "@npm//@dcl/urn-resolver"
     ],
 )
