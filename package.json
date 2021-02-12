@@ -62,7 +62,7 @@
     "tree-kill": "^1.2.2",
     "ts-mockito": "^2.6.1",
     "ts-proto": "^1.8.0",
-    "ts-protoc-gen": "^0.12.0",
+    "ts-protoc-gen": "^0.14.0",
     "typescript": "^3.9.8",
     "web3x-codegen": "^4.0.6",
     "yargs": "^15.0.2"
