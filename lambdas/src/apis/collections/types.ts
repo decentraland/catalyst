@@ -32,7 +32,7 @@ type WearableMetadataData = {
 type WearableBodyShape = WearableId
 type WearableCategory = string
 type Rarity = string
-type I18N = {
+export type I18N = {
   code: string
   text: string
 }
