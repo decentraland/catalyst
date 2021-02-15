@@ -20,7 +20,7 @@ import fs from 'fs'
 import log4js from 'log4js'
 import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
-import { CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
 import {
   Deployment,
@@ -490,6 +490,7 @@ export class Controller {
       ...serverStatus,
       synchronizationStatus,
       commitHash: CURRENT_COMMIT_HASH,
+      catalystVersion: CURRENT_CATALYST_VERSION,
       ethNetwork: this.ethNetwork
     })
   }

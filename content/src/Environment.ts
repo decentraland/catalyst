@@ -38,6 +38,7 @@ export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN =
 export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections'
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
+export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
 export const DEFAULT_DATABASE_CONFIG = {
   password: '12345678',
   user: 'postgres',
