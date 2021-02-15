@@ -85,7 +85,8 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
       restrictedAccessSigner: restrictedAccessAddress,
       env: {
         secure,
-        commitHash: process.env.COMMIT_HASH
+        commitHash: process.env.COMMIT_HASH,
+        catalystVersion: process.env.CATALYST_VERSION
       }
     }
   )
