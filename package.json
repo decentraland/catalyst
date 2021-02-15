@@ -134,7 +134,7 @@
     "pg-promise": "^10.5.7",
     "prom-client": "^13.1.0",
     "react": "^16.14.0",
-    "react-dom": "^16.13.1",
+    "react-dom": "^16.14.0",
     "response-time": "^2.3.2",
     "sharp": "^0.27.1",
     "simple-peer": "^9.7.2",
