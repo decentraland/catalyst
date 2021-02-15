@@ -26,7 +26,7 @@
     "@types/node-fetch": "^2.5.8",
     "@types/puppeteer": "^5.4.3",
     "@types/react": "^16.9.13",
-    "@types/react-dom": "^16.9.4",
+    "@types/react-dom": "^17.0.1",
     "@types/simple-peer": "^9.6.1",
     "@types/sinon": "^9.0.10",
     "@types/uuid": "^3.4.6",
