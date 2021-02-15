@@ -51,7 +51,7 @@
     "karma-spec-reporter": "^0.0.32",
     "prettier": "^2.2.1",
     "protobufjs": "^6.10.2",
-    "puppeteer": "^2.0.0",
+    "puppeteer": "^7.1.0",
     "requirejs": "^2.3.6",
     "rollup": "^1.32.1",
     "rollup-plugin-json": "^4.0.0",
