@@ -95,8 +95,8 @@ export async function fetchProfiles(
           ...profileData.avatar,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
-            ? await sanitizeWearables(profileData.avatar.wearables, wearablesOwnership)
-            : profileData.avatar.wearables
+            ? await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
+            : fixWearableId(profileData.avatar.wearables)
         }
       }))
       return { avatars: await Promise.all(avatars) }
@@ -109,6 +109,15 @@ export async function fetchProfiles(
   }
 }
 
+/**
+ * During the wearables migration into the content server, we realized that a wearable had the wrong id.
+ * We are now fixing all wearable ids that were stored in profiles. This will need to be here until we are sure that there are no more profiles with the wrong id
+ */
+function fixWearableId(wearableIds: WearableId[]): WearableId[] {
+  const fixId = (wearableId: WearableId) =>
+    wearableId === 'dcl://base-avatars/Moccasin' ? 'dcl://base-avatars/SchoolShoes' : wearableId
+  return wearableIds.map(fixId)
+}
 /**
  * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
  */
