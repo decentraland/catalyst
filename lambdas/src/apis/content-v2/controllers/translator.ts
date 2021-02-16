@@ -1,3 +1,4 @@
+import { asArray } from '@katalyst/lambdas/utils/ControllerUtils'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import fetch, { Response as NodeFetchResponse } from 'node-fetch'
@@ -137,16 +138,6 @@ export async function getInfo(fetcher: SmartContentServerFetcher, req: Request, 
       LOGGER.error(`Error getting info for ${req.path}`, e)
       res.status(500).send(e.message ?? e.toString())
     })
-}
-
-function asArray<T>(elements: T[] | T): T[] {
-  if (!elements) {
-    return []
-  }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
 }
 
 interface ParcelInfoResult {

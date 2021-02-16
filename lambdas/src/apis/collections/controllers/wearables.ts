@@ -1,9 +1,11 @@
+import { asArray } from '@katalyst/lambdas/utils/ControllerUtils'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
-import { Wearable, WearableId } from '../types'
+import { OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
+import { Wearable, WearableId, WearablesFilters } from '../types'
 import { translateEntityIntoWearable } from '../Utils'
 
 // Different versions of the same query param
@@ -55,6 +57,55 @@ export async function getWearablesByOwner(
     amount,
     definition: definitions.get(id)
   }))
+}
+
+export async function getWearablesEndpoint(
+  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  offChainManager: OffChainWearablesManager,
+  req: Request,
+  res: Response
+) {
+  // Method: GET
+  // Path: /wearables/?filters
+
+  const collectionIds: string[] = asArray<string>(req.query.collectionId).map((id) => id.toLowerCase())
+  const wearableIds: string[] = asArray<string>(req.query.wearableId).map((id) => id.toLowerCase())
+  const textSearch: string | undefined = req.query.textSearch?.toLowerCase()
+
+  if (collectionIds.length === 0 && wearableIds.length === 0 && !textSearch) {
+    return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)
+  }
+
+  const filters = {
+    collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
+    wearableIds: wearableIds.length > 0 ? wearableIds : undefined,
+    textSearch
+  }
+
+  try {
+    const result = await getWearables(filters, client, theGraphClient, offChainManager)
+    res.send(result)
+  } catch (error) {
+    console.log(error)
+    res.status(500).send(error.message)
+  }
+}
+
+export async function getWearables(
+  filters: WearablesFilters,
+  client: SmartContentClient,
+  theGraphClient: TheGraphClient,
+  offChainManager: OffChainWearablesManager
+): Promise<Wearable[]> {
+  const offChainPromise = offChainManager.find(filters)
+  const onChainPromise = theGraphClient
+    .findWearablesByFilters(filters)
+    .then((ids) => (ids.length > 0 ? client.fetchEntitiesByPointers(EntityType.WEARABLE, ids) : []))
+    .then((entities) => entities.map((entity) => translateEntityIntoWearable(client, entity)))
+
+  const [offChainWearables, onChainWearables] = await Promise.all([offChainPromise, onChainPromise])
+  return offChainWearables.concat(onChainWearables)
 }
 
 async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, Wearable>> {
