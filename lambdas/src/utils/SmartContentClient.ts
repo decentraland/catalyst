@@ -125,7 +125,7 @@ export class SmartContentClient implements ContentAPI {
       try {
         const fetcher = new Fetcher()
         await fetcher.fetchJson(`${SmartContentClient.INTERNAL_CONTENT_SERVER_URL}/status`, {
-          attempts: 6,
+          attempts: 1,
           waitTime: '10s'
         })
         SmartContentClient.LOGGER.info('Will use the internal content server url')

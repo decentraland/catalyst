@@ -21,9 +21,15 @@ export class OffChainWearablesManager {
     // Load into memory all data regarding off-chain wearables
     const definitions = await this.loadDefinitionsIfNecessary()
 
-    // Note: So far, we have few off-chain wearables and no plans to add more. If we do add more in the future, then it
-    // might make sense to modify this filter, since many optimizations could be added
-    const filtered = definitions.filter(({ collectionId, wearable }) => {
+    return definitions.filter(this.buildFilter(filters)).map(({ wearable }) => wearable)
+  }
+
+  /**
+   * Note: So far, we have few off-chain wearables and no plans to add more. If we do add more in the future, then it
+   * might make sense to modify this filter, since many optimizations could be added
+   */
+  private buildFilter(filters: WearablesFilters): (wearable: LocalOffChainWearable) => boolean {
+    return ({ collectionId, wearable }) => {
       const okByCollection = !filters.collectionIds || filters.collectionIds.includes(collectionId)
       if (!okByCollection) return false
 
@@ -31,11 +37,9 @@ export class OffChainWearablesManager {
       if (!okByIds) return false
 
       const text = preferEnglish(wearable.i18n)?.toLowerCase()
-      const okByTextSearch = !filters.textSearch || (text && text.includes(filters.textSearch))
+      const okByTextSearch = !filters.textSearch || (!!text && text.includes(filters.textSearch))
       return okByTextSearch
-    })
-
-    return filtered.map(({ wearable }) => wearable)
+    }
   }
 
   private async loadDefinitionsIfNecessary(): Promise<LocalOffChainWearables> {
@@ -49,6 +53,7 @@ export class OffChainWearablesManager {
         const entities = await this.client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
         entities
           .map((entity) => translateEntityIntoWearable(this.client, entity))
+          .sort((wearable1, wearable2) => wearable1.id.localeCompare(wearable2.id))
           .forEach((wearable) => localDefinitions.push({ collectionId, wearable }))
       }
 
@@ -63,6 +68,7 @@ const DEFAULT_COLLECTIONS: OffChainCollections = {
   'base-avatars': baseAvatars
 }
 
-type LocalOffChainWearables = { collectionId: OffChainCollectionId; wearable: Wearable }[]
+type LocalOffChainWearables = LocalOffChainWearable[]
+type LocalOffChainWearable = { collectionId: OffChainCollectionId; wearable: Wearable }
 type OffChainCollections = { [collectionId: string]: WearableId[] }
 type OffChainCollectionId = string

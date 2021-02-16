@@ -60,3 +60,8 @@ export type WearablesFilters = {
   wearableIds?: string[]
   textSearch?: string
 }
+
+export type WearablesPagination = {
+  offset: number
+  limit: number
+}

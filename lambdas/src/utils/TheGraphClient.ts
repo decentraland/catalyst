@@ -48,16 +48,16 @@ export class TheGraphClient {
     return this.paginatableQuery(query, { owner: owner.toLowerCase() })
   }
 
-  public findWearablesByFilters(filters: WearablesFilters): Promise<WearableId[]> {
+  public findWearablesByFilters(filters: WearablesFilters, pagination: Pagination): Promise<WearableId[]> {
     const subgraphQuery = this.buildFilterQuery(filters)
-    const query: Query<{ nfts: { urn: string }[] }, WearableId[]> = {
+    const query: Query<{ items: { urn: string }[] }, WearableId[]> = {
       description: 'fetch wearables by filters',
       subgraph: 'collectionsSubgraph',
       query: subgraphQuery,
-      mapper: (response) => response.nfts.map(({ urn }) => urn),
+      mapper: (response) => response.items.map(({ urn }) => urn),
       default: []
     }
-    return this.paginatableQuery(query, filters)
+    return this.runQuery(query, { ...filters, first: pagination.limit, skip: pagination.offset })
   }
 
   private buildFilterQuery(filters: WearablesFilters): string {
@@ -80,7 +80,7 @@ export class TheGraphClient {
 
     return `
       query WearablesByFilters(${params.join(',')}, $first: Int!, $skip: Int!) {
-        nfts(where: {${whereClause.join(',')}}, first: $first, skip: $skip) {
+        items(where: {${whereClause.join(',')}}, first: $first, skip: $skip) {
           urn
         }
       }`
@@ -197,3 +197,5 @@ type URLs = {
   ensSubgraph: string
   collectionsSubgraph: string
 }
+
+type Pagination = { offset: number; limit: number }

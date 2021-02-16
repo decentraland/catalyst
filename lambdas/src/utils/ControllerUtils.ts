@@ -7,3 +7,11 @@ export function asArray<T>(elements: T[] | T): T[] {
   }
   return [elements]
 }
+export function asInt(value: any): number | undefined {
+  if (value) {
+    const parsed = parseInt(value)
+    if (!isNaN(parsed)) {
+      return parsed
+    }
+  }
+}
