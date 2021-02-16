@@ -1,3 +1,4 @@
+import { asArray } from '@katalyst/lambdas/utils/ControllerUtils'
 import { ContentFileHash, Entity, EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
@@ -156,16 +157,6 @@ function addBaseUrlToSnapshots(
   }
 
   return snapshots
-}
-
-function asArray<T>(elements: T[]): T[] | undefined {
-  if (!elements) {
-    return undefined
-  }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
 }
 
 export type ProfileMetadata = {

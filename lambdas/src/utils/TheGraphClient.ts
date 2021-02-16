@@ -1,7 +1,7 @@
 import { Fetcher } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
-import { WearableId } from '../apis/collections/types'
+import { WearableId, WearablesFilters } from '../apis/collections/types'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
@@ -46,6 +46,44 @@ export class TheGraphClient {
       default: []
     }
     return this.paginatableQuery(query, { owner: owner.toLowerCase() })
+  }
+
+  public findWearablesByFilters(filters: WearablesFilters, pagination: Pagination): Promise<WearableId[]> {
+    const subgraphQuery = this.buildFilterQuery(filters)
+    const query: Query<{ items: { urn: string }[] }, WearableId[]> = {
+      description: 'fetch wearables by filters',
+      subgraph: 'collectionsSubgraph',
+      query: subgraphQuery,
+      mapper: (response) => response.items.map(({ urn }) => urn),
+      default: []
+    }
+    return this.runQuery(query, { ...filters, first: pagination.limit, skip: pagination.offset })
+  }
+
+  private buildFilterQuery(filters: WearablesFilters): string {
+    const whereClause: string[] = [`searchItemType_in: ["wearable_v1", "wearable_v2"]`]
+    const params: string[] = []
+    if (filters.textSearch) {
+      params.push('$textSearch: String')
+      whereClause.push(`searchText_contains: $textSearch`)
+    }
+
+    if (filters.wearableIds) {
+      params.push('$wearableIds: [String]!')
+      whereClause.push(`urn_in: $wearableIds`)
+    }
+
+    if (filters.collectionIds) {
+      params.push('$collectionIds: [String]!')
+      whereClause.push(`collection_in: $collectionIds`)
+    }
+
+    return `
+      query WearablesByFilters(${params.join(',')}, $first: Int!, $skip: Int!) {
+        items(where: {${whereClause.join(',')}}, first: $first, skip: $skip) {
+          urn
+        }
+      }`
   }
 
   /** This method takes a query that could be paginated and performs the pagination internally */
@@ -112,7 +150,7 @@ export class TheGraphClient {
 
 const QUERY_WEARABLES_BY_OWNER: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
-    nfts(where: {owner: $owner}, first: $first, skip: $skip) {
+    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: $first, skip: $skip) {
       urn
     }
   }`
@@ -159,3 +197,5 @@ type URLs = {
   ensSubgraph: string
   collectionsSubgraph: string
 }
+
+type Pagination = { offset: number; limit: number }

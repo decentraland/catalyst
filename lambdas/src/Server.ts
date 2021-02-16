@@ -5,6 +5,7 @@ import express, { RequestHandler } from 'express'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
+import { OffChainWearablesManager } from './apis/collections/off-chain/OffChainWearablesManager'
 import { initializeCollectionsRoutes } from './apis/collections/routes'
 import { initializeContentV2Routes } from './apis/content-v2/routes'
 import { initializeContractRoutes } from './apis/contracts/routes'
@@ -59,6 +60,7 @@ export class Server {
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
+    const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
@@ -86,7 +88,10 @@ export class Server {
     this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
-    this.app.use('/collections', initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient))
+    this.app.use(
+      '/collections',
+      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
+    )
 
     // Functionality for Explore use case
     this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))

@@ -33,7 +33,7 @@ type WearableBodyShape = WearableId
 type WearableCategory = string
 type Rarity = string
 export type I18N = {
-  code: string
+  code: LanguageCode
   text: string
 }
 type Metrics = {
@@ -45,6 +45,8 @@ type Metrics = {
   entities: number
 }
 
+type LanguageCode = string
+
 export type Wearable = Omit<WearableMetadata, 'data'> & { data: WearableData }
 type WearableData = Omit<WearableMetadataData, 'representations'> & { representations: WearableRepresentation[] }
 export type WearableRepresentation = Omit<WearableMetadataRepresentation, 'contents'> & {
@@ -52,3 +54,14 @@ export type WearableRepresentation = Omit<WearableMetadataRepresentation, 'conte
 }
 
 export type WearableId = string // These ids are used as pointers on the content server
+
+export type WearablesFilters = {
+  collectionIds?: string[]
+  wearableIds?: string[]
+  textSearch?: string
+}
+
+export type WearablesPagination = {
+  offset: number
+  limit: number
+}

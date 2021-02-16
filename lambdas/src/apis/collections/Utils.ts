@@ -1,7 +1,14 @@
 import { parseUrn } from '@dcl/urn-resolver'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity } from 'dcl-catalyst-commons'
-import { Wearable, WearableId, WearableMetadata, WearableMetadataRepresentation, WearableRepresentation } from './types'
+import {
+  I18N,
+  Wearable,
+  WearableId,
+  WearableMetadata,
+  WearableMetadataRepresentation,
+  WearableRepresentation
+} from './types'
 
 /**
  * We are translating from the old id format into the new one.
@@ -17,6 +24,12 @@ export async function translateWearablesIdFormat(wearableId: WearableId): Promis
 
 export function isBaseAvatar(wearable: WearableId): boolean {
   return wearable.includes('base-avatars')
+}
+
+/** We will prioritize the text in english. If not present, then we will choose the first one */
+export function preferEnglish(i18ns: I18N[]): string | undefined {
+  const i18nInEnglish = i18ns.filter((i18n) => i18n.code.toLowerCase() === 'en')[0]
+  return (i18nInEnglish ?? i18ns[0])?.text
 }
 
 export function translateEntityIntoWearable(client: SmartContentClient, entity: Entity): Wearable {
