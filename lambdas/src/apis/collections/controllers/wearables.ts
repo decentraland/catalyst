@@ -87,7 +87,6 @@ export async function getWearablesEndpoint(
     const result = await getWearables(filters, client, theGraphClient, offChainManager)
     res.send(result)
   } catch (error) {
-    console.log(error)
     res.status(500).send(error.message)
   }
 }

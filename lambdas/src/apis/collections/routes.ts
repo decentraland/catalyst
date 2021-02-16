@@ -18,7 +18,7 @@ export function initializeCollectionsRoutes(
   router.get('/contents/:urn/image', createHandler(client, contentsImage))
   router.get('/contents/:urn/thumbnail', createHandler(client, contentsThumbnail))
   router.get('/wearables-by-owner/:owner', (req, res) => getWearablesByOwnerHandler(client, theGraphClient, req, res))
-  router.get('/wearables/', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
+  router.get('/wearables', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
   return router
 }
 
