@@ -95,9 +95,6 @@ export async function getWearablesEndpoint(
   }
 }
 
-// When off-chain is enough for page request, then subgraph is never queried
-// When page is not filled by off-chain, then subgraph is queried with the correct parameters
-
 export async function getWearables(
   filters: WearablesFilters,
   pagination: WearablesPagination,
