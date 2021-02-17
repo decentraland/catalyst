@@ -33,10 +33,11 @@ export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
 export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
-export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ropsten'
-export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections'
+export const DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET =
+  'https://thegraph.com/explorer/subgraph/decentraland/collections-ethereum-mainnet'
+export const DEFAULT_COLLECTIONS_PROVIDER_URL_MUMBAI =
+  ' https://thegraph.com/explorer/subgraph/decentraland/collections-matic-mumbai'
+
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
 export const DEFAULT_DATABASE_CONFIG = {
