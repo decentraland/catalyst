@@ -1,4 +1,5 @@
 import ms from 'ms'
+import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { ControllerFactory } from './controller/ControllerFactory'
@@ -59,7 +60,8 @@ export const enum Bean {
   DAO,
   ENS_OWNERSHIP,
   WEARABLES_OWNERSHIP,
-  THE_GRAPH_CLIENT
+  THE_GRAPH_CLIENT,
+  OFF_CHAIN_MANAGER
 }
 
 export const enum EnvironmentConfig {
@@ -69,6 +71,7 @@ export const enum EnvironmentConfig {
   ENS_OWNER_PROVIDER_URL,
   COLLECTIONS_PROVIDER_URL,
   COMMIT_HASH,
+  CATALYST_VERSION,
   USE_COMPRESSION_MIDDLEWARE,
   LOG_LEVEL,
   ETH_NETWORK,
@@ -131,6 +134,11 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')
     this.registerConfigIfNotAlreadySet(
       env,
+      EnvironmentConfig.CATALYST_VERSION,
+      () => process.env.CATALYST_VERSION ?? 'Unknown'
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
       EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE,
       () => process.env.USE_COMPRESSION_MIDDLEWARE === 'true'
     )
@@ -167,6 +175,7 @@ export class EnvironmentBuilder {
     )
     this.registerBeanIfNotAlreadySet(env, Bean.SMART_CONTENT_SERVER_CLIENT, () => SmartContentClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))

@@ -1,3 +1,4 @@
+import { asArray } from '@katalyst/lambdas/utils/ControllerUtils'
 import { ContentFileHash, Entity, EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
@@ -95,8 +96,8 @@ export async function fetchProfiles(
           ...profileData.avatar,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
-            ? await sanitizeWearables(profileData.avatar.wearables, wearablesOwnership)
-            : profileData.avatar.wearables
+            ? await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
+            : fixWearableId(profileData.avatar.wearables)
         }
       }))
       return { avatars: await Promise.all(avatars) }
@@ -109,6 +110,15 @@ export async function fetchProfiles(
   }
 }
 
+/**
+ * During the wearables migration into the content server, we realized that a wearable had the wrong id.
+ * We are now fixing all wearable ids that were stored in profiles. This will need to be here until we are sure that there are no more profiles with the wrong id
+ */
+function fixWearableId(wearableIds: WearableId[]): WearableId[] {
+  const fixId = (wearableId: WearableId) =>
+    wearableId === 'dcl://base-avatars/Moccasin' ? 'dcl://base-avatars/SchoolShoes' : wearableId
+  return wearableIds.map(fixId)
+}
 /**
  * We are sanitizing the wearables that are being worn. This includes removing any wearables that is not currently owned, and transforming all of them into the new format
  */
@@ -147,16 +157,6 @@ function addBaseUrlToSnapshots(
   }
 
   return snapshots
-}
-
-function asArray<T>(elements: T[]): T[] | undefined {
-  if (!elements) {
-    return undefined
-  }
-  if (elements instanceof Array) {
-    return elements
-  }
-  return [elements]
 }
 
 export type ProfileMetadata = {
