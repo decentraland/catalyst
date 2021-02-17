@@ -35,7 +35,7 @@ export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN =
 export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
 export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET =
   'https://thegraph.com/explorer/subgraph/decentraland/collections-ethereum-mainnet'
-export const DEFAULT_DCL_COLLECTIONS_PROVIDER_URL_MUMBAI =
+export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MUMBAI =
   ' https://thegraph.com/explorer/subgraph/decentraland/collections-matic-mumbai'
 
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
@@ -248,7 +248,7 @@ export class EnvironmentBuilder {
         process.env.DCL_COLLECTIONS_ACCESS_URL ??
         (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
           ? DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET
-          : DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN)
+          : DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MUMBAI)
     )
     this.registerConfigIfNotAlreadySet(
       env,

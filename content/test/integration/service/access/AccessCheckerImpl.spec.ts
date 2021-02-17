@@ -1,5 +1,5 @@
 import {
-  DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN,
+  DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MUMBAI,
   DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN
 } from '@katalyst/content/Environment'
 import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
@@ -59,7 +59,7 @@ describe('Integration - AccessCheckerImpl', function () {
       new ContentAuthenticator(),
       new Fetcher(),
       'Unused URL',
-      DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN
+      DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MUMBAI
     )
     const pointer = 'urn:decentraland:ethereum:collections-v2:0x1b8ba74cc34c2927aac0a8af9c3b1ba2e61352f2:0'
 
