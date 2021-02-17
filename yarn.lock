@@ -3148,20 +3148,20 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-file-piping-0.0.10:
-  version "3.1.4-20210212202817.commit-3b2ccbc"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210212202817.commit-3b2ccbc.tgz#4b42921ae45072ff4b41617603ba5399572ca5fb"
-  integrity sha512-1YHc+W7KpdDuCy+Pz1ARSidTv3A94WJFp9fCyrYTJYrPyMuBCbhe7EYLhLNJ89ZQ1UJpk2Mfb/UebF6zbrqH4Q==
+dcl-catalyst-client@tag-file-piping-0.1.0:
+  version "3.1.4-20210217144529.commit-112d9ed"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.1.4-20210217144529.commit-112d9ed.tgz#26a8773ae4848e65752980f5ab3835b53c65771b"
+  integrity sha512-GUb/UFE5oIiSEKKUTY2ZFjvaNpWedaI+ah4ass7yNVeMuF1zabsdlnlXf//55J+Y7QQ6nh+YswV80S8Sa4YwYw==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons tag-file-piping-0.0.9
+    dcl-catalyst-commons tag-file-piping-0.1.0
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
 
-dcl-catalyst-commons@tag-file-piping-0.0.9:
-  version "2.0.4-20210212201135.commit-8c2e4ad"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.4-20210212201135.commit-8c2e4ad.tgz#9f22edc8ab234069a8791c88bfbd51608286b899"
-  integrity sha512-uBvy8fFP7fTF0IK2zlpvpnraiTmFDRxOJneyj4UoySQz96w9ScVjJLVUw1ol8feWB2MP+KvYq5QMC6NOGkDycQ==
+dcl-catalyst-commons@tag-file-piping-0.1.0:
+  version "2.0.4-20210217143808.commit-01bee82"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.0.4-20210217143808.commit-01bee82.tgz#5683047fbf75b51eb33238870a49d16f6e5ad620"
+  integrity sha512-r0rcjq9LPCeFx1GXcdkD7WP2e1AMcCxVfjd7VE8HWYoQOLGZlmtKD3aFY1wbLH36r2sQPVt7vAYNr1XjPuLy9Q==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"

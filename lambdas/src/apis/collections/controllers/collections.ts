@@ -107,7 +107,6 @@ async function internalContents(
   }
 }
 
-
 async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity | undefined> {
   const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
   return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
