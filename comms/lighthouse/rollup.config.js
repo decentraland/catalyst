@@ -1,6 +1,5 @@
 import commonjs from '@rollup/plugin-commonjs'
 import npm from '@rollup/plugin-node-resolve'
-import ts from '@wessberg/rollup-plugin-ts'
 import react from 'react'
 import reactDom from 'react-dom'
 import globals from 'rollup-plugin-node-globals'
@@ -15,6 +14,7 @@ export default {
   output: {
     name: 'bundle'
   },
+  context: 'this',
   plugins: [
     json(),
     npm({ preferBuiltins: true, browser: true }),
@@ -25,8 +25,6 @@ export default {
         'react-dom': Object.keys(reactDom)
       }
     }),
-    globals(),
-    ,
-    ts({})
+    globals()
   ]
 }
