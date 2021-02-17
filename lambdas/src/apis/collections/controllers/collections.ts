@@ -42,14 +42,14 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   }
 }
 
-export async function contentsImage(client: SmartContentClient, req: Request, res: Response) {
+export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/image
   const { urn } = req.params
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.image)
 }
 
-export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response) {
+export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/thumbnail
   const { urn } = req.params
@@ -86,20 +86,19 @@ async function internalContents(
   res: Response,
   urn: string,
   selector: (metadata: WearableMetadata) => string | undefined
-) {
+): Promise<void> {
   try {
     const entity = await fetchEntity(client, urn)
     if (entity) {
       const wearableMetadata: WearableMetadata = entity.metadata
-      const selec = selector(wearableMetadata)
-      const hash = findHashForFile(entity, selec)
+      const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
         const headers: Map<string, string> = await client.pipeContent(hash, (res as any) as ReadableStream<Uint8Array>)
         headers.forEach((value: string, key: string) => {
           res.setHeader(key, value)
         })
       } else {
-        res.status(404).send('Hash not found')
+        res.status(404).send()
       }
     }
   } catch (e) {
