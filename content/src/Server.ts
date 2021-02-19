@@ -97,16 +97,15 @@ export class Server {
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
+      Metrics.requestCounters,
+      Metrics.responseCounters,
       async (req: express.Request, res: express.Response, next: NextFunction) => {
         try {
           await action.call(controller, req, res)
-          next()
         } catch (error) {
           next(error)
         }
-      },
-      Metrics.requestCounters,
-      Metrics.responseCounters
+      }
     ]
     if (extraHandler) {
       handlers.unshift(extraHandler)
