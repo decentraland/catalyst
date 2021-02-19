@@ -102,7 +102,7 @@
     "@types/sharp": "^0.27.1",
     "abort-controller": "^3.0.0",
     "analytics-node": "^3.5.0",
-    "aws-sdk": "^2.842.0",
+    "aws-sdk": "^2.847.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dcl-catalyst-client": "^3.1.3",
