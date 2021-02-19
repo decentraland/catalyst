@@ -105,6 +105,7 @@ export class Server {
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
+      ...Metrics.requestHandlers(),
       (req: express.Request, res: express.Response) => action.call(controller, req, res)
     ]
     if (extraHandler) {

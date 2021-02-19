@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { RequestHandler } from 'express'
 import { collectDefaultMetrics, Counter, register as Register, Summary } from 'prom-client'
 import ResponseTime from 'response-time'
 
@@ -21,12 +21,14 @@ const numRequests = new Counter({
 })
 
 const port = parseInt(process.env.METRICS_PORT ?? '9090')
+let requestMetricsHandlers: RequestHandler[] = []
 
 export class Metrics {
   static initialize(app: express.Express) {
     const metricsServer = express()
     this.injectMetricsRoute(metricsServer)
     this.startCollection(metricsServer)
+    requestMetricsHandlers = [this.requestCounters, this.responseCounters]
   }
 
   static requestCounters = function (req, res, next) {
@@ -50,5 +52,9 @@ export class Metrics {
     console.log(`Starting the collection of metrics, the metrics are available on :${port}/metrics`)
     collectDefaultMetrics()
     app.listen(port)
+  }
+
+  static requestHandlers(): RequestHandler[] {
+    return requestMetricsHandlers
   }
 }

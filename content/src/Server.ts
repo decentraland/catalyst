@@ -97,8 +97,7 @@ export class Server {
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
-      Metrics.requestCounters,
-      Metrics.responseCounters,
+      ...Metrics.requestHandlers(),
       async (req: express.Request, res: express.Response, next: NextFunction) => {
         try {
           await action.call(controller, req, res)
