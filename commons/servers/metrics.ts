@@ -25,8 +25,6 @@ const port = parseInt(process.env.METRICS_PORT ?? '9090')
 export class Metrics {
   static initialize(app: express.Express) {
     const metricsServer = express()
-    app.use(Metrics.requestCounters)
-    app.use(Metrics.responseCounters)
     this.injectMetricsRoute(metricsServer)
     this.startCollection(metricsServer)
   }
@@ -42,9 +40,9 @@ export class Metrics {
   })
 
   static injectMetricsRoute(app: express.Express) {
-    app.get('/metrics', (req, res) => {
+    app.get('/metrics', async (req, res) => {
       res.set('Content-Type', Register.contentType)
-      res.end(Register.metrics())
+      res.end(await Register.metrics())
     })
   }
 
