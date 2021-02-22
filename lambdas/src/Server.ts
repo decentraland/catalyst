@@ -49,7 +49,7 @@ export class Server {
     }
 
     if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize(this.app)
+      Metrics.initialize()
     }
 
     // Base endpoints
@@ -105,6 +105,7 @@ export class Server {
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
+      ...Metrics.requestHandlers(),
       (req: express.Request, res: express.Response) => action.call(controller, req, res)
     ]
     if (extraHandler) {
