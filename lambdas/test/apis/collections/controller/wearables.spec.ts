@@ -81,9 +81,9 @@ describe('wearables', () => {
     const offChain = offChainManager()
 
     const pagination = { offset: 0, limit: 1 }
-    const wearables = await getWearables({}, pagination, contentClient, graphClient, offChain)
+    const response = await getWearables({}, pagination, contentClient, graphClient, offChain)
 
-    expect(wearables).toEqual([WEARABLE])
+    expect(response.wearables).toEqual([WEARABLE])
     verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
   })
 
@@ -94,9 +94,9 @@ describe('wearables', () => {
 
     const filters = {}
     const pagination = { offset: 0, limit: 2 }
-    const wearables = await getWearables(filters, pagination, contentClient, graphClient, offChain)
+    const response = await getWearables(filters, pagination, contentClient, graphClient, offChain)
 
-    expect(wearables.length).toEqual(2)
+    expect(response.wearables.length).toEqual(2)
     verify(graphClientMock.findWearablesByFilters(deepEqual(filters), deepEqual({ offset: 0, limit: 1 }))).once()
   })
 })

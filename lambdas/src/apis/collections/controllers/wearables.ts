@@ -79,17 +79,16 @@ export async function getWearablesEndpoint(
     return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)
   }
 
-  const filters = {
+  const requestFilters = {
     collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
     wearableIds: wearableIds.length > 0 ? wearableIds : undefined,
     textSearch
   }
-
-  const pagination = sanitizePagination(offset, limit)
+  const sanitizedPagination = sanitizePagination(offset, limit)
 
   try {
-    const result = await getWearables(filters, pagination, client, theGraphClient, offChainManager)
-    res.send(result)
+    const response = await getWearables(requestFilters, sanitizedPagination, client, theGraphClient, offChainManager)
+    res.send(response)
   } catch (error) {
     res.status(500).send(error.message)
   }
@@ -101,7 +100,11 @@ export async function getWearables(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   offChainManager: OffChainWearablesManager
-): Promise<Wearable[]> {
+): Promise<{
+  wearables: Wearable[]
+  filters: { collectionIds?: string[]; wearableIds?: string[]; textSearch?: string }
+  pagination: { offset: number; limit: number; moreData: boolean }
+}> {
   const offChainWearables = await offChainManager.find(filters)
   const paginatedOffChainWearables = offChainWearables.slice(pagination.offset, pagination.offset + pagination.limit)
 
@@ -120,7 +123,18 @@ export async function getWearables(
     }
   }
 
-  return paginatedOffChainWearables.concat(onChainWearables)
+  let moreData: boolean = false
+  if (offChainWearables.length > (onChainPagination.offset + 1) * onChainPagination.limit) {
+    moreData = true
+  }
+
+  const allPagination = { ...onChainPagination, moreData: moreData }
+
+  return {
+    wearables: paginatedOffChainWearables.concat(onChainWearables),
+    filters: filters,
+    pagination: allPagination
+  }
 }
 
 function sanitizePagination(offset: number | undefined, limit: number | undefined): WearablesPagination {
