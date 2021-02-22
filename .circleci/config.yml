@@ -169,24 +169,15 @@ jobs:
               docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
               docker push "${DOCKER_IMAGE_NAME}:latest"
+              # TODO: publish SNS message for stable channel
             fi
-  tag-latest-docker:
-    <<: *base_env
-    docker:
-      - image: circleci/node:12-browsers
-        environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/katalyst
-    steps:
-      - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true }
-      - run:
-          name: Log into DockerHub
-          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-      - run:
-          name: Tag image
-          command: |
-            docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
-            docker push "${DOCKER_IMAGE_NAME}:latest"
+
+            if [ "${CIRCLE_BRANCH}" = "master" ]; then
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
+              docker push "${DOCKER_IMAGE_NAME}:next"
+
+              # TODO: publish SNS message for latest channel
+            fi
 
 workflows:
   version: 2
@@ -230,30 +221,23 @@ workflows:
           type: approval
           requires:
             - build-peer
+            # build-peer is the only real dependency. But we wait to reduce possibilities of bugs
+            # in other pipelines
+            - build-lighthouse
+            - build-content
+            - build-lambdas
       - publish-peer:
           <<: *master_and_tags
           requires:
             - accept-publish-peer
 
-      # publish docker image
-      - accept-publish-docker:
-          <<: *all_branches_and_tags
-          type: approval
+      # publish docker image in "master" and semver tags
+      # master publishes to @next
+      # semver tags publish to @latest
+      - publish-docker:
+          <<: *master_and_tags
           requires:
             - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas
-      - publish-docker:
-          <<: *all_branches_and_tags
-          requires:
-            - accept-publish-docker
-      - accept-tag-latest-docker:
-          <<: *master_and_tags
-          type: approval
-          requires:
-            - publish-docker
-      - tag-latest-docker:
-          <<: *master_and_tags
-          requires:
-            - accept-tag-latest-docker
