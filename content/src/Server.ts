@@ -64,7 +64,7 @@ export class Server {
     }
 
     if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize(this.app)
+      Metrics.initialize()
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)

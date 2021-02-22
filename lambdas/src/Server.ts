@@ -49,7 +49,7 @@ export class Server {
     }
 
     if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize(this.app)
+      Metrics.initialize()
     }
 
     // Base endpoints

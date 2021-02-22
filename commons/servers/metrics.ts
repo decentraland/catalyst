@@ -24,37 +24,37 @@ const port = parseInt(process.env.METRICS_PORT ?? '9090')
 let requestMetricsHandlers: RequestHandler[] = []
 
 export class Metrics {
-  static initialize(app: express.Express) {
+  static initialize() {
     const metricsServer = express()
     this.injectMetricsRoute(metricsServer)
     this.startCollection(metricsServer)
     requestMetricsHandlers = [this.requestCounters, this.responseCounters]
   }
 
-  static requestCounters = function (req, res, next) {
+  static requestHandlers(): RequestHandler[] {
+    return requestMetricsHandlers
+  }
+
+  private static requestCounters = function (req, _res, next) {
     numRequests.inc({ method: req.method })
     pathsTaken.inc({ path: req.route.path })
     next()
   }
 
-  static responseCounters = ResponseTime(function (req, res, time) {
+  private static responseCounters = ResponseTime(function (req, res, time) {
     responses.labels(req.method, req.route.path, res.statusCode).observe(time)
   })
 
-  static injectMetricsRoute(app: express.Express) {
+  private static injectMetricsRoute(app: express.Express) {
     app.get('/metrics', async (req, res) => {
       res.set('Content-Type', Register.contentType)
       res.end(await Register.metrics())
     })
   }
 
-  static startCollection(app: express.Express) {
+  private static startCollection(app: express.Express) {
     console.log(`Starting the collection of metrics, the metrics are available on :${port}/metrics`)
     collectDefaultMetrics()
     app.listen(port)
-  }
-
-  static requestHandlers(): RequestHandler[] {
-    return requestMetricsHandlers
   }
 }
