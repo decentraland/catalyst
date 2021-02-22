@@ -1,5 +1,6 @@
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
-import express from 'express'
+import { Metrics } from 'decentraland-katalyst-commons/metrics'
+import express, { RequestHandler } from 'express'
 import { IRealm } from 'peerjs-server'
 import { ConfigService } from './configService'
 import { RequestError } from './errors'
@@ -36,7 +37,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   }
 
-  app.get('/status', async (req, res, next) => {
+  const getStatus: RequestHandler = async (req, res) => {
     const ready = readyStateService.isReady()
 
     const status: any = {
@@ -58,95 +59,70 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
 
     res.send(status)
-  })
+  }
 
-  app.get('/layers', async (req, res, next) => {
+  const getLayers: RequestHandler = async (req, res) => {
     const globalMaxPerLayer = await configService.getMaxPeersPerLayer()
     res.send(
       layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, req.query.usersParcels === 'true'))
     )
-  })
+  }
 
-  app.get('/layers/:layerId', validateLayerExists, async (req, res, next) => {
+  const getByLayerId = async (req, res) => {
     const globalMaxPerLayer = await configService.getMaxPeersPerLayer()
     res.send(mapLayerToJson(layersService.getLayer(req.params.layerId)!, globalMaxPerLayer))
-  })
+  }
 
-  app.get('/layers/:layerId/users', validateLayerExists, (req, res, next) => {
+  const GetUsersByLayerId = (req, res) => {
     res.send(mapUsersToJson(layersService.getLayerPeers(req.params.layerId)))
-  })
+  }
 
-  app.get('/layers/:layerId/rooms', validateLayerExists, (req, res, next) => {
+  const getRoomsByLayerId = (req, res) => {
     res.send(layersService.getRoomsService(req.params.layerId)!.getRoomIds({ peerId: req.query.userId }))
-  })
+  }
 
-  app.get('/layers/:layerId/rooms/:roomId', validateLayerExists, (req, res, next) => {
+  const getRoomId = (req, res) => {
     const roomUsers = layersService.getRoomsService(req.params.layerId)!.getPeers(req.params.roomId)
     if (typeof roomUsers === 'undefined') {
       res.status(404).send({ status: 'room-not-found' })
     } else {
       res.send(mapUsersToJson(roomUsers))
     }
-  })
+  }
 
-  app.put(
-    '/layers/:layerId',
-    requireServerReady(readyStateService),
-    requireOneOf(['id', 'peerId'], (req, res) => req.body),
-    validatePeerToken(getPeerJsRealm),
-    async (req, res, next) => {
-      const { layerId } = req.params
-      try {
-        const layer = await layersService.setPeerLayer(layerId, req.body)
-        res.send(mapUsersToJson(peersService.getPeersInfo(layer.peers)))
-      } catch (err) {
-        handleError(err, res, next)
-      }
+  const putLayerId = async (req, res, next) => {
+    const { layerId } = req.params
+    try {
+      const layer = await layersService.setPeerLayer(layerId, req.body)
+      res.send(mapUsersToJson(peersService.getPeersInfo(layer.peers)))
+    } catch (err) {
+      handleError(err, res, next)
     }
-  )
+  }
 
-  app.put(
-    '/layers/:layerId/rooms/:roomId',
-    requireServerReady(readyStateService),
-    validateLayerExists,
-    requireOneOf(['id', 'peerId'], (req, res) => req.body),
-    validatePeerToken(getPeerJsRealm),
-    async (req, res, next) => {
-      const { layerId, roomId } = req.params
-      try {
-        const room = await layersService.addPeerToRoom(layerId, roomId, req.body)
-        res.send(mapUsersToJson(peersService.getPeersInfo(room.peers)))
-      } catch (err) {
-        handleError(err, res, next)
-      }
+  const putRoomId = async (req, res, next) => {
+    const { layerId, roomId } = req.params
+    try {
+      const room = await layersService.addPeerToRoom(layerId, roomId, req.body)
+      res.send(mapUsersToJson(peersService.getPeersInfo(room.peers)))
+    } catch (err) {
+      handleError(err, res, next)
     }
-  )
+  }
 
-  app.delete(
-    '/layers/:layerId/rooms/:roomId/users/:userId',
-    requireServerReady(readyStateService),
-    validateLayerExists,
-    validatePeerToken(getPeerJsRealm),
-    (req, res, next) => {
-      const { roomId, userId, layerId } = req.params
-      const room = layersService.getRoomsService(layerId)?.removePeerFromRoom(roomId, userId)
-      res.send(mapUsersToJson(peersService.getPeersInfo(room?.peers ?? [])))
-    }
-  )
+  const deleteUserFromRoomById = (req, res) => {
+    const { roomId, userId, layerId } = req.params
+    const room = layersService.getRoomsService(layerId)?.removePeerFromRoom(roomId, userId)
+    res.send(mapUsersToJson(peersService.getPeersInfo(room?.peers ?? [])))
+  }
 
-  app.delete(
-    '/layers/:layerId/users/:userId',
-    requireServerReady(readyStateService),
-    validateLayerExists,
-    validatePeerToken(getPeerJsRealm),
-    (req, res, next) => {
-      const { userId, layerId } = req.params
-      const layer = layersService.removePeerFromLayer(layerId, userId)
-      res.send(mapUsersToJson(peersService.getPeersInfo(layer?.peers ?? [])))
-    }
-  )
+  const deleteUserId = (req, res) => {
+    const { userId, layerId } = req.params
+    const layer = layersService.removePeerFromLayer(layerId, userId)
+    res.send(mapUsersToJson(peersService.getPeersInfo(layer?.peers ?? [])))
+  }
 
-  app.get('/layers/:layerId/topology', validateLayerExists, (req, res, next) => {
+  const getTopology = (req, res) => {
     const { layerId } = req.params
     const topologyInfo = layersService.getLayerTopology(layerId)
     if (req.query.format === 'graphviz') {
@@ -167,31 +143,80 @@ export function configureRoutes(app: express.Express, services: Services, option
     } else {
       res.send(topologyInfo)
     }
-  })
+  }
 
-  app.put(
-    '/config',
+  const putConfig = async (req, res) => {
+    const configKeyValues = req.body.config
+    if (!Array.isArray(configKeyValues) || configKeyValues.some((it) => !it.key)) {
+      res.status(400).send(
+        JSON.stringify({
+          status: 'bad-request',
+          message: 'Expected array body with {key: string, value?: string} elements'
+        })
+      )
+    } else {
+      const config = await configService.updateConfigs(configKeyValues)
+      res.send(config)
+    }
+  }
+
+  registerRoute('/status', HttpMethod.GET, [getStatus])
+  registerRoute('/layers', HttpMethod.GET, [getLayers])
+  registerRoute('/layers/:layerId', HttpMethod.GET, [validateLayerExists, getByLayerId])
+  registerRoute('/layers/:layerId/users', HttpMethod.GET, [validateLayerExists, GetUsersByLayerId])
+  registerRoute('/layers/:layerId/rooms', HttpMethod.GET, [validateLayerExists, getRoomsByLayerId])
+  registerRoute('/layers/:layerId/rooms/:roomId', HttpMethod.GET, [validateLayerExists, getRoomId])
+  registerRoute('/layers/:layerId', HttpMethod.PUT, [
+    requireServerReady(readyStateService),
+    requireOneOf(['id', 'peerId'], (req) => req.body),
+    validatePeerToken(getPeerJsRealm),
+    putLayerId
+  ])
+  registerRoute('/layers/:layerId/rooms/:roomId', HttpMethod.PUT, [
+    requireServerReady(readyStateService),
+    validateLayerExists,
+    requireOneOf(['id', 'peerId'], (req) => req.body),
+    validatePeerToken(getPeerJsRealm),
+    putRoomId
+  ])
+  registerRoute('/layers/:layerId/rooms/:roomId/users/:userId', HttpMethod.DELETE, [
+    requireServerReady(readyStateService),
+    validateLayerExists,
+    validatePeerToken(getPeerJsRealm),
+    deleteUserFromRoomById
+  ])
+  registerRoute('/layers/:layerId/users/:userId', HttpMethod.DELETE, [
+    requireServerReady(readyStateService),
+    validateLayerExists,
+    validatePeerToken(getPeerJsRealm),
+    deleteUserId
+  ])
+  registerRoute('/layers/:layerId/topology', HttpMethod.GET, [validateLayerExists, getTopology])
+
+  registerRoute('/config', HttpMethod.PUT, [
     requireAll(['config'], (req) => req.body),
     validateSignatureHandler(
       (body) => JSON.stringify(body.config),
       options.ethNetwork,
       (signer) => signer?.toLowerCase() == options.restrictedAccessSigner.toLowerCase()
     ),
-    async (req, res, next) => {
-      const configKeyValues = req.body.config
-      if (!Array.isArray(configKeyValues) || configKeyValues.some((it) => !it.key)) {
-        res.status(400).send(
-          JSON.stringify({
-            status: 'bad-request',
-            message: 'Expected array body with {key: string, value?: string} elements'
-          })
-        )
-      } else {
-        const config = await configService.updateConfigs(configKeyValues)
-        res.send(config)
-      }
+    putConfig
+  ])
+
+  function registerRoute(route: string, method: HttpMethod, actions: RequestHandler[]) {
+    const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
+    switch (method) {
+      case HttpMethod.GET:
+        this.app.get(route, handlers)
+        break
+      case HttpMethod.PUT:
+        this.app.put(route, handlers)
+        break
+      case HttpMethod.DELETE:
+        this.app.delete(route, handlers)
+        break
     }
-  )
+  }
 
   function mapLayerToJson(layer: Layer, globalMaxPerLayer: number | undefined, includeUserParcels: boolean = false) {
     return {
@@ -234,4 +259,10 @@ export function configureRoutes(app: express.Express, services: Services, option
       address: it.address
     }))
   }
+}
+
+enum HttpMethod {
+  GET,
+  PUT,
+  DELETE
 }

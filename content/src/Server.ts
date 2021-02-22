@@ -64,7 +64,7 @@ export class Server {
     }
 
     if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize(this.app)
+      Metrics.initialize()
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
@@ -97,6 +97,7 @@ export class Server {
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
+      ...Metrics.requestHandlers(),
       async (req: express.Request, res: express.Response, next: NextFunction) => {
         try {
           await action.call(controller, req, res)

@@ -56,7 +56,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const app = express()
 
   if (enableMetrics) {
-    Metrics.initialize(app)
+    Metrics.initialize()
   }
 
   const peersService = new PeersService(getPeerJsRealm)

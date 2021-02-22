@@ -15,9 +15,9 @@ export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
 export const DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ropsten'
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
 export const DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/collections'
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
