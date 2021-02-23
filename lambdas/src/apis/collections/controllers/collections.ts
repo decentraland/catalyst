@@ -42,15 +42,14 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   }
 }
 
-export async function contentsImage(client: SmartContentClient, req: Request, res: Response) {
+export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/image
   const { urn } = req.params
-
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.image)
 }
 
-export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response) {
+export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/thumbnail
   const { urn } = req.params
@@ -87,21 +86,20 @@ async function internalContents(
   res: Response,
   urn: string,
   selector: (metadata: WearableMetadata) => string | undefined
-) {
+): Promise<void> {
   try {
-    let contentBuffer: Buffer | undefined = undefined
     const entity = await fetchEntity(client, urn)
     if (entity) {
       const wearableMetadata: WearableMetadata = entity.metadata
       const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
-        contentBuffer = await client.downloadContent(hash) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
+        const headers: Map<string, string> = await client.pipeContent(hash, (res as any) as ReadableStream<Uint8Array>)
+        headers.forEach((value: string, key: string) => {
+          res.setHeader(key, value)
+        })
+      } else {
+        res.status(404).send()
       }
-    }
-    if (contentBuffer) {
-      res.send(contentBuffer)
-    } else {
-      res.status(404).send()
     }
   } catch (e) {
     res.status(500).send(e.message)
