@@ -970,6 +970,24 @@ describe('Peer Integration Test', function () {
 
   it('handles authentication', () => {})
 
+  it('raises an specific error when the requested id is taken', async () => {
+    let idTakenErrorReceived = false
+    extraPeersConfig = {
+      statusHandler: (status) => {
+        if (status === 'id-taken') {
+          idTakenErrorReceived = true
+        }
+      }
+    }
+    const [socket] = await createPeer('peer')
+
+    socket.onmessage({
+      data: JSON.stringify({ type: ServerMessageType.IdTaken, payload: { msg: 'ETH Address is taken' } })
+    })
+
+    expect(idTakenErrorReceived).toEqual(true)
+  })
+
   function getConnectedPeers(peer: Peer) {
     //@ts-ignore
     return peer.wrtcHandler.connectedPeers
