@@ -160,40 +160,40 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   }
 
-  registerRoute('/status', HttpMethod.GET, [getStatus])
-  registerRoute('/layers', HttpMethod.GET, [getLayers])
-  registerRoute('/layers/:layerId', HttpMethod.GET, [validateLayerExists, getByLayerId])
-  registerRoute('/layers/:layerId/users', HttpMethod.GET, [validateLayerExists, GetUsersByLayerId])
-  registerRoute('/layers/:layerId/rooms', HttpMethod.GET, [validateLayerExists, getRoomsByLayerId])
-  registerRoute('/layers/:layerId/rooms/:roomId', HttpMethod.GET, [validateLayerExists, getRoomId])
-  registerRoute('/layers/:layerId', HttpMethod.PUT, [
+  registerRoute(app, '/status', HttpMethod.GET, [getStatus])
+  registerRoute(app, '/layers', HttpMethod.GET, [getLayers])
+  registerRoute(app, '/layers/:layerId', HttpMethod.GET, [validateLayerExists, getByLayerId])
+  registerRoute(app, '/layers/:layerId/users', HttpMethod.GET, [validateLayerExists, GetUsersByLayerId])
+  registerRoute(app, '/layers/:layerId/rooms', HttpMethod.GET, [validateLayerExists, getRoomsByLayerId])
+  registerRoute(app, '/layers/:layerId/rooms/:roomId', HttpMethod.GET, [validateLayerExists, getRoomId])
+  registerRoute(app, '/layers/:layerId', HttpMethod.PUT, [
     requireServerReady(readyStateService),
     requireOneOf(['id', 'peerId'], (req) => req.body),
     validatePeerToken(getPeerJsRealm),
     putLayerId
   ])
-  registerRoute('/layers/:layerId/rooms/:roomId', HttpMethod.PUT, [
+  registerRoute(app, '/layers/:layerId/rooms/:roomId', HttpMethod.PUT, [
     requireServerReady(readyStateService),
     validateLayerExists,
     requireOneOf(['id', 'peerId'], (req) => req.body),
     validatePeerToken(getPeerJsRealm),
     putRoomId
   ])
-  registerRoute('/layers/:layerId/rooms/:roomId/users/:userId', HttpMethod.DELETE, [
+  registerRoute(app, '/layers/:layerId/rooms/:roomId/users/:userId', HttpMethod.DELETE, [
     requireServerReady(readyStateService),
     validateLayerExists,
     validatePeerToken(getPeerJsRealm),
     deleteUserFromRoomById
   ])
-  registerRoute('/layers/:layerId/users/:userId', HttpMethod.DELETE, [
+  registerRoute(app, '/layers/:layerId/users/:userId', HttpMethod.DELETE, [
     requireServerReady(readyStateService),
     validateLayerExists,
     validatePeerToken(getPeerJsRealm),
     deleteUserId
   ])
-  registerRoute('/layers/:layerId/topology', HttpMethod.GET, [validateLayerExists, getTopology])
+  registerRoute(app, '/layers/:layerId/topology', HttpMethod.GET, [validateLayerExists, getTopology])
 
-  registerRoute('/config', HttpMethod.PUT, [
+  registerRoute(app, '/config', HttpMethod.PUT, [
     requireAll(['config'], (req) => req.body),
     validateSignatureHandler(
       (body) => JSON.stringify(body.config),
@@ -203,17 +203,17 @@ export function configureRoutes(app: express.Express, services: Services, option
     putConfig
   ])
 
-  function registerRoute(route: string, method: HttpMethod, actions: RequestHandler[]) {
+  function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
     switch (method) {
       case HttpMethod.GET:
-        this.app.get(route, handlers)
+        app.get(route, handlers)
         break
       case HttpMethod.PUT:
-        this.app.put(route, handlers)
+        app.put(route, handlers)
         break
       case HttpMethod.DELETE:
-        this.app.delete(route, handlers)
+        app.delete(route, handlers)
         break
     }
   }
