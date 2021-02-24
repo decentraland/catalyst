@@ -27,7 +27,7 @@
     "@types/puppeteer": "^5.4.3",
     "@types/react": "^17.0.2",
     "@types/react-dom": "^17.0.1",
-    "@types/simple-peer": "^9.6.1",
+    "@types/simple-peer": "^9.6.2",
     "@types/sinon": "^9.0.10",
     "@types/uuid": "^3.4.6",
     "@types/web3": "^1.2.2",
