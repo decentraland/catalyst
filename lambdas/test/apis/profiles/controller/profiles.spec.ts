@@ -118,7 +118,7 @@ function profileWith(
         description: 'description',
         hasClaimedName: true,
         avatar: {
-          bodyShape: {},
+          bodyShape: 'bodyShape',
           eyes: {},
           hair: {},
           skin: {},
