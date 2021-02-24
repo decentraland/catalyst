@@ -95,7 +95,7 @@ export async function getWearablesEndpoint(
 }
 
 /**
- * As Base Wearables are off chain wearables, we need to render both off-chain and on-chain wearables in the same collection.
+ * As Base Wearables are off chain, we need to return both off-chain and on-chain wearables in the same query.
  * To do that, we use the order of first rendering off-chain wearables and then on-chain wearables,
  * that order is used to paginate elements.
  */
@@ -138,7 +138,7 @@ export async function getWearables(
 
   return {
     wearables: allWearables,
-    filters: filters,
+    filters,
     pagination: { ...pagination, moreData: moreData }
   }
 }
