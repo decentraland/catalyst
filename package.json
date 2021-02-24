@@ -6,7 +6,7 @@
     "@bazel/bazel": "latest",
     "@bazel/buildifier": "latest",
     "@bazel/ibazel": "latest",
-    "@bazel/jasmine": "^0.42.3",
+    "@bazel/jasmine": "^3.2.1",
     "@bazel/karma": "^0.42.3",
     "@bazel/rollup": "1.7.0",
     "@bazel/typescript": "^0.42.3",
