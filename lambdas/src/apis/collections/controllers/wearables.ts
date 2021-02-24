@@ -107,8 +107,8 @@ export async function getWearables(
   offChainManager: OffChainWearablesManager
 ): Promise<{
   wearables: Wearable[]
-  filters: { collectionIds?: string[]; wearableIds?: string[]; textSearch?: string }
-  pagination: { offset: number; limit: number; moreData: boolean }
+  filters: WearablesFilters
+  pagination: WearablesPagination
 }> {
   // [TRICK] Get one more element than necessary to check if there is moreData
   const paginationLimitWithMore = pagination.limit + 1
