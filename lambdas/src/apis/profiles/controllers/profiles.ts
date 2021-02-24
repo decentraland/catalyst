@@ -94,7 +94,9 @@ export async function fetchProfiles(
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
-          bodyShape: await translateWearablesIdFormat(profileData.avatar.bodyShape),
+          bodyShape: performWearableSanitization
+            ? await translateWearablesIdFormat(profileData.avatar.bodyShape)
+            : profileData.avatar.bodyShape,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
             ? await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
