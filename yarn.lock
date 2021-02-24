@@ -916,6 +916,13 @@
     source-map-support "0.5.9"
     tsutils "2.27.2"
 
+"@dcl/schemas@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-0.2.0.tgz#2ba3161da61d1c1bde8d36290c13957960daaa65"
+  integrity sha512-mvjMQryY+in8TKNNOzyp+ibq4gvnbnI0AX+KgbFLCD4LJyQPi59jeeyqGHAmassKqQiC2iCDvZc5FxDw9FxqRQ==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/urn-resolver@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.0.1.tgz#7b6a7aa667eaab9f5f61e199a5b20135578e8abe"
@@ -1901,7 +1908,7 @@ ajv@^6.10.0, ajv@^6.12.4, ajv@^6.5.5:
     json-schema-traverse "^0.4.1"
     uri-js "^4.2.2"
 
-ajv@^7.0.2:
+ajv@^7.0.2, ajv@^7.1.0:
   version "7.1.1"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-7.1.1.tgz#1e6b37a454021fa9941713f38b952fc1c8d32a84"
   integrity sha512-ga/aqDYnUy/o7vbsRTFhhTsNeXiYb5JWDIcRIeZfwRNCefwjNTVYCGdGSUrEmiu3yDK3vFvNbgJxvrQW4JXrYQ==
@@ -3174,11 +3181,12 @@ decentraland-commons@^5.2.0:
   resolved "https://registry.yarnpkg.com/decentraland-commons/-/decentraland-commons-5.2.0.tgz#35a1e9925a6146c3b60d735f1db3848792e012ce"
   integrity sha512-sU6GJmoDM9E/i6T87DMJO8UyFd8ydVgsNaNNPU9sNrZszTGIerfMsKP4WRen8Dne6j5elDQbeDSr08iOl7wl4A==
 
-decentraland-ui@^2.29.0:
-  version "2.29.0"
-  resolved "https://registry.yarnpkg.com/decentraland-ui/-/decentraland-ui-2.29.0.tgz#9667f671ac1ba7fdc8a4363ea58f294b738f897a"
-  integrity sha512-fSySIYi6V5paetoQru0AJuAHpJrYxazlGxPI3A7LIUYLY9PCr8cLqJTeoZJ4GzLua1YjJDfvAF2QKg5jvgKAaA==
+decentraland-ui@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/decentraland-ui/-/decentraland-ui-3.0.0.tgz#edc4676b62dba869fa21ba9c2a1830a5dd2d22c1"
+  integrity sha512-9WR7UQNDZWWgWGWNrEt+hY9Mw+FSjT1q0kDeQr+oJYwEXlYfJ9EzM74pKBSXM/Xmw7tslZcAnGrqdCCnf7WzSw==
   dependencies:
+    "@dcl/schemas" "^0.2.0"
     balloon-css "^0.5.0"
     ethereum-blockies "^0.1.1"
     parallax-js "^3.1.0"
