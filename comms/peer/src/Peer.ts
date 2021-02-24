@@ -10,7 +10,7 @@ import { randomUint32 } from '../../../commons/utils/util'
 import { ConnectionRejectReasons, PEER_CONSTANTS } from './constants'
 import { PeerMessageType, PingMessageType, PongMessageType, SuspendRelayType } from './messageTypes'
 import { PeerHttpClient } from './PeerHttpClient'
-import { ServerMessageType } from './peerjs-server-connector/enums'
+import { PeerErrorType, ServerMessageType } from './peerjs-server-connector/enums'
 import { HandshakeData } from './peerjs-server-connector/peerjsserverconnection'
 import { ServerMessage } from './peerjs-server-connector/servermessage'
 import { delay, pickBy, pickRandom } from './peerjs-server-connector/util'
@@ -145,7 +145,11 @@ export class Peer implements IPeer {
     this.wrtcHandler.on(PeerWebRTCEvent.PeerConnectionLost, this.handlePeerConnectionLost.bind(this))
 
     this.wrtcHandler.on(PeerWebRTCEvent.ServerConnectionError, async (err) => {
-      if (!this.retryingConnection) await this.retryConnection()
+      if (err.type === PeerErrorType.UnavailableID) {
+        this.config.statusHandler!('id-taken')
+      } else {
+        if (!this.retryingConnection) await this.retryConnection()
+      }
     })
 
     this.setUpTimeToRequestOptimumNetwork()
