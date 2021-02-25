@@ -7,10 +7,8 @@ import {
   Hashing,
   PartialDeploymentHistory,
   Pointer,
-  ServerAddress,
   ServerName,
-  ServerStatus,
-  Timestamp
+  ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { ContentFile } from '../controller/Controller'
@@ -200,22 +198,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         let auditInfoComplete: AuditInfo
 
         if (fix) {
-          const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(
-            transaction.failedDeployments,
-            entity.type,
-            entity.id
-          ))!
           auditInfoComplete = {
             ...auditInfo,
-            originTimestamp: failedDeployment.originTimestamp,
-            originServerUrl: failedDeployment.originServerUrl,
             localTimestamp
           }
         } else {
           auditInfoComplete = {
-            originTimestamp: localTimestamp,
-            originServerUrl:
-              this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
             ...auditInfo,
             localTimestamp
           }
@@ -294,8 +282,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
-    originTimestamp: Timestamp,
-    originServerUrl: ServerAddress,
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null> {
@@ -304,8 +290,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       this.repository.failedDeployments,
       entityType,
       entityId,
-      originTimestamp,
-      originServerUrl,
       reason,
       errorDescription
     )

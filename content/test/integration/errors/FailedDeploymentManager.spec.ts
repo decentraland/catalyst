@@ -93,16 +93,8 @@ describe('Integration - Failed Deployments Manager', function () {
     reason: FailureReason
     description?: string
   }): Promise<null> {
-    const { entityType, entityId, originTimestamp, originServerUrl } = deployment
-    return manager.reportFailure(
-      repository.failedDeployments,
-      entityType,
-      entityId,
-      originTimestamp,
-      originServerUrl,
-      reason,
-      description
-    )
+    const { entityType, entityId } = deployment
+    return manager.reportFailure(repository.failedDeployments, entityType, entityId, reason, description)
   }
 
   function buildRandomDeployment(): FakeDeployment {

@@ -129,7 +129,7 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
 
   // Sort deployments by ascending origin timestamp
   const sortedDeployments = deployments.sort((a, b) =>
-    a.auditInfo.originTimestamp > b.auditInfo.originTimestamp ? 1 : -1
+    a.auditInfo.localTimestamp > b.auditInfo.localTimestamp ? 1 : -1
   )
 
   // Compare deployments
@@ -183,16 +183,10 @@ function assertEqualsDeployment(
   assert.equal(actualDeployment.deployedBy, expectedDeployment.deployedBy)
   assert.equal(actualDeployment.auditInfo.version, expectedDeployment.auditInfo.version)
   assert.deepEqual(actualDeployment.auditInfo.authChain, expectedDeployment.auditInfo.authChain)
-  assert.equal(actualDeployment.auditInfo.originServerUrl, expectedDeployment.auditInfo.originServerUrl)
-  assert.equal(actualDeployment.auditInfo.originTimestamp, expectedDeployment.auditInfo.originTimestamp)
   assert.deepEqual(actualDeployment.auditInfo.migrationData, expectedDeployment.auditInfo.migrationData)
   assert.equal(actualDeployment.auditInfo.isDenylisted, expectedDeployment.auditInfo.isDenylisted)
   assert.deepEqual(actualDeployment.auditInfo.denylistedContent, expectedDeployment.auditInfo.denylistedContent)
-  if (server.getAddress() === actualDeployment.auditInfo.originServerUrl) {
-    assert.equal(actualDeployment.auditInfo.localTimestamp, expectedDeployment.auditInfo.localTimestamp)
-  } else {
-    assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)
-  }
+  assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)
 }
 
 function assertEqualsDeploymentEvent(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
@@ -305,8 +299,6 @@ export function buildDeployment(
     deployedBy: Authenticator.ownerAddress(deployData.authChain),
     auditInfo: {
       version: EntityVersion.V3,
-      originServerUrl: server.getAddress(),
-      originTimestamp: deploymentTimestamp,
       localTimestamp: deploymentTimestamp,
       authChain: deployData.authChain
     }

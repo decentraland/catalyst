@@ -156,7 +156,7 @@ describe('Integration - Deployment Filters', () => {
     originServerUrl: string,
     ...entities: EntityCombo[]
   ): Promise<Timestamp[]> {
-    return deployWithAuditInfo(entities, { originTimestamp, originServerUrl })
+    return deployWithAuditInfo(entities, {})
   }
 
   async function deployWithIdentity(deployedBy: string, ...entities: EntityCombo[]): Promise<Timestamp[]> {
