@@ -3181,10 +3181,10 @@ decentraland-commons@^5.2.0:
   resolved "https://registry.yarnpkg.com/decentraland-commons/-/decentraland-commons-5.2.0.tgz#35a1e9925a6146c3b60d735f1db3848792e012ce"
   integrity sha512-sU6GJmoDM9E/i6T87DMJO8UyFd8ydVgsNaNNPU9sNrZszTGIerfMsKP4WRen8Dne6j5elDQbeDSr08iOl7wl4A==
 
-decentraland-ui@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/decentraland-ui/-/decentraland-ui-3.0.0.tgz#edc4676b62dba869fa21ba9c2a1830a5dd2d22c1"
-  integrity sha512-9WR7UQNDZWWgWGWNrEt+hY9Mw+FSjT1q0kDeQr+oJYwEXlYfJ9EzM74pKBSXM/Xmw7tslZcAnGrqdCCnf7WzSw==
+decentraland-ui@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/decentraland-ui/-/decentraland-ui-3.1.0.tgz#0a9be36ef06d703dc1dfc0cfdb24424ae86b5bed"
+  integrity sha512-yr4vs1q2PFdoTI26xfhn0yxCAJSQH9LYohJUlOm5HL+TMRg9I5F3+WAgPAjF2O8UFSyy/3gifOt4x8ui6HEnoA==
   dependencies:
     "@dcl/schemas" "^0.2.0"
     balloon-css "^0.5.0"
