@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { DeploymentsRepository } from '@katalyst/content/storage/repositories/DeploymentsRepository'
 import { Repository } from '@katalyst/content/storage/Repository'
 import { anything, instance, mock, when } from 'ts-mockito'
@@ -10,7 +11,8 @@ export class MockedRepository {
     when(mockedRepository.taskIf(anything())).thenCall((call) => call(mockedRepository))
     when(mockedRepository.tx(anything())).thenCall((call) => call(mockedRepository))
     when(mockedRepository.txIf(anything())).thenCall((call) => call(mockedRepository))
-    when(mockedRepository.$pool).thenReturn({ end: () => {} })
+    // @ts-ignore
+    when(mockedRepository.$pool).thenReturn({ end: () => Promise.resolve(undefined) })
     return instance(mockedRepository)
   }
 

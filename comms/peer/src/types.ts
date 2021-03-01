@@ -86,7 +86,7 @@ export type PeerConfig = {
   optimizeNetworkInterval?: number
   authHandler?: (msg: string) => Promise<string>
   positionConfig?: PositionConfig
-  statusHandler?: (status: string) => void
+  statusHandler?: (status: PeerStatus) => void
   statsUpdateInterval?: number
   /**
    * If not set, the peer won't execute pings regularly.
@@ -169,3 +169,5 @@ export type PeerRelayData = {
    */
   pendingSuspensionRequests: string[]
 }
+
+export type PeerStatus = 'reconnection-error' | 'id-taken'

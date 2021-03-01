@@ -85,6 +85,9 @@ jobs:
     steps:
       - <<: *attach_root
       - run:
+          name: Build lighthouse
+          command: npx bazel build //comms/lighthouse:server --test_output=all
+      - run:
           name: Run tests
           command: npx bazel test //comms/lighthouse:unit_test --test_output=all
 
