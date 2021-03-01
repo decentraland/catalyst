@@ -131,7 +131,7 @@
     "node-pg-migrate": "^5.9.0",
     "parallel-transform": "^1.2.0",
     "peerjs-server": "https://github.com/decentraland/peerjs-server.git#ed5f4f978cddba907ba3c75f422f4f959848cd20",
-    "pg-promise": "^10.5.7",
+    "pg-promise": "^10.9.4",
     "prom-client": "^13.1.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
