@@ -58,7 +58,8 @@ export async function realmsStatus(daoCache: DAOCache, req: Request, res: Respon
   const realmsStatusData = await realmsStatusCache.get()
   const hotScenesLastUpdate = hotSceneCache.lastUpdate()
 
-  res.status(200).send(realmsStatusData).setHeader('Last-Modified', hotScenesLastUpdate.toUTCString())
+  res.setHeader('Last-Modified', hotScenesLastUpdate.toUTCString())
+  res.status(200).send(realmsStatusData)
 }
 
 let hotSceneCache: TimeRefreshedDataHolder<HotSceneInfo[]>
@@ -74,7 +75,8 @@ export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentC
   const hotScenesData = await hotSceneCache.get()
   const hotScenesLastUpdate = hotSceneCache.lastUpdate()
 
-  res.status(200).send(hotScenesData).setHeader('Last-Modified', hotScenesLastUpdate.toUTCString())
+  res.setHeader('Last-Modified', hotScenesLastUpdate.toUTCString())
+  res.status(200).send(hotScenesData)
 }
 
 async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
