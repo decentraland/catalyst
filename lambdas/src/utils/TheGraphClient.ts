@@ -8,8 +8,7 @@ export class TheGraphClient {
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
   private readonly CACHE_TIMEOUT_DAYS = 1
   private readonly CACHE_TIMEOUT = this.CACHE_TIMEOUT_DAYS * 24 * 60 * 60 * 1000
-  private ethereumTotalWearablesCache: { lastUpdate: number; totalAmount: number }
-  undefined = undefined
+  private ethereumTotalWearablesCache: { lastUpdate: number; totalAmount: number } | undefined = undefined
 
   constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
 
