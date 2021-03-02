@@ -128,7 +128,7 @@ export class TheGraphClient {
     const query: Query<number[], number> = {
       description: 'fetch total amount of wearables',
       subgraph: subgraph,
-      query: QUERY_ALL_WEARABLES,
+      query: QUERY_WEARABLES_TOTAL_AMOUNT,
       mapper: (response) => response.reduce((sum, current) => sum + current, 0),
       default: 0
     }
@@ -258,14 +258,14 @@ export class TheGraphClient {
 const QUERY_WEARABLES_TOTAL_AMOUNT: string = `
   query WearablesAmount() {
     nfts(where: {searchItemType_in: ["wearable_v1", "wearable_v2"]}) {
-      urn
+      1
     }
   }`
 
 const QUERY_ALL_WEARABLES: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: $first, skip: $skip) {
-      1
+      urn
     }
   }`
 

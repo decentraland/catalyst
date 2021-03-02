@@ -19,9 +19,9 @@ export const DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN =
 export const DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
 export const DEFAULT_COLLECTIONS_PROVIDER_URL_MATIC_MUMBAI =
-  'https://thegraph.com/explorer/subgraph/decentraland/collections-matic-mumbai'
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
 export const DEFAULT_COLLECTIONS_PROVIDER_URL_MATIC_MAINNET =
-  'https://thegraph.com/explorer/subgraph/decentraland/collections-matic-mainnet'
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
 
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
