@@ -262,7 +262,7 @@ const QUERY_WEARABLES_TOTAL_AMOUNT: string = `
     }
   }`
 
-const QUERY_ALL_WEARABLES: string = `
+const QUERY_WEARABLES_BY_OWNER: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: $first, skip: $skip) {
       urn
