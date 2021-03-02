@@ -29,15 +29,13 @@ export class TheGraphClient {
    */
   public async findOwnersByWearable(wearables: WearableId[]): Promise<{ urn: string; owner: EthAddress }[]> {
     const ethereumWearablesOwners = await this.getOwnersByWearable(wearables, 'collectionsSubgraph')
-    const missingWearables: WearableId[] = wearables.filter(
-      // Think a better solution
-      (item) => ethereumWearablesOwners.map((w) => w.urn).indexOf(item) < 0
-    )
-    if (missingWearables.length > 0) {
-      const maticWearablesOwners = await this.getOwnersByWearable(missingWearables, 'maticCollectionsSubgraph')
-      return ethereumWearablesOwners.concat(maticWearablesOwners)
+    if (ethereumWearablesOwners.length === wearables.length) {
+      return ethereumWearablesOwners
     }
-    return ethereumWearablesOwners
+    const foundWearables: WearableId[] = ethereumWearablesOwners.map((w) => w.urn)
+    const missingWearables: WearableId[] = wearables.filter((a) => !foundWearables.includes(a))
+    const maticWearablesOwners = await this.getOwnersByWearable(missingWearables, 'maticCollectionsSubgraph')
+    return ethereumWearablesOwners.concat(maticWearablesOwners)
   }
 
   private async getOwnersByWearable(
