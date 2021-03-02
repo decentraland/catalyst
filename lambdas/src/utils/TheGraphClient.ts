@@ -6,6 +6,10 @@ import { WearableId, WearablesFilters } from '../apis/collections/types'
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
+  private readonly CACHE_TIMEOUT_DAYS = 1
+  private readonly CACHE_TIMEOUT = this.CACHE_TIMEOUT_DAYS * 24 * 60 * 60 * 1000
+  private ethereumTotalWearablesCache: { lastUpdate: number; totalAmount: number }
+  undefined = undefined
 
   constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
 
@@ -23,13 +27,32 @@ export class TheGraphClient {
     return this.splitQueryVariablesIntoSlices(query, names, (slicedNames) => ({ names: slicedNames }))
   }
 
+  /**
+   * This method returns all the owners from the given wearables URNs. It looks for them first in Ethereum and then in Matic
+   * @param wearables
+   */
   public async findOwnersByWearable(wearables: WearableId[]): Promise<{ urn: string; owner: EthAddress }[]> {
+    const ethereumWearablesOwners = await this.getOwnersByWearable(wearables, 'collectionsSubgraph')
+    const missingWearables: WearableId[] = wearables.filter(
+      (item) => ethereumWearablesOwners.map((w) => w.urn).indexOf(item) < 0
+    )
+    if (missingWearables.length > 0) {
+      const maticWearablesOwners = await this.getOwnersByWearable(missingWearables, 'maticCollectionsSubgraph')
+      return ethereumWearablesOwners.concat(maticWearablesOwners)
+    }
+    return ethereumWearablesOwners
+  }
+
+  private async getOwnersByWearable(
+    wearables: string[],
+    subgraph: keyof URLs
+  ): Promise<{ urn: string; owner: EthAddress }[]> {
     const query: Query<
       { nfts: { urn: string; owner: { address: EthAddress } }[] },
       { urn: string; owner: EthAddress }[]
     > = {
       description: 'fetch owners by wearable',
-      subgraph: 'collectionsSubgraph',
+      subgraph: subgraph,
       query: QUERY_OWNER_BY_WEARABLES,
       mapper: (response) => response.nfts.map(({ urn, owner }) => ({ urn, owner: owner.address })),
       default: []
@@ -37,27 +60,111 @@ export class TheGraphClient {
     return this.splitQueryVariablesIntoSlices(query, wearables, (slicedWearables) => ({ urns: slicedWearables }))
   }
 
-  public findWearablesByOwner(owner: EthAddress): Promise<WearableId[]> {
+  /**
+   * Given an ethereum address, this method returns all wearables from ethereum and matic that are asociated to it.
+   * @param owner
+   */
+  public async findWearablesByOwner(owner: EthAddress): Promise<WearableId[]> {
+    const ethereumWearables = await this.getWearablesByOwner('collectionsSubgraph', owner)
+    const maticWearables = await this.getWearablesByOwner('maticCollectionsSubgraph', owner)
+
+    return ethereumWearables.concat(maticWearables)
+  }
+
+  private async getWearablesByOwner(subgraph: keyof URLs, owner: string) {
     const query: Query<{ nfts: { urn: string }[] }, WearableId[]> = {
       description: 'fetch wearables by owner',
-      subgraph: 'collectionsSubgraph',
+      subgraph: subgraph,
       query: QUERY_WEARABLES_BY_OWNER,
       mapper: (response) => response.nfts.map(({ urn }) => urn),
       default: []
     }
-    return this.paginatableQuery(query, { owner: owner.toLowerCase() })
+    return await this.paginatableQuery(query, { owner: owner.toLowerCase() })
   }
 
-  public findWearablesByFilters(filters: WearablesFilters, pagination: Pagination): Promise<WearableId[]> {
-    const subgraphQuery = this.buildFilterQuery(filters)
+  /**
+   * Get all wearables paginated that apply the given filter, the order is ethereum wearables first and matic after.
+   * If no filter is given, we don't want to retrieve all wearables as it is a huge load on the server.
+   * @param filters
+   * @param pagination
+   */
+  public async findWearablesByFilters(filters: WearablesFilters, pagination: Pagination): Promise<WearableId[]> {
+    if (this.invalidFilters(filters)) {
+      throw new Error('There must be at least one filter to get all wearables.')
+    }
+    const ethereumWearablesByFilter: WearableId[] = await this.getWearablesByFilter(
+      'collectionsSubgraph',
+      filters,
+      pagination
+    )
+    const ethereumWearablesRetrievedAmount = ethereumWearablesByFilter.length
+    if (ethereumWearablesRetrievedAmount == pagination.limit) {
+      // The total amount of wearables to retrieve is in Ethereum chain
+      return ethereumWearablesByFilter
+    } else {
+      // We need to get the matic wearables too
+      let maticOffset: number = 0
+      if (ethereumWearablesRetrievedAmount == 0) {
+        // We need to calculate how many wearables are in ethereum to calculate the correct offset on matic
+        const ethereumWearablesTotal: number = await this.calculateWearablesTotal('collectionsSubgraph')
+        maticOffset = pagination.offset - ethereumWearablesTotal
+      }
+      const maticPagination: Pagination = {
+        offset: maticOffset,
+        limit: pagination.limit - ethereumWearablesRetrievedAmount
+      }
+      const maticWearablesByFilter: WearableId[] = await this.getWearablesByFilter(
+        'maticCollectionsSubgraph',
+        filters,
+        maticPagination
+      )
+      return ethereumWearablesByFilter.concat(maticWearablesByFilter)
+    }
+  }
+  async calculateWearablesTotal(subgraph: keyof URLs): Promise<number> {
+    if (this.isCacheValid()) {
+      return this.ethereumTotalWearablesCache.totalAmount
+    }
+    const query: Query<number[], number> = {
+      description: 'fetch total amount of wearables',
+      subgraph: subgraph,
+      query: QUERY_ALL_WEARABLES,
+      mapper: (response) => response.reduce((sum, current) => sum + current, 0),
+      default: 0
+    }
+    const total = await this.runQuery(query, {})
+    this.ethereumTotalWearablesCache = { lastUpdate: Date.now(), totalAmount: total }
+    return total
+  }
+
+  private isCacheValid() {
+    return (
+      !!this.ethereumTotalWearablesCache &&
+      this.ethereumTotalWearablesCache.lastUpdate > new Date(Date.now() - this.CACHE_TIMEOUT).getTime()
+    )
+  }
+
+  private async getWearablesByFilter(subgraph: keyof URLs, filters: WearablesFilters, pagination: Pagination) {
     const query: Query<{ items: { urn: string }[] }, WearableId[]> = {
       description: 'fetch wearables by filters',
-      subgraph: 'collectionsSubgraph',
-      query: subgraphQuery,
+      subgraph: subgraph,
+      query: this.buildFilterQuery(filters),
       mapper: (response) => response.items.map(({ urn }) => urn),
       default: []
     }
-    return this.runQuery(query, { ...filters, first: pagination.limit, skip: pagination.offset })
+    const ethereumWearablesByFilter: WearableId[] = await this.runQuery(query, {
+      ...filters,
+      first: pagination.limit,
+      skip: pagination.offset
+    })
+    return ethereumWearablesByFilter
+  }
+
+  private invalidFilters(filters: WearablesFilters): boolean {
+    const noCollectionId: boolean = filters.collectionIds === undefined || filters.collectionIds === []
+    const noWearablesId: boolean = filters.wearableIds === undefined || filters.wearableIds === []
+    const noTextSearch: boolean = filters.textSearch === undefined || filters.textSearch === ''
+    return noCollectionId && noWearablesId && noTextSearch
   }
 
   private buildFilterQuery(filters: WearablesFilters): string {
@@ -148,10 +255,17 @@ export class TheGraphClient {
   }
 }
 
-const QUERY_WEARABLES_BY_OWNER: string = `
+const QUERY_WEARABLES_TOTAL_AMOUNT: string = `
+  query WearablesAmount() {
+    nfts(where: {searchItemType_in: ["wearable_v1", "wearable_v2"]}) {
+      urn
+    }
+  }`
+
+const QUERY_ALL_WEARABLES: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: $first, skip: $skip) {
-      urn
+      1
     }
   }`
 
@@ -196,6 +310,7 @@ type Query<QueryResult, ReturnType> = {
 type URLs = {
   ensSubgraph: string
   collectionsSubgraph: string
+  maticCollectionsSubgraph: string
 }
 
 type Pagination = { offset: number; limit: number }

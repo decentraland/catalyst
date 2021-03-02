@@ -18,6 +18,11 @@ export const DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
 export const DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
+export const DEFAULT_COLLECTIONS_PROVIDER_URL_MATIC_MUMBAI =
+  'https://thegraph.com/explorer/subgraph/decentraland/collections-matic-mumbai'
+export const DEFAULT_COLLECTIONS_PROVIDER_URL_MATIC_MAINNET =
+  'https://thegraph.com/explorer/subgraph/decentraland/collections-matic-mainnet'
+
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
@@ -70,6 +75,7 @@ export const enum EnvironmentConfig {
   CONTENT_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
   COLLECTIONS_PROVIDER_URL,
+  COLLECTIONS_PROVIDER_MATIC_URL,
   COMMIT_HASH,
   CATALYST_VERSION,
   USE_COMPRESSION_MIDDLEWARE,
@@ -131,6 +137,17 @@ export class EnvironmentBuilder {
           ? DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET
           : DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN)
     )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.COLLECTIONS_PROVIDER_MATIC_URL,
+      () =>
+        process.env.COLLECTIONS_PROVIDER_MATIC_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_COLLECTIONS_PROVIDER_URL_MATIC_MAINNET
+          : DEFAULT_COLLECTIONS_PROVIDER_URL_MATIC_MUMBAI)
+    )
+
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')
     this.registerConfigIfNotAlreadySet(
       env,
