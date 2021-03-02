@@ -122,7 +122,7 @@ export class TheGraphClient {
   }
   async calculateWearablesTotal(subgraph: keyof URLs): Promise<number> {
     if (this.isCacheValid()) {
-      return this.ethereumTotalWearablesCache.totalAmount
+      return this.ethereumTotalWearablesCache!.totalAmount
     }
     const query: Query<number[], number> = {
       description: 'fetch total amount of wearables',
