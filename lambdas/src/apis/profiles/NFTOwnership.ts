@@ -5,10 +5,10 @@ import LRU from 'lru-cache'
  * This is a custom cache for storing the owner of a given NFT. It can be configured with a max size of elements
  */
 export abstract class NFTOwnership {
-  private static readonly PAGE_SIZE = 1000 // The graph has a 1000 limit when return the response
+  private static readonly NFT_FRAGMENTS_PER_QUERY = 10
 
-  // The cache lib returns undefined when no value was calculated at all. We will set a 'null' value when we checked the blockchain, and there was no owner
-  private internalCache: LRU<NFTId, EthAddress | null>
+  // The cache lib returns undefined when no value was calculated at all
+  private internalCache: LRU<NFTIdOwnerPair, Owned>
 
   constructor(maxSize: number, maxAge: number) {
     this.internalCache = new LRU({ max: maxSize, maxAge })
@@ -26,8 +26,7 @@ export abstract class NFTOwnership {
       Array.from(check.keys()).map((ethAddress) => [ethAddress.toLowerCase(), new Map()])
     )
 
-    // We will keep the unknown nfts in 2 different structures, so that it is easier to use them later
-    const unknown: NFTId[] = []
+    // Place to store unknown NFTs
     const unknownMap: Map<EthAddress, NFTId[]> = new Map()
 
     // Check what is on the cache
@@ -35,9 +34,10 @@ export abstract class NFTOwnership {
       const lowerCaseAddress = ethAddress.toLowerCase()
       const ethAddressResult = result.get(lowerCaseAddress)!
       for (const nft of nfts) {
-        const owner = this.internalCache.get(nft)
-        if (owner === undefined) {
-          unknown.push(nft)
+        const pair = this.buildOwnerIdPair(lowerCaseAddress, nft)
+        const owned = this.internalCache.get(pair)
+        if (owned === undefined) {
+          // Unknown NFTS
           const unknownNFTsPerAddress = unknownMap.get(lowerCaseAddress)
           if (!unknownNFTsPerAddress) {
             unknownMap.set(lowerCaseAddress, [nft])
@@ -45,44 +45,56 @@ export abstract class NFTOwnership {
             unknownNFTsPerAddress.push(nft)
           }
         } else {
-          ethAddressResult.set(nft, lowerCaseAddress === owner)
+          // NFT ownership already in cache
+          ethAddressResult.set(nft, owned)
         }
       }
     }
 
-    // Fetch owners for unknown nfts
-    const graphFetchResult = await this.fetchActualOwners(unknown)
+    // Check ownership for unknown nfts
+    const graphFetchResult = await this.checkForOwnership(unknownMap)
 
     // Store fetched data in the cache, and add missing information to the result
     for (const [ethAddress, nfts] of unknownMap) {
       const ethAddressResult = result.get(ethAddress)!
-      for (const nfs of nfts) {
-        const owner = graphFetchResult.get(nfs)
-        this.internalCache.set(nfs, owner ?? null) // We are setting undefined values to null. This is so that we know we queried the data, and there is no owner
-        ethAddressResult.set(nfs, owner === ethAddress)
+      const ownedNfts = graphFetchResult.get(ethAddress)!
+      for (const nft of nfts) {
+        const pair = this.buildOwnerIdPair(ethAddress, nft)
+        const owned = ownedNfts.has(nft)
+        this.internalCache.set(pair, owned)
+        ethAddressResult.set(nft, owned)
       }
     }
 
     return result
   }
 
-  protected abstract querySubgraph(ids: NFTId[]): Promise<{ nft: NFTId; owner: EthAddress }[]>
+  protected abstract querySubgraph(
+    nftsToCheck: [EthAddress, NFTId[]][]
+  ): Promise<{ owner: EthAddress; ownedNFTs: NFTId[] }[]>
 
-  private async fetchActualOwners(ids: NFTId[]): Promise<Map<NFTId, EthAddress>> {
-    const result: Map<NFTId, EthAddress> = new Map()
+  /** Return a set of the NFTs that are actually owned by the user */
+  private async checkForOwnership(nftsToCheck: Map<EthAddress, NFTId[]>): Promise<Map<EthAddress, Set<NFTId>>> {
+    const entries = Array.from(nftsToCheck.entries())
+    const result: Map<EthAddress, Set<NFTId>> = new Map()
     let offset = 0
-    while (offset < ids.length) {
-      const slice = ids.slice(offset, offset + NFTOwnership.PAGE_SIZE)
-      const owners = await this.querySubgraph(slice)
-      for (const { nft, owner } of owners) {
-        result.set(nft, owner)
+    while (offset < entries.length) {
+      const slice = entries.slice(offset, offset + NFTOwnership.NFT_FRAGMENTS_PER_QUERY)
+      const queryResult = await this.querySubgraph(slice)
+      for (const { ownedNFTs, owner } of queryResult) {
+        result.set(owner, new Set(ownedNFTs))
       }
-      offset += NFTOwnership.PAGE_SIZE
+      offset += NFTOwnership.NFT_FRAGMENTS_PER_QUERY
     }
 
     return result
+  }
+
+  private buildOwnerIdPair(owner: EthAddress, nftId: NFTId): NFTIdOwnerPair {
+    return `${owner}-${nftId}`
   }
 }
 
+type NFTIdOwnerPair = string
 type Owned = boolean
 type NFTId = string
