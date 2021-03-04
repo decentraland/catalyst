@@ -9,7 +9,7 @@ export class EnsOwnership extends NFTOwnership {
 
   protected async querySubgraph(nftsToCheck: [EthAddress, Name[]][]) {
     const result = await this.theGraphClient.checkForNamesOwnership(nftsToCheck)
-    return result.map(({ names, owner }) => ({ ownedNfts: names, owner }))
+    return result.map(({ names, owner }) => ({ ownedNFTs: names, owner }))
   }
 }
 

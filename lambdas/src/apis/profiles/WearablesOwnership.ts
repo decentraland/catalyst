@@ -12,6 +12,6 @@ export class WearablesOwnership extends NFTOwnership {
 
   protected async querySubgraph(nftsToCheck: [EthAddress, string[]][]) {
     const result = await this.theGraphClient.checkForWearablesOwnership(nftsToCheck)
-    return result.map(({ urns, owner }) => ({ ownedNfts: urns, owner }))
+    return result.map(({ urns, owner }) => ({ ownedNFTs: urns, owner }))
   }
 }
