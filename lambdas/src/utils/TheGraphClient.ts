@@ -46,7 +46,7 @@ export class TheGraphClient {
     const nameList = names.map((name) => `"${name}"`).join(',')
     // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
     return `
-      P${ethAddress}: nfts(where: { owner: "${ethAddress}", category: ens, name_in: [${nameList}] }) {
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", category: ens, name_in: [${nameList}] }, first: 1000) {
         name
       }
     `
@@ -75,7 +75,7 @@ export class TheGraphClient {
     const urnList = wearableIds.map((wearableId) => `"${wearableId}"`).join(',')
     // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
     return `
-      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2"], urn_in: [${urnList}] }) {
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2"], urn_in: [${urnList}] }, first: 1000) {
         urn
       }
     `
