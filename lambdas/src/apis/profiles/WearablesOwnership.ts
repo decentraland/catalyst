@@ -1,4 +1,5 @@
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
+import { EthAddress } from 'dcl-crypto'
 import { NFTOwnership } from './NFTOwnership'
 
 /**
@@ -9,8 +10,8 @@ export class WearablesOwnership extends NFTOwnership {
     super(maxSize, maxAge)
   }
 
-  protected async querySubgraph(urns: string[]) {
-    const result = await this.theGraphClient.findOwnersByWearable(urns)
-    return result.map(({ urn, owner }) => ({ nft: urn, owner }))
+  protected async querySubgraph(nftsToCheck: [EthAddress, string[]][]) {
+    const result = await this.theGraphClient.checkForWearablesOwnership(nftsToCheck)
+    return result.map(({ urns, owner }) => ({ ownedNfts: urns, owner }))
   }
 }

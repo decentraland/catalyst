@@ -23,18 +23,62 @@ export class TheGraphClient {
     return this.splitQueryVariablesIntoSlices(query, names, (slicedNames) => ({ names: slicedNames }))
   }
 
-  public async findOwnersByWearable(wearables: WearableId[]): Promise<{ urn: string; owner: EthAddress }[]> {
-    const query: Query<
-      { nfts: { urn: string; owner: { address: EthAddress } }[] },
-      { urn: string; owner: EthAddress }[]
-    > = {
-      description: 'fetch owners by wearable',
-      subgraph: 'collectionsSubgraph',
-      query: QUERY_OWNER_BY_WEARABLES,
-      mapper: (response) => response.nfts.map(({ urn, owner }) => ({ urn, owner: owner.address })),
+  public async checkForNamesOwnership(
+    namesToCheck: [EthAddress, string[]][]
+  ): Promise<{ owner: EthAddress; names: string[] }[]> {
+    const subgraphQuery = `{` + namesToCheck.map((query) => this.getNamesFragment(query)).join('\n') + `}`
+    const mapper = (response: { [owner: string]: { name: string }[] }) =>
+      Object.entries(response).map(([addressWithPrefix, names]) => ({
+        owner: addressWithPrefix.substring(1),
+        names: names.map(({ name }) => name)
+      }))
+    const query: Query<{ [owner: string]: { name: string }[] }, { owner: EthAddress; names: string[] }[]> = {
+      description: 'check for names ownership',
+      subgraph: 'ensSubgraph',
+      query: subgraphQuery,
+      mapper,
       default: []
     }
-    return this.splitQueryVariablesIntoSlices(query, wearables, (slicedWearables) => ({ urns: slicedWearables }))
+    return this.runQuery(query, {})
+  }
+
+  private getNamesFragment([ethAddress, names]: [EthAddress, string[]]) {
+    const nameList = names.map((name) => `"${name}"`).join(',')
+    // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
+    return `
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", category: ens, name_in: [${nameList}] }) {
+        name
+      }
+    `
+  }
+
+  public async checkForWearablesOwnership(
+    wearableIdsToCheck: [EthAddress, string[]][]
+  ): Promise<{ owner: EthAddress; urns: string[] }[]> {
+    const subgraphQuery = `{` + wearableIdsToCheck.map((query) => this.getWearablesFragment(query)).join('\n') + `}`
+    const mapper = (response: { [owner: string]: { urn: string }[] }) =>
+      Object.entries(response).map(([addressWithPrefix, wearables]) => ({
+        owner: addressWithPrefix.substring(1),
+        urns: wearables.map(({ urn }) => urn)
+      }))
+    const query: Query<{ [owner: string]: { urn: string }[] }, { owner: EthAddress; urns: string[] }[]> = {
+      description: 'check for wearables ownership',
+      subgraph: 'collectionsSubgraph',
+      query: subgraphQuery,
+      mapper,
+      default: []
+    }
+    return this.runQuery(query, {})
+  }
+
+  private getWearablesFragment([ethAddress, wearableIds]: [EthAddress, string[]]) {
+    const urnList = wearableIds.map((wearableId) => `"${wearableId}"`).join(',')
+    // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
+    return `
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2"], urn_in: [${urnList}] }) {
+        urn
+      }
+    `
   }
 
   public findWearablesByOwner(owner: EthAddress): Promise<WearableId[]> {
@@ -152,21 +196,6 @@ const QUERY_WEARABLES_BY_OWNER: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2"]}, first: $first, skip: $skip) {
       urn
-    }
-  }`
-
-const QUERY_OWNER_BY_WEARABLES = `
-  query FetchOwnersByURN($urns: [String]) {
-    nfts(
-        where: {
-            urn_in: $urns,
-            searchItemType_in: ["wearable_v1", "wearable_v2"]
-        })
-    {
-        urn
-        owner {
-          address
-        }
     }
   }`
 
