@@ -173,6 +173,9 @@ function sanitizePagination(offset: number | undefined, limit: number | undefine
 }
 
 async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, Wearable>> {
+  if (wearableIds.length === 0) {
+    return new Map()
+  }
   const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
   return new Map(
     entities
