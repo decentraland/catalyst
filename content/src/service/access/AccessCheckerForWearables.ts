@@ -78,7 +78,7 @@ export class AccessCheckerForWearables {
       const wearableCollectionsAndItems = await this.fetcher.queryGraph<WearableCollectionsAndItems>(
         this.dclCollectionsAccessUrl,
         query,
-        { collection: collection, itemId: itemId }
+        { collection: collection, itemId: parseInt(itemId, 10) }
       )
       return {
         collectionCreator: wearableCollectionsAndItems.collections[0]?.creator,
