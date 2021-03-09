@@ -1,3 +1,4 @@
+import { ChainId } from '@dcl/schemas'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
@@ -58,20 +59,20 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
 }
 
 function getProtocol(chainId: string): string | undefined {
-  switch (chainId) {
-    case '1':
+  switch (parseInt(chainId, 10)) {
+    case ChainId.ETHEREUM_MAINNET:
       return 'ethereum'
-    case '3':
+    case ChainId.ETHEREUM_ROPSTEN:
       return 'ropsten'
-    case '4':
+    case ChainId.ETHEREUM_RINKEBY:
       return 'rinkeby'
-    case '5':
+    case ChainId.ETHEREUM_GOERLI:
       return 'goerli'
-    case '42':
+    case ChainId.ETHEREUM_KOVAN:
       return 'kovan'
-    case '89':
+    case ChainId.MATIC_MAINNET:
       return 'matic'
-    case '13881':
+    case ChainId.MATIC_MUMBAI:
       return 'mumbai'
   }
 }
