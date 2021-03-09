@@ -923,6 +923,13 @@
   dependencies:
     ajv "^7.1.0"
 
+"@dcl/schemas@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-1.0.0.tgz#1b1e6e3d4dc658bfe4fadb39c29bb13ebe34ffca"
+  integrity sha512-1l7GDyIGi3P1lidsS8GuOrEdxSU6o15MALT+DhKOgJ6LTLZUP1bp7VSn/DPCZsR9wfAPP9U6Ig0RwruZtz3AIA==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/urn-resolver@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.0.1.tgz#7b6a7aa667eaab9f5f61e199a5b20135578e8abe"
