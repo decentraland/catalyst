@@ -122,25 +122,27 @@ export async function fetchProfiles(
 // Visible for testing purposes
 export async function fetchProfilesForSnapshots(
   ethAddresses: EthAddress[],
-  client: SmartContentClient,
+  client: SmartContentClient
 ): Promise<ProfileMetadataForSnapshots[]> {
   try {
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
 
     const profilesMetadataForSnapshots: ProfileMetadataForSnapshots[] = entities
       .filter((entity) => !!entity.metadata)
-      .map(entity => {
+      .map((entity) => {
         const ethAddress: EthAddress = entity.pointers[0]
         const metadata: ProfileMetadata = entity.metadata
         const avatar: Avatar = metadata.avatars[0].avatar
         const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
         const profileMetadataForSnapshots: ProfileMetadataForSnapshots = {
           ethAddress,
-          avatars: [{
-            avatar: {
-              snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), avatar, content)
+          avatars: [
+            {
+              avatar: {
+                snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), avatar, content)
+              }
             }
-          }]
+          ]
         }
         return profileMetadataForSnapshots
       })

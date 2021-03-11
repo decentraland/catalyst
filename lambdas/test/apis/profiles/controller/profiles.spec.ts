@@ -1,5 +1,9 @@
 import { WearableId } from '@katalyst/lambdas/apis/collections/types'
-import { fetchProfiles, fetchProfilesForSnapshots, ProfileMetadata } from '@katalyst/lambdas/apis/profiles/controllers/profiles'
+import {
+  fetchProfiles,
+  fetchProfilesForSnapshots,
+  ProfileMetadata
+} from '@katalyst/lambdas/apis/profiles/controllers/profiles'
 import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '@katalyst/lambdas/apis/profiles/WearablesOwnership'
