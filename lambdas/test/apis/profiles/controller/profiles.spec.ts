@@ -87,7 +87,6 @@ describe('profiles', () => {
     const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
 
     expect(profiles.length).toEqual(1)
-    profiles[0].avatars[0].name
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
   })
 
