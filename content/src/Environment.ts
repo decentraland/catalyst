@@ -147,6 +147,7 @@ export enum EnvironmentConfig {
     GARBAGE_COLLECTION_INTERVAL,
     SNAPSHOT_FREQUENCY,
     CUSTOM_DAO,
+    DISABLE_DENYLIST
 }
 
 export class EnvironmentBuilder {
@@ -207,6 +208,7 @@ export class EnvironmentBuilder {
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL    , () => ms('6h'))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SNAPSHOT_FREQUENCY             , () => new Map([[EntityType.SCENE, 100], [EntityType.PROFILE, 500], [EntityType.WEARABLE, 50]]))
         this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO                     , () => process.env.CUSTOM_DAO)
+        this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DISABLE_DENYLIST               , () => process.env.DISABLE_DENYLIST === 'true')
 
         // Please put special attention on the bean registration order.
         // Some beans depend on other beans, so the required beans should be registered before
