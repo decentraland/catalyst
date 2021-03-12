@@ -34,12 +34,18 @@ export async function getProfilesById(
   res: Response
 ) {
   const profileIds: EthAddress[] | undefined = asArray(req.query.id)
+  const fields: string[] | undefined = asArray(req.query.field)
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
-  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
-  res.send(profiles)
+  if (fields && fields.includes('snapshots')) {
+    const profiles = await fetchProfilesForSnapshots(profileIds, client)
+    res.send(profiles)
+  } else {
+    const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
+    res.send(profiles)
+  }
 }
 
 // Visible for testing purposes
@@ -106,6 +112,41 @@ export async function fetchProfiles(
       return { avatars: await Promise.all(avatars) }
     })
     return await Promise.all(result)
+  } catch (error) {
+    console.log(error)
+    LOGGER.warn(error)
+    return []
+  }
+}
+
+// Visible for testing purposes
+export async function fetchProfilesForSnapshots(
+  ethAddresses: EthAddress[],
+  client: SmartContentClient
+): Promise<ProfileMetadataForSnapshots[]> {
+  try {
+    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+
+    const profilesMetadataForSnapshots: ProfileMetadataForSnapshots[] = entities
+      .filter((entity) => !!entity.metadata)
+      .map((entity) => {
+        const ethAddress: EthAddress = entity.pointers[0]
+        const metadata: ProfileMetadata = entity.metadata
+        const avatar: Avatar = metadata.avatars[0].avatar
+        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
+        const profileMetadataForSnapshots: ProfileMetadataForSnapshots = {
+          ethAddress,
+          avatars: [
+            {
+              avatar: {
+                snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), avatar, content)
+              }
+            }
+          ]
+        }
+        return profileMetadataForSnapshots
+      })
+    return profilesMetadataForSnapshots
   } catch (error) {
     console.log(error)
     LOGGER.warn(error)
@@ -181,4 +222,14 @@ type Avatar = {
   snapshots: AvatarSnapshots
   version: number
   wearables: WearableId[]
+}
+
+export type ProfileMetadataForSnapshots = {
+  ethAddress: EthAddress
+  avatars: {
+    avatar: AvatarForSnapshots
+  }[]
+}
+type AvatarForSnapshots = {
+  snapshots: AvatarSnapshots
 }
