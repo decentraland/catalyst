@@ -150,7 +150,8 @@ export enum EnvironmentConfig {
   GARBAGE_COLLECTION_INTERVAL,
   SNAPSHOT_FREQUENCY,
   CUSTOM_DAO,
-  DISABLE_SYNCHRONIZATION
+  DISABLE_SYNCHRONIZATION,
+  DISABLE_DENYLIST
 }
 
 export class EnvironmentBuilder {
@@ -312,6 +313,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.DISABLE_SYNCHRONIZATION,
       () => process.env.DISABLE_SYNCHRONIZATION === 'true'
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.DISABLE_DENYLIST,
+      () => process.env.DISABLE_DENYLIST === 'true'
     )
 
     // Please put special attention on the bean registration order.
