@@ -317,7 +317,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.DISABLE_DENYLIST,
-      () => process.env.DISABLE_DENYLIST === 'true'
+      () => process.env.DISABLE_DENYLIST !== 'false'
     )
 
     // Please put special attention on the bean registration order.
