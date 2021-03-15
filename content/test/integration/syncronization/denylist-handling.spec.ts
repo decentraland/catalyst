@@ -27,6 +27,7 @@ describe('End 2 end - Denylist handling', () => {
     ;[server1, server2, onboardingServer] = await testEnv
       .configServer(SYNC_INTERVAL)
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
+      .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .andBuildMany(3)
   })
 
