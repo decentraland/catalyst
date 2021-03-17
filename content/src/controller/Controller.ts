@@ -15,9 +15,11 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
+import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
+import onFinished from 'on-finished'
 import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
@@ -239,7 +241,11 @@ export class Controller {
       if (data.getLength()) {
         res.setHeader('Content-Length', data.getLength()!.toString())
       }
-      data.asStream().pipe(res)
+      const stream = data.asStream()
+      stream.pipe(res)
+
+      // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
+      onFinished(res, () => destroy(stream))
     } else {
       res.status(404).send()
     }
