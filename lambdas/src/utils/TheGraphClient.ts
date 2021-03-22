@@ -88,12 +88,7 @@ export class TheGraphClient {
       allWearables.set(b.owner, existingUrns.concat(b.urns))
     })
 
-    let response: { owner: EthAddress; urns: string[] }[] = []
-
-    allWearables.forEach((value, key) => {
-      response = response.concat([{ owner: key, urns: value }])
-    })
-    return response
+    return Array.from(allWearables.entries()).map(([owner, urns]) => ({ owner, urns } ))
   }
 
   private async getOwnedWearables(
@@ -148,8 +143,9 @@ export class TheGraphClient {
    * @param owner
    */
   public async findWearablesByOwner(owner: EthAddress): Promise<WearableId[]> {
-    const ethereumWearables = await this.getWearablesByOwner('collectionsSubgraph', owner)
-    const maticWearables = await this.getWearablesByOwner('maticCollectionsSubgraph', owner)
+    const ethereumWearablesPromise = this.getWearablesByOwner('collectionsSubgraph', owner)
+    const maticWearablesPromise = this.getWearablesByOwner('maticCollectionsSubgraph', owner)
+    const [ethereumWearables, maticWearables] = await Promise.all([ethereumWearablesPromise, maticWearablesPromise])
 
     return ethereumWearables.concat(maticWearables)
   }
