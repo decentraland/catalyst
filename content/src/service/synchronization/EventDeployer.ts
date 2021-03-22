@@ -157,12 +157,12 @@ export class EventDeployer {
 
   private reportError(deployment: DeploymentWithAuditInfo, reason: FailureReason, description?: string): Promise<null> {
     const { entityType, entityId, auditInfo } = deployment
-    const { originTimestamp, originServerUrl } = auditInfo
+    const { localTimestamp } = auditInfo
     return this.service.reportErrorDuringSync(
       entityType,
       entityId,
-      originTimestamp,
-      originServerUrl,
+      localTimestamp,
+      'unknown origin',
       reason,
       description
     )

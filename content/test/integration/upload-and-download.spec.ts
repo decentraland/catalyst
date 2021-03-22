@@ -48,9 +48,7 @@ describe('End 2 end deploy test', () => {
     })
 
     const creationTimestamp = await server.deploy(deployData)
-    const serverUrl = 'https://peer.decentraland.org/content'
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server, creationTimestamp)
-    deployment.auditInfo.originServerUrl = serverUrl
+    const deployment = buildDeployment(deployData, entityBeingDeployed, creationTimestamp)
     const deltaTimestamp = Date.now() - creationTimestamp
     expect(deltaTimestamp).toBeLessThanOrEqual(100)
     expect(deltaTimestamp).toBeGreaterThanOrEqual(0)

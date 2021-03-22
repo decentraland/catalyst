@@ -145,7 +145,7 @@ describe('End 2 end - Error handling', () => {
 
     // Deploy the entity
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)

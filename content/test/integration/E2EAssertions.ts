@@ -101,14 +101,15 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
     assert.ok(deployments[i - 1].auditInfo.localTimestamp > deployments[i].auditInfo.localTimestamp)
   }
 
-  // Sort deployments by ascending origin timestamp
-  const sortedDeployments = deployments.sort((a, b) =>
-    a.auditInfo.originTimestamp > b.auditInfo.originTimestamp ? 1 : -1
-  )
+  // Sort fetched deployments by ascending entity id
+  const sortedDeployments = deployments.sort((a, b) => (a.entityId > b.entityId ? 1 : -1))
+
+  // Sort expected deployments by ascending entity id
+  const sortedExpectedDeployments = expectedDeployments.sort((a, b) => (a.entityId > b.entityId ? 1 : -1))
 
   // Compare deployments
   for (let i = 0; i < expectedDeployments.length; i++) {
-    const expectedEvent: ControllerDeployment = expectedDeployments[i]
+    const expectedEvent: ControllerDeployment = sortedExpectedDeployments[i]
     const actualEvent: ControllerDeployment = sortedDeployments[i]
     assertEqualsDeployment(server, actualEvent, expectedEvent)
   }
@@ -157,16 +158,10 @@ function assertEqualsDeployment(
   assert.equal(actualDeployment.deployedBy, expectedDeployment.deployedBy)
   assert.equal(actualDeployment.auditInfo.version, expectedDeployment.auditInfo.version)
   assert.deepEqual(actualDeployment.auditInfo.authChain, expectedDeployment.auditInfo.authChain)
-  assert.equal(actualDeployment.auditInfo.originServerUrl, expectedDeployment.auditInfo.originServerUrl)
-  assert.equal(actualDeployment.auditInfo.originTimestamp, expectedDeployment.auditInfo.originTimestamp)
   assert.deepEqual(actualDeployment.auditInfo.migrationData, expectedDeployment.auditInfo.migrationData)
   assert.equal(actualDeployment.auditInfo.isDenylisted, expectedDeployment.auditInfo.isDenylisted)
   assert.deepEqual(actualDeployment.auditInfo.denylistedContent, expectedDeployment.auditInfo.denylistedContent)
-  if (server.getAddress() === actualDeployment.auditInfo.originServerUrl) {
-    assert.equal(actualDeployment.auditInfo.localTimestamp, expectedDeployment.auditInfo.localTimestamp)
-  } else {
-    assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)
-  }
+  assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)
 }
 
 async function assertEntityIsOnServer(server: TestServer, entity: ControllerEntity) {
@@ -260,7 +255,6 @@ export async function assertContentIsDenylisted(
 export function buildDeployment(
   deployData: DeployData,
   entity: ControllerEntity,
-  server: TestServer,
   deploymentTimestamp: Timestamp
 ): ControllerDeployment {
   return {
@@ -272,8 +266,6 @@ export function buildDeployment(
     deployedBy: Authenticator.ownerAddress(deployData.authChain),
     auditInfo: {
       version: EntityVersion.V3,
-      originServerUrl: server.getAddress(),
-      originTimestamp: deploymentTimestamp,
       localTimestamp: deploymentTimestamp,
       authChain: deployData.authChain
     }

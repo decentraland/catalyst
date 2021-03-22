@@ -54,24 +54,6 @@ describe('Integration - Deployment Sorting', () => {
     assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.ASCENDING)
   })
 
-  it(`When getting all deployments with sortby by origin and asc then the order is correct`, async () => {
-    const deploymentsFromServer1 = await server1.getDeployments({
-      filters: { entityTypes: [EntityType.SCENE] },
-      sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.ASCENDING }
-    })
-
-    assertSortedBy(deploymentsFromServer1, SortingField.ORIGIN_TIMESTAMP, SortingOrder.ASCENDING)
-  })
-
-  it(`When getting all deployments with sortby by origin and desc then the order is correct`, async () => {
-    const deploymentsFromServer1 = await server1.getDeployments({
-      filters: { entityTypes: [EntityType.SCENE] },
-      sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }
-    })
-
-    assertSortedBy(deploymentsFromServer1, SortingField.ORIGIN_TIMESTAMP, SortingOrder.DESCENDING)
-  })
-
   it(`When getting all deployments with sortby by entity and asc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
       filters: { entityTypes: [EntityType.SCENE] },
@@ -84,7 +66,7 @@ describe('Integration - Deployment Sorting', () => {
   it(`When getting all deployments with sortby by entity and desc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
       filters: { entityTypes: [EntityType.SCENE] },
-      sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }
+      sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.DESCENDING }
     })
 
     assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.DESCENDING)
@@ -92,7 +74,6 @@ describe('Integration - Deployment Sorting', () => {
 })
 
 const timestampExtractorMap: Map<SortingField, (deployment: Deployment) => Timestamp> = new Map([
-  [SortingField.ORIGIN_TIMESTAMP, (deployment) => deployment.auditInfo.originTimestamp],
   [SortingField.LOCAL_TIMESTAMP, (deployment) => deployment.auditInfo.localTimestamp],
   [SortingField.ENTITY_TIMESTAMP, (deployment) => deployment.entityTimestamp]
 ])

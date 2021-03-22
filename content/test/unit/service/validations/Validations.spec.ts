@@ -492,8 +492,6 @@ function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
     auditInfo: {
       version: EntityVersion.V2,
       authChain: [],
-      originServerUrl: '',
-      originTimestamp: 10,
       localTimestamp: 20,
       ...auditInfo
     }

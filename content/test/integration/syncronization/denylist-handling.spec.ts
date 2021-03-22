@@ -99,7 +99,7 @@ describe('End 2 end - Denylist handling', () => {
 
     // Deploy the entity
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Wait for servers to sync
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
@@ -138,7 +138,7 @@ describe('End 2 end - Denylist handling', () => {
 
     // Deploy the entity
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Wait for servers to sync
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))

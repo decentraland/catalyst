@@ -38,7 +38,7 @@ describe('End 2 end synchronization tests', function () {
 
     // Deploy the entity to server 1
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Assert that the entity was deployed on server 1
     await assertDeploymentsAreReported(server1, deployment)
@@ -68,14 +68,14 @@ describe('End 2 end synchronization tests', function () {
 
     // Deploy entity 1 on server 1
     const deploymentTimestamp1 = await server1.deploy(deployData1)
-    const deployment1 = buildDeployment(deployData1, entityBeingDeployed1, server1, deploymentTimestamp1)
+    const deployment1 = buildDeployment(deployData1, entityBeingDeployed1, deploymentTimestamp1)
 
     // Wait for servers to sync
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1))
 
     // Deploy entity 2 on server 2
     const deploymentTimestamp2 = await server2.deploy(deployData2)
-    const deployment2 = buildDeployment(deployData2, entityBeingDeployed2, server2, deploymentTimestamp2)
+    const deployment2 = buildDeployment(deployData2, entityBeingDeployed2, deploymentTimestamp2)
 
     // Assert that the entities were deployed on the servers
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
@@ -114,7 +114,7 @@ describe('End 2 end synchronization tests', function () {
 
     // Deploy entity 2
     const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
-    const deployment2 = buildDeployment(deployData2, entity2, server2, deploymentTimestamp2)
+    const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
 
     // Stop server 2
     await server2.stop({ deleteStorage: false, endDbConnection: false })
@@ -124,10 +124,10 @@ describe('End 2 end synchronization tests', function () {
 
     // Deploy entities 1 and 3
     const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
-    const deployment1 = buildDeployment(deployData1, entity1, server1, deploymentTimestamp1)
+    const deployment1 = buildDeployment(deployData1, entity1, deploymentTimestamp1)
 
     const deploymentTimestamp3: Timestamp = await server3.deploy(deployData3)
-    const deployment3 = buildDeployment(deployData3, entity3, server3, deploymentTimestamp3)
+    const deployment3 = buildDeployment(deployData3, entity3, deploymentTimestamp3)
 
     // Wait for servers 1 and 3 to sync
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment3))

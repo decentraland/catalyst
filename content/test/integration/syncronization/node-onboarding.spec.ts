@@ -36,11 +36,11 @@ describe('End 2 end - Node onboarding', function () {
 
     // Deploy entity1 on server 1
     const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
-    const deployment1 = buildDeployment(deployData1, entity1, server1, deploymentTimestamp1)
+    const deployment1 = buildDeployment(deployData1, entity1, deploymentTimestamp1)
 
     // Deploy entity2 on server 2
     const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
-    const deployment2 = buildDeployment(deployData2, entity2, server2, deploymentTimestamp2)
+    const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
 
     // Wait for servers to sync and assert servers 1 and 2 are synced
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
@@ -72,7 +72,7 @@ describe('End 2 end - Node onboarding', function () {
 
     // Deploy entity on server 1
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deployment = buildDeployment(deployData, entity, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entity, deploymentTimestamp)
 
     // Wait for sync and assert servers 1 and 2 are synced
     await assertDeploymentsAreReported(server1, deployment)
