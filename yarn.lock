@@ -3148,13 +3148,13 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.2.0.tgz#c8e2344bd8a2cbc72b043274d4f4315c3c246125"
-  integrity sha512-kqaEfnEsamgR8bjkE+mSPT4iL+vPlLj+rySJATdJx8PUe4/YQTuOoct0su9NXo5jqRNFFoirtgUAn8QL0PE/2Q==
+dcl-catalyst-client@^4.0.3-20210322124812.commit-b5a1484:
+  version "4.0.3-20210322124812.commit-b5a1484"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-4.0.3-20210322124812.commit-b5a1484.tgz#9657a22226cfccd8e11380a0ca18e10ab9a9323a"
+  integrity sha512-1JtHQt5/7AQ3+X68vmtOpmjEhSOZt9Xz3MzD4yLyIQpl++uVAQXnrlJ42Ce0GMx3APRbansxmO0iLl4Rxs+DeQ==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^2.1.0"
+    dcl-catalyst-commons "^3.0.0"
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
 
@@ -3162,6 +3162,27 @@ dcl-catalyst-commons@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.1.0.tgz#8ccd222ef48a585bddafd6fd34e46adccd040475"
   integrity sha512-zbPndghPml/XhHEpSzOUDy0xmJGSE5bqeCjRfd7TAbaxsB8SyuAGjb093HLuVyGGCcVluAMhMMDKjr+dVZG9Uw==
+  dependencies:
+    "@types/isomorphic-fetch" "0.0.35"
+    "@types/ms" "^0.7.31"
+    "@typescript-eslint/eslint-plugin" "^4.9.0"
+    "@typescript-eslint/parser" "^4.9.0"
+    abort-controller "^3.0.0"
+    blob-to-buffer "^1.2.9"
+    cids "^0.8.0"
+    cross-fetch "^3.0.5"
+    dcl-crypto "^2.1.0"
+    eslint "^7.14.0"
+    eslint-config-prettier "^7.2.0"
+    eslint-plugin-prettier "^3.2.0"
+    ms "^2.1.2"
+    multihashing-async "^0.8.1"
+    prettier "^2.2.1"
+
+dcl-catalyst-commons@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.0.tgz#241f4c73651ed3dedd3675783d3cb161b2d6eafc"
+  integrity sha512-EjjeecUUejnc1Qo68sqxUgXn4QCMtU5Cb69zuwwQ7M7s28HByWL+ETthB9Sio8TcSzLdb3PDga+Op6vFU8TJMA==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
