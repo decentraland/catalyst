@@ -162,7 +162,7 @@ export class EventDeployer {
       entityType,
       entityId,
       localTimestamp,
-      'unknown origin',
+      'https://peer.decentraland.org/content',
       reason,
       description
     )
