@@ -4,10 +4,7 @@ import {
   assertEntityIsOverwrittenBy,
   assertFileIsNotOnServer,
   assertFileIsOnServer,
-  assertHistoryOnServerHasEvents,
-  buildDeployment,
-  buildEvent,
-  buildEventWithName
+  buildDeployment
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
@@ -39,17 +36,13 @@ describe('End 2 end - Node onboarding', function () {
 
     // Deploy entity1 on server 1
     const deploymentTimestamp1: Timestamp = await server1.deploy(deployData1)
-    const deploymentEvent1 = buildEvent(entity1, server1, deploymentTimestamp1)
-    const deployment1 = buildDeployment(deployData1, entity1, server1, deploymentTimestamp1)
+    const deployment1 = buildDeployment(deployData1, entity1, deploymentTimestamp1)
 
     // Deploy entity2 on server 2
     const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
-    const deploymentEvent2 = buildEvent(entity2, server2, deploymentTimestamp2)
-    const deployment2 = buildDeployment(deployData2, entity2, server2, deploymentTimestamp2)
+    const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
 
     // Wait for servers to sync and assert servers 1 and 2 are synced
-    await awaitUntil(() => assertHistoryOnServerHasEvents(server1, deploymentEvent1, deploymentEvent2))
-    await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent1, deploymentEvent2))
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1, deployment2))
     await assertFileIsOnServer(server1, entity1ContentHash)
@@ -60,7 +53,6 @@ describe('End 2 end - Node onboarding', function () {
     await server3.start()
 
     // Assert server 3 has all the history
-    await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEvent1, deploymentEvent2))
     await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment2))
 
     // Make sure that is didn't download overwritten content
@@ -80,12 +72,9 @@ describe('End 2 end - Node onboarding', function () {
 
     // Deploy entity on server 1
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deploymentEvent = buildEvent(entity, server1, deploymentTimestamp)
-    const deployment = buildDeployment(deployData, entity, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entity, deploymentTimestamp)
 
     // Wait for sync and assert servers 1 and 2 are synced
-    await assertHistoryOnServerHasEvents(server1, deploymentEvent)
-    await awaitUntil(() => assertHistoryOnServerHasEvents(server2, deploymentEvent))
     await assertDeploymentsAreReported(server1, deployment)
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
     await assertFileIsOnServer(server1, entityContentHash)
@@ -97,13 +86,6 @@ describe('End 2 end - Node onboarding', function () {
     // Start server 3
     await server3.start()
 
-    // Assert server 3 has all the history, the name and origin server url remain the same
-    const deploymentEventWithoutName = buildEventWithName(
-      entity,
-      encodeURIComponent(server1.getAddress()),
-      deploymentTimestamp
-    )
-    await awaitUntil(() => assertHistoryOnServerHasEvents(server3, deploymentEventWithoutName))
     await awaitUntil(() => assertDeploymentsAreReported(server3, deployment))
 
     // Make sure that even the content is properly propagated

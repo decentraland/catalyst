@@ -3148,20 +3148,20 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-3.2.0.tgz#c8e2344bd8a2cbc72b043274d4f4315c3c246125"
-  integrity sha512-kqaEfnEsamgR8bjkE+mSPT4iL+vPlLj+rySJATdJx8PUe4/YQTuOoct0su9NXo5jqRNFFoirtgUAn8QL0PE/2Q==
+dcl-catalyst-client@^4.0.3-20210322145441.commit-8c2b9c7:
+  version "4.0.3-20210322145441.commit-8c2b9c7"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-4.0.3-20210322145441.commit-8c2b9c7.tgz#6c0e8be48f0959b1176b2cab82915f50ee700195"
+  integrity sha512-S34Su4xR8/dNZSfVKYGjuyKe9B6jeUQSQXXVR8KAXJjeoH40KAyTnVov1eB+5DqnGli94iWRnFon9q9PPZVtnw==
   dependencies:
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^2.1.0"
+    dcl-catalyst-commons "^3.0.1"
     dcl-crypto "^2.2.0"
     isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
 
-dcl-catalyst-commons@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-2.1.0.tgz#8ccd222ef48a585bddafd6fd34e46adccd040475"
-  integrity sha512-zbPndghPml/XhHEpSzOUDy0xmJGSE5bqeCjRfd7TAbaxsB8SyuAGjb093HLuVyGGCcVluAMhMMDKjr+dVZG9Uw==
+dcl-catalyst-commons@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.1.tgz#f4d5ad8861553ee04702bbfd5ea307b643b8b914"
+  integrity sha512-Bqp4MwDIHEFV8buPW5ThYdZoFCI+0bBC3qZ1B8DAFqywwM2dGHpQJwDVaqyj2lGaS7EbHyeQY0na5o7jMUL9Xw==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"

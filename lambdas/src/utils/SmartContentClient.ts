@@ -15,11 +15,8 @@ import {
   EntityType,
   Fetcher,
   LegacyAuditInfo,
-  LegacyDeploymentHistory,
-  LegacyPartialDeploymentHistory,
   Pointer,
   RequestOptions,
-  ServerName,
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -59,29 +56,13 @@ export class SmartContentClient implements ContentAPI {
     return client.fetchAuditInfo(type, id, options)
   }
 
-  async fetchFullHistory(
-    query?: { from?: Timestamp; to?: Timestamp; serverName?: ServerName },
-    options?: RequestOptions
-  ): Promise<LegacyDeploymentHistory> {
+  async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
     const client = await this.getClient()
-    return client.fetchFullHistory(query, options)
-  }
-
-  async fetchHistory(
-    query?: { from?: Timestamp; to?: Timestamp; serverName?: ServerName; offset?: number; limit?: number },
-    options?: RequestOptions
-  ): Promise<LegacyPartialDeploymentHistory> {
-    const client = await this.getClient()
-    return client.fetchHistory(query, options)
-  }
-
-  async fetchStatus(options?: RequestOptions): Promise<ServerStatus> {
-    const client = await this.getClient()
-    return client.fetchStatus(options)
+    return client.fetchContentStatus(options)
   }
 
   async fetchAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-    deploymentOptions?: DeploymentOptions<T>,
+    deploymentOptions: DeploymentOptions<T>,
     options?: RequestOptions
   ): Promise<T[]> {
     const client = await this.getClient()
@@ -116,6 +97,10 @@ export class SmartContentClient implements ContentAPI {
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<Timestamp> {
     throw new Error('New deployments are currently not supported')
+  }
+
+  getContentUrl(): string {
+    throw new Error('Get content url is currently not supported')
   }
 
   getExternalContentServerUrl(): string {
