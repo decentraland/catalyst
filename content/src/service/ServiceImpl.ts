@@ -197,28 +197,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
         const localTimestamp = Date.now()
 
-        let auditInfoComplete: AuditInfo
-
-        if (fix) {
-          const failedDeployment = (await this.failedDeploymentsManager.getFailedDeployment(
-            transaction.failedDeployments,
-            entity.type,
-            entity.id
-          ))!
-          auditInfoComplete = {
-            ...auditInfo,
-            originTimestamp: failedDeployment.originTimestamp,
-            originServerUrl: failedDeployment.originServerUrl,
-            localTimestamp
-          }
-        } else {
-          auditInfoComplete = {
-            originTimestamp: localTimestamp,
-            originServerUrl:
-              this.identityProvider.getIdentityInDAO()?.address ?? 'https://peer.decentraland.org/content',
-            ...auditInfo,
-            localTimestamp
-          }
+        const auditInfoComplete: AuditInfo = {
+          ...auditInfo,
+          localTimestamp
         }
 
         if (!isEntityAlreadyDeployed) {

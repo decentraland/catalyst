@@ -13,7 +13,6 @@ import {
   EntityType,
   PartialDeploymentHistory,
   Pointer,
-  ServerAddress,
   SortingField,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -178,12 +177,6 @@ export class DeploymentManager {
 }
 
 export type Deployment = Omit<ControllerDeployment, 'content'> & { content?: Map<string, ContentFileHash> }
-
-export type ExtendedDeploymentFilters = DeploymentFilters & {
-  fromOriginTimestamp?: Timestamp
-  toOriginTimestamp?: Timestamp
-  originServerUrl?: ServerAddress
-}
 
 export type DeploymentPointerChanges = {
   entityType: EntityType
