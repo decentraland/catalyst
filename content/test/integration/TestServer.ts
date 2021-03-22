@@ -17,7 +17,6 @@ import {
   EntityId,
   EntityType,
   LegacyAuditInfo,
-  LegacyPartialDeploymentHistory,
   Pointer,
   ServerAddress,
   ServerStatus,
@@ -76,10 +75,6 @@ export class TestServer extends Server {
     return this.client.fetchEntitiesByPointers(type, pointers)
   }
 
-  getHistory(): Promise<LegacyPartialDeploymentHistory> {
-    return this.client.fetchHistory()
-  }
-
   getDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
     options?: DeploymentOptions<T>
   ): Promise<ControllerDeployment[]> {
@@ -89,7 +84,7 @@ export class TestServer extends Server {
   }
 
   getStatus(): Promise<ServerStatus> {
-    return this.client.fetchStatus()
+    return this.client.fetchContentStatus()
   }
 
   getEntitiesByIds(type: EntityType, ...ids: EntityId[]): Promise<ControllerEntity[]> {

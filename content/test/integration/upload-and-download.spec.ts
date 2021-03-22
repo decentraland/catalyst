@@ -2,13 +2,7 @@ import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean } from '@katalyst/content/Environment'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
-import {
-  assertDeploymentFailsWith,
-  assertDeploymentsAreReported,
-  assertHistoryOnServerHasEvents,
-  buildDeployment,
-  buildEventWithName
-} from './E2EAssertions'
+import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData, DeployData } from './E2ETestUtils'
 import { TestServer } from './TestServer'
@@ -55,7 +49,6 @@ describe('End 2 end deploy test', () => {
 
     const creationTimestamp = await server.deploy(deployData)
     const serverUrl = 'https://peer.decentraland.org/content'
-    const deploymentEvent = buildEventWithName(entityBeingDeployed, encodeURIComponent(serverUrl), creationTimestamp)
     const deployment = buildDeployment(deployData, entityBeingDeployed, server, creationTimestamp)
     deployment.auditInfo.originServerUrl = serverUrl
     const deltaTimestamp = Date.now() - creationTimestamp
@@ -74,7 +67,6 @@ describe('End 2 end deploy test', () => {
     const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
     await validateReceivedData(scenesByPointer, deployData)
 
-    await assertHistoryOnServerHasEvents(server, deploymentEvent)
     await assertDeploymentsAreReported(server, deployment)
   })
 

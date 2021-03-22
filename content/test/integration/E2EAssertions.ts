@@ -9,7 +9,6 @@ import {
   EntityVersion,
   Hashing,
   LegacyAuditInfo,
-  LegacyDeploymentEvent,
   ServerAddress,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -75,31 +74,6 @@ export async function assertEntitiesAreActiveOnServer(server: TestServer, ...ent
     assertEntityIsTheSameAsDeployment(entitiesById.get(deployment.entityId)!, deployment)
     assert.equal(deployment.auditInfo.overwrittenBy, undefined)
     await assertFileIsOnServer(server, deployment.entityId)
-  }
-}
-
-/** Please set the expected events from older to newer */
-export async function assertHistoryOnServerHasEvents(server: TestServer, ...expectedEvents: LegacyDeploymentEvent[]) {
-  const { events: deploymentHistory } = await server.getHistory()
-  assert.equal(
-    deploymentHistory.length,
-    expectedEvents.length,
-    `Expected to find ${
-      expectedEvents.length
-    } deployments in history on server ${server.getAddress()}. Instead, found ${deploymentHistory.length}.`
-  )
-  const { historySize } = await server.getStatus()
-  assert.equal(
-    historySize,
-    expectedEvents.length,
-    `Expected to find a history of size ${
-      expectedEvents.length
-    } on the status on ${server.getAddress()}. Instead, found ${historySize}.`
-  )
-  for (let i = 0; i < expectedEvents.length; i++) {
-    const expectedEvent: LegacyDeploymentEvent = expectedEvents[expectedEvents.length - 1 - i]
-    const actualEvent: LegacyDeploymentEvent = deploymentHistory[i]
-    assertEqualsDeploymentEvent(actualEvent, expectedEvent)
   }
 }
 
@@ -193,13 +167,6 @@ function assertEqualsDeployment(
   } else {
     assert.ok(actualDeployment.auditInfo.localTimestamp >= expectedDeployment.auditInfo.localTimestamp)
   }
-}
-
-function assertEqualsDeploymentEvent(actualEvent: LegacyDeploymentEvent, expectedEvent: LegacyDeploymentEvent) {
-  assert.equal(actualEvent.entityId, expectedEvent.entityId)
-  assert.equal(actualEvent.entityType, expectedEvent.entityType)
-  assert.equal(actualEvent.timestamp, expectedEvent.timestamp)
-  assert.equal(actualEvent.serverName, expectedEvent.serverName)
 }
 
 async function assertEntityIsOnServer(server: TestServer, entity: ControllerEntity) {
@@ -310,23 +277,6 @@ export function buildDeployment(
       localTimestamp: deploymentTimestamp,
       authChain: deployData.authChain
     }
-  }
-}
-
-export function buildEvent(entity: ControllerEntity, server: TestServer, timestamp: Timestamp): LegacyDeploymentEvent {
-  return buildEventWithName(entity, encodeURIComponent(server.getAddress()), timestamp)
-}
-
-export function buildEventWithName(
-  entity: ControllerEntity,
-  name: string,
-  timestamp: Timestamp
-): LegacyDeploymentEvent {
-  return {
-    serverName: name,
-    entityId: entity.id,
-    entityType: entity.type,
-    timestamp
   }
 }
 

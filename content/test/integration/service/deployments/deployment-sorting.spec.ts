@@ -1,4 +1,4 @@
-import { Deployment, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
+import { Deployment, EntityType, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { assertDeploymentsCount } from '../../E2EAssertions'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
@@ -47,6 +47,7 @@ describe('Integration - Deployment Sorting', () => {
 
   it(`When getting all deployments with sortby by local and asc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
       sortBy: { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING }
     })
 
@@ -55,6 +56,7 @@ describe('Integration - Deployment Sorting', () => {
 
   it(`When getting all deployments with sortby by origin and asc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
       sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.ASCENDING }
     })
 
@@ -63,6 +65,7 @@ describe('Integration - Deployment Sorting', () => {
 
   it(`When getting all deployments with sortby by origin and desc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
       sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }
     })
 
@@ -71,6 +74,7 @@ describe('Integration - Deployment Sorting', () => {
 
   it(`When getting all deployments with sortby by entity and asc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
       sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.ASCENDING }
     })
 
@@ -79,6 +83,7 @@ describe('Integration - Deployment Sorting', () => {
 
   it(`When getting all deployments with sortby by entity and desc then the order is correct`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
       sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING }
     })
 
