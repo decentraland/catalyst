@@ -923,6 +923,13 @@
   dependencies:
     ajv "^7.1.0"
 
+"@dcl/schemas@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-1.0.0.tgz#1b1e6e3d4dc658bfe4fadb39c29bb13ebe34ffca"
+  integrity sha512-1l7GDyIGi3P1lidsS8GuOrEdxSU6o15MALT+DhKOgJ6LTLZUP1bp7VSn/DPCZsR9wfAPP9U6Ig0RwruZtz3AIA==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/urn-resolver@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.0.1.tgz#7b6a7aa667eaab9f5f61e199a5b20135578e8abe"
@@ -1360,6 +1367,13 @@
   resolved "https://registry.yarnpkg.com/@types/cors/-/cors-2.8.10.tgz#61cc8469849e5bcdd0c7044122265c39cec10cf4"
   integrity sha512-C7srjHiVG3Ey1nR6d511dtDkCEjxuN9W1HWAEjGq8kpcwmNM6JJkpC0xvabM7BXTG2wDq8Eu33iH9aQKa7IvLQ==
 
+"@types/destroy@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@types/destroy/-/destroy-1.0.0.tgz#2a5a28fdfb1d5e929019f1c916a1c19370824961"
+  integrity sha512-nE3ePJLWPRu/qFHN8mj3fWnkr9K9ezwoiG4yOis2DuLeAawlnOOT/pM29JQkityrwfEvkblU5O9iS1bsiMqtDw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/estree@*":
   version "0.0.40"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.40.tgz#0e6cb9b9bbd098031fa19e4b4e8131bc70e5de13"
@@ -1501,6 +1515,13 @@
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/@types/object-path/-/object-path-0.11.0.tgz#0b744309b2573dc8bf867ef589b6288be998e602"
   integrity sha512-/tuN8jDbOXcPk+VzEVZzzAgw1Byz7s/itb2YI10qkSyy6nykJH02DuhfrflxVdAdE7AZ91h5X6Cn0dmVdFw2TQ==
+
+"@types/on-finished@^2.3.1":
+  version "2.3.1"
+  resolved "https://registry.yarnpkg.com/@types/on-finished/-/on-finished-2.3.1.tgz#4537f9f2b47b3ba0b92c14a4bcc0f755aeda3484"
+  integrity sha512-mzVYaYcFs5Jd2n/O6uYIRUsFRR1cHyZLRvkLCU0E7+G5WhY0qBDAR5fUCeZbvecYOSh9ikhlesyi2UfI8B9ckQ==
+  dependencies:
+    "@types/node" "*"
 
 "@types/parallel-transform@^1.1.0":
   version "1.1.0"
@@ -3380,7 +3401,7 @@ des.js@^1.0.0:
     inherits "^2.0.1"
     minimalistic-assert "^1.0.0"
 
-destroy@~1.0.4:
+destroy@^1.0.4, destroy@~1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.0.4.tgz#978857442c44749e4206613e37946205826abd80"
   integrity sha1-l4hXRCxEdJ5CBmE+N5RiBYJqvYA=

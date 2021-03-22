@@ -1,3 +1,4 @@
+import { BaseBlockchainAsset, parseUrn } from '@dcl/urn-resolver'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
@@ -23,36 +24,101 @@ export class TheGraphClient {
     return this.splitQueryVariablesIntoSlices(query, names, (slicedNames) => ({ names: slicedNames }))
   }
 
-  /**
-   * This method returns all the owners from the given wearables URNs. It looks for them first in Ethereum and then in Matic
-   * @param wearables
-   */
-  public async findOwnersByWearable(wearables: WearableId[]): Promise<{ urn: string; owner: EthAddress }[]> {
-    const ethereumWearablesOwners = await this.getOwnersByWearable(wearables, 'collectionsSubgraph')
-    if (ethereumWearablesOwners.length === wearables.length) {
-      return ethereumWearablesOwners
-    }
-    const foundWearables: WearableId[] = ethereumWearablesOwners.map((w) => w.urn)
-    const missingWearables: WearableId[] = wearables.filter((a) => !foundWearables.includes(a))
-    const maticWearablesOwners = await this.getOwnersByWearable(missingWearables, 'maticCollectionsSubgraph')
-    return ethereumWearablesOwners.concat(maticWearablesOwners)
-  }
-
-  private async getOwnersByWearable(
-    wearables: string[],
-    subgraph: keyof URLs
-  ): Promise<{ urn: string; owner: EthAddress }[]> {
-    const query: Query<
-      { nfts: { urn: string; owner: { address: EthAddress } }[] },
-      { urn: string; owner: EthAddress }[]
-    > = {
-      description: 'fetch owners by wearable',
-      subgraph: subgraph,
-      query: QUERY_OWNER_BY_WEARABLES,
-      mapper: (response) => response.nfts.map(({ urn, owner }) => ({ urn, owner: owner.address })),
+  public async checkForNamesOwnership(
+    namesToCheck: [EthAddress, string[]][]
+  ): Promise<{ owner: EthAddress; names: string[] }[]> {
+    const subgraphQuery = `{` + namesToCheck.map((query) => this.getNamesFragment(query)).join('\n') + `}`
+    const mapper = (response: { [owner: string]: { name: string }[] }) =>
+      Object.entries(response).map(([addressWithPrefix, names]) => ({
+        owner: addressWithPrefix.substring(1),
+        names: names.map(({ name }) => name)
+      }))
+    const query: Query<{ [owner: string]: { name: string }[] }, { owner: EthAddress; names: string[] }[]> = {
+      description: 'check for names ownership',
+      subgraph: 'ensSubgraph',
+      query: subgraphQuery,
+      mapper,
       default: []
     }
-    return this.splitQueryVariablesIntoSlices(query, wearables, (slicedWearables) => ({ urns: slicedWearables }))
+    return this.runQuery(query, {})
+  }
+
+  private getNamesFragment([ethAddress, names]: [EthAddress, string[]]) {
+    const nameList = names.map((name) => `"${name}"`).join(',')
+    // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
+    return `
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", category: ens, name_in: [${nameList}] }, first: 1000) {
+        name
+      }
+    `
+  }
+
+  /**
+   * This method returns all the owners from the given wearables URNs. It looks for them first in Ethereum and then in Matic
+   * @param wearableIdsToCheck pairs of ethAddress and a list of urns to check ownership
+   * @returns the pairs of ehtAddress and list of urns
+   */
+  public async checkForWearablesOwnership(
+    wearableIdsToCheck: [EthAddress, string[]][]
+  ): Promise<{ owner: EthAddress; urns: string[] }[]> {
+    const ethereumWearablesOwners: { owner: EthAddress; urns: string[] }[] = await this.getOwnedWearables(
+      wearableIdsToCheck,
+      'ethereum',
+      'collectionsSubgraph'
+    )
+    const maticWearablesOwners: { owner: EthAddress; urns: string[] }[] = await this.getOwnedWearables(
+      wearableIdsToCheck,
+      'matic',
+      'maticCollectionsSubgraph'
+    )
+    return concatWearables(ethereumWearablesOwners, maticWearablesOwners)
+  }
+
+  private async getOwnedWearables(
+    wearableIdsToCheck: [string, string[]][],
+    blockchain: string,
+    subgraph: keyof URLs
+  ): Promise<{ owner: EthAddress; urns: string[] }[]> {
+    const wearablesToCheckInEth: [EthAddress, string[]][] = wearableIdsToCheck.map((a) => [
+      a[0],
+      a[1].filter(async (a) => ((await parseUrn(a)) as BaseBlockchainAsset).blockchain == blockchain)
+    ])
+
+    const ethereumWearablesOwners: { owner: EthAddress; urns: string[] }[] = await this.getOwnersByWearable(
+      wearablesToCheckInEth,
+      subgraph
+    )
+    return ethereumWearablesOwners
+  }
+
+  private getOwnersByWearable(
+    wearableIdsToCheck: [string, string[]][],
+    subgraph: keyof URLs
+  ): Promise<{ owner: EthAddress; urns: string[] }[]> {
+    const subgraphQuery = `{` + wearableIdsToCheck.map((query) => this.getWearablesFragment(query)).join('\n') + `}`
+    const mapper = (response: { [owner: string]: { urn: string }[] }) =>
+      Object.entries(response).map(([addressWithPrefix, wearables]) => ({
+        owner: addressWithPrefix.substring(1),
+        urns: wearables.map(({ urn }) => urn)
+      }))
+    const query: Query<{ [owner: string]: { urn: string }[] }, { owner: EthAddress; urns: string[] }[]> = {
+      description: 'check for wearables ownership',
+      subgraph: subgraph,
+      query: subgraphQuery,
+      mapper,
+      default: []
+    }
+    return this.runQuery(query, {})
+  }
+
+  private getWearablesFragment([ethAddress, wearableIds]: [EthAddress, string[]]) {
+    const urnList = wearableIds.map((wearableId) => `"${wearableId}"`).join(',')
+    // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
+    return `
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2"], urn_in: [${urnList}] }, first: 1000) {
+        urn
+      }
+    `
   }
 
   /**
@@ -184,21 +250,6 @@ const QUERY_WEARABLES_BY_OWNER: string = `
     }
   }`
 
-const QUERY_OWNER_BY_WEARABLES = `
-  query FetchOwnersByURN($urns: [String]) {
-    nfts(
-        where: {
-            urn_in: $urns,
-            searchItemType_in: ["wearable_v1", "wearable_v2"]
-        })
-    {
-        urn
-        owner {
-          address
-        }
-    }
-  }`
-
 const QUERY_OWNER_BY_NAME = `
   query FetchOwnersByName($names: [String]) {
     nfts(
@@ -229,3 +280,24 @@ type URLs = {
 }
 
 type Pagination = { offset: number; limit: number }
+function concatWearables(
+  ethereumWearablesOwners: { owner: EthAddress; urns: string[] }[],
+  maticWearablesOwners: { owner: EthAddress; urns: string[] }[]
+) {
+  const allWearables: Map<string, string[]> = new Map<string, string[]>()
+
+  ethereumWearablesOwners.forEach((a) => {
+    allWearables.set(a.owner, a.urns)
+  })
+  maticWearablesOwners.forEach((b) => {
+    const existingUrns = allWearables.get(b.owner) ?? []
+    allWearables.set(b.owner, existingUrns.concat(b.urns))
+  })
+
+  const response: { owner: EthAddress; urns: string[] }[] = []
+
+  allWearables.forEach((value, key) => {
+    response.concat([{ owner: key, urns: value }])
+  })
+  return response
+}

@@ -11,6 +11,7 @@ ts_library(
         "//contracts",
         "//commons/utils",
         "//commons/servers",
+        "@npm//@dcl/schemas",
         "@npm//@types",
         "@npm//@types/node",
         "@npm//@types/compression",

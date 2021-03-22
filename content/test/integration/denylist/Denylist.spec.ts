@@ -32,6 +32,7 @@ describe('Integration - Denylist', () => {
       .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
       .withBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withAddress(ownerIdentity.address))
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, decentralandIdentity.address)
+      .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .andBuild()
 
     await server.start()

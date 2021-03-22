@@ -30,6 +30,7 @@ describe('End 2 end - Error handling', () => {
       .configServer('5s')
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
+      .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .withBean(Bean.ACCESS_CHECKER, accessChecker)
       .andBuildMany(2)
   })
