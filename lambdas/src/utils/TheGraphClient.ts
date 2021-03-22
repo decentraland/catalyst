@@ -71,7 +71,29 @@ export class TheGraphClient {
       'matic',
       'maticCollectionsSubgraph'
     )
-    return concatWearables(ethereumWearablesOwners, maticWearablesOwners)
+    return this.concatWearables(ethereumWearablesOwners, maticWearablesOwners)
+  }
+
+  private concatWearables(
+    ethereumWearablesOwners: { owner: EthAddress; urns: string[] }[],
+    maticWearablesOwners: { owner: EthAddress; urns: string[] }[]
+  ) {
+    const allWearables: Map<string, string[]> = new Map<string, string[]>()
+
+    ethereumWearablesOwners.forEach((a) => {
+      allWearables.set(a.owner, a.urns)
+    })
+    maticWearablesOwners.forEach((b) => {
+      const existingUrns = allWearables.get(b.owner) ?? []
+      allWearables.set(b.owner, existingUrns.concat(b.urns))
+    })
+
+    let response: { owner: EthAddress; urns: string[] }[] = []
+
+    allWearables.forEach((value, key) => {
+      response = response.concat([{ owner: key, urns: value }])
+    })
+    return response
   }
 
   private async getOwnedWearables(
@@ -280,24 +302,3 @@ type URLs = {
 }
 
 type Pagination = { offset: number; limit: number }
-function concatWearables(
-  ethereumWearablesOwners: { owner: EthAddress; urns: string[] }[],
-  maticWearablesOwners: { owner: EthAddress; urns: string[] }[]
-) {
-  const allWearables: Map<string, string[]> = new Map<string, string[]>()
-
-  ethereumWearablesOwners.forEach((a) => {
-    allWearables.set(a.owner, a.urns)
-  })
-  maticWearablesOwners.forEach((b) => {
-    const existingUrns = allWearables.get(b.owner) ?? []
-    allWearables.set(b.owner, existingUrns.concat(b.urns))
-  })
-
-  const response: { owner: EthAddress; urns: string[] }[] = []
-
-  allWearables.forEach((value, key) => {
-    response.concat([{ owner: key, urns: value }])
-  })
-  return response
-}
