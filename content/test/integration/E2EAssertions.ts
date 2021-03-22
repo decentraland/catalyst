@@ -9,7 +9,6 @@ import {
   EntityVersion,
   Hashing,
   LegacyAuditInfo,
-  ServerAddress,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
@@ -111,7 +110,7 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
   for (let i = 0; i < expectedDeployments.length; i++) {
     const expectedEvent: ControllerDeployment = sortedExpectedDeployments[i]
     const actualEvent: ControllerDeployment = sortedDeployments[i]
-    assertEqualsDeployment(server, actualEvent, expectedEvent)
+    assertEqualsDeployment(actualEvent, expectedEvent)
   }
 }
 
@@ -132,23 +131,16 @@ export async function assertDeploymentFailed(
   server: TestServer,
   reason: FailureReason,
   entity: ControllerEntity,
-  originTimestamp: Timestamp,
-  originServerUrl: ServerAddress
+  originTimestamp: Timestamp
 ) {
   const failedDeployment = await assertThereIsAFailedDeployment(server)
   assert.equal(failedDeployment.entityType, entity.type)
   assert.equal(failedDeployment.entityId, entity.id)
-  assert.equal(failedDeployment.originTimestamp, originTimestamp)
-  assert.equal(failedDeployment.originServerUrl, originServerUrl)
   assert.equal(failedDeployment.reason, reason)
   assert.ok(failedDeployment.failureTimestamp > originTimestamp)
 }
 
-function assertEqualsDeployment(
-  server: TestServer,
-  actualDeployment: ControllerDeployment,
-  expectedDeployment: ControllerDeployment
-) {
+function assertEqualsDeployment(actualDeployment: ControllerDeployment, expectedDeployment: ControllerDeployment) {
   assert.equal(actualDeployment.entityType, expectedDeployment.entityType)
   assert.equal(actualDeployment.entityId, expectedDeployment.entityId)
   assert.deepEqual(actualDeployment.pointers, expectedDeployment.pointers)

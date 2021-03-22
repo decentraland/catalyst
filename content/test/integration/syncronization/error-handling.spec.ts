@@ -154,9 +154,7 @@ describe('End 2 end - Error handling', () => {
     await server2.start()
 
     // Assert deployment is marked as failed
-    await awaitUntil(() =>
-      assertDeploymentFailed(server2, errorType, entityBeingDeployed, deploymentTimestamp, server1.getAddress())
-    )
+    await awaitUntil(() => assertDeploymentFailed(server2, errorType, entityBeingDeployed, deploymentTimestamp))
 
     // Assert entity wasn't deployed
     await assertEntityWasNotDeployed(server2, entityBeingDeployed)
