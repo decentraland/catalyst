@@ -88,7 +88,7 @@ export class TheGraphClient {
       allWearables.set(b.owner, existingUrns.concat(b.urns))
     })
 
-    return Array.from(allWearables.entries()).map(([owner, urns]) => ({ owner, urns } ))
+    return Array.from(allWearables.entries()).map(([owner, urns]) => ({ owner, urns }))
   }
 
   private async getOwnedWearables(
