@@ -63,18 +63,24 @@ export class TheGraphClient {
   ): Promise<{ owner: EthAddress; urns: string[] }[]> {
     const urnsProtocolMap: Map<string, string> = await this.calculateNetworks(wearableIdsToCheck)
 
-    const ethereumWearablesOwners: { owner: EthAddress; urns: string[] }[] = await this.getOwnedWearables(
+    const ethereumWearablesOwnersPromise = this.getOwnedWearables(
       wearableIdsToCheck,
       urnsProtocolMap,
       'mainnet',
       'collectionsSubgraph'
     )
-    const maticWearablesOwners: { owner: EthAddress; urns: string[] }[] = await this.getOwnedWearables(
+    const maticWearablesOwnersPromise = this.getOwnedWearables(
       wearableIdsToCheck,
       urnsProtocolMap,
       'matic',
       'maticCollectionsSubgraph'
     )
+
+    const [ethereumWearablesOwners, maticWearablesOwners] = await Promise.all([
+      ethereumWearablesOwnersPromise,
+      maticWearablesOwnersPromise
+    ])
+
     return this.concatWearables(ethereumWearablesOwners, maticWearablesOwners)
   }
 
@@ -129,7 +135,7 @@ export class TheGraphClient {
       a[1].filter((a) => urnsWithNetwork.get(a) === network)
     ])
 
-    return await this.getOwnersByWearable(wearablesToCheckInBlockchain, subgraph)
+    return this.getOwnersByWearable(wearablesToCheckInBlockchain, subgraph)
   }
 
   private getOwnersByWearable(
