@@ -188,7 +188,7 @@ export class TheGraphClient {
       mapper: (response) => response.nfts.map(({ urn }) => urn),
       default: []
     }
-    return await this.paginatableQuery(query, { owner: owner.toLowerCase() })
+    return this.paginatableQuery(query, { owner: owner.toLowerCase() })
   }
 
   public findWearablesByFilters(filters: WearablesFilters, pagination: Pagination): Promise<WearableId[]> {
