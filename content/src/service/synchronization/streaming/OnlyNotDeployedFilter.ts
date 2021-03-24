@@ -1,6 +1,7 @@
-import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
+import { EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Transform } from 'stream'
+import { DeploymentWithSource } from './EventStreamProcessor'
 
 /**
  * Expose a stream transform that filters out already deployed entities.
@@ -10,13 +11,13 @@ import { Transform } from 'stream'
 export class OnlyNotDeployedFilter extends Transform {
   private static readonly BUFFERED_DEPLOYMENTS = 300
   private static readonly LOGGER = log4js.getLogger('OnlyNotDeployedFilter')
-  private readonly buffer: DeploymentWithAuditInfo[] = []
+  private readonly buffer: DeploymentWithSource[] = []
 
   constructor(private readonly checkIfAlreadyDeployed: (entityIds: EntityId[]) => Promise<Map<EntityId, boolean>>) {
     super({ objectMode: true })
   }
 
-  async _transform(deployment: DeploymentWithAuditInfo, _, done) {
+  async _transform(deployment: DeploymentWithSource, _, done) {
     this.buffer.push(deployment)
     if (this.buffer.length >= OnlyNotDeployedFilter.BUFFERED_DEPLOYMENTS) {
       await this.processBufferAndPushNonDeployed()
@@ -33,7 +34,7 @@ export class OnlyNotDeployedFilter extends Transform {
 
   private async processBufferAndPushNonDeployed(): Promise<void> {
     // Find non deployed entities
-    const ids = this.buffer.map(({ entityId }) => entityId)
+    const ids = this.buffer.map(({ deployment }) => deployment.entityId)
     const deployInfo = await this.checkIfAlreadyDeployed(ids)
     const newEntities: Set<EntityId> = new Set(
       Array.from(deployInfo.entries())
@@ -48,7 +49,9 @@ export class OnlyNotDeployedFilter extends Transform {
     }
 
     // Filter out already deployed entities and push the new ones
-    this.buffer.filter((event) => newEntities.has(event.entityId)).forEach((deployment) => this.push(deployment))
+    this.buffer
+      .filter(({ deployment }) => newEntities.has(deployment.entityId))
+      .forEach((deployment) => this.push(deployment))
 
     // Clear the buffer
     this.buffer.length = 0

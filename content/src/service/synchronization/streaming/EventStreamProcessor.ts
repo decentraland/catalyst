@@ -1,9 +1,7 @@
-import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
 import {
   awaitablePipeline,
   mergeStreams,
-  streamFilter,
-  streamMap
+  streamFilter
 } from '@katalyst/content/service/synchronization/streaming/StreamHelper'
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
@@ -32,14 +30,6 @@ export class EventStreamProcessor {
     // Merge the streams from the different servers
     const merged = mergeStreams(deployments)
 
-    // TODO: Remove on next deployment
-    // Delete information that is not yet excluded from the response
-    const reduceExtraInfo = streamMap(({ entityType, entityId, entityTimestamp, deployedBy, auditInfo }) => {
-      delete auditInfo.denylistedContent
-      delete auditInfo.isDenylisted
-      return { entityType, entityId, entityTimestamp, deployedBy, auditInfo }
-    })
-
     // A transform that will filter out duplicate deployments
     const filterOutDuplicates = this.filterOutDuplicates()
 
@@ -47,21 +37,14 @@ export class EventStreamProcessor {
     const filterOutAlreadyDeployed = new OnlyNotDeployedFilter((entityIds) => this.checkIfAlreadyDeployed(entityIds))
 
     // Build a transform stream that process the deployment info and prepares the deployment
-    const downloadFilesTransform = this.prepareDeploymentBuilder(options)
+    const downloadFilesTransform = this.prepareDeploymentBuilder()
 
     // Create writer stream that deploys the entity on this server
     const deployer = this.prepareStreamDeployer(options)
 
     // Build and execute the pipeline
     try {
-      await awaitablePipeline(
-        merged,
-        reduceExtraInfo,
-        filterOutDuplicates,
-        filterOutAlreadyDeployed,
-        downloadFilesTransform,
-        deployer
-      )
+      await awaitablePipeline(merged, filterOutDuplicates, filterOutAlreadyDeployed, downloadFilesTransform, deployer)
     } catch (error) {
       EventStreamProcessor.LOGGER.error(`Something failed when trying to deploy the history:\n${error}`)
     }
@@ -69,7 +52,7 @@ export class EventStreamProcessor {
 
   private filterOutDuplicates() {
     const known: Set<EntityId> = new Set()
-    return streamFilter((deployment: DeploymentWithAuditInfo) => {
+    return streamFilter(({ deployment }: DeploymentWithSource) => {
       if (known.has(deployment.entityId)) {
         return false
       }
@@ -81,16 +64,16 @@ export class EventStreamProcessor {
   /**
    * Build a transform stream that takes the deployment information and downloads all files necessary to deploy it locally.
    */
-  private prepareDeploymentBuilder(options?: HistoryDeploymentOptions) {
+  private prepareDeploymentBuilder() {
     return parallelTransform(
       EventStreamProcessor.PARALLEL_DOWNLOAD_WORKERS,
       { objectMode: true, ordered: false },
-      async (deploymentEvent, done) => {
+      async ({ deployment: deploymentEvent, source }: DeploymentWithSource, done) => {
         try {
           EventStreamProcessor.LOGGER.trace(
             `Preparing deployment. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`
           )
-          const execution = await this.deploymentBuilder(deploymentEvent, options?.preferredServer)
+          const execution = await this.deploymentBuilder(deploymentEvent, source)
           EventStreamProcessor.LOGGER.trace(
             `Deployment prepared. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`
           )
@@ -129,5 +112,9 @@ export class EventStreamProcessor {
   }
 }
 
-type DeploymentPreparation = (event: Deployment, preferred?: ContentServerClient) => Promise<DeploymentExecution>
+export type DeploymentWithSource = { deployment: DeploymentWithAuditInfo; source: ContentServerClient }
+type DeploymentPreparation = (
+  event: DeploymentWithAuditInfo,
+  preferred?: ContentServerClient
+) => Promise<DeploymentExecution>
 type DeploymentExecution = () => Promise<void>
