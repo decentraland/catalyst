@@ -1,4 +1,5 @@
-import { ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { streamMap } from '@katalyst/content/service/synchronization/streaming/StreamHelper'
+import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { delay } from 'decentraland-katalyst-utils/util'
 import log4js from 'log4js'
 import ms from 'ms'
@@ -7,6 +8,7 @@ import { SystemPropertiesManager, SystemProperty } from '../system-properties/Sy
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
+import { DeploymentWithSource } from './streaming/EventStreamProcessor'
 
 export interface SynchronizationManager {
   start(): Promise<void>
@@ -82,7 +84,14 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
       // Fetch all new deployments
-      const streams = contentServers.map((contentServer) => contentServer.getNewDeployments())
+      const streams = contentServers.map((contentServer) => {
+        const deploymentStream = contentServer.getNewDeployments()
+        const sourceData = streamMap<DeploymentWithAuditInfo, DeploymentWithSource>((deployment) => ({
+          deployment,
+          source: contentServer
+        }))
+        return deploymentStream.pipe(sourceData)
+      })
 
       // Process them together
       await this.deployer.processAllDeployments(streams)
