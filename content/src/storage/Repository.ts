@@ -1,4 +1,5 @@
 import log4js from 'log4js'
+import ms from 'ms'
 import pgPromise, { IDatabase, IInitOptions, IMain, ITask } from 'pg-promise'
 import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './repositories/ContentFilesRepository'
@@ -102,7 +103,7 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
 
   setInterval(() => {
     LOGGER.debug('Total waiting queries to the database: ', db.$pool.waitingCount)
-  }, 10000)
+  }, ms('1m'))
 
   // Make sure we can connect to it
   await retry(
