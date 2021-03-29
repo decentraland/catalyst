@@ -185,6 +185,7 @@ jobs:
       - run:
           name: Tag image
           command: |
+            docker pull "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
             docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
             docker push "${DOCKER_IMAGE_NAME}:latest"
 
