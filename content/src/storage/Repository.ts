@@ -1,3 +1,4 @@
+import log4js from 'log4js'
 import pgPromise, { IDatabase, IInitOptions, IMain, ITask } from 'pg-promise'
 import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './repositories/ContentFilesRepository'
@@ -9,6 +10,8 @@ import { LastDeployedPointersRepository } from './repositories/LastDeployedPoint
 import { MigrationDataRepository } from './repositories/MigrationDataRepository'
 import { PointerHistoryRepository } from './repositories/PointerHistoryRepository'
 import { SystemPropertiesRepository } from './repositories/SystemPropertiesRepository'
+
+const LOGGER = log4js.getLogger('Repository')
 
 export type Repository = IDatabase<IExtensions> & IExtensions
 export type RepositoryTask = ITask<IExtensions> & IExtensions
@@ -90,11 +93,16 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
 
   const dbConfig = {
     ...connection,
-    ...credentials
+    ...credentials,
+    max: 20
   }
 
   // Build the database
   const db: Repository = pgp(dbConfig)
+
+  setInterval(() => {
+    LOGGER.debug('Total waiting queries to the database: ', db.$pool.waitingCount)
+  }, 10000)
 
   // Make sure we can connect to it
   await retry(
