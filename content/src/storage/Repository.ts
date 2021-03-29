@@ -101,9 +101,7 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
   // Build the database
   const db: Repository = pgp(dbConfig)
 
-  setInterval(() => {
-    LOGGER.debug('Total waiting queries to the database: ', db.$pool.waitingCount)
-  }, ms('1m'))
+  setInterval(() => LOGGER.debug('Amount of queries waiting: ', db.$pool.waitingCount), ms('1m'))
 
   // Make sure we can connect to it
   await retry(
