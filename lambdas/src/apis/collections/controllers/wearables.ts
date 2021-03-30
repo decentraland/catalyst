@@ -28,8 +28,12 @@ export async function getWearablesByOwnerEndpoint(
   const { owner } = req.params
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
-  const result = await getWearablesByOwner(owner, includeDefinition, client, theGraphClient)
-  res.send(result)
+  try {
+    const result = await getWearablesByOwner(owner, includeDefinition, client, theGraphClient)
+    res.send(result)
+  } catch (e) {
+    res.status(500).send(`Failed to fetch wearables by owner. Reason was ${e}`)
+  }
 }
 
 export async function getWearablesByOwner(
@@ -72,11 +76,15 @@ export async function getWearablesEndpoint(
   const collectionIds: string[] = asArray<string>(req.query.collectionId).map((id) => id.toLowerCase())
   const wearableIds: string[] = asArray<string>(req.query.wearableId).map((id) => id.toLowerCase())
   const textSearch: string | undefined = req.query.textSearch?.toLowerCase()
-  const offset: number | undefined = asInt(req.query.offset)
+  const lastId: string | undefined = req.query.lastId?.toLowerCase()
   const limit: number | undefined = asInt(req.query.limit)
 
   if (collectionIds.length === 0 && wearableIds.length === 0 && !textSearch) {
     return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)
+  } else if (textSearch && textSearch.length < 3) {
+    return res.status(400).send(`The text search must be at least 3 characters long`)
+  } else if (wearableIds && wearableIds.length > 500) {
+    return res.status(400).send(`You can't ask for more than 500 wearables`)
   }
 
   const requestFilters = {
@@ -84,10 +92,16 @@ export async function getWearablesEndpoint(
     wearableIds: wearableIds.length > 0 ? wearableIds : undefined,
     textSearch
   }
-  const sanitizedPagination = sanitizePagination(offset, limit)
+  const sanitizedLimit = !limit || limit <= 0 || limit > 500 ? 500 : limit
 
   try {
-    const response = await getWearables(requestFilters, sanitizedPagination, client, theGraphClient, offChainManager)
+    const response = await getWearables(
+      requestFilters,
+      { limit: sanitizedLimit, lastId },
+      client,
+      theGraphClient,
+      offChainManager
+    )
     res.send(response)
   } catch (error) {
     res.status(500).send(error.message)
@@ -95,9 +109,8 @@ export async function getWearablesEndpoint(
 }
 
 /**
- * As Base Wearables are off chain, we need to return both off-chain and on-chain wearables in the same query.
- * To do that, we use the order of first rendering off-chain wearables and then on-chain wearables,
- * that order is used to paginate elements.
+ * This function will return a list of wearables that matches the given filters. It will check off-chain, L1 and L2 wearables.
+ * The order will be off-chain > L1 > L2.
  */
 export async function getWearables(
   filters: WearablesFilters,
@@ -105,81 +118,58 @@ export async function getWearables(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   offChainManager: OffChainWearablesManager
-): Promise<{
-  wearables: Wearable[]
-  filters: WearablesFilters
-  pagination: WearablesPagination
-}> {
-  // [TRICK] Get one more element than necessary to check if there is moreData
-  const paginationLimitWithMore = pagination.limit + 1
-  const offChainWearables = await offChainManager.find(filters)
-  const paginatedOffChainWearablesWithMore = offChainWearables.slice(
-    pagination.offset,
-    pagination.offset + paginationLimitWithMore
-  )
+): Promise<{ wearables: Wearable[]; moreData: boolean }> {
+  let result: Wearable[] = []
 
-  // Calculate offset and limit for getting the on-chain wearables depending on the off-chain wearables result
-  const onChainPagination = {
-    offset: Math.max(0, pagination.offset - offChainWearables.length),
-    limit: Math.max(0, paginationLimitWithMore - paginatedOffChainWearablesWithMore.length)
+  if (!filters.collectionIds && !filters.textSearch) {
+    // Since we only have ids, we can go directly with the content server and avoid everything else
+    result = await fetchWearables(filters.wearableIds!, client)
+  } else {
+    let limit = pagination.limit
+    let lastId: string | undefined = pagination.lastId
+
+    if (!lastId || lastId.startsWith('urn:decentraland:off-chain:base-avatars')) {
+      const offChainResult = await offChainManager.find(filters, lastId)
+      result = offChainResult
+      limit -= offChainResult.length
+      lastId = undefined
+    }
+
+    // Check if maybe we don't have to check for on-chain wearables, based on the filters
+    const onlyBaseAvatars =
+      filters.collectionIds && filters.collectionIds.length === 1 && filters.collectionIds[0] === 'base-avatars'
+
+    if (!onlyBaseAvatars) {
+      const onChain = await getOnChainWearables(filters, { limit, lastId }, theGraphClient, client)
+      result.push(...onChain)
+    }
   }
-  // Get the on-chain wearables, if corresponds one more element will be returned
-  const onChainWearablesWithMore: Wearable[] = await getOnChainWearables(
-    onChainPagination,
-    theGraphClient,
-    filters,
-    client
-  )
 
-  // Check if there is moreData and then slice for the correct limit
-  const allWearablesWithMore = paginatedOffChainWearablesWithMore.concat(onChainWearablesWithMore)
-  const moreData: boolean = allWearablesWithMore.length > pagination.limit
-  const allWearables = allWearablesWithMore.slice(0, pagination.limit)
-
-  return {
-    wearables: allWearables,
-    filters,
-    pagination: { ...pagination, moreData: moreData }
-  }
+  const moreData = result.length > pagination.limit
+  const slice = result.length > pagination.limit ? result.slice(0, pagination.limit) : result
+  return { wearables: slice, moreData }
 }
 
 async function getOnChainWearables(
-  pagination: { offset: number; limit: number },
-  theGraphClient: TheGraphClient,
   filters: WearablesFilters,
+  pagination: WearablesPagination,
+  theGraphClient: TheGraphClient,
   client: SmartContentClient
 ) {
-  let onChainWearables: Wearable[] = []
-
-  if (pagination.limit > 0) {
-    const onChainWearableIds = await theGraphClient.findWearablesByFilters(filters, pagination)
-    if (onChainWearableIds.length > 0) {
-      onChainWearables = await client
-        .fetchEntitiesByPointers(EntityType.WEARABLE, onChainWearableIds)
-        .then((entities) => entities.map((entity) => translateEntityIntoWearable(client, entity)))
-    }
-  }
-  return onChainWearables
+  const onChainWearableIds = await theGraphClient.findWearablesByFilters(filters, pagination)
+  return fetchWearables(onChainWearableIds, client)
 }
 
-function sanitizePagination(offset: number | undefined, limit: number | undefined): WearablesPagination {
-  if (!offset || offset < 0) {
-    offset = 0
+function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): Promise<Wearable[]> {
+  if (wearableIds.length === 0) {
+    return Promise.resolve([])
   }
-  if (!limit || limit <= 0 || limit > 500) {
-    limit = 500
-  }
-  return { offset, limit }
+  return client
+    .fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+    .then((entities) => entities.map((entity) => translateEntityIntoWearable(client, entity)))
 }
 
 async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, Wearable>> {
-  if (wearableIds.length === 0) {
-    return new Map()
-  }
-  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
-  return new Map(
-    entities
-      .filter((entity) => !!entity.metadata)
-      .map((entity) => [entity.pointers[0], translateEntityIntoWearable(client, entity)])
-  )
+  const wearables = await fetchWearables(wearableIds, client)
+  return new Map(wearables.map((wearable) => [wearable.id.toLowerCase(), wearable]))
 }
