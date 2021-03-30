@@ -51,6 +51,18 @@ describe('NFTOwnership', () => {
 
     expect(nftOwnership.timesQueried()).toEqual(2)
   })
+
+  it(`When subgraph query fails, then nfts are considered as owned, but they are not cached`, async () => {
+    const nftOwnership = new FailingOwnership(500, 1000)
+    const nftId = 'unowned_nft'
+
+    const ownership = await nftOwnership.areNFTsOwnedByAddress(address, [nftId])
+    const ownership2 = await nftOwnership.areNFTsOwnedByAddress(address, [nftId])
+
+    expect(ownership.get(nftId)).toBeTruthy()
+    expect(ownership2.get(nftId)).toBeTruthy()
+    expect(nftOwnership.timesQueried()).toEqual(2)
+  })
 })
 
 function assertNamesAreOwned(result: Map<string, boolean>, ...names: string[]) {
@@ -77,6 +89,19 @@ class TestOwnership extends NFTOwnership {
       { ownedNFTs: ['marcosnc'], owner: address.toLowerCase() },
       { ownedNFTs: [], owner: 'anotheraddress' }
     ])
+  }
+
+  public timesQueried(): number {
+    return this.queried
+  }
+}
+
+class FailingOwnership extends NFTOwnership {
+  private queried = 0
+
+  protected querySubgraph(nftsToCheck: [string, string[]][]): Promise<{ ownedNFTs: string[]; owner: string }[]> {
+    this.queried++
+    return Promise.reject('Failed to query the subgraph')
   }
 
   public timesQueried(): number {

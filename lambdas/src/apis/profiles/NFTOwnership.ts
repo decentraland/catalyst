@@ -1,4 +1,5 @@
 import { EthAddress } from 'dcl-crypto'
+import log4js from 'log4js'
 import LRU from 'lru-cache'
 
 /**
@@ -6,6 +7,7 @@ import LRU from 'lru-cache'
  */
 export abstract class NFTOwnership {
   private static readonly NFT_FRAGMENTS_PER_QUERY = 10
+  private static readonly LOGGER = log4js.getLogger('NFTOwnership')
 
   // The cache lib returns undefined when no value was calculated at all
   private internalCache: LRU<NFTIdOwnerPair, Owned>
@@ -57,12 +59,16 @@ export abstract class NFTOwnership {
     // Store fetched data in the cache, and add missing information to the result
     for (const [ethAddress, nfts] of unknownMap) {
       const ethAddressResult = result.get(ethAddress)!
-      const ownedNfts = graphFetchResult.get(ethAddress)!
+      const ownedNfts = graphFetchResult.get(ethAddress)
       for (const nft of nfts) {
         const pair = this.buildOwnerIdPair(ethAddress, nft)
-        const owned = ownedNfts.has(nft)
-        this.internalCache.set(pair, owned)
-        ethAddressResult.set(nft, owned)
+        const owned = ownedNfts?.has(nft)
+        if (owned !== undefined) {
+          // Only cache the result if the subgraph actually responded
+          this.internalCache.set(pair, owned)
+        }
+        // If the query to the subgraph failed, then consider the nft as owned
+        ethAddressResult.set(nft, owned ?? true)
       }
     }
 
@@ -80,11 +86,16 @@ export abstract class NFTOwnership {
     let offset = 0
     while (offset < entries.length) {
       const slice = entries.slice(offset, offset + NFTOwnership.NFT_FRAGMENTS_PER_QUERY)
-      const queryResult = await this.querySubgraph(slice)
-      for (const { ownedNFTs, owner } of queryResult) {
-        result.set(owner, new Set(ownedNFTs))
+      try {
+        const queryResult = await this.querySubgraph(slice)
+        for (const { ownedNFTs, owner } of queryResult) {
+          result.set(owner, new Set(ownedNFTs))
+        }
+      } catch (error) {
+        NFTOwnership.LOGGER.warn(error)
+      } finally {
+        offset += NFTOwnership.NFT_FRAGMENTS_PER_QUERY
       }
-      offset += NFTOwnership.NFT_FRAGMENTS_PER_QUERY
     }
 
     return result
