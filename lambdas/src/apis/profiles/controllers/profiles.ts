@@ -87,8 +87,11 @@ export async function fetchProfiles(
     await Promise.all(entityPromises)
 
     // Check which NFTs are owned
-    const ownedWearables = performWearableSanitization ? await wearablesOwnership.areNFTsOwned(wearables) : new Map()
-    const ownedENS = await ensOwnership.areNFTsOwned(names)
+    const ownedWearablesPromise = performWearableSanitization
+      ? wearablesOwnership.areNFTsOwned(wearables)
+      : Promise.resolve(new Map())
+    const ownedENSPromise = ensOwnership.areNFTsOwned(names)
+    const [ownedWearables, ownedENS] = await Promise.all([ownedWearablesPromise, ownedENSPromise])
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profiles.entries()).map(async ([ethAddress, profile]) => {
@@ -113,7 +116,6 @@ export async function fetchProfiles(
     })
     return await Promise.all(result)
   } catch (error) {
-    console.log(error)
     LOGGER.warn(error)
     return []
   }
