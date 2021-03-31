@@ -17,7 +17,7 @@ export class OffChainWearablesManager {
     private readonly collections: OffChainCollections = DEFAULT_COLLECTIONS
   ) {}
 
-  public async find(filters: WearablesFilters, lastId: string | undefined): Promise<Wearable[]> {
+  public async find(filters: WearablesFilters, lastId?: string): Promise<Wearable[]> {
     // Load into memory all data regarding off-chain wearables
     const definitions = await this.loadDefinitionsIfNecessary()
 

@@ -6,7 +6,7 @@ import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
-import { translateEntityIntoWearable } from '../Utils'
+import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
 
 // Different versions of the same query param
 const INCLUDE_DEFINITION_VERSIONS = [
@@ -122,13 +122,24 @@ export async function getWearables(
   let result: Wearable[] = []
 
   if (!filters.collectionIds && !filters.textSearch) {
-    // Since we only have ids, we can go directly with the content server and avoid everything else
-    result = await fetchWearables(filters.wearableIds!, client)
+    // Since we only have ids, we don't need to query the subgraph at all
+
+    // Check off-chain first. Maybe we don't need to go to the content server
+    const offChain = await offChainManager.find(filters)
+
+    let onChain: Wearable[] = []
+    if (offChain.length < filters.wearableIds!.length) {
+      // It looks like we do need to query the content server after all
+      const onChainIds = filters.wearableIds!.filter((wearableId) => !isBaseAvatar(wearableId))
+      onChain = await fetchWearables(onChainIds, client)
+    }
+
+    result = offChain.concat(onChain)
   } else {
     let limit = pagination.limit
     let lastId: string | undefined = pagination.cursor
 
-    if (!lastId || lastId.startsWith('urn:decentraland:off-chain:base-avatars')) {
+    if (!lastId || isBaseAvatar(lastId)) {
       const offChainResult = await offChainManager.find(filters, lastId)
       result = offChainResult
       limit -= offChainResult.length
@@ -148,7 +159,7 @@ export async function getWearables(
   }
 
   const moreData = result.length > pagination.limit
-  const slice = result.length > pagination.limit ? result.slice(0, pagination.limit) : result
+  const slice = moreData ? result.slice(0, pagination.limit) : result
   return { wearables: slice, nextCursor: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
