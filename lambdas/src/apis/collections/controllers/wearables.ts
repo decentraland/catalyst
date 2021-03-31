@@ -4,7 +4,7 @@ import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
-import { OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
+import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
 import { translateEntityIntoWearable } from '../Utils'
 
@@ -71,13 +71,13 @@ export async function getWearablesEndpoint(
   res: Response
 ) {
   // Method: GET
-  // Path: /wearables/?filters&limit={number}&offset={number}
+  // Path: /wearables/?filters&limit={number}&cursor={string}
 
   const collectionIds: string[] = asArray<string>(req.query.collectionId).map((id) => id.toLowerCase())
   const wearableIds: string[] = asArray<string>(req.query.wearableId).map((id) => id.toLowerCase())
   const textSearch: string | undefined = req.query.textSearch?.toLowerCase()
-  const lastId: string | undefined = req.query.lastId?.toLowerCase()
   const limit: number | undefined = asInt(req.query.limit)
+  const cursor: string | undefined = req.query.cursor?.toLowerCase()
 
   if (collectionIds.length === 0 && wearableIds.length === 0 && !textSearch) {
     return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)
@@ -95,14 +95,14 @@ export async function getWearablesEndpoint(
   const sanitizedLimit = !limit || limit <= 0 || limit > 500 ? 500 : limit
 
   try {
-    const response = await getWearables(
+    const { wearables, nextCursor } = await getWearables(
       requestFilters,
-      { limit: sanitizedLimit, lastId },
+      { limit: sanitizedLimit, cursor },
       client,
       theGraphClient,
       offChainManager
     )
-    res.send(response)
+    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, cursor, nextCursor } })
   } catch (error) {
     res.status(500).send(error.message)
   }
@@ -118,7 +118,7 @@ export async function getWearables(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   offChainManager: OffChainWearablesManager
-): Promise<{ wearables: Wearable[]; moreData: boolean }> {
+): Promise<{ wearables: Wearable[]; nextCursor: string | undefined }> {
   let result: Wearable[] = []
 
   if (!filters.collectionIds && !filters.textSearch) {
@@ -126,7 +126,7 @@ export async function getWearables(
     result = await fetchWearables(filters.wearableIds!, client)
   } else {
     let limit = pagination.limit
-    let lastId: string | undefined = pagination.lastId
+    let lastId: string | undefined = pagination.cursor
 
     if (!lastId || lastId.startsWith('urn:decentraland:off-chain:base-avatars')) {
       const offChainResult = await offChainManager.find(filters, lastId)
@@ -137,7 +137,9 @@ export async function getWearables(
 
     // Check if maybe we don't have to check for on-chain wearables, based on the filters
     const onlyBaseAvatars =
-      filters.collectionIds && filters.collectionIds.length === 1 && filters.collectionIds[0] === 'base-avatars'
+      filters.collectionIds &&
+      filters.collectionIds.length === 1 &&
+      filters.collectionIds[0] === BASE_AVATARS_COLLECTION_ID
 
     if (!onlyBaseAvatars) {
       const onChain = await getOnChainWearables(filters, { limit, lastId }, theGraphClient, client)
@@ -147,12 +149,12 @@ export async function getWearables(
 
   const moreData = result.length > pagination.limit
   const slice = result.length > pagination.limit ? result.slice(0, pagination.limit) : result
-  return { wearables: slice, moreData }
+  return { wearables: slice, nextCursor: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
 async function getOnChainWearables(
   filters: WearablesFilters,
-  pagination: WearablesPagination,
+  pagination: { limit: number; lastId: string | undefined },
   theGraphClient: TheGraphClient,
   client: SmartContentClient
 ) {

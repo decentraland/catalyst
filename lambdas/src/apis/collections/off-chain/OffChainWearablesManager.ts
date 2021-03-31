@@ -71,8 +71,10 @@ export class OffChainWearablesManager {
   }
 }
 
+export const BASE_AVATARS_COLLECTION_ID = 'base-avatars'
+
 const DEFAULT_COLLECTIONS: OffChainCollections = {
-  'base-avatars': baseAvatars
+  [BASE_AVATARS_COLLECTION_ID]: baseAvatars
 }
 
 type LocalOffChainWearables = LocalOffChainWearable[]

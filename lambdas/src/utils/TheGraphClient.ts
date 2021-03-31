@@ -193,7 +193,7 @@ export class TheGraphClient {
 
   public async findWearablesByFilters(
     filters: WearablesFilters,
-    pagination: { limit: number; lastId?: string }
+    pagination: { limit: number; lastId: string | undefined }
   ): Promise<WearableId[]> {
     // Order will be L1 > L2
     const L1_NETWORKS = ['ethereum', 'ropsten', 'kovan', 'rinkeby', 'goerli']
