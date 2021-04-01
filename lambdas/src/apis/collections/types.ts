@@ -63,5 +63,5 @@ export type WearablesFilters = {
 
 export type WearablesPagination = {
   limit: number
-  cursor: WearableId | undefined
+  lastId: WearableId | undefined
 }

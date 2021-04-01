@@ -9,13 +9,14 @@ const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
 const WEARABLE_ID_2 = 'someOtherCollection-someOtherWearable'
 const WEARABLE_METADATA = {
+  id: 'someId',
   someProperty: 'someValue',
   data: { representations: [] },
   image: undefined,
   thumbnail: undefined
 } as any
 
-describe('wearables', () => {
+describe('wearables by owner', () => {
   it(`When user doesn't have any wearables, then the response is empty`, async () => {
     const { instance: contentClient, mock: contentClientMock } = emptyContentServer()
     const graphClient = noOwnedWearables()
@@ -44,7 +45,7 @@ describe('wearables', () => {
   })
 
   it(`When user requests definitions, then they are included in the response`, async () => {
-    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_METADATA)
+    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_ID_1)
     const graphClient = ownedWearables(WEARABLE_ID_1)
 
     const wearables = await getWearablesByOwner(SOME_ADDRESS, true, contentClient, graphClient)
@@ -53,7 +54,7 @@ describe('wearables', () => {
     const [wearable] = wearables
     expect(wearable.urn).toBe(WEARABLE_ID_1)
     expect(wearable.amount).toBe(1)
-    expect(wearable.definition).toEqual(WEARABLE_METADATA)
+    expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: WEARABLE_ID_1 })
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
   })
 
@@ -76,16 +77,22 @@ function emptyContentServer() {
   return contentServerThatReturns()
 }
 
-function contentServerThatReturns(metadata?: any) {
+function contentServerThatReturns(id?: WearableId) {
   const entity = {
     id: '',
     type: EntityType.WEARABLE,
-    pointers: [WEARABLE_ID_1],
+    pointers: [id ?? ''],
     timestamp: 10,
-    metadata
+    metadata: {
+      id,
+      someProperty: 'someValue',
+      data: { representations: [] },
+      image: undefined,
+      thumbnail: undefined
+    }
   }
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(metadata ? [entity] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(id ? [entity] : [])
   return { instance: instance(mockedClient), mock: mockedClient }
 }
 

@@ -205,7 +205,7 @@ export class TheGraphClient {
 
     const result: WearableId[] = []
 
-    if (limit > 0 && (!lastIdLayer || L1_NETWORKS.includes(lastIdLayer))) {
+    if (limit >= 0 && (!lastIdLayer || L1_NETWORKS.includes(lastIdLayer))) {
       const l1Result = await this.findWearablesByFiltersInSubgraph(
         'collectionsSubgraph',
         { ...filters, lastId },
@@ -217,7 +217,7 @@ export class TheGraphClient {
       lastIdLayer = undefined
     }
 
-    if (limit > 0 && (!lastIdLayer || L2_NETWORKS.includes(lastIdLayer))) {
+    if (limit >= 0 && (!lastIdLayer || L2_NETWORKS.includes(lastIdLayer))) {
       const l2Result = await this.findWearablesByFiltersInSubgraph(
         'maticCollectionsSubgraph',
         { ...filters, lastId },

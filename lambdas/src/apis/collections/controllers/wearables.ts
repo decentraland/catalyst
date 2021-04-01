@@ -4,6 +4,7 @@ import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
+import qs from 'qs'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
@@ -59,9 +60,11 @@ export async function getWearablesByOwner(
   return Array.from(count.entries()).map(([id, amount]) => ({
     urn: id,
     amount,
-    definition: definitions.get(id)
+    definition: definitions.get(id.toLowerCase())
   }))
 }
+
+const MAX_LIMIT = 500
 
 export async function getWearablesEndpoint(
   client: SmartContentClient,
@@ -77,14 +80,14 @@ export async function getWearablesEndpoint(
   const wearableIds: string[] = asArray<string>(req.query.wearableId).map((id) => id.toLowerCase())
   const textSearch: string | undefined = req.query.textSearch?.toLowerCase()
   const limit: number | undefined = asInt(req.query.limit)
-  const cursor: string | undefined = req.query.cursor?.toLowerCase()
+  const lastId: string | undefined = req.query.lastId?.toLowerCase()
 
   if (collectionIds.length === 0 && wearableIds.length === 0 && !textSearch) {
     return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)
   } else if (textSearch && textSearch.length < 3) {
     return res.status(400).send(`The text search must be at least 3 characters long`)
-  } else if (wearableIds && wearableIds.length > 500) {
-    return res.status(400).send(`You can't ask for more than 500 wearables`)
+  } else if (wearableIds && wearableIds.length > MAX_LIMIT) {
+    return res.status(400).send(`You can't ask for more than ${MAX_LIMIT} wearables`)
   }
 
   const requestFilters = {
@@ -92,17 +95,32 @@ export async function getWearablesEndpoint(
     wearableIds: wearableIds.length > 0 ? wearableIds : undefined,
     textSearch
   }
-  const sanitizedLimit = !limit || limit <= 0 || limit > 500 ? 500 : limit
+  const sanitizedLimit = !limit || limit <= 0 || limit > MAX_LIMIT ? MAX_LIMIT : limit
 
   try {
-    const { wearables, nextCursor } = await getWearables(
+    const { wearables, lastId: nextLastId } = await getWearables(
       requestFilters,
-      { limit: sanitizedLimit, cursor },
+      { limit: sanitizedLimit, lastId },
       client,
       theGraphClient,
       offChainManager
     )
-    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, cursor, nextCursor } })
+
+    const queryParams = qs.stringify(
+      {
+        collectionId: requestFilters.collectionIds,
+        wearableId: requestFilters.wearableIds,
+        textSearch: requestFilters.textSearch,
+        lastId: nextLastId,
+        limit: sanitizedLimit
+      },
+      { arrayFormat: 'repeat' }
+    )
+    const next = nextLastId
+      ? req.protocol + '://' + req.get('host') + req.baseUrl + req.path + '?' + queryParams
+      : undefined
+
+    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, next } })
   } catch (error) {
     res.status(500).send(error.message)
   }
@@ -118,7 +136,7 @@ export async function getWearables(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   offChainManager: OffChainWearablesManager
-): Promise<{ wearables: Wearable[]; nextCursor: string | undefined }> {
+): Promise<{ wearables: Wearable[]; lastId: string | undefined }> {
   let result: Wearable[] = []
 
   if (!filters.collectionIds && !filters.textSearch) {
@@ -137,7 +155,7 @@ export async function getWearables(
     result = offChain.concat(onChain)
   } else {
     let limit = pagination.limit
-    let lastId: string | undefined = pagination.cursor
+    let lastId: string | undefined = pagination.lastId
 
     if (!lastId || isBaseAvatar(lastId)) {
       const offChainResult = await offChainManager.find(filters, lastId)
@@ -153,24 +171,15 @@ export async function getWearables(
       filters.collectionIds[0] === BASE_AVATARS_COLLECTION_ID
 
     if (!onlyBaseAvatars) {
-      const onChain = await getOnChainWearables(filters, { limit, lastId }, theGraphClient, client)
+      const onChainIds = await theGraphClient.findWearablesByFilters(filters, { limit, lastId })
+      const onChain = await fetchWearables(onChainIds, client)
       result.push(...onChain)
     }
   }
 
   const moreData = result.length > pagination.limit
   const slice = moreData ? result.slice(0, pagination.limit) : result
-  return { wearables: slice, nextCursor: moreData ? slice[slice.length - 1]?.id : undefined }
-}
-
-async function getOnChainWearables(
-  filters: WearablesFilters,
-  pagination: { limit: number; lastId: string | undefined },
-  theGraphClient: TheGraphClient,
-  client: SmartContentClient
-) {
-  const onChainWearableIds = await theGraphClient.findWearablesByFilters(filters, pagination)
-  return fetchWearables(onChainWearableIds, client)
+  return { wearables: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
 function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): Promise<Wearable[]> {
@@ -180,6 +189,9 @@ function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): 
   return client
     .fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
     .then((entities) => entities.map((entity) => translateEntityIntoWearable(client, entity)))
+    .then((wearables) =>
+      wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
+    )
 }
 
 async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, Wearable>> {
