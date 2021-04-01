@@ -74,7 +74,7 @@ export async function getWearablesEndpoint(
   res: Response
 ) {
   // Method: GET
-  // Path: /wearables/?filters&limit={number}&cursor={string}
+  // Path: /wearables/?filters&limit={number}&lastId={string}
 
   const collectionIds: string[] = asArray<string>(req.query.collectionId).map((id) => id.toLowerCase())
   const wearableIds: string[] = asArray<string>(req.query.wearableId).map((id) => id.toLowerCase())
