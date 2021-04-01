@@ -17,23 +17,30 @@ export class OffChainWearablesManager {
     private readonly collections: OffChainCollections = DEFAULT_COLLECTIONS
   ) {}
 
-  public async find(filters: WearablesFilters): Promise<Wearable[]> {
+  public async find(filters: WearablesFilters, lastId?: string): Promise<Wearable[]> {
     // Load into memory all data regarding off-chain wearables
     const definitions = await this.loadDefinitionsIfNecessary()
 
-    return definitions.filter(this.buildFilter(filters)).map(({ wearable }) => wearable)
+    return definitions.filter(this.buildFilter(filters, lastId)).map(({ wearable }) => wearable)
   }
 
   /**
    * Note: So far, we have few off-chain wearables and no plans to add more. If we do add more in the future, then it
    * might make sense to modify this filter, since many optimizations could be added
    */
-  private buildFilter(filters: WearablesFilters): (wearable: LocalOffChainWearable) => boolean {
+  private buildFilter(
+    filters: WearablesFilters,
+    lastId: string | undefined
+  ): (wearable: LocalOffChainWearable) => boolean {
     return ({ collectionId, wearable }) => {
+      const lowerCaseWearableId = wearable.id.toLowerCase()
+      const okByLastId = !lastId || lowerCaseWearableId > lastId
+      if (!okByLastId) return false
+
       const okByCollection = !filters.collectionIds || filters.collectionIds.includes(collectionId)
       if (!okByCollection) return false
 
-      const okByIds = !filters.wearableIds || filters.wearableIds.includes(wearable.id.toLowerCase())
+      const okByIds = !filters.wearableIds || filters.wearableIds.includes(lowerCaseWearableId)
       if (!okByIds) return false
 
       const text = preferEnglish(wearable.i18n)?.toLowerCase()
@@ -53,7 +60,7 @@ export class OffChainWearablesManager {
         const entities = await this.client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
         entities
           .map((entity) => translateEntityIntoWearable(this.client, entity))
-          .sort((wearable1, wearable2) => wearable1.id.localeCompare(wearable2.id))
+          .sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
           .forEach((wearable) => localDefinitions.push({ collectionId, wearable }))
       }
 
@@ -64,8 +71,10 @@ export class OffChainWearablesManager {
   }
 }
 
+export const BASE_AVATARS_COLLECTION_ID = 'base-avatars'
+
 const DEFAULT_COLLECTIONS: OffChainCollections = {
-  'base-avatars': baseAvatars
+  [BASE_AVATARS_COLLECTION_ID]: baseAvatars
 }
 
 type LocalOffChainWearables = LocalOffChainWearable[]
