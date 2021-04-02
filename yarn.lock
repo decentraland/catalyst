@@ -930,10 +930,10 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/urn-resolver@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.1.0.tgz#5ecc9b494cd24279c61ce528ddef8979e06794e6"
-  integrity sha512-Msc1ALU5pSwtq7O/mN3S3S0UinrWZbHd96osP1fLU2R4gUi/VBv16i4EBOZfCvf1RQ4Cr/fI4H6B1C/QZzeTIA==
+"@dcl/urn-resolver@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.1.1.tgz#89800523c982fc35fdebb431e535c67eabd490d4"
+  integrity sha512-fc9UR1aBG/jrHqF5KWXoo1gkmf01KRXxRkWwfY9C6lHz0p+fHxbtIFYQ1Cz44VGXJD0D1+oA2aNaBEOCkOsaTQ==
 
 "@eslint/eslintrc@^0.4.0":
   version "0.4.0"

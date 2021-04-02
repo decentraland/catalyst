@@ -56,7 +56,7 @@ export class TheGraphClient {
   /**
    * This method returns all the owners from the given wearables URNs. It looks for them first in Ethereum and then in Matic
    * @param wearableIdsToCheck pairs of ethAddress and a list of urns to check ownership
-   * @returns the pairs of ehtAddress and list of urns
+   * @returns the pairs of ethAddress and list of urns
    */
   public async checkForWearablesOwnership(
     wearableIdsToCheck: [EthAddress, string[]][]
@@ -130,12 +130,17 @@ export class TheGraphClient {
     network: string,
     subgraph: keyof URLs
   ): Promise<{ owner: EthAddress; urns: string[] }[]> {
-    const wearablesToCheckInBlockchain: [EthAddress, string[]][] = wearableIdsToCheck.map((a) => [
-      a[0],
-      a[1].filter((a) => urnsWithNetwork.get(a) === network)
-    ])
+    try {
+      const wearablesToCheckInBlockchain: [EthAddress, string[]][] = wearableIdsToCheck.map((a) => [
+        a[0],
+        a[1].filter((a) => urnsWithNetwork.get(a) === network)
+      ])
 
-    return this.getOwnersByWearable(wearablesToCheckInBlockchain, subgraph)
+      return this.getOwnersByWearable(wearablesToCheckInBlockchain, subgraph)
+    } catch (error) {
+      TheGraphClient.LOGGER.error(error)
+      return []
+    }
   }
 
   private getOwnersByWearable(
