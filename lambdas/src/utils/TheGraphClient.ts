@@ -240,13 +240,21 @@ export class TheGraphClient {
     limit: number
   ): Promise<WearableId[]> {
     const subgraphQuery = this.buildFilterQuery(filters)
-    const query: Query<{ items: { urn: string }[] }, WearableId[]> = {
+    let mapper: (response: any) => WearableId[]
+    if (filters.collectionIds) {
+      mapper = (response: { collections: { items: { urn: string }[] }[] }) =>
+        response.collections.map(({ items }) => items.map(({ urn }) => urn)).flat()
+    } else {
+      mapper = (response: { items: { urn: string }[] }) => response.items.map(({ urn }) => urn)
+    }
+    const query = {
       description: 'fetch wearables by filters',
       subgraph,
       query: subgraphQuery,
-      mapper: (response) => response.items.map(({ urn }) => urn),
+      mapper,
       default: []
     }
+
     return this.runQuery(query, { ...filters, lastId: filters.lastId ?? '', first: limit })
   }
 
@@ -263,22 +271,32 @@ export class TheGraphClient {
       whereClause.push(`urn_in: $wearableIds`)
     }
 
-    if (filters.collectionIds) {
-      params.push('$collectionIds: [String]!')
-      whereClause.push(`collection_in: $collectionIds`)
-    }
-
     if (filters.lastId) {
       params.push('$lastId: String!')
       whereClause.push(`urn_gt: $lastId`)
     }
 
-    return `
-      query WearablesByFilters(${params.join(',')}, $first: Int!) {
-        items(where: {${whereClause.join(',')}}, first: $first, orderBy: urn, orderDirection: asc) {
-          urn
-        }
-      }`
+    const itemsQuery = `
+      items(where: {${whereClause.join(',')}}, first: $first, orderBy: urn, orderDirection: asc) {
+        urn
+      }
+    `
+
+    if (filters.collectionIds) {
+      params.push('$collectionIds: [String]!')
+
+      return `
+        query WearablesByFilters(${params.join(',')}, $first: Int!) {
+          collections(where: { urn_in: $collectionIds }, first: 1000, orderBy: urn, orderDirection: asc) {
+            ${itemsQuery}
+          }
+        }`
+    } else {
+      return `
+        query WearablesByFilters(${params.join(',')}, $first: Int!) {
+          ${itemsQuery}
+        }`
+    }
   }
 
   /** This method takes a query that could be paginated and performs the pagination internally */
