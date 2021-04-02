@@ -88,6 +88,8 @@ export async function getWearablesEndpoint(
     return res.status(400).send(`The text search must be at least 3 characters long`)
   } else if (wearableIds && wearableIds.length > MAX_LIMIT) {
     return res.status(400).send(`You can't ask for more than ${MAX_LIMIT} wearables`)
+  } else if (collectionIds && collectionIds.length > MAX_LIMIT) {
+    return res.status(400).send(`You can't filter for more than ${MAX_LIMIT} collection ids`)
   }
 
   const requestFilters = {

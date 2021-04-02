@@ -71,7 +71,7 @@ export class OffChainWearablesManager {
   }
 }
 
-export const BASE_AVATARS_COLLECTION_ID = 'base-avatars'
+export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 
 const DEFAULT_COLLECTIONS: OffChainCollections = {
   [BASE_AVATARS_COLLECTION_ID]: baseAvatars
