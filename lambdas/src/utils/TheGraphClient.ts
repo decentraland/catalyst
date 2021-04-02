@@ -231,7 +231,9 @@ export class TheGraphClient {
 
   private async getProtocol(urn: string) {
     const parsed = await parseUrn(urn)
-    return parsed?.type === 'blockchain-asset' ? parsed.network : undefined
+    return parsed?.type === 'blockchain-collection-v1-asset' || parsed?.type === 'blockchain-collection-v2-asset'
+      ? parsed.network
+      : undefined
   }
 
   private findWearablesByFiltersInSubgraph(

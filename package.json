@@ -94,7 +94,7 @@
   },
   "dependencies": {
     "@dcl/schemas": "^1.0.0",
-    "@dcl/urn-resolver": "^1.0.1",
+    "@dcl/urn-resolver": "^1.1.0",
     "@types/destroy": "^1.0.0",
     "@types/log4js": "^2.3.5",
     "@types/merge-stream": "^1.1.2",

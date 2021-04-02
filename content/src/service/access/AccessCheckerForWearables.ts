@@ -38,7 +38,7 @@ export class AccessCheckerForWearables {
   private async parseUrnNoFail(urn: string): Promise<BlockchainCollectionV2Asset | null> {
     try {
       const parsed = await parseUrn(urn)
-      if (parsed?.type === 'blockchain-collection-v2') {
+      if (parsed?.type === 'blockchain-collection-v2-asset') {
         return parsed as BlockchainCollectionV2Asset
       }
     } catch {}
