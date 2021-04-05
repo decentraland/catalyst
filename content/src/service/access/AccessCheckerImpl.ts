@@ -14,22 +14,24 @@ export class AccessCheckerImpl implements AccessChecker {
   private readonly accessCheckerForProfiles: AccessCheckerForProfiles
   private readonly accessCheckerForWearables: AccessCheckerForWearables
 
-  constructor(
-    authenticator: ContentAuthenticator,
-    fetcher: Fetcher,
-    dclParcelAccessUrl: string,
-    dclCollectionsAccessUrl: string
-  ) {
+  constructor({
+    authenticator,
+    fetcher,
+    landManagerSubgraphUrl,
+    collectionsL1SubgraphUrl,
+    collectionsL2SubgraphUrl
+  }: AccessCheckerImplParams) {
     this.accessCheckerForScenes = new AccessCheckerForScenes(
       authenticator,
       fetcher,
-      dclParcelAccessUrl,
+      landManagerSubgraphUrl,
       AccessCheckerImpl.LOGGER
     )
     this.accessCheckerForProfiles = new AccessCheckerForProfiles(authenticator)
     this.accessCheckerForWearables = new AccessCheckerForWearables(
       fetcher,
-      dclCollectionsAccessUrl,
+      collectionsL1SubgraphUrl,
+      collectionsL2SubgraphUrl,
       AccessCheckerImpl.LOGGER
     )
   }
@@ -51,4 +53,12 @@ export class AccessCheckerImpl implements AccessChecker {
         return ['Unknown type provided']
     }
   }
+}
+
+export type AccessCheckerImplParams = {
+  authenticator: ContentAuthenticator
+  fetcher: Fetcher
+  landManagerSubgraphUrl: string
+  collectionsL1SubgraphUrl: string
+  collectionsL2SubgraphUrl: string
 }
