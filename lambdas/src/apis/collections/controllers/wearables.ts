@@ -118,14 +118,17 @@ export async function getWearablesEndpoint(
       },
       { arrayFormat: 'repeat' }
     )
-    const next = nextLastId
-      ? req.protocol + '://' + req.get('host') + req.baseUrl + req.path + '?' + queryParams
-      : undefined
+    const next = nextLastId ? calculateNextUrl(req, queryParams) : undefined
 
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, next } })
   } catch (error) {
     res.status(500).send(error.message)
   }
+}
+
+function calculateNextUrl(req: Request, queryParams: string) {
+  const host = req.get('X-Forwarded-Host') ?? req.get('Host')
+  return req.protocol + '://' + host + req.baseUrl + req.path + '?' + queryParams
 }
 
 /**
