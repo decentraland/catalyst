@@ -6,8 +6,8 @@ export class AccessCheckerImplFactory {
     return new AccessCheckerImpl(
       env.getBean(Bean.AUTHENTICATOR),
       env.getBean(Bean.FETCHER),
-      env.getConfig(EnvironmentConfig.DCL_PARCEL_ACCESS_URL),
-      env.getConfig(EnvironmentConfig.DCL_COLLECTIONS_ACCESS_URL)
+      env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL),
+      env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
     )
   }
 }

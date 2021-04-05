@@ -30,12 +30,12 @@ export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
 export const DEFAULT_ETH_NETWORK = 'ropsten'
-export const DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN =
+export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
-export const DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
-export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN =
+export const DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
-export const DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET =
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
@@ -135,8 +135,8 @@ export enum EnvironmentConfig {
   USE_COMPRESSION_MIDDLEWARE,
   BOOTSTRAP_FROM_SCRATCH,
   REQUEST_TTL_BACKWARDS,
-  DCL_PARCEL_ACCESS_URL,
-  DCL_COLLECTIONS_ACCESS_URL,
+  LAND_MANAGER_SUBGRAPH_URL,
+  COLLECTIONS_L1_SUBGRAPH_URL,
   SQS_QUEUE_URL_REPORTING,
   SQS_ACCESS_KEY_ID,
   SQS_SECRET_ACCESS_KEY,
@@ -235,21 +235,21 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.REQUEST_TTL_BACKWARDS, () => ms('20m'))
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.DCL_PARCEL_ACCESS_URL,
+      EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL,
       () =>
-        process.env.DCL_PARCEL_ACCESS_URL ??
+        process.env.LAND_MANAGER_SUBGRAPH_URL ??
         (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
-          ? DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET
-          : DEFAULT_DCL_PARCEL_ACCESS_URL_ROPSTEN)
+          ? DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET
+          : DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN)
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.DCL_COLLECTIONS_ACCESS_URL,
+      EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL,
       () =>
-        process.env.DCL_COLLECTIONS_ACCESS_URL ??
+        process.env.COLLECTIONS_L1_SUBGRAPH_URL ??
         (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
-          ? DEFAULT_DCL_COLLECTIONS_ACCESS_URL_MAINNET
-          : DEFAULT_DCL_COLLECTIONS_ACCESS_URL_ROPSTEN)
+          ? DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET
+          : DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN)
     )
     this.registerConfigIfNotAlreadySet(
       env,
