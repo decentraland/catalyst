@@ -7,7 +7,7 @@ export class AccessCheckerImplFactory {
       env.getBean(Bean.AUTHENTICATOR),
       env.getBean(Bean.FETCHER),
       env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL),
-      env.getConfig(EnvironmentConfig.DCL_COLLECTIONS_ACCESS_URL)
+      env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL)
     )
   }
 }
