@@ -4,9 +4,13 @@ import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 
 export class AccessCheckerForWearables {
+  private static readonly L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
+  private static readonly L2_NETWORKS = ['matic', 'mumbai']
+
   constructor(
     private readonly fetcher: Fetcher,
-    private readonly dclCollectionsAccessUrl: string,
+    private readonly collectionsL1SubgraphUrl: string,
+    private readonly collectionsL2SubgraphUrl: string,
     private readonly LOGGER: log4js.Logger
   ) {}
 
@@ -15,22 +19,31 @@ export class AccessCheckerForWearables {
 
     if (pointers.length != 1) {
       errors.push(`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`)
-    }
-
-    const pointer: Pointer = pointers[0].toLowerCase()
-    const parsed = await this.parseUrnNoFail(pointer)
-    if (parsed) {
-      const { contractAddress: collection, id: itemId } = parsed
-
-      // Check that the address has access
-      const hasAccess = await this.checkCollectionAccess(collection, itemId, ethAddress)
-      if (!hasAccess) {
-        errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
-      }
     } else {
-      errors.push(
-        `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
-      )
+      const pointer: Pointer = pointers[0].toLowerCase()
+      const parsed = await this.parseUrnNoFail(pointer)
+      if (parsed) {
+        const { contractAddress: collection, id: itemId, network } = parsed
+        let subgraphUrl: string
+        if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
+          subgraphUrl = this.collectionsL1SubgraphUrl
+        } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
+          subgraphUrl = this.collectionsL2SubgraphUrl
+        } else {
+          errors.push(`Found an unknown network on the urn '${network}'`)
+          return errors
+        }
+
+        // Check that the address has access
+        const hasAccess = await this.checkCollectionAccess(subgraphUrl, collection, itemId, ethAddress)
+        if (!hasAccess) {
+          errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
+        }
+      } else {
+        errors.push(
+          `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
+        )
+      }
     }
     return errors
   }
@@ -45,10 +58,15 @@ export class AccessCheckerForWearables {
     return null
   }
 
-  private async checkCollectionAccess(collection: string, itemId: string, ethAddress: EthAddress): Promise<boolean> {
+  private async checkCollectionAccess(
+    subgraphUrl: string,
+    collection: string,
+    itemId: string,
+    ethAddress: EthAddress
+  ): Promise<boolean> {
     try {
       const ethAddressLowercase = ethAddress.toLowerCase()
-      const permissions: WearableItemPermissionsData = await this.getCollectionItems(collection, itemId)
+      const permissions: WearableItemPermissionsData = await this.getCollectionItems(subgraphUrl, collection, itemId)
       return (
         (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
         (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
@@ -60,7 +78,11 @@ export class AccessCheckerForWearables {
     }
   }
 
-  private async getCollectionItems(collection: string, itemId: string): Promise<WearableItemPermissionsData> {
+  private async getCollectionItems(
+    subgraphUrl: string,
+    collection: string,
+    itemId: string
+  ): Promise<WearableItemPermissionsData> {
     const query = `
          query getCollectionRoles($collection: String!, $itemId: Int!) {
             collections(where:{id: $collection}) {
@@ -76,9 +98,9 @@ export class AccessCheckerForWearables {
 
     try {
       const wearableCollectionsAndItems = await this.fetcher.queryGraph<WearableCollectionsAndItems>(
-        this.dclCollectionsAccessUrl,
+        subgraphUrl,
         query,
-        { collection: collection, itemId: parseInt(itemId, 10) }
+        { collection, itemId: parseInt(itemId, 10) }
       )
       return {
         collectionCreator: wearableCollectionsAndItems.collections[0]?.creator,

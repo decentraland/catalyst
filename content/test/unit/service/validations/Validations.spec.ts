@@ -470,7 +470,13 @@ function buildEntity(options?: { timestamp?: Timestamp; content?: Map<string, st
 function getValidatorWithRealAccess() {
   const authenticator = new ContentAuthenticator()
   return new Validations(
-    new AccessCheckerImpl(authenticator, new Fetcher(), 'unused_url', 'unused_url'),
+    new AccessCheckerImpl({
+      authenticator,
+      fetcher: new Fetcher(),
+      landManagerSubgraphUrl: 'unused_url',
+      collectionsL1SubgraphUrl: 'unused_url',
+      collectionsL2SubgraphUrl: 'unused_url'
+    }),
     authenticator,
     'ropsten',
     ms('10m')

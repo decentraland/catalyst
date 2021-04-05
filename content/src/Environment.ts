@@ -37,6 +37,10 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
 export const DEFAULT_DATABASE_CONFIG = {
@@ -137,6 +141,7 @@ export enum EnvironmentConfig {
   REQUEST_TTL_BACKWARDS,
   LAND_MANAGER_SUBGRAPH_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
+  COLLECTIONS_L2_SUBGRAPH_URL,
   SQS_QUEUE_URL_REPORTING,
   SQS_ACCESS_KEY_ID,
   SQS_SECRET_ACCESS_KEY,
@@ -251,6 +256,17 @@ export class EnvironmentBuilder {
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET
           : DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN)
     )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL,
+      () =>
+        process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
+          : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
+    )
+
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SQS_QUEUE_URL_REPORTING,

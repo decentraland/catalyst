@@ -224,7 +224,7 @@ export class TheGraphClient {
     pagination: { limit: number; lastId: string | undefined }
   ): Promise<WearableId[]> {
     // Order will be L1 > L2
-    const L1_NETWORKS = ['ethereum', 'ropsten', 'kovan', 'rinkeby', 'goerli']
+    const L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
     const L2_NETWORKS = ['matic', 'mumbai']
 
     let limit = pagination.limit
