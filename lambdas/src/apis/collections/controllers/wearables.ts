@@ -127,7 +127,8 @@ export async function getWearablesEndpoint(
 }
 
 function calculateNextUrl(req: Request, queryParams: string) {
-  const host = req.get('X-Forwarded-Host') //?? req.get('Host')
+  // When running local the X-Forwarded-Host is absent, as it is set by nginx
+  const host = req.get('X-Forwarded-Host') ?? req.get('Host')
   return req.protocol + '://' + host + req.baseUrl + req.path + '?' + queryParams
 }
 
