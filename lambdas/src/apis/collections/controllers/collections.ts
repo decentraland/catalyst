@@ -69,18 +69,22 @@ export async function getCollectionsHandler(
   // Path: /
 
   try {
-    const onChainCollections = await theGraphClient.getAllCollections()
-    const collections: Collection[] = [
-      {
-        id: BASE_AVATARS_COLLECTION_ID,
-        name: 'Base Wearables'
-      },
-      ...onChainCollections.map(({ urn, name }) => ({ id: urn, name }))
-    ]
+    const collections: Collection[] = await getCollections(theGraphClient)
     res.send({ collections })
   } catch (error) {
     res.status(500).send(error.message)
   }
+}
+
+export async function getCollections(theGraphClient: TheGraphClient): Promise<Collection[]> {
+  const onChainCollections = await theGraphClient.getAllCollections()
+  return [
+    {
+      id: BASE_AVATARS_COLLECTION_ID,
+      name: 'Base Wearables'
+    },
+    ...onChainCollections.map(({ urn, name }) => ({ id: urn, name }))
+  ]
 }
 
 function getProtocol(chainId: string): string | undefined {
