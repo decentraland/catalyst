@@ -70,7 +70,6 @@ export async function getCollectionsHandler(
 
   try {
     const onChainCollections = await theGraphClient.getAllCollections()
-    onChainCollections.unshift()
     const collections: Collection[] = [
       {
         id: BASE_AVATARS_COLLECTION_ID,
