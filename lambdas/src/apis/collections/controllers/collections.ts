@@ -1,8 +1,10 @@
 import { ChainId } from '@dcl/schemas'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
+import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
-import { WearableMetadata } from '../types'
+import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
+import { Collection, WearableMetadata } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
@@ -56,6 +58,30 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
   const { urn } = req.params
 
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
+}
+
+export async function getCollectionsHandler(
+  theGraphClient: TheGraphClient,
+  req: Request,
+  res: Response
+): Promise<void> {
+  // Method: GET
+  // Path: /
+
+  try {
+    const onChainCollections = await theGraphClient.getAllCollections()
+    onChainCollections.unshift()
+    const collections: Collection[] = [
+      {
+        id: BASE_AVATARS_COLLECTION_ID,
+        name: 'Base Wearables'
+      },
+      ...onChainCollections.map(({ urn, name }) => ({ id: urn, name }))
+    ]
+    res.send({ collections })
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
 }
 
 function getProtocol(chainId: string): string | undefined {
