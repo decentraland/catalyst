@@ -84,6 +84,29 @@ export class TheGraphClient {
     return this.concatWearables(ethereumWearablesOwners, maticWearablesOwners)
   }
 
+  public async getAllCollections(): Promise<{ name: string; urn: string }[]> {
+    const l1CollectionsPromise = this.getCollections('collectionsSubgraph')
+    const l2CollectionsPromise = this.getCollections('maticCollectionsSubgraph')
+
+    const [l1Collections, l2Collections] = await Promise.all([l1CollectionsPromise, l2CollectionsPromise])
+    return l1Collections.concat(l2Collections)
+  }
+
+  private async getCollections(subgraph: keyof URLs) {
+    try {
+      const query: Query<{ collections: { name: string; urn: string }[] }, { name: string; urn: string }[]> = {
+        description: 'fetch collections',
+        subgraph: subgraph,
+        query: QUERY_COLLECTIONS,
+        mapper: (response) => response.collections,
+        default: []
+      }
+      return this.runQuery(query, {})
+    } catch {
+      return []
+    }
+  }
+
   private async calculateNetworks(wearableIdsToCheck: [EthAddress, string[]][]): Promise<Map<string, string>> {
     const urnsWithNetwork: Map<string, string> = new Map()
     const result = await Promise.all(wearableIdsToCheck.map(([_, urns]) => this.extractNetworkFromMany(urns)))
@@ -360,7 +383,7 @@ export class TheGraphClient {
       return query.mapper(response)
     } catch (error) {
       TheGraphClient.LOGGER.error(
-        `Failed to execute the following query to the subgraph '${query.description}'.`,
+        `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${query.description}'.`,
         error
       )
       return query.default
@@ -387,6 +410,15 @@ const QUERY_OWNER_BY_NAME = `
       owner {
         address
       }
+    }
+  }`
+
+// NOTE: Even though it isn't necessary right now, we might require some pagination in the future
+const QUERY_COLLECTIONS = `
+  {
+    collections (first: 1000, orderBy: urn, orderDirection: asc) {
+      urn,
+      name,
     }
   }`
 
