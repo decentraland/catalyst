@@ -120,7 +120,7 @@ export async function getWearablesEndpoint(
     )
     const next = nextLastId ? calculateNextUrl(req, queryParams) : undefined
 
-    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, next } })
+    res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
     res.status(500).send(error.message)
   }
@@ -178,7 +178,9 @@ export async function getWearables(
 
     if (!onlyBaseAvatars) {
       const onChainIds = await theGraphClient.findWearablesByFilters(filters, { limit, lastId })
+      console.log('onChainIds', onChainIds)
       const onChain = await fetchWearables(onChainIds, client)
+      console.log('onChain', onChain)
       result.push(...onChain)
     }
   }
