@@ -1,7 +1,7 @@
 import compression from 'compression'
 import cors from 'cors'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
-import express, { RequestHandler } from 'express'
+import express, { RequestHandler, Router } from 'express'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
@@ -63,59 +63,50 @@ export class Server {
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
     // Backwards compatibility for older Content API
-    this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
+    this.app.use('/contentv2', initializeContentV2Routes(createMetricsProxy(), fetcher))
 
     // Profile API implementation
     this.app.use(
       '/profile',
-      initializeIndividualProfileRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
+      initializeIndividualProfileRoutes(createMetricsProxy(), contentClient, ensOwnership, wearablesOwnership)
     )
     this.app.use(
       '/profiles',
-      initializeProfilesRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
+      initializeProfilesRoutes(createMetricsProxy(), contentClient, ensOwnership, wearablesOwnership)
     )
 
     // DCL-Crypto API implementation
-    this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))
+    this.app.use('/crypto', initializeCryptoRoutes(createMetricsProxy(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))
 
     // Images API for resizing contents
     this.app.use(
       '/images',
-      initializeImagesRoutes(express.Router(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
+      initializeImagesRoutes(createMetricsProxy(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
     )
 
     // DAO cached access API
-    this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
+    this.app.use('/contracts', initializeContractRoutes(createMetricsProxy(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
     this.app.use(
       '/collections',
-      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
+      initializeCollectionsRoutes(createMetricsProxy(), contentClient, theGraphClient, offChainManager)
     )
 
     // Functionality for Explore use case
-    this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
+    this.app.use('/explore', initializeExploreRoutes(createMetricsProxy(), env.getBean(Bean.DAO), contentClient))
   }
 
   private registerRoute(
     route: string,
     controller: Controller,
-    action: (req: express.Request, res: express.Response) => void,
-    isPost?: boolean,
-    extraHandler?: RequestHandler
+    action: (req: express.Request, res: express.Response) => void
   ) {
     const handlers: RequestHandler[] = [
       ...Metrics.requestHandlers(),
       (req: express.Request, res: express.Response) => action.call(controller, req, res)
     ]
-    if (extraHandler) {
-      handlers.unshift(extraHandler)
-    }
-    if (!isPost) {
-      this.app.get(route, handlers)
-    } else {
-      this.app.post(route, handlers)
-    }
+    this.app.get(route, handlers)
   }
 
   async start(): Promise<void> {
@@ -131,4 +122,21 @@ export class Server {
       })
     }
   }
+}
+
+const METHODS_TO_PROXY = ['get', 'post', 'put', 'delete', 'patch']
+/** Create an ES6 proxy that will inject the appropriate handlers to record metrics */
+function createMetricsProxy(): Router {
+  return new Proxy<Router>(express.Router(), {
+    get: (target: Router, p: string | symbol, receiver: any) => {
+      if (typeof p === 'string' && METHODS_TO_PROXY.includes(p)) {
+        return (route, handler) => {
+          const handlers = [...Metrics.requestHandlers(), handler]
+          return target[p](route, handlers)
+        }
+      } else {
+        return Reflect.get(target, p, receiver)
+      }
+    }
+  })
 }
