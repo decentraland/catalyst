@@ -178,9 +178,7 @@ export async function getWearables(
 
     if (!onlyBaseAvatars) {
       const onChainIds = await theGraphClient.findWearablesByFilters(filters, { limit, lastId })
-      console.log('onChainIds', onChainIds)
       const onChain = await fetchWearables(onChainIds, client)
-      console.log('onChain', onChain)
       result.push(...onChain)
     }
   }
