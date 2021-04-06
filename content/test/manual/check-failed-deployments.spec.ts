@@ -1,4 +1,4 @@
-import { DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET } from '@katalyst/content/Environment'
+import { DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET } from '@katalyst/content/Environment'
 import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { AuditInfo } from '@katalyst/content/service/Audit'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
@@ -52,7 +52,7 @@ describe('Failed Deployments validations.', () => {
       const accessChecker = new AccessCheckerImpl(
         new ContentAuthenticator(),
         new Fetcher(),
-        DEFAULT_DCL_PARCEL_ACCESS_URL_MAINNET
+        DEFAULT_LAND_MANAGER_SUBGRAPH_MAINNET
       )
 
       if (reviewSceneErrors) {

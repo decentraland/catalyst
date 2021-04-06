@@ -5,28 +5,23 @@ import {
   EntityType,
   EntityVersion,
   LegacyAuditInfo,
-  LegacyDeploymentEvent,
-  LegacyPartialDeploymentHistory,
   PartialDeploymentHistory,
   Pointer,
-  ServerAddress,
   SortingField,
   SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
+import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
+import onFinished from 'on-finished'
 import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import {
-  Deployment,
-  DeploymentPointerChanges,
-  ExtendedDeploymentFilters
-} from '../service/deployments/DeploymentManager'
+import { Deployment, DeploymentPointerChanges } from '../service/deployments/DeploymentManager'
 import {
   DeploymentResult,
   isSuccessfulDeployment,
@@ -239,7 +234,11 @@ export class Controller {
       if (data.getLength()) {
         res.setHeader('Content-Length', data.getLength()!.toString())
       }
-      data.asStream().pipe(res)
+      const stream = data.asStream()
+      stream.pipe(res)
+
+      // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
+      onFinished(res, () => destroy(stream))
     } else {
       res.status(404).send()
     }
@@ -284,7 +283,7 @@ export class Controller {
       const { auditInfo } = deployments[0]
       const legacyAuditInfo: LegacyAuditInfo = {
         version: auditInfo.version,
-        deployedTimestamp: auditInfo.originTimestamp,
+        deployedTimestamp: auditInfo.localTimestamp,
         authChain: auditInfo.authChain,
         overwrittenBy: auditInfo.overwrittenBy,
         isDenylisted: auditInfo.isDenylisted,
@@ -295,52 +294,6 @@ export class Controller {
     } else {
       res.status(404).send()
     }
-  }
-
-  async getHistory(req: express.Request, res: express.Response) {
-    // Method: GET
-    // Path: /history
-    // Query String: ?from={timestamp}&to={timestamp}&serverName={string}
-    const fromOriginTimestamp = req.query.from
-    const toOriginTimestamp = req.query.to
-    const serverName = req.query.serverName
-    const offset = this.asInt(req.query.offset)
-    const limit = this.asInt(req.query.limit)
-
-    const originServerUrl: ServerAddress | undefined = serverName ? decodeURIComponent(serverName) : undefined
-
-    const requestFilters: ExtendedDeploymentFilters = { originServerUrl, fromOriginTimestamp, toOriginTimestamp }
-    const deployments = await this.service.getDeployments({
-      filters: requestFilters,
-      sortBy: { field: SortingField.ORIGIN_TIMESTAMP, order: SortingOrder.DESCENDING },
-      offset: offset,
-      limit: limit
-    })
-
-    const finalDeployments: LegacyDeploymentEvent[] = deployments.deployments
-      .slice(0, deployments.pagination.limit)
-      .map((deployment) => ({
-        entityType: deployment.entityType,
-        entityId: deployment.entityId,
-        timestamp: deployment.auditInfo.originTimestamp,
-        serverName: encodeURIComponent(deployment.auditInfo.originServerUrl)
-      }))
-
-    const legacyHistory: LegacyPartialDeploymentHistory = {
-      events: finalDeployments,
-      filters: {
-        from: fromOriginTimestamp,
-        to: toOriginTimestamp,
-        serverName: serverName
-      },
-      pagination: {
-        offset: deployments.pagination.offset,
-        limit: deployments.pagination.limit,
-        moreData: deployments.pagination.moreData
-      }
-    }
-
-    res.send(legacyHistory)
   }
 
   async getPointerChanges(req: express.Request, res: express.Response) {

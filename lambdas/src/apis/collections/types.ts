@@ -1,5 +1,10 @@
 import { EthAddress } from 'dcl-crypto'
 
+export type Collection = {
+  id: string
+  name: string
+}
+
 export type WearableMetadata = {
   id: WearableId
   description: string
@@ -62,6 +67,6 @@ export type WearablesFilters = {
 }
 
 export type WearablesPagination = {
-  offset: number
   limit: number
+  lastId: WearableId | undefined
 }

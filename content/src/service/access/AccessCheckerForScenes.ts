@@ -11,7 +11,7 @@ export class AccessCheckerForScenes {
   constructor(
     private readonly authenticator: ContentAuthenticator,
     private readonly fetcher: Fetcher,
-    private readonly dclParcelAccessUrl: string,
+    private readonly landManagerSubgraphUrl: string,
     private readonly LOGGER: log4js.Logger
   ) {}
 
@@ -206,7 +206,7 @@ export class AccessCheckerForScenes {
     }
 
     try {
-      return (await this.fetcher.queryGraph<{ parcels: Parcel[] }>(this.dclParcelAccessUrl, query, variables))
+      return (await this.fetcher.queryGraph<{ parcels: Parcel[] }>(this.landManagerSubgraphUrl, query, variables))
         .parcels[0]
     } catch (error) {
       this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
@@ -258,7 +258,7 @@ export class AccessCheckerForScenes {
     }
 
     try {
-      return (await this.fetcher.queryGraph<{ estates: Estate[] }>(this.dclParcelAccessUrl, query, variables))
+      return (await this.fetcher.queryGraph<{ estates: Estate[] }>(this.landManagerSubgraphUrl, query, variables))
         .estates[0]
     } catch (error) {
       this.LOGGER.error(`Error fetching estate (${estateId})`, error)
@@ -295,7 +295,11 @@ export class AccessCheckerForScenes {
 
     try {
       return (
-        await this.fetcher.queryGraph<{ authorizations: Authorization[] }>(this.dclParcelAccessUrl, query, variables)
+        await this.fetcher.queryGraph<{ authorizations: Authorization[] }>(
+          this.landManagerSubgraphUrl,
+          query,
+          variables
+        )
       ).authorizations
     } catch (error) {
       this.LOGGER.error(`Error fetching authorizations for ${owner}`, error)

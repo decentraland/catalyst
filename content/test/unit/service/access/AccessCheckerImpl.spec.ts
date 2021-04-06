@@ -1,7 +1,8 @@
-import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
+import { AccessCheckerImpl, AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
+import { anything, instance, mock, verify, when } from 'ts-mockito'
 
 describe('AccessCheckerImpl', function () {
   it(`When a non-decentraland address tries to deploy an default scene, then an error is returned`, async () => {
@@ -46,7 +47,60 @@ describe('AccessCheckerImpl', function () {
     )
   })
 
-  function buildAccessChecker() {
-    return new AccessCheckerImpl(new ContentAuthenticator(), new Fetcher(), 'unused_url', 'unused_url')
+  it(`When urn network belongs to L2, then L2 subgraph is used`, async () => {
+    const l2Url = 'http://someUrl'
+    const { fetcher, mockedFetcher } = mockFetcher()
+
+    const accessChecker = buildAccessChecker({
+      fetcher,
+      collectionsL2SubgraphUrl: l2Url
+    })
+
+    await accessChecker.hasAccess(
+      EntityType.WEARABLE,
+      ['urn:decentraland:mumbai:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'],
+      Date.now(),
+      'Unused Address'
+    )
+
+    verify(mockedFetcher.queryGraph(l2Url, anything(), anything())).once()
+  })
+
+  it(`When urn network belongs to L1, then L1 subgraph is used`, async () => {
+    const l1Url = 'http://someUrl'
+    const { fetcher, mockedFetcher } = mockFetcher()
+
+    const accessChecker = buildAccessChecker({
+      fetcher,
+      collectionsL1SubgraphUrl: l1Url
+    })
+
+    await accessChecker.hasAccess(
+      EntityType.WEARABLE,
+      ['urn:decentraland:ethereum:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'],
+      Date.now(),
+      'Unused Address'
+    )
+
+    verify(mockedFetcher.queryGraph(l1Url, anything(), anything())).once()
+  })
+
+  function buildAccessChecker(params?: Partial<AccessCheckerImplParams>) {
+    const finalParams = {
+      authenticator: new ContentAuthenticator(),
+      fetcher: new Fetcher(),
+      landManagerSubgraphUrl: 'Unused URL',
+      collectionsL1SubgraphUrl: 'Unused URL',
+      collectionsL2SubgraphUrl: 'Unused URL',
+      ...params
+    }
+    return new AccessCheckerImpl(finalParams)
+  }
+
+  function mockFetcher() {
+    const mockedFetcher = mock(Fetcher)
+    when(mockedFetcher.fetchJson(anything(), anything())).thenResolve({ collections: [], items: [] })
+    const fetcher = instance(mockedFetcher)
+    return { fetcher, mockedFetcher }
   }
 })

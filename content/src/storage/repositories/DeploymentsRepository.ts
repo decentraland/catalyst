@@ -1,8 +1,8 @@
-import { ExtendedDeploymentFilters } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
 import { Repository } from '@katalyst/content/storage/Repository'
 import {
   AuditInfo,
+  DeploymentFilters,
   DeploymentSorting,
   EntityId,
   EntityType,
@@ -33,12 +33,7 @@ export class DeploymentsRepository {
     return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], (row) => parseInt(row.count))
   }
 
-  getHistoricalDeployments(
-    offset: number,
-    limit: number,
-    filters?: ExtendedDeploymentFilters,
-    sortBy?: DeploymentSorting
-  ) {
+  getHistoricalDeployments(offset: number, limit: number, filters?: DeploymentFilters, sortBy?: DeploymentSorting) {
     const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
     return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters)
   }
@@ -48,7 +43,7 @@ export class DeploymentsRepository {
     order: string,
     offset: number,
     limit: number,
-    filters?: ExtendedDeploymentFilters
+    filters?: DeploymentFilters
   ) {
     let query = `
             SELECT
@@ -84,21 +79,6 @@ export class DeploymentsRepository {
     if (filters?.toLocalTimestamp) {
       values.toLocalTimestamp = filters.toLocalTimestamp
       whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
-    }
-
-    if (filters?.fromOriginTimestamp) {
-      values.fromOriginTimestamp = filters.fromOriginTimestamp
-      whereClause.push(`dep1.origin_timestamp >= to_timestamp($(fromOriginTimestamp) / 1000.0)`)
-    }
-
-    if (filters?.toOriginTimestamp) {
-      values.toOriginTimestamp = filters.toOriginTimestamp
-      whereClause.push(`dep1.origin_timestamp <= to_timestamp($(toOriginTimestamp) / 1000.0)`)
-    }
-
-    if (filters?.originServerUrl) {
-      values.originServerUrl = filters.originServerUrl
-      whereClause.push(`dep1.origin_server_url = $(originServerUrl)`)
     }
 
     if (filters?.deployedBy && filters.deployedBy.length > 0) {
@@ -204,8 +184,8 @@ export class DeploymentsRepository {
                 to_timestamp($(entity.timestamp) / 1000.0),
                 $(entity.pointers),
                 $(metadata),
-                $(auditInfo.originServerUrl),
-                to_timestamp($(auditInfo.originTimestamp) / 1000.0),
+                'https://peer.decentraland.org/content',
+                to_timestamp($(auditInfo.localTimestamp) / 1000.0),
                 to_timestamp($(auditInfo.localTimestamp) / 1000.0),
                 $(auditInfo.authChain:json),
                 $(overwrittenBy)

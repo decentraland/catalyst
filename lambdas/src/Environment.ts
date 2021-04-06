@@ -14,10 +14,15 @@ export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_ENS_OWNER_PROVIDER_URL_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten'
 const DEFAULT_ENS_OWNER_PROVIDER_URL_MAINNET = 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace'
-export const DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN =
+export const DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-ropsten'
-export const DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET =
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-ethereum-mainnet'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
+export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
@@ -69,7 +74,8 @@ export const enum EnvironmentConfig {
   LOG_REQUESTS,
   CONTENT_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
-  COLLECTIONS_PROVIDER_URL,
+  COLLECTIONS_L1_SUBGRAPH_URL,
+  COLLECTIONS_L2_SUBGRAPH_URL,
   COMMIT_HASH,
   CATALYST_VERSION,
   USE_COMPRESSION_MIDDLEWARE,
@@ -124,13 +130,24 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.COLLECTIONS_PROVIDER_URL,
+      EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL,
       () =>
-        process.env.COLLECTIONS_PROVIDER_URL ??
+        process.env.COLLECTIONS_L1_SUBGRAPH_URL ??
         (process.env.ETH_NETWORK === 'mainnet'
-          ? DEFAULT_COLLECTIONS_PROVIDER_URL_MAINNET
-          : DEFAULT_COLLECTIONS_PROVIDER_URL_ROPSTEN)
+          ? DEFAULT_COLLECTIONS_SUBGRAPH_MAINNET
+          : DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN)
     )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL,
+      () =>
+        process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
+          : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
+    )
+
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')
     this.registerConfigIfNotAlreadySet(
       env,

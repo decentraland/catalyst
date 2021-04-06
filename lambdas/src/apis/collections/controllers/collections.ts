@@ -1,7 +1,10 @@
+import { ChainId } from '@dcl/schemas'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
+import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
-import { WearableMetadata } from '../types'
+import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
+import { Collection, WearableMetadata } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
@@ -42,15 +45,14 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   }
 }
 
-export async function contentsImage(client: SmartContentClient, req: Request, res: Response) {
+export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/image
   const { urn } = req.params
-
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.image)
 }
 
-export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response) {
+export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/thumbnail
   const { urn } = req.params
@@ -58,21 +60,48 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
   await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
 }
 
+export async function getCollectionsHandler(
+  theGraphClient: TheGraphClient,
+  req: Request,
+  res: Response
+): Promise<void> {
+  // Method: GET
+  // Path: /
+
+  try {
+    const collections: Collection[] = await getCollections(theGraphClient)
+    res.send({ collections })
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
+}
+
+export async function getCollections(theGraphClient: TheGraphClient): Promise<Collection[]> {
+  const onChainCollections = await theGraphClient.getAllCollections()
+  return [
+    {
+      id: BASE_AVATARS_COLLECTION_ID,
+      name: 'Base Wearables'
+    },
+    ...onChainCollections.map(({ urn, name }) => ({ id: urn, name }))
+  ]
+}
+
 function getProtocol(chainId: string): string | undefined {
-  switch (chainId) {
-    case '1':
+  switch (parseInt(chainId, 10)) {
+    case ChainId.ETHEREUM_MAINNET:
       return 'ethereum'
-    case '3':
+    case ChainId.ETHEREUM_ROPSTEN:
       return 'ropsten'
-    case '4':
+    case ChainId.ETHEREUM_RINKEBY:
       return 'rinkeby'
-    case '5':
+    case ChainId.ETHEREUM_GOERLI:
       return 'goerli'
-    case '42':
+    case ChainId.ETHEREUM_KOVAN:
       return 'kovan'
-    case '89':
+    case ChainId.MATIC_MAINNET:
       return 'matic'
-    case '13881':
+    case ChainId.MATIC_MUMBAI:
       return 'mumbai'
   }
 }
@@ -87,21 +116,20 @@ async function internalContents(
   res: Response,
   urn: string,
   selector: (metadata: WearableMetadata) => string | undefined
-) {
+): Promise<void> {
   try {
-    let contentBuffer: Buffer | undefined = undefined
     const entity = await fetchEntity(client, urn)
     if (entity) {
       const wearableMetadata: WearableMetadata = entity.metadata
       const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
-        contentBuffer = await client.downloadContent(hash) // TODO: fetch a stream instead of a Buffer. See https://github.com/decentraland/catalyst/issues/199
+        const headers: Map<string, string> = await client.pipeContent(hash, (res as any) as ReadableStream<Uint8Array>)
+        headers.forEach((value: string, key: string) => {
+          res.setHeader(key, value)
+        })
+      } else {
+        res.status(404).send()
       }
-    }
-    if (contentBuffer) {
-      res.send(contentBuffer)
-    } else {
-      res.status(404).send()
     }
   } catch (e) {
     res.status(500).send(e.message)

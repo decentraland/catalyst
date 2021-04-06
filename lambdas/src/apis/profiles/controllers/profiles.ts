@@ -34,12 +34,18 @@ export async function getProfilesById(
   res: Response
 ) {
   const profileIds: EthAddress[] | undefined = asArray(req.query.id)
+  const fields: string[] | undefined = asArray(req.query.field)
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }
 
-  const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
-  res.send(profiles)
+  if (fields && fields.includes('snapshots')) {
+    const profiles = await fetchProfilesForSnapshots(profileIds, client)
+    res.send(profiles)
+  } else {
+    const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
+    res.send(profiles)
+  }
 }
 
 // Visible for testing purposes
@@ -81,8 +87,11 @@ export async function fetchProfiles(
     await Promise.all(entityPromises)
 
     // Check which NFTs are owned
-    const ownedWearables = performWearableSanitization ? await wearablesOwnership.areNFTsOwned(wearables) : new Map()
-    const ownedENS = await ensOwnership.areNFTsOwned(names)
+    const ownedWearablesPromise = performWearableSanitization
+      ? wearablesOwnership.areNFTsOwned(wearables)
+      : Promise.resolve(new Map())
+    const ownedENSPromise = ensOwnership.areNFTsOwned(names)
+    const [ownedWearables, ownedENS] = await Promise.all([ownedWearablesPromise, ownedENSPromise])
 
     // Add name data and snapshot urls to profiles
     const result = Array.from(profiles.entries()).map(async ([ethAddress, profile]) => {
@@ -94,6 +103,9 @@ export async function fetchProfiles(
         hasClaimedName: ensOwnership.get(profileData.name) ?? false,
         avatar: {
           ...profileData.avatar,
+          bodyShape: performWearableSanitization
+            ? await translateWearablesIdFormat(profileData.avatar.bodyShape)
+            : profileData.avatar.bodyShape,
           snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), profileData.avatar, content),
           wearables: performWearableSanitization
             ? await sanitizeWearables(fixWearableId(profileData.avatar.wearables), wearablesOwnership)
@@ -103,6 +115,40 @@ export async function fetchProfiles(
       return { avatars: await Promise.all(avatars) }
     })
     return await Promise.all(result)
+  } catch (error) {
+    LOGGER.warn(error)
+    return []
+  }
+}
+
+// Visible for testing purposes
+export async function fetchProfilesForSnapshots(
+  ethAddresses: EthAddress[],
+  client: SmartContentClient
+): Promise<ProfileMetadataForSnapshots[]> {
+  try {
+    const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+
+    const profilesMetadataForSnapshots: ProfileMetadataForSnapshots[] = entities
+      .filter((entity) => !!entity.metadata)
+      .map((entity) => {
+        const ethAddress: EthAddress = entity.pointers[0]
+        const metadata: ProfileMetadata = entity.metadata
+        const avatar: Avatar = metadata.avatars[0].avatar
+        const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
+        const profileMetadataForSnapshots: ProfileMetadataForSnapshots = {
+          ethAddress,
+          avatars: [
+            {
+              avatar: {
+                snapshots: addBaseUrlToSnapshots(client.getExternalContentServerUrl(), avatar, content)
+              }
+            }
+          ]
+        }
+        return profileMetadataForSnapshots
+      })
+    return profilesMetadataForSnapshots
   } catch (error) {
     console.log(error)
     LOGGER.warn(error)
@@ -178,4 +224,14 @@ type Avatar = {
   snapshots: AvatarSnapshots
   version: number
   wearables: WearableId[]
+}
+
+export type ProfileMetadataForSnapshots = {
+  ethAddress: EthAddress
+  avatars: {
+    avatar: AvatarForSnapshots
+  }[]
+}
+type AvatarForSnapshots = {
+  snapshots: AvatarSnapshots
 }

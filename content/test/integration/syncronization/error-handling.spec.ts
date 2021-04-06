@@ -10,10 +10,8 @@ import {
   assertEntitiesAreActiveOnServer,
   assertEntitiesAreDeployedButNotActive,
   assertEntityWasNotDeployed,
-  assertHistoryOnServerHasEvents,
   assertThereIsAFailedDeployment,
-  buildDeployment,
-  buildEvent
+  buildDeployment
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
@@ -30,6 +28,7 @@ describe('End 2 end - Error handling', () => {
       .configServer('5s')
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
+      .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .withBean(Bean.ACCESS_CHECKER, accessChecker)
       .andBuildMany(2)
   })
@@ -146,8 +145,7 @@ describe('End 2 end - Error handling', () => {
 
     // Deploy the entity
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deploymentEvent = buildEvent(entityBeingDeployed, server1, deploymentTimestamp)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, server1, deploymentTimestamp)
+    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)
@@ -156,15 +154,12 @@ describe('End 2 end - Error handling', () => {
     await server2.start()
 
     // Assert deployment is marked as failed
-    await awaitUntil(() =>
-      assertDeploymentFailed(server2, errorType, entityBeingDeployed, deploymentTimestamp, server1.getAddress())
-    )
+    await awaitUntil(() => assertDeploymentFailed(server2, errorType, entityBeingDeployed, deploymentTimestamp))
 
     // Assert entity wasn't deployed
     await assertEntityWasNotDeployed(server2, entityBeingDeployed)
 
     // Assert history was not modified
-    await assertHistoryOnServerHasEvents(server2)
     await assertDeploymentsAreReported(server2)
 
     // Remove cause of failure
@@ -181,7 +176,6 @@ describe('End 2 end - Error handling', () => {
     await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
 
     // Assert history was modified
-    await assertHistoryOnServerHasEvents(server2, deploymentEvent)
     await assertDeploymentsAreReported(server2, deployment)
   }
 })

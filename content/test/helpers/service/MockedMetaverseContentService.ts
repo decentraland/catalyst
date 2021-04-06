@@ -42,9 +42,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
   static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {
     localTimestamp: Date.now(),
-    originTimestamp: Date.now(),
     deployedTimestamp: Date.now(),
-    originServerUrl: 'http://localhost',
     authChain: [
       {
         type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY,

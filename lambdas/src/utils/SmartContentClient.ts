@@ -7,6 +7,7 @@ import {
 } from 'dcl-catalyst-client'
 import {
   AvailableContentResult,
+  CompleteRequestOptions,
   ContentFileHash,
   DeploymentBase,
   Entity,
@@ -14,18 +15,14 @@ import {
   EntityType,
   Fetcher,
   LegacyAuditInfo,
-  LegacyDeploymentHistory,
-  LegacyPartialDeploymentHistory,
   Pointer,
   RequestOptions,
-  ServerName,
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 import { Readable } from 'stream'
-
 /**
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
@@ -59,29 +56,13 @@ export class SmartContentClient implements ContentAPI {
     return client.fetchAuditInfo(type, id, options)
   }
 
-  async fetchFullHistory(
-    query?: { from?: Timestamp; to?: Timestamp; serverName?: ServerName },
-    options?: RequestOptions
-  ): Promise<LegacyDeploymentHistory> {
+  async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
     const client = await this.getClient()
-    return client.fetchFullHistory(query, options)
-  }
-
-  async fetchHistory(
-    query?: { from?: Timestamp; to?: Timestamp; serverName?: ServerName; offset?: number; limit?: number },
-    options?: RequestOptions
-  ): Promise<LegacyPartialDeploymentHistory> {
-    const client = await this.getClient()
-    return client.fetchHistory(query, options)
-  }
-
-  async fetchStatus(options?: RequestOptions): Promise<ServerStatus> {
-    const client = await this.getClient()
-    return client.fetchStatus(options)
+    return client.fetchContentStatus(options)
   }
 
   async fetchAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-    deploymentOptions?: DeploymentOptions<T>,
+    deploymentOptions: DeploymentOptions<T>,
     options?: RequestOptions
   ): Promise<T[]> {
     const client = await this.getClient()
@@ -100,6 +81,15 @@ export class SmartContentClient implements ContentAPI {
     return client.downloadContent(contentHash, options)
   }
 
+  async pipeContent(
+    contentHash: string,
+    responseTo: ReadableStream<Uint8Array>,
+    options?: Partial<CompleteRequestOptions>
+  ): Promise<Map<string, string>> {
+    const client = await this.getClient()
+    return await client.pipeContent(contentHash, (responseTo as any) as ReadableStream<Uint8Array>, options)
+  }
+
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {
     const client = await this.getClient()
     return client.isContentAvailable(cids, options)
@@ -107,6 +97,10 @@ export class SmartContentClient implements ContentAPI {
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<Timestamp> {
     throw new Error('New deployments are currently not supported')
+  }
+
+  getContentUrl(): string {
+    throw new Error('Get content url is currently not supported')
   }
 
   getExternalContentServerUrl(): string {

@@ -11,6 +11,7 @@ ts_library(
         "//contracts",
         "//commons/utils",
         "//commons/servers",
+        "@npm//@dcl/schemas",
         "@npm//@types",
         "@npm//@types/node",
         "@npm//@types/compression",
@@ -35,6 +36,8 @@ ts_library(
         "@npm//dcl-crypto",
         "@npm//dcl-catalyst-commons",
         "@npm//dcl-catalyst-client",
-        "@npm//@dcl/urn-resolver"
+        "@npm//@dcl/urn-resolver",
+        "@npm//@types/qs",
+        "@npm//qs"
     ],
 )

@@ -1,5 +1,9 @@
 import { WearableId } from '@katalyst/lambdas/apis/collections/types'
-import { fetchProfiles, ProfileMetadata } from '@katalyst/lambdas/apis/profiles/controllers/profiles'
+import {
+  fetchProfiles,
+  fetchProfilesForSnapshots,
+  ProfileMetadata
+} from '@katalyst/lambdas/apis/profiles/controllers/profiles'
 import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '@katalyst/lambdas/apis/profiles/WearablesOwnership'
@@ -100,6 +104,31 @@ describe('profiles', () => {
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
   })
+
+  it(`When profiles are returned but only the snapshots, external urls are added to snapshots`, async () => {
+    const { entity } = profileWith(SOME_ADDRESS, { snapshots: { aKey: 'aHash' } })
+    const client = contentServerThatReturns(entity)
+
+    const profiles = await fetchProfilesForSnapshots([SOME_ADDRESS], client)
+
+    expect(profiles.length).toEqual(1)
+    expect(profiles[0].ethAddress).toEqual(SOME_ADDRESS)
+    expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
+  })
+
+  it(`When profiles are returned but only the snapshots, external urls pointing to the hash are added to snapshots`, async () => {
+    const { entity } = profileWith(SOME_ADDRESS, {
+      snapshots: { aKey: './file' },
+      content: { file: './file', hash: 'fileHash' }
+    })
+    const client = contentServerThatReturns(entity)
+
+    const profiles = await fetchProfilesForSnapshots([SOME_ADDRESS], client)
+
+    expect(profiles.length).toEqual(1)
+    expect(profiles[0].ethAddress).toEqual(SOME_ADDRESS)
+    expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
+  })
 })
 
 function profileWith(
@@ -118,7 +147,7 @@ function profileWith(
         description: 'description',
         hasClaimedName: true,
         avatar: {
-          bodyShape: {},
+          bodyShape: 'bodyShape',
           eyes: {},
           hair: {},
           skin: {},

@@ -1,5 +1,3 @@
-import ts from '@wessberg/rollup-plugin-ts'
-
 /* eslint-disable @typescript-eslint/no-var-requires */
 const json = require('rollup-plugin-json')
 
@@ -10,5 +8,5 @@ export default {
   output: {
     name: 'bundle'
   },
-  plugins: [json(), ts({})]
+  plugins: [json()]
 }

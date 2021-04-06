@@ -1,25 +1,22 @@
-import { getWearables, getWearablesByOwner } from '@katalyst/lambdas/apis/collections/controllers/wearables'
-import { OffChainWearablesManager } from '@katalyst/lambdas/apis/collections/off-chain/OffChainWearablesManager'
+import { getWearablesByOwner } from '@katalyst/lambdas/apis/collections/controllers/wearables'
 import { WearableId } from '@katalyst/lambdas/apis/collections/types'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
-import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
+import { anything, instance, mock, verify, when } from 'ts-mockito'
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'
 const WEARABLE_ID_2 = 'someOtherCollection-someOtherWearable'
 const WEARABLE_METADATA = {
+  id: 'someId',
   someProperty: 'someValue',
   data: { representations: [] },
   image: undefined,
   thumbnail: undefined
 } as any
-const WEARABLE = {
-  someProperty: 'someValue'
-} as any
 
-describe('wearables', () => {
+describe('wearables by owner', () => {
   it(`When user doesn't have any wearables, then the response is empty`, async () => {
     const { instance: contentClient, mock: contentClientMock } = emptyContentServer()
     const graphClient = noOwnedWearables()
@@ -48,7 +45,7 @@ describe('wearables', () => {
   })
 
   it(`When user requests definitions, then they are included in the response`, async () => {
-    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_METADATA)
+    const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_ID_1)
     const graphClient = ownedWearables(WEARABLE_ID_1)
 
     const wearables = await getWearablesByOwner(SOME_ADDRESS, true, contentClient, graphClient)
@@ -57,7 +54,7 @@ describe('wearables', () => {
     const [wearable] = wearables
     expect(wearable.urn).toBe(WEARABLE_ID_1)
     expect(wearable.amount).toBe(1)
-    expect(wearable.definition).toEqual(WEARABLE_METADATA)
+    expect(wearable.definition).toEqual({ ...WEARABLE_METADATA, id: WEARABLE_ID_1 })
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
   })
 
@@ -74,53 +71,28 @@ describe('wearables', () => {
     expect(wearable.definition).toBeUndefined()
     verify(contentClientMock.fetchEntitiesByPointers(anything(), anything())).once()
   })
-
-  it(`When page is filled by off-chain, then subgraph is never queried`, async () => {
-    const { instance: contentClient } = emptyContentServer()
-    const { instance: graphClient, mock: graphClientMock } = noExistingWearables()
-    const offChain = offChainManager()
-
-    const pagination = { offset: 0, limit: 1 }
-    const wearables = await getWearables({}, pagination, contentClient, graphClient, offChain)
-
-    expect(wearables).toEqual([WEARABLE])
-    verify(graphClientMock.findWearablesByFilters(anything(), anything())).never()
-  })
-
-  it(`When page is not filled by off-chain, then subgraph is queried with the correct parameters`, async () => {
-    const { instance: contentClient } = contentServerThatReturns(WEARABLE_METADATA)
-    const { instance: graphClient, mock: graphClientMock } = existingWearables(WEARABLE_ID_1)
-    const offChain = offChainManager()
-
-    const filters = {}
-    const pagination = { offset: 0, limit: 2 }
-    const wearables = await getWearables(filters, pagination, contentClient, graphClient, offChain)
-
-    expect(wearables.length).toEqual(2)
-    verify(graphClientMock.findWearablesByFilters(deepEqual(filters), deepEqual({ offset: 0, limit: 1 }))).once()
-  })
 })
 
 function emptyContentServer() {
   return contentServerThatReturns()
 }
 
-function offChainManager(): OffChainWearablesManager {
-  const mockedManager = mock(OffChainWearablesManager)
-  when(mockedManager.find(anything())).thenResolve([WEARABLE])
-  return instance(mockedManager)
-}
-
-function contentServerThatReturns(metadata?: any) {
+function contentServerThatReturns(id?: WearableId) {
   const entity = {
     id: '',
     type: EntityType.WEARABLE,
-    pointers: [WEARABLE_ID_1],
+    pointers: [id ?? ''],
     timestamp: 10,
-    metadata
+    metadata: {
+      id,
+      someProperty: 'someValue',
+      data: { representations: [] },
+      image: undefined,
+      thumbnail: undefined
+    }
   }
   const mockedClient = mock(SmartContentClient)
-  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(metadata ? [entity] : [])
+  when(mockedClient.fetchEntitiesByPointers(anything(), anything())).thenResolve(id ? [entity] : [])
   return { instance: instance(mockedClient), mock: mockedClient }
 }
 
@@ -132,14 +104,4 @@ function ownedWearables(...ownedWearables: WearableId[]): TheGraphClient {
   const mockedClient = mock(TheGraphClient)
   when(mockedClient.findWearablesByOwner(anything())).thenResolve(ownedWearables)
   return instance(mockedClient)
-}
-
-function noExistingWearables() {
-  return existingWearables()
-}
-
-function existingWearables(...existingWearables: WearableId[]) {
-  const mockedClient = mock(TheGraphClient)
-  when(mockedClient.findWearablesByFilters(anything(), anything())).thenResolve(existingWearables)
-  return { instance: instance(mockedClient), mock: mockedClient }
 }
