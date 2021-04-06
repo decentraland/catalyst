@@ -283,6 +283,6 @@ workflows:
             - build-content
             - build-lambdas
       - publish-docker-without-tag:
-          <<: *master_and_tags
+          <<: *testing_branches
           requires:
             - accept-publish-docker-for-testing
