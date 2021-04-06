@@ -108,7 +108,7 @@ export async function getWearablesEndpoint(
       offChainManager
     )
 
-    const queryParams = qs.stringify(
+    const nextQueryParams = qs.stringify(
       {
         collectionId: requestFilters.collectionIds,
         wearableId: requestFilters.wearableIds,
@@ -118,18 +118,12 @@ export async function getWearablesEndpoint(
       },
       { arrayFormat: 'repeat' }
     )
-    const next = nextLastId ? calculateNextUrl(req, queryParams) : undefined
+    const next = nextLastId ? '?' + nextQueryParams : undefined
 
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
     res.status(500).send(error.message)
   }
-}
-
-function calculateNextUrl(req: Request, queryParams: string) {
-  // When running local the X-Forwarded-Host is absent, as it is set by nginx
-  const host = req.get('X-Forwarded-Host') ?? req.get('Host')
-  return req.protocol + '://' + host + req.baseUrl + req.path + '?' + queryParams
 }
 
 /**
