@@ -37,12 +37,12 @@ export class Metrics {
 
   private static requestCounters = function (req, _res, next) {
     numRequests.inc({ method: req.method })
-    pathsTaken.inc({ path: req.route.path })
+    pathsTaken.inc({ path: req.baseUrl + req.route.path })
     next()
   }
 
   private static responseCounters = ResponseTime(function (req, res, time) {
-    responses.labels(req.method, req.route.path, res.statusCode).observe(time)
+    responses.labels(req.method, req.baseUrl + req.route.path, res.statusCode).observe(time)
   })
 
   private static injectMetricsRoute(app: express.Express) {
