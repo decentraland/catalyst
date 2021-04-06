@@ -33,6 +33,14 @@ references:
       - <<: *image_client
     working_directory: *workspace_root
 
+
+  .testing_branches: &testing_branches
+    filters:
+      branches:
+        ignore: master
+      tags:
+        ignore: /(.*)/
+
   .all_branches_and_tags: &all_branches_and_tags
     filters:
       branches:
@@ -169,8 +177,17 @@ jobs:
               docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
               docker push "${DOCKER_IMAGE_NAME}:latest"
+              # TODO: publish SNS message for stable channel
             fi
-  tag-latest-docker:
+
+            if [ "${CIRCLE_BRANCH}" = "master" ]; then
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
+              docker push "${DOCKER_IMAGE_NAME}:next"
+
+              # TODO: publish SNS message for latest channel
+            fi
+
+  publish-docker-without-tag:
     <<: *base_env
     docker:
       - image: circleci/node:12-browsers
@@ -180,14 +197,18 @@ jobs:
       - <<: *attach_root
       - setup_remote_docker: { docker_layer_caching: true }
       - run:
+          name: Prepare to build Docker image
+          command: ./prepare_for_docker_image.sh
+      - run:
+          name: Build Docker image
+          command: docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} .
+      - run:
           name: Log into DockerHub
           command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
       - run:
-          name: Tag image
+          name: Push image (without tag)
           command: |
-            docker pull "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
-            docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
-            docker push "${DOCKER_IMAGE_NAME}:latest"
+            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
 
 workflows:
   version: 2
@@ -231,30 +252,37 @@ workflows:
           type: approval
           requires:
             - build-peer
+            # build-peer is the only real dependency. But we wait to reduce possibilities of bugs
+            # in other pipelines
+            - build-lighthouse
+            - build-content
+            - build-lambdas
       - publish-peer:
           <<: *master_and_tags
           requires:
             - accept-publish-peer
 
-      # publish docker image
-      - accept-publish-docker:
-          <<: *all_branches_and_tags
+      # publish docker image in "master" and semver tags
+      # master publishes to @next
+      # semver tags publish to @latest
+      - publish-docker:
+          <<: *master_and_tags
+          requires:
+            - build-peer
+            - build-lighthouse
+            - build-content
+            - build-lambdas
+
+      # NOT (master | semver) enables manual approval to release untagged docker images
+      - accept-publish-docker-for-testing:
+          <<: *testing_branches
           type: approval
           requires:
             - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas
-      - publish-docker:
-          <<: *all_branches_and_tags
+      - publish-docker-without-tag:
+          <<: *testing_branches
           requires:
-            - accept-publish-docker
-      - accept-tag-latest-docker:
-          <<: *master_and_tags
-          type: approval
-          requires:
-            - publish-docker
-      - tag-latest-docker:
-          <<: *master_and_tags
-          requires:
-            - accept-tag-latest-docker
+            - accept-publish-docker-for-testing
