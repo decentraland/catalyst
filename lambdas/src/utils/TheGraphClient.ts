@@ -284,6 +284,7 @@ export class TheGraphClient {
       mapper,
       default: []
     }
+    console.log('subgraphQuery', subgraphQuery)
 
     return this.runQuery(query, { ...filters, lastId: filters.lastId ?? '', first: limit })
   }
