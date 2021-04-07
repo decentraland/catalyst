@@ -14,8 +14,10 @@ import {
   PartialDeploymentHistory,
   Pointer,
   SortingField,
+  SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
+import qs from 'qs'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
@@ -72,6 +74,13 @@ export class DeploymentManager {
         migrationData: migrationData.get(result.deploymentId)
       }
     }))
+
+    let nextRelativePath: string | undefined = undefined
+    if (deployments.length > 0) {
+      const lastDeployment = deployments[deployments.length - 1]
+      nextRelativePath = this.calculateNextRelativePath(options, lastDeployment)
+    }
+
     return {
       deployments: deployments,
       filters: {
@@ -80,9 +89,47 @@ export class DeploymentManager {
       pagination: {
         offset: curatedOffset,
         limit: curatedLimit,
-        moreData: moreData
+        moreData: moreData,
+        lastEntityId: options?.filters?.lastEntityId,
+        next: nextRelativePath
       }
     }
+  }
+
+  private calculateNextRelativePath(options: DeploymentOptions | undefined, lastDeployment: Deployment): string {
+    const nextFilters = options?.filters ?? {}
+    nextFilters.fromLocalTimestamp = undefined
+    nextFilters.toLocalTimestamp = undefined
+    nextFilters.fromEntityTimestamp = undefined
+    nextFilters.toEntityTimestamp = undefined
+
+    const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
+    const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
+
+    if (field == SortingField.LOCAL_TIMESTAMP) {
+      if (order == SortingOrder.ASCENDING) {
+        nextFilters.fromLocalTimestamp = lastDeployment.auditInfo.localTimestamp
+      } else {
+        nextFilters.toLocalTimestamp = lastDeployment.auditInfo.localTimestamp
+      }
+    } else {
+      if (order == SortingOrder.ASCENDING) {
+        nextFilters.fromLocalTimestamp = lastDeployment.entityTimestamp
+      } else {
+        nextFilters.toLocalTimestamp = lastDeployment.entityTimestamp
+      }
+    }
+
+    const nextQueryParams = qs.stringify(
+      {
+        ...nextFilters,
+        limit: options?.limit,
+        sortBy: options?.sortBy,
+        lastEntityId: lastDeployment.entityId
+      },
+      { arrayFormat: 'repeat' }
+    )
+    return '?' + nextQueryParams
   }
 
   async saveDeployment(

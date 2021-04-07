@@ -354,6 +354,7 @@ export class Controller {
     const fields: string | undefined = req.query.fields
     const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, req.query.sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, req.query.sortingOrder)
+    const lastEntityId: string | undefined = req.query.lastEntityId?.toLowerCase()
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -396,7 +397,8 @@ export class Controller {
       entityTypes: entityTypes as EntityType[],
       entityIds,
       deployedBy,
-      onlyCurrentlyPointed
+      onlyCurrentlyPointed,
+      lastEntityId
     }
 
     const { deployments, filters, pagination } = await this.service.getDeployments({

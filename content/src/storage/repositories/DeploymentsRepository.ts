@@ -71,6 +71,15 @@ export class DeploymentsRepository {
       offset
     }
 
+    if (filters?.lastEntityId) {
+      values.lastEntityId = filters.lastEntityId
+      if (order == SortingOrder.ASCENDING) {
+        whereClause.push(`dep1.entityId > $(lastEntityId)`)
+      } else {
+        whereClause.push(`dep1.entityId < $(lastEntityId)`)
+      }
+    }
+
     if (filters?.fromLocalTimestamp) {
       values.fromLocalTimestamp = filters.fromLocalTimestamp
       whereClause.push(`dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0)`)
@@ -79,6 +88,16 @@ export class DeploymentsRepository {
     if (filters?.toLocalTimestamp) {
       values.toLocalTimestamp = filters.toLocalTimestamp
       whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
+    }
+
+    if (filters?.fromEntityTimestamp) {
+      values.fromEntityTimestamp = filters.fromEntityTimestamp
+      whereClause.push(`dep1.entity_timestamp >= to_timestamp($(fromEntityTimestamp) / 1000.0)`)
+    }
+
+    if (filters?.toEntityTimestamp) {
+      values.toEntityTimestamp = filters.toEntityTimestamp
+      whereClause.push(`dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`)
     }
 
     if (filters?.deployedBy && filters.deployedBy.length > 0) {
