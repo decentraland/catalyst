@@ -182,7 +182,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILE_WEARABLES_CACHE_TIMEOUT, () =>
       ms(process.env.PROFILE_WEARABLES_CACHE_TIMEOUT ?? '30m')
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS === 'true')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before

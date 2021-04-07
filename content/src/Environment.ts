@@ -198,7 +198,7 @@ export class EnvironmentBuilder {
       () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY, () => process.env.SEGMENT_WRITE_KEY)
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS === 'true')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
       env,
