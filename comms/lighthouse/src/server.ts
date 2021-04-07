@@ -42,7 +42,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const port = parseInt(process.env.PORT ?? '9000')
   const noAuth = parseBoolean(process.env.NO_AUTH ?? 'false')
   const secure = parseBoolean(process.env.SECURE ?? 'false')
-  const enableMetrics = parseBoolean(process.env.METRICS ?? 'false')
+  const enableMetrics = parseBoolean(process.env.METRICS ?? 'true')
   const allowNewLayers = parseBoolean(process.env.ALLOW_NEW_LAYERS ?? 'false')
   const existingLayers = process.env.DEFAULT_LAYERS?.split(',').map((it) => it.trim()) ?? DEFAULT_LAYERS
   const idAlphabet = process.env.ID_ALPHABET ? process.env.ID_ALPHABET : undefined
