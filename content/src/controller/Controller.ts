@@ -308,6 +308,7 @@ export class Controller {
     const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
+    const lastEntityId: string | undefined = req.query.lastEntityId?.toLowerCase()
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -323,7 +324,8 @@ export class Controller {
     const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(
       requestFilters,
       offset,
-      limit
+      limit,
+      lastEntityId
     )
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,

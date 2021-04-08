@@ -77,7 +77,7 @@ export class DeploymentManager {
     }))
 
     let nextRelativePath: string | undefined = undefined
-    if (deployments.length > 0) {
+    if (deployments.length > 0 && moreData) {
       const lastDeployment = deployments[deployments.length - 1]
       nextRelativePath = this.calculateNextRelativePath(options, lastDeployment)
     }
@@ -99,10 +99,6 @@ export class DeploymentManager {
 
   private calculateNextRelativePath(options: DeploymentOptions | undefined, lastDeployment: Deployment): string {
     const nextFilters = Object.assign({}, options?.filters)
-    nextFilters.fromLocalTimestamp = undefined
-    nextFilters.toLocalTimestamp = undefined
-    nextFilters.fromEntityTimestamp = undefined
-    nextFilters.toEntityTimestamp = undefined
 
     const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
     const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
@@ -125,7 +121,8 @@ export class DeploymentManager {
       {
         ...nextFilters,
         limit: options?.limit,
-        sortBy: options?.sortBy,
+        sortingField: field,
+        sortingOrder: order,
         lastEntityId: lastDeployment.entityId
       },
       { arrayFormat: 'repeat' }
@@ -166,7 +163,8 @@ export class DeploymentManager {
     deploymentsRepo: DeploymentsRepository,
     filters?: PointerChangesFilters,
     offset?: number,
-    limit?: number
+    limit?: number,
+    lastEntityId?: string
   ): Promise<PartialDeploymentPointerChanges> {
     const curatedOffset = offset && offset >= 0 ? offset : 0
     const curatedLimit =
@@ -175,7 +173,8 @@ export class DeploymentManager {
       curatedOffset,
       curatedLimit + 1,
       filters,
-      { field: SortingField.LOCAL_TIMESTAMP }
+      { field: SortingField.LOCAL_TIMESTAMP },
+      lastEntityId
     )
     const moreData = deploymentsWithExtra.length > curatedLimit
 
@@ -189,6 +188,13 @@ export class DeploymentManager {
         return { entityType, entityId, localTimestamp, changes }
       }
     )
+
+    let nextRelativePath: string | undefined = undefined
+    if (pointerChanges.length > 0 && moreData) {
+      const lastPointerChange = pointerChanges[pointerChanges.length - 1]
+      nextRelativePath = this.calculateNextRelativePathForPointer(lastPointerChange, curatedLimit, filters)
+    }
+
     return {
       pointerChanges,
       filters: {
@@ -197,9 +203,29 @@ export class DeploymentManager {
       pagination: {
         offset: curatedOffset,
         limit: curatedLimit,
-        moreData
+        moreData,
+        next: nextRelativePath
       }
     }
+  }
+
+  calculateNextRelativePathForPointer(
+    lastPointerChange: DeploymentPointerChanges,
+    limit: number,
+    filters?: PointerChangesFilters
+  ): string | undefined {
+    const nextFilters = Object.assign({}, filters)
+    nextFilters.toLocalTimestamp = lastPointerChange.localTimestamp
+
+    const nextQueryParams = qs.stringify(
+      {
+        ...nextFilters,
+        limit: limit,
+        lastEntityId: lastPointerChange.entityId
+      },
+      { arrayFormat: 'repeat' }
+    )
+    return '?' + nextQueryParams
   }
 
   savePointerChanges(
