@@ -75,6 +75,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
+    lastEntityId?: string,
     repository?: RepositoryTask | Repository
   ) {
     return Promise.resolve({
