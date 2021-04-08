@@ -397,15 +397,15 @@ export class Controller {
       entityTypes: entityTypes as EntityType[],
       entityIds,
       deployedBy,
-      onlyCurrentlyPointed,
-      lastEntityId
+      onlyCurrentlyPointed
     }
 
     const { deployments, filters, pagination } = await this.service.getDeployments({
       filters: requestFilters,
       sortBy: sortBy,
       offset: offset,
-      limit: limit
+      limit: limit,
+      lastEntityId: lastEntityId
     })
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)

@@ -33,9 +33,15 @@ export class DeploymentsRepository {
     return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], (row) => parseInt(row.count))
   }
 
-  getHistoricalDeployments(offset: number, limit: number, filters?: DeploymentFilters, sortBy?: DeploymentSorting) {
+  getHistoricalDeployments(
+    offset: number,
+    limit: number,
+    filters?: DeploymentFilters,
+    sortBy?: DeploymentSorting,
+    lastEntityId?: string
+  ) {
     const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
-    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters)
+    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters, lastEntityId)
   }
 
   private getDeploymentsBy(
@@ -43,7 +49,8 @@ export class DeploymentsRepository {
     order: string,
     offset: number,
     limit: number,
-    filters?: DeploymentFilters
+    filters?: DeploymentFilters,
+    lastEntityId?: string
   ) {
     let query = `
             SELECT
@@ -71,12 +78,12 @@ export class DeploymentsRepository {
       offset
     }
 
-    if (filters?.lastEntityId) {
-      values.lastEntityId = filters.lastEntityId
+    if (lastEntityId) {
+      values.lastEntityId = lastEntityId
       if (order == SortingOrder.ASCENDING) {
-        whereClause.push(`dep1.entityId > $(lastEntityId)`)
+        whereClause.push(`dep1.entity_id > $(lastEntityId)`)
       } else {
-        whereClause.push(`dep1.entityId < $(lastEntityId)`)
+        whereClause.push(`dep1.entity_id < $(lastEntityId)`)
       }
     }
 

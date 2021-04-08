@@ -46,7 +46,8 @@ export class DeploymentManager {
       curatedOffset,
       curatedLimit + 1,
       options?.filters,
-      options?.sortBy
+      options?.sortBy,
+      options?.lastEntityId
     )
 
     const moreData = deploymentsWithExtra.length > curatedLimit
@@ -90,14 +91,14 @@ export class DeploymentManager {
         offset: curatedOffset,
         limit: curatedLimit,
         moreData: moreData,
-        lastEntityId: options?.filters?.lastEntityId,
+        lastEntityId: options?.lastEntityId,
         next: nextRelativePath
       }
     }
   }
 
   private calculateNextRelativePath(options: DeploymentOptions | undefined, lastDeployment: Deployment): string {
-    const nextFilters = options?.filters ?? {}
+    const nextFilters = Object.assign({}, options?.filters)
     nextFilters.fromLocalTimestamp = undefined
     nextFilters.toLocalTimestamp = undefined
     nextFilters.fromEntityTimestamp = undefined
@@ -114,9 +115,9 @@ export class DeploymentManager {
       }
     } else {
       if (order == SortingOrder.ASCENDING) {
-        nextFilters.fromLocalTimestamp = lastDeployment.entityTimestamp
+        nextFilters.fromEntityTimestamp = lastDeployment.entityTimestamp
       } else {
-        nextFilters.toLocalTimestamp = lastDeployment.entityTimestamp
+        nextFilters.toEntityTimestamp = lastDeployment.entityTimestamp
       }
     }
 
@@ -239,6 +240,8 @@ export type PartialDeploymentPointerChanges = {
     offset: number
     limit: number
     moreData: boolean
+    lastEntityId?: string
+    next?: string
   }
 }
 
@@ -247,6 +250,7 @@ export type DeploymentOptions = {
   sortBy?: DeploymentSorting
   offset?: number
   limit?: number
+  lastEntityId?: string
 }
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
