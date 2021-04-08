@@ -3192,6 +3192,27 @@ dcl-catalyst-commons@^3.0.1:
     multihashing-async "^0.8.1"
     prettier "^2.2.1"
 
+dcl-catalyst-commons@tag-with-next-pagination-v2:
+  version "3.0.2-20210408114433.commit-c34b7de"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.2-20210408114433.commit-c34b7de.tgz#bcdbed8781c2b626bf60e009508f9f3a41a19e7a"
+  integrity sha512-yS+0/ets7ROyodUQ+nj9kFtoAuGQARu35wO/K6dfrMsEZCxAyq9UOlEs3mNgY+Skq8FhHzRbzhKjTcSNqdq1Sg==
+  dependencies:
+    "@types/isomorphic-fetch" "0.0.35"
+    "@types/ms" "^0.7.31"
+    "@typescript-eslint/eslint-plugin" "^4.9.0"
+    "@typescript-eslint/parser" "^4.9.0"
+    abort-controller "^3.0.0"
+    blob-to-buffer "^1.2.9"
+    cids "^0.8.0"
+    cross-fetch "^3.0.5"
+    dcl-crypto "^2.1.0"
+    eslint "^7.14.0"
+    eslint-config-prettier "^7.2.0"
+    eslint-plugin-prettier "^3.2.0"
+    ms "^2.1.2"
+    multihashing-async "^0.8.1"
+    prettier "^2.2.1"
+
 dcl-crypto@^2.1.0, dcl-crypto@^2.2.0, dcl-crypto@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/dcl-crypto/-/dcl-crypto-2.3.0.tgz#a223b1513888a359ff93b302b0d5a045edff5a79"
