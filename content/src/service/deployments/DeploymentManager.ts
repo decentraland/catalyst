@@ -79,6 +79,7 @@ export class DeploymentManager {
     let nextRelativePath: string | undefined = undefined
     if (deployments.length > 0 && moreData) {
       const lastDeployment = deployments[deployments.length - 1]
+      console.log('Last deployment: ' + lastDeployment.pointers + lastDeployment.entityId)
       nextRelativePath = this.calculateNextRelativePath(options, lastDeployment)
     }
 
@@ -215,6 +216,7 @@ export class DeploymentManager {
     filters?: PointerChangesFilters
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
+    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
     nextFilters.toLocalTimestamp = lastPointerChange.localTimestamp
 
     const nextQueryParams = qs.stringify(

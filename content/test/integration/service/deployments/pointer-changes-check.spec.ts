@@ -64,6 +64,15 @@ describe('Integration - Pointer Changes Check', () => {
     assertChangesAre(changes, [P1, { before: E1, after: undefined }], [P2, { before: E2, after: undefined }])
   })
 
+  it('When getting a page of pointer changes then next url is set', async () => {
+    const E1Timestamp = await deployEntitiesCombo(service, E1, E3)
+
+    const { pagination: pagination } = await service.getPointerChanges({ entityTypes: [E3.entity.type] }, undefined, 1)
+
+    expect(pagination.next).toContain(`toLocalTimestamp=${E1Timestamp}`)
+    expect(pagination.lastEntityId).toBeUndefined()
+  })
+
   function assertChangesAre(
     changes: PointerChanges,
     ...expectedChanges: [Pointer, { before: EntityCombo | undefined; after: EntityCombo | undefined }][]
