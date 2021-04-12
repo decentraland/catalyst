@@ -3192,10 +3192,10 @@ dcl-catalyst-commons@^3.0.1:
     multihashing-async "^0.8.1"
     prettier "^2.2.1"
 
-dcl-catalyst-commons@tag-with-next-pagination-v3:
-  version "3.0.2-20210408125322.commit-bf4f190"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.2-20210408125322.commit-bf4f190.tgz#d9c117ea9edce36b3cff9a06002d7d1211db8160"
-  integrity sha512-YFPKDuhdcXTaDiylDeKoFLlOu700a/+B1GV6OQIrt0u+FUp9jivYwEKp2eOLDcBiKQURk0/YC2LN3Dm551AVSQ==
+dcl-catalyst-commons@tag-with-next-pagination-v5:
+  version "3.0.2-20210412170356.commit-3fa3c08"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.2-20210412170356.commit-3fa3c08.tgz#876a8fc3ddbdb67e86780bbb0ad052e82a648d88"
+  integrity sha512-FANZODg9vFZHV5GszWRct6uF2mmthL9bm4NexWyO4zclhaqrN+OputKXuYBP65LGhCodNIK+z1g/cery8j65KQ==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"

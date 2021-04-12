@@ -308,7 +308,7 @@ export class Controller {
     const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
-    const lastEntityId: string | undefined = req.query.lastEntityId?.toLowerCase()
+    const lastId: string | undefined = req.query.lastId?.toLowerCase()
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -325,7 +325,7 @@ export class Controller {
       requestFilters,
       offset,
       limit,
-      lastEntityId
+      lastId
     )
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
@@ -356,7 +356,7 @@ export class Controller {
     const fields: string | undefined = req.query.fields
     const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, req.query.sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, req.query.sortingOrder)
-    const lastEntityId: string | undefined = req.query.lastEntityId?.toLowerCase()
+    const lastId: string | undefined = req.query.lastId?.toLowerCase()
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -407,7 +407,7 @@ export class Controller {
       sortBy: sortBy,
       offset: offset,
       limit: limit,
-      lastEntityId: lastEntityId
+      lastId: lastId
     })
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)

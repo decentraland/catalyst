@@ -47,7 +47,7 @@ export class DeploymentManager {
       curatedLimit + 1,
       options?.filters,
       options?.sortBy,
-      options?.lastEntityId
+      options?.lastId
     )
 
     const moreData = deploymentsWithExtra.length > curatedLimit
@@ -92,7 +92,7 @@ export class DeploymentManager {
         offset: curatedOffset,
         limit: curatedLimit,
         moreData: moreData,
-        lastEntityId: options?.lastEntityId,
+        lastId: options?.lastId,
         next: nextRelativePath
       }
     }
@@ -124,7 +124,7 @@ export class DeploymentManager {
         limit: options?.limit,
         sortingField: field,
         sortingOrder: order,
-        lastEntityId: lastDeployment.entityId
+        lastId: lastDeployment.entityId
       },
       { arrayFormat: 'repeat' }
     )
@@ -165,7 +165,7 @@ export class DeploymentManager {
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
-    lastEntityId?: string
+    lastId?: string
   ): Promise<PartialDeploymentPointerChanges> {
     const curatedOffset = offset && offset >= 0 ? offset : 0
     const curatedLimit =
@@ -175,7 +175,7 @@ export class DeploymentManager {
       curatedLimit + 1,
       filters,
       { field: SortingField.LOCAL_TIMESTAMP },
-      lastEntityId
+      lastId
     )
     const moreData = deploymentsWithExtra.length > curatedLimit
 
@@ -223,7 +223,7 @@ export class DeploymentManager {
       {
         ...nextFilters,
         limit: limit,
-        lastEntityId: lastPointerChange.entityId
+        lastId: lastPointerChange.entityId
       },
       { arrayFormat: 'repeat' }
     )
@@ -268,7 +268,7 @@ export type PartialDeploymentPointerChanges = {
     offset: number
     limit: number
     moreData: boolean
-    lastEntityId?: string
+    lastId?: string
     next?: string
   }
 }
@@ -278,7 +278,7 @@ export type DeploymentOptions = {
   sortBy?: DeploymentSorting
   offset?: number
   limit?: number
-  lastEntityId?: string
+  lastId?: string
 }
 
 export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>

@@ -414,7 +414,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
-    lastEntityId?: string,
+    lastId?: string,
     repository: RepositoryTask | Repository = this.repository
   ): Promise<PartialDeploymentPointerChanges> {
     return repository.taskIf((task) =>
@@ -424,7 +424,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         filters,
         offset,
         limit,
-        lastEntityId
+        lastId
       )
     )
   }

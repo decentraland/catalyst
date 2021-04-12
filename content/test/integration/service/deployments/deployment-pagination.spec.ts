@@ -44,20 +44,20 @@ describe('Integration - Deployment Pagination', () => {
     expect(nextLink).toBeUndefined()
   })
 
-  it('When lastEntityId is sent, it stills orders by timestamp', async () => {
+  it('When lastId is sent, it stills orders by timestamp', async () => {
     // Deploy E1, E2 and E3 in that order
     const [, E2Timestamp] = await deploy(E1, E2, E3)
 
     const actualDeployments = await service.getDeployments({
       limit: 2,
-      lastEntityId: E1.entity.id
+      lastId: E1.entity.id
     })
 
     const nextLink = actualDeployments.pagination.next
 
     expect(nextLink).toContain(`toLocalTimestamp=${E2Timestamp.toString()}`)
-    expect(nextLink).toContain(`lastEntityId=${E2.entity.id}`)
-    expect(actualDeployments.pagination.lastEntityId).toBe(E1.entity.id)
+    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
+    expect(actualDeployments.pagination.lastId).toBe(E1.entity.id)
   })
 
   it('When local timestamp filter is set, then in next only to is modified', async () => {
@@ -73,7 +73,7 @@ describe('Integration - Deployment Pagination', () => {
 
     expect(nextLink).toContain(`fromLocalTimestamp=${E1Timestamp.toString()}`)
     expect(nextLink).toContain(`toLocalTimestamp=${E2Timestamp.toString()}`)
-    expect(nextLink).toContain(`lastEntityId=${E2.entity.id}`)
+    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
   it('When local timestamp filter is set with asc order, then in next only from is modified', async () => {
@@ -92,7 +92,7 @@ describe('Integration - Deployment Pagination', () => {
 
     expect(nextLink).toContain(`fromLocalTimestamp=${E2Timestamp.toString()}`)
     expect(nextLink).toContain(`toLocalTimestamp=${E3Timestamp.toString()}`)
-    expect(nextLink).toContain(`lastEntityId=${E2.entity.id}`)
+    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
   it('When limit is set, then in next it persists', async () => {
@@ -125,7 +125,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(nextLink).toContain(`fromLocalTimestamp=${E1Timestamp.toString()}`)
     expect(nextLink).toContain(`toLocalTimestamp=${E3Timestamp.toString()}`)
     expect(nextLink).toContain(`toEntityTimestamp=${E2.entity.timestamp.toString()}`)
-    expect(nextLink).toContain(`lastEntityId=${E2.entity.id}`)
+    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
   it('When order is by entity timestamp then it sorts by entityId', async () => {
@@ -143,7 +143,7 @@ describe('Integration - Deployment Pagination', () => {
     const nextLink = actualDeployments.pagination.next
 
     expect(nextLink).toContain(`fromEntityTimestamp=${E1.entity.timestamp.toString()}`)
-    expect(nextLink).toContain(`lastEntityId=${E1.entity.id}`)
+    expect(nextLink).toContain(`lastId=${E1.entity.id}`)
   })
 
   it('When getting by last entityId then it returns the correct page', async () => {
@@ -156,7 +156,7 @@ describe('Integration - Deployment Pagination', () => {
         field: SortingField.ENTITY_TIMESTAMP,
         order: SortingOrder.ASCENDING
       },
-      lastEntityId: E1.entity.id,
+      lastId: E1.entity.id,
       filters: { fromEntityTimestamp: E1.entity.timestamp }
     })
 

@@ -38,10 +38,10 @@ export class DeploymentsRepository {
     limit: number,
     filters?: DeploymentFilters,
     sortBy?: DeploymentSorting,
-    lastEntityId?: string
+    lastId?: string
   ) {
     const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
-    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters, lastEntityId)
+    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters, lastId)
   }
 
   private getDeploymentsBy(
@@ -50,7 +50,7 @@ export class DeploymentsRepository {
     offset: number,
     limit: number,
     filters?: DeploymentFilters,
-    lastEntityId?: string
+    lastId?: string
   ) {
     let query = `
             SELECT
@@ -78,13 +78,13 @@ export class DeploymentsRepository {
       offset
     }
 
-    if (lastEntityId) {
-      values.lastEntityId = lastEntityId
+    if (lastId) {
+      values.lastId = lastId
     }
 
-    /**  The lastEntityId is a field that we only want to compare with if for pagination.
+    /**  The lastId is a field that we only want to compare with if for pagination.
      * If the filter specifies a timestamp value that it's repeated among many deployments,
-     * then to know where the page should start we will use the lastEntityId.
+     * then to know where the page should start we will use the lastId.
      */
     const pageBorder: string =
       (order == SortingOrder.ASCENDING ? 'from' : 'to') +
@@ -173,7 +173,7 @@ export class DeploymentsRepository {
   }
 
   private createOrClause(timestampField: string, compare: string, timestampFilter: string): string {
-    const equalWithEntityIdComparison = `(dep1.entity_id ${compare} $(lastEntityId) AND dep1.${timestampField} = to_timestamp($(${timestampFilter}) / 1000.0))`
+    const equalWithEntityIdComparison = `(dep1.entity_id ${compare} $(lastId) AND dep1.${timestampField} = to_timestamp($(${timestampFilter}) / 1000.0))`
     const timestampComparison = `(dep1.entity_timestamp ${compare} to_timestamp($(${timestampFilter}) / 1000.0))`
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
