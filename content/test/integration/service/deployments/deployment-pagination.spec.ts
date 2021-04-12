@@ -1,23 +1,31 @@
 import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
 import { AuditInfo, EntityType, EntityVersion, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
-import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
+import { buildDeployData, EntityCombo } from '../../E2ETestUtils'
 /**
  * This test verifies that when getting all deployments next link is paginating correctly
  */
-describe('Integration - Deployment Filters', () => {
-  const P1 = 'x1,y1'
-  const P2 = 'x2,y2'
-  const P3 = 'x3,y3'
+describe('Integration - Deployment Pagination', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
 
   beforeAll(async () => {
-    E1 = await buildDeployData([P1], { type: EntityType.PROFILE })
-    E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE })
-    E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3], { type: EntityType.PROFILE })
+    const P1 = 'X1,Y1'
+    const type = EntityType.PROFILE
+
+    const timestamp = Date.now()
+    const a = await buildDeployData([P1], { type, timestamp, metadata: 'metadata1' })
+    const b = await buildDeployData([P1], { type, timestamp, metadata: 'metadata2' })
+    if (a.entity.id.toLowerCase() < b.entity.id.toLowerCase()) {
+      E1 = a
+      E2 = b
+    } else {
+      E1 = b
+      E2 = a
+    }
+    E3 = await buildDeployData([P1], { type, timestamp, metadata: 'metadata3' })
   })
 
   beforeEach(async () => {
@@ -118,6 +126,44 @@ describe('Integration - Deployment Filters', () => {
     expect(nextLink).toContain(`toLocalTimestamp=${E3Timestamp.toString()}`)
     expect(nextLink).toContain(`toEntityTimestamp=${E2.entity.timestamp.toString()}`)
     expect(nextLink).toContain(`lastEntityId=${E2.entity.id}`)
+  })
+
+  it('When order is by entity timestamp then it sorts by entityId', async () => {
+    // Deploy E1, E2 in that order
+    await deploy(E1, E2)
+
+    const actualDeployments = await service.getDeployments({
+      limit: 1,
+      sortBy: {
+        field: SortingField.ENTITY_TIMESTAMP,
+        order: SortingOrder.ASCENDING
+      }
+    })
+
+    const nextLink = actualDeployments.pagination.next
+
+    expect(nextLink).toContain(`fromEntityTimestamp=${E1.entity.timestamp.toString()}`)
+    expect(nextLink).toContain(`lastEntityId=${E1.entity.id}`)
+  })
+
+  it('When getting by last entityId then it returns the correct page', async () => {
+    // Deploy E1, E2 in that order
+    await deploy(E1, E2)
+
+    const actualDeployments = await service.getDeployments({
+      limit: 1,
+      sortBy: {
+        field: SortingField.ENTITY_TIMESTAMP,
+        order: SortingOrder.ASCENDING
+      },
+      lastEntityId: E1.entity.id,
+      filters: { fromEntityTimestamp: E1.entity.timestamp }
+    })
+
+    const deployments = actualDeployments.deployments
+
+    expect(deployments.length).toBe(1)
+    expect(deployments[0].entityId).toBe(`${E2.entity.id}`)
   })
 
   async function deploy(...entities: EntityCombo[]): Promise<Timestamp[]> {
