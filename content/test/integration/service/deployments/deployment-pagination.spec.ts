@@ -55,12 +55,12 @@ describe('Integration - Deployment Pagination', () => {
 
     const nextLink = actualDeployments.pagination.next
 
-    expect(nextLink).toContain(`toLocalTimestamp=${E2Timestamp.toString()}`)
+    expect(nextLink).toContain(`toLocalTimestamp=${E2Timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
     expect(actualDeployments.pagination.lastId).toBe(E1.entity.id)
   })
 
-  it('When local timestamp filter is set, then in next only to is modified', async () => {
+  it('When local timestamp filter is set, then only toLocalTimestamp is modified in next ', async () => {
     // Deploy E1, E2 and E3 in that order
     const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(E1, E2, E3)
 
@@ -71,12 +71,12 @@ describe('Integration - Deployment Pagination', () => {
 
     const nextLink = actualDeployments.pagination.next
 
-    expect(nextLink).toContain(`fromLocalTimestamp=${E1Timestamp.toString()}`)
-    expect(nextLink).toContain(`toLocalTimestamp=${E2Timestamp.toString()}`)
+    expect(nextLink).toContain(`fromLocalTimestamp=${E1Timestamp}`)
+    expect(nextLink).toContain(`toLocalTimestamp=${E2Timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
-  it('When local timestamp filter is set with asc order, then in next only from is modified', async () => {
+  it('When local timestamp filter is set with asc order, then only fromLocalTimestamp is modified in next', async () => {
     // Deploy E1, E2 and E3 in that order
     const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(E1, E2, E3)
 
@@ -108,7 +108,7 @@ describe('Integration - Deployment Pagination', () => {
     expect(nextLink).toContain('limit=2')
   })
 
-  it('When order is by entity timestamp, then in next only toEntityTimestamp is modified', async () => {
+  it('When order is by entity timestamp, then only toEntityTimestamp is modified in next', async () => {
     // Deploy E1, E2 and E3 in that order
     const [E1Timestamp, , E3Timestamp] = await deploy(E1, E2, E3)
 

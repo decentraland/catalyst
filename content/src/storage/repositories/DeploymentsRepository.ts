@@ -87,8 +87,8 @@ export class DeploymentsRepository {
      * then to know where the page should start we will use the lastId.
      */
     const pageBorder: string =
-      (order == SortingOrder.ASCENDING ? 'from' : 'to') +
-      (timestampField == SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'localTimestamp')
+      (order === SortingOrder.ASCENDING ? 'from' : 'to') +
+      (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'localTimestamp')
 
     if (filters?.fromLocalTimestamp) {
       values.fromLocalTimestamp = filters.fromLocalTimestamp
