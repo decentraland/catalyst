@@ -2,3 +2,7 @@
 comms/peer/src/Peer.ts
 status/**/*
 comms/lighthouse/rollup.config.js
+dist
+bazel-out
+**/node_modules
+tmpbin
