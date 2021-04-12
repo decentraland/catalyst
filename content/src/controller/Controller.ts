@@ -344,8 +344,6 @@ export class Controller {
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
     const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
-    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
     const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)?.map((p) =>
       p.toLowerCase()
@@ -357,6 +355,12 @@ export class Controller {
     const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, req.query.sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, req.query.sortingOrder)
     const lastId: string | undefined = req.query.lastId?.toLowerCase()
+    // deprecated
+    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
+    // deprecated
+    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
+    const from: number | undefined = this.asInt(req.query.from)
+    const to: number | undefined = this.asInt(req.query.to)
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -392,14 +396,19 @@ export class Controller {
         sortBy.order = sortingOrder
       }
     }
+
+    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
+    const fromFilter = sortingField == SortingField.LOCAL_TIMESTAMP && fromLocalTimestamp ? fromLocalTimestamp : from
+    const toFilter = sortingField == SortingField.LOCAL_TIMESTAMP && toLocalTimestamp ? toLocalTimestamp : to
+
     const requestFilters = {
       pointers,
-      fromLocalTimestamp,
-      toLocalTimestamp,
       entityTypes: entityTypes as EntityType[],
       entityIds,
       deployedBy,
-      onlyCurrentlyPointed
+      onlyCurrentlyPointed,
+      from: fromFilter,
+      to: toFilter
     }
 
     const { deployments, filters, pagination } = await this.service.getDeployments({

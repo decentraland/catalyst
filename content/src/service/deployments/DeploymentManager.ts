@@ -79,7 +79,6 @@ export class DeploymentManager {
     let nextRelativePath: string | undefined = undefined
     if (deployments.length > 0 && moreData) {
       const lastDeployment = deployments[deployments.length - 1]
-      console.log('Last deployment: ' + lastDeployment.pointers + lastDeployment.entityId)
       nextRelativePath = this.calculateNextRelativePath(options, lastDeployment)
     }
 
@@ -106,17 +105,21 @@ export class DeploymentManager {
 
     if (field == SortingField.LOCAL_TIMESTAMP) {
       if (order == SortingOrder.ASCENDING) {
-        nextFilters.fromLocalTimestamp = lastDeployment.auditInfo.localTimestamp
+        nextFilters.from = lastDeployment.auditInfo.localTimestamp
+        nextFilters.to = nextFilters.to ?? nextFilters.toLocalTimestamp
       } else {
-        nextFilters.toLocalTimestamp = lastDeployment.auditInfo.localTimestamp
+        nextFilters.to = lastDeployment.auditInfo.localTimestamp
+        nextFilters.from = nextFilters.from ?? nextFilters.fromLocalTimestamp
       }
     } else {
       if (order == SortingOrder.ASCENDING) {
-        nextFilters.fromEntityTimestamp = lastDeployment.entityTimestamp
+        nextFilters.from = lastDeployment.entityTimestamp
       } else {
-        nextFilters.toEntityTimestamp = lastDeployment.entityTimestamp
+        nextFilters.to = lastDeployment.entityTimestamp
       }
     }
+    nextFilters.fromLocalTimestamp = undefined
+    nextFilters.toLocalTimestamp = undefined
 
     const nextQueryParams = qs.stringify(
       {
@@ -217,7 +220,10 @@ export class DeploymentManager {
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
     // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
-    nextFilters.toLocalTimestamp = lastPointerChange.localTimestamp
+    nextFilters.to = lastPointerChange.localTimestamp
+    nextFilters.toLocalTimestamp = undefined
+    nextFilters.from = nextFilters.from ?? nextFilters.fromLocalTimestamp
+    nextFilters.fromLocalTimestamp = undefined
 
     const nextQueryParams = qs.stringify(
       {
@@ -281,6 +287,9 @@ export type DeploymentOptions = {
   lastId?: string
 }
 
-export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
+export type PointerChangesFilters = Pick<
+  DeploymentFilters,
+  'from' | 'to' | 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'
+>
 
 export type PointerChanges = Map<Pointer, { before: EntityId | undefined; after: EntityId | undefined }>

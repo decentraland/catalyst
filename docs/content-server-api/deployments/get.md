@@ -14,6 +14,7 @@ List all deployments stored in the content server
 
 **Query Parameters** :
 
+*DEPRECATED: PLEASE USE from*
 - fromLocalTimestamp
   - Format: int
   - Value: timestamp
@@ -21,12 +22,29 @@ List all deployments stored in the content server
   - Default value: NULL - no lower filter is set
   - Description: Acts as a filter in the collection of deployments, this value is the minimum value of local timestamp that any deployment in the collection will have.
 
+*DEPRECATED: PLEASE USE to*
 - toLocalTimestamp
   - Format: int
   - Value: timestamp
   - Example: toLocalTimestamp=1606829553969
   - Default value: NULL - no upper filter is set
   - Description: Acts as a filter in the collection of deployments, this value is the maximum value of local timestamp that any deployment in the collection will have.
+
+- from
+  - Format: int
+  - Value: timestamp
+  - Example: from=1606829553969
+  - Default value: NULL - no lower filter is set
+  - Description: Acts as a filter in the collection of deployments, this value is the minimum value of timestamp (of the field indicated by SortingField: localTimestamp is the default) that any deployment in the collection will have.
+
+- to
+  - Format: int
+  - Value: timestamp
+  - Example: to=1606829553969
+  - Default value: NULL - no upper filter is set
+  - Description: Acts as a filter in the collection of deployments, this value is the maximum value of timestamp (of the field indicated by SortingField: localTimestamp is the default) that any deployment in the collection will have.
+
+
 
 - entityType
   - Format: string array
