@@ -42,10 +42,19 @@ export class DeploymentManager {
         ? options.limit
         : DeploymentManager.MAX_HISTORY_LIMIT
 
+    const curatedFilters = Object.assign({}, options?.filters)
+
+    if (!options?.sortBy?.field || options?.sortBy?.field != SortingField.ENTITY_TIMESTAMP) {
+      curatedFilters.from = curatedFilters.fromLocalTimestamp
+      curatedFilters.to = curatedFilters.toLocalTimestamp
+    }
+    curatedFilters.fromLocalTimestamp = undefined
+    curatedFilters.toLocalTimestamp = undefined
+
     const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(
       curatedOffset,
       curatedLimit + 1,
-      options?.filters,
+      curatedFilters,
       options?.sortBy,
       options?.lastId
     )

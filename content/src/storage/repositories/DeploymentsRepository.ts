@@ -88,11 +88,11 @@ export class DeploymentsRepository {
      */
     const pageBorder: string =
       (order === SortingOrder.ASCENDING ? 'from' : 'to') +
-      (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'localTimestamp')
+      (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
 
     if (filters?.from && timestampField == SortingField.LOCAL_TIMESTAMP) {
       values.fromLocalTimestamp = filters.fromLocalTimestamp ?? filters.from
-      if (pageBorder == 'fromLocalTimestamp') {
+      if (pageBorder == 'fromLocalTimestamp' && lastId) {
         whereClause.push(this.createOrClause('local_timestamp', '>', 'fromLocalTimestamp'))
       } else {
         whereClause.push(`dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0)`)
@@ -100,7 +100,7 @@ export class DeploymentsRepository {
     }
     if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
       values.toLocalTimestamp = filters.toLocalTimestamp ?? filters.to
-      if (pageBorder == 'toLocalTimestamp') {
+      if (pageBorder == 'toLocalTimestamp' && lastId) {
         whereClause.push(this.createOrClause('local_timestamp', '<', 'toLocalTimestamp'))
       } else {
         whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
@@ -109,7 +109,7 @@ export class DeploymentsRepository {
 
     if (filters?.from && timestampField == SortingField.ENTITY_TIMESTAMP) {
       values.fromEntityTimestamp = filters.from
-      if (pageBorder == 'fromEntityTimestamp') {
+      if (pageBorder == 'fromEntityTimestamp' && lastId) {
         whereClause.push(this.createOrClause('entity_timestamp', '>', 'fromEntityTimestamp'))
       } else {
         whereClause.push(`dep1.entity_timestamp >= to_timestamp($(fromEntityTimestamp) / 1000.0)`)
@@ -117,7 +117,7 @@ export class DeploymentsRepository {
     }
     if (filters?.to && timestampField == SortingField.ENTITY_TIMESTAMP) {
       values.toEntityTimestamp = filters.to
-      if (pageBorder == 'toEntityTimestamp') {
+      if (pageBorder == 'toEntityTimestamp' && lastId) {
         whereClause.push(this.createOrClause('entity_timestamp', '<', 'toEntityTimestamp'))
       } else {
         whereClause.push(`dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`)

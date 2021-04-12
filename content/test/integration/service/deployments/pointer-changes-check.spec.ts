@@ -69,7 +69,7 @@ describe('Integration - Pointer Changes Check', () => {
 
     const { pagination: pagination } = await service.getPointerChanges({ entityTypes: [E3.entity.type] }, undefined, 1)
 
-    expect(pagination.next).toContain(`toLocalTimestamp=${E1Timestamp}`)
+    expect(pagination.next).toContain(`to=${E1Timestamp}`)
     expect(pagination.lastId).toBeUndefined()
   })
 
