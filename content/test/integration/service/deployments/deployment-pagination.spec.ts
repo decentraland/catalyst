@@ -1,6 +1,6 @@
 import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
+import assert from 'assert'
 import { EntityType, EntityVersion, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
-import { assert } from 'sinon'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../../E2ETestUtils'
 /**
