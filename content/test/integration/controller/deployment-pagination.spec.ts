@@ -167,6 +167,86 @@ describe('Integration - Deployment Pagination', () => {
     expect(deployments[0].entityId).toBe(`${E2.entity.id}`)
   })
 
+  it('given local timestamp and asc when getting two elements the next link page is correct', async () => {
+    // Deploy E2, E3, E1 in that order
+    const [, E3Timestamp] = await deploy(E2, E3, E1)
+
+    const actualDeployments = await fetchDeployments({
+      limit: 2,
+      sortBy: {
+        order: SortingOrder.ASCENDING,
+        field: SortingField.LOCAL_TIMESTAMP
+      }
+    })
+
+    expect(actualDeployments.deployments.length).toBe(2)
+    expect(actualDeployments.deployments[0].entityId).toBe(E2.entity.id)
+    expect(actualDeployments.deployments[1].entityId).toBe(E3.entity.id)
+    const nextLink = actualDeployments.pagination.next
+    expect(nextLink).toContain(`from=${E3Timestamp}`)
+    expect(nextLink).toContain(`lastId=${E3.entity.id}`)
+  })
+
+  it('given local timestamp and desc when getting two elements the next link page is correct', async () => {
+    // Deploy E2, E3, E1 in that order
+    const [, E3Timestamp] = await deploy(E2, E3, E1)
+
+    const actualDeployments = await fetchDeployments({
+      limit: 2,
+      sortBy: {
+        order: SortingOrder.DESCENDING,
+        field: SortingField.LOCAL_TIMESTAMP
+      }
+    })
+
+    expect(actualDeployments.deployments.length).toBe(2)
+    expect(actualDeployments.deployments[0].entityId).toBe(E1.entity.id)
+    expect(actualDeployments.deployments[1].entityId).toBe(E3.entity.id)
+    const nextLink = actualDeployments.pagination.next
+    expect(nextLink).toContain(`to=${E3Timestamp}`)
+    expect(nextLink).toContain(`lastId=${E3.entity.id}`)
+  })
+
+  it('given entity timestamp and asc when getting two elements the next link page is correct', async () => {
+    // Deploy E2, E3, E1 in that order
+    await deploy(E2, E3, E1)
+
+    const actualDeployments = await fetchDeployments({
+      limit: 2,
+      sortBy: {
+        order: SortingOrder.ASCENDING,
+        field: SortingField.ENTITY_TIMESTAMP
+      }
+    })
+
+    expect(actualDeployments.deployments.length).toBe(2)
+    expect(actualDeployments.deployments[0].entityId).toBe(E1.entity.id)
+    expect(actualDeployments.deployments[1].entityId).toBe(E2.entity.id)
+    const nextLink = actualDeployments.pagination.next
+    expect(nextLink).toContain(`from=${E2.entity.timestamp}`)
+    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
+  })
+
+  it('given entity timestamp and desc when getting two elements the next link page is correct', async () => {
+    // Deploy E2, E3, E1 in that order
+    await deploy(E2, E3, E1)
+
+    const actualDeployments = await fetchDeployments({
+      limit: 2,
+      sortBy: {
+        order: SortingOrder.DESCENDING,
+        field: SortingField.ENTITY_TIMESTAMP
+      }
+    })
+
+    expect(actualDeployments.deployments.length).toBe(2)
+    expect(actualDeployments.deployments[0].entityId).toBe(E3.entity.id)
+    expect(actualDeployments.deployments[1].entityId).toBe(E2.entity.id)
+    const nextLink = actualDeployments.pagination.next
+    expect(nextLink).toContain(`to=${E2.entity.timestamp}`)
+    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
+  })
+
   it('When getting pointer Changes then the pagination is correctly done', async () => {
     // Deploy E1, E2 in that order
     const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
@@ -174,6 +254,23 @@ describe('Integration - Deployment Pagination', () => {
     const pointerChanges = await fetchPointerChanges({ from: E1Timestamp }, 1)
 
     expect(pointerChanges.deltas.length).toBe(1)
+    expect(pointerChanges.pagination.next).toContain(`to=${E2Timestamp}`)
+    expect(pointerChanges.pagination.next).toContain(`from=${E1Timestamp}`)
+    expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
+  })
+
+  it('When getting pointer Changes with deprecated filter then the pagination is correctly done', async () => {
+    // Deploy E1, E2 in that order
+    const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
+
+    const pointerChanges = await fetchPointerChanges(
+      { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp },
+      1
+    )
+
+    expect(pointerChanges.deltas.length).toBe(1)
+    expect(pointerChanges.pagination.next).not.toContain('toLocalTimestamp=')
+    expect(pointerChanges.pagination.next).not.toContain('fromLocalTimestamp')
     expect(pointerChanges.pagination.next).toContain(`to=${E2Timestamp}`)
     expect(pointerChanges.pagination.next).toContain(`from=${E1Timestamp}`)
     expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
