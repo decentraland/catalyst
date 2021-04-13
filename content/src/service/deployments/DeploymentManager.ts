@@ -14,13 +14,9 @@ import {
   PartialDeploymentHistory,
   Pointer,
   SortingField,
-  SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
-import {
-  toQueryParamsForGetAllDeployments,
-  toQueryParamsForPointerChanges
-} from 'decentraland-katalyst-commons/QueryParameters'
+import { toQueryParamsForPointerChanges } from 'decentraland-katalyst-commons/QueryParameters'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
@@ -48,11 +44,15 @@ export class DeploymentManager {
     const curatedFilters = Object.assign({}, options?.filters)
 
     if (!options?.sortBy?.field || options?.sortBy?.field != SortingField.ENTITY_TIMESTAMP) {
+      console.log('HOLA')
       curatedFilters.from = curatedFilters.fromLocalTimestamp
       curatedFilters.to = curatedFilters.toLocalTimestamp
+      console.log('to: ', options?.filters?.toLocalTimestamp)
+      console.log('to: ', curatedFilters.to)
     }
     curatedFilters.fromLocalTimestamp = undefined
     curatedFilters.toLocalTimestamp = undefined
+    console.log('to: ', curatedFilters.to)
 
     const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(
       curatedOffset,
@@ -88,12 +88,6 @@ export class DeploymentManager {
       }
     }))
 
-    let nextRelativePath: string | undefined = undefined
-    if (deployments.length > 0 && moreData) {
-      const lastDeployment = deployments[deployments.length - 1]
-      nextRelativePath = this.calculateNextRelativePath(options, lastDeployment)
-    }
-
     return {
       deployments: deployments,
       filters: {
@@ -103,44 +97,9 @@ export class DeploymentManager {
         offset: curatedOffset,
         limit: curatedLimit,
         moreData: moreData,
-        lastId: options?.lastId,
-        next: nextRelativePath
+        lastId: options?.lastId
       }
     }
-  }
-
-  private calculateNextRelativePath(options: DeploymentOptions | undefined, lastDeployment: Deployment): string {
-    const nextFilters = Object.assign({}, options?.filters)
-
-    const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
-    const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
-
-    if (field == SortingField.LOCAL_TIMESTAMP) {
-      if (order == SortingOrder.ASCENDING) {
-        nextFilters.from = lastDeployment.auditInfo.localTimestamp
-        nextFilters.to = nextFilters.to ?? nextFilters.toLocalTimestamp
-      } else {
-        nextFilters.to = lastDeployment.auditInfo.localTimestamp
-        nextFilters.from = nextFilters.from ?? nextFilters.fromLocalTimestamp
-      }
-    } else {
-      if (order == SortingOrder.ASCENDING) {
-        nextFilters.from = lastDeployment.entityTimestamp
-      } else {
-        nextFilters.to = lastDeployment.entityTimestamp
-      }
-    }
-    nextFilters.fromLocalTimestamp = undefined
-    nextFilters.toLocalTimestamp = undefined
-
-    const nextQueryParams = toQueryParamsForGetAllDeployments(
-      nextFilters,
-      field,
-      order,
-      lastDeployment.entityId,
-      options?.limit
-    )
-    return '?' + nextQueryParams
   }
 
   async saveDeployment(

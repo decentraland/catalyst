@@ -12,6 +12,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
+import { toQueryParamsForGetAllDeployments } from 'decentraland-katalyst-commons/QueryParameters'
 import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
@@ -21,7 +22,7 @@ import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } fr
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Deployment, DeploymentPointerChanges } from '../service/deployments/DeploymentManager'
+import { Deployment, DeploymentOptions, DeploymentPointerChanges } from '../service/deployments/DeploymentManager'
 import {
   DeploymentResult,
   isSuccessfulDeployment,
@@ -362,6 +363,8 @@ export class Controller {
     const from: number | undefined = this.asInt(req.query.from)
     const to: number | undefined = this.asInt(req.query.to)
 
+    console.log('toLocalTImestamp: ', toLocalTimestamp)
+
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
       res.status(400).send({ error: `Found an unrecognized entity type` })
@@ -398,8 +401,10 @@ export class Controller {
     }
 
     // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
-    const fromFilter = sortingField == SortingField.LOCAL_TIMESTAMP && fromLocalTimestamp ? fromLocalTimestamp : from
-    const toFilter = sortingField == SortingField.LOCAL_TIMESTAMP && toLocalTimestamp ? toLocalTimestamp : to
+    const fromFilter =
+      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && fromLocalTimestamp ? fromLocalTimestamp : from
+    const toFilter =
+      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && toLocalTimestamp ? toLocalTimestamp : to
 
     const requestFilters = {
       pointers,
@@ -411,18 +416,59 @@ export class Controller {
       to: toFilter
     }
 
-    const { deployments, filters, pagination } = await this.service.getDeployments({
+    const deploymentOptions = {
       filters: requestFilters,
       sortBy: sortBy,
       offset: offset,
       limit: limit,
       lastId: lastId
-    })
+    }
+    const { deployments, filters, pagination } = await this.service.getDeployments(deploymentOptions)
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
     )
 
+    if (deployments.length > 0 && pagination.moreData) {
+      const lastDeployment = deployments[deployments.length - 1]
+      pagination.next = this.calculateNextRelativePath(deploymentOptions, lastDeployment)
+    }
+
     res.send({ deployments: controllerDeployments, filters, pagination })
+  }
+
+  private calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
+    const nextFilters = Object.assign({}, options?.filters)
+
+    const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
+    const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
+
+    if (field == SortingField.LOCAL_TIMESTAMP) {
+      if (order == SortingOrder.ASCENDING) {
+        nextFilters.from = lastDeployment.auditInfo.localTimestamp
+        nextFilters.to = nextFilters.to ?? nextFilters.toLocalTimestamp
+      } else {
+        nextFilters.to = lastDeployment.auditInfo.localTimestamp
+        nextFilters.from = nextFilters.from ?? nextFilters.fromLocalTimestamp
+      }
+    } else {
+      if (order == SortingOrder.ASCENDING) {
+        nextFilters.from = lastDeployment.entityTimestamp
+      } else {
+        nextFilters.to = lastDeployment.entityTimestamp
+      }
+    }
+    // TODO: remove this when to/from localTimestamp is removed
+    nextFilters.fromLocalTimestamp = undefined
+    nextFilters.toLocalTimestamp = undefined
+
+    const nextQueryParams = toQueryParamsForGetAllDeployments(
+      nextFilters,
+      field,
+      order,
+      lastDeployment.entityId,
+      options?.limit
+    )
+    return '?' + nextQueryParams
   }
 
   private asEnumValue<T extends { [key: number]: string }>(

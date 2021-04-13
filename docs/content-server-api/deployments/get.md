@@ -44,8 +44,6 @@ List all deployments stored in the content server
   - Default value: NULL - no upper filter is set
   - Description: Acts as a filter in the collection of deployments, this value is the maximum value of timestamp (of the field indicated by SortingField: localTimestamp is the default) that any deployment in the collection will have.
 
-
-
 - entityType
   - Format: string array
   - Value: [scene, profile, wearable]

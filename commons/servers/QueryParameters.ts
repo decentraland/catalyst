@@ -2,21 +2,23 @@ import { DeploymentFilters, EntityType, SortingField, SortingOrder } from 'dcl-c
 import qs from 'qs'
 
 export function toQueryParamsForGetAllDeployments(
-  filters: DeploymentFilters,
-  field: SortingField,
-  order: SortingOrder,
-  entityId: string,
+  filters?: DeploymentFilters,
+  field?: SortingField,
+  order?: SortingOrder,
+  entityId?: string,
   limit?: number
 ): string {
   return qs.stringify(
     {
-      from: filters.from,
-      to: filters.to,
-      deployedBy: filters.deployedBy,
-      entityType: filters.entityTypes,
-      entityId: filters.entityIds,
-      pointer: filters.pointers,
-      onlyCurrentlyPointed: filters.onlyCurrentlyPointed,
+      from: filters?.from,
+      to: filters?.to,
+      fromLocalTimestamp: filters?.fromLocalTimestamp,
+      toLocalTimestamp: filters?.toLocalTimestamp,
+      deployedBy: filters?.deployedBy,
+      entityType: filters?.entityTypes,
+      entityId: filters?.entityIds,
+      pointer: filters?.pointers,
+      onlyCurrentlyPointed: filters?.onlyCurrentlyPointed,
       limit: limit,
       sortingField: field,
       sortingOrder: order,
