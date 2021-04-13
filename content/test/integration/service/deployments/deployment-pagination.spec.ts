@@ -1,5 +1,6 @@
 import { DeploymentResult, isSuccessfulDeployment, MetaverseContentService } from '@katalyst/content/service/Service'
-import { AuditInfo, EntityType, EntityVersion, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType, EntityVersion, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
+import { assert } from 'sinon'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../../E2ETestUtils'
 /**
@@ -41,25 +42,9 @@ describe('Integration - Deployment Pagination', () => {
       limit: 3
     })
 
+    expect(actualDeployments.deployments.length).toBe(3)
     const nextLink = actualDeployments.pagination.next
-
     expect(nextLink).toBeUndefined()
-  })
-
-  it('When lastId is sent, it stills orders by timestamp', async () => {
-    // Deploy E1, E2 and E3 in that order
-    const [, E2Timestamp] = await deploy(E1, E2, E3)
-
-    const actualDeployments = await service.getDeployments({
-      limit: 2,
-      lastId: E1.entity.id
-    })
-
-    const nextLink = actualDeployments.pagination.next
-
-    expect(nextLink).toContain(`to=${E2Timestamp}`)
-    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
-    expect(actualDeployments.pagination.lastId).toBe(E1.entity.id)
   })
 
   it('When local timestamp filter is set, then only toLocalTimestamp is modified in next ', async () => {
@@ -71,8 +56,8 @@ describe('Integration - Deployment Pagination', () => {
       filters: { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E3Timestamp }
     })
 
+    expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
-
     expect(nextLink).toContain(`from=${E1Timestamp}`)
     expect(nextLink).toContain(`to=${E2Timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
@@ -90,10 +75,10 @@ describe('Integration - Deployment Pagination', () => {
       filters: { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E3Timestamp }
     })
 
+    expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
-
-    expect(nextLink).toContain(`from=${E2Timestamp.toString()}`)
-    expect(nextLink).toContain(`to=${E3Timestamp.toString()}`)
+    expect(nextLink).toContain(`from=${E2Timestamp}`)
+    expect(nextLink).toContain(`to=${E3Timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
@@ -105,8 +90,8 @@ describe('Integration - Deployment Pagination', () => {
       limit: 2
     })
 
+    expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
-
     expect(nextLink).toContain('limit=2')
   })
 
@@ -122,12 +107,12 @@ describe('Integration - Deployment Pagination', () => {
       filters: { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E3Timestamp }
     })
 
+    expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
-
     expect(nextLink).not.toContain(`fromLocalTimestamp=`)
     expect(nextLink).not.toContain(`toLocalTimestamp=`)
     expect(nextLink).not.toContain(`from=`)
-    expect(nextLink).toContain(`to=${E2.entity.timestamp.toString()}`)
+    expect(nextLink).toContain(`to=${E2.entity.timestamp}`)
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
@@ -143,9 +128,9 @@ describe('Integration - Deployment Pagination', () => {
       }
     })
 
+    expect(actualDeployments.deployments.length).toBe(1)
     const nextLink = actualDeployments.pagination.next
-
-    expect(nextLink).toContain(`from=${E1.entity.timestamp.toString()}`)
+    expect(nextLink).toContain(`from=${E1.entity.timestamp}`)
     expect(nextLink).toContain(`lastId=${E1.entity.id}`)
   })
 
@@ -170,21 +155,19 @@ describe('Integration - Deployment Pagination', () => {
   })
 
   async function deploy(...entities: EntityCombo[]): Promise<Timestamp[]> {
-    return deployWithAuditInfo(entities, {})
-  }
-
-  async function deployWithAuditInfo(entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
     const result: Timestamp[] = []
     for (const { deployData } of entities) {
-      const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
+      const auditInfo = { version: EntityVersion.V2, authChain: deployData.authChain }
       const deploymentResult: DeploymentResult = await service.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,
-        newAuditInfo,
+        auditInfo,
         ''
       )
       if (isSuccessfulDeployment(deploymentResult)) {
         result.push(deploymentResult)
+      } else {
+        assert.fail('The deployment was not successful')
       }
     }
     return result

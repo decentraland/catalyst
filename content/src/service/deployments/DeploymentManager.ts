@@ -17,7 +17,10 @@ import {
   SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
-import qs from 'qs'
+import {
+  toQueryParamsForGetAllDeployments,
+  toQueryParamsForPointerChanges
+} from 'decentraland-katalyst-commons/QueryParameters'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
@@ -130,15 +133,12 @@ export class DeploymentManager {
     nextFilters.fromLocalTimestamp = undefined
     nextFilters.toLocalTimestamp = undefined
 
-    const nextQueryParams = qs.stringify(
-      {
-        ...nextFilters,
-        limit: options?.limit,
-        sortingField: field,
-        sortingOrder: order,
-        lastId: lastDeployment.entityId
-      },
-      { arrayFormat: 'repeat' }
+    const nextQueryParams = toQueryParamsForGetAllDeployments(
+      nextFilters,
+      field,
+      order,
+      lastDeployment.entityId,
+      options?.limit
     )
     return '?' + nextQueryParams
   }
@@ -229,19 +229,11 @@ export class DeploymentManager {
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
     // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
-    nextFilters.to = lastPointerChange.localTimestamp
-    nextFilters.toLocalTimestamp = undefined
-    nextFilters.from = nextFilters.from ?? nextFilters.fromLocalTimestamp
-    nextFilters.fromLocalTimestamp = undefined
+    const to = lastPointerChange.localTimestamp
+    const from = nextFilters.from ?? nextFilters.fromLocalTimestamp
+    const entityTypes = nextFilters.entityTypes
 
-    const nextQueryParams = qs.stringify(
-      {
-        ...nextFilters,
-        limit: limit,
-        lastId: lastPointerChange.entityId
-      },
-      { arrayFormat: 'repeat' }
-    )
+    const nextQueryParams = toQueryParamsForPointerChanges(to, entityTypes, limit, lastPointerChange.entityId, from)
     return '?' + nextQueryParams
   }
 

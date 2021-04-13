@@ -65,11 +65,12 @@ describe('Integration - Pointer Changes Check', () => {
   })
 
   it('When getting a page of pointer changes then next url is set', async () => {
-    const E1Timestamp = await deployEntitiesCombo(service, E1, E3)
+    const deploymentTimestamp = await deployEntitiesCombo(service, E1, E3)
 
     const { pagination: pagination } = await service.getPointerChanges({ entityTypes: [E3.entity.type] }, undefined, 1)
 
-    expect(pagination.next).toContain(`to=${E1Timestamp}`)
+    expect(pagination.next).toContain(`to=${deploymentTimestamp}`)
+    // expect(pagination.next).toContain(`lastId=${E1.entity.id}`)
     expect(pagination.lastId).toBeUndefined()
   })
 
