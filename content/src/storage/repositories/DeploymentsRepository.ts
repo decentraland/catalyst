@@ -152,8 +152,6 @@ export class DeploymentsRepository {
     query += where
     query += ` ORDER BY dep1.${timestampField} ${order}, dep1.entity_id ${order} LIMIT $(limit) OFFSET $(offset)`
 
-    console.log('Y LA QUERY QUEDO ASI MASO MENOS: ', query)
-    console.log('Y los values: ', values)
     return this.db.map(query, values, (row) => ({
       deploymentId: row.id,
       entityType: row.entity_type,

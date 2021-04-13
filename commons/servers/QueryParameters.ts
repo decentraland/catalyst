@@ -32,13 +32,17 @@ export function toQueryParamsForPointerChanges(
   to: number,
   entityTypes: EntityType[] | undefined,
   limit: number,
-  lastPointerChangeId: string,
-  from?: number
+  lastPointerChangeId?: string,
+  from?: number,
+  toLocalTimestamp?: number,
+  fromLocalTimestamp?: number
 ): string {
   return qs.stringify(
     {
-      from: from,
       to: to,
+      from: from,
+      toLocalTimestamp: toLocalTimestamp,
+      fromLocalTimestamp: fromLocalTimestamp,
       entityType: entityTypes,
       limit: limit,
       lastId: lastPointerChangeId

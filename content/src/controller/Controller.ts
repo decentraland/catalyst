@@ -313,8 +313,12 @@ export class Controller {
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
+    //deprecated
     const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
+    // deprecated
     const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
+    const from: Timestamp | undefined = this.asInt(req.query.from)
+    const to: Timestamp | undefined = this.asInt(req.query.to)
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = req.query.lastId?.toLowerCase()
@@ -325,10 +329,14 @@ export class Controller {
       return
     }
 
+    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
+    const fromFilter = from ?? fromLocalTimestamp
+    const toFilter = to ?? toLocalTimestamp
+
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
-      fromLocalTimestamp,
-      toLocalTimestamp
+      from: fromFilter,
+      to: toFilter
     }
     const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(
       requestFilters,
@@ -357,7 +365,7 @@ export class Controller {
     const nextFilters = Object.assign({}, filters)
     // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
     const to = lastPointerChange.localTimestamp
-    const from = nextFilters.from ?? nextFilters.fromLocalTimestamp
+    const from = nextFilters.from
     const entityTypes = nextFilters.entityTypes
 
     const nextQueryParams = toQueryParamsForPointerChanges(to, entityTypes, limit, lastPointerChange.entityId, from)
@@ -391,8 +399,6 @@ export class Controller {
     const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const from: number | undefined = this.asInt(req.query.from)
     const to: number | undefined = this.asInt(req.query.to)
-
-    console.log('toLocalTImestamp: ', toLocalTimestamp)
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {

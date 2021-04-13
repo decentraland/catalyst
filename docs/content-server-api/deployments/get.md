@@ -92,6 +92,7 @@ List all deployments stored in the content server
   - Default value: -
   - Description: The pointer corresponding to the entity. For example, if the entity type is an scene, then the pointer will be a coordenate. If the entity type is a profile, then the pointer will be an ethAddress.
 
+*DEPRECATED: PLEASE USE from/to*
 - offset
   - Format: int
   - Value: the offset number
@@ -105,6 +106,13 @@ List all deployments stored in the content server
   - Example: limit=100
   - Default value: 500
   - Description: The deployments are a paginated collection, this parameter corresponds to the limit for each page.
+
+- lastId
+  - Format: string
+  - Value: EntityId
+  - Example: lastId=QmNknKv8MuKbfZ73z4QdUEsNbTd1ZAN1fSuwTFGiNGeCt5
+  - Default value: -
+  - Description: It is the last entity id that will be listed in the collection
 
 - fields
   - Format: string

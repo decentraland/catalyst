@@ -1,10 +1,13 @@
 import { Bean } from '@katalyst/content/Environment'
-import { DeploymentOptions } from '@katalyst/content/service/deployments/DeploymentManager'
+import { DeploymentOptions, PointerChangesFilters } from '@katalyst/content/service/deployments/DeploymentManager'
 import { isSuccessfulDeployment } from '@katalyst/content/service/Service'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import assert from 'assert'
 import { EntityType, Fetcher, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
-import { toQueryParamsForGetAllDeployments } from 'decentraland-katalyst-commons/QueryParameters'
+import {
+  toQueryParamsForGetAllDeployments,
+  toQueryParamsForPointerChanges
+} from 'decentraland-katalyst-commons/QueryParameters'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
@@ -159,10 +162,21 @@ describe('Integration - Deployment Pagination', () => {
     })
 
     const deployments = actualDeployments.deployments
-    console.log('all deployments: ', deployments)
 
     expect(deployments.length).toBe(1)
     expect(deployments[0].entityId).toBe(`${E2.entity.id}`)
+  })
+
+  it('When getting pointer Changes then the pagination is correctly done', async () => {
+    // Deploy E1, E2 in that order
+    const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
+
+    const pointerChanges = await fetchPointerChanges({ from: E1Timestamp }, 1)
+
+    expect(pointerChanges.deltas.length).toBe(1)
+    expect(pointerChanges.pagination.next).toContain(`to=${E2Timestamp}`)
+    expect(pointerChanges.pagination.next).toContain(`from=${E1Timestamp}`)
+    expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
   })
 
   async function deploy(...entities: EntityCombo[]): Promise<Timestamp[]> {
@@ -189,7 +203,23 @@ describe('Integration - Deployment Pagination', () => {
         options.lastId,
         options.limit
       )
-    console.log(url)
+    const response = await fetcher.fetchJson(url)
+    return response
+  }
+
+  async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
+    const url =
+      server.getAddress() +
+      `/pointerChanges?` +
+      toQueryParamsForPointerChanges(
+        filters.to!,
+        undefined,
+        limit,
+        undefined,
+        filters.from,
+        filters.toLocalTimestamp,
+        filters.fromLocalTimestamp
+      )
     const response = await fetcher.fetchJson(url)
     return response
   }
