@@ -29,9 +29,9 @@ export function toQueryParamsForGetAllDeployments(
 }
 
 export function toQueryParamsForPointerChanges(
-  to: number,
-  entityTypes: EntityType[] | undefined,
-  limit: number,
+  to?: number,
+  entityTypes?: EntityType[] | undefined,
+  limit?: number,
   lastPointerChangeId?: string,
   from?: number,
   toLocalTimestamp?: number,

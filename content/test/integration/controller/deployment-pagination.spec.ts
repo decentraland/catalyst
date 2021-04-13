@@ -212,7 +212,7 @@ describe('Integration - Deployment Pagination', () => {
       server.getAddress() +
       `/pointerChanges?` +
       toQueryParamsForPointerChanges(
-        filters.to!,
+        filters.to,
         undefined,
         limit,
         undefined,
