@@ -12,7 +12,10 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
-import { toQueryParamsForGetAllDeployments } from 'decentraland-katalyst-commons/QueryParameters'
+import {
+  toQueryParamsForGetAllDeployments,
+  toQueryParamsForPointerChanges
+} from 'decentraland-katalyst-commons/QueryParameters'
 import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
@@ -22,7 +25,12 @@ import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } fr
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Deployment, DeploymentOptions, DeploymentPointerChanges } from '../service/deployments/DeploymentManager'
+import {
+  Deployment,
+  DeploymentOptions,
+  DeploymentPointerChanges,
+  PointerChangesFilters
+} from '../service/deployments/DeploymentManager'
 import {
   DeploymentResult,
   isSuccessfulDeployment,
@@ -332,7 +340,28 @@ export class Controller {
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
     }))
+
+    if (controllerPointerChanges.length > 0 && pagination.moreData) {
+      const lastPointerChange = controllerPointerChanges[controllerPointerChanges.length - 1]
+      pagination.next = this.calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
+    }
+
     res.send({ deltas: controllerPointerChanges, filters, pagination })
+  }
+
+  calculateNextRelativePathForPointer(
+    lastPointerChange: ControllerPointerChanges,
+    limit: number,
+    filters?: PointerChangesFilters
+  ): string | undefined {
+    const nextFilters = Object.assign({}, filters)
+    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
+    const to = lastPointerChange.localTimestamp
+    const from = nextFilters.from ?? nextFilters.fromLocalTimestamp
+    const entityTypes = nextFilters.entityTypes
+
+    const nextQueryParams = toQueryParamsForPointerChanges(to, entityTypes, limit, lastPointerChange.entityId, from)
+    return '?' + nextQueryParams
   }
 
   async getDeployments(req: express.Request, res: express.Response) {

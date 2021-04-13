@@ -16,7 +16,6 @@ import {
   SortingField,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { toQueryParamsForPointerChanges } from 'decentraland-katalyst-commons/QueryParameters'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
@@ -44,15 +43,11 @@ export class DeploymentManager {
     const curatedFilters = Object.assign({}, options?.filters)
 
     if (!options?.sortBy?.field || options?.sortBy?.field != SortingField.ENTITY_TIMESTAMP) {
-      console.log('HOLA')
       curatedFilters.from = curatedFilters.fromLocalTimestamp
       curatedFilters.to = curatedFilters.toLocalTimestamp
-      console.log('to: ', options?.filters?.toLocalTimestamp)
-      console.log('to: ', curatedFilters.to)
     }
     curatedFilters.fromLocalTimestamp = undefined
     curatedFilters.toLocalTimestamp = undefined
-    console.log('to: ', curatedFilters.to)
 
     const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(
       curatedOffset,
@@ -161,12 +156,6 @@ export class DeploymentManager {
       }
     )
 
-    let nextRelativePath: string | undefined = undefined
-    if (pointerChanges.length > 0 && moreData) {
-      const lastPointerChange = pointerChanges[pointerChanges.length - 1]
-      nextRelativePath = this.calculateNextRelativePathForPointer(lastPointerChange, curatedLimit, filters)
-    }
-
     return {
       pointerChanges,
       filters: {
@@ -175,25 +164,9 @@ export class DeploymentManager {
       pagination: {
         offset: curatedOffset,
         limit: curatedLimit,
-        moreData,
-        next: nextRelativePath
+        moreData
       }
     }
-  }
-
-  calculateNextRelativePathForPointer(
-    lastPointerChange: DeploymentPointerChanges,
-    limit: number,
-    filters?: PointerChangesFilters
-  ): string | undefined {
-    const nextFilters = Object.assign({}, filters)
-    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
-    const to = lastPointerChange.localTimestamp
-    const from = nextFilters.from ?? nextFilters.fromLocalTimestamp
-    const entityTypes = nextFilters.entityTypes
-
-    const nextQueryParams = toQueryParamsForPointerChanges(to, entityTypes, limit, lastPointerChange.entityId, from)
-    return '?' + nextQueryParams
   }
 
   savePointerChanges(
