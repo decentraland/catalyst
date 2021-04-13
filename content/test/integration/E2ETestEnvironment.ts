@@ -60,12 +60,12 @@ export class E2ETestEnvironment {
   }
 
   async stop(): Promise<void> {
-    await this.repository.$pool.end()
+    await this.repository.shutdown()
     await this.postgresContainer.stop()
   }
 
   async clearDatabases(): Promise<void> {
-    await this.repository.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`)
+    await this.repository.run((db) => db.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`))
   }
 
   async stopServers(): Promise<void> {
@@ -124,10 +124,10 @@ export class E2ETestEnvironment {
   }
 
   private async createDatabases(amount: number) {
-    await this.repository.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`)
+    await this.repository.run((db) => db.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`))
     const dbNames = new Array(amount).fill(0).map((_) => 'db' + random.alphaNumeric(8))
     for (const dbName of dbNames) {
-      await this.repository.none(`CREATE DATABASE ${dbName}`)
+      await this.repository.run((db) => db.none(`CREATE DATABASE ${dbName}`))
     }
     return dbNames
   }

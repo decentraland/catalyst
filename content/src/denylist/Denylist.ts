@@ -69,11 +69,11 @@ export class Denylist {
   }
 
   getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
-    return this.repository.denylist.getAllDenylistedTargets()
+    return this.repository.run((db) => db.denylist.getAllDenylistedTargets())
   }
 
   async isTargetDenylisted(target: DenylistTarget): Promise<boolean> {
-    const map = await this.areTargetsDenylisted(this.repository.denylist, [target])
+    const map = await this.repository.run((db) => this.areTargetsDenylisted(db.denylist, [target]))
     return map.get(target.getType())?.get(target.getId()) ?? false
   }
 

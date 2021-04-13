@@ -1,9 +1,9 @@
 import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 
 export class FailedDeploymentsRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {
     return this.db.map(

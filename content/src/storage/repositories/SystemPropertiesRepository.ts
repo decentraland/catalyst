@@ -1,7 +1,7 @@
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 
 export class SystemPropertiesRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   getProperty(key: string): Promise<string | undefined> {
     return this.db.oneOrNone(

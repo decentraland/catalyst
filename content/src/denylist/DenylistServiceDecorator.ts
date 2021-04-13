@@ -49,7 +49,9 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
-    const isDenylisted = await this.areDenylisted(this.repository.denylist, ...this.getHashTargets(fileHash))
+    const isDenylisted = await this.repository.run((db) =>
+      this.areDenylisted(db.denylist, ...this.getHashTargets(fileHash))
+    )
     if (isDenylisted) {
       return undefined
     } else {
@@ -65,7 +67,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
       .map(([hash]) => hash)
     const hashToTargets = new Map(onlyAvailable.map((hash) => [hash, this.getHashTargets(hash)]))
     const allTargets = Array.from(hashToTargets.values()).reduce((curr, next) => curr.concat(next), [])
-    const result = await this.denylist.areTargetsDenylisted(this.repository.denylist, allTargets)
+    const result = await this.repository.run((db) => this.denylist.areTargetsDenylisted(db.denylist, allTargets))
 
     for (const [fileHash, targets] of hashToTargets) {
       const isDenylisted = targets.some((target) => isTargetDenylisted(target, result))
@@ -207,7 +209,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 
   getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number) {
-    return this.service.getPointerChanges(filters, offset, limit, this.repository)
+    return this.service.getPointerChanges(filters, offset, limit)
   }
 
   getAllFailedDeployments() {

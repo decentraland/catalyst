@@ -36,6 +36,7 @@ ts_library(
         "@npm//dcl-catalyst-commons",
         "@npm//eth-crypto",
         "@npm//express",
+        "@npm//fp-future",
         "@npm//ip",
         "@npm//log4js",
         "@npm//morgan",

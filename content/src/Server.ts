@@ -147,7 +147,7 @@ export class Server {
     }
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
-      await this.repository.$pool.end()
+      await this.repository.shutdown()
     }
   }
 

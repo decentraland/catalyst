@@ -1,10 +1,10 @@
 import { DELTA_POINTER_RESULT, DeploymentResult } from '@katalyst/content/service/pointers/PointerManager'
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class DeploymentPointerChangesRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   async savePointerChanges(deploymentId: DeploymentId, deploymentResult: DeploymentResult): Promise<void> {
     await this.db.txIf((transaction) => {

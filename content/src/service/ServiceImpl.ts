@@ -16,7 +16,8 @@ import log4js from 'log4js'
 import { ContentFile } from '../controller/Controller'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentItem, fromBuffer, StorageContent } from '../storage/ContentStorage'
-import { Repository, RepositoryTask } from '../storage/Repository'
+import { Database } from '../storage/Database'
+import { Repository } from '../storage/Repository'
 import { ContentAuthenticator } from './auth/Authenticator'
 import {
   Deployment,
@@ -69,9 +70,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
-    repository: RepositoryTask | Repository = this.repository
+    task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, origin, repository)
+    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, origin, task)
   }
 
   deployToFix(
@@ -79,18 +80,18 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
-    repository: RepositoryTask | Repository = this.repository
+    task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, origin, repository, true)
+    return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, origin, task)
   }
 
   deployLocalLegacy(
     files: ContentFile[],
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    repository: RepositoryTask | Repository = this.repository
+    task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, 'legacy', repository)
+    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, 'legacy', task)
   }
 
   private async deployInternal(
@@ -99,8 +100,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     auditInfo: AuditInfo | LocalDeploymentAuditInfo,
     validationContext: ValidationContext,
     origin: string,
-    repository: RepositoryTask | Repository = this.repository,
-    fix: boolean = false
+    task?: Database
   ): Promise<DeploymentResult> {
     const validation = this.validations.getInstance()
 
@@ -163,93 +163,95 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     try {
       const response:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean }
-        | InvalidResult = await repository.txIf(async (transaction) => {
-        const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
+        | InvalidResult = await this.repository.reuseIfPresent(task, (db) =>
+        db.txIf(async (transaction) => {
+          const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
-        // Validate if the entity can be re deployed
-        await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
+          // Validate if the entity can be re deployed
+          await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
-        // Validate that there is no entity with a higher version
-        await validation.validateLegacyEntity(
-          entity,
-          auditInfo,
-          (filters) => this.getDeployments({ filters }, transaction),
-          validationContext
-        )
-
-        // Validate that there are no newer entities on pointers
-        await validation.validateNoNewerEntitiesOnPointers(
-          entity,
-          (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
-          validationContext
-        )
-
-        // Validate that if the entity was already deployed, the status it was left is what we expect
-        await validation.validateThatEntityFailedBefore(
-          entity,
-          (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
-          validationContext
-        )
-
-        if (validation.getErrors().length > 0) {
-          return { errors: validation.getErrors() }
-        }
-
-        const localTimestamp = Date.now()
-
-        const auditInfoComplete: AuditInfo = {
-          ...auditInfo,
-          localTimestamp
-        }
-
-        if (!isEntityAlreadyDeployed) {
-          // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
-
-          // Calculate overwrites
-          const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(
-            transaction.pointerHistory,
-            entity
-          )
-
-          // Store the deployment
-          const deploymentId = await this.deploymentManager.saveDeployment(
-            transaction.deployments,
-            transaction.migrationData,
-            transaction.content,
+          // Validate that there is no entity with a higher version
+          await validation.validateLegacyEntity(
             entity,
-            auditInfoComplete,
-            overwrittenBy
+            auditInfo,
+            (filters) => this.getDeployments({ filters }, transaction),
+            validationContext
           )
 
-          // Modify active pointers
-          const result = await this.pointerManager.referenceEntityFromPointers(
-            transaction.lastDeployedPointers,
-            deploymentId,
-            entity
+          // Validate that there are no newer entities on pointers
+          await validation.validateNoNewerEntitiesOnPointers(
+            entity,
+            (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
+            validationContext
           )
 
-          // Save deployment pointer changes
-          await this.deploymentManager.savePointerChanges(transaction.deploymentPointerChanges, deploymentId, result)
+          // Validate that if the entity was already deployed, the status it was left is what we expect
+          await validation.validateThatEntityFailedBefore(
+            entity,
+            (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
+            validationContext
+          )
 
-          // Add to pointer history
-          await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
+          if (validation.getErrors().length > 0) {
+            return { errors: validation.getErrors() }
+          }
 
-          // Set who overwrote who
-          await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
+          const localTimestamp = Date.now()
 
-          // Store the entity's content
-          await this.storeEntityContent(hashes, alreadyStoredContent)
-        }
+          const auditInfoComplete: AuditInfo = {
+            ...auditInfo,
+            localTimestamp
+          }
 
-        // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-        await this.failedDeploymentsManager.reportSuccessfulDeployment(
-          transaction.failedDeployments,
-          entity.type,
-          entity.id
-        )
+          if (!isEntityAlreadyDeployed) {
+            // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
 
-        return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
-      })
+            // Calculate overwrites
+            const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(
+              transaction.pointerHistory,
+              entity
+            )
+
+            // Store the deployment
+            const deploymentId = await this.deploymentManager.saveDeployment(
+              transaction.deployments,
+              transaction.migrationData,
+              transaction.content,
+              entity,
+              auditInfoComplete,
+              overwrittenBy
+            )
+
+            // Modify active pointers
+            const result = await this.pointerManager.referenceEntityFromPointers(
+              transaction.lastDeployedPointers,
+              deploymentId,
+              entity
+            )
+
+            // Save deployment pointer changes
+            await this.deploymentManager.savePointerChanges(transaction.deploymentPointerChanges, deploymentId, result)
+
+            // Add to pointer history
+            await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
+
+            // Set who overwrote who
+            await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
+
+            // Store the entity's content
+            await this.storeEntityContent(hashes, alreadyStoredContent)
+          }
+
+          // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
+          await this.failedDeploymentsManager.reportSuccessfulDeployment(
+            transaction.failedDeployments,
+            entity.type,
+            entity.id
+          )
+
+          return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
+        })
+      )
 
       if (!('auditInfoComplete' in response)) {
         return response
@@ -281,19 +283,21 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     errorDescription?: string
   ): Promise<null> {
     ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
-    return this.failedDeploymentsManager.reportFailure(
-      this.repository.failedDeployments,
-      entityType,
-      entityId,
-      originTimestamp,
-      originServerUrl,
-      reason,
-      errorDescription
+    return this.repository.run((db) =>
+      this.failedDeploymentsManager.reportFailure(
+        db.failedDeployments,
+        entityType,
+        entityId,
+        originTimestamp,
+        originServerUrl,
+        reason,
+        errorDescription
+      )
     )
   }
 
   /** Check if there are newer entities on the given entity's pointers */
-  private async areThereNewerEntitiesOnPointers(entity: Entity, transaction: RepositoryTask): Promise<boolean> {
+  private async areThereNewerEntitiesOnPointers(entity: Entity, transaction: Database): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
     const { deployments: lastDeployments } = await this.getDeployments(
       { filters: { entityTypes: [entity.type], pointers: entity.pointers } },
@@ -394,19 +398,17 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     )
   }
 
-  areEntitiesAlreadyDeployed(
-    entityIds: EntityId[],
-    repository: RepositoryTask | Repository = this.repository
-  ): Promise<Map<EntityId, boolean>> {
-    return this.deploymentManager.areEntitiesDeployed(repository.deployments, entityIds)
+  areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {
+    return this.repository.reuseIfPresent(task, (db) =>
+      this.deploymentManager.areEntitiesDeployed(db.deployments, entityIds)
+    )
   }
 
-  getDeployments(
-    options?: DeploymentOptions,
-    repository: RepositoryTask | Repository = this.repository
-  ): Promise<PartialDeploymentHistory<Deployment>> {
-    return repository.taskIf((task) =>
-      this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
+  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
+    return this.repository.reuseIfPresent(task, (db) =>
+      db.taskIf((task) =>
+        this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
+      )
     )
   }
 
@@ -414,22 +416,30 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
-    repository: RepositoryTask | Repository = this.repository
+    task?: Database
   ): Promise<PartialDeploymentPointerChanges> {
-    return repository.taskIf((task) =>
-      this.deploymentManager.getPointerChanges(task.deploymentPointerChanges, task.deployments, filters, offset, limit)
+    return this.repository.reuseIfPresent(task, (db) =>
+      db.taskIf((task) =>
+        this.deploymentManager.getPointerChanges(
+          task.deploymentPointerChanges,
+          task.deployments,
+          filters,
+          offset,
+          limit
+        )
+      )
     )
   }
 
   getAllFailedDeployments() {
-    return this.failedDeploymentsManager.getAllFailedDeployments(this.repository.failedDeployments)
+    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments))
   }
 
   listenToDeployments(listener: DeploymentListener): void {
     this.listeners.push(listener)
   }
 
-  private async isEntityAlreadyDeployed(entityId: EntityId, transaction: RepositoryTask): Promise<boolean> {
+  private async isEntityAlreadyDeployed(entityId: EntityId, transaction: Database): Promise<boolean> {
     const result = await this.areEntitiesAlreadyDeployed([entityId], transaction)
     return result.get(entityId)!
   }

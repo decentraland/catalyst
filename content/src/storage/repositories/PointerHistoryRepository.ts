@@ -1,9 +1,9 @@
 import { Entity } from '@katalyst/content/service/Entity'
+import { Database } from '@katalyst/content/storage/Database'
 import { DeploymentId } from '@katalyst/content/storage/repositories/DeploymentsRepository'
-import { Repository } from '@katalyst/content/storage/Repository'
 
 export class PointerHistoryRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   async calculateOverwrites(
     entity: Entity
