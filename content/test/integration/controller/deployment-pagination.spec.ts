@@ -4,15 +4,12 @@ import { isSuccessfulDeployment } from '@katalyst/content/service/Service'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import assert from 'assert'
 import { EntityType, Fetcher, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
-import {
-  toQueryParamsForGetAllDeployments,
-  toQueryParamsForPointerChanges
-} from 'decentraland-katalyst-commons/QueryParameters'
+import { toQueryParams } from 'decentraland-katalyst-commons/QueryParameters'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
-describe('Integration - Deployment Pagination', () => {
+fdescribe('Integration - Deployment Pagination', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   const testEnv = loadStandaloneTestEnvironment()
@@ -290,33 +287,28 @@ describe('Integration - Deployment Pagination', () => {
   }
 
   async function fetchDeployments(options: DeploymentOptions) {
+    const composedOptions = {
+      ...options.filters,
+      sortingField: options.sortBy?.field,
+      sortingOrder: options.sortBy?.order
+    }
+    const newOptions = Object.assign({}, options)
+    newOptions.sortBy = undefined
+    newOptions.filters = undefined
     const url =
       server.getAddress() +
       `/deployments?` +
-      toQueryParamsForGetAllDeployments(
-        options.filters,
-        options.sortBy?.field,
-        options.sortBy?.order,
-        options.lastId,
-        options.limit
-      )
+      toQueryParams({
+        ...newOptions,
+        ...composedOptions
+      })
     const response = await fetcher.fetchJson(url)
     return response
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url =
-      server.getAddress() +
-      `/pointerChanges?` +
-      toQueryParamsForPointerChanges(
-        filters.to,
-        undefined,
-        limit,
-        undefined,
-        filters.from,
-        filters.toLocalTimestamp,
-        filters.fromLocalTimestamp
-      )
+    const url = server.getAddress() + `/pointerChanges?` + toQueryParams({ ...filters, limit: limit })
+    console.log('URL ', url)
     const response = await fetcher.fetchJson(url)
     return response
   }

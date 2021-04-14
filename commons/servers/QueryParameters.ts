@@ -1,73 +1,35 @@
-import { DeploymentFilters, EntityType, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import qs from 'qs'
 
-export function toQueryParamsForGetAllDeployments(
-  filters?: DeploymentFilters,
-  field?: SortingField,
-  order?: SortingOrder,
-  entityId?: string,
-  limit?: number
-): string {
-  return qs.stringify(
-    {
-      from: filters?.from,
-      to: filters?.to,
-      fromLocalTimestamp: filters?.fromLocalTimestamp,
-      toLocalTimestamp: filters?.toLocalTimestamp,
-      deployedBy: filters?.deployedBy,
-      entityType: filters?.entityTypes,
-      entityId: filters?.entityIds,
-      pointer: filters?.pointers,
-      onlyCurrentlyPointed: filters?.onlyCurrentlyPointed,
-      limit: limit,
-      sortingField: field,
-      sortingOrder: order,
-      lastId: entityId
-    },
-    { arrayFormat: 'repeat' }
-  )
+export function toQueryParams(filters: Record<string, any>): string {
+  const entries = convertFiltersToQueryParams(filters)
+  return qs.stringify(Object.fromEntries(entries), { arrayFormat: 'repeat' })
 }
 
-export function toQueryParamsForPointerChanges(
-  to?: number,
-  entityTypes?: EntityType[] | undefined,
-  limit?: number,
-  lastPointerChangeId?: string,
-  from?: number,
-  toLocalTimestamp?: number,
-  fromLocalTimestamp?: number
-): string {
-  return qs.stringify(
-    {
-      to: to,
-      from: from,
-      toLocalTimestamp: toLocalTimestamp,
-      fromLocalTimestamp: fromLocalTimestamp,
-      entityType: entityTypes,
-      limit: limit,
-      lastId: lastPointerChangeId
-    },
-    { arrayFormat: 'repeat' }
-  )
+function convertFiltersToQueryParams(filters?: Record<string, any>): Map<string, string[]> {
+  if (!filters) {
+    return new Map()
+  }
+  const entries = Object.entries(filters)
+    .filter(([_, value]) => !!value)
+    .map<[string, string[]]>(([name, value]) => {
+      const newName = name.endsWith('s') ? name.slice(0, -1) : name
+      let newValues: string[]
+      // Force coercion of number, boolean, or string into string
+      if (Array.isArray(value)) {
+        newValues = [...value].filter(isValidQueryParamValue).map((_) => `${_}`)
+      } else if (isValidQueryParamValue(value)) {
+        newValues = [`${value}`]
+      } else {
+        throw new Error(
+          'Query params must be either a string, a number, a boolean or an array of the types just mentioned'
+        )
+      }
+      return [newName, newValues]
+    })
+    .filter(([_, values]) => values.length > 0)
+  return new Map(entries)
 }
 
-export function toQueryParamsForWearables(
-  requestFilters: {
-    collectionIds: string[] | undefined
-    wearableIds: string[] | undefined
-    textSearch: string | undefined
-  },
-  nextLastId: string | undefined,
-  sanitizedLimit: number
-): string {
-  return qs.stringify(
-    {
-      collectionId: requestFilters.collectionIds,
-      wearableId: requestFilters.wearableIds,
-      textSearch: requestFilters.textSearch,
-      lastId: nextLastId,
-      limit: sanitizedLimit
-    },
-    { arrayFormat: 'repeat' }
-  )
+function isValidQueryParamValue(value: any): boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
 }

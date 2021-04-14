@@ -220,6 +220,7 @@ export type DeploymentOptions = {
   lastId?: string
 }
 
+// TODO: remove this
 export type PointerChangesFilters = Pick<
   DeploymentFilters,
   'from' | 'to' | 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'

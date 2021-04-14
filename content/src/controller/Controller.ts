@@ -12,10 +12,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
-import {
-  toQueryParamsForGetAllDeployments,
-  toQueryParamsForPointerChanges
-} from 'decentraland-katalyst-commons/QueryParameters'
+import { toQueryParams } from 'decentraland-katalyst-commons/QueryParameters'
 import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
@@ -364,11 +361,13 @@ export class Controller {
   ): string | undefined {
     const nextFilters = Object.assign({}, filters)
     // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
-    const to = lastPointerChange.localTimestamp
-    const from = nextFilters.from
-    const entityTypes = nextFilters.entityTypes
+    nextFilters.to = lastPointerChange.localTimestamp
 
-    const nextQueryParams = toQueryParamsForPointerChanges(to, entityTypes, limit, lastPointerChange.entityId, from)
+    const nextQueryParams = toQueryParams({
+      ...nextFilters,
+      limit: limit,
+      lastId: lastPointerChange.entityId
+    })
     return '?' + nextQueryParams
   }
 
@@ -496,13 +495,13 @@ export class Controller {
     nextFilters.fromLocalTimestamp = undefined
     nextFilters.toLocalTimestamp = undefined
 
-    const nextQueryParams = toQueryParamsForGetAllDeployments(
-      nextFilters,
-      field,
-      order,
-      lastDeployment.entityId,
-      options?.limit
-    )
+    const nextQueryParams = toQueryParams({
+      ...nextFilters,
+      sortingField: field,
+      sortingOrder: order,
+      lastId: lastDeployment.entityId,
+      limit: options?.limit
+    })
     return '?' + nextQueryParams
   }
 
