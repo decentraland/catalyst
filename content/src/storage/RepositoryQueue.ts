@@ -11,7 +11,8 @@ export class RepositoryQueue {
   private readonly queue: PQueue
 
   constructor(options?: Partial<QueueOptions>) {
-    const { maxConcurrency, maxQueued } = { maxConcurrency: 20, maxQueued: 50, ...options }
+    const withoutUndefined = options ? copyWithoutUndefinedValues(options) : {}
+    const { maxConcurrency, maxQueued } = { maxConcurrency: 20, maxQueued: 50, ...withoutUndefined }
     this.queue = new PQueue({ concurrency: maxConcurrency })
     this.maxQueued = maxQueued
   }
@@ -39,3 +40,10 @@ export enum DB_REQUEST_PRIORITY {
 }
 
 type QueueOptions = { maxConcurrency: number; maxQueued: number }
+
+function copyWithoutUndefinedValues<T extends Record<string, any>>(object: T): T {
+  const newLocal = Object.entries(object).filter(([, value]) => value)
+  /* eslint-disable @typescript-eslint/ban-ts-comment */
+  // @ts-ignore
+  return Object.fromEntries<T>(newLocal)
+}
