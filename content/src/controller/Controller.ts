@@ -354,7 +354,7 @@ export class Controller {
     res.send({ deltas: controllerPointerChanges, filters, pagination })
   }
 
-  calculateNextRelativePathForPointer(
+  private calculateNextRelativePathForPointer(
     lastPointerChange: ControllerPointerChanges,
     limit: number,
     filters?: PointerChangesFilters
@@ -432,6 +432,16 @@ export class Controller {
       } else {
         sortBy.order = sortingOrder
       }
+    }
+
+    console.log('Y HOLA? S')
+    // Validate to and from are valid
+    if (sortingField == SortingField.ENTITY_TIMESTAMP && (fromLocalTimestamp || toLocalTimestamp)) {
+      console.log('DEBIA HA BER FALLADO')
+      res.status(400).send({
+        error: 'The filters fromLocalTimestamp and toLocalTimestamp can not be used when sorting by entity timestamp.'
+      })
+      return
     }
 
     // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
