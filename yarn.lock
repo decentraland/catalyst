@@ -3161,21 +3161,21 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-with-next-v1:
-  version "4.0.7-20210414181150.commit-efb0e4c"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-4.0.7-20210414181150.commit-efb0e4c.tgz#28ca8511dd7d403337b4e8322765cc402c62cf25"
-  integrity sha512-d7h+cHBkjKgdwwbYCo8uFhn3Tdj4q6GZTuQfPAZbfiWKsYVftWX66kSotdxJE8aVBOtXz1KulkIdRFPJuL6mRw==
+dcl-catalyst-client@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.0.tgz#e9b75c90f3a6ddeff17d2ee1ed38930ad9211ba9"
+  integrity sha512-JjrkTDv1O499H8zqNgDxWd3DFYrJHa4xCXwItH4UP/oZtCFwVZKzQPFVgK0UlgcyZmvSpimrIge6FZRuHDaZCA==
   dependencies:
     "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons tag-with-next-pagination-v7
+    dcl-catalyst-commons "^4.0.0"
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@tag-with-next-pagination-v7:
-  version "3.0.2-20210414172529.commit-6354154"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.2-20210414172529.commit-6354154.tgz#5f6a88b0b3bf438e4fb3c174e671eff6233e74b3"
-  integrity sha512-EMxH5eMjhWegpVnH3V68+1DylN4ad7j6zNXLp14rOq9oN5ZfCU5crJFpAtgD5HoWMCCc7Bvs0tfXzWjkqTvS5A==
+dcl-catalyst-commons@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.0.tgz#06591159f02da2d63fdb77d28932a05994db1957"
+  integrity sha512-Xwf4ZlwAfhfTj8fD40+nwKh8DiEp6qTcy1OM19kdIJX1YgUMY18QMMUbPkAQHYNSsvOXOb2zZ8WAIYuwrtd8qg==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
