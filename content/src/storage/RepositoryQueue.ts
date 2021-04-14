@@ -1,4 +1,9 @@
 import PQueue from 'p-queue'
+
+/**
+ * All database requests go through this queue. All pending requests will be queued as long as the limit isn't reached. If if it, then
+ * low priority requests will be rejected before being queued.
+ */
 export class RepositoryQueue {
   public static readonly TOO_MANY_QUEUED_ERROR =
     'There are too many requests being made to the database right now. Please try again in a few minutes'
