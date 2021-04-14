@@ -22,22 +22,25 @@ export class SnapshotManager {
   }
 
   start(): Promise<void> {
-    return this.repository.txIf(async (transaction) => {
-      this.lastSnapshots = new Map(
-        await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOTS, transaction)
-      )
-      for (const entityType of Object.values(EntityType)) {
-        const snapshot = this.lastSnapshots.get(entityType)
-        const typeFrequency = this.getFrequencyForType(entityType)
-        if (
-          !snapshot ||
-          (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >=
-            typeFrequency
-        ) {
-          await this.generateSnapshot(entityType, transaction)
+    return this.repository.txIf(
+      async (transaction) => {
+        this.lastSnapshots = new Map(
+          await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOTS, transaction)
+        )
+        for (const entityType of Object.values(EntityType)) {
+          const snapshot = this.lastSnapshots.get(entityType)
+          const typeFrequency = this.getFrequencyForType(entityType)
+          if (
+            !snapshot ||
+            (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >=
+              typeFrequency
+          ) {
+            await this.generateSnapshot(entityType, transaction)
+          }
         }
-      }
-    })
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 
   getSnapshotMetadata(entityType: EntityType): SnapshotMetadata | undefined {

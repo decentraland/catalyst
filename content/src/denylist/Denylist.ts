@@ -5,6 +5,7 @@ import { ContentAuthenticator } from '../service/auth/Authenticator'
 import { ContentCluster } from '../service/synchronization/ContentCluster'
 import { DenylistRepository } from '../storage/repositories/DenylistRepository'
 import { Repository } from '../storage/Repository'
+import { DB_REQUEST_PRIORITY } from '../storage/RepositoryQueue'
 import { DenylistTarget, DenylistTargetId, DenylistTargetType } from './DenylistTarget'
 
 export class Denylist {
@@ -37,13 +38,16 @@ export class Denylist {
       return operationResult
     }
 
-    await this.repository.tx(async (transaction) => {
-      // Add denylist
-      await transaction.denylist.addTarget(target)
+    await this.repository.tx(
+      async (transaction) => {
+        // Add denylist
+        await transaction.denylist.addTarget(target)
 
-      // Add to history
-      await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.ADDITION)
-    })
+        // Add to history
+        await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.ADDITION)
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
     return { status: DenylistSignatureValidationStatus.OK }
   }
 
@@ -58,13 +62,16 @@ export class Denylist {
       return operationResult
     }
 
-    await this.repository.tx(async (transaction) => {
-      // Remove denylist
-      await transaction.denylist.removeTarget(target)
+    await this.repository.tx(
+      async (transaction) => {
+        // Remove denylist
+        await transaction.denylist.removeTarget(target)
 
-      // Add to history
-      await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.REMOVAL)
-    })
+        // Add to history
+        await transaction.denylist.addEventToHistory(target, metadata, DenylistAction.REMOVAL)
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
     return { status: DenylistSignatureValidationStatus.OK }
   }
 

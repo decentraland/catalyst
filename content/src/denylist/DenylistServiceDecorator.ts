@@ -21,6 +21,7 @@ import { ServiceImpl } from '../service/ServiceImpl'
 import { ContentItem } from '../storage/ContentStorage'
 import { DenylistRepository } from '../storage/repositories/DenylistRepository'
 import { Repository } from '../storage/Repository'
+import { DB_REQUEST_PRIORITY } from '../storage/RepositoryQueue'
 import { Denylist } from './Denylist'
 import {
   buildAddressTarget,
@@ -85,13 +86,16 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     origin: string
   ): Promise<DeploymentResult> {
-    return this.repository.task(async (task) => {
-      // Validate the deployment
-      await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+    return this.repository.task(
+      async (task) => {
+        // Validate the deployment
+        await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
-      // If all validations passed, then deploy the entity
-      return this.service.deployToFix(files, entityId, auditInfo, origin, task)
-    })
+        // If all validations passed, then deploy the entity
+        return this.service.deployToFix(files, entityId, auditInfo, origin, task)
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 
   async deployEntity(
@@ -100,13 +104,16 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     origin: string
   ): Promise<DeploymentResult> {
-    return this.repository.task(async (task) => {
-      // Validate the deployment
-      await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+    return this.repository.task(
+      async (task) => {
+        // Validate the deployment
+        await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
-      // If all validations passed, then deploy the entity
-      return this.service.deployEntity(files, entityId, auditInfo, origin, task)
-    })
+        // If all validations passed, then deploy the entity
+        return this.service.deployEntity(files, entityId, auditInfo, origin, task)
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 
   async deployLocalLegacy(
@@ -114,13 +121,16 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo
   ): Promise<DeploymentResult> {
-    return this.repository.task(async (task) => {
-      // Validate the deployment
-      await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+    return this.repository.task(
+      async (task) => {
+        // Validate the deployment
+        await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
-      // If all validations passed, then deploy the entity
-      return this.service.deployLocalLegacy(files, entityId, auditInfo, task)
-    })
+        // If all validations passed, then deploy the entity
+        return this.service.deployLocalLegacy(files, entityId, auditInfo, task)
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 
   deleteContent(fileHashes: string[]): Promise<void> {
