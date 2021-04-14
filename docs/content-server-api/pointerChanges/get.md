@@ -1,10 +1,9 @@
 # Get Pointer Changes
 
-List all deployment changes from the same pointer
+List all deployment changes made to pointers.
+
 
 **URL** : `/pointerChanges`
-
-<!-- **URL Parameters** : `pk=[integer]` where `pk` is the ID of the Account on the server. -->
 
 **Method** : `GET`
 
