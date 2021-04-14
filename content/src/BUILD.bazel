@@ -50,5 +50,7 @@ ts_library(
         "@npm//@dcl/urn-resolver",
         "@npm//uuid",
         "@npm//web3x",
+        "@npm//@types/qs",
+        "@npm//qs",
     ],
 )

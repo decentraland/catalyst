@@ -44,7 +44,8 @@ export class DeploymentManager {
       curatedOffset,
       curatedLimit + 1,
       options?.filters,
-      options?.sortBy
+      options?.sortBy,
+      options?.lastId
     )
 
     const moreData = deploymentsWithExtra.length > curatedLimit
@@ -72,6 +73,7 @@ export class DeploymentManager {
         migrationData: migrationData.get(result.deploymentId)
       }
     }))
+
     return {
       deployments: deployments,
       filters: {
@@ -80,7 +82,8 @@ export class DeploymentManager {
       pagination: {
         offset: curatedOffset,
         limit: curatedLimit,
-        moreData: moreData
+        moreData: moreData,
+        lastId: options?.lastId
       }
     }
   }
@@ -118,7 +121,8 @@ export class DeploymentManager {
     deploymentsRepo: DeploymentsRepository,
     filters?: PointerChangesFilters,
     offset?: number,
-    limit?: number
+    limit?: number,
+    lastId?: string
   ): Promise<PartialDeploymentPointerChanges> {
     const curatedOffset = offset && offset >= 0 ? offset : 0
     const curatedLimit =
@@ -127,7 +131,8 @@ export class DeploymentManager {
       curatedOffset,
       curatedLimit + 1,
       filters,
-      { field: SortingField.LOCAL_TIMESTAMP }
+      { field: SortingField.LOCAL_TIMESTAMP },
+      lastId
     )
     const moreData = deploymentsWithExtra.length > curatedLimit
 
@@ -141,6 +146,7 @@ export class DeploymentManager {
         return { entityType, entityId, localTimestamp, changes }
       }
     )
+
     return {
       pointerChanges,
       filters: {
@@ -192,6 +198,8 @@ export type PartialDeploymentPointerChanges = {
     offset: number
     limit: number
     moreData: boolean
+    lastId?: string
+    next?: string
   }
 }
 
@@ -200,8 +208,9 @@ export type DeploymentOptions = {
   sortBy?: DeploymentSorting
   offset?: number
   limit?: number
+  lastId?: string
 }
 
-export type PointerChangesFilters = Pick<DeploymentFilters, 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'>
+export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 
 export type PointerChanges = Map<Pointer, { before: EntityId | undefined; after: EntityId | undefined }>

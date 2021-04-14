@@ -36,7 +36,7 @@ export class ContentServerClient {
     // Fetch the deployments
     const stream = this.client.streamAllDeployments(
       {
-        filters: { fromLocalTimestamp: this.lastLocalDeploymentTimestamp + 1 },
+        filters: { from: this.lastLocalDeploymentTimestamp + 1 },
         fields: DeploymentFields.AUDIT_INFO,
         errorListener: (errorMessage) => {
           error = true

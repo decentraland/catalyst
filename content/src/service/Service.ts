@@ -60,6 +60,7 @@ export interface MetaverseContentService {
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
+    lastId?: string,
     repository?: RepositoryTask | Repository
   ): Promise<PartialDeploymentPointerChanges>
   listenToDeployments(listener: DeploymentListener): void
