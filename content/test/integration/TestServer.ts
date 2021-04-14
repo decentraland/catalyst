@@ -78,12 +78,12 @@ export class TestServer extends Server {
   getDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
     options?: DeploymentOptions<T>
   ): Promise<ControllerDeployment[]> {
+    const filters = Object.assign({ from: 1 }, options?.filters)
     return this.client.fetchAllDeployments({
       fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO,
       ...options,
       filters: {
-        fromLocalTimestamp: 1,
-        ...options?.filters
+        ...filters
       }
     })
   }

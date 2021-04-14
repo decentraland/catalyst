@@ -90,7 +90,7 @@ export class DeploymentsRepository {
       (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
 
     if (filters?.from && timestampField == SortingField.LOCAL_TIMESTAMP) {
-      values.fromLocalTimestamp = filters.fromLocalTimestamp ?? filters.from
+      values.fromLocalTimestamp = filters.from
       if (pageBorder == 'fromLocalTimestamp' && lastId) {
         whereClause.push(this.createOrClause('local_timestamp', '>', 'fromLocalTimestamp'))
       } else {
@@ -98,7 +98,7 @@ export class DeploymentsRepository {
       }
     }
     if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
-      values.toLocalTimestamp = filters.toLocalTimestamp ?? filters.to
+      values.toLocalTimestamp = filters.to
       if (pageBorder == 'toLocalTimestamp' && lastId) {
         whereClause.push(this.createOrClause('local_timestamp', '<', 'toLocalTimestamp'))
       } else {

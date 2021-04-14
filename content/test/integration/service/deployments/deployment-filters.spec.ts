@@ -31,9 +31,9 @@ describe('Integration - Deployment Filters', () => {
     const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(E1, E2, E3)
 
     await assertDeploymentsWithFilterAre({}, E1, E2, E3)
-    await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp }, E1, E2)
-    await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E2Timestamp }, E2, E3)
-    await assertDeploymentsWithFilterAre({ fromLocalTimestamp: E3Timestamp + 1 })
+    await assertDeploymentsWithFilterAre({ from: E1Timestamp, to: E2Timestamp }, E1, E2)
+    await assertDeploymentsWithFilterAre({ from: E2Timestamp }, E2, E3)
+    await assertDeploymentsWithFilterAre({ from: E3Timestamp + 1 })
   })
 
   it('When entity types filter is set, then results are calculated correctly', async () => {

@@ -184,13 +184,16 @@ describe('Integration - Deployment Pagination', () => {
     // Deploy E1, E2 and E3 in that order
     const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(E1, E2, E3)
 
-    const actualDeployments = await fetchDeployments({
-      limit: 2,
-      sortBy: {
-        order: SortingOrder.ASCENDING
-      },
-      filters: { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E3Timestamp }
-    })
+    const url =
+      server.getAddress() +
+      `/deployments?` +
+      toQueryParams({
+        limit: 2,
+        sortingOrder: SortingOrder.ASCENDING,
+        fromLocalTimestamp: E1Timestamp,
+        toLocalTimestamp: E3Timestamp
+      })
+    const actualDeployments = await fetchJson(url)
 
     expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
@@ -205,13 +208,17 @@ describe('Integration - Deployment Pagination', () => {
     const [E1Timestamp, , E3Timestamp] = await deploy(E1, E2, E3)
 
     try {
-      await fetchDeployments({
-        limit: 2,
-        sortBy: {
-          field: SortingField.ENTITY_TIMESTAMP
-        },
-        filters: { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E3Timestamp }
-      })
+      const url =
+        server.getAddress() +
+        `/deployments?` +
+        toQueryParams({
+          limit: 2,
+          sortingField: SortingField.ENTITY_TIMESTAMP,
+          fromLocalTimestamp: E1Timestamp,
+          toLocalTimestamp: E3Timestamp
+        })
+      await fetchJson(url)
+
       assert.fail('When using deprecated filters it should fail.')
     } catch (err) {}
   })
@@ -233,10 +240,12 @@ describe('Integration - Deployment Pagination', () => {
     // Deploy E1, E2 in that order
     const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
 
-    const pointerChanges = await fetchPointerChanges(
-      { fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp },
-      1
-    )
+    const url =
+      server.getAddress() +
+      `/pointerChanges?` +
+      toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
+    console.log('URL ', url)
+    const pointerChanges = await fetchJson(url)
 
     expect(pointerChanges.deltas.length).toBe(1)
     expect(pointerChanges.pagination.next).not.toContain('toLocalTimestamp=')

@@ -305,7 +305,7 @@ export class Controller {
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /pointerChanges
-    // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}&entityType={entityType}
+    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
@@ -365,6 +365,7 @@ export class Controller {
 
     const nextQueryParams = toQueryParams({
       ...nextFilters,
+
       limit: limit,
       lastId: lastPointerChange.entityId
     })
@@ -374,7 +375,7 @@ export class Controller {
   async getDeployments(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments
-    // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
+    // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
@@ -434,10 +435,8 @@ export class Controller {
       }
     }
 
-    console.log('Y HOLA? S')
     // Validate to and from are valid
     if (sortingField == SortingField.ENTITY_TIMESTAMP && (fromLocalTimestamp || toLocalTimestamp)) {
-      console.log('DEBIA HA BER FALLADO')
       res.status(400).send({
         error: 'The filters fromLocalTimestamp and toLocalTimestamp can not be used when sorting by entity timestamp.'
       })
@@ -489,10 +488,8 @@ export class Controller {
     if (field == SortingField.LOCAL_TIMESTAMP) {
       if (order == SortingOrder.ASCENDING) {
         nextFilters.from = lastDeployment.auditInfo.localTimestamp
-        nextFilters.to = nextFilters.to ?? nextFilters.toLocalTimestamp
       } else {
         nextFilters.to = lastDeployment.auditInfo.localTimestamp
-        nextFilters.from = nextFilters.from ?? nextFilters.fromLocalTimestamp
       }
     } else {
       if (order == SortingOrder.ASCENDING) {
@@ -501,10 +498,6 @@ export class Controller {
         nextFilters.to = lastDeployment.entityTimestamp
       }
     }
-    // TODO: remove this when to/from localTimestamp is removed
-    nextFilters.fromLocalTimestamp = undefined
-    nextFilters.toLocalTimestamp = undefined
-
     const nextQueryParams = toQueryParams({
       ...nextFilters,
       sortingField: field,

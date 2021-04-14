@@ -40,19 +40,10 @@ export class DeploymentManager {
         ? options.limit
         : DeploymentManager.MAX_HISTORY_LIMIT
 
-    const curatedFilters = Object.assign({}, options?.filters)
-
-    if (!options?.sortBy?.field || options?.sortBy?.field != SortingField.ENTITY_TIMESTAMP) {
-      curatedFilters.from = curatedFilters.fromLocalTimestamp
-      curatedFilters.to = curatedFilters.toLocalTimestamp
-    }
-    curatedFilters.fromLocalTimestamp = undefined
-    curatedFilters.toLocalTimestamp = undefined
-
     const deploymentsWithExtra = await deploymentsRepository.getHistoricalDeployments(
       curatedOffset,
       curatedLimit + 1,
-      curatedFilters,
+      options?.filters,
       options?.sortBy,
       options?.lastId
     )
@@ -220,10 +211,6 @@ export type DeploymentOptions = {
   lastId?: string
 }
 
-// TODO: remove this
-export type PointerChangesFilters = Pick<
-  DeploymentFilters,
-  'from' | 'to' | 'fromLocalTimestamp' | 'toLocalTimestamp' | 'entityTypes'
->
+export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 
 export type PointerChanges = Map<Pointer, { before: EntityId | undefined; after: EntityId | undefined }>
