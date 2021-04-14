@@ -26,6 +26,12 @@ export class RepositoryFactory {
     }
 
     const database = await build(connection, contentCredentials, rootCredentials)
-    return new Repository(database, new RepositoryQueue())
+    return new Repository(
+      database,
+      new RepositoryQueue({
+        maxConcurrency: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY),
+        maxQueued: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED)
+      })
+    )
   }
 }
