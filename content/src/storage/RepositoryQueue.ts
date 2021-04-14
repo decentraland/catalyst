@@ -1,17 +1,30 @@
 import PQueue from 'p-queue'
 export class RepositoryQueue {
-  private static readonly MAX_QUEUED_REQUESTS = 50
-  private static readonly MAX_CONCURRENT_REQUESTS = 20
-  private readonly queue = new PQueue({ concurrency: RepositoryQueue.MAX_CONCURRENT_REQUESTS })
+  public static readonly TOO_MANY_QUEUED_ERROR =
+    'There are too many requests being made to the database right now. Please try again in a few minutes'
+  private readonly maxQueued: number
+  private readonly queue: PQueue
+
+  constructor(options?: Partial<QueueOptions>) {
+    const { maxConcurrency, maxQueued } = { maxConcurrency: 20, maxQueued: 50, ...options }
+    this.queue = new PQueue({ concurrency: maxConcurrency })
+    this.maxQueued = maxQueued
+  }
 
   addDatabaseRequest<T>(priority: DB_REQUEST_PRIORITY, execution: () => Promise<T>): Promise<T> {
-    if (this.queue.size >= RepositoryQueue.MAX_QUEUED_REQUESTS && priority === DB_REQUEST_PRIORITY.LOW) {
-      return Promise.reject(
-        new Error('There are too many requests being made to the database right now. Please try again in a few minutes')
-      )
+    if (this.queue.size >= this.maxQueued && priority === DB_REQUEST_PRIORITY.LOW) {
+      return Promise.reject(new Error(RepositoryQueue.TOO_MANY_QUEUED_ERROR))
     }
 
     return this.queue.add(execution, { priority })
+  }
+
+  get beingExecuted() {
+    return this.queue.pending
+  }
+
+  get pendingInQueue() {
+    return this.queue.size
   }
 }
 
@@ -19,3 +32,5 @@ export enum DB_REQUEST_PRIORITY {
   HIGH = 10,
   LOW = 0
 }
+
+type QueueOptions = { maxConcurrency: number; maxQueued: number }
