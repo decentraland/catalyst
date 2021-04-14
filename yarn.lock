@@ -3161,20 +3161,21 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@4.0.4:
-  version "4.0.4"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-4.0.4.tgz#25c6fe7f29d396b08807736bf10dbfa101ae1e6a"
-  integrity sha512-vIiBh70DoAjGGQJanQNxNB7utEURZg0hJ4InVtBoTCwA7TPv09aLCNYO44MUO3vNTGObSHnVJzdQA3x9U46n0Q==
+dcl-catalyst-client@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.0.tgz#e9b75c90f3a6ddeff17d2ee1ed38930ad9211ba9"
+  integrity sha512-JjrkTDv1O499H8zqNgDxWd3DFYrJHa4xCXwItH4UP/oZtCFwVZKzQPFVgK0UlgcyZmvSpimrIge6FZRuHDaZCA==
   dependencies:
+    "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^3.0.1"
+    dcl-catalyst-commons "^4.0.0"
     dcl-crypto "^2.2.0"
-    isomorphic-form-data "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
+    form-data "^4.0.0"
 
-dcl-catalyst-commons@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-3.0.1.tgz#f4d5ad8861553ee04702bbfd5ea307b643b8b914"
-  integrity sha512-Bqp4MwDIHEFV8buPW5ThYdZoFCI+0bBC3qZ1B8DAFqywwM2dGHpQJwDVaqyj2lGaS7EbHyeQY0na5o7jMUL9Xw==
+dcl-catalyst-commons@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.0.tgz#06591159f02da2d63fdb77d28932a05994db1957"
+  integrity sha512-Xwf4ZlwAfhfTj8fD40+nwKh8DiEp6qTcy1OM19kdIJX1YgUMY18QMMUbPkAQHYNSsvOXOb2zZ8WAIYuwrtd8qg==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
@@ -4406,15 +4407,6 @@ form-data@*, form-data@^4.0.0:
     combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
-form-data@^2.3.2:
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/form-data/-/form-data-2.5.1.tgz#f2cbec57b5e59e23716e128fe44d4e5dd23895f4"
-  integrity sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==
-  dependencies:
-    asynckit "^0.4.0"
-    combined-stream "^1.0.6"
-    mime-types "^2.1.12"
-
 form-data@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/form-data/-/form-data-3.0.0.tgz#31b7e39c85f1355b7139ee0c647cf0de7f83c682"
@@ -5223,12 +5215,6 @@ isomorphic-fetch@^3.0.0:
   dependencies:
     node-fetch "^2.6.1"
     whatwg-fetch "^3.4.1"
-
-"isomorphic-form-data@git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e":
-  version "2.0.0"
-  resolved "git+https://github.com/decentraland/isomorphic-form-data.git#3409301b9e0348dc30da63955fa9fdb3ac46ac3e"
-  dependencies:
-    form-data "^2.3.2"
 
 isomorphic-ws@^4.0.1:
   version "4.0.1"

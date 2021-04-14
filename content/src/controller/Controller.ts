@@ -12,6 +12,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
+import { toQueryParams } from 'decentraland-katalyst-commons/QueryParameters'
 import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
@@ -21,7 +22,12 @@ import { Denylist, DenylistSignatureValidationResult, isSuccessfulOperation } fr
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Deployment, DeploymentPointerChanges } from '../service/deployments/DeploymentManager'
+import {
+  Deployment,
+  DeploymentOptions,
+  DeploymentPointerChanges,
+  PointerChangesFilters
+} from '../service/deployments/DeploymentManager'
 import {
   DeploymentResult,
   isSuccessfulDeployment,
@@ -299,15 +305,20 @@ export class Controller {
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /pointerChanges
-    // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&offset={number}&limit={number}&entityType={entityType}
+    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
+    //deprecated
     const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
+    // deprecated
     const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
+    const from: Timestamp | undefined = this.asInt(req.query.from)
+    const to: Timestamp | undefined = this.asInt(req.query.to)
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
+    const lastId: string | undefined = req.query.lastId?.toLowerCase()
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -315,35 +326,62 @@ export class Controller {
       return
     }
 
+    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
+    const fromFilter = from ?? fromLocalTimestamp
+    const toFilter = to ?? toLocalTimestamp
+
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
-      fromLocalTimestamp,
-      toLocalTimestamp
+      from: fromFilter,
+      to: toFilter
     }
     const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(
       requestFilters,
       offset,
-      limit
+      limit,
+      lastId
     )
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
     }))
+
+    if (controllerPointerChanges.length > 0 && pagination.moreData) {
+      const lastPointerChange = controllerPointerChanges[controllerPointerChanges.length - 1]
+      pagination.next = this.calculateNextRelativePathForPointer(lastPointerChange, pagination.limit, filters)
+    }
+
     res.send({ deltas: controllerPointerChanges, filters, pagination })
+  }
+
+  private calculateNextRelativePathForPointer(
+    lastPointerChange: ControllerPointerChanges,
+    limit: number,
+    filters?: PointerChangesFilters
+  ): string | undefined {
+    const nextFilters = Object.assign({}, filters)
+    // It will always use toLocalTimestamp as this endpoint is always sorted with the default config: local and DESC
+    nextFilters.to = lastPointerChange.localTimestamp
+
+    const nextQueryParams = toQueryParams({
+      ...nextFilters,
+
+      limit: limit,
+      lastId: lastPointerChange.entityId
+    })
+    return '?' + nextQueryParams
   }
 
   async getDeployments(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments
-    // Query String: ?fromLocalTimestamp={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
+    // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
     const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
-    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
     const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)?.map((p) =>
       p.toLowerCase()
@@ -354,6 +392,13 @@ export class Controller {
     const fields: string | undefined = req.query.fields
     const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, req.query.sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, req.query.sortingOrder)
+    const lastId: string | undefined = req.query.lastId?.toLowerCase()
+    // deprecated
+    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
+    // deprecated
+    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
+    const from: number | undefined = this.asInt(req.query.from)
+    const to: number | undefined = this.asInt(req.query.to)
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -389,27 +434,78 @@ export class Controller {
         sortBy.order = sortingOrder
       }
     }
+
+    // Validate to and from are valid
+    if (sortingField == SortingField.ENTITY_TIMESTAMP && (fromLocalTimestamp || toLocalTimestamp)) {
+      res.status(400).send({
+        error: 'The filters fromLocalTimestamp and toLocalTimestamp can not be used when sorting by entity timestamp.'
+      })
+      return
+    }
+
+    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
+    const fromFilter =
+      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && fromLocalTimestamp ? fromLocalTimestamp : from
+    const toFilter =
+      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && toLocalTimestamp ? toLocalTimestamp : to
+
     const requestFilters = {
       pointers,
-      fromLocalTimestamp,
-      toLocalTimestamp,
       entityTypes: entityTypes as EntityType[],
       entityIds,
       deployedBy,
-      onlyCurrentlyPointed
+      onlyCurrentlyPointed,
+      from: fromFilter,
+      to: toFilter
     }
 
-    const { deployments, filters, pagination } = await this.service.getDeployments({
+    const deploymentOptions = {
       filters: requestFilters,
       sortBy: sortBy,
       offset: offset,
-      limit: limit
-    })
+      limit: limit,
+      lastId: lastId
+    }
+    const { deployments, filters, pagination } = await this.service.getDeployments(deploymentOptions)
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
     )
 
+    if (deployments.length > 0 && pagination.moreData) {
+      const lastDeployment = deployments[deployments.length - 1]
+      pagination.next = this.calculateNextRelativePath(deploymentOptions, lastDeployment)
+    }
+
     res.send({ deployments: controllerDeployments, filters, pagination })
+  }
+
+  private calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
+    const nextFilters = Object.assign({}, options?.filters)
+
+    const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
+    const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
+
+    if (field == SortingField.LOCAL_TIMESTAMP) {
+      if (order == SortingOrder.ASCENDING) {
+        nextFilters.from = lastDeployment.auditInfo.localTimestamp
+      } else {
+        nextFilters.to = lastDeployment.auditInfo.localTimestamp
+      }
+    } else {
+      if (order == SortingOrder.ASCENDING) {
+        nextFilters.from = lastDeployment.entityTimestamp
+      } else {
+        nextFilters.to = lastDeployment.entityTimestamp
+      }
+    }
+    const nextQueryParams = toQueryParams({
+      ...nextFilters,
+      sortingField: field,
+      sortingOrder: order,
+      lastId: lastDeployment.entityId,
+      limit: options?.limit
+    })
+    return '?' + nextQueryParams
   }
 
   private asEnumValue<T extends { [key: number]: string }>(

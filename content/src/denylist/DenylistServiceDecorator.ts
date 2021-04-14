@@ -218,8 +218,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
-  getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number) {
-    return this.service.getPointerChanges(filters, offset, limit)
+  getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, lastId?: string) {
+    return this.service.getPointerChanges(filters, offset, limit, lastId)
   }
 
   getAllFailedDeployments() {

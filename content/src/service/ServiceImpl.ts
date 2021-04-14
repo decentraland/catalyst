@@ -430,6 +430,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
+    lastId?: string,
     task?: Database
   ): Promise<PartialDeploymentPointerChanges> {
     return this.repository.reuseIfPresent(task, (db) =>
@@ -439,7 +440,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           task.deployments,
           filters,
           offset,
-          limit
+          limit,
+          lastId
         )
       )
     )

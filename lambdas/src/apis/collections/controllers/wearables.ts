@@ -3,8 +3,8 @@ import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
+import { toQueryParams } from 'decentraland-katalyst-commons/QueryParameters'
 import { Request, Response } from 'express'
-import qs from 'qs'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
@@ -108,16 +108,7 @@ export async function getWearablesEndpoint(
       offChainManager
     )
 
-    const nextQueryParams = qs.stringify(
-      {
-        collectionId: requestFilters.collectionIds,
-        wearableId: requestFilters.wearableIds,
-        textSearch: requestFilters.textSearch,
-        lastId: nextLastId,
-        limit: sanitizedLimit
-      },
-      { arrayFormat: 'repeat' }
-    )
+    const nextQueryParams = toQueryParams({ ...requestFilters, lastId: nextLastId, limit: sanitizedLimit })
     const next = nextLastId ? '?' + nextQueryParams : undefined
 
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })

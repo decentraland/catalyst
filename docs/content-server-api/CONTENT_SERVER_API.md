@@ -15,7 +15,7 @@
 * Get Entities: `GET /entities/:type`
 * Failed Deployments: `GET /failedDeployments`
 * [History](history/get.md) : `GET /history`
-* Pointer Changes: `GET /pointerChanges'`
+* [Pointer Changes](pointerChanges/get.md) : `GET /pointerChanges'`
 * Snapshot: `GET /snapshot/:type`
 * Status: `GET /status`
 

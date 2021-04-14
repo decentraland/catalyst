@@ -21,7 +21,6 @@ import {
   EntityId,
   EntityType,
   LegacyAuditInfo,
-  LegacyPartialDeploymentHistory,
   PartialDeploymentHistory,
   Pointer,
   ServerStatus,
@@ -71,7 +70,13 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     throw new Error('Method not implemented.')
   }
 
-  getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, task?: Database) {
+  getPointerChanges(
+    filters?: PointerChangesFilters,
+    offset?: number,
+    limit?: number,
+    lastId?: string,
+    task?: Database
+  ) {
     return Promise.resolve({
       pointerChanges: this.pointerChanges,
       filters: {},
@@ -139,16 +144,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
 
   getStatus(): ServerStatus {
     return MockedMetaverseContentService.STATUS
-  }
-
-  getLegacyHistory(
-    from?: number,
-    to?: number,
-    serverName?: string,
-    offset?: number,
-    limit?: number
-  ): Promise<LegacyPartialDeploymentHistory> {
-    throw new Error('Method not implemented.')
   }
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {
