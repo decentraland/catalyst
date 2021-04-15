@@ -63,13 +63,13 @@ export class EventDeployer {
           )
         } else {
           // Looks like there was a problem fetching one of the files
-          await this.reportError(deployment, FailureReason.FETCH_PROBLEM)
+          await this.reportError({ deployment, reason: FailureReason.FETCH_PROBLEM, source })
           throw new Error('Failed to download some content')
         }
       }
     } else {
       // It looks like we could not fetch the entity file
-      await this.reportError(deployment, FailureReason.NO_ENTITY_OR_AUDIT)
+      await this.reportError({ deployment, reason: FailureReason.NO_ENTITY_OR_AUDIT, source })
       throw new Error('Failed to fetch the entity file')
     }
   }
@@ -155,16 +155,21 @@ export class EventDeployer {
       .map(([fileHash, _]) => fileHash)
   }
 
-  private reportError(deployment: DeploymentWithAuditInfo, reason: FailureReason, description?: string): Promise<null> {
-    const { entityType, entityId, auditInfo } = deployment
+  private reportError(options: {
+    deployment: DeploymentWithAuditInfo
+    reason: FailureReason
+    description?: string
+    source?: ContentServerClient
+  }): Promise<null> {
+    const { entityType, entityId, auditInfo } = options.deployment
     const { localTimestamp } = auditInfo
     return this.service.reportErrorDuringSync(
       entityType,
       entityId,
       localTimestamp,
-      'https://peer.decentraland.org/content',
-      reason,
-      description
+      options.source?.getAddress() ?? 'https://peer.decentraland.org/content',
+      options.reason,
+      options.description
     )
   }
 
@@ -188,19 +193,19 @@ export class EventDeployer {
         const deploymentResult: DeploymentResult = await deploymentExecution.execution()
         if (isInvalidDeployment(deploymentResult)) {
           // The deployment failed, so we report it
-          await this.reportError(
-            deploymentExecution.metadata.deploymentEvent,
-            FailureReason.DEPLOYMENT_ERROR,
-            deploymentResult.errors.join('\n')
-          )
+          await this.reportError({
+            deployment: deploymentExecution.metadata.deploymentEvent,
+            reason: FailureReason.DEPLOYMENT_ERROR,
+            description: deploymentResult.errors.join('\n')
+          })
         }
       } catch (error) {
         // The deployment failed, so we report it
-        await this.reportError(
-          deploymentExecution.metadata.deploymentEvent,
-          FailureReason.DEPLOYMENT_ERROR,
-          error.message
-        )
+        await this.reportError({
+          deployment: deploymentExecution.metadata.deploymentEvent,
+          reason: FailureReason.DEPLOYMENT_ERROR,
+          description: error.message
+        })
         // Re throw the error
         throw error
       }
