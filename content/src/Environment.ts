@@ -157,7 +157,9 @@ export enum EnvironmentConfig {
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
   DISABLE_DENYLIST,
-  CONTENT_SERVER_ADDRESS
+  CONTENT_SERVER_ADDRESS,
+  REPOSITORY_QUEUE_MAX_CONCURRENCY,
+  REPOSITORY_QUEUE_MAX_QUEUED
 }
 
 export class EnvironmentBuilder {
@@ -341,6 +343,18 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () => process.env.CONTENT_SERVER_ADDRESS
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY,
+      () => process.env.REPOSITORY_QUEUE_MAX_CONCURRENCY ?? 20
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED,
+      () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? 50
     )
 
     // Please put special attention on the bean registration order.

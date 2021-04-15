@@ -1,4 +1,6 @@
-import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
+import { Repository } from '@katalyst/content/storage/Repository'
+import { DB_REQUEST_PRIORITY } from '@katalyst/content/storage/RepositoryQueue'
 import { EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { SnapshotMetadata } from '../snapshots/SnapshotManager'
 import { IntPropertyMapper, JSONPropertyMapper, SystemPropertyMapper } from './SystemPropertyMappers'
@@ -31,20 +33,21 @@ export class SystemProperty<PropertyType> {
 export class SystemPropertiesManager {
   constructor(private readonly repository: Repository) {}
 
-  async getSystemProperty<T>(
-    property: SystemProperty<T>,
-    repository: RepositoryTask | Repository = this.repository
-  ): Promise<T | undefined> {
-    const stringValue = await repository.systemProperties.getProperty(property.getName())
+  async getSystemProperty<T>(property: SystemProperty<T>, task?: Database): Promise<T | undefined> {
+    const stringValue = await this.repository.reuseIfPresent(
+      task,
+      (db) => db.systemProperties.getProperty(property.getName()),
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
     return stringValue ? property.getMapper().fromString(stringValue) : undefined
   }
 
-  setSystemProperty<T>(
-    property: SystemProperty<T>,
-    value: T,
-    repository: RepositoryTask | Repository = this.repository
-  ) {
+  setSystemProperty<T>(property: SystemProperty<T>, value: T, task?: Database) {
     const stringValue = property.getMapper().toString(value)
-    return repository.systemProperties.setProperty(property.getName(), stringValue)
+    return this.repository.reuseIfPresent(
+      task,
+      (db) => db.systemProperties.setProperty(property.getName(), stringValue),
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 }

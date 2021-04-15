@@ -1,5 +1,7 @@
 import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
-import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
+import { Repository } from '@katalyst/content/storage/Repository'
+import { DB_REQUEST_PRIORITY } from '@katalyst/content/storage/RepositoryQueue'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Entity } from '../Entity'
@@ -20,22 +22,25 @@ export class SnapshotManager {
   }
 
   start(): Promise<void> {
-    return this.repository.txIf(async (transaction) => {
-      this.lastSnapshots = new Map(
-        await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOTS, transaction)
-      )
-      for (const entityType of Object.values(EntityType)) {
-        const snapshot = this.lastSnapshots.get(entityType)
-        const typeFrequency = this.getFrequencyForType(entityType)
-        if (
-          !snapshot ||
-          (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >=
-            typeFrequency
-        ) {
-          await this.generateSnapshot(entityType, transaction)
+    return this.repository.txIf(
+      async (transaction) => {
+        this.lastSnapshots = new Map(
+          await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOTS, transaction)
+        )
+        for (const entityType of Object.values(EntityType)) {
+          const snapshot = this.lastSnapshots.get(entityType)
+          const typeFrequency = this.getFrequencyForType(entityType)
+          if (
+            !snapshot ||
+            (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >=
+              typeFrequency
+          ) {
+            await this.generateSnapshot(entityType, transaction)
+          }
         }
-      }
-    })
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 
   getSnapshotMetadata(entityType: EntityType): SnapshotMetadata | undefined {
@@ -55,40 +60,42 @@ export class SnapshotManager {
   }
 
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
-  private async generateSnapshot(
-    entityType: EntityType,
-    repository: RepositoryTask | Repository = this.repository
-  ): Promise<void> {
+  private async generateSnapshot(entityType: EntityType, task?: Database): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
-    await repository.txIf(async (transaction) => {
-      // Get the active entities
-      const snapshot = await transaction.deployments.getSnapshot(entityType)
+    await this.repository.reuseIfPresent(
+      task,
+      (db) =>
+        db.txIf(async (transaction) => {
+          // Get the active entities
+          const snapshot = await transaction.deployments.getSnapshot(entityType)
 
-      // Calculate the local deployment timestamp of the newest entity in the snapshot
-      const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
+          // Calculate the local deployment timestamp of the newest entity in the snapshot
+          const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
-      // Format the snapshot in a buffer
-      const inArrayFormat = snapshot.map(({ entityId, pointers }) => [entityId, pointers])
-      const buffer = Buffer.from(JSON.stringify(inArrayFormat))
+          // Format the snapshot in a buffer
+          const inArrayFormat = snapshot.map(({ entityId, pointers }) => [entityId, pointers])
+          const buffer = Buffer.from(JSON.stringify(inArrayFormat))
 
-      // Calculate the snapshot's hash
-      const hash = await Hashing.calculateBufferHash(buffer)
+          // Calculate the snapshot's hash
+          const hash = await Hashing.calculateBufferHash(buffer)
 
-      // Store the new snapshot
-      await this.service.storeContent(hash, buffer)
+          // Store the new snapshot
+          await this.service.storeContent(hash, buffer)
 
-      // Store the metadata
-      await this.storeSnapshotMetadata(entityType, hash, snapshotTimestamp, repository)
+          // Store the metadata
+          await this.storeSnapshotMetadata(entityType, hash, snapshotTimestamp, db)
 
-      // Reset the counter
-      this.counter.set(entityType, 0)
+          // Reset the counter
+          this.counter.set(entityType, 0)
 
-      // Log
-      SnapshotManager.LOGGER.debug(
-        `Generated snapshot for type: '${entityType}'. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
-      )
-    })
+          // Log
+          SnapshotManager.LOGGER.debug(
+            `Generated snapshot for type: '${entityType}'. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+          )
+        }),
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
 
     // Delete the previous snapshot (if it exists)
     if (previousSnapshot) {
@@ -96,25 +103,21 @@ export class SnapshotManager {
     }
   }
 
-  private deploymentsSince(
-    entityType: EntityType,
-    timestamp: Timestamp,
-    repository: RepositoryTask | Repository = this.repository
-  ): Promise<number> {
-    return repository.deployments.deploymentsSince(entityType, timestamp)
+  private deploymentsSince(entityType: EntityType, timestamp: Timestamp, db: Database): Promise<number> {
+    return db.deployments.deploymentsSince(entityType, timestamp)
   }
 
   private storeSnapshotMetadata(
     entityType: EntityType,
     hash: ContentFileHash,
     lastIncludedDeploymentTimestamp: Timestamp,
-    repository: RepositoryTask | Repository = this.repository
+    db: Database
   ) {
     this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
     return this.systemPropertiesManager.setSystemProperty(
       SystemProperty.LAST_SNAPSHOTS,
       Array.from(this.lastSnapshots.entries()),
-      repository
+      db
     )
   }
 

@@ -1,4 +1,5 @@
 import {
+  DeploymentStatus,
   FailedDeployment,
   FailedDeploymentsManager,
   FailureReason,
@@ -25,16 +26,12 @@ describe('Integration - Failed Deployments Manager', function () {
 
     await reportDeployment({ deployment, reason: FailureReason.NO_ENTITY_OR_AUDIT })
 
-    let status = await manager.getDeploymentStatus(
-      repository.failedDeployments,
-      deployment.entityType,
-      deployment.entityId
-    )
+    let status = await getDeploymentStatus(deployment)
     expect(status).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
 
     await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    status = await manager.getDeploymentStatus(repository.failedDeployments, deployment.entityType, deployment.entityId)
+    status = await getDeploymentStatus(deployment)
     expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
   })
 
@@ -49,8 +46,8 @@ describe('Integration - Failed Deployments Manager', function () {
     })
     await reportDeployment({ deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    const [failed1, failed2]: Array<FailedDeployment> = await manager.getAllFailedDeployments(
-      repository.failedDeployments
+    const [failed1, failed2]: Array<FailedDeployment> = await repository.run((db) =>
+      manager.getAllFailedDeployments(db.failedDeployments)
     )
 
     assertFailureWasDueToDeployment(failed1, deployment2)
@@ -66,13 +63,11 @@ describe('Integration - Failed Deployments Manager', function () {
 
     await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    await manager.reportSuccessfulDeployment(repository.failedDeployments, deployment.entityType, deployment.entityId)
-
-    const status = await manager.getDeploymentStatus(
-      repository.failedDeployments,
-      deployment.entityType,
-      deployment.entityId
+    await repository.run((db) =>
+      manager.reportSuccessfulDeployment(db.failedDeployments, deployment.entityType, deployment.entityId)
     )
+
+    const status = await getDeploymentStatus(deployment)
     expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
   })
 
@@ -94,14 +89,22 @@ describe('Integration - Failed Deployments Manager', function () {
     description?: string
   }): Promise<null> {
     const { entityType, entityId, originTimestamp, originServerUrl } = deployment
-    return manager.reportFailure(
-      repository.failedDeployments,
-      entityType,
-      entityId,
-      originTimestamp,
-      originServerUrl,
-      reason,
-      description
+    return repository.run((db) =>
+      manager.reportFailure(
+        db.failedDeployments,
+        entityType,
+        entityId,
+        originTimestamp,
+        originServerUrl,
+        reason,
+        description
+      )
+    )
+  }
+
+  function getDeploymentStatus(deployment: FakeDeployment): Promise<DeploymentStatus> {
+    return repository.run((db) =>
+      manager.getDeploymentStatus(db.failedDeployments, deployment.entityType, deployment.entityId)
     )
   }
 

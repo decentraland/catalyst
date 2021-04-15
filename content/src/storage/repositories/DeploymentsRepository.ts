@@ -1,5 +1,5 @@
 import { Entity } from '@katalyst/content/service/Entity'
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 import {
   AuditInfo,
   DeploymentFilters,
@@ -14,7 +14,7 @@ import {
 import { Authenticator } from 'dcl-crypto'
 
 export class DeploymentsRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   async areEntitiesDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
     if (entityIds.length === 0) {

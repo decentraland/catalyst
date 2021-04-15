@@ -51,6 +51,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//commons/servers",
+        "//commons/utils",
         "//content/src:content",
         "//content/test/helpers:tests_helpers",
         "@npm//@types/faker",
@@ -64,6 +65,7 @@ ts_library(
         "@npm//faker",
         "@npm//ms",
         "@npm//ts-mockito",
+        "@npm//fp-future",
     ],
 )
 

@@ -1,9 +1,9 @@
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class ContentFilesRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   findContentHashesNotBeingUsedAnymore(lastGarbageCollection: Timestamp): Promise<ContentFileHash[]> {
     return this.db.map(

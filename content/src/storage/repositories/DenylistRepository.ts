@@ -5,10 +5,10 @@ import {
   DenylistTargetType,
   parseDenylistTypeAndId
 } from '@katalyst/content/denylist/DenylistTarget'
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 
 export class DenylistRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   addTarget(target: DenylistTarget) {
     return this.db.none('INSERT INTO denylist (target_type, target_id) VALUES ($1, $2)', [

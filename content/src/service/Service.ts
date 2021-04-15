@@ -10,7 +10,7 @@ import {
 } from 'dcl-catalyst-commons'
 import { ContentFile } from '../controller/Controller'
 import { ContentItem } from '../storage/ContentStorage'
-import { Repository, RepositoryTask } from '../storage/Repository'
+import { Database } from '../storage/Database'
 import {
   Deployment,
   DeploymentOptions,
@@ -31,37 +31,34 @@ export interface MetaverseContentService {
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
-    repository?: RepositoryTask | Repository
+    task?: Database
   ): Promise<DeploymentResult>
   deployLocalLegacy(
     files: ContentFile[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    repository?: RepositoryTask | Repository
+    task?: Database
   ): Promise<DeploymentResult>
   deployToFix(
     files: ContentFile[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
-    repository?: RepositoryTask | Repository
+    task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>
   getStatus(): ServerStatus
-  getDeployments(
-    options?: DeploymentOptions,
-    repository?: RepositoryTask | Repository
-  ): Promise<PartialDeploymentHistory<Deployment>>
+  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
   getAllFailedDeployments(): Promise<FailedDeployment[]>
   getPointerChanges(
     filters?: PointerChangesFilters,
     offset?: number,
     limit?: number,
     lastId?: string,
-    repository?: RepositoryTask | Repository
+    task?: Database
   ): Promise<PartialDeploymentPointerChanges>
   listenToDeployments(listener: DeploymentListener): void
 }

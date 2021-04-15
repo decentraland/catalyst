@@ -1,8 +1,8 @@
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class MigrationDataRepository {
-  constructor(private readonly db: Repository) {}
+  constructor(private readonly db: Database) {}
 
   saveMigrationData(deploymentId: DeploymentId, originalMetadata: any): Promise<null> {
     return this.db.none('INSERT INTO migration_data (deployment, original_metadata) VALUES ($1, $2)', [

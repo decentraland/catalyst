@@ -1,5 +1,7 @@
 import { Environment, EnvironmentConfig } from '../Environment'
-import { build, DBCredentials, Repository } from './Repository'
+import { build, DBCredentials } from './Database'
+import { Repository } from './Repository'
+import { RepositoryQueue } from './RepositoryQueue'
 
 export class RepositoryFactory {
   static async create(env: Environment): Promise<Repository> {
@@ -23,6 +25,13 @@ export class RepositoryFactory {
       }
     }
 
-    return build(connection, contentCredentials, rootCredentials)
+    const database = await build(connection, contentCredentials, rootCredentials)
+    return new Repository(
+      database,
+      new RepositoryQueue({
+        maxConcurrency: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY),
+        maxQueued: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED)
+      })
+    )
   }
 }

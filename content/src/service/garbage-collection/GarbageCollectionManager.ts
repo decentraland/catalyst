@@ -1,5 +1,6 @@
 import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
 import { Repository } from '@katalyst/content/storage/Repository'
+import { DB_REQUEST_PRIORITY } from '@katalyst/content/storage/RepositoryQueue'
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { MetaverseContentService } from '../Service'
@@ -23,11 +24,10 @@ export class GarbageCollectionManager {
   async start(): Promise<void> {
     if (this.performGarbageCollection) {
       this.stopping = false
-      this.lastTimeOfCollection =
-        (await this.systemPropertiesManager.getSystemProperty(
-          SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
-          this.repository
-        )) ?? 0
+      const lastCollectionTime = await this.systemPropertiesManager.getSystemProperty(
+        SystemProperty.LAST_GARBAGE_COLLECTION_TIME
+      )
+      this.lastTimeOfCollection = lastCollectionTime ?? 0
       await this.performSweep()
     }
   }
@@ -48,17 +48,20 @@ export class GarbageCollectionManager {
     const newTimeOfCollection: Timestamp = Date.now()
     this.sweeping = true
     try {
-      await this.repository.tx(async (transaction) => {
-        const hashes = await transaction.content.findContentHashesNotBeingUsedAnymore(this.lastTimeOfCollection)
-        GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
-        await this.service.deleteContent(hashes)
-        await this.systemPropertiesManager.setSystemProperty(
-          SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
-          newTimeOfCollection,
-          transaction
-        )
-        this.hashesDeletedInLastSweep = new Set(hashes)
-      })
+      await this.repository.tx(
+        async (transaction) => {
+          const hashes = await transaction.content.findContentHashesNotBeingUsedAnymore(this.lastTimeOfCollection)
+          GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
+          await this.service.deleteContent(hashes)
+          await this.systemPropertiesManager.setSystemProperty(
+            SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
+            newTimeOfCollection,
+            transaction
+          )
+          this.hashesDeletedInLastSweep = new Set(hashes)
+        },
+        { priority: DB_REQUEST_PRIORITY.HIGH }
+      )
       this.lastTimeOfCollection = newTimeOfCollection
     } catch (error) {
       GarbageCollectionManager.LOGGER.warn(`Failed to perform garbage collection. Reason:\n${error}`)

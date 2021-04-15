@@ -47,6 +47,7 @@ ts_library(
         "@npm//on-finished",
         "@npm//parallel-transform",
         "@npm//pg-promise",
+        "@npm//p-queue",
         "@npm//@dcl/urn-resolver",
         "@npm//uuid",
         "@npm//web3x",

@@ -14,7 +14,7 @@ import {
   MetaverseContentService
 } from '@katalyst/content/service/Service'
 import { ContentItem, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
-import { Repository, RepositoryTask } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/storage/Database'
 import {
   AuditInfo,
   ContentFileHash,
@@ -75,7 +75,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     offset?: number,
     limit?: number,
     lastId?: string,
-    repository?: RepositoryTask | Repository
+    task?: Database
   ) {
     return Promise.resolve({
       pointerChanges: this.pointerChanges,
@@ -116,7 +116,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     files: ContentFile[],
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
-    repository?: RepositoryTask | Repository
+    task?: Database
   ): Promise<number> {
     throw new Error('Method not implemented.')
   }
