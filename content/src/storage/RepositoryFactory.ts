@@ -1,5 +1,5 @@
 import { Environment, EnvironmentConfig } from '../Environment'
-import { build, DBCredentials } from './Database'
+import { build } from './Database'
 import { Repository } from './Repository'
 import { RepositoryQueue } from './RepositoryQueue'
 
@@ -15,17 +15,7 @@ export class RepositoryFactory {
       password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD)
     }
 
-    let rootCredentials: DBCredentials | undefined
-
-    if (process.env.POSTGRES_PASSWORD && process.env.POSTGRES_USER && process.env.POSTGRES_DB) {
-      rootCredentials = {
-        database: process.env.POSTGRES_DB,
-        user: process.env.POSTGRES_USER,
-        password: process.env.POSTGRES_PASSWORD
-      }
-    }
-
-    const database = await build(connection, contentCredentials, rootCredentials)
+    const database = await build(connection, contentCredentials)
     return new Repository(
       database,
       new RepositoryQueue({
