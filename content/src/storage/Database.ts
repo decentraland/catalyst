@@ -25,12 +25,12 @@ export interface IExtensions {
   systemProperties: SystemPropertiesRepository
 }
 
-export type DBConnection = {
+type DBConnection = {
   host: string
   port: number
 }
 
-export type DBCredentials = {
+type DBCredentials = {
   database: string
   user: string
   password: string
@@ -39,7 +39,7 @@ export type DBCredentials = {
 /**
  * Builds the database client by connecting to the content database. If it isn't present, then it tries to connect with the root user and creates the content database and user.
  */
-export async function build(connection: DBConnection, contentCredentials: DBCredentials): Promise<FullDatabase> {
+export function build(connection: DBConnection, contentCredentials: DBCredentials): Promise<FullDatabase> {
   return connectTo(connection, contentCredentials)
 }
 
