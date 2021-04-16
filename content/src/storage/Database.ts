@@ -39,29 +39,8 @@ export type DBCredentials = {
 /**
  * Builds the database client by connecting to the content database. If it isn't present, then it tries to connect with the root user and creates the content database and user.
  */
-export async function build(
-  connection: DBConnection,
-  contentCredentials: DBCredentials,
-  rootCredentials?: DBCredentials
-): Promise<FullDatabase> {
-  try {
-    return await connectTo(connection, contentCredentials)
-  } catch (error) {
-    if (rootCredentials) {
-      console.log('Trying to create database...')
-      // Probably the content database doesn't exist. So we try to create it
-      const rootRepo = await connectTo(connection, rootCredentials)
-      await rootRepo.query(`CREATE USER ${contentCredentials.user} WITH PASSWORD $1`, [contentCredentials.password])
-      await rootRepo.query(`CREATE DATABASE ${contentCredentials.database}`)
-      await rootRepo.query(
-        `GRANT ALL PRIVILEGES ON DATABASE ${contentCredentials.database} TO ${contentCredentials.user}`
-      )
-
-      return connectTo(connection, contentCredentials)
-    } else {
-      throw error
-    }
-  }
+export async function build(connection: DBConnection, contentCredentials: DBCredentials): Promise<FullDatabase> {
+  return connectTo(connection, contentCredentials)
 }
 
 async function connectTo(connection: DBConnection, credentials: DBCredentials) {
