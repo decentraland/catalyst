@@ -37,7 +37,7 @@ type DBCredentials = {
 }
 
 /**
- * Builds the database client by connecting to the content database. If it isn't present, then it tries to connect with the root user and creates the content database and user.
+ * Builds the database client by connecting to the content database
  */
 export function build(connection: DBConnection, contentCredentials: DBCredentials): Promise<FullDatabase> {
   return connectTo(connection, contentCredentials)
