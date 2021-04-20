@@ -4,6 +4,7 @@ import {
   EntityId,
   EntityType,
   PartialDeploymentHistory,
+  Pointer,
   ServerAddress,
   ServerStatus,
   Timestamp
@@ -60,6 +61,8 @@ export interface MetaverseContentService {
     lastId?: string,
     task?: Database
   ): Promise<PartialDeploymentPointerChanges>
+  getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
+  getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
 }
 

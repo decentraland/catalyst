@@ -8,6 +8,7 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
+import { CacheManagerFactory } from './service/caching/CacheManagerFactory'
 import { DeploymentManagerFactory } from './service/deployments/DeploymentManagerFactory'
 import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsManager'
 import { GarbageCollectionManagerFactory } from './service/garbage-collection/GarbageCollectionManagerFactory'
@@ -120,7 +121,8 @@ export const enum Bean {
   MIGRATION_MANAGER,
   GARBAGE_COLLECTION_MANAGER,
   SYSTEM_PROPERTIES_MANAGER,
-  SNAPSHOT_MANAGER
+  SNAPSHOT_MANAGER,
+  CACHE_MANAGER
 }
 
 export enum EnvironmentConfig {
@@ -159,7 +161,8 @@ export enum EnvironmentConfig {
   DISABLE_DENYLIST,
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
-  REPOSITORY_QUEUE_MAX_QUEUED
+  REPOSITORY_QUEUE_MAX_QUEUED,
+  CACHE_SIZES
 }
 
 export class EnvironmentBuilder {
@@ -357,6 +360,16 @@ export class EnvironmentBuilder {
       () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? 50
     )
 
+    /*
+     * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
+     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000
+     */
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.CACHE_SIZES,
+      () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
+    )
+
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
 
@@ -366,6 +379,7 @@ export class EnvironmentBuilder {
       SystemPropertiesManagerFactory.create(env)
     )
     this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR, () => new ChallengeSupervisor())
+    this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER, () => CacheManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.FETCHER, () => FetcherFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT, () => DAOClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR, () => AuthenticatorFactory.create(env))

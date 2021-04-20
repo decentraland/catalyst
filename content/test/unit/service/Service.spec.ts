@@ -1,6 +1,7 @@
 import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean, Environment } from '@katalyst/content/Environment'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { CacheManager } from '@katalyst/content/service/caching/CacheManager'
 import { Entity } from '@katalyst/content/service/Entity'
 import {
   DeploymentResult,
@@ -24,7 +25,7 @@ import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
 import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsManager'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 
-describe('Service', function () {
+fdescribe('Service', function () {
   const auditInfo: LocalDeploymentAuditInfo = {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature'),
     version: EntityVersion.V3
@@ -145,6 +146,7 @@ describe('Service', function () {
       .registerBean(Bean.POINTER_MANAGER, NoOpPointerManager.build())
       .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
       .registerBean(Bean.REPOSITORY, MockedRepository.build(initialAmountOfDeployments))
+      .registerBean(Bean.CACHE_MANAGER, new CacheManager())
     return ServiceFactory.create(env)
   }
 
