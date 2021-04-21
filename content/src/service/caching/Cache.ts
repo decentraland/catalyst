@@ -28,9 +28,9 @@ export class Cache<Key, Value> {
     const calculated: Map<Key, Value | undefined> = missing.length > 0 ? await orCalculate(missing) : new Map()
 
     // Save the calculated values. When a key doesn't have a value, set it as null
-    Array.from(calculated.entries())
-      .map<[Key, Value | null]>(([key, value]) => [key, value ?? null])
-      .forEach(([key, value]) => this.internalCache.set(key, value))
+    for (const [key, value] of calculated) {
+      this.internalCache.set(key, value ?? null)
+    }
 
     // Concatenate the results and return them
     return [
