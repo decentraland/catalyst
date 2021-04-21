@@ -140,7 +140,7 @@ describe('Service', function () {
     expect(status.historySize).toBe(initialAmountOfDeployments)
   })
 
-  it(`When the same pointer is asked twice, then the second time cached result is returned`, async () => {
+  it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
     const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
       Promise.resolve({
         deployments: [fakeDeployment()],
