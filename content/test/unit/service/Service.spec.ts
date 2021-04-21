@@ -1,7 +1,10 @@
 import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean, Environment } from '@katalyst/content/Environment'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { CacheManager } from '@katalyst/content/service/caching/CacheManager'
+import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
+import { DELTA_POINTER_RESULT, PointerManager } from '@katalyst/content/service/pointers/PointerManager'
 import {
   DeploymentResult,
   isInvalidDeployment,
@@ -25,6 +28,7 @@ import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsMana
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 
 describe('Service', function () {
+  const POINTERS = ['X1,Y1', 'X2,Y2']
   const auditInfo: LocalDeploymentAuditInfo = {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature'),
     version: EntityVersion.V3
@@ -38,13 +42,14 @@ describe('Service', function () {
   let entityFile: ContentFile
   let storage: ContentStorage
   let service: MetaverseContentService
+  let pointerManager: PointerManager
 
   beforeAll(async () => {
     randomFile = { name: 'file', content: Buffer.from('1234') }
     randomFileHash = await Hashing.calculateHash(randomFile)
     ;[entity, entityFile] = await buildEntityAndFile(
       EntityType.SCENE,
-      ['X1,Y1', 'X2,Y2'],
+      POINTERS,
       Date.now(),
       new Map([[randomFile.name, randomFileHash]]),
       'metadata'
@@ -53,6 +58,7 @@ describe('Service', function () {
 
   beforeEach(async () => {
     storage = new MockedStorage()
+    pointerManager = NoOpPointerManager.build()
     service = await buildService()
   })
 
@@ -134,6 +140,55 @@ describe('Service', function () {
     expect(status.historySize).toBe(initialAmountOfDeployments)
   })
 
+  it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
+    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+      Promise.resolve({
+        deployments: [fakeDeployment()],
+        filters: {},
+        pagination: { offset: 0, limit: 0, moreData: true }
+      })
+    )
+
+    // Call the first time
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expectSpyToBeCalled(serviceSpy, POINTERS)
+
+    // Reset spy and call again
+    serviceSpy.calls.reset()
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expect(serviceSpy).not.toHaveBeenCalled()
+  })
+
+  it(`When a pointer is affected by a deployment, then it is invalidated from the cache`, async () => {
+    spyOn(pointerManager, 'referenceEntityFromPointers').and.callFake(() =>
+      Promise.resolve(
+        new Map([
+          [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.CLEARED }],
+          [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.CLEARED }]
+        ])
+      )
+    )
+    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+      Promise.resolve({
+        deployments: [fakeDeployment()],
+        filters: {},
+        pagination: { offset: 0, limit: 0, moreData: true }
+      })
+    )
+
+    // Call the first time
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expectSpyToBeCalled(serviceSpy, POINTERS)
+
+    // Make deployment that should invalidate the cache
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+
+    // Reset spy and call again
+    serviceSpy.calls.reset()
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expectSpyToBeCalled(serviceSpy, POINTERS)
+  })
+
   async function buildService() {
     const env = new Environment()
       .registerBean(Bean.STORAGE, storage)
@@ -142,9 +197,10 @@ describe('Service', function () {
       .registerBean(Bean.VALIDATIONS, new NoOpValidations())
       .registerBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withoutIdentity())
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
-      .registerBean(Bean.POINTER_MANAGER, NoOpPointerManager.build())
+      .registerBean(Bean.POINTER_MANAGER, pointerManager)
       .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
       .registerBean(Bean.REPOSITORY, MockedRepository.build(initialAmountOfDeployments))
+      .registerBean(Bean.CACHE_MANAGER, new CacheManager())
     return ServiceFactory.create(env)
   }
 
@@ -155,6 +211,29 @@ describe('Service', function () {
       },
       jasmineToString: function () {
         return `<StorageContent with Data: ${data}>`
+      }
+    }
+  }
+
+  function expectSpyToBeCalled(serviceSpy: jasmine.Spy, pointers: string[]) {
+    expect(serviceSpy).toHaveBeenCalledWith(
+      {
+        filters: { entityTypes: [EntityType.SCENE], pointers: pointers, onlyCurrentlyPointed: true }
+      },
+      undefined
+    )
+  }
+
+  function fakeDeployment(): Deployment {
+    return {
+      entityType: EntityType.SCENE,
+      entityId: '',
+      entityTimestamp: 10,
+      deployedBy: '',
+      pointers: POINTERS,
+      auditInfo: {
+        ...auditInfo,
+        localTimestamp: 10
       }
     }
   }

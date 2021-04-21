@@ -57,7 +57,7 @@ export async function assertEntityWasNotDeployed(server: TestServer, entity: Con
 }
 
 export async function assertEntitiesAreActiveOnServer(server: TestServer, ...entities: ControllerEntity[]) {
-  // Legacy check
+  // Entities check
   for (const entity of entities) {
     const entitiesByPointer = await server.getEntitiesByPointers(entity.type, entity.pointers)
     assert.deepStrictEqual(entitiesByPointer, [entity])

@@ -5,7 +5,6 @@ import {
   EntityType,
   EntityVersion,
   LegacyAuditInfo,
-  PartialDeploymentHistory,
   Pointer,
   SortingField,
   SortingOrder,
@@ -28,6 +27,7 @@ import {
   DeploymentPointerChanges,
   PointerChangesFilters
 } from '../service/deployments/DeploymentManager'
+import { Entity } from '../service/Entity'
 import {
   DeploymentResult,
   isSuccessfulDeployment,
@@ -81,16 +81,14 @@ export class Controller {
     }
 
     // Calculate and mask entities
-    let history: PartialDeploymentHistory<Deployment>
+    let entities: Entity[]
     if (ids.length > 0) {
-      history = await this.service.getDeployments({ filters: { entityTypes: [type], entityIds: ids } })
+      entities = await this.service.getEntitiesByIds(ids)
     } else {
-      history = await this.service.getDeployments({
-        filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
-      })
+      entities = await this.service.getEntitiesByPointers(type, pointers)
     }
-    const maskedEntities: ControllerEntity[] = history.deployments.map((fullDeployment) =>
-      ControllerEntityFactory.maskDeployment(fullDeployment, enumFields)
+    const maskedEntities: ControllerEntity[] = entities.map((entity) =>
+      ControllerEntityFactory.maskEntity(entity, enumFields)
     )
     res.send(maskedEntities)
   }

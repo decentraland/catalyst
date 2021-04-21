@@ -157,6 +157,18 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     throw new Error('Method not implemented.')
   }
 
+  getEntitiesByIds(ids: string[]): Promise<Entity[]> {
+    return Promise.resolve(this.entities.filter(({ id }) => ids.includes(id)))
+  }
+
+  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
+    return Promise.resolve(
+      this.entities.filter(
+        (entity) => entity.type === type && entity.pointers.some((pointer) => pointers.includes(pointer))
+      )
+    )
+  }
+
   private entityToDeployment(entity: Entity): Deployment {
     return {
       ...entity,
