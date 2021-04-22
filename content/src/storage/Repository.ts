@@ -1,18 +1,8 @@
-import log4js from 'log4js'
-import ms from 'ms'
 import { Database, FullDatabase } from './Database'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from './RepositoryQueue'
 
 export class Repository {
-  private static readonly LOGGER = log4js.getLogger('Repository')
-  private readonly interval: NodeJS.Timeout
-
-  constructor(private readonly db: FullDatabase, private readonly queue: RepositoryQueue) {
-    this.interval = setInterval(
-      () => Repository.LOGGER.info('Amount of queries waiting: ', db.$pool.waitingCount),
-      ms('1m')
-    )
-  }
+  constructor(private readonly db: FullDatabase, private readonly queue: RepositoryQueue) {}
 
   /**
    * Run some query against the database
@@ -40,7 +30,6 @@ export class Repository {
    * Shutdown the database client
    */
   async shutdown(): Promise<void> {
-    clearInterval(this.interval)
     await this.db.$pool.end()
   }
 
