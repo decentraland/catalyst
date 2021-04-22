@@ -4,7 +4,8 @@ import { Counter, Histogram } from 'prom-client'
 
 export const TOTAL_AMOUNT_OF_DEPLOYMENTS = new Counter({
   name: 'total_deployments_count',
-  help: 'Total number of deployments made to the content server'
+  help: 'Total number of deployments made to the content server',
+  labelNames: ['entity_type']
 })
 
 export const REPOSITORY_QUEUE_TOTAL_QUERIES = new Counter({
