@@ -6,9 +6,9 @@ import {
   EnvironmentConfig
 } from '@katalyst/content/Environment'
 import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
+import { Repository } from '@katalyst/content/repository/Repository'
+import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactory'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { Repository } from '@katalyst/content/storage/Repository'
-import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'

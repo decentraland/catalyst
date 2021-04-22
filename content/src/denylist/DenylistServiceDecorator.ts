@@ -8,6 +8,8 @@ import {
 } from 'dcl-catalyst-commons'
 import { ContentFile } from '../controller/Controller'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
+import { Repository } from '../repository/Repository'
+import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
 import { Deployment, DeploymentOptions, PointerChangesFilters } from '../service/deployments/DeploymentManager'
 import { Entity } from '../service/Entity'
@@ -20,8 +22,6 @@ import {
 } from '../service/Service'
 import { ServiceImpl } from '../service/ServiceImpl'
 import { ContentItem } from '../storage/ContentStorage'
-import { Repository } from '../storage/Repository'
-import { DB_REQUEST_PRIORITY } from '../storage/RepositoryQueue'
 import { Denylist } from './Denylist'
 import {
   buildAddressTarget,

@@ -1,6 +1,6 @@
 import { Database } from '@katalyst/content/repository/Database'
-import { Repository } from '@katalyst/content/storage/Repository'
-import { DB_REQUEST_PRIORITY } from '@katalyst/content/storage/RepositoryQueue'
+import { Repository } from '@katalyst/content/repository/Repository'
+import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
 import { EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { SnapshotMetadata } from '../snapshots/SnapshotManager'
 import { IntPropertyMapper, JSONPropertyMapper, SystemPropertyMapper } from './SystemPropertyMappers'
