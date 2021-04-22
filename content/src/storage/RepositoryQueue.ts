@@ -15,7 +15,7 @@ const REJECTED_QUERIES = new Counter({
 
 const EXECUTED_QUERIES = new Histogram({
   name: 'db_queued_queries_executed',
-  help: 'Total time spent in executed queries',
+  help: 'Total time spent in seconds in executed queries',
   labelNames: ['priority']
 })
 
@@ -57,7 +57,7 @@ export class RepositoryQueue {
         try {
           return await execution()
         } finally {
-          console.log(endTimer())
+          endTimer()
         }
       },
       { priority }
