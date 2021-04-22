@@ -1,4 +1,4 @@
-import { Database } from '@katalyst/content/storage/Database'
+import { Database } from '@katalyst/content/repository/Database'
 import { Repository } from '@katalyst/content/storage/Repository'
 import { DB_REQUEST_PRIORITY } from '@katalyst/content/storage/RepositoryQueue'
 import { EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'

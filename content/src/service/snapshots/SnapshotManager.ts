@@ -1,5 +1,5 @@
+import { Database } from '@katalyst/content/repository/Database'
 import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
-import { Database } from '@katalyst/content/storage/Database'
 import { Repository } from '@katalyst/content/storage/Repository'
 import { DB_REQUEST_PRIORITY } from '@katalyst/content/storage/RepositoryQueue'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'

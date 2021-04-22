@@ -1,8 +1,8 @@
+import { ContentFilesRepository } from '@katalyst/content/repository/extensions/ContentFilesRepository'
+import { DeploymentPointerChangesRepository } from '@katalyst/content/repository/extensions/DeploymentPointerChangesRepository'
+import { DeploymentId, DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
+import { MigrationDataRepository } from '@katalyst/content/repository/extensions/MigrationDataRepository'
 import { Entity } from '@katalyst/content/service/Entity'
-import { ContentFilesRepository } from '@katalyst/content/storage/repositories/ContentFilesRepository'
-import { DeploymentPointerChangesRepository } from '@katalyst/content/storage/repositories/DeploymentPointerChangesRepository'
-import { DeploymentId, DeploymentsRepository } from '@katalyst/content/storage/repositories/DeploymentsRepository'
-import { MigrationDataRepository } from '@katalyst/content/storage/repositories/MigrationDataRepository'
 import {
   AuditInfo,
   ContentFileHash,

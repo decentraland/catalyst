@@ -1,4 +1,4 @@
-import { Database } from '@katalyst/content/storage/Database'
+import { Database } from '@katalyst/content/repository/Database'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentId } from './DeploymentsRepository'
 

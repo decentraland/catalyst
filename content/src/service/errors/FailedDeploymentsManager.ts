@@ -1,4 +1,4 @@
-import { FailedDeploymentsRepository } from '@katalyst/content/storage/repositories/FailedDeploymentsRepository'
+import { FailedDeploymentsRepository } from '@katalyst/content/repository/extensions/FailedDeploymentsRepository'
 import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 
 /**

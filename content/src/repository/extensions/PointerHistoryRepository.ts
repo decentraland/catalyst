@@ -1,6 +1,6 @@
+import { Database } from '@katalyst/content/repository/Database'
+import { DeploymentId } from '@katalyst/content/repository/extensions/DeploymentsRepository'
 import { Entity } from '@katalyst/content/service/Entity'
-import { Database } from '@katalyst/content/storage/Database'
-import { DeploymentId } from '@katalyst/content/storage/repositories/DeploymentsRepository'
 
 export class PointerHistoryRepository {
   constructor(private readonly db: Database) {}

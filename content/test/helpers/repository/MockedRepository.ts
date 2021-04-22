@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Database } from '@katalyst/content/storage/Database'
-import { DeploymentsRepository } from '@katalyst/content/storage/repositories/DeploymentsRepository'
+import { Database } from '@katalyst/content/repository/Database'
+import { DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
 import { Repository } from '@katalyst/content/storage/Repository'
 import { anything, instance, mock, when } from 'ts-mockito'
 

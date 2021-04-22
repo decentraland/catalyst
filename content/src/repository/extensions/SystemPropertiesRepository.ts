@@ -1,4 +1,4 @@
-import { Database } from '@katalyst/content/storage/Database'
+import { Database } from '@katalyst/content/repository/Database'
 
 export class SystemPropertiesRepository {
   constructor(private readonly db: Database) {}
