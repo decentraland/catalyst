@@ -14,12 +14,14 @@ export function removePeerAndNotify<T extends PeerContainer>(
   containerKey: string,
   peersService?: IPeersService,
   deleteIfEmpty: boolean = true
-): T {
+): { container: T; removed: boolean } {
   const container = containers[containerId]
+  let removed = false
   if (container) {
     const index = container.peers.indexOf(peerId)
     if (index !== -1) {
       container.peers.splice(index, 1)
+      removed = true
 
       peersService?.notifyPeersById(container.peers, notificationType, {
         id: peerId,
@@ -34,7 +36,7 @@ export function removePeerAndNotify<T extends PeerContainer>(
     }
   }
 
-  return container
+  return { container, removed }
 }
 
 export function getPeerId(peer: PeerRequest): string {

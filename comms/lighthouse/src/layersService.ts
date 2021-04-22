@@ -1,9 +1,16 @@
+import { Gauge } from 'prom-client'
 import { ConfigService } from './configService'
 import { LayerIsFullError, RequestError, UserMustBeInLayerError as PeerMustBeInLayerError } from './errors'
 import { NotificationType, PeersService } from './peersService'
 import { RoomsService } from './roomsService'
 import { Layer, PeerInfo, PeerRequest } from './types'
 import { getPeerId, removePeerAndNotify } from './utils'
+
+const ACTIVE_USERS_GAUGE = new Gauge({
+  name: 'active_peers_count',
+  help: 'Number of active users connected to each layer',
+  labelNames: ['layer']
+})
 
 type LayersServiceConfig = {
   peersService: PeersService
@@ -77,7 +84,7 @@ export class LayersService {
 
   removePeerFromLayer(layerId: string, peerId: string) {
     this.getRoomsService(layerId)?.removePeer(peerId)
-    return removePeerAndNotify(
+    const { container, removed } = removePeerAndNotify(
       this.layers,
       layerId,
       peerId,
@@ -86,6 +93,10 @@ export class LayersService {
       this.peersService,
       !this.isDefaultLayer(layerId)
     )
+    if (removed) {
+      ACTIVE_USERS_GAUGE.dec({ layer: layerId })
+    }
+    return container
   }
 
   createLayer(layerId: string) {
@@ -122,8 +133,9 @@ export class LayersService {
         id: peerId,
         userId: peerId,
         peerId,
-        layerId: layerId
+        layerId
       })
+      ACTIVE_USERS_GAUGE.inc({ layer: layerId })
     }
 
     return layer
