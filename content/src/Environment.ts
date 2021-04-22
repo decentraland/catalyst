@@ -26,6 +26,7 @@ import { SystemPropertiesManagerFactory } from './service/system-properties/Syst
 import { ValidationsFactory } from './service/validations/ValidationsFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
 import { RepositoryFactory } from './storage/RepositoryFactory'
+import { RepositoryQueue } from './storage/RepositoryQueue'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
@@ -351,13 +352,13 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY,
-      () => process.env.REPOSITORY_QUEUE_MAX_CONCURRENCY ?? 20
+      () => process.env.REPOSITORY_QUEUE_MAX_CONCURRENCY ?? RepositoryQueue.DEFAULT_MAX_CONCURRENCY
     )
 
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED,
-      () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? 50
+      () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? RepositoryQueue.DEFAULT_MAX_QUEUED
     )
 
     /*
