@@ -5,7 +5,7 @@ import {
   DenylistTargetType,
   parseDenylistTypeAndId
 } from '@katalyst/content/denylist/DenylistTarget'
-import { Database } from '@katalyst/content/storage/Database'
+import { Database } from '@katalyst/content/repository/Database'
 
 export class DenylistRepository {
   constructor(private readonly db: Database) {}

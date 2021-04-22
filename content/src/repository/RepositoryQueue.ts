@@ -1,23 +1,9 @@
 import PQueue from 'p-queue'
-import { Counter, Histogram } from 'prom-client'
-
-const TOTAL_QUERIES = new Counter({
-  name: 'db_queued_queries_count',
-  help: 'Total number of queries that went through the queue since the service started',
-  labelNames: ['priority']
-})
-
-const REJECTED_QUERIES = new Counter({
-  name: 'db_queued_queries_rejected_count',
-  help: 'Total number of queries that were rejected due to high number of requests',
-  labelNames: ['priority']
-})
-
-const EXECUTED_QUERIES = new Histogram({
-  name: 'db_queued_queries_executed',
-  help: 'Time spent in seconds since the queries were added to the queue until they got resolved',
-  labelNames: ['priority']
-})
+import {
+  REPOSITORY_QUEUE_EXECUTED_QUERIES,
+  REPOSITORY_QUEUE_REJECTED_QUERIES,
+  REPOSITORY_QUEUE_TOTAL_QUERIES
+} from '../ContentMetrics'
 
 /**
  * All database requests go through this queue. All pending requests will be queued as long as the limit isn't reached. If if it, then
@@ -44,13 +30,13 @@ export class RepositoryQueue {
 
   addDatabaseRequest<T>(priority: DB_REQUEST_PRIORITY, execution: () => Promise<T>): Promise<T> {
     const priorityLabel = DB_REQUEST_PRIORITY[priority]
-    TOTAL_QUERIES.inc({ priority: priorityLabel })
+    REPOSITORY_QUEUE_TOTAL_QUERIES.inc({ priority: priorityLabel })
     if (this.queue.size >= this.maxQueued && priority === DB_REQUEST_PRIORITY.LOW) {
-      REJECTED_QUERIES.inc({ priority: priorityLabel })
+      REPOSITORY_QUEUE_REJECTED_QUERIES.inc({ priority: priorityLabel })
       return Promise.reject(new Error(RepositoryQueue.TOO_MANY_QUEUED_ERROR))
     }
 
-    const endTimer = EXECUTED_QUERIES.startTimer({ priority: priorityLabel })
+    const endTimer = REPOSITORY_QUEUE_EXECUTED_QUERIES.startTimer({ priority: priorityLabel })
 
     return this.queue.add(
       async () => {

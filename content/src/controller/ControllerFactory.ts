@@ -1,11 +1,11 @@
 import { Denylist } from '../denylist/Denylist'
 import { DenylistServiceDecorator } from '../denylist/DenylistServiceDecorator'
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
+import { Repository } from '../repository/Repository'
 import { MetaverseContentService } from '../service/Service'
 import { SnapshotManager } from '../service/snapshots/SnapshotManager'
 import { ChallengeSupervisor } from '../service/synchronization/ChallengeSupervisor'
 import { SynchronizationManager } from '../service/synchronization/SynchronizationManager'
-import { Repository } from '../storage/Repository'
 import { Controller } from './Controller'
 
 export class ControllerFactory {

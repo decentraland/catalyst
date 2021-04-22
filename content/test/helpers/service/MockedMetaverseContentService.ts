@@ -1,5 +1,6 @@
 import { ContentFile } from '@katalyst/content/controller/Controller'
 import { CURRENT_CONTENT_VERSION } from '@katalyst/content/Environment'
+import { Database } from '@katalyst/content/repository/Database'
 import {
   Deployment,
   DeploymentOptions,
@@ -14,7 +15,6 @@ import {
   MetaverseContentService
 } from '@katalyst/content/service/Service'
 import { ContentItem, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
-import { Database } from '@katalyst/content/storage/Database'
 import {
   AuditInfo,
   ContentFileHash,

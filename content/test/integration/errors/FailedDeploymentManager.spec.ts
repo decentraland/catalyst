@@ -1,3 +1,5 @@
+import { Repository } from '@katalyst/content/repository/Repository'
+import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactory'
 import {
   DeploymentStatus,
   FailedDeployment,
@@ -5,8 +7,6 @@ import {
   FailureReason,
   NoFailure
 } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { Repository } from '@katalyst/content/storage/Repository'
-import { RepositoryFactory } from '@katalyst/content/storage/RepositoryFactory'
 import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { internet, random } from 'faker'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'

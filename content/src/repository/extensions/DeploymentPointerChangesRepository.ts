@@ -1,5 +1,5 @@
+import { Database } from '@katalyst/content/repository/Database'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '@katalyst/content/service/pointers/PointerManager'
-import { Database } from '@katalyst/content/storage/Database'
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { DeploymentId } from './DeploymentsRepository'
 

@@ -14,13 +14,13 @@ import { Deployment } from '@katalyst/content/service/deployments/DeploymentMana
 import { Entity } from '@katalyst/content/service/Entity'
 import { LocalDeploymentAuditInfo } from '@katalyst/content/service/Service'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
+import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
 import {
   buildContent as buildRandomContent,
   buildEntity,
   MockedMetaverseContentService,
   MockedMetaverseContentServiceBuilder
 } from '@katalyst/test-helpers/service/MockedMetaverseContentService'
-import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
 import { EntityVersion, Pointer } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { random } from 'faker'

@@ -14,11 +14,11 @@ import {
 import { ServiceFactory } from '@katalyst/content/service/ServiceFactory'
 import { ContentStorage, StorageContent } from '@katalyst/content/storage/ContentStorage'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
+import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
-import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
 import assert from 'assert'
 import { ContentFileHash, EntityType, EntityVersion, ENTITY_FILE_NAME, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
@@ -199,7 +199,7 @@ describe('Service', function () {
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
       .registerBean(Bean.POINTER_MANAGER, pointerManager)
       .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
-      .registerBean(Bean.REPOSITORY, MockedRepository.build(initialAmountOfDeployments))
+      .registerBean(Bean.REPOSITORY, MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]])))
       .registerBean(Bean.CACHE_MANAGER, new CacheManager())
     return ServiceFactory.create(env)
   }

@@ -6,6 +6,8 @@ import { ControllerFactory } from './controller/ControllerFactory'
 import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { RepositoryFactory } from './repository/RepositoryFactory'
+import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { CacheManagerFactory } from './service/caching/CacheManagerFactory'
@@ -25,8 +27,6 @@ import { EventDeployerFactory } from './service/synchronization/EventDeployerFac
 import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
 import { ValidationsFactory } from './service/validations/ValidationsFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
-import { RepositoryFactory } from './storage/RepositoryFactory'
-import { RepositoryQueue } from './storage/RepositoryQueue'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'

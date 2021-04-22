@@ -1,14 +1,14 @@
 import pgPromise, { IBaseProtocol, IDatabase, IInitOptions, IMain } from 'pg-promise'
 import { retry } from '../helpers/RetryHelper'
-import { ContentFilesRepository } from './repositories/ContentFilesRepository'
-import { DenylistRepository } from './repositories/DenylistRepository'
-import { DeploymentPointerChangesRepository } from './repositories/DeploymentPointerChangesRepository'
-import { DeploymentsRepository } from './repositories/DeploymentsRepository'
-import { FailedDeploymentsRepository } from './repositories/FailedDeploymentsRepository'
-import { LastDeployedPointersRepository } from './repositories/LastDeployedPointersRepository'
-import { MigrationDataRepository } from './repositories/MigrationDataRepository'
-import { PointerHistoryRepository } from './repositories/PointerHistoryRepository'
-import { SystemPropertiesRepository } from './repositories/SystemPropertiesRepository'
+import { ContentFilesRepository } from './extensions/ContentFilesRepository'
+import { DenylistRepository } from './extensions/DenylistRepository'
+import { DeploymentPointerChangesRepository } from './extensions/DeploymentPointerChangesRepository'
+import { DeploymentsRepository } from './extensions/DeploymentsRepository'
+import { FailedDeploymentsRepository } from './extensions/FailedDeploymentsRepository'
+import { LastDeployedPointersRepository } from './extensions/LastDeployedPointersRepository'
+import { MigrationDataRepository } from './extensions/MigrationDataRepository'
+import { PointerHistoryRepository } from './extensions/PointerHistoryRepository'
+import { SystemPropertiesRepository } from './extensions/SystemPropertiesRepository'
 
 export type Database = IBaseProtocol<IExtensions> & IExtensions
 export type FullDatabase = IDatabase<IExtensions> & Database

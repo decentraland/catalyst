@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Database } from '@katalyst/content/storage/Database'
-import { DeploymentsRepository } from '@katalyst/content/storage/repositories/DeploymentsRepository'
-import { Repository } from '@katalyst/content/storage/Repository'
+import { Database } from '@katalyst/content/repository/Database'
+import { DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
+import { Repository } from '@katalyst/content/repository/Repository'
+import { EntityType } from 'dcl-catalyst-commons'
 import { anything, instance, mock, when } from 'ts-mockito'
 
 export class MockedRepository {
-  static build(initialAmountOfDeployments: number = 0): Repository {
+  static build(initialAmountOfDeployments: Map<EntityType, number> = new Map()): Repository {
     const mockedDatabase: Database = mock<Database>()
     when(mockedDatabase.task(anything())).thenCall((call) => call(mockedDatabase))
     when(mockedDatabase.taskIf(anything())).thenCall((call) => call(mockedDatabase))
@@ -32,7 +33,7 @@ export class MockedRepository {
     return instance(mockedRepository)
   }
 
-  private static mockDeploymentsRepository(initialAmountOfDeployments: number): DeploymentsRepository {
+  private static mockDeploymentsRepository(initialAmountOfDeployments: Map<EntityType, number>): DeploymentsRepository {
     const deploymentRepository: DeploymentsRepository = mock<DeploymentsRepository>()
     when(deploymentRepository.getAmountOfDeployments()).thenResolve(initialAmountOfDeployments)
     return deploymentRepository
