@@ -15,7 +15,7 @@ const REJECTED_QUERIES = new Counter({
 
 const EXECUTED_QUERIES = new Histogram({
   name: 'db_queued_queries_executed',
-  help: 'Total time spent in seconds in executed queries',
+  help: 'Time spent in seconds since the queries were added to the queue until they got resolved',
   labelNames: ['priority']
 })
 
