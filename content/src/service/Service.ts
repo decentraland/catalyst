@@ -10,8 +10,8 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { ContentFile } from '../controller/Controller'
+import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
-import { Database } from '../storage/Database'
 import {
   Deployment,
   DeploymentOptions,

@@ -1,5 +1,5 @@
+import { Database } from '@katalyst/content/repository/Database'
 import { Entity } from '@katalyst/content/service/Entity'
-import { Database } from '@katalyst/content/storage/Database'
 import {
   AuditInfo,
   DeploymentFilters,

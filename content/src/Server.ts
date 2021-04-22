@@ -12,11 +12,11 @@ import path from 'path'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { MigrationManager } from './migrations/MigrationManager'
+import { Repository } from './repository/Repository'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { MetaverseContentService } from './service/Service'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
-import { Repository } from './storage/Repository'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')

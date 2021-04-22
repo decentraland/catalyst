@@ -1,5 +1,5 @@
+import { Database } from '@katalyst/content/repository/Database'
 import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { Database } from '@katalyst/content/storage/Database'
 import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 
 export class FailedDeploymentsRepository {

@@ -5,6 +5,7 @@ import { Server } from '@katalyst/content/Server'
 import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
 import { NoOpMigrationManager } from '@katalyst/test-helpers/NoOpMigrationManager'
+import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
 import { randomEntity } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { NoOpGarbageCollectionManager } from '@katalyst/test-helpers/service/garbage-collection/NoOpGarbageCollectionManager'
 import {
@@ -13,7 +14,6 @@ import {
 } from '@katalyst/test-helpers/service/MockedMetaverseContentService'
 import { NoOpSnapshotManager } from '@katalyst/test-helpers/service/snapshots/NoOpGarbageCollectionManager'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
-import { MockedRepository } from '@katalyst/test-helpers/storage/MockedRepository'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 
