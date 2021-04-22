@@ -29,8 +29,16 @@ export class DeploymentsRepository {
     return new Map(entityIds.map((entityId) => [entityId, deployedIds.has(entityId)]))
   }
 
-  getAmountOfDeployments(): Promise<number> {
-    return this.db.one(`SELECT COUNT(*) AS count FROM deployments`, [], (row) => parseInt(row.count))
+  async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
+    const entries: [
+      EntityType,
+      number
+    ][] = await this.db.map(
+      `SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`,
+      [],
+      (row) => [row.entity_type, parseInt(row.count)]
+    )
+    return new Map(entries)
   }
 
   getHistoricalDeployments(

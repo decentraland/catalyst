@@ -13,6 +13,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { TOTAL_AMOUNT_OF_DEPLOYMENTS } from '../ContentMetrics'
 import { ContentFile } from '../controller/Controller'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { Database } from '../repository/Database'
@@ -65,9 +66,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   ) {}
 
   async start(): Promise<void> {
-    this.historySize = await this.repository.task((task) => task.deployments.getAmountOfDeployments(), {
+    const amountOfDeployments = await this.repository.task((task) => task.deployments.getAmountOfDeployments(), {
       priority: DB_REQUEST_PRIORITY.HIGH
     })
+    for (const [entityType, amount] of amountOfDeployments) {
+      this.historySize += amount
+      TOTAL_AMOUNT_OF_DEPLOYMENTS.inc({ entity_type: entityType }, amount)
+    }
   }
 
   deployEntity(
@@ -278,6 +283,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
         // Since we are still reporting the history size, add one to it
         this.historySize++
+        TOTAL_AMOUNT_OF_DEPLOYMENTS.inc({ entity_type: entity.type })
 
         // Invalidate cache
         response.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))

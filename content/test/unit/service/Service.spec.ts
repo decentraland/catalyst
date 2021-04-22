@@ -199,7 +199,7 @@ describe('Service', function () {
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
       .registerBean(Bean.POINTER_MANAGER, pointerManager)
       .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
-      .registerBean(Bean.REPOSITORY, MockedRepository.build(initialAmountOfDeployments))
+      .registerBean(Bean.REPOSITORY, MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]])))
       .registerBean(Bean.CACHE_MANAGER, new CacheManager())
     return ServiceFactory.create(env)
   }
