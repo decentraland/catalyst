@@ -57,7 +57,15 @@ export class RoomsService {
   }
 
   removePeerFromRoom(roomId: string, peerId: string) {
-    return removePeerAndNotify(this.rooms, roomId, peerId, NotificationType.PEER_LEFT_ROOM, 'roomId', this.peersService)
+    const { container } = removePeerAndNotify(
+      this.rooms,
+      roomId,
+      peerId,
+      NotificationType.PEER_LEFT_ROOM,
+      'roomId',
+      this.peersService
+    )
+    return container
   }
 
   removePeer(peerId: string) {
