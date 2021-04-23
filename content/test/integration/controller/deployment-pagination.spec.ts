@@ -7,7 +7,7 @@ import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
-describe('Integration - Deployment Pagination', () => {
+xdescribe('Integration - Deployment Pagination', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
   const testEnv = loadStandaloneTestEnvironment()

@@ -41,7 +41,7 @@ export class DeploymentsRepository {
     lastId?: string
   ) {
     const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
-    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters, lastId)
+    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters)
   }
 
   private getDeploymentsBy(
@@ -49,8 +49,7 @@ export class DeploymentsRepository {
     order: string,
     offset: number,
     limit: number,
-    filters?: DeploymentFilters,
-    lastId?: string
+    filters?: DeploymentFilters
   ) {
     let query = `
             SELECT
@@ -73,54 +72,19 @@ export class DeploymentsRepository {
     const whereClause: string[] = []
 
     const values: any = {
+      timestampField,
       limit,
       offset
     }
 
-    if (lastId) {
-      values.lastId = lastId
-    }
-
-    /**  The lastId is a field that we only want to compare with when paginating.
-     * If the filter specifies a timestamp value that it's repeated among many deployments,
-     * then to know where the page should start we will use the lastId.
-     */
-    const pageBorder: string =
-      (order === SortingOrder.ASCENDING ? 'from' : 'to') +
-      (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
-
-    if (filters?.from && timestampField == SortingField.LOCAL_TIMESTAMP) {
+    if (filters?.from) {
       values.fromLocalTimestamp = filters.from
-      if (pageBorder == 'fromLocalTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('local_timestamp', '>', 'fromLocalTimestamp'))
-      } else {
-        whereClause.push(`dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0)`)
-      }
-    }
-    if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
-      values.toLocalTimestamp = filters.to
-      if (pageBorder == 'toLocalTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('local_timestamp', '<', 'toLocalTimestamp'))
-      } else {
-        whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
-      }
+      whereClause.push(`dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0)`)
     }
 
-    if (filters?.from && timestampField == SortingField.ENTITY_TIMESTAMP) {
-      values.fromEntityTimestamp = filters.from
-      if (pageBorder == 'fromEntityTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('entity_timestamp', '>', 'fromEntityTimestamp'))
-      } else {
-        whereClause.push(`dep1.entity_timestamp >= to_timestamp($(fromEntityTimestamp) / 1000.0)`)
-      }
-    }
-    if (filters?.to && timestampField == SortingField.ENTITY_TIMESTAMP) {
-      values.toEntityTimestamp = filters.to
-      if (pageBorder == 'toEntityTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('entity_timestamp', '<', 'toEntityTimestamp'))
-      } else {
-        whereClause.push(`dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`)
-      }
+    if (filters?.to) {
+      values.toLocalTimestamp = filters.to
+      whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
     }
 
     if (filters?.deployedBy && filters.deployedBy.length > 0) {
@@ -167,12 +131,6 @@ export class DeploymentsRepository {
       localTimestamp: row.local_timestamp,
       overwrittenBy: row.overwritten_by ?? undefined
     }))
-  }
-
-  private createOrClause(timestampField: string, compare: string, timestampFilter: string): string {
-    const equalWithEntityIdComparison = `(LOWER(dep1.entity_id) ${compare} LOWER($(lastId)) AND dep1.${timestampField} = to_timestamp($(${timestampFilter}) / 1000.0))`
-    const timestampComparison = `(dep1.entity_timestamp ${compare} to_timestamp($(${timestampFilter}) / 1000.0))`
-    return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
   getSnapshot(
