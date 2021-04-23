@@ -21,7 +21,7 @@ export class ControllerDeploymentFactory {
     if (fields.includes(DeploymentField.AUDIT_INFO)) {
       result.auditInfo = auditInfo
     }
-    result.local_timestamp = auditInfo.localTimestamp
+    result.localTimestamp = auditInfo.localTimestamp
     return result
   }
 }
