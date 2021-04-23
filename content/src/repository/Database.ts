@@ -1,3 +1,4 @@
+import log4js from 'log4js'
 import pgPromise, { IBaseProtocol, IDatabase, IInitOptions, IMain } from 'pg-promise'
 import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './extensions/ContentFilesRepository'
@@ -36,6 +37,8 @@ type DBCredentials = {
   password: string
 }
 
+const LOGGER = log4js.getLogger('Database')
+
 /**
  * Builds the database client by connecting to the content database
  */
@@ -62,6 +65,10 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
       if (e.query) {
         console.log(`Query was ${e.query}`)
       }
+    },
+
+    query(e) {
+      LOGGER.trace(e.query)
     }
   }
 
