@@ -38,3 +38,9 @@ These are some of the more important configuration values:
 | STORAGE_ROOT_FOLDER | Folder where all content will be stored | 'storage' |
 | SERVER_PORT | Port to be used by the service | 6969 |
 | LOG_LEVEL | Minimum log level | 'info' |
+
+## Run unit tests
+`bazel run content:unit_test`
+
+## Run integration tests
+ `bazel run content:integration_test`

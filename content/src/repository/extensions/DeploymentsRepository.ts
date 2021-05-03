@@ -14,7 +14,7 @@ import {
 import { Authenticator } from 'dcl-crypto'
 
 export class DeploymentsRepository {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly db: Database) { }
 
   async areEntitiesDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
     if (entityIds.length === 0) {
@@ -71,8 +71,6 @@ export class DeploymentsRepository {
                 dep1.deployer_address,
                 dep1.version,
                 dep1.auth_chain,
-                dep1.origin_server_url,
-                date_part('epoch', dep1.origin_timestamp) * 1000 AS origin_timestamp,
                 date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
                 dep2.entity_id AS overwritten_by
             FROM deployments AS dep1
