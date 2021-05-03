@@ -14,7 +14,7 @@ import {
 import { Authenticator } from 'dcl-crypto'
 
 export class DeploymentsRepository {
-  constructor(private readonly db: Database) { }
+  constructor(private readonly db: Database) {}
 
   async areEntitiesDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
     if (entityIds.length === 0) {
