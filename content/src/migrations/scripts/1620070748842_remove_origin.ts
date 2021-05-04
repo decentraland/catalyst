@@ -5,7 +5,6 @@ import { MigrationBuilder } from 'node-pg-migrate'
  */
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  pgm.sql(`DROP INDEX IF EXISTS deployments_origin_timestamp_idx;`)
   pgm.sql(`ALTER TABLE IF EXISTS deployments DROP COLUMN origin_server_url ;`)
   pgm.sql(`ALTER TABLE IF EXISTS deployments DROP COLUMN origin_timestamp;`)
   pgm.sql(`ALTER TABLE IF EXISTS failed_deployments DROP COLUMN origin_server_url;`)
@@ -13,8 +12,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
-  pgm.sql(`CREATE INDEX ON deployments ( origin_timestamp DESC );`) // Using plain SQL since lib doesn't expose DESC
-
   pgm.sql(
     `ALTER TABLE deployments ADD COLUMN origin_server_url text  DEFAULT 'https://peer.decentraland.org/content' NOT NULL;`
   )
@@ -24,4 +21,7 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
     `ALTER TABLE failed_deployments ADD COLUMN origin_server_url text  DEFAULT 'https://peer.decentraland.org/content' NOT NULL;`
   )
   pgm.sql(`ALTER TABLE deployments ADD COLUMN origin_timestamp text  DEFAULT NOW() NOT NULL;`)
+
+  pgm.sql(`CREATE INDEX ON deployments ( origin_timestamp DESC );`) // Using plain SQL since lib doesn't expose DESC
+
 }
