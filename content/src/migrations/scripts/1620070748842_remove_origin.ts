@@ -23,5 +23,4 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`ALTER TABLE deployments ADD COLUMN origin_timestamp text  DEFAULT NOW() NOT NULL;`)
 
   pgm.sql(`CREATE INDEX ON deployments ( origin_timestamp DESC );`) // Using plain SQL since lib doesn't expose DESC
-
 }
