@@ -72,9 +72,6 @@ describe('Integration - Failed Deployments Manager', function () {
   })
 
   function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: FakeDeployment) {
-    console.log('deployment', JSON.stringify(deployment, null, 4))
-    console.log('failedDeployment', JSON.stringify(failedDeployment, null, 4))
-
     expect(failedDeployment.entityId).toEqual(deployment.entityId)
     expect(failedDeployment.entityType).toEqual(deployment.entityType)
   }
