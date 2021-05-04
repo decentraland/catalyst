@@ -7,10 +7,8 @@ import {
   Hashing,
   PartialDeploymentHistory,
   Pointer,
-  ServerAddress,
   ServerName,
-  ServerStatus,
-  Timestamp
+  ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { TOTAL_AMOUNT_OF_DEPLOYMENTS } from '../ContentMetrics'
@@ -301,8 +299,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
-    originTimestamp: Timestamp,
-    originServerUrl: ServerAddress,
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null> {
@@ -313,8 +309,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           db.failedDeployments,
           entityType,
           entityId,
-          originTimestamp,
-          originServerUrl,
           reason,
           errorDescription
         ),

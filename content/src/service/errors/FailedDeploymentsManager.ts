@@ -1,5 +1,5 @@
 import { FailedDeploymentsRepository } from '@katalyst/content/repository/extensions/FailedDeploymentsRepository'
-import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { EntityId, EntityType, Timestamp } from 'dcl-catalyst-commons'
 
 /**
  * This manager will handle all failed deployments
@@ -9,20 +9,10 @@ export class FailedDeploymentsManager {
     failedDeploymentsRepo: FailedDeploymentsRepository,
     entityType: EntityType,
     entityId: EntityId,
-    originTimestamp: Timestamp,
-    originServerUrl: ServerAddress,
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null> {
-    return failedDeploymentsRepo.reportFailure(
-      entityType,
-      entityId,
-      originTimestamp,
-      originServerUrl,
-      Date.now(),
-      reason,
-      errorDescription
-    )
+    return failedDeploymentsRepo.reportFailure(entityType, entityId, Date.now(), reason, errorDescription)
   }
 
   getAllFailedDeployments(failedDeploymentsRepo: FailedDeploymentsRepository): Promise<FailedDeployment[]> {
@@ -58,8 +48,6 @@ export class FailedDeploymentsManager {
 export type FailedDeployment = {
   entityType: EntityType
   entityId: EntityId
-  originTimestamp: Timestamp
-  originServerUrl: ServerAddress
   failureTimestamp: Timestamp
   reason: FailureReason
   errorDescription?: string

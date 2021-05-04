@@ -27,15 +27,10 @@ describe('Failed Deployments validations.', () => {
       const failedDeployments: FailedDeployment[] = await getFailedDeployments()
       const failedScenes = failedDeployments.filter((fd) => fd.entityType === EntityType.SCENE)
       const failedProfiles = failedDeployments.filter((fd) => fd.entityType === EntityType.PROFILE)
-      const servers = failedProfiles.map((fd) => fd.originServerUrl).filter(onlyUnique)
 
       console.log(`Total Failed Deployments: ${failedDeployments.length}`)
       console.log(`Scenes  : ${failedScenes.length}`)
       console.log(`Profiles: ${failedProfiles.length}`)
-      console.log('------------------------------')
-
-      console.log(`Servers:`)
-      servers.forEach((server) => console.log(`  ${server}`))
       console.log('------------------------------')
 
       // Retrieve Access Snapshots
@@ -44,7 +39,7 @@ describe('Failed Deployments validations.', () => {
         await Promise.all(
           failedDeployments.map(async (fd) => {
             console.log(`=> ${accessSnapshotsCount++ + 1} of ${failedDeployments.length}`)
-            return await getAccessSnapshot(fd.originServerUrl, fd.entityType, fd.entityId)
+            return await getAccessSnapshot('https://peer.decentraland.org/content', fd.entityType, fd.entityId)
           })
         )
       ).filter(notEmpty)
@@ -230,7 +225,7 @@ describe('Failed Deployments validations.', () => {
 })
 
 async function getFailedDeployments(): Promise<FailedDeployment[]> {
-  return fetchArray(`https://bot1-catalyst.decentraland.org/content/failedDeployments`)
+  return fetchArray(`https://peer.decentraland.org/content/failedDeployments`)
 }
 
 function onlyUnique<T>(value: T, index: number, self: T[]): boolean {

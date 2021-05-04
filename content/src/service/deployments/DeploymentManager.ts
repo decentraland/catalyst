@@ -66,8 +66,6 @@ export class DeploymentManager {
       auditInfo: {
         version: result.version,
         authChain: result.authChain,
-        originServerUrl: result.originServerUrl,
-        originTimestamp: result.originTimestamp,
         localTimestamp: result.localTimestamp,
         overwrittenBy: result.overwrittenBy,
         migrationData: migrationData.get(result.deploymentId)
