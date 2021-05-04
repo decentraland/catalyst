@@ -71,10 +71,10 @@ describe('Failed Deployments validations.', () => {
             } else {
               const overwriteEntity: Entity | undefined = accessSnapshot.overwrittenBy
                 ? await fetchEntity(
-                  'https://peer.decentraland.org/content',
-                  EntityType.SCENE,
-                  accessSnapshot.overwrittenBy
-                )
+                    'https://peer.decentraland.org/content',
+                    EntityType.SCENE,
+                    accessSnapshot.overwrittenBy
+                  )
                 : undefined
               console.log(
                 ' => Invalid',
@@ -249,7 +249,7 @@ function groupBy<K extends keyof V, V>(items: V[], groupingProperty: K): Associa
   return items.reduce(function (rv: AssociativeArray<V>, x: V) {
     const index = x[groupingProperty]
     if (isAssociativeIndex(index)) {
-      ; (rv[index] = rv[index] || []).push(x)
+      ;(rv[index] = rv[index] || []).push(x)
     }
     return rv
   }, {})

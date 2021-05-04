@@ -3,7 +3,7 @@ import { FailedDeployment, FailureReason } from '@katalyst/content/service/error
 import { EntityId, EntityType, Timestamp } from 'dcl-catalyst-commons'
 
 export class FailedDeploymentsRepository {
-  constructor(private readonly db: Database) { }
+  constructor(private readonly db: Database) {}
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {
     return this.db.map(

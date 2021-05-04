@@ -72,8 +72,8 @@ describe('Integration - Failed Deployments Manager', function () {
   })
 
   function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: FakeDeployment) {
-    console.log('deployment', JSON.stringify(deployment, null, 4));
-    console.log('failedDeployment', JSON.stringify(failedDeployment, null, 4));
+    console.log('deployment', JSON.stringify(deployment, null, 4))
+    console.log('failedDeployment', JSON.stringify(failedDeployment, null, 4))
 
     expect(failedDeployment.entityId).toEqual(deployment.entityId)
     expect(failedDeployment.entityType).toEqual(deployment.entityType)
@@ -90,13 +90,7 @@ describe('Integration - Failed Deployments Manager', function () {
   }): Promise<null> {
     const { entityType, entityId } = deployment
     return repository.run((db) =>
-      manager.reportFailure(
-        db.failedDeployments,
-        entityType,
-        entityId,
-        reason,
-        description
-      )
+      manager.reportFailure(db.failedDeployments, entityType, entityId, reason, description)
     )
   }
 
@@ -109,7 +103,7 @@ describe('Integration - Failed Deployments Manager', function () {
   function buildRandomDeployment(): FakeDeployment {
     const event: FakeDeployment = {
       entityType: EntityType.PROFILE,
-      entityId: random.alphaNumeric(10),
+      entityId: random.alphaNumeric(10)
     }
     return event
   }

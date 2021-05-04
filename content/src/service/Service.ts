@@ -5,7 +5,6 @@ import {
   EntityType,
   PartialDeploymentHistory,
   Pointer,
-
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
