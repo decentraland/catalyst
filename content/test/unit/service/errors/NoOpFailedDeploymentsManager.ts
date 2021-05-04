@@ -9,8 +9,6 @@ export class NoOpFailedDeploymentsManager {
       Promise.resolve({
         entityType: EntityType.PROFILE,
         entityId: 'id',
-        originTimestamp: 10,
-        originServerUrl: 'ServerAddress',
         failureTimestamp: 20,
         reason: FailureReason.DEPLOYMENT_ERROR
       })

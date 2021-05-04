@@ -161,16 +161,8 @@ export class EventDeployer {
     description?: string
     source?: ContentServerClient
   }): Promise<null> {
-    const { entityType, entityId, auditInfo } = options.deployment
-    const { localTimestamp } = auditInfo
-    return this.service.reportErrorDuringSync(
-      entityType,
-      entityId,
-      localTimestamp,
-      options.source?.getAddress() ?? 'https://peer.decentraland.org/content',
-      options.reason,
-      options.description
-    )
+    const { entityType, entityId } = options.deployment
+    return this.service.reportErrorDuringSync(entityType, entityId, options.reason, options.description)
   }
 
   private buildDeploymentExecution(

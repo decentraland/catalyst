@@ -71,8 +71,6 @@ export class DeploymentsRepository {
                 dep1.deployer_address,
                 dep1.version,
                 dep1.auth_chain,
-                dep1.origin_server_url,
-                date_part('epoch', dep1.origin_timestamp) * 1000 AS origin_timestamp,
                 date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
                 dep2.entity_id AS overwritten_by
             FROM deployments AS dep1
@@ -170,8 +168,6 @@ export class DeploymentsRepository {
       deployerAddress: row.deployer_address,
       version: row.version,
       authChain: row.auth_chain,
-      originServerUrl: row.origin_server_url,
-      originTimestamp: row.origin_timestamp,
       localTimestamp: row.local_timestamp,
       overwrittenBy: row.overwritten_by ?? undefined
     }))
@@ -227,8 +223,6 @@ export class DeploymentsRepository {
                 entity_timestamp,
                 entity_pointers,
                 entity_metadata,
-                origin_server_url,
-                origin_timestamp,
                 local_timestamp,
                 auth_chain,
                 deleter_deployment
@@ -240,8 +234,6 @@ export class DeploymentsRepository {
                 to_timestamp($(entity.timestamp) / 1000.0),
                 $(entity.pointers),
                 $(metadata),
-                'https://peer.decentraland.org/content',
-                to_timestamp($(auditInfo.localTimestamp) / 1000.0),
                 to_timestamp($(auditInfo.localTimestamp) / 1000.0),
                 $(auditInfo.authChain:json),
                 $(overwrittenBy)

@@ -127,17 +127,11 @@ export async function assertThereIsAFailedDeployment(server: TestServer): Promis
   return failedDeployments[0]
 }
 
-export async function assertDeploymentFailed(
-  server: TestServer,
-  reason: FailureReason,
-  entity: ControllerEntity,
-  originTimestamp: Timestamp
-) {
+export async function assertDeploymentFailed(server: TestServer, reason: FailureReason, entity: ControllerEntity) {
   const failedDeployment = await assertThereIsAFailedDeployment(server)
   assert.equal(failedDeployment.entityType, entity.type)
   assert.equal(failedDeployment.entityId, entity.id)
   assert.equal(failedDeployment.reason, reason)
-  assert.ok(failedDeployment.failureTimestamp > originTimestamp)
 }
 
 function assertEqualsDeployment(actualDeployment: ControllerDeployment, expectedDeployment: ControllerDeployment) {

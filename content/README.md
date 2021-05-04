@@ -23,6 +23,10 @@ If you set up a local content server, it will receive all updates by those other
 
     `yarn bazel run content:server`
 
+* To connect to the database locally
+
+    `docker exec -it postgres psql -U postgres -d content`
+
 
 ## Configuration
 
@@ -38,3 +42,9 @@ These are some of the more important configuration values:
 | STORAGE_ROOT_FOLDER | Folder where all content will be stored | 'storage' |
 | SERVER_PORT | Port to be used by the service | 6969 |
 | LOG_LEVEL | Minimum log level | 'info' |
+
+## Run unit tests
+    `yarn bazel run content:unit_test`
+
+## Run integration tests
+    `yarn bazel run content:integration_test`

@@ -4,7 +4,7 @@ import { SQSDeploymentReporter } from '@katalyst/content/service/reporters/SQSDe
 describe('SQS Deployment Reporter', () => {
   const MAX_SAFE_TIMEOUT = Math.pow(2, 31) - 1
 
-  fit(
+  it(
     `Simple event reporting`,
     async () => {
       const sqsAccessKey = process.env.SQS_ACCESS_KEY_ID ?? ''
