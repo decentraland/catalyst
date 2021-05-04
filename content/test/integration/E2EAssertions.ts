@@ -25,8 +25,7 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
     assert.equal(
       unexpectedEntities.length,
       0,
-      `Expected not to find entity with id ${entity.id} when checking for pointer ${
-        entity.pointers
+      `Expected not to find entity with id ${entity.id} when checking for pointer ${entity.pointers
       } on server '${server.getAddress()}.'`
     )
     await assertEntityIsOnServer(server, entity)
@@ -90,8 +89,7 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
   assert.equal(
     deployments.length,
     expectedDeployments.length,
-    `Expected to find ${expectedDeployments.length} deployments on server ${server.getAddress()}. Instead, found ${
-      deployments.length
+    `Expected to find ${expectedDeployments.length} deployments on server ${server.getAddress()}. Instead, found ${deployments.length
     }.`
   )
 
@@ -130,14 +128,12 @@ export async function assertThereIsAFailedDeployment(server: TestServer): Promis
 export async function assertDeploymentFailed(
   server: TestServer,
   reason: FailureReason,
-  entity: ControllerEntity,
-  originTimestamp: Timestamp
+  entity: ControllerEntity
 ) {
   const failedDeployment = await assertThereIsAFailedDeployment(server)
   assert.equal(failedDeployment.entityType, entity.type)
   assert.equal(failedDeployment.entityId, entity.id)
   assert.equal(failedDeployment.reason, reason)
-  assert.ok(failedDeployment.failureTimestamp > originTimestamp)
 }
 
 function assertEqualsDeployment(actualDeployment: ControllerDeployment, expectedDeployment: ControllerDeployment) {

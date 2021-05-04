@@ -7,8 +7,8 @@ import {
   FailureReason,
   NoFailure
 } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { EntityId, EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
-import { internet, random } from 'faker'
+import { EntityId, EntityType } from 'dcl-catalyst-commons'
+import { random } from 'faker'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 
 describe('Integration - Failed Deployments Manager', function () {
@@ -72,11 +72,11 @@ describe('Integration - Failed Deployments Manager', function () {
   })
 
   function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: FakeDeployment) {
+    console.log('deployment', JSON.stringify(deployment, null, 4));
+    console.log('failedDeployment', JSON.stringify(failedDeployment, null, 4));
+
     expect(failedDeployment.entityId).toEqual(deployment.entityId)
     expect(failedDeployment.entityType).toEqual(deployment.entityType)
-    expect(failedDeployment.originServerUrl).toEqual(deployment.originServerUrl)
-    expect(failedDeployment.originTimestamp).toEqual(deployment.originTimestamp)
-    expect(failedDeployment.failureTimestamp).toBeGreaterThanOrEqual(deployment.originTimestamp)
   }
 
   function reportDeployment({
@@ -88,14 +88,12 @@ describe('Integration - Failed Deployments Manager', function () {
     reason: FailureReason
     description?: string
   }): Promise<null> {
-    const { entityType, entityId, originTimestamp, originServerUrl } = deployment
+    const { entityType, entityId } = deployment
     return repository.run((db) =>
       manager.reportFailure(
         db.failedDeployments,
         entityType,
         entityId,
-        originTimestamp,
-        originServerUrl,
         reason,
         description
       )
@@ -109,13 +107,9 @@ describe('Integration - Failed Deployments Manager', function () {
   }
 
   function buildRandomDeployment(): FakeDeployment {
-    const originTimestamp = Date.now()
-    const originServerUrl = internet.url()
-    const event = {
+    const event: FakeDeployment = {
       entityType: EntityType.PROFILE,
       entityId: random.alphaNumeric(10),
-      originTimestamp,
-      originServerUrl
     }
     return event
   }
@@ -124,6 +118,4 @@ describe('Integration - Failed Deployments Manager', function () {
 type FakeDeployment = {
   entityType: EntityType
   entityId: EntityId
-  originTimestamp: Timestamp
-  originServerUrl: ServerAddress
 }

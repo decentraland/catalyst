@@ -14,7 +14,7 @@ import {
 import { Authenticator } from 'dcl-crypto'
 
 export class DeploymentsRepository {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly db: Database) { }
 
   async areEntitiesDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
     if (entityIds.length === 0) {
@@ -168,8 +168,6 @@ export class DeploymentsRepository {
       deployerAddress: row.deployer_address,
       version: row.version,
       authChain: row.auth_chain,
-      originServerUrl: row.origin_server_url,
-      originTimestamp: row.origin_timestamp,
       localTimestamp: row.local_timestamp,
       overwrittenBy: row.overwritten_by ?? undefined
     }))
@@ -225,8 +223,6 @@ export class DeploymentsRepository {
                 entity_timestamp,
                 entity_pointers,
                 entity_metadata,
-                origin_server_url,
-                origin_timestamp,
                 local_timestamp,
                 auth_chain,
                 deleter_deployment
@@ -238,8 +234,6 @@ export class DeploymentsRepository {
                 to_timestamp($(entity.timestamp) / 1000.0),
                 $(entity.pointers),
                 $(metadata),
-                'https://peer.decentraland.org/content',
-                to_timestamp($(auditInfo.localTimestamp) / 1000.0),
                 to_timestamp($(auditInfo.localTimestamp) / 1000.0),
                 $(auditInfo.authChain:json),
                 $(overwrittenBy)

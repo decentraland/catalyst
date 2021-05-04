@@ -5,7 +5,7 @@ import {
   EntityType,
   PartialDeploymentHistory,
   Pointer,
-  ServerAddress,
+
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -74,8 +74,6 @@ export interface ClusterDeploymentsService {
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
-    originTimestamp: Timestamp,
-    originServerUrl: ServerAddress,
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null>

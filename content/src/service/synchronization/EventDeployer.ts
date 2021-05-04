@@ -92,22 +92,19 @@ export class EventDeployer {
     for (let i = 0; i < unknownFileHashes.length; i++) {
       const fileHash = unknownFileHashes[i]
       EventDeployer.LOGGER.trace(
-        `Going to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${
-          entity.id
+        `Going to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id
         }). Hash is ${fileHash}`
       )
       const file = await this.getFileOrUndefined(fileHash, source)
       if (file) {
         files.push(file)
         EventDeployer.LOGGER.trace(
-          `Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${
-            entity.id
+          `Downloaded file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id
           }). Hash was ${fileHash}`
         )
       } else {
         EventDeployer.LOGGER.trace(
-          `Failed to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${
-            entity.id
+          `Failed to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${entity.id
           }). Hash was ${fileHash}. Will cancel content download`
         )
         return undefined
@@ -161,13 +158,10 @@ export class EventDeployer {
     description?: string
     source?: ContentServerClient
   }): Promise<null> {
-    const { entityType, entityId, auditInfo } = options.deployment
-    const { localTimestamp } = auditInfo
+    const { entityType, entityId } = options.deployment
     return this.service.reportErrorDuringSync(
       entityType,
       entityId,
-      localTimestamp,
-      options.source?.getAddress() ?? 'https://peer.decentraland.org/content',
       options.reason,
       options.description
     )
