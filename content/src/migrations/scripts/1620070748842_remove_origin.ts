@@ -18,7 +18,10 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(
     `ALTER TABLE deployments ADD COLUMN origin_server_url text  DEFAULT 'https://peer.decentraland.org/content' NOT NULL;`
   )
+  pgm.sql(`ALTER TABLE failed_deployments ADD COLUMN origin_timestamp text  DEFAULT NOW() NOT NULL;`)
+
+  pgm.sql(
+    `ALTER TABLE failed_deployments ADD COLUMN origin_server_url text  DEFAULT 'https://peer.decentraland.org/content' NOT NULL;`
+  )
   pgm.sql(`ALTER TABLE deployments ADD COLUMN origin_timestamp text  DEFAULT NOW() NOT NULL;`)
-  pgm.sql(`ALTER TABLE failed_deployments DROP COLUMN origin_server_url IF EXISTS;`)
-  pgm.sql(`ALTER TABLE failed_deployments DROP COLUMN origin_timestamp IF EXISTS;`)
 }
