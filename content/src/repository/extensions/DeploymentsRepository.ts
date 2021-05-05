@@ -176,7 +176,7 @@ export class DeploymentsRepository {
 
   private createOrClause(timestampField: string, compare: string, timestampFilter: string): string {
     const equalWithEntityIdComparison = `(LOWER(dep1.entity_id) ${compare} LOWER($(lastId)) AND dep1.${timestampField} = to_timestamp($(${timestampFilter}) / 1000.0))`
-    const timestampComparison = `(dep1.entity_timestamp ${compare} to_timestamp($(${timestampFilter}) / 1000.0))`
+    const timestampComparison = `(dep1.${timestampField} ${compare} to_timestamp($(${timestampFilter}) / 1000.0))`
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 

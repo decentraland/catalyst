@@ -3,7 +3,7 @@ import { SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { anything, capture, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import MockedDataBase from './MockedDataBase'
 
-fdescribe('DeploymentRepository', () => {
+describe('DeploymentRepository', () => {
   let repository: DeploymentsRepository
   let db: MockedDataBase
 
@@ -85,34 +85,134 @@ fdescribe('DeploymentRepository', () => {
       repository = new DeploymentsRepository(instance(db) as any)
     })
 
-    describe('when it receives a field or order to sort by', () => {
+    describe("when it doesn't receive a lastId", () => {
       beforeEach(() => {
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
       })
 
-      it('should call the database with the expected sorting', async () => {
-        await repository.getHistoricalDeployments(0, 10, undefined, {
-          field: SortingField.ENTITY_TIMESTAMP,
-          order: SortingOrder.ASCENDING
+      describe('when it receives a field or order to sort by', () => {
+        beforeEach(() => {
+          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
         })
 
-        const args = capture(db.map).last()
+        fit('should call the database with the expected sorting', async () => {
+          await repository.getHistoricalDeployments(
+            0,
+            10,
+            { from: 1, to: 11 },
+            {
+              field: SortingField.ENTITY_TIMESTAMP,
+              order: SortingOrder.ASCENDING
+            }
+          )
 
-        expect(args[0]).toContain(`ORDER BY dep1.entity_timestamp ASC`)
+          const args = capture(db.map).last()
+
+          expect(args[0]).toContain(`ORDER BY dep1.entity_timestamp ASC`)
+          expect(args[0]).toContain(
+            `dep1.entity_timestamp >= to_timestamp($(fromEntityTimestamp) / 1000.0) AND dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`
+          )
+          expect(args[1]).toEqual(jasmine.objectContaining({ fromEntityTimestamp: 1, toEntityTimestamp: 11 }))
+        })
+      })
+
+      describe("when it doesn't receive a field or order to sort by", () => {
+        beforeEach(() => {
+          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+        })
+
+        it('should call the database with the default sorting', async () => {
+          await repository.getHistoricalDeployments(0, 10, { from: 1, to: 11 })
+
+          const args = capture(db.map).last()
+
+          expect(args[0]).toContain(`ORDER BY dep1.local_timestamp DESC`)
+          expect(args[0]).toContain(
+            `dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0) AND dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`
+          )
+          expect(args[1]).toEqual(jasmine.objectContaining({ fromLocalTimestamp: 1, toLocalTimestamp: 11 }))
+        })
       })
     })
 
-    describe("when it doesn't receive a field or order to sort by", () => {
+    describe('when it receives a lastId', () => {
+      const lastId = '1'
       beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+      })
+
+      describe('when it receives a field or order to sort by', () => {
+        beforeEach(() => {
+          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+        })
+
+        it('should call the database with the expected sorting', async () => {
+          await repository.getHistoricalDeployments(
+            0,
+            10,
+            { from: 1, to: 11 },
+            {
+              field: SortingField.ENTITY_TIMESTAMP,
+              order: SortingOrder.ASCENDING
+            },
+            lastId
+          )
+
+          const args = capture(db.map).last()
+
+          expect(args[0]).toContain(`ORDER BY dep1.entity_timestamp ASC`)
+          expect(args[0]).toContain(`((LOWER(dep1.entity_id) > LOWER($(lastId))`)
+          expect(args[0]).toContain(
+            `dep1.entity_timestamp = to_timestamp($(fromEntityTimestamp) / 1000.0)) ` +
+              `OR (dep1.entity_timestamp > to_timestamp($(fromEntityTimestamp) / 1000.0))) ` +
+              `AND dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`
+          )
+
+          expect(args[1]).toEqual(jasmine.objectContaining({ fromEntityTimestamp: 1, toEntityTimestamp: 11 }))
+        })
+      })
+
+      describe("when it doesn't receive a field or order to sort by", () => {
+        beforeEach(() => {
+          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+        })
+
+        it('should call the database with the default sorting', async () => {
+          await repository.getHistoricalDeployments(0, 10, { from: 1, to: 11 }, undefined, lastId)
+
+          const args = capture(db.map).last()
+
+          expect(args[0]).toContain(`ORDER BY dep1.local_timestamp DESC`)
+          expect(args[0]).toContain(`((LOWER(dep1.entity_id) < LOWER($(lastId))`)
+          expect(args[0]).toContain(
+            `dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0) AND ` +
+              `((LOWER(dep1.entity_id) < LOWER($(lastId)) AND dep1.local_timestamp = to_timestamp($(toLocalTimestamp) / 1000.0)) ` +
+              `OR (dep1.local_timestamp < to_timestamp($(toLocalTimestamp) / 1000.0)))`
+          )
+
+          expect(args[1]).toEqual(jasmine.objectContaining({ fromLocalTimestamp: 1, toLocalTimestamp: 11 }))
+        })
+      })
+    })
+
+    describe('when there is a deployed by filter', () => {
+      beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+
         when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
       })
 
-      it('should call the database with the default sorting', async () => {
-        await repository.getHistoricalDeployments(0, 10)
+      it('should add the expected where clause to the query', async () => {
+        const deployedBy = ['jOn', 'aGus']
+        await repository.getHistoricalDeployments(0, 10, { deployedBy })
 
         const args = capture(db.map).last()
 
-        expect(args[0]).toContain(`ORDER BY dep1.local_timestamp DESC`)
+        expect(args[0]).toContain(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
+        expect(args[1]).toEqual(jasmine.objectContaining({ deployedBy: deployedBy.map((x) => x.toLowerCase()) }))
       })
     })
   })
