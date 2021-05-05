@@ -1,5 +1,5 @@
 import { DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
-import { SortingField, SortingOrder } from 'dcl-catalyst-commons'
+import { EntityType, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { anything, capture, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import MockedDataBase from './MockedDataBase'
 
@@ -138,6 +138,7 @@ describe('DeploymentRepository', () => {
 
     describe('when it receives a lastId', () => {
       const lastId = '1'
+
       beforeEach(() => {
         db = mock(MockedDataBase)
         repository = new DeploymentsRepository(instance(db) as any)
@@ -205,7 +206,7 @@ describe('DeploymentRepository', () => {
         when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
       })
 
-      it('should add the expected where clause to the query', async () => {
+      it('should add the expected where clause to the query with the addresses on lowercase', async () => {
         const deployedBy = ['jOn', 'aGus']
         await repository.getHistoricalDeployments(0, 10, { deployedBy })
 
@@ -213,6 +214,81 @@ describe('DeploymentRepository', () => {
 
         expect(args[0]).toContain(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
         expect(args[1]).toEqual(jasmine.objectContaining({ deployedBy: deployedBy.map((x) => x.toLowerCase()) }))
+      })
+    })
+
+    describe('when there is entityTypes filter', () => {
+      beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+
+        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+      })
+
+      it('should add the expected where clause to the query', async () => {
+        const entityTypes = [EntityType.SCENE, EntityType.PROFILE]
+        await repository.getHistoricalDeployments(0, 10, { entityTypes })
+
+        const args = capture(db.map).last()
+
+        expect(args[0]).toContain(`dep1.entity_type IN ($(entityTypes:list))`)
+        expect(args[1]).toEqual(jasmine.objectContaining({ entityTypes }))
+      })
+    })
+
+    describe('when there is entityIds filter', () => {
+      beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+
+        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+      })
+
+      it('should add the expected where clause to the query', async () => {
+        const entityIds = ['A custom string', 'Another custom string']
+
+        await repository.getHistoricalDeployments(0, 10, { entityIds })
+
+        const args = capture(db.map).last()
+
+        expect(args[0]).toContain(`dep1.entity_id IN ($(entityIds:list))`)
+        expect(args[1]).toEqual(jasmine.objectContaining({ entityIds }))
+      })
+    })
+
+    describe('when there is onlyCurrentlyPointed filter', () => {
+      beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+
+        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+      })
+
+      it('should add the expected where clause to the query', async () => {
+        await repository.getHistoricalDeployments(0, 10, { onlyCurrentlyPointed: true })
+
+        const args = capture(db.map).last()
+
+        expect(args[0]).toContain(`dep1.deleter_deployment IS NULL`)
+      })
+    })
+
+    describe('when there is pointers filter', () => {
+      beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+
+        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+      })
+
+      it('should add the expected where clause to the query with the pointers in lowercase', async () => {
+        const pointers = ['jOn', 'aGus']
+        await repository.getHistoricalDeployments(0, 10, { pointers })
+
+        const args = capture(db.map).last()
+
+        expect(args[0]).toContain(`dep1.entity_pointers && ARRAY[$(pointers:list)]`)
+        expect(args[1]).toEqual(jasmine.objectContaining({ pointers: pointers.map((x) => x.toLowerCase()) }))
       })
     })
   })
