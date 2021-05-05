@@ -50,7 +50,7 @@ export class DeploymentsRepository {
     lastId?: string
   ) {
     const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
-    return this.getDeploymentsBy(sorting?.field, sorting?.order, offset, limit, filters, lastId)
+    return this.getDeploymentsBy(sorting.field, sorting.order, offset, limit, filters, lastId)
   }
 
   private getDeploymentsBy(
