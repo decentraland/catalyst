@@ -291,5 +291,22 @@ describe('DeploymentRepository', () => {
         expect(args[1]).toEqual(jasmine.objectContaining({ pointers: pointers.map((x) => x.toLowerCase()) }))
       })
     })
+
+    describe('when there is no filter', () => {
+      beforeEach(() => {
+        db = mock(MockedDataBase)
+        repository = new DeploymentsRepository(instance(db) as any)
+
+        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+      })
+
+      it('should not add a where clause', async () => {
+        await repository.getHistoricalDeployments(0, 10)
+
+        const args = capture(db.map).last()
+
+        expect(args[0]).not.toContain(`WHERE`)
+      })
+    })
   })
 })
