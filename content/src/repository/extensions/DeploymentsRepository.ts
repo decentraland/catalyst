@@ -25,7 +25,9 @@ export class DeploymentsRepository {
       [entityIds],
       ({ entity_id }) => entity_id
     )
+
     const deployedIds = new Set(result)
+    console.log('deployedIds', deployedIds)
     return new Map(entityIds.map((entityId) => [entityId, deployedIds.has(entityId)]))
   }
 
@@ -130,8 +132,8 @@ export class DeploymentsRepository {
     }
 
     if (filters?.deployedBy && filters.deployedBy.length > 0) {
-      values.deployedBy = filters.deployedBy
-      whereClause.push(`dep1.deployer_address IN ($(deployedBy:list))`)
+      values.deployedBy = filters.deployedBy.map((deployedBy) => deployedBy.toLocaleLowerCase())
+      whereClause.push(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
     }
 
     if (filters?.entityTypes && filters.entityTypes.length > 0) {
