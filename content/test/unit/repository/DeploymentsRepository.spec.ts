@@ -1,5 +1,5 @@
 import { DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
-import { anything, capture, instance, mock, when } from 'ts-mockito'
+import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import MockedDataBase from './MockedDataBase'
 
 describe('DeploymentRepository', () => {
@@ -27,10 +27,9 @@ describe('DeploymentRepository', () => {
 
         expect(result).toEqual(new Map(entities.map((entityId) => [entityId, entitiesSet.has(entityId)])))
 
-        const args = capture(db.map).last()
-
-        expect(args[0]).toEqual('SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)')
-        expect(args[1]).toEqual([entities])
+        verify(
+          db.map('SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)', deepEqual([entities]), anything())
+        ).once()
       })
     })
   })

@@ -27,7 +27,6 @@ export class DeploymentsRepository {
     )
 
     const deployedIds = new Set(result)
-    console.log('deployedIds', deployedIds)
     return new Map(entityIds.map((entityId) => [entityId, deployedIds.has(entityId)]))
   }
 
