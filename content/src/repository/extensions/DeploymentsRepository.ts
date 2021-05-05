@@ -184,15 +184,10 @@ export class DeploymentsRepository {
     entityType: EntityType
   ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
     return this.db.map(
-      `
-            SELECT
-                entity_id,
-                entity_pointers,
-                date_part('epoch', local_timestamp) * 1000 AS local_timestamp
-            FROM deployments
-            WHERE entity_type = $1 AND deleter_deployment IS NULL
-            ORDER BY local_timestamp DESC, entity_id DESC
-            `,
+      `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
+        `FROM deployments ` +
+        `WHERE entity_type = $1 AND deleter_deployment IS NULL ` +
+        `ORDER BY local_timestamp DESC, entity_id DESC`,
       [entityType],
       (row) => ({
         entityId: row.entity_id,
@@ -204,10 +199,9 @@ export class DeploymentsRepository {
 
   deploymentsSince(entityType: EntityType, timestamp: Timestamp): Promise<number> {
     return this.db.one(
-      `
-            SELECT COUNT(*) AS count
-            FROM deployments
-            WHERE entity_type = $1 AND local_timestamp > to_timestamp($2 / 1000.0)`,
+      `SELECT COUNT(*) AS count ` +
+        `FROM deployments ` +
+        `WHERE entity_type = $1 AND local_timestamp > to_timestamp($2 / 1000.0)`,
       [entityType, timestamp],
       (row) => row.count
     )
@@ -215,30 +209,10 @@ export class DeploymentsRepository {
 
   saveDeployment(entity: Entity, auditInfo: AuditInfo, overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
     return this.db.one(
-      `
-            INSERT INTO deployments (
-                deployer_address,
-                version,
-                entity_type,
-                entity_id,
-                entity_timestamp,
-                entity_pointers,
-                entity_metadata,
-                local_timestamp,
-                auth_chain,
-                deleter_deployment
-            ) VALUES (
-                $(deployer),
-                $(auditInfo.version),
-                $(entity.type),
-                $(entity.id),
-                to_timestamp($(entity.timestamp) / 1000.0),
-                $(entity.pointers),
-                $(metadata),
-                to_timestamp($(auditInfo.localTimestamp) / 1000.0),
-                $(auditInfo.authChain:json),
-                $(overwrittenBy)
-            ) RETURNING id`,
+      `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)` +
+        ` VALUES ` +
+        `($(deployer), $(auditInfo.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy))` +
+        ` RETURNING id`,
       {
         entity,
         auditInfo,

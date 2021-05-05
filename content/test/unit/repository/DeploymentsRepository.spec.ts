@@ -1,9 +1,10 @@
 import { DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
-import { EntityType, SortingField, SortingOrder } from 'dcl-catalyst-commons'
+import { Entity } from '@katalyst/content/service/Entity'
+import { EntityType, EntityVersion, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { anything, capture, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import MockedDataBase from './MockedDataBase'
 
-describe('DeploymentRepository', () => {
+fdescribe('DeploymentRepository', () => {
   let repository: DeploymentsRepository
   let db: MockedDataBase
 
@@ -96,7 +97,7 @@ describe('DeploymentRepository', () => {
           when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
         })
 
-        fit('should call the database with the expected sorting', async () => {
+        it('should call the database with the expected sorting', async () => {
           await repository.getHistoricalDeployments(
             0,
             10,
@@ -309,4 +310,111 @@ describe('DeploymentRepository', () => {
       })
     })
   })
+
+  describe('getSnapshot', () => {
+    beforeEach(() => {
+      db = mock(MockedDataBase)
+      repository = new DeploymentsRepository(instance(db) as any)
+
+      const dbResult = ['1', '2']
+      when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
+    })
+
+    it('should return a map of entity id to the deployment status', async () => {
+      const entityType = EntityType.PROFILE
+      await repository.getSnapshot(entityType)
+
+      const expectedQuery = `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp FROM deployments WHERE entity_type = $1 AND deleter_deployment IS NULL ORDER BY local_timestamp DESC, entity_id DESC`
+
+      verify(db.map(expectedQuery, deepEqual([entityType]), anything())).once()
+    })
+  })
+
+  describe('deploymentsSince', () => {
+    beforeEach(() => {
+      db = mock(MockedDataBase)
+      repository = new DeploymentsRepository(instance(db) as any)
+
+      when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
+    })
+
+    it('should call the db with the expected query', async () => {
+      const entityType = EntityType.PROFILE
+      await repository.getSnapshot(entityType)
+
+      const expectedQuery = `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp FROM deployments WHERE entity_type = $1 AND deleter_deployment IS NULL ORDER BY local_timestamp DESC, entity_id DESC`
+
+      const args = capture(db.map).last()
+      expect(args[0]).toEqual(expectedQuery)
+
+      verify(db.map(expectedQuery, deepEqual([entityType]), anything())).once()
+    })
+  })
+
+  describe('saveDeployment', () => {
+    beforeEach(() => {
+      db = mock(MockedDataBase)
+      repository = new DeploymentsRepository(instance(db) as any)
+
+      when(db.one(anything(), anything(), anything())).thenReturn(Promise.resolve({}))
+    })
+
+    describe('when there is no metadata', () => {
+      it('should call the db with the expected query and null metadata', async () => {
+        const entity: Entity = { id: '1', pointers: [], timestamp: 1, type: EntityType.PROFILE }
+        const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
+        const overwrittenBy = 10
+        await repository.saveDeployment(entity, auditInfo, overwrittenBy)
+
+        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(auditInfo.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
+
+        const args = capture(db.one).last()
+        expect(args[0]).toEqual(expectedQuery)
+
+        verify(
+          db.one(
+            expectedQuery,
+            deepEqual({
+              entity,
+              auditInfo,
+              metadata: null,
+              deployer: 'Invalid-Owner-Address',
+              overwrittenBy
+            }),
+            anything()
+          )
+        ).once()
+      })
+    })
+
+    describe('when there is no metadata', () => {
+      it('should call the db with the expected query and the metadata value', async () => {
+        const metadata = { aField: 'aValue' }
+        const entity: Entity = { id: '1', pointers: [], timestamp: 1, type: EntityType.PROFILE, metadata }
+        const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
+        const overwrittenBy = 10
+        await repository.saveDeployment(entity, auditInfo, overwrittenBy)
+
+        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(auditInfo.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
+
+        const args = capture(db.one).last()
+        expect(args[0]).toEqual(expectedQuery)
+
+        verify(
+          db.one(
+            expectedQuery,
+            deepEqual({
+              entity,
+              auditInfo,
+              metadata: { v: metadata },
+              deployer: 'Invalid-Owner-Address',
+              overwrittenBy
+            }),
+            anything()
+          )
+        ).once()
+      })
+    })
+  })
+  describe('setEntitiesAsOverwritten', () => {})
 })
