@@ -56,8 +56,8 @@ describe('Integration - Deployment Filters', () => {
     await assertDeploymentsWithFilterAre({ entityIds: [E1.entity.id, E2.entity.id] }, E1, E2)
   })
 
-  it('When deployed by filter is set, then results are calculated correctly', async () => {
-    const identity1 = 'some-identity'
+  it('When deployed by filter is set, then results are calculated ignoring the casing', async () => {
+    const identity1 = 'Some-Identity'
     const identity2 = 'another-identity'
 
     // Deploy E1 and E2
@@ -66,6 +66,7 @@ describe('Integration - Deployment Filters', () => {
 
     await assertDeploymentsWithFilterAre({}, E1, E2)
     await assertDeploymentsWithFilterAre({ deployedBy: [identity1] }, E1)
+    await assertDeploymentsWithFilterAre({ deployedBy: [identity1.toLowerCase()] }, E1)
     await assertDeploymentsWithFilterAre({ deployedBy: [identity2] }, E2)
     await assertDeploymentsWithFilterAre({ deployedBy: [identity1, identity2] }, E1, E2)
     await assertDeploymentsWithFilterAre({ deployedBy: ['not-and-identity'] })
