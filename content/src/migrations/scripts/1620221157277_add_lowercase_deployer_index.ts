@@ -5,6 +5,7 @@ import { MigrationBuilder } from 'node-pg-migrate'
  */
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
+  pgm.sql(`DROP INDEX deployments_deployer_address_index;`)
   pgm.sql(`CREATE INDEX deployer_address_lower_case on deployments (LOWER(deployer_address) text_pattern_ops);`)
 }
 

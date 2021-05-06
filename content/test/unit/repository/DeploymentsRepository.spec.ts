@@ -21,22 +21,24 @@ describe('DeploymentRepository', () => {
 
     describe('when the entities list is not empty', () => {
       const dbResult = ['1', '2']
+      const entities = ['1', '3']
+      let result
 
-      beforeEach(() => {
+      beforeEach(async () => {
         when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
+        result = await repository.areEntitiesDeployed(entities)
       })
 
       it('should return a map of entity id to the deployment status', async () => {
-        const entities = ['1', '3']
-        const result = await repository.areEntitiesDeployed(entities)
-
         expect(result).toEqual(
           new Map([
             ['1', true],
             ['3', false]
           ])
         )
+      })
 
+      it('should call the db with the expected parameters', () => {
         verify(
           db.map('SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)', deepEqual([entities]), anything())
         ).once()
@@ -69,7 +71,7 @@ describe('DeploymentRepository', () => {
       result = await repository.getAmountOfDeployments()
     })
 
-    it('should call the database with the expected query', () => {
+    it('should call the database to obtain the count of deployments by entity type', () => {
       verify(
         db.map(`SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`, deepEqual([]), anything())
       ).once()
@@ -81,22 +83,14 @@ describe('DeploymentRepository', () => {
   })
 
   describe('getHistoricalDeployments', () => {
-    beforeEach(() => {
-      db = mock(MockedDataBase)
-      repository = new DeploymentsRepository(instance(db) as any)
-    })
-
     describe("when it doesn't receive a lastId", () => {
       beforeEach(() => {
         db = mock(MockedDataBase)
         repository = new DeploymentsRepository(instance(db) as any)
+        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
       })
 
       describe('when it receives a field or order to sort by', () => {
-        beforeEach(() => {
-          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-        })
-
         it('should call the database with the expected sorting', async () => {
           await repository.getHistoricalDeployments(
             0,
@@ -119,10 +113,6 @@ describe('DeploymentRepository', () => {
       })
 
       describe("when it doesn't receive a field or order to sort by", () => {
-        beforeEach(() => {
-          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-        })
-
         it('should call the database with the default sorting', async () => {
           await repository.getHistoricalDeployments(0, 10, { from: 1, to: 11 })
 
@@ -146,10 +136,6 @@ describe('DeploymentRepository', () => {
       })
 
       describe('when it receives a field or order to sort by', () => {
-        beforeEach(() => {
-          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-        })
-
         it('should call the database with the expected sorting', async () => {
           await repository.getHistoricalDeployments(
             0,
@@ -177,10 +163,6 @@ describe('DeploymentRepository', () => {
       })
 
       describe("when it doesn't receive a field or order to sort by", () => {
-        beforeEach(() => {
-          when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-        })
-
         it('should call the database with the default sorting', async () => {
           await repository.getHistoricalDeployments(0, 10, { from: 1, to: 11 }, undefined, lastId)
 
@@ -214,18 +196,11 @@ describe('DeploymentRepository', () => {
         const args = capture(db.map).last()
 
         expect(args[0]).toContain(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
-        expect(args[1]).toEqual(jasmine.objectContaining({ deployedBy: deployedBy.map((x) => x.toLowerCase()) }))
+        expect(args[1]).toEqual(jasmine.objectContaining({ deployedBy: ['jon', 'agus'] }))
       })
     })
 
     describe('when there is entityTypes filter', () => {
-      beforeEach(() => {
-        db = mock(MockedDataBase)
-        repository = new DeploymentsRepository(instance(db) as any)
-
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-      })
-
       it('should add the expected where clause to the query', async () => {
         const entityTypes = [EntityType.SCENE, EntityType.PROFILE]
         await repository.getHistoricalDeployments(0, 10, { entityTypes })
@@ -238,13 +213,6 @@ describe('DeploymentRepository', () => {
     })
 
     describe('when there is entityIds filter', () => {
-      beforeEach(() => {
-        db = mock(MockedDataBase)
-        repository = new DeploymentsRepository(instance(db) as any)
-
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-      })
-
       it('should add the expected where clause to the query', async () => {
         const entityIds = ['A custom string', 'Another custom string']
 
@@ -258,13 +226,6 @@ describe('DeploymentRepository', () => {
     })
 
     describe('when there is onlyCurrentlyPointed filter', () => {
-      beforeEach(() => {
-        db = mock(MockedDataBase)
-        repository = new DeploymentsRepository(instance(db) as any)
-
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-      })
-
       it('should add the expected where clause to the query', async () => {
         await repository.getHistoricalDeployments(0, 10, { onlyCurrentlyPointed: true })
 
@@ -275,13 +236,6 @@ describe('DeploymentRepository', () => {
     })
 
     describe('when there is pointers filter', () => {
-      beforeEach(() => {
-        db = mock(MockedDataBase)
-        repository = new DeploymentsRepository(instance(db) as any)
-
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-      })
-
       it('should add the expected where clause to the query with the pointers in lowercase', async () => {
         const pointers = ['jOn', 'aGus']
         await repository.getHistoricalDeployments(0, 10, { pointers })
@@ -294,18 +248,10 @@ describe('DeploymentRepository', () => {
     })
 
     describe('when there is no filter', () => {
-      beforeEach(() => {
-        db = mock(MockedDataBase)
-        repository = new DeploymentsRepository(instance(db) as any)
-
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-      })
-
       it('should not add a where clause', async () => {
         await repository.getHistoricalDeployments(0, 10)
 
         const args = capture(db.map).last()
-
         expect(args[0]).not.toContain(`WHERE`)
       })
     })
