@@ -7,15 +7,11 @@ export default class MockedDataBase {
     return Promise.resolve([])
   }
 
-  public none = (query: string, args: any, mapping: (row: any) => any): Promise<any> => {
+  public none(query: string, args: any, mapping?: (row: any) => any): Promise<any> {
     return Promise.resolve()
   }
 
-  public batch = (...args: any[]): Promise<any[]> => {
+  public batch(...args: any[]): Promise<any[]> {
     return Promise.resolve(args)
-  }
-
-  public txIf = (transactionFunction: (transaction: any) => Promise<any>): Promise<any> => {
-    return transactionFunction(this)
   }
 }
