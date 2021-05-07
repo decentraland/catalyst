@@ -10,5 +10,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
+  pgm.addIndex('deployments', 'deployer_address')
   pgm.sql(`DROP INDEX deployer_address_lower_case;`)
 }
