@@ -232,6 +232,36 @@ export class DeploymentsRepository {
       return transaction.batch(updates)
     })
   }
+
+  async getDeploymentByHash(contentHash: string) {
+    return this.db.map(
+      `SELECT ` +
+        `deployment.id, ` +
+        `deployment.entity_type, ` +
+        `deployment.entity_id, ` +
+        `deployment.entity_pointers, ` +
+        `date_part('epoch', deployment.entity_timestamp) * 1000 AS entity_timestamp, ` +
+        `deployment.entity_metadata, ` +
+        `deployment.deployer_address, ` +
+        `deployment.version, ` +
+        `deployment.auth_chain, ` +
+        `date_part('epoch', deployment.local_timestamp) * 1000 AS local_timestamp, ` +
+        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1';`,
+      [contentHash],
+      (row) => ({
+        deploymentId: row.id,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        pointers: row.entity_pointers,
+        entityTimestamp: row.entity_timestamp,
+        metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+        deployerAddress: row.deployer_address,
+        version: row.version,
+        authChain: row.auth_chain,
+        localTimestamp: row.local_timestamp
+      })
+    )
+  }
 }
 
 export type DeploymentId = number

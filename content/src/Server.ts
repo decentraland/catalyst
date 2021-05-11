@@ -73,6 +73,7 @@ export class Server {
     this.registerRoute('/available-content', controller, controller.getAvailableContent)
     this.registerRoute('/audit/:type/:entityId', controller, controller.getAudit)
     this.registerRoute('/deployments', controller, controller.getDeployments)
+    this.registerRoute('/deployments/:contentHash', controller, controller.getDeploymentsByHash)
     this.registerRoute('/status', controller, controller.getStatus)
     this.registerRoute('/denylist', controller, controller.getAllDenylistTargets)
     this.registerRoute('/denylist/:type/:id', controller, controller.addToDenylist, HttpMethod.PUT)

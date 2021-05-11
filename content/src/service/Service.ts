@@ -52,6 +52,7 @@ export interface MetaverseContentService {
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>
   getStatus(): ServerStatus
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
+  getDeploymentsByHash(hash: string, task?: Database): Promise<Deployment[]>
   getAllFailedDeployments(): Promise<FailedDeployment[]>
   getPointerChanges(
     filters?: PointerChangesFilters,

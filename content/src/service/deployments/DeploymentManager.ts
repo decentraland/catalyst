@@ -50,12 +50,57 @@ export class DeploymentManager {
 
     const moreData = deploymentsWithExtra.length > curatedLimit
 
+    const deployments = await this.transformDeployments(
+      deploymentsRepository,
+      curatedLimit,
+      contentFilesRepository,
+      migrationDataRepository
+    )
+
+    return {
+      deployments: deployments,
+      filters: {
+        ...options?.filters
+      },
+      pagination: {
+        offset: curatedOffset,
+        limit: curatedLimit,
+        moreData: moreData,
+        lastId: options?.lastId
+      }
+    }
+  }
+
+  async getDeploymentsByHash(
+    deploymentsRepository: DeploymentsRepository,
+    contentFilesRepository: ContentFilesRepository,
+    migrationDataRepository: MigrationDataRepository,
+    hash: string
+  ): Promise<Deployment[]> {
+    const curatedLimit = DeploymentManager.MAX_HISTORY_LIMIT
+
+    const deploymentsWithExtra = await deploymentsRepository.getDeploymentByHash(hash)
+
+    return this.transformDeployments(
+      deploymentsWithExtra,
+      curatedLimit,
+      contentFilesRepository,
+      migrationDataRepository
+    )
+  }
+
+  private async transformDeployments(
+    deploymentsWithExtra,
+    curatedLimit: number,
+    contentFilesRepository: ContentFilesRepository,
+    migrationDataRepository: MigrationDataRepository
+  ): Promise<Deployment[]> {
     const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
     const content = await contentFilesRepository.getContentFiles(deploymentIds)
     const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
 
-    const deployments: Deployment[] = deploymentsResult.map((result) => ({
+    return deploymentsResult.map((result) => ({
       entityType: result.entityType,
       entityId: result.entityId,
       pointers: result.pointers,
@@ -71,19 +116,6 @@ export class DeploymentManager {
         migrationData: migrationData.get(result.deploymentId)
       }
     }))
-
-    return {
-      deployments: deployments,
-      filters: {
-        ...options?.filters
-      },
-      pagination: {
-        offset: curatedOffset,
-        limit: curatedLimit,
-        moreData: moreData,
-        lastId: options?.lastId
-      }
-    }
   }
 
   async saveDeployment(
