@@ -9,10 +9,10 @@ import { DenylistTarget, DenylistTargetType } from './DenylistTarget'
 
 export class DummyDenylist extends Denylist {
   async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
-    return { status: DenylistSignatureValidationStatus.OK }
+    return { status: DenylistSignatureValidationStatus.ERROR }
   }
   async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
-    return { status: DenylistSignatureValidationStatus.OK }
+    return { status: DenylistSignatureValidationStatus.ERROR }
   }
   async getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
     return []

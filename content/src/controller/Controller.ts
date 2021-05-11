@@ -599,6 +599,7 @@ export class Controller {
     // Method: DELETE
     // Path: /denylist/{type}/{id}
     // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
+
     const blocker: EthAddress = req.query.blocker
     const timestamp: Timestamp = req.query.timestamp
     const signature: Signature = req.query.signature
