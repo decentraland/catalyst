@@ -6,7 +6,7 @@ import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, createIdentity } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
-fdescribe('Integration - DummyDenylist', () => {
+describe('Integration - DummyDenylist', () => {
   const metadata: string = 'Some metadata'
   const decentralandIdentity = createIdentity()
   const ownerIdentity = createIdentity()
