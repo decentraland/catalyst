@@ -568,6 +568,11 @@ export class Controller {
     // Path: /denylist/{type}/{id}
     // Body: JSON with ethAddress, signature and timestamp
 
+    if (this.denylist.isDisabled()) {
+      res.status(500).send()
+      return
+    }
+
     const blocker: EthAddress = req.body.blocker
     const timestamp: Timestamp = req.body.timestamp
     const signature: Signature = req.body.signature
@@ -599,6 +604,11 @@ export class Controller {
     // Method: DELETE
     // Path: /denylist/{type}/{id}
     // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
+
+    if (this.denylist.isDisabled()) {
+      res.status(500).send()
+      return
+    }
 
     const blocker: EthAddress = req.query.blocker
     const timestamp: Timestamp = req.query.timestamp

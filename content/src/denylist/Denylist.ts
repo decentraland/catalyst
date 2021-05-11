@@ -13,8 +13,13 @@ export class Denylist {
     private readonly repository: Repository,
     private readonly authenticator: ContentAuthenticator,
     private readonly cluster: ContentCluster,
-    private readonly network: string
+    private readonly network: string,
+    private readonly disableDenylist: boolean
   ) {}
+
+  public isDisabled(): boolean {
+    return this.disableDenylist
+  }
 
   static buildBlockMessageToSign(target: DenylistTarget, timestamp: Timestamp) {
     return this.internalBuildMessageToSign(DenylistAction.ADDITION, target, timestamp)
@@ -22,12 +27,20 @@ export class Denylist {
   static buildUnblockMessageToSign(target: DenylistTarget, timestamp: Timestamp) {
     return this.internalBuildMessageToSign(DenylistAction.REMOVAL, target, timestamp)
   }
+
   private static internalBuildMessageToSign(action: DenylistAction, target: DenylistTarget, timestamp: Timestamp) {
     const actionMessage = action == DenylistAction.ADDITION ? 'block' : 'unblock'
     return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
-  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
+  public async addTarget(
+    target: DenylistTarget,
+    metadata: DenylistMetadata
+  ): Promise<DenylistSignatureValidationResult> {
+    if (this.disableDenylist) {
+      return { status: DenylistSignatureValidationStatus.OK }
+    }
+
     // Validate blocker and signature
     const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
       DenylistAction.ADDITION,
@@ -51,7 +64,14 @@ export class Denylist {
     return { status: DenylistSignatureValidationStatus.OK }
   }
 
-  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
+  public async removeTarget(
+    target: DenylistTarget,
+    metadata: DenylistMetadata
+  ): Promise<DenylistSignatureValidationResult> {
+    if (this.disableDenylist) {
+      return { status: DenylistSignatureValidationStatus.OK }
+    }
+
     // Validate blocker and signature
     const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
       DenylistAction.REMOVAL,
@@ -75,16 +95,22 @@ export class Denylist {
     return { status: DenylistSignatureValidationStatus.OK }
   }
 
-  getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
+  public getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
+    if (this.disableDenylist) {
+      return Promise.resolve([])
+    }
     return this.repository.run((db) => db.denylist.getAllDenylistedTargets())
   }
 
-  async isTargetDenylisted(target: DenylistTarget): Promise<boolean> {
+  public async isTargetDenylisted(target: DenylistTarget): Promise<boolean> {
+    if (this.disableDenylist) {
+      return false
+    }
     const map = await this.repository.run((db) => this.areTargetsDenylisted(db.denylist, [target]))
     return map.get(target.getType())?.get(target.getId()) ?? false
   }
 
-  async areTargetsDenylisted(
+  public async areTargetsDenylisted(
     denylistRepo: DenylistRepository,
     targets: DenylistTarget[]
   ): Promise<Map<DenylistTargetType, Map<DenylistTargetId, boolean>>> {
@@ -93,7 +119,10 @@ export class Denylist {
     }
 
     // Get only denylisted
-    const denylisted = await denylistRepo.getDenylistedTargets(targets)
+    let denylisted = new Map()
+    if (!this.disableDenylist) {
+      denylisted = await denylistRepo.getDenylistedTargets(targets)
+    }
 
     // Build result
     const result: Map<DenylistTargetType, Map<DenylistTargetId, boolean>> = new Map()

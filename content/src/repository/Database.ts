@@ -45,7 +45,7 @@ export function build(connection: DBConnection, contentCredentials: DBCredential
 
 async function connectTo(connection: DBConnection, credentials: DBCredentials) {
   const initOptions: IInitOptions<IExtensions> = {
-    extend(obj: Database, dc: any) {
+    extend(obj: Database) {
       obj.deployments = new DeploymentsRepository(obj)
       obj.migrationData = new MigrationDataRepository(obj)
       obj.content = new ContentFilesRepository(obj)

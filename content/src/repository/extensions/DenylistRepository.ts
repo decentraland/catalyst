@@ -24,6 +24,7 @@ export class DenylistRepository {
     ])
   }
 
+  // This could be too
   async getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
     const result = await this.db.any(`
             SELECT DISTINCT ON (denylist.target_type, denylist.target_id)
@@ -74,6 +75,7 @@ export class DenylistRepository {
     })
 
     // Perform the query
+    // this is!!
     const queryResult = await this.db.any(
       `SELECT target_type, target_id FROM denylist WHERE ${orClause.join(' OR ')}`,
       values

@@ -7,7 +7,8 @@ export class DenylistFactory {
       env.getBean(Bean.REPOSITORY),
       env.getBean(Bean.AUTHENTICATOR),
       env.getBean(Bean.CONTENT_CLUSTER),
-      env.getConfig(EnvironmentConfig.ETH_NETWORK)
+      env.getConfig(EnvironmentConfig.ETH_NETWORK),
+      env.getConfig(EnvironmentConfig.DISABLE_DENYLIST)
     )
   }
 }
