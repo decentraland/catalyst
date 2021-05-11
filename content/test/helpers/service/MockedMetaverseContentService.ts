@@ -5,6 +5,7 @@ import {
   Deployment,
   DeploymentOptions,
   DeploymentPointerChanges,
+  EntityByHash,
   PointerChangesFilters
 } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
@@ -104,9 +105,13 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     })
   }
 
-  getDeploymentsByHash(hash: string): Promise<Deployment[]> {
+  getDeploymentsByHash(hash: string): Promise<EntityByHash> {
     return Promise.resolve(
-      this.entities.filter((entity) => entity.content?.has(hash)).map((entity) => this.entityToDeployment(entity))
+      this.entities
+        .filter((entity) => entity.content?.has(hash))
+        .map((entity) => this.entityToDeployment(entity))
+        .map((entity) => ({ entityId: entity.entityId }))
+        .find((x) => x) || null
     )
   }
 

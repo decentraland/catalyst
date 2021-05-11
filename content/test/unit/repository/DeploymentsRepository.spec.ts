@@ -408,14 +408,14 @@ describe('DeploymentRepository', () => {
       db = mock(MockedDataBase)
       repository = new DeploymentsRepository(instance(db) as any)
 
-      when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
+      when(db.one(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
       await repository.getDeploymentByHash(hashToSearch)
     })
 
     it('should call the db with the expected parameters', () => {
-      const expectedQuery = `SELECT deployment.id, deployment.entity_type, deployment.entity_id, deployment.entity_pointers, date_part('epoch', deployment.entity_timestamp) * 1000 AS entity_timestamp, deployment.entity_metadata, deployment.deployer_address, deployment.version, deployment.auth_chain, date_part('epoch', deployment.local_timestamp) * 1000 AS local_timestamp, FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1';`
+      const expectedQuery = `SELECT deployment.entity_id, FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' WHERE deployment.deleter_deployment IS NULL;`
 
-      verify(db.map(expectedQuery, deepEqual([hashToSearch]), anything())).once()
+      verify(db.one(expectedQuery, deepEqual([hashToSearch]), anything())).once()
     })
   })
 })

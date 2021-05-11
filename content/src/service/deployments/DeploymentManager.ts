@@ -71,22 +71,8 @@ export class DeploymentManager {
     }
   }
 
-  async getDeploymentsByHash(
-    deploymentsRepository: DeploymentsRepository,
-    contentFilesRepository: ContentFilesRepository,
-    migrationDataRepository: MigrationDataRepository,
-    hash: string
-  ): Promise<Deployment[]> {
-    const curatedLimit = DeploymentManager.MAX_HISTORY_LIMIT
-
-    const deploymentsWithExtra = await deploymentsRepository.getDeploymentByHash(hash)
-
-    return this.transformDeployments(
-      deploymentsWithExtra,
-      curatedLimit,
-      contentFilesRepository,
-      migrationDataRepository
-    )
+  async getDeploymentsByHash(deploymentsRepository: DeploymentsRepository, hash: string): Promise<EntityByHash> {
+    return deploymentsRepository.getDeploymentByHash(hash)
   }
 
   private async transformDeployments(
@@ -244,3 +230,7 @@ export type DeploymentOptions = {
 export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 
 export type PointerChanges = Map<Pointer, { before: EntityId | undefined; after: EntityId | undefined }>
+
+export type EntityByHash = {
+  entityId: string
+} | null

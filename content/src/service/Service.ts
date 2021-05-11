@@ -14,6 +14,7 @@ import { ContentItem } from '../storage/ContentStorage'
 import {
   Deployment,
   DeploymentOptions,
+  EntityByHash,
   PartialDeploymentPointerChanges,
   PointerChangesFilters
 } from './deployments/DeploymentManager'
@@ -52,7 +53,7 @@ export interface MetaverseContentService {
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>
   getStatus(): ServerStatus
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
-  getDeploymentsByHash(hash: string, task?: Database): Promise<Deployment[]>
+  getDeploymentsByHash(hash: string, task?: Database): Promise<EntityByHash>
   getAllFailedDeployments(): Promise<FailedDeployment[]>
   getPointerChanges(
     filters?: PointerChangesFilters,

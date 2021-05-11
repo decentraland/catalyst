@@ -233,24 +233,15 @@ export class DeploymentsRepository {
     })
   }
 
-  async getDeploymentByHash(contentHash: string) {
-    return this.db.map(
+  async getDeploymentByHash(contentHash: string): Promise<{ entityId: string }> {
+    return this.db.one(
       `SELECT ` +
         `deployment.entity_id, ` +
         `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' ` +
         `WHERE deployment.deleter_deployment IS NULL;`,
       [contentHash],
       (row) => ({
-        deploymentId: row.id,
-        entityType: row.entity_type,
-        entityId: row.entity_id,
-        pointers: row.entity_pointers,
-        entityTimestamp: row.entity_timestamp,
-        metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
-        deployerAddress: row.deployer_address,
-        version: row.version,
-        authChain: row.auth_chain,
-        localTimestamp: row.local_timestamp
+        entityId: row.entity_id
       })
     )
   }
