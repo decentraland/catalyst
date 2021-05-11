@@ -255,6 +255,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
   }
 
+  getDeploymentsByHash(hash: string) {
+    return this.service.getDeploymentsByHash(hash)
+  }
+
   private async validateDeployment(
     denylistRepo: DenylistRepository,
     files: ContentFile[],

@@ -236,17 +236,9 @@ export class DeploymentsRepository {
   async getDeploymentByHash(contentHash: string) {
     return this.db.map(
       `SELECT ` +
-        `deployment.id, ` +
-        `deployment.entity_type, ` +
         `deployment.entity_id, ` +
-        `deployment.entity_pointers, ` +
-        `date_part('epoch', deployment.entity_timestamp) * 1000 AS entity_timestamp, ` +
-        `deployment.entity_metadata, ` +
-        `deployment.deployer_address, ` +
-        `deployment.version, ` +
-        `deployment.auth_chain, ` +
-        `date_part('epoch', deployment.local_timestamp) * 1000 AS local_timestamp, ` +
-        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1';`,
+        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' ` +
+        `WHERE deployment.deleter_deployment IS NULL;`,
       [contentHash],
       (row) => ({
         deploymentId: row.id,
