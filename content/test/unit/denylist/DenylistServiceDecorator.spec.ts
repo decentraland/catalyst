@@ -343,7 +343,7 @@ describe('DenylistServiceDecorator', () => {
     const denylistedTargetsAsMap: Map<DenylistTargetId, DenylistTargetType> = new Map(
       denylistedTargets.map((target) => [target.getId(), target.getType()])
     )
-    const mockedDenylist: Denylist = mock(Denylist)
+    const mockedDenylist: Denylist = mock<Denylist>()
     when(mockedDenylist.areTargetsDenylisted(anything(), anything())).thenCall((_, targets: DenylistTarget[]) => {
       const result: Map<DenylistTargetType, Map<DenylistTargetId, boolean>> = new Map()
       targets.forEach((target) => {
