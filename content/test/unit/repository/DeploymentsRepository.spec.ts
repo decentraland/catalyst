@@ -413,7 +413,7 @@ describe('DeploymentRepository', () => {
     })
 
     it('should call the db with the expected parameters', () => {
-      const expectedQuery = `SELECT deployment.entity_id, FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' WHERE deployment.deleter_deployment IS NULL;`
+      const expectedQuery = `SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' WHERE deployment.deleter_deployment IS NULL;`
 
       verify(db.one(expectedQuery, deepEqual([hashToSearch]), anything())).once()
     })

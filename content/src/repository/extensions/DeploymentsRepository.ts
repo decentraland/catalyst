@@ -236,7 +236,7 @@ export class DeploymentsRepository {
   async getDeploymentByHash(contentHash: string): Promise<{ entityId: string }> {
     return this.db.one(
       `SELECT ` +
-        `deployment.entity_id, ` +
+        `deployment.entity_id ` +
         `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' ` +
         `WHERE deployment.deleter_deployment IS NULL;`,
       [contentHash],
