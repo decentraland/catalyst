@@ -50,12 +50,27 @@ export class DeploymentManager {
 
     const moreData = deploymentsWithExtra.length > curatedLimit
 
-    const deployments = await this.transformDeployments(
-      deploymentsRepository,
-      curatedLimit,
-      contentFilesRepository,
-      migrationDataRepository
-    )
+    const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
+    const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
+    const content = await contentFilesRepository.getContentFiles(deploymentIds)
+    const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
+
+    const deployments = deploymentsResult.map((result) => ({
+      entityType: result.entityType,
+      entityId: result.entityId,
+      pointers: result.pointers,
+      entityTimestamp: result.entityTimestamp,
+      content: content.get(result.deploymentId),
+      metadata: result.metadata,
+      deployedBy: result.deployerAddress,
+      auditInfo: {
+        version: result.version,
+        authChain: result.authChain,
+        localTimestamp: result.localTimestamp,
+        overwrittenBy: result.overwrittenBy,
+        migrationData: migrationData.get(result.deploymentId)
+      }
+    }))
 
     return {
       deployments: deployments,
@@ -73,35 +88,6 @@ export class DeploymentManager {
 
   async getDeploymentsByHash(deploymentsRepository: DeploymentsRepository, hash: string): Promise<EntityByHash> {
     return deploymentsRepository.getDeploymentByHash(hash)
-  }
-
-  private async transformDeployments(
-    deploymentsWithExtra,
-    curatedLimit: number,
-    contentFilesRepository: ContentFilesRepository,
-    migrationDataRepository: MigrationDataRepository
-  ): Promise<Deployment[]> {
-    const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
-    const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
-    const content = await contentFilesRepository.getContentFiles(deploymentIds)
-    const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
-
-    return deploymentsResult.map((result) => ({
-      entityType: result.entityType,
-      entityId: result.entityId,
-      pointers: result.pointers,
-      entityTimestamp: result.entityTimestamp,
-      content: content.get(result.deploymentId),
-      metadata: result.metadata,
-      deployedBy: result.deployerAddress,
-      auditInfo: {
-        version: result.version,
-        authChain: result.authChain,
-        localTimestamp: result.localTimestamp,
-        overwrittenBy: result.overwrittenBy,
-        migrationData: migrationData.get(result.deploymentId)
-      }
-    }))
   }
 
   async saveDeployment(
