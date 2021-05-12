@@ -3,6 +3,10 @@ export default class MockedDataBase {
     return Promise.resolve(null)
   }
 
+  public oneOrNone = (query: string, args: any, mapping: (row: any) => any, _?: any): Promise<any> => {
+    return Promise.resolve(null)
+  }
+
   public map = (query: string, args: any, mapping: (row: any) => any): Promise<any[]> => {
     return Promise.resolve([])
   }

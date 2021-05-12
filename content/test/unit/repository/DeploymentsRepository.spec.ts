@@ -408,14 +408,14 @@ describe('DeploymentRepository', () => {
       db = mock(MockedDataBase)
       repository = new DeploymentsRepository(instance(db) as any)
 
-      when(db.one(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
+      when(db.oneOrNone(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
       await repository.getActiveDeploymentByContentHash(hashToSearch)
     })
 
     it('should call the db with the expected parameters', () => {
-      const expectedQuery = `SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id WHERE content_hash='$1' AND deployment.deleter_deployment IS NULL;`
+      const expectedQuery = `SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`
 
-      verify(db.one(expectedQuery, deepEqual([hashToSearch]), anything())).once()
+      verify(db.oneOrNone(expectedQuery, deepEqual([hashToSearch]), anything())).once()
     })
   })
 })
