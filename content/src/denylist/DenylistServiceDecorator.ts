@@ -63,6 +63,9 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   /** If content is denylisted, then we will return that it is not available */
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
     const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes)
+    if (await denylistEmpty(this.denylist)) {
+      return availability
+    }
     const onlyAvailable: ContentFileHash[] = Array.from(availability.entries())
       .filter(([, available]) => available)
       .map(([hash]) => hash)
@@ -162,55 +165,58 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         allTargets.push(entityTarget, ...hashTargets.values(), ...pointerTargets.values())
       })
 
-      // Check which targets are denylisted
-      const queryResult = await this.denylist.areTargetsDenylisted(task.denylist, allTargets)
+      let sanitizedDeployments = deploymentHistory.deployments
 
-      // Filter out deployments with blacklisted pointers
-      const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
-        if (options?.filters?.pointers && options.filters.pointers.length > 0) {
-          // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
-          const intersection = options.filters.pointers.filter((pointer) => pointers.includes(pointer))
-          const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId)!
-          // Check if there is at least one pointer on the intersection that is not denylisted
-          const isAtLeastOnePointerNotDenylisted = intersection
-            .map((pointer) => pointerTargets.get(pointer)!)
-            .some((target) => !isTargetDenylisted(target, queryResult))
-          // If there is one pointer on the intersection that is not denylisted, then the entity shouldn't be filtered out
-          return isAtLeastOnePointerNotDenylisted
-        }
-        return true
-      })
+      if (!(await denylistEmpty(this.denylist))) {
+        // Check which targets are denylisted only if there items in denylist
+        const queryResult = await this.denylist.areTargetsDenylisted(task.denylist, allTargets)
 
-      // Perform sanitization
-      const sanitizedDeployments = filteredDeployments.map((deployment) => {
-        const { entityId } = deployment
-        const entityTarget = entityTargetsByEntity.get(entityId)!
-        const contentTargets = contentTargetsByEntity.get(entityId)!
-
-        const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
-        const denylistedContent = Array.from(contentTargets.entries())
-          .map(([hash, target]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
-          .filter(({ isDenylisted }) => isDenylisted)
-          .map(({ hash }) => hash)
-
-        const { auditInfo } = deployment
-        const result = {
-          ...deployment,
-          content: isEntityDenylisted ? undefined : deployment.content,
-          metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
-          auditInfo: {
-            ...auditInfo
+        // Filter out deployments with denylisted pointers
+        const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
+          if (options?.filters?.pointers && options.filters.pointers.length > 0) {
+            // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
+            const intersection = options.filters.pointers.filter((pointer) => pointers.includes(pointer))
+            const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId)!
+            // Check if there is at least one pointer on the intersection that is not denylisted
+            const isAtLeastOnePointerNotDenylisted = intersection
+              .map((pointer) => pointerTargets.get(pointer)!)
+              .some((target) => !isTargetDenylisted(target, queryResult))
+            // If there is one pointer on the intersection that is not denylisted, then the entity shouldn't be filtered out
+            return isAtLeastOnePointerNotDenylisted
           }
-        }
-        if (denylistedContent.length > 0) {
-          result.auditInfo.denylistedContent = denylistedContent
-        }
-        if (isEntityDenylisted) {
-          result.auditInfo.isDenylisted = true
-        }
-        return result
-      })
+          return true
+        })
 
+        // Perform sanitization
+        sanitizedDeployments = filteredDeployments.map((deployment) => {
+          const { entityId } = deployment
+          const entityTarget = entityTargetsByEntity.get(entityId)!
+          const contentTargets = contentTargetsByEntity.get(entityId)!
+
+          const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
+          const denylistedContent = Array.from(contentTargets.entries())
+            .map(([hash, target]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
+            .filter(({ isDenylisted }) => isDenylisted)
+            .map(({ hash }) => hash)
+
+          const { auditInfo } = deployment
+          const result = {
+            ...deployment,
+            content: isEntityDenylisted ? undefined : deployment.content,
+            metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
+            auditInfo: {
+              ...auditInfo
+            }
+          }
+          if (denylistedContent.length > 0) {
+            result.auditInfo.denylistedContent = denylistedContent
+          }
+          if (isEntityDenylisted) {
+            result.auditInfo.isDenylisted = true
+          }
+          return result
+        })
+      }
       return {
         ...deploymentHistory,
         deployments: sanitizedDeployments
@@ -305,7 +311,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     elements: T[],
     targetBuild: (element: T) => DenylistTarget
   ): Promise<T[]> {
-    if (denylistEmpty(this.denylist)) {
+    if (await denylistEmpty(this.denylist)) {
       return elements
     }
 
@@ -318,7 +324,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   /** When an entity is denylisted, we don't want to show its content and metadata  */
   private async sanitizeEntities(denylistRepo: DenylistRepository, entities: Entity[]): Promise<Entity[]> {
-    if (denylistEmpty(this.denylist)) {
+    if (await denylistEmpty(this.denylist)) {
       return entities
     }
 
@@ -347,7 +353,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   /** Return true if any of the given targets is denylisted */
   private async areDenylisted(denylistRepo: DenylistRepository, ...targets: DenylistTarget[]): Promise<boolean> {
-    if (denylistEmpty(this.denylist)) {
+    if (await denylistEmpty(this.denylist)) {
       return false
     }
 
@@ -358,9 +364,9 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 }
 
-function denylistEmpty(denylist: Denylist): boolean {
+async function denylistEmpty(denylist: Denylist): Promise<boolean> {
   const allDenylisted = await denylist.getAllDenylistedTargets()
-  return allDenylisted.length === 0
+  return !allDenylisted || allDenylisted.length === 0
 }
 
 function isTargetDenylisted(
