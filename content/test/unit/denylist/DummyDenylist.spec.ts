@@ -1,8 +1,8 @@
 import { DenylistMetadata, DenylistSignatureValidationStatus } from '@katalyst/content/denylist/Denylist'
-import { DenylistTarget } from '@katalyst/content/denylist/DenylistTarget'
+import { DenylistTarget, DenylistTargetId, DenylistTargetType } from '@katalyst/content/denylist/DenylistTarget'
 import { DummyDenylist } from '@katalyst/content/denylist/DummyDenylist'
 import { DenylistRepository } from '@katalyst/content/repository/extensions/DenylistRepository'
-import { mock } from 'ts-mockito'
+import { instance, mock, when } from 'ts-mockito'
 
 describe('DummyDenylist', () => {
   const dummyDenylist: DummyDenylist = new DummyDenylist()
@@ -28,15 +28,22 @@ describe('DummyDenylist', () => {
     expect(getAllDenylistedTargetsResult).toEqual([])
   })
 
-  it(`Given a DummyDenylist, when isTargetDenylisted, then it returns error status`, async () => {
+  it(`Given a DummyDenylist, when isTargetDenylisted, then it returns false`, async () => {
     const isTargetDenylistedResult = await dummyDenylist.isTargetDenylisted(target)
 
     expect(isTargetDenylistedResult).toBeFalsy()
   })
 
-  it(`Given a DummyDenylist, when areTargetsDenylisted, then it returns error status`, async () => {
-    const areTargetsDenylistedResult = await dummyDenylist.areTargetsDenylisted(denylistRepository, [target])
+  it(`Given a DummyDenylist, when areTargetsDenylisted, then it returns a false map`, async () => {
+    when(target.getType()).thenReturn(DenylistTargetType.ADDRESS)
+    when(target.getId()).thenReturn('id')
+    const areTargetsDenylistedResult = await dummyDenylist.areTargetsDenylisted(denylistRepository, [instance(target)])
 
-    expect(areTargetsDenylistedResult).toEqual(new Map())
+    // Build expected result
+    const expectedResult: Map<DenylistTargetType, Map<DenylistTargetId, boolean>> = new Map()
+    expectedResult.set(DenylistTargetType.ADDRESS, new Map())
+    expectedResult.get(DenylistTargetType.ADDRESS)?.set('id', false)
+
+    expect(areTargetsDenylistedResult).toEqual(expectedResult)
   })
 })

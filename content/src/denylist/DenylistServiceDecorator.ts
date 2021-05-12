@@ -60,7 +60,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
   }
 
-  /** Is content is denylisted, then we will return that it is not available */
+  /** If content is denylisted, then we will return that it is not available */
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
     const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes)
     const onlyAvailable: ContentFileHash[] = Array.from(availability.entries())
@@ -305,6 +305,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     elements: T[],
     targetBuild: (element: T) => DenylistTarget
   ): Promise<T[]> {
+    if (denylistEmpty(this.denylist)) {
+      return elements
+    }
+
     const elementToTarget: Map<T, DenylistTarget> = new Map(elements.map((element) => [element, targetBuild(element)]))
     const areDenylisted = await this.denylist.areTargetsDenylisted(denylistRepo, Array.from(elementToTarget.values()))
     return Array.from(elementToTarget.entries())
@@ -314,6 +318,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   /** When an entity is denylisted, we don't want to show its content and metadata  */
   private async sanitizeEntities(denylistRepo: DenylistRepository, entities: Entity[]): Promise<Entity[]> {
+    if (denylistEmpty(this.denylist)) {
+      return entities
+    }
+
     // Build the target per entity
     const entityToTarget: Map<Entity, DenylistTarget> = new Map(
       entities.map((entity) => [entity, buildEntityTarget(entity.type, entity.id)])
@@ -339,11 +347,20 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   /** Return true if any of the given targets is denylisted */
   private async areDenylisted(denylistRepo: DenylistRepository, ...targets: DenylistTarget[]): Promise<boolean> {
+    if (denylistEmpty(this.denylist)) {
+      return false
+    }
+
     const result = await this.denylist.areTargetsDenylisted(denylistRepo, targets)
     return Array.from(result.values())
       .map((subMap) => Array.from(subMap.values()))
       .reduce((prev, current) => prev || current.some((denylisted) => denylisted), false)
   }
+}
+
+function denylistEmpty(denylist: Denylist): boolean {
+  const allDenylisted = await denylist.getAllDenylistedTargets()
+  return allDenylisted.length === 0
 }
 
 function isTargetDenylisted(
