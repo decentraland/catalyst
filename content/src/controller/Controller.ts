@@ -378,7 +378,7 @@ export class Controller {
     const result = await this.service.getActiveDeploymentByContentHash(hashId)
 
     if (result == null) {
-      res.status(404).send('The entity was not found')
+      res.status(404).send({ error: 'The entity was not found' })
       return
     }
 
