@@ -1,4 +1,5 @@
 import { Database } from '@katalyst/content/repository/Database'
+import { EntityByHash } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
 import {
   AuditInfo,
@@ -12,7 +13,6 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
@@ -233,16 +233,19 @@ export class DeploymentsRepository {
     })
   }
 
-  async getActiveDeploymentByContentHash(contentHash: string): Promise<{ entityId: string }> {
-    return this.db.one(
+  async getActiveDeploymentByContentHash(contentHash: string): Promise<EntityByHash> {
+    return this.db.oneOrNone(
       `SELECT ` +
         `deployment.entity_id ` +
         `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +
         `WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`,
       [contentHash],
-      (row) => ({
-        entityId: row.entity_id
-      })
+      (row) =>
+        row != null
+          ? {
+              entityId: row.entity_id
+            }
+          : null
     )
   }
 }

@@ -375,7 +375,14 @@ export class Controller {
     // Path: /contents/:hashId/active-entity
     const hashId = req.params.hashId
 
-    res.json(await this.service.getActiveDeploymentByContentHash(hashId))
+    const result = await this.service.getActiveDeploymentByContentHash(hashId)
+
+    if (result == null) {
+      res.status(404).send('The entity was not found')
+      return
+    }
+
+    res.json(result)
   }
 
   async getDeployments(req: express.Request, res: express.Response) {
