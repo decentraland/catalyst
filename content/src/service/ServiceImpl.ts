@@ -469,7 +469,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     )
   }
 
-  getDeploymentsByHash(hash: string, task?: Database): Promise<EntityByHash> {
+  getActiveDeploymentByContentHash(hash: string, task?: Database): Promise<EntityByHash> {
     return this.repository.reuseIfPresent(task, (db) =>
       db.taskIf((task) => this.deploymentManager.getDeploymentsByHash(task.deployments, hash))
     )

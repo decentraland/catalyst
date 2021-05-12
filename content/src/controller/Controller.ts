@@ -370,13 +370,13 @@ export class Controller {
     return '?' + nextQueryParams
   }
 
-  async getDeploymentsByHash(req: express.Request, res: express.Response) {
+  async getActiveDeploymentByContentHash(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments/:contentHash
 
     const contentHash = req.params.contentHash
 
-    return this.service.getDeploymentsByHash(contentHash)
+    return this.service.getActiveDeploymentByContentHash(contentHash)
   }
 
   async getDeployments(req: express.Request, res: express.Response) {
