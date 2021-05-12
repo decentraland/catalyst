@@ -372,11 +372,11 @@ export class Controller {
 
   async getActiveDeploymentByContentHash(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /deployments/:contentHash
+    // Path: /contents/:hashId/active-entity
 
-    const contentHash = req.params.contentHash
+    const hashId = req.params.contentHash
 
-    return this.service.getActiveDeploymentByContentHash(contentHash)
+    res.send(this.service.getActiveDeploymentByContentHash(hashId))
   }
 
   async getDeployments(req: express.Request, res: express.Response) {

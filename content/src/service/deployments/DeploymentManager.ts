@@ -86,7 +86,10 @@ export class DeploymentManager {
     }
   }
 
-  async getDeploymentsByHash(deploymentsRepository: DeploymentsRepository, hash: string): Promise<EntityByHash> {
+  async getActiveDeploymentByContentHash(
+    deploymentsRepository: DeploymentsRepository,
+    hash: string
+  ): Promise<EntityByHash> {
     return deploymentsRepository.getDeploymentByHash(hash)
   }
 

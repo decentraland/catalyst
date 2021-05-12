@@ -4,8 +4,6 @@ Please avoid using this endpoint, getting to `/history` retrieves the same infor
 
 **URL** : `/history`
 
-<!-- **URL Parameters** : `pk=[integer]` where `pk` is the ID of the Account on the server. -->
-
 **Method** : `GET`
 
 **Auth required** : NO
