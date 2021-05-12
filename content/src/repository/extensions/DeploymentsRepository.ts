@@ -237,8 +237,8 @@ export class DeploymentsRepository {
     return this.db.one(
       `SELECT ` +
         `deployment.entity_id ` +
-        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id where content_hash='$1' ` +
-        `WHERE deployment.deleter_deployment IS NULL;`,
+        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +
+        `WHERE content_hash='$1' AND deployment.deleter_deployment IS NULL;`,
       [contentHash],
       (row) => ({
         entityId: row.entity_id
