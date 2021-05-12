@@ -7,16 +7,16 @@ import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
-fdescribe('Integration - Get Active Entity By Content Hash', () => {
+describe('Integration - Get Active Entity By Content Hash', () => {
   const testEnv = loadStandaloneTestEnvironment()
   let server: TestServer
   const fetcher = new Fetcher()
 
   beforeEach(async () => {
     server = await testEnv
-      .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .andBuild()
+   .configServer()
+   .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
+   .andBuild()
     await server.start()
   })
 
@@ -46,7 +46,6 @@ fdescribe('Integration - Get Active Entity By Content Hash', () => {
 
   async function fetchActiveEntity(contentHash: string): Promise<EntityByHash> {
     const url = server.getAddress() + `/contents/${contentHash}/active-entity`
-    console.log(url)
     return fetcher.fetchJson(url)
   }
 })

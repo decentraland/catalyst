@@ -4,7 +4,7 @@ Get the entity id of the deployment associated with a content hash
 
 **URL** : `/contents/:hashId/active-entity`
 
-<!-- **URL Parameters** : `hashId=[integer]` where `hashId` is the ID of the Hash on the server. -->
+**URL Parameters** : `hashId=[integer]` where `hashId` is the ID of the Hash on the server.
 
 **Method** : `GET`
 
