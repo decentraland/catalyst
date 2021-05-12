@@ -373,10 +373,9 @@ export class Controller {
   async getActiveDeploymentByContentHash(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /contents/:hashId/active-entity
+    const hashId = req.params.hashId
 
-    const hashId = req.params.contentHash
-
-    res.send(this.service.getActiveDeploymentByContentHash(hashId))
+    res.json(await this.service.getActiveDeploymentByContentHash(hashId))
   }
 
   async getDeployments(req: express.Request, res: express.Response) {

@@ -409,7 +409,7 @@ describe('DeploymentRepository', () => {
       repository = new DeploymentsRepository(instance(db) as any)
 
       when(db.one(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
-      await repository.getDeploymentByHash(hashToSearch)
+      await repository.getActiveDeploymentByContentHash(hashToSearch)
     })
 
     it('should call the db with the expected parameters', () => {

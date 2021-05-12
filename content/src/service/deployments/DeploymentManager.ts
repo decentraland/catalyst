@@ -90,7 +90,7 @@ export class DeploymentManager {
     deploymentsRepository: DeploymentsRepository,
     hash: string
   ): Promise<EntityByHash> {
-    return deploymentsRepository.getDeploymentByHash(hash)
+    return deploymentsRepository.getActiveDeploymentByContentHash(hash)
   }
 
   async saveDeployment(

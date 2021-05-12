@@ -233,12 +233,12 @@ export class DeploymentsRepository {
     })
   }
 
-  async getDeploymentByHash(contentHash: string): Promise<{ entityId: string }> {
+  async getActiveDeploymentByContentHash(contentHash: string): Promise<{ entityId: string }> {
     return this.db.one(
       `SELECT ` +
         `deployment.entity_id ` +
         `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +
-        `WHERE content_hash='$1' AND deployment.deleter_deployment IS NULL;`,
+        `WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`,
       [contentHash],
       (row) => ({
         entityId: row.entity_id
