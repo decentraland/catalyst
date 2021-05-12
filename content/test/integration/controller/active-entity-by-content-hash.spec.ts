@@ -1,6 +1,4 @@
-import { Bean } from '@katalyst/content/Environment'
 import { EntityByHash } from '@katalyst/content/service/deployments/DeploymentManager'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { Fetcher } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
@@ -13,10 +11,7 @@ describe('Integration - Get Active Entity By Content Hash', () => {
   const fetcher = new Fetcher()
 
   beforeEach(async () => {
-    server = await testEnv
-   .configServer()
-   .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
-   .andBuild()
+    server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
     await server.start()
   })
 
@@ -46,6 +41,7 @@ describe('Integration - Get Active Entity By Content Hash', () => {
 
   async function fetchActiveEntity(contentHash: string): Promise<EntityByHash> {
     const url = server.getAddress() + `/contents/${contentHash}/active-entity`
+
     return fetcher.fetchJson(url)
   }
 })
