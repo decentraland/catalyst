@@ -1,3 +1,4 @@
+import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { EntityByHash } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Fetcher } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
