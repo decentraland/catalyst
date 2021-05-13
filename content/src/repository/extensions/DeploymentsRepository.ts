@@ -1,5 +1,4 @@
 import { Database } from '@katalyst/content/repository/Database'
-import { EntityByHash } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
 import {
   AuditInfo,
@@ -233,19 +232,14 @@ export class DeploymentsRepository {
     })
   }
 
-  async getActiveDeploymentByContentHash(contentHash: string): Promise<EntityByHash[]> {
+  async getActiveDeploymentByContentHash(contentHash: string): Promise<EntityId[]> {
     return this.db.map(
       `SELECT ` +
         `deployment.entity_id ` +
         `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +
         `WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`,
       [contentHash],
-      (row) =>
-        row != null
-          ? {
-              entityId: row.entity_id
-            }
-          : null
+      (row) => row.entity_id
     )
   }
 }

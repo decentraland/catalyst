@@ -89,7 +89,7 @@ export class DeploymentManager {
   async getActiveDeploymentByContentHash(
     deploymentsRepository: DeploymentsRepository,
     hash: string
-  ): Promise<EntityByHash[]> {
+  ): Promise<EntityId[]> {
     return deploymentsRepository.getActiveDeploymentByContentHash(hash)
   }
 
@@ -219,7 +219,3 @@ export type DeploymentOptions = {
 export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
 
 export type PointerChanges = Map<Pointer, { before: EntityId | undefined; after: EntityId | undefined }>
-
-export type EntityByHash = {
-  entityId: string
-} | null

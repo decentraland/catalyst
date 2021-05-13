@@ -1,8 +1,6 @@
 import { EnvironmentConfig } from '@katalyst/content/Environment'
-import { EntityByHash } from '@katalyst/content/service/deployments/DeploymentManager'
-import { Fetcher } from 'dcl-catalyst-commons'
+import { EntityId, Fetcher } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
-import { deepEqual } from 'ts-mockito'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
@@ -44,10 +42,10 @@ describe('Integration - Get Active Entity By Content Hash', () => {
 
     const result = await fetchActiveEntity(deployResult.entity.content?.get('some-binary-file.png') || '')
 
-    expect(result?.entityId).toEqual(deepEqual[(deployResult.entity.id, secondDeployResult.entity.id)])
+    expect(result).toEqual([deployResult.entity.id, secondDeployResult.entity.id])
   })
 
-  async function fetchActiveEntity(contentHash: string): Promise<EntityByHash> {
+  async function fetchActiveEntity(contentHash: string): Promise<EntityId> {
     const url = server.getAddress() + `/contents/${contentHash}/active-entity`
 
     return fetcher.fetchJson(url)
