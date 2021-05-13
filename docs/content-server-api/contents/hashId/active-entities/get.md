@@ -4,7 +4,7 @@ Get the entity ids of the deployments associated with a content hash
 
 **URL** : `/contents/:hashId/active-entities`
 
-**URL Parameters** : `hashId=[integer]` where `hashId` is the ID of the Hash on the server.
+**URL Parameters** : `hashId=[string]` where `hashId` is the ID of the Hash on the server.
 
 **Method** : `GET`
 
@@ -22,6 +22,6 @@ Get the entity ids of the deployments associated with a content hash
 
 ```json
 
-[{ "entityId": "QmZbAEFPF7LSq9xVZTCAZoHPNV1QX7YiSbKL2g694EA1r7"}, { "entityId": "QmZbAEFPF7LSq9xVZTCAZoHPNV1QX7YiSbKL2g881MJLj8"}]
+["QmZbAEFPF7LSq9xVZTCAZoHPNV1QX7YiSbKL2g694EA1r7", "QmZbAEFPF7LSq9xVZTCAZoHPNV1QX7YiSbKL2g881MJLj8"]
 
 ```
