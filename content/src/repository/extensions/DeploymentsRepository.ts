@@ -232,7 +232,7 @@ export class DeploymentsRepository {
     })
   }
 
-  async getActiveDeploymentByContentHash(contentHash: string): Promise<EntityId[]> {
+  async getActiveDeploymentsByContentHash(contentHash: string): Promise<EntityId[]> {
     return this.db.map(
       `SELECT ` +
         `deployment.entity_id ` +

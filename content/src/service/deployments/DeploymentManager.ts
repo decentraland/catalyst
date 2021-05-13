@@ -86,11 +86,11 @@ export class DeploymentManager {
     }
   }
 
-  async getActiveDeploymentByContentHash(
+  async getActiveDeploymentsByContentHash(
     deploymentsRepository: DeploymentsRepository,
     hash: string
   ): Promise<EntityId[]> {
-    return deploymentsRepository.getActiveDeploymentByContentHash(hash)
+    return deploymentsRepository.getActiveDeploymentsByContentHash(hash)
   }
 
   async saveDeployment(
