@@ -233,8 +233,8 @@ export class DeploymentsRepository {
     })
   }
 
-  async getActiveDeploymentByContentHash(contentHash: string): Promise<EntityByHash> {
-    return this.db.oneOrNone(
+  async getActiveDeploymentByContentHash(contentHash: string): Promise<EntityByHash[]> {
+    return this.db.map(
       `SELECT ` +
         `deployment.entity_id ` +
         `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +

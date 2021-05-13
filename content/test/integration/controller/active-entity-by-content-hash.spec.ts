@@ -2,6 +2,7 @@ import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { EntityByHash } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Fetcher } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
+import { deepEqual } from 'ts-mockito'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
@@ -32,12 +33,18 @@ describe('Integration - Get Active Entity By Content Hash', () => {
       contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
 
+    const secondDeployResult = await buildDeployData(['0,3', '0,2'], {
+      metadata: 'this is just some metadata',
+      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+    })
+
     // Deploy entity
     await server.deploy(deployResult.deployData)
+    await server.deploy(secondDeployResult.deployData)
 
     const result = await fetchActiveEntity(deployResult.entity.content?.get('some-binary-file.png') || '')
 
-    expect(result?.entityId).toEqual(deployResult.entity.id)
+    expect(result?.entityId).toEqual(deepEqual[(deployResult.entity.id, secondDeployResult.entity.id)])
   })
 
   async function fetchActiveEntity(contentHash: string): Promise<EntityByHash> {

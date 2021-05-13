@@ -89,7 +89,7 @@ export class DeploymentManager {
   async getActiveDeploymentByContentHash(
     deploymentsRepository: DeploymentsRepository,
     hash: string
-  ): Promise<EntityByHash> {
+  ): Promise<EntityByHash[]> {
     return deploymentsRepository.getActiveDeploymentByContentHash(hash)
   }
 
