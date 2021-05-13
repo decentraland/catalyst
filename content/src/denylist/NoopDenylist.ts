@@ -7,7 +7,7 @@ import {
 } from './Denylist'
 import { DenylistTarget, DenylistTargetId, DenylistTargetType } from './DenylistTarget'
 
-export class DummyDenylist extends Denylist {
+export class NoopDenylist extends Denylist {
   async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
     return { status: DenylistSignatureValidationStatus.ERROR }
   }

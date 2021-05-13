@@ -24,7 +24,7 @@ import {
 import { EntityVersion, Pointer } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { random } from 'faker'
-import { anything, instance, mock, verify, when } from 'ts-mockito'
+import { anything, instance, mock, when } from 'ts-mockito'
 
 describe('DenylistServiceDecorator', () => {
   const P1: Pointer = 'p1'
@@ -64,27 +64,6 @@ describe('DenylistServiceDecorator', () => {
       .withEntity(entity1)
       .withEntity(entity2)
       .build()
-  })
-
-  it(`When the denylist is not empty, then areTargetsDenylisted is invoked`, async () => {
-    const denylist = mockDenylistWith(entity2Target)
-    const decorator = getDecorator(instance(denylist))
-
-    await decorator.getDeployments()
-
-    verify(denylist.getAllDenylistedTargets()).once()
-    verify(denylist.areTargetsDenylisted(anything(), anything())).once()
-  })
-
-  it(`When the denylist is empty, then areTargetsDenylisted is not invoked`, async () => {
-    const denylist = mock<Denylist>()
-    when(denylist.getAllDenylistedTargets()).thenResolve([])
-    const decorator = getDecorator(instance(denylist))
-
-    await decorator.getDeployments()
-
-    verify(denylist.getAllDenylistedTargets()).once()
-    verify(denylist.areTargetsDenylisted(anything(), anything())).never()
   })
 
   it(`When an entity is not denylisted, then the audit info is not modified`, async () => {

@@ -16,6 +16,7 @@ import {
 import { DenylistTarget, DenylistTargetId, DenylistTargetType } from './DenylistTarget'
 
 export class ActiveDenylist extends Denylist {
+  private size: number = 0
   constructor(
     private readonly repository: Repository,
     private readonly authenticator: ContentAuthenticator,
@@ -46,6 +47,7 @@ export class ActiveDenylist extends Denylist {
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
+    this.size++
     return { status: DenylistSignatureValidationStatus.OK }
   }
 
@@ -70,14 +72,21 @@ export class ActiveDenylist extends Denylist {
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
+    this.size--
     return { status: DenylistSignatureValidationStatus.OK }
   }
 
-  getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
+  async getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
+    if (this.size === 0) {
+      return []
+    }
     return this.repository.run((db) => db.denylist.getAllDenylistedTargets())
   }
 
   async isTargetDenylisted(target: DenylistTarget): Promise<boolean> {
+    if (this.size === 0) {
+      return false
+    }
     const map = await this.repository.run((db) => this.areTargetsDenylisted(db.denylist, [target]))
     return map.get(target.getType())?.get(target.getId()) ?? false
   }
@@ -91,7 +100,10 @@ export class ActiveDenylist extends Denylist {
     }
 
     // Get only denylisted
-    const denylisted = await denylistRepo.getDenylistedTargets(targets)
+    let denylisted = new Map()
+    if (this.size != 0) {
+      denylisted = await denylistRepo.getDenylistedTargets(targets)
+    }
 
     // Build result
     const result: Map<DenylistTargetType, Map<DenylistTargetId, boolean>> = new Map()

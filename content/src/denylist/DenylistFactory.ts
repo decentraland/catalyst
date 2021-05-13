@@ -1,12 +1,12 @@
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
 import { ActiveDenylist } from './ActiveDenylist'
 import { Denylist } from './Denylist'
-import { DummyDenylist } from './DummyDenylist'
+import { NoopDenylist } from './NoopDenylist'
 
 export class DenylistFactory {
   static create(env: Environment): Denylist {
     if (env.getConfig(EnvironmentConfig.DISABLE_DENYLIST)) {
-      return new DummyDenylist()
+      return new NoopDenylist()
     }
 
     return new ActiveDenylist(
