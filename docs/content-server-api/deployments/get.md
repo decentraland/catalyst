@@ -4,8 +4,6 @@ List all deployments stored in the content server
 
 **URL** : `/deployments`
 
-<!-- **URL Parameters** : `pk=[integer]` where `pk` is the ID of the Account on the server. -->
-
 **Method** : `GET`
 
 **Auth required** : NO

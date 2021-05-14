@@ -370,6 +370,21 @@ export class Controller {
     return '?' + nextQueryParams
   }
 
+  async getActiveDeploymentsByContentHash(req: express.Request, res: express.Response) {
+    // Method: GET
+    // Path: /contents/:hashId/active-entities
+    const hashId = req.params.hashId
+
+    const result = await this.service.getActiveDeploymentsByContentHash(hashId)
+
+    if (result.length === 0) {
+      res.status(404).send({ error: 'The entity was not found' })
+      return
+    }
+
+    res.json(result)
+  }
+
   async getDeployments(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments
