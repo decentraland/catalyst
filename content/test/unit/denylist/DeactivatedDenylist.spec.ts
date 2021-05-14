@@ -1,8 +1,7 @@
 import { DeactivatedDenylist } from '@katalyst/content/denylist/DeactivatedDenylist'
-import { DenylistMetadata } from '@katalyst/content/denylist/Denylist'
+import { DenylistMetadata, DenylistOperationStatus, DenylistValidationType } from '@katalyst/content/denylist/Denylist'
 import { DenylistTarget, DenylistTargetId, DenylistTargetType } from '@katalyst/content/denylist/DenylistTarget'
 import { DenylistRepository } from '@katalyst/content/repository/extensions/DenylistRepository'
-import { assertPromiseIsRejected } from '@katalyst/test-helpers/PromiseAssertions'
 import { instance, mock, when } from 'ts-mockito'
 
 describe('DeactivatedDenylist', () => {
@@ -11,12 +10,20 @@ describe('DeactivatedDenylist', () => {
   const metadata: DenylistMetadata = { timestamp: 1, authChain: [] }
   const denylistRepository: DenylistRepository = mock(DenylistRepository)
 
-  it(`Given a DeactivatedDenylist, when addTarget, then it throws an error`, async () => {
-    await assertPromiseIsRejected(() => deactivatedDenylist.addTarget(target, metadata))
+  it(`Given a DeactivatedDenylist, when addTarget, then it returns an error`, async () => {
+    const result = await deactivatedDenylist.addTarget(target, metadata)
+
+    expect(result.status).toEqual(DenylistOperationStatus.ERROR)
+    expect(result.type).toEqual(DenylistValidationType.CONFIGURATION)
+    expect(result.message).toEqual('Enable target from denylist is not activated.')
   })
 
-  it(`Given a DeactivatedDenylist, when removeTarget, then it throws an error`, async () => {
-    await assertPromiseIsRejected(() => deactivatedDenylist.removeTarget(target, metadata))
+  it(`Given a DeactivatedDenylist, when removeTarget, then it returns an error`, async () => {
+    const result = await deactivatedDenylist.removeTarget(target, metadata)
+
+    expect(result.status).toEqual(DenylistOperationStatus.ERROR)
+    expect(result.type).toEqual(DenylistValidationType.CONFIGURATION)
+    expect(result.message).toEqual('Remove target from denylist is not activated.')
   })
 
   it(`Given a DeactivatedDenylist, when getAllDenylistedTargets, then it returns empty array`, async () => {

@@ -9,8 +9,9 @@ import {
   Denylist,
   DenylistAction,
   DenylistMetadata,
-  DenylistSignatureValidationResult,
-  DenylistSignatureValidationStatus,
+  DenylistOperationResult,
+  DenylistOperationStatus,
+  DenylistValidationType,
   isErrorOperation
 } from './Denylist'
 import { DenylistTarget, DenylistTargetId, DenylistTargetType } from './DenylistTarget'
@@ -26,9 +27,9 @@ export class ActiveDenylist extends Denylist {
     super()
   }
 
-  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
+  async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult> {
     // Validate blocker and signature
-    const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
+    const operationResult: DenylistOperationResult = await this.validateSignature(
       DenylistAction.ADDITION,
       target,
       metadata
@@ -48,12 +49,12 @@ export class ActiveDenylist extends Denylist {
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
     this.empty = false
-    return { status: DenylistSignatureValidationStatus.OK }
+    return { status: DenylistOperationStatus.OK, type: DenylistValidationType.SIGNATURE_VALIDATION }
   }
 
-  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
+  async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult> {
     // Validate blocker and signature
-    const operationResult: DenylistSignatureValidationResult = await this.validateSignature(
+    const operationResult: DenylistOperationResult = await this.validateSignature(
       DenylistAction.REMOVAL,
       target,
       metadata
@@ -73,7 +74,7 @@ export class ActiveDenylist extends Denylist {
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
     this.empty = (await this.repository.run((db) => db.denylist.getAllDenylistedTargets())).length === 0
-    return { status: DenylistSignatureValidationStatus.OK }
+    return { status: DenylistOperationStatus.OK, type: DenylistValidationType.SIGNATURE_VALIDATION }
   }
 
   async getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
@@ -124,7 +125,7 @@ export class ActiveDenylist extends Denylist {
     action: DenylistAction,
     target: DenylistTarget,
     metadata: DenylistMetadata
-  ): Promise<DenylistSignatureValidationResult> {
+  ): Promise<DenylistOperationResult> {
     const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
     const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
 
@@ -134,11 +135,13 @@ export class ActiveDenylist extends Denylist {
         messageToSign,
         () =>
           resolve({
-            status: DenylistSignatureValidationStatus.OK
+            status: DenylistOperationStatus.OK,
+            type: DenylistValidationType.SIGNATURE_VALIDATION
           }),
         (errorMessage) =>
           resolve({
-            status: DenylistSignatureValidationStatus.ERROR,
+            status: DenylistOperationStatus.ERROR,
+            type: DenylistValidationType.SIGNATURE_VALIDATION,
             message: `Failed to authenticate the blocker. Error was: ${errorMessage}`
           }),
         (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),

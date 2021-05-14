@@ -18,15 +18,9 @@ export abstract class Denylist {
     return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
-  abstract async addTarget(
-    target: DenylistTarget,
-    metadata: DenylistMetadata
-  ): Promise<DenylistSignatureValidationResult>
+  abstract async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult>
 
-  abstract async removeTarget(
-    target: DenylistTarget,
-    metadata: DenylistMetadata
-  ): Promise<DenylistSignatureValidationResult>
+  abstract async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult>
 
   abstract getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]>
 
@@ -48,20 +42,26 @@ export enum DenylistAction {
   REMOVAL = 'removal'
 }
 
-export enum DenylistSignatureValidationStatus {
+export enum DenylistValidationType {
+  SIGNATURE_VALIDATION,
+  CONFIGURATION
+}
+
+export enum DenylistOperationStatus {
   OK,
   ERROR
 }
 
-export type DenylistSignatureValidationResult = {
-  status: DenylistSignatureValidationStatus
+export type DenylistOperationResult = {
+  type: DenylistValidationType
+  status: DenylistOperationStatus
   message?: string
 }
 
-export function isSuccessfulOperation(operation: DenylistSignatureValidationResult): boolean {
-  return operation.status === DenylistSignatureValidationStatus.OK
+export function isSuccessfulOperation(operation: DenylistOperationResult): boolean {
+  return operation.status === DenylistOperationStatus.OK
 }
 
-export function isErrorOperation(operation: DenylistSignatureValidationResult): boolean {
+export function isErrorOperation(operation: DenylistOperationResult): boolean {
   return !isSuccessfulOperation(operation)
 }
