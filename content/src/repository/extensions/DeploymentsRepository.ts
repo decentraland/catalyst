@@ -12,7 +12,6 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
@@ -231,6 +230,17 @@ export class DeploymentsRepository {
       )
       return transaction.batch(updates)
     })
+  }
+
+  async getActiveDeploymentsByContentHash(contentHash: string): Promise<EntityId[]> {
+    return this.db.map(
+      `SELECT ` +
+        `deployment.entity_id ` +
+        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +
+        `WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`,
+      [contentHash],
+      (row) => row.entity_id
+    )
   }
 }
 

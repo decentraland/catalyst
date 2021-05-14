@@ -5,6 +5,7 @@
 * Audit: `GET /audit/:type/:entityId`
 * Challenge: `GET /challenge`
 * Contents per hashId: `GET /contents/:hashId`
+* [Get active entity ids per hashId](contents/hashId/active-entities/get.md) : `GET /contents/:hashId/active-entities`
 * Available Content: `GET /available-content`
 * Denylist: `GET /denylist`
 * Put Denylist: `PUT /denylist/:type/:id`

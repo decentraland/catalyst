@@ -5,10 +5,10 @@ import { MigrationBuilder } from 'node-pg-migrate'
  */
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  pgm.sql(`ALTER TABLE IF EXISTS deployments DROP COLUMN origin_server_url ;`)
-  pgm.sql(`ALTER TABLE IF EXISTS deployments DROP COLUMN origin_timestamp;`)
-  pgm.sql(`ALTER TABLE IF EXISTS failed_deployments DROP COLUMN origin_server_url;`)
-  pgm.sql(`ALTER TABLE IF EXISTS failed_deployments DROP COLUMN origin_timestamp;`)
+  pgm.sql(`ALTER TABLE deployments DROP COLUMN IF EXISTS origin_server_url ;`)
+  pgm.sql(`ALTER TABLE deployments DROP COLUMN IF EXISTS origin_timestamp;`)
+  pgm.sql(`ALTER TABLE failed_deployments DROP COLUMN IF EXISTS origin_server_url;`)
+  pgm.sql(`ALTER TABLE failed_deployments DROP COLUMN IF EXISTS origin_timestamp;`)
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
