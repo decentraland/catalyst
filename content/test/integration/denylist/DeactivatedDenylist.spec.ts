@@ -1,24 +1,19 @@
-import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
+import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { assertPromiseIsRejected } from '@katalyst/test-helpers/PromiseAssertions'
-import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, createIdentity } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
-describe('Integration - NoopDenylist', () => {
+describe('Integration - DeactivatedDenylist', () => {
   const metadata: string = 'Some metadata'
   const decentralandIdentity = createIdentity()
-  const ownerIdentity = createIdentity()
   const testEnv = loadStandaloneTestEnvironment()
   let server: TestServer
 
   beforeEach(async () => {
     server = await testEnv
       .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .withBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withAddress(ownerIdentity.address))
-      .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, decentralandIdentity.address)
+      .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, true)
       .andBuild()
 

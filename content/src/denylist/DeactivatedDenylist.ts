@@ -1,18 +1,13 @@
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
-import {
-  Denylist,
-  DenylistMetadata,
-  DenylistSignatureValidationResult,
-  DenylistSignatureValidationStatus
-} from './Denylist'
+import { Denylist, DenylistMetadata, DenylistSignatureValidationResult } from './Denylist'
 import { DenylistTarget, DenylistTargetId, DenylistTargetType } from './DenylistTarget'
 
-export class NoopDenylist extends Denylist {
+export class DeactivatedDenylist extends Denylist {
   async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
-    return { status: DenylistSignatureValidationStatus.ERROR }
+    throw new Error('Add target from denylist is not activated.')
   }
   async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistSignatureValidationResult> {
-    return { status: DenylistSignatureValidationStatus.ERROR }
+    throw new Error('Remove target from denylist is not activated.')
   }
   async getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
     return []
