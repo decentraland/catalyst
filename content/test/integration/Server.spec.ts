@@ -1,5 +1,6 @@
 import { ControllerPointerChanges } from '@katalyst/content/controller/Controller'
 import { ControllerFactory } from '@katalyst/content/controller/ControllerFactory'
+import { DeactivatedDenylist } from '@katalyst/content/denylist/DeactivatedDenylist'
 import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
 import { Server } from '@katalyst/content/Server'
 import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
@@ -42,11 +43,13 @@ describe('Integration - Server', function () {
       .registerBean(Bean.REPOSITORY, MockedRepository.build())
       .registerBean(Bean.SERVICE, service)
       .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
+      .registerBean(Bean.DENYLIST, new DeactivatedDenylist())
       .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())
       .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
       .registerBean(Bean.SNAPSHOT_MANAGER, NoOpSnapshotManager.build())
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
+      .setConfig(EnvironmentConfig.DISABLE_DENYLIST, true)
 
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
