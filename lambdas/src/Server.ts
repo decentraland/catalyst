@@ -52,15 +52,15 @@ export class Server {
       Metrics.initialize()
     }
 
-    // Base endpoints
-    this.registerRoute('/status', controller, controller.getStatus)
-
     const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
     const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
     const fetcher: SmartContentServerFetcher = env.getBean(Bean.SMART_CONTENT_SERVER_FETCHER)
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
+
+    // Base endpoints
+    this.registerRoute('/status', controller, controller.getStatus)
 
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(createMetricsProxy(), fetcher))
