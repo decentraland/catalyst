@@ -5,7 +5,6 @@ import { buildDeployData, createIdentity } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
 describe('Integration - DeactivatedDenylist', () => {
-  const metadata: string = 'Some metadata'
   const decentralandIdentity = createIdentity()
   const testEnv = loadStandaloneTestEnvironment()
   let server: TestServer
@@ -22,10 +21,7 @@ describe('Integration - DeactivatedDenylist', () => {
 
   it(`When an entity is denylisted, then an error is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
-      metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
-    })
+    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'])
 
     // Deploy the entity
     await server.deploy(deployData)
@@ -36,10 +32,7 @@ describe('Integration - DeactivatedDenylist', () => {
 
   it(`When an entity is undenylisted, then it fails`, async () => {
     // Prepare entity to deploy
-    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
-      metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
-    })
+    const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'])
 
     // Deploy the entity
     await server.deploy(deployData)
@@ -50,10 +43,7 @@ describe('Integration - DeactivatedDenylist', () => {
 
   it(`When getting denylistedTargets, then it is empty`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], {
-      metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
-    })
+    const { deployData } = await buildDeployData(['0,0', '0,1'])
 
     // Deploy the entity
     await server.deploy(deployData)

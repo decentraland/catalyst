@@ -13,14 +13,14 @@ export class DeactivatedDenylist extends Denylist {
     return {
       status: DenylistOperationStatus.ERROR,
       type: DenylistValidationType.CONFIGURATION,
-      message: 'Enable target from denylist is not activated.'
+      message: 'Denylist is not activated, so you can not add a target to the denylist.'
     }
   }
   async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult> {
     return {
       status: DenylistOperationStatus.ERROR,
       type: DenylistValidationType.CONFIGURATION,
-      message: 'Remove target from denylist is not activated.'
+      message: 'Denylist is not activated, so you can not remove a target from the denylist.'
     }
   }
   async getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]> {
