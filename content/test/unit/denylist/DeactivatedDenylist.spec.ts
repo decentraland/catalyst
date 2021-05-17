@@ -15,7 +15,7 @@ describe('DeactivatedDenylist', () => {
 
     expect(result.status).toEqual(DenylistOperationStatus.ERROR)
     expect(result.type).toEqual(DenylistValidationType.CONFIGURATION)
-    expect(result.message).toEqual('Enable target from denylist is not activated.')
+    expect(result.message).toEqual('Denylist is not activated, so you can not add a target to the denylist.')
   })
 
   it(`Given a DeactivatedDenylist, when removeTarget, then it returns an error`, async () => {
@@ -23,7 +23,7 @@ describe('DeactivatedDenylist', () => {
 
     expect(result.status).toEqual(DenylistOperationStatus.ERROR)
     expect(result.type).toEqual(DenylistValidationType.CONFIGURATION)
-    expect(result.message).toEqual('Remove target from denylist is not activated.')
+    expect(result.message).toEqual('Denylist is not activated, so you can not remove a target from the denylist.')
   })
 
   it(`Given a DeactivatedDenylist, when getAllDenylistedTargets, then it returns empty array`, async () => {
