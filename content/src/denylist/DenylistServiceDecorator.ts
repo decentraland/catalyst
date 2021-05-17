@@ -60,7 +60,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
   }
 
-  /** Is content is denylisted, then we will return that it is not available */
+  /** If content is denylisted, then we will return that it is not available */
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<string, boolean>> {
     const availability: Map<ContentFileHash, boolean> = await this.service.isContentAvailable(fileHashes)
     const onlyAvailable: ContentFileHash[] = Array.from(availability.entries())
@@ -162,10 +162,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         allTargets.push(entityTarget, ...hashTargets.values(), ...pointerTargets.values())
       })
 
-      // Check which targets are denylisted
+      // Check which targets are denylisted only if there items in denylist
       const queryResult = await this.denylist.areTargetsDenylisted(task.denylist, allTargets)
 
-      // Filter out deployments with blacklisted pointers
+      // Filter out deployments with denylisted pointers
       const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
         if (options?.filters?.pointers && options.filters.pointers.length > 0) {
           // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
