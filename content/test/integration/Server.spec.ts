@@ -1,10 +1,12 @@
 import { ControllerPointerChanges } from '@katalyst/content/controller/Controller'
 import { ControllerFactory } from '@katalyst/content/controller/ControllerFactory'
-import { DeactivatedDenylist } from '@katalyst/content/denylist/DeactivatedDenylist'
+import { ActiveDenylist } from '@katalyst/content/denylist/ActiveDenylist'
 import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
 import { Server } from '@katalyst/content/Server'
+import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { DeploymentPointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
 import { Entity } from '@katalyst/content/service/Entity'
+import { ContentCluster } from '@katalyst/content/service/synchronization/ContentCluster'
 import { NoOpMigrationManager } from '@katalyst/test-helpers/NoOpMigrationManager'
 import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
 import { randomEntity } from '@katalyst/test-helpers/service/EntityTestFactory'
@@ -17,6 +19,7 @@ import { NoOpSnapshotManager } from '@katalyst/test-helpers/service/snapshots/No
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
+import { mock } from 'ts-mockito'
 
 describe('Integration - Server', function () {
   let server: Server
@@ -43,13 +46,15 @@ describe('Integration - Server', function () {
       .registerBean(Bean.REPOSITORY, MockedRepository.build())
       .registerBean(Bean.SERVICE, service)
       .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .registerBean(Bean.DENYLIST, new DeactivatedDenylist())
       .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())
       .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
       .registerBean(Bean.SNAPSHOT_MANAGER, NoOpSnapshotManager.build())
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
-      .setConfig(EnvironmentConfig.DISABLE_DENYLIST, true)
+      .registerBean(
+        Bean.DENYLIST,
+        new ActiveDenylist(MockedRepository.build(), mock(ContentAuthenticator), mock(ContentCluster), 'network')
+      )
 
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
