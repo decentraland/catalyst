@@ -135,7 +135,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   }
 }
 
-enum SynchronizationState {
+export enum SynchronizationState {
   BOOTSTRAPPING = 'Bootstrapping',
   SYNCED = 'Synced',
   SYNCING = 'Syncing',

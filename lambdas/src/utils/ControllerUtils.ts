@@ -32,7 +32,7 @@ export async function getCommsServerUrl(logger: Logger, externalCommsServerUrl?:
     })
     return INTERNAL_COMMS_SERVER_URL
   } catch {
-    logger.info('Defaulting to external content server url')
+    logger.info('Defaulting to external comms server url')
   }
 
   return externalCommsServerUrl || ''

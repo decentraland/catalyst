@@ -103,6 +103,10 @@ export class SmartContentClient implements ContentAPI {
     throw new Error('Get content url is currently not supported')
   }
 
+  async getClientUrl(): Promise<string> {
+    return (await this.getClient()).getContentUrl()
+  }
+
   getExternalContentServerUrl(): string {
     return this.externalContentServerUrl
   }
@@ -125,7 +129,10 @@ export class SmartContentClient implements ContentAPI {
         SmartContentClient.LOGGER.info('Will use the internal content server url')
         contentClientUrl = SmartContentClient.INTERNAL_CONTENT_SERVER_URL
       } catch {
-        SmartContentClient.LOGGER.info('Defaulting to external content server url')
+        SmartContentClient.LOGGER.info(
+          `Defaulting to external content server url: "${contentClientUrl}"`,
+          contentClientUrl
+        )
       }
       this.contentClient.resolve(new ContentClient(contentClientUrl, 'lambdas'))
     }
