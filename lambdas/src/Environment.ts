@@ -73,6 +73,7 @@ export const enum EnvironmentConfig {
   SERVER_PORT,
   LOG_REQUESTS,
   CONTENT_SERVER_ADDRESS,
+  COMMS_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
@@ -118,6 +119,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () => process.env.CONTENT_SERVER_ADDRESS
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.COMMS_SERVER_ADDRESS,
+      () => process.env.COMMS_SERVER_ADDRESS
     )
     this.registerConfigIfNotAlreadySet(
       env,
