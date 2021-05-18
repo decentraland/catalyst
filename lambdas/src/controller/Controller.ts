@@ -1,4 +1,4 @@
-// import { SynchronizationState } from '@katalyst/content/service/synchronization/SynchronizationManager'
+import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import express from 'express'
 import log4js, { Logger } from 'log4js'
 import fetch from 'node-fetch'
@@ -8,9 +8,6 @@ import { SmartContentClient } from '../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../utils/TimeRefreshedDataHolder'
 
 const REFRESH_TIME: string = '1m'
-
-const MAX_SYNCHRONIZATION_TIME_IN_SECONDS: number = 15 * 60
-const MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS: number = 2
 
 enum HealthStatus {
   HEALTHY = 'Healthy',
@@ -34,6 +31,8 @@ export class Controller {
   constructor(
     private service: LambdasService,
     private contentService: SmartContentClient,
+    private readonly maxSynchronizationTimeInSeconds: number,
+    private readonly maxDeploymentObtentionTimeInSeconds: number,
     externalCommsServerUrl?: string
   ) {
     this.contentServerStatus = new TimeRefreshedDataHolder(() => this.refreshContentServerStatus(), REFRESH_TIME)
@@ -79,13 +78,13 @@ export class Controller {
       const synchronizationDiffInSeconds =
         new Date(serverStatus.currentTime - serverStatus.synchronizationStatus.lastSyncWithOtherServers).getTime() /
         1000
-      const hasOldInformation = synchronizationDiffInSeconds > MAX_SYNCHRONIZATION_TIME_IN_SECONDS
+      const hasOldInformation = synchronizationDiffInSeconds > this.maxSynchronizationTimeInSeconds
 
       const obtainDeploymentTimeInSeconds = obtainDeploymentTime / 1000
-      const obtainDeploymentTimeIsTooLong = obtainDeploymentTimeInSeconds > MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS
-      // const isBootstrapping = serverStatus.synchronizationStatus === SynchronizationState.BOOTSTRAPPING;
+      const obtainDeploymentTimeIsTooLong = obtainDeploymentTimeInSeconds > this.maxDeploymentObtentionTimeInSeconds
+      const isBootstrapping = serverStatus.synchronizationStatus === SynchronizationState.BOOTSTRAPPING
 
-      if (hasOldInformation || obtainDeploymentTimeIsTooLong) {
+      if (hasOldInformation || obtainDeploymentTimeIsTooLong || isBootstrapping) {
         healthStatus = HealthStatus.UNHEALTHY
       } else {
         healthStatus = HealthStatus.HEALTHY
