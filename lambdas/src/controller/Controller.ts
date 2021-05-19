@@ -1,41 +1,38 @@
-import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import express from 'express'
 import log4js, { Logger } from 'log4js'
 import fetch from 'node-fetch'
-import { LambdasService, ServerStatus } from '../service/Service'
-import { getCommsServerUrl } from '../utils/ControllerUtils'
+import { LambdasService } from '../service/Service'
+import { getCommsServerUrl, HealthStatus, refreshContentServerStatus } from '../utils/ControllerUtils'
 import { SmartContentClient } from '../utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '../utils/TimeRefreshedDataHolder'
 
 const REFRESH_TIME: string = '1m'
 
-enum HealthStatus {
-  HEALTHY = 'Healthy',
-  LOADED = 'Loaded',
-  UNHEALTHY = 'Unhealthy',
-  DOWN = 'Down'
-}
-
-interface HealthStatusStatus {
-  status: string
-}
-
-type Status = ServerStatus & HealthStatusStatus
-
 export class Controller {
   private static LOGGER: Logger = log4js.getLogger('Controller')
-  private contentServerStatus: TimeRefreshedDataHolder<Partial<Status>>
-  private commsServerStatus: TimeRefreshedDataHolder<Status>
+  private contentServerStatus: TimeRefreshedDataHolder<HealthStatus>
+  private commsServerStatus: TimeRefreshedDataHolder<HealthStatus>
+  private lambdaServerStatus: TimeRefreshedDataHolder<HealthStatus>
   private commsServerUrl: string
 
   constructor(
     private service: LambdasService,
     private contentService: SmartContentClient,
-    private readonly maxSynchronizationTimeInSeconds: number,
-    private readonly maxDeploymentObtentionTimeInSeconds: number,
+    maxSynchronizationTimeInSeconds: number,
+    maxDeploymentObtentionTimeInSeconds: number,
     externalCommsServerUrl?: string
   ) {
-    this.contentServerStatus = new TimeRefreshedDataHolder(() => this.refreshContentServerStatus(), REFRESH_TIME)
+    this.contentServerStatus = new TimeRefreshedDataHolder(
+      () =>
+        refreshContentServerStatus(
+          this.contentService,
+          maxSynchronizationTimeInSeconds,
+          maxDeploymentObtentionTimeInSeconds,
+          Controller.LOGGER
+        ),
+      REFRESH_TIME
+    )
+    this.lambdaServerStatus = new TimeRefreshedDataHolder(() => this.refreshLambdaServerStatus(), REFRESH_TIME)
     this.commsServerStatus = new TimeRefreshedDataHolder(
       () => this.refreshCommsServerStatus(externalCommsServerUrl),
       REFRESH_TIME
@@ -46,66 +43,53 @@ export class Controller {
     // Method: GET
     // Path: /status
     try {
-      res.send({
-        lambdaStatus: await this.service.getStatus(),
-        contentStatus: await this.contentServerStatus.get(),
-        commsStatus: await this.commsServerStatus.get()
-      })
+      res.send(await this.service.getStatus())
     } catch (err) {
       res.status(500).send(`There was an error while processing your request: ${err.message}`)
     }
   }
 
-  private async refreshCommsServerStatus(externalCommsServerUrl?: string): Promise<Status> {
+  async getHealth(req: express.Request, res: express.Response) {
+    // Method: GET
+    // Path: /health
+    try {
+      const serversStatus = {
+        lambdaStatus: await (await this.lambdaServerStatus.get()).getName(),
+        contentStatus: await (await this.contentServerStatus.get()).getName(),
+        commsStatus: await (await this.commsServerStatus.get()).getName()
+      }
+
+      res.send(serversStatus)
+    } catch (err) {
+      res.status(500).send(`There was an error while processing your request: ${err.message}`)
+    }
+  }
+
+  public async refreshLambdaServerStatus(): Promise<HealthStatus> {
+    try {
+      await this.service.getStatus()
+
+      return HealthStatus.HEALTHY
+    } catch (error) {
+      Controller.LOGGER.info('error fetching lambda server status', error)
+
+      return HealthStatus.DOWN
+    }
+  }
+
+  public async refreshCommsServerStatus(externalCommsServerUrl?: string): Promise<HealthStatus> {
     if (!this.commsServerUrl) {
       this.commsServerUrl = await getCommsServerUrl(Controller.LOGGER, externalCommsServerUrl)
     }
 
-    const serverStatus = await (await fetch(this.commsServerUrl + '/status')).json()
-
-    return serverStatus
-  }
-
-  private async refreshContentServerStatus(): Promise<Partial<Status>> {
-    let healthStatus: HealthStatus
-    const serverStatus = {}
     try {
-      const fetchContentServerStatus = (await fetch((await this.contentService.getClientUrl()) + '/status')).json()
-      const [serverStatus, obtainDeploymentTime] = await Promise.all([
-        await fetchContentServerStatus,
-        await this.timeContentDeployments()
-      ])
-      const synchronizationDiffInSeconds =
-        new Date(serverStatus.currentTime - serverStatus.synchronizationStatus.lastSyncWithOtherServers).getTime() /
-        1000
-      const hasOldInformation = synchronizationDiffInSeconds > this.maxSynchronizationTimeInSeconds
+      await (await fetch(this.commsServerUrl + '/status')).json()
 
-      const obtainDeploymentTimeInSeconds = obtainDeploymentTime / 1000
-      const obtainDeploymentTimeIsTooLong = obtainDeploymentTimeInSeconds > this.maxDeploymentObtentionTimeInSeconds
-      const isBootstrapping = serverStatus.synchronizationStatus === SynchronizationState.BOOTSTRAPPING
-
-      if (hasOldInformation || obtainDeploymentTimeIsTooLong || isBootstrapping) {
-        healthStatus = HealthStatus.UNHEALTHY
-      } else {
-        healthStatus = HealthStatus.HEALTHY
-      }
-
-      //   HealthStatus.UNHEALTHY :
-      // hasOldInformation?
-      return { ...fetchContentServerStatus, healthStatus }
+      return HealthStatus.HEALTHY
     } catch (error) {
-      Controller.LOGGER.info('error', error)
-      healthStatus = HealthStatus.UNHEALTHY
+      Controller.LOGGER.info('error fetching comms server status', error)
+
+      return HealthStatus.DOWN
     }
-
-    return { ...serverStatus, healthStatus } as Partial<Status>
-  }
-
-  private async timeContentDeployments(): Promise<number> {
-    const startingTime = Date.now()
-    await (await fetch((await this.contentService.getClientUrl()) + '/deployments?limit=1')).json()
-    const endingTime = Date.now()
-
-    return endingTime - startingTime
   }
 }

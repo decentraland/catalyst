@@ -61,6 +61,7 @@ export class Server {
 
     // Base endpoints
     this.registerRoute('/status', controller, controller.getStatus)
+    this.registerRoute('/health', controller, controller.getHealth)
 
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(createMetricsProxy(), fetcher))

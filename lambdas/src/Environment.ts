@@ -203,7 +203,7 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.MAX_SYNCHRONIZATION_TIME_IN_SECONDS,
+      EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS,
       () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS
     )
 

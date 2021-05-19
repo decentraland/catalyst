@@ -129,10 +129,7 @@ export class SmartContentClient implements ContentAPI {
         SmartContentClient.LOGGER.info('Will use the internal content server url')
         contentClientUrl = SmartContentClient.INTERNAL_CONTENT_SERVER_URL
       } catch {
-        SmartContentClient.LOGGER.info(
-          `Defaulting to external content server url: "${contentClientUrl}"`,
-          contentClientUrl
-        )
+        SmartContentClient.LOGGER.info('Defaulting to external content server url: ', contentClientUrl)
       }
       this.contentClient.resolve(new ContentClient(contentClientUrl, 'lambdas'))
     }
