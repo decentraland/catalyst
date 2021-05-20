@@ -340,7 +340,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.DISABLE_DENYLIST,
-      () => process.env.DISABLE_DENYLIST !== 'false'
+      () => process.env.DISABLE_DENYLIST === 'true'
     )
 
     this.registerConfigIfNotAlreadySet(
