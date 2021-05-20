@@ -5,9 +5,7 @@ import fetch from 'node-fetch'
 import sinon from 'sinon'
 import { mock } from 'ts-mockito'
 
-fdescribe("Lambda's Controller Utils", () => {
-  // let controller: Controller
-
+describe("Lambda's Controller Utils", () => {
   describe('HealthStatus', () => {
     describe('compare', () => {
       describe('when comparing a Healthy and a Loaded', () => {
