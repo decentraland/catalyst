@@ -1,8 +1,9 @@
 // import { Controller } from '@katalyst/lambdas/controller/Controller'
-import { Controller } from '@katalyst/lambdas/controller/Controller'
-import { HealthStatus } from '@katalyst/lambdas/utils/ControllerUtils'
+import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/utils/ControllerUtils'
+import { Logger } from 'log4js'
 import fetch from 'node-fetch'
 import sinon from 'sinon'
+import { mock } from 'ts-mockito'
 
 fdescribe("Lambda's Controller Utils", () => {
   // let controller: Controller
@@ -12,18 +13,21 @@ fdescribe("Lambda's Controller Utils", () => {
       describe('when comparing a Healthy and a Loaded', () => {
         it('should return the Healthy is lower than the Loaded', () => {
           expect(HealthStatus.compare(HealthStatus.HEALTHY, HealthStatus.UNHEALTHY)).toEqual(-1)
+          expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.HEALTHY)).toEqual(1)
         })
       })
 
       describe('when comparing a Loaded and a Unhealthy', () => {
         it('should return the Loaded is lower than the Unhealthy', () => {
           expect(HealthStatus.compare(HealthStatus.LOADED, HealthStatus.UNHEALTHY)).toEqual(-1)
+          expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.LOADED)).toEqual(1)
         })
       })
 
       describe('when comparing a Unhealthy and a Down', () => {
         it('should return the Unhealthy is lower than the Down', () => {
           expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.DOWN)).toEqual(-1)
+          expect(HealthStatus.compare(HealthStatus.DOWN, HealthStatus.UNHEALTHY)).toEqual(1)
         })
       })
 
@@ -36,16 +40,120 @@ fdescribe("Lambda's Controller Utils", () => {
   })
 
   describe('refreshContentServerStatus', () => {
-    let controller: Controller
+    describe('when the service is synced', () => {
+      const mockedHealthyStatus = {
+        currentTime: 100,
+        synchronizationStatus: {
+          lastSyncWithOtherServers: 100
+        }
+      }
 
-    it('test', () => {
-      sinon.stub(fetch, 'Promise' as any).returns(Promise.resolve({ json: async () => HealthStatus.LOADED }))
+      let fetchStub: sinon.SinonStub
 
-      // when(fetchSpy.default(anything())).thenReturn(Promise.resolve({ json: () => Promise.resolve }) as any)
-      const commsUrl = 'localhost'
+      beforeAll(() => {
+        fetchStub = sinon.stub(fetch, 'Promise' as any).returns({ json: () => Promise.resolve(mockedHealthyStatus) })
+      })
 
-      controller = new Controller({ getClientUrl: () => 'mockUrl' } as any, {} as any, 10, 10, commsUrl)
-      expect(controller).not.toBeNull()
+      afterAll(() => {
+        fetchStub.restore()
+      })
+
+      it('should return a healthy status', async () => {
+        const logger = mock(Logger)
+
+        expect(
+          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
+        ).toEqual(HealthStatus.HEALTHY)
+      })
+    })
+
+    describe('when the service is bootstrapping', () => {
+      const mockedBootstrappingStatus = {
+        currentTime: 100,
+        synchronizationStatus: 'Bootstrapping'
+      }
+
+      let fetchStub: sinon.SinonStub
+
+      beforeAll(() => {
+        fetchStub = sinon
+          .stub(fetch, 'Promise' as any)
+          .returns({ json: () => Promise.resolve(mockedBootstrappingStatus) })
+      })
+
+      afterAll(() => {
+        fetchStub.restore()
+      })
+
+      it('should return an unhealthy status', async () => {
+        const logger = mock(Logger)
+
+        expect(
+          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
+        ).toEqual(HealthStatus.UNHEALTHY)
+      })
+    })
+
+    describe('when the service has old information', () => {
+      const mockedHealthyStatus = {
+        currentTime: 1000000,
+        synchronizationStatus: {
+          lastSyncWithOtherServers: 100
+        }
+      }
+
+      let fetchStub: sinon.SinonStub
+
+      beforeAll(() => {
+        fetchStub = sinon.stub(fetch, 'Promise' as any).returns({ json: () => Promise.resolve(mockedHealthyStatus) })
+      })
+
+      afterAll(() => {
+        fetchStub.restore()
+      })
+
+      it('should return an unhealthy status', async () => {
+        const logger = mock(Logger)
+
+        expect(
+          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
+        ).toEqual(HealthStatus.UNHEALTHY)
+      })
+    })
+
+    describe('when the service takes too much time to obtain deployment', () => {
+      const mockedHealthyStatus = {
+        currentTime: 100,
+        synchronizationStatus: {
+          lastSyncWithOtherServers: 100
+        }
+      }
+
+      let fetchStub: sinon.SinonStub
+      let dateNowStub: sinon.SinonStub
+
+      beforeAll(() => {
+        fetchStub = sinon.stub(fetch, 'Promise' as any).returns({ json: () => Promise.resolve(mockedHealthyStatus) })
+        dateNowStub = sinon
+          .stub(Date, 'now' as any)
+          .onFirstCall()
+          .returns(100)
+          .onSecondCall()
+          .returns(1000000)
+      })
+
+      afterAll(() => {
+        fetchStub.restore()
+        dateNowStub.restore()
+      })
+
+      it('should return a loaded status', async () => {
+        const logger = mock(Logger)
+
+        expect(
+          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
+        ).toEqual(HealthStatus.LOADED)
+      })
     })
   })
 })
