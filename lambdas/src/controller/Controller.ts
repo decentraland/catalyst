@@ -54,9 +54,9 @@ export class Controller {
     // Path: /health
     try {
       const serversStatus = {
-        lambdaStatus: await (await this.lambdaServerStatus.get()).getName(),
-        contentStatus: await (await this.contentServerStatus.get()).getName(),
-        commsStatus: await (await this.commsServerStatus.get()).getName()
+        lambdaStatus: (await this.lambdaServerStatus.get()).getName(),
+        contentStatus: (await this.contentServerStatus.get()).getName(),
+        commsStatus: (await this.commsServerStatus.get()).getName()
       }
 
       res.send(serversStatus)
