@@ -1,7 +1,8 @@
 import log4js, { Logger } from 'log4js'
 import fetch from 'node-fetch'
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
-import { getCommsServerUrl, HealthStatus, refreshContentServerStatus } from '../utils/ControllerUtils'
+import { getCommsServerUrl } from '../utils/commons'
+import { HealthStatus, refreshContentServerStatus } from '../utils/health'
 import { TimeRefreshedDataHolder } from '../utils/TimeRefreshedDataHolder'
 import { LambdasService, ServerStatus } from './Service'
 

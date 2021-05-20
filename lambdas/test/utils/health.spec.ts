@@ -1,5 +1,6 @@
 // import { Controller } from '@katalyst/lambdas/controller/Controller'
-import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/utils/ControllerUtils'
+
+import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/utils/health'
 import { Logger } from 'log4js'
 import fetch from 'node-fetch'
 import sinon from 'sinon'

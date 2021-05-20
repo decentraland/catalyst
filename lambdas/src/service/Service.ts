@@ -1,4 +1,4 @@
-import { HealthStatus } from '../utils/ControllerUtils'
+import { HealthStatus } from '../utils/health'
 
 /**
  * This version of the service can tell clients about the status of the base Lambdas Service.
