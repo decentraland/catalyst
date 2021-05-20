@@ -23,6 +23,7 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
 
+// The last sync can be max 15 minutes ago
 const DEFAULT_MAX_SYNCHRONIZATION_TIME_IN_SECONDS = 15 * 60
 const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS = 3
 
