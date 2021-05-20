@@ -47,6 +47,7 @@ ts_library(
         "@npm//ts-mockito",
         "@npm//dcl-crypto",
         "@npm//faker",
+        "@npm//sinon",
         "@npm//@dcl/urn-resolver"
     ],
 )

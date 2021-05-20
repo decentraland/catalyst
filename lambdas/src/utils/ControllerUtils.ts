@@ -1,6 +1,7 @@
 import { Fetcher } from 'dcl-catalyst-commons'
 import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import { Logger } from 'log4js'
+import fetch from 'node-fetch'
 import { SmartContentClient } from './SmartContentClient'
 
 const INTERNAL_COMMS_SERVER_URL: string = `http://comms-server:6969`
