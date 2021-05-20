@@ -30,6 +30,8 @@ These are some of the more important configuration values when running locally:
 | COMMS_SERVER_ADDRESS | Comms server address. Will only be used when the service is running outside of docker | - |
 | CONTENT_SERVER_ADDRESS | Content server address. Will only be used when the service is running outside of docker | - |
 | LOG_LEVEL | Minimum log level | 'info' |
+| MAX_SYNCHRONIZATION_TIME_IN_SECONDS | It's the max seconds that the service will allow for the content service to be out of sync before considering it unhealthy | '900' (15 minutes) |
+| MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS | It's the max seconds that the service will allow for the content service to obtain a single deployment before considering it Loaded | '3' |
 
 ## Run unit tests
     `yarn bazel run lambdas:unit_test`
