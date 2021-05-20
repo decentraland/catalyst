@@ -155,5 +155,25 @@ fdescribe("Lambda's Controller Utils", () => {
         ).toEqual(HealthStatus.LOADED)
       })
     })
+
+    describe('when the request fails', () => {
+      let fetchStub: sinon.SinonStub
+
+      beforeAll(() => {
+        fetchStub = sinon.stub(fetch, 'Promise' as any).throws(new Error('error'))
+      })
+
+      afterAll(() => {
+        fetchStub.restore()
+      })
+
+      it('should return a down status', async () => {
+        const logger = mock(Logger)
+
+        expect(
+          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
+        ).toEqual(HealthStatus.DOWN)
+      })
+    })
   })
 })
