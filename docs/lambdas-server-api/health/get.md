@@ -2,7 +2,7 @@
 
 Get the health status for each server running in catalyst
 
-**URL** : `/lambdas/health`
+**URL** : `/health`
 
 **Method** : `GET`
 
