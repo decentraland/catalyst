@@ -1,7 +1,7 @@
+import { EntityType } from 'dcl-catalyst-commons'
 import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import { Logger } from 'log4js'
 import ms from 'ms'
-import fetch from 'node-fetch'
 import { SmartContentClient } from './SmartContentClient'
 
 export enum HealthStatus {
@@ -18,11 +18,10 @@ export async function refreshContentServerStatus(
 ): Promise<HealthStatus> {
   let healthStatus: HealthStatus
   try {
-    const url = await contentService.getClientUrl()
     const fetchContentServerStatus = contentService.fetchContentStatus()
     const [serverStatus, obtainDeploymentTime] = await Promise.all([
       await fetchContentServerStatus,
-      await timeContentDeployments(url)
+      await timeContentDeployments(contentService)
     ])
     const synchronizationDiffInSeconds = new Date(
       serverStatus.currentTime - (serverStatus as any).synchronizationStatus.lastSyncWithOtherServers
@@ -48,9 +47,11 @@ export async function refreshContentServerStatus(
   return healthStatus
 }
 
-async function timeContentDeployments(url: string): Promise<number> {
+async function timeContentDeployments(contentService: SmartContentClient): Promise<number> {
   const startingTime = Date.now()
-  await (await fetch(url + '/deployments?limit=1')).json()
+  await contentService.fetchAllDeployments({
+    filters: { pointers: ['0,0'], onlyCurrentlyPointed: true, entityTypes: [EntityType.SCENE] }
+  })
   const endingTime = Date.now()
 
   return endingTime - startingTime
