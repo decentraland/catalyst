@@ -103,10 +103,6 @@ export class SmartContentClient implements ContentAPI {
     throw new Error('Get content url is currently not supported')
   }
 
-  async getClientUrl(): Promise<string> {
-    return (await this.getClient()).getContentUrl()
-  }
-
   getExternalContentServerUrl(): string {
     return this.externalContentServerUrl
   }

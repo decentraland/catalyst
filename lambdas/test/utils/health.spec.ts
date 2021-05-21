@@ -20,7 +20,6 @@ describe("Lambda's Controller Utils", () => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
         when(contentClientMock.fetchAllDeployments(anything())).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
       })
 
       it('should return a healthy status', async () => {
@@ -44,7 +43,6 @@ describe("Lambda's Controller Utils", () => {
         when(contentClientMock.fetchAllDeployments(anything())).thenReturn(
           Promise.resolve(mockedBootstrappingStatus as any)
         )
-        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
       })
 
       it('should return an unhealthy status', async () => {
@@ -68,7 +66,6 @@ describe("Lambda's Controller Utils", () => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
         when(contentClientMock.fetchAllDeployments(anything())).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
       })
 
       it('should return an unhealthy status', async () => {
@@ -93,7 +90,7 @@ describe("Lambda's Controller Utils", () => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
         when(contentClientMock.fetchAllDeployments(anything())).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
+
         dateNowStub = sinon
           .stub(Date, 'now' as any)
           .onFirstCall()
