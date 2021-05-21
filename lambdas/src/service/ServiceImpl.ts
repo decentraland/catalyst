@@ -21,8 +21,8 @@ export class ServiceImpl implements LambdasService {
       () =>
         refreshContentServerStatus(
           env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT),
-          env.getConfig(EnvironmentConfig.MAX_SYNCHRONIZATION_TIME_IN_SECONDS),
-          env.getConfig(EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS),
+          env.getConfig(EnvironmentConfig.MAX_SYNCHRONIZATION_TIME),
+          env.getConfig(EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME),
           ServiceImpl.LOGGER
         ),
       REFRESH_TIME
@@ -43,9 +43,9 @@ export class ServiceImpl implements LambdasService {
 
   async getHealth(): Promise<Record<string, HealthStatus>> {
     const serversStatus = {
-      lambdaStatus: (await this.lambdaServerStatus.get()).getName(),
-      contentStatus: (await this.contentServerStatus.get()).getName(),
-      commsStatus: (await this.commsServerStatus.get()).getName()
+      lambda: await this.lambdaServerStatus.get(),
+      content: await this.contentServerStatus.get(),
+      comms: await this.commsServerStatus.get()
     }
 
     return serversStatus

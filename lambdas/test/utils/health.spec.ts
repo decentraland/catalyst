@@ -1,44 +1,14 @@
-// import { Controller } from '@katalyst/lambdas/controller/Controller'
-
 import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/utils/health'
+import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Logger } from 'log4js'
 import fetch from 'node-fetch'
 import sinon from 'sinon'
-import { mock } from 'ts-mockito'
+import { instance, mock, when } from 'ts-mockito'
 
 describe("Lambda's Controller Utils", () => {
-  describe('HealthStatus', () => {
-    describe('compare', () => {
-      describe('when comparing a Healthy and a Loaded', () => {
-        it('should return the Healthy is lower than the Loaded', () => {
-          expect(HealthStatus.compare(HealthStatus.HEALTHY, HealthStatus.UNHEALTHY)).toEqual(-1)
-          expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.HEALTHY)).toEqual(1)
-        })
-      })
-
-      describe('when comparing a Loaded and a Unhealthy', () => {
-        it('should return the Loaded is lower than the Unhealthy', () => {
-          expect(HealthStatus.compare(HealthStatus.LOADED, HealthStatus.UNHEALTHY)).toEqual(-1)
-          expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.LOADED)).toEqual(1)
-        })
-      })
-
-      describe('when comparing a Unhealthy and a Down', () => {
-        it('should return the Unhealthy is lower than the Down', () => {
-          expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.DOWN)).toEqual(-1)
-          expect(HealthStatus.compare(HealthStatus.DOWN, HealthStatus.UNHEALTHY)).toEqual(1)
-        })
-      })
-
-      describe('when comparing two equal states', () => {
-        it('should return 0', () => {
-          expect(HealthStatus.compare(HealthStatus.UNHEALTHY, HealthStatus.UNHEALTHY)).toEqual(0)
-        })
-      })
-    })
-  })
-
   describe('refreshContentServerStatus', () => {
+    let contentClientMock: SmartContentClient
+
     describe('when the service is synced', () => {
       const mockedHealthyStatus = {
         currentTime: 100,
@@ -50,6 +20,9 @@ describe("Lambda's Controller Utils", () => {
       let fetchStub: sinon.SinonStub
 
       beforeAll(() => {
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
+        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
         fetchStub = sinon.stub(fetch, 'Promise' as any).returns({ json: () => Promise.resolve(mockedHealthyStatus) })
       })
 
@@ -60,9 +33,9 @@ describe("Lambda's Controller Utils", () => {
       it('should return a healthy status', async () => {
         const logger = mock(Logger)
 
-        expect(
-          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
-        ).toEqual(HealthStatus.HEALTHY)
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.HEALTHY
+        )
       })
     })
 
@@ -75,6 +48,9 @@ describe("Lambda's Controller Utils", () => {
       let fetchStub: sinon.SinonStub
 
       beforeAll(() => {
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedBootstrappingStatus as any))
+        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
         fetchStub = sinon
           .stub(fetch, 'Promise' as any)
           .returns({ json: () => Promise.resolve(mockedBootstrappingStatus) })
@@ -87,9 +63,9 @@ describe("Lambda's Controller Utils", () => {
       it('should return an unhealthy status', async () => {
         const logger = mock(Logger)
 
-        expect(
-          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
-        ).toEqual(HealthStatus.UNHEALTHY)
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.UNHEALTHY
+        )
       })
     })
 
@@ -104,6 +80,9 @@ describe("Lambda's Controller Utils", () => {
       let fetchStub: sinon.SinonStub
 
       beforeAll(() => {
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
+        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
         fetchStub = sinon.stub(fetch, 'Promise' as any).returns({ json: () => Promise.resolve(mockedHealthyStatus) })
       })
 
@@ -114,9 +93,9 @@ describe("Lambda's Controller Utils", () => {
       it('should return an unhealthy status', async () => {
         const logger = mock(Logger)
 
-        expect(
-          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
-        ).toEqual(HealthStatus.UNHEALTHY)
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.UNHEALTHY
+        )
       })
     })
 
@@ -133,6 +112,9 @@ describe("Lambda's Controller Utils", () => {
 
       beforeAll(() => {
         fetchStub = sinon.stub(fetch, 'Promise' as any).returns({ json: () => Promise.resolve(mockedHealthyStatus) })
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
+        when(contentClientMock.getClientUrl()).thenReturn(Promise.resolve('mockUrl'))
         dateNowStub = sinon
           .stub(Date, 'now' as any)
           .onFirstCall()
@@ -146,12 +128,12 @@ describe("Lambda's Controller Utils", () => {
         dateNowStub.restore()
       })
 
-      it('should return a loaded status', async () => {
+      it('should return aa unhealthy status', async () => {
         const logger = mock(Logger)
 
-        expect(
-          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
-        ).toEqual(HealthStatus.LOADED)
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.UNHEALTHY
+        )
       })
     })
 
@@ -170,7 +152,12 @@ describe("Lambda's Controller Utils", () => {
         const logger = mock(Logger)
 
         expect(
-          await refreshContentServerStatus({ getClientUrl: () => Promise.resolve('mockUrl') } as any, 10, 10, logger)
+          await refreshContentServerStatus(
+            { getClientUrl: () => Promise.resolve('mockUrl') } as any,
+            '10s',
+            '10s',
+            logger
+          )
         ).toEqual(HealthStatus.DOWN)
       })
     })

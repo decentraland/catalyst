@@ -1,68 +1,42 @@
 import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import { Logger } from 'log4js'
+import ms from 'ms'
 import fetch from 'node-fetch'
 import { SmartContentClient } from './SmartContentClient'
 
-export class HealthStatus {
-  static HEALTHY = new HealthStatus('Healthy')
-  static LOADED = new HealthStatus('Loaded')
-  static UNHEALTHY = new HealthStatus('Unhealthy')
-  static DOWN = new HealthStatus('Down')
-
-  constructor(private name) {}
-
-  getName() {
-    return this.name
-  }
-
-  static compare(a: HealthStatus, b: HealthStatus): number {
-    if (a === b) return 0
-
-    // Health is lower than anything else
-    if (a === HealthStatus.HEALTHY) return -1
-    if (b === HealthStatus.HEALTHY) return 1
-
-    // Either is healthy so the Loaded one is the lowest
-    if (a === HealthStatus.LOADED) return -1
-    if (b === HealthStatus.LOADED) return 1
-
-    // Either is healthy nor loaded so the UNHEALTHY one is the lowest
-    if (a === HealthStatus.UNHEALTHY) return -1
-    if (b === HealthStatus.UNHEALTHY) return 1
-
-    if (a === HealthStatus.DOWN) return -1
-    if (b === HealthStatus.DOWN) return 1
-
-    return 0
-  }
+export enum HealthStatus {
+  HEALTHY = 'Healthy',
+  UNHEALTHY = 'Unhealthy',
+  DOWN = 'Down'
 }
 
 export async function refreshContentServerStatus(
   contentService: SmartContentClient,
-  maxSynchronizationTimeInSeconds: number,
-  maxDeploymentObtentionTimeInSeconds: number,
+  maxSynchronizationTime: string,
+  maxDeploymentObtentionTime: string,
   logger: Logger
 ): Promise<HealthStatus> {
   let healthStatus: HealthStatus
   try {
     const url = await contentService.getClientUrl()
-    const fetchContentServerStatus = (await fetch(url + '/status')).json()
+    const fetchContentServerStatus = contentService.fetchContentStatus()
     const [serverStatus, obtainDeploymentTime] = await Promise.all([
       await fetchContentServerStatus,
       await timeContentDeployments(url)
     ])
-    const synchronizationDiffInSeconds =
-      new Date(serverStatus.currentTime - serverStatus.synchronizationStatus.lastSyncWithOtherServers).getTime() / 1000
-    const hasOldInformation = synchronizationDiffInSeconds > maxSynchronizationTimeInSeconds
+    const synchronizationDiffInSeconds = new Date(
+      serverStatus.currentTime - (serverStatus as any).synchronizationStatus.lastSyncWithOtherServers
+    ).getTime()
 
-    const obtainDeploymentTimeInSeconds = obtainDeploymentTime / 1000
-    const obtainDeploymentTimeIsTooLong = obtainDeploymentTimeInSeconds > maxDeploymentObtentionTimeInSeconds
-    const isBootstrapping = serverStatus.synchronizationStatus === SynchronizationState.BOOTSTRAPPING
+    const hasOldInformation = synchronizationDiffInSeconds > ms(maxSynchronizationTime)
 
-    if (hasOldInformation || isBootstrapping) {
+    const obtainDeploymentTimeInSeconds = obtainDeploymentTime
+
+    const obtainDeploymentTimeIsTooLong = obtainDeploymentTimeInSeconds > ms(maxDeploymentObtentionTime)
+    const isBootstrapping = (serverStatus as any).synchronizationStatus === SynchronizationState.BOOTSTRAPPING
+
+    if (hasOldInformation || isBootstrapping || obtainDeploymentTimeIsTooLong) {
       healthStatus = HealthStatus.UNHEALTHY
-    } else if (obtainDeploymentTimeIsTooLong) {
-      healthStatus = HealthStatus.LOADED
     } else {
       healthStatus = HealthStatus.HEALTHY
     }

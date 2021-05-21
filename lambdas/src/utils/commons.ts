@@ -1,4 +1,4 @@
-import { Fetcher } from 'dcl-catalyst-commons'
+import { fetchJson } from 'dcl-catalyst-commons'
 import { Logger } from 'log4js'
 
 const INTERNAL_COMMS_SERVER_URL: string = `http://comms-server:6969`
@@ -7,8 +7,7 @@ export async function getCommsServerUrl(logger: Logger, externalCommsServerUrl?:
   this.commsServerUrl = externalCommsServerUrl
 
   try {
-    const fetcher = new Fetcher()
-    await fetcher.fetchJson(`${INTERNAL_COMMS_SERVER_URL}/status`, {
+    await fetchJson(`${INTERNAL_COMMS_SERVER_URL}/status`, {
       attempts: 6,
       waitTime: '10s'
     })

@@ -23,9 +23,8 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
 
-// The last sync can be max 15 minutes ago
-const DEFAULT_MAX_SYNCHRONIZATION_TIME_IN_SECONDS = 15 * 60
-const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS = 3
+const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
+const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
 
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
@@ -91,8 +90,8 @@ export const enum EnvironmentConfig {
   PROFILE_NAMES_CACHE_TIMEOUT,
   PROFILE_WEARABLES_CACHE_MAX,
   PROFILE_WEARABLES_CACHE_TIMEOUT,
-  MAX_SYNCHRONIZATION_TIME_IN_SECONDS,
-  MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS,
+  MAX_SYNCHRONIZATION_TIME,
+  MAX_DEPLOYMENT_OBTENTION_TIME,
   METRICS
 }
 
@@ -198,14 +197,14 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.MAX_SYNCHRONIZATION_TIME_IN_SECONDS,
-      () => process.env.MAX_SYNCHRONIZATION_TIME_IN_SECONDS ?? DEFAULT_MAX_SYNCHRONIZATION_TIME_IN_SECONDS
+      EnvironmentConfig.MAX_SYNCHRONIZATION_TIME,
+      () => process.env.MAX_SYNCHRONIZATION_TIME_IN_SECONDS ?? DEFAULT_MAX_SYNCHRONIZATION_TIME
     )
 
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS,
-      () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS
+      EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME,
+      () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME
     )
 
     // Please put special attention on the bean registration order.

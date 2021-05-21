@@ -21,9 +21,9 @@ Get the health status for each server running in catalyst
 ```json
 
 {
-    "commsStatus": "Healthy",
-    "contentStatus": "Unhealthy",
-    "lambdaStatus": "Healthy"
+    "comms": "Healthy",
+    "content": "Unhealthy",
+    "lambda": "Healthy"
 }
 
 ```
