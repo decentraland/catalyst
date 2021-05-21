@@ -23,15 +23,12 @@ export async function refreshContentServerStatus(
       await fetchContentServerStatus,
       await timeContentDeployments(contentService)
     ])
-    const synchronizationDiffInSeconds = new Date(
+    const synchronizationDiff =
       serverStatus.currentTime - (serverStatus as any).synchronizationStatus.lastSyncWithOtherServers
-    ).getTime()
 
-    const hasOldInformation = synchronizationDiffInSeconds > ms(maxSynchronizationTime)
+    const hasOldInformation = synchronizationDiff > ms(maxSynchronizationTime)
 
-    const obtainDeploymentTimeInSeconds = obtainDeploymentTime
-
-    const obtainDeploymentTimeIsTooLong = obtainDeploymentTimeInSeconds > ms(maxDeploymentObtentionTime)
+    const obtainDeploymentTimeIsTooLong = obtainDeploymentTime > ms(maxDeploymentObtentionTime)
     const isBootstrapping = (serverStatus as any).synchronizationStatus === SynchronizationState.BOOTSTRAPPING
 
     if (hasOldInformation || isBootstrapping || obtainDeploymentTimeIsTooLong) {
@@ -49,9 +46,12 @@ export async function refreshContentServerStatus(
 
 async function timeContentDeployments(contentService: SmartContentClient): Promise<number> {
   const startingTime = Date.now()
-  await contentService.fetchAllDeployments({
-    filters: { pointers: ['0,0'], onlyCurrentlyPointed: true, entityTypes: [EntityType.SCENE] }
-  })
+  await contentService.fetchAllDeployments(
+    {
+      filters: { pointers: ['0,0'], onlyCurrentlyPointed: true, entityTypes: [EntityType.SCENE] }
+    },
+    { timeout: '30s' }
+  )
   const endingTime = Date.now()
 
   return endingTime - startingTime

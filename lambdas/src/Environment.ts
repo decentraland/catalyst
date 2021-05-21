@@ -198,13 +198,13 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.MAX_SYNCHRONIZATION_TIME,
-      () => process.env.MAX_SYNCHRONIZATION_TIME_IN_SECONDS ?? DEFAULT_MAX_SYNCHRONIZATION_TIME
+      () => process.env.MAX_SYNCHRONIZATION_TIME ?? DEFAULT_MAX_SYNCHRONIZATION_TIME
     )
 
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME,
-      () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME_IN_SECONDS ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME
+      () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME
     )
 
     // Please put special attention on the bean registration order.
