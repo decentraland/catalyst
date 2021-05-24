@@ -1,5 +1,5 @@
+import PeerHealthStatus from '@katalyst/lambdas/apis/status/PeerHealthStatus'
 import { Bean, Environment, EnvironmentConfig } from '@katalyst/lambdas/Environment'
-import PeerHealthStatus from '@katalyst/lambdas/service/status/PeerHealthStatus'
 import { Request, Response, Router } from 'express'
 
 export default (environment: Environment): Router => {

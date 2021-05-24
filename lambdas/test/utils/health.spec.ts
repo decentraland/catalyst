@@ -1,4 +1,4 @@
-import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/utils/health'
+import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/apis/status/health'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Logger } from 'log4js'
 import sinon from 'sinon'

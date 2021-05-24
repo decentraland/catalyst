@@ -1,5 +1,5 @@
+import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/apis/status/health'
 import { getCommsServerUrl } from '@katalyst/lambdas/utils/commons'
-import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/utils/health'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '@katalyst/lambdas/utils/TimeRefreshedDataHolder'
 import log4js, { Logger } from 'log4js'
