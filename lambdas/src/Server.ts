@@ -59,8 +59,6 @@ export class Server {
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
     // Base endpoints
-    // this.registerRoute('/status', controller, controller.getStatus)
-    // this.registerRoute('/health', controller, controller.getHealth)
     this.app.use('/', statusRouter(env))
 
     // Backwards compatibility for older Content API
