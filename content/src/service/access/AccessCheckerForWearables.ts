@@ -85,7 +85,7 @@ export class AccessCheckerForWearables {
   ): Promise<WearableItemPermissionsData> {
     const query = `
          query getCollectionRoles($collection: String!, $itemId: Int!) {
-            collections(where:{id: $collection}) {
+            collections(where:{ id: $collection, isApproved: false, isCompleted: true }) {
               creator
               managers
               minters
