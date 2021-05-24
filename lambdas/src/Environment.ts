@@ -2,9 +2,7 @@ import ms from 'ms'
 import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
-import { ControllerFactory } from './controller/ControllerFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
-import { ServiceFactory } from './service/ServiceFactory'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
@@ -22,6 +20,9 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+
+const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
+const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
 
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
@@ -73,6 +74,7 @@ export const enum EnvironmentConfig {
   SERVER_PORT,
   LOG_REQUESTS,
   CONTENT_SERVER_ADDRESS,
+  COMMS_SERVER_ADDRESS,
   ENS_OWNER_PROVIDER_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
@@ -86,6 +88,8 @@ export const enum EnvironmentConfig {
   PROFILE_NAMES_CACHE_TIMEOUT,
   PROFILE_WEARABLES_CACHE_MAX,
   PROFILE_WEARABLES_CACHE_TIMEOUT,
+  MAX_SYNCHRONIZATION_TIME,
+  MAX_DEPLOYMENT_OBTENTION_TIME,
   METRICS
 }
 
@@ -118,6 +122,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () => process.env.CONTENT_SERVER_ADDRESS
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.COMMS_SERVER_ADDRESS,
+      () => process.env.COMMS_SERVER_ADDRESS
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -184,6 +193,18 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
 
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.MAX_SYNCHRONIZATION_TIME,
+      () => process.env.MAX_SYNCHRONIZATION_TIME ?? DEFAULT_MAX_SYNCHRONIZATION_TIME
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME,
+      () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME
+    )
+
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
 
@@ -194,8 +215,6 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
 

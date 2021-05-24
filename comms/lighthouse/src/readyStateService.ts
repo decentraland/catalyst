@@ -1,3 +1,4 @@
+import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import ms from 'ms'
 
 const awaitContentServerEnabled = (process.env.AWAIT_CONTENT_SERVER ?? 'true') === 'true'
@@ -65,7 +66,7 @@ const awaitContentServerCheck: StateCheck = {
     if (statusResponse.ok) {
       const { synchronizationStatus } = await statusResponse.json()
       const { synchronizationState } = synchronizationStatus
-      return synchronizationState !== 'Bootstrapping'
+      return synchronizationState !== SynchronizationState.BOOTSTRAPPING
     }
     throw new Error(`Response not OK. Response status: ${statusResponse.status}`)
   }
