@@ -1,7 +1,7 @@
 import compression from 'compression'
 import cors from 'cors'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
-import express, { RequestHandler, Router } from 'express'
+import express, { Router } from 'express'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
@@ -15,7 +15,7 @@ import { initializeImagesRoutes } from './apis/images/routes'
 import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
-import { Controller } from './controller/Controller'
+import statusRouter from './apis/status/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
@@ -36,7 +36,6 @@ export class Server {
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
     this.app = express()
-    const controller: Controller = env.getBean(Bean.CONTROLLER)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))
@@ -60,8 +59,9 @@ export class Server {
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
     // Base endpoints
-    this.registerRoute('/status', controller, controller.getStatus)
-    this.registerRoute('/health', controller, controller.getHealth)
+    // this.registerRoute('/status', controller, controller.getStatus)
+    // this.registerRoute('/health', controller, controller.getHealth)
+    this.app.use('/', statusRouter(env))
 
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(createMetricsProxy(), fetcher))
@@ -96,18 +96,6 @@ export class Server {
 
     // Functionality for Explore use case
     this.app.use('/explore', initializeExploreRoutes(createMetricsProxy(), env.getBean(Bean.DAO), contentClient))
-  }
-
-  private registerRoute(
-    route: string,
-    controller: Controller,
-    action: (req: express.Request, res: express.Response) => void
-  ) {
-    const handlers: RequestHandler[] = [
-      ...Metrics.requestHandlers(),
-      (req: express.Request, res: express.Response) => action.call(controller, req, res)
-    ]
-    this.app.get(route, handlers)
   }
 
   async start(): Promise<void> {
