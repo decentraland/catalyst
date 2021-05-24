@@ -3,7 +3,6 @@ import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/Of
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
-import { ServiceFactory } from './service/ServiceFactory'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
@@ -216,7 +215,6 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.THE_GRAPH_CLIENT, () => TheGraphClientFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.OFF_CHAIN_MANAGER, () => OffChainWearablesManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.DAO, () => DAOCacheFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ENS_OWNERSHIP, () => EnsOwnershipFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.WEARABLES_OWNERSHIP, () => WearablesOwnershipFactory.create(env))
 
