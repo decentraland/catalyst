@@ -90,7 +90,8 @@ export const enum EnvironmentConfig {
   PROFILE_WEARABLES_CACHE_TIMEOUT,
   MAX_SYNCHRONIZATION_TIME,
   MAX_DEPLOYMENT_OBTENTION_TIME,
-  METRICS
+  METRICS,
+  OFF_CHAIN_WEARABLES_REFRESH_TIME
 }
 
 export class EnvironmentBuilder {
@@ -203,6 +204,12 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.MAX_DEPLOYMENT_OBTENTION_TIME,
       () => process.env.MAX_DEPLOYMENT_OBTENTION_TIME ?? DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.OFF_CHAIN_WEARABLES_REFRESH_TIME,
+      () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '1d'
     )
 
     // Please put special attention on the bean registration order.

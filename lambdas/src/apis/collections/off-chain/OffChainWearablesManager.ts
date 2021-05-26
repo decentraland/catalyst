@@ -12,14 +12,18 @@ import baseAvatars from './base-avatars'
 export class OffChainWearablesManager {
   private readonly definitions: TimeRefreshedDataHolder<LocalOffChainWearables>
 
-  constructor(
-    client: SmartContentClient,
-    collections: OffChainCollections = DEFAULT_COLLECTIONS,
-    refreshTime: string = '1d'
-  ) {
+  constructor({
+    client,
+    collections,
+    refreshTime
+  }: {
+    client: SmartContentClient
+    collections?: OffChainCollections
+    refreshTime?: string
+  }) {
     this.definitions = new TimeRefreshedDataHolder(
-      () => OffChainWearablesManager.fetchOffChain(client, collections),
-      refreshTime
+      () => OffChainWearablesManager.fetchOffChain(client, collections ?? DEFAULT_COLLECTIONS),
+      refreshTime ?? '1d'
     )
   }
 
