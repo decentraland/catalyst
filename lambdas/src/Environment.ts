@@ -1,8 +1,10 @@
+import log4js from 'log4js'
 import ms from 'ms'
 import { OffChainWearablesManagerFactory } from './apis/collections/off-chain/OffChainWearablesManagerFactory'
 import { EnsOwnershipFactory } from './apis/profiles/EnsOwnershipFactory'
 import { WearablesOwnershipFactory } from './apis/profiles/WearablesOwnershipFactory'
 import { DAOCacheFactory } from './service/dao/DAOCacheFactory'
+import { getCommsServerUrl } from './utils/commons'
 import { SmartContentClientFactory } from './utils/SmartContentClientFactory'
 import { SmartContentServerFetcherFactory } from './utils/SmartContentServerFetcherFactory'
 import { TheGraphClientFactory } from './utils/TheGraphClientFactory'
@@ -24,6 +26,7 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
 const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
 const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
 
+const DEFAULT_INTERNAL_COMMS_SERVER_URL: string = `http://comms-server:9000`
 const DEFAULT_LAMBDAS_STORAGE_LOCATION = 'lambdas-storage'
 
 export class Environment {
@@ -95,6 +98,7 @@ export const enum EnvironmentConfig {
 }
 
 export class EnvironmentBuilder {
+  private static readonly LOGGER = log4js.getLogger('EnvironmentBuilder')
   private baseEnv: Environment
   constructor(baseEnv?: Environment) {
     this.baseEnv = baseEnv ?? new Environment()
@@ -124,11 +128,15 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
       () => process.env.CONTENT_SERVER_ADDRESS
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.COMMS_SERVER_ADDRESS,
-      () => process.env.COMMS_SERVER_ADDRESS
+
+    const realCommsServerAddress = await getCommsServerUrl(
+      EnvironmentBuilder.LOGGER,
+      process.env.INTERNAL_COMMS_SERVER_ADDRESS ?? DEFAULT_INTERNAL_COMMS_SERVER_URL,
+      process.env.COMMS_SERVER_ADDRESS
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMS_SERVER_ADDRESS, () => realCommsServerAddress)
+
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.ENS_OWNER_PROVIDER_URL,
