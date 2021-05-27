@@ -136,7 +136,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     validation.validateDecentralandAddress(ownerAddress, validationContext)
 
     // Validate request size
-    validation.validateRequestSize(files, entity.pointers, validationContext)
+    validation.validateRequestSize(files, entity.type, entity.pointers, validationContext)
 
     // Validate ethAddress access
     await validation.validateAccess(entity.type, entity.pointers, entity.timestamp, ownerAddress, validationContext)

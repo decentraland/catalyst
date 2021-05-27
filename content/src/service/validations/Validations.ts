@@ -22,15 +22,28 @@ import { happenedBefore } from '../time/TimeSorting'
 import { Validation, ValidationContext } from './ValidationContext'
 
 export class Validations {
+  private static MAX_UPLOAD_SIZE_PER_POINTER_MB: Map<EntityType, number> = new Map([
+    [EntityType.SCENE, 15],
+    [EntityType.PROFILE, 15], // TODO: Investigate and update profiles to a more appropriate number
+    [EntityType.WEARABLE, 2.5]
+  ])
+
   constructor(
     private readonly accessChecker: AccessChecker,
     private readonly authenticator: ContentAuthenticator,
     private readonly network: string,
-    private readonly requestTtlBackwards: number
+    private readonly requestTtlBackwards: number,
+    private readonly maxUploadSizePerTypeInMB: Map<EntityType, number> = Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB
   ) {}
 
   getInstance(): ValidatorInstance {
-    return new ValidatorInstance(this.accessChecker, this.authenticator, this.network, this.requestTtlBackwards)
+    return new ValidatorInstance(
+      this.accessChecker,
+      this.authenticator,
+      this.network,
+      this.requestTtlBackwards,
+      this.maxUploadSizePerTypeInMB
+    )
   }
 }
 
@@ -41,7 +54,8 @@ export class ValidatorInstance {
     private readonly accessChecker: AccessChecker,
     private readonly authenticator: ContentAuthenticator,
     private readonly network: string,
-    private readonly requestTtlBackwards: number
+    private readonly requestTtlBackwards: number,
+    private readonly maxUploadSizePerTypeInMB: Map<EntityType, number>
   ) {}
 
   getErrors(): string[] {
@@ -109,19 +123,26 @@ export class ValidatorInstance {
   }
 
   /** Validate that the full request size is within limits */
-  private static MAX_UPLOAD_SIZE_PER_POINTER_MB = 15
-  private static MAX_UPLOAD_SIZE_PER_POINTER = ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER_MB * 1024 * 1024
-  validateRequestSize(files: ContentFile[], pointers: Pointer[], validationContext: ValidationContext): void {
+  validateRequestSize(
+    files: ContentFile[],
+    entityType: EntityType,
+    pointers: Pointer[],
+    validationContext: ValidationContext
+  ): void {
     if (validationContext.shouldValidate(Validation.REQUEST_SIZE)) {
+      const maxSizeInMB = this.maxUploadSizePerTypeInMB.get(entityType)
+      if (!maxSizeInMB) {
+        this.errors.push(`Type ${entityType} is not supported yet`)
+        return
+      }
+      const maxSizeInBytes = maxSizeInMB * 1024 * 1024
       let totalSize = 0
       files.forEach((file) => (totalSize += file.content.byteLength))
       const sizePerPointer = totalSize / pointers.length
-      if (sizePerPointer > ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER) {
+      if (sizePerPointer > maxSizeInBytes) {
         this.errors.push(
-          `The deployment is too big. The maximum allowed size per pointer is ${
-            ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER_MB
-          } MB. You can upload up to ${
-            pointers.length * ValidatorInstance.MAX_UPLOAD_SIZE_PER_POINTER
+          `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB} MB for ${entityType}. You can upload up to ${
+            pointers.length * maxSizeInBytes
           } bytes but you tried to upload ${totalSize}.`
         )
       }
