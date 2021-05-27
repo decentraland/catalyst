@@ -25,7 +25,7 @@ export class Validations {
   private static MAX_UPLOAD_SIZE_PER_POINTER_MB: Map<EntityType, number> = new Map([
     [EntityType.SCENE, 15],
     [EntityType.PROFILE, 15], // TODO: Investigate and update profiles to a more appropriate number
-    [EntityType.WEARABLE, 2.5]
+    [EntityType.WEARABLE, 2]
   ])
 
   constructor(
