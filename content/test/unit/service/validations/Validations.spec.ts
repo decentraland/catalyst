@@ -9,7 +9,7 @@ import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
 
-fdescribe('Validations', function () {
+describe('Validations', function () {
   it(`When a non uploaded hash is referenced, it is reported`, () => {
     const entity = buildEntity({
       content: new Map([
