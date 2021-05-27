@@ -47,6 +47,8 @@ ts_library(
         "@npm//ts-mockito",
         "@npm//dcl-crypto",
         "@npm//faker",
+        "@npm//ms",
+        "@npm//@types/ms",
         "@npm//@types/sinon",
         "@npm//sinon",
         "@npm//log4js",

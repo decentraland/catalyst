@@ -1,6 +1,6 @@
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
+import { TimeRefreshedDataHolder } from '@katalyst/lambdas/utils/TimeRefreshedDataHolder'
 import { EntityType } from 'dcl-catalyst-commons'
-import future, { IFuture } from 'fp-future'
 import { Wearable, WearableId, WearablesFilters } from '../types'
 import { preferEnglish, translateEntityIntoWearable } from '../Utils'
 import baseAvatars from './base-avatars'
@@ -10,17 +10,25 @@ import baseAvatars from './base-avatars'
  * then look at 'baseAvatars' at the end of the file.
  */
 export class OffChainWearablesManager {
-  private definitions: IFuture<LocalOffChainWearables>
+  private readonly definitions: TimeRefreshedDataHolder<LocalOffChainWearables>
 
-  constructor(
-    private readonly client: SmartContentClient,
-    private readonly collections: OffChainCollections = DEFAULT_COLLECTIONS
-  ) {}
+  constructor({
+    client,
+    collections,
+    refreshTime
+  }: {
+    client: SmartContentClient
+    collections?: OffChainCollections
+    refreshTime?: string
+  }) {
+    this.definitions = new TimeRefreshedDataHolder(
+      () => OffChainWearablesManager.fetchOffChain(client, collections ?? DEFAULT_COLLECTIONS),
+      refreshTime ?? '1d'
+    )
+  }
 
   public async find(filters: WearablesFilters, lastId?: string): Promise<Wearable[]> {
-    // Load into memory all data regarding off-chain wearables
-    const definitions = await this.loadDefinitionsIfNecessary()
-
+    const definitions = await this.definitions.get()
     return definitions.filter(this.buildFilter(filters, lastId)).map(({ wearable }) => wearable)
   }
 
@@ -49,25 +57,21 @@ export class OffChainWearablesManager {
     }
   }
 
-  private async loadDefinitionsIfNecessary(): Promise<LocalOffChainWearables> {
-    if (!this.definitions) {
-      // We are using future here, so if get many requests at once, we only calculate the definitions once
-      this.definitions = future()
+  private static async fetchOffChain(
+    client: SmartContentClient,
+    collections: OffChainCollections
+  ): Promise<LocalOffChainWearables> {
+    const localDefinitions: LocalOffChainWearables = []
 
-      const localDefinitions: LocalOffChainWearables = []
-
-      for (const [collectionId, wearableIds] of Object.entries(this.collections)) {
-        const entities = await this.client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
-        entities
-          .map((entity) => translateEntityIntoWearable(this.client, entity))
-          .sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
-          .forEach((wearable) => localDefinitions.push({ collectionId, wearable }))
-      }
-
-      this.definitions.resolve(localDefinitions)
+    for (const [collectionId, wearableIds] of Object.entries(collections)) {
+      const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+      entities
+        .map((entity) => translateEntityIntoWearable(client, entity))
+        .sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
+        .forEach((wearable) => localDefinitions.push({ collectionId, wearable }))
     }
 
-    return this.definitions
+    return localDefinitions
   }
 }
 
