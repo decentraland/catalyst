@@ -1,5 +1,4 @@
 import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/apis/status/health'
-import { getCommsServerUrl } from '@katalyst/lambdas/utils/commons'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TimeRefreshedDataHolder } from '@katalyst/lambdas/utils/TimeRefreshedDataHolder'
 import log4js, { Logger } from 'log4js'
@@ -12,13 +11,12 @@ export default class PeerHealthStatus {
   private contentServerStatus: TimeRefreshedDataHolder<HealthStatus>
   private commsServerStatus: TimeRefreshedDataHolder<HealthStatus>
   private lambdaServerStatus: TimeRefreshedDataHolder<HealthStatus>
-  private commsServerUrl: string
 
   constructor(
     contentClient: SmartContentClient,
     maxSynchronizationTime: string,
     maxDeploymentObtentionTime: string,
-    private readonly externalCommsServerAddress: string
+    private readonly commsServerAddress: string
   ) {
     this.contentServerStatus = new TimeRefreshedDataHolder(
       () =>
@@ -49,12 +47,8 @@ export default class PeerHealthStatus {
   }
 
   public async refreshCommsServerStatus(): Promise<HealthStatus> {
-    if (!this.commsServerUrl) {
-      this.commsServerUrl = await getCommsServerUrl(PeerHealthStatus.LOGGER, this.externalCommsServerAddress)
-    }
-
     try {
-      await (await fetch(this.commsServerUrl + '/status')).json()
+      await (await fetch(this.commsServerAddress + '/status')).json()
 
       return HealthStatus.HEALTHY
     } catch (error) {
