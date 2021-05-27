@@ -453,7 +453,7 @@ fdescribe('Validations', function () {
     expect(validation.getErrors().length).toBe(1)
   })
 
-  fit(`when an entity is too big per pointer, then it fails`, async () => {
+  it(`when an entity is too big per pointer, then it fails`, async () => {
     const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
 
     validation.validateRequestSize([getFileWithSize(3)], EntityType.SCENE, ['pointer1'], ValidationContext.ALL)
@@ -462,7 +462,7 @@ fdescribe('Validations', function () {
     expect(validation.getErrors()[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
   })
 
-  fit(`when an entity is big, but has enough pointers, then it is ok`, async () => {
+  it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
     const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
 
     validation.validateRequestSize(
