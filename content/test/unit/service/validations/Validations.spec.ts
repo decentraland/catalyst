@@ -452,6 +452,28 @@ describe('Validations', function () {
     )
     expect(validation.getErrors().length).toBe(1)
   })
+
+  it(`when an entity is too big per pointer, then it fails`, async () => {
+    const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
+
+    validation.validateRequestSize([getFileWithSize(3)], EntityType.SCENE, ['pointer1'], ValidationContext.ALL)
+
+    expect(validation.getErrors().length).toBe(1)
+    expect(validation.getErrors()[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+  })
+
+  it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
+    const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
+
+    validation.validateRequestSize(
+      [getFileWithSize(3)],
+      EntityType.SCENE,
+      ['pointer1', 'pointer2'],
+      ValidationContext.ALL
+    )
+
+    expect(validation.getErrors().length).toBe(0)
+  })
 })
 
 const notAvailableHashMessage = (hash) => {
@@ -483,8 +505,21 @@ function getValidatorWithRealAccess() {
   ).getInstance()
 }
 
-function getValidatorWithMockedAccess() {
-  return new Validations(new MockedAccessChecker(), new ContentAuthenticator(), 'ropsten', ms('10m')).getInstance()
+function getFileWithSize(sizeInMB: number) {
+  return { name: '', content: Buffer.alloc(sizeInMB * 1024 * 1024) }
+}
+
+function getValidatorWithMockedAccess(options?: { maxSizePerPointer: { type: EntityType; size: number } }) {
+  const maxSizeMap: Map<EntityType, number> = options
+    ? new Map([[options.maxSizePerPointer.type, options.maxSizePerPointer.size]])
+    : new Map()
+  return new Validations(
+    new MockedAccessChecker(),
+    new ContentAuthenticator(),
+    'ropsten',
+    ms('10m'),
+    maxSizeMap
+  ).getInstance()
 }
 
 function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
