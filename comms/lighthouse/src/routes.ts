@@ -4,10 +4,9 @@ import express, { RequestHandler } from 'express'
 import { IRealm } from 'peerjs-server'
 import { ConfigService } from './configService'
 import { RequestError } from './errors'
-import { requireAll, requireOneOf, requireServerReady, validatePeerToken } from './handlers'
+import { requireAll, requireOneOf, validatePeerToken } from './handlers'
 import { LayersService } from './layersService'
 import { PeersService } from './peersService'
-import { ReadyStateService } from './readyStateService'
 import { Layer, PeerInfo } from './types'
 
 export type RoutesOptions = {
@@ -23,11 +22,10 @@ export type Services = {
   realmProvider: () => IRealm
   peersService: PeersService
   configService: ConfigService
-  readyStateService: ReadyStateService
 }
 
 export function configureRoutes(app: express.Express, services: Services, options: RoutesOptions) {
-  const { layersService, realmProvider: getPeerJsRealm, peersService, configService, readyStateService } = services
+  const { layersService, realmProvider: getPeerJsRealm, peersService, configService } = services
 
   const validateLayerExists = (req, res, next) => {
     if (layersService.exists(req.params.layerId)) {
@@ -38,24 +36,18 @@ export function configureRoutes(app: express.Express, services: Services, option
   }
 
   const getStatus: RequestHandler = async (req, res) => {
-    const ready = readyStateService.isReady()
-
     const status: any = {
       name: options.name,
       version: options.version,
       currenTime: Date.now(),
       env: options.env,
-      ready
+      ready: true
     }
 
     const globalMaxPerLayer = await configService.getMaxPeersPerLayer()
 
     if (req.query.includeLayers === 'true') {
       status.layers = layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, true))
-    }
-
-    if (!ready) {
-      res.status(503)
     }
 
     res.send(status)
@@ -167,26 +159,22 @@ export function configureRoutes(app: express.Express, services: Services, option
   registerRoute(app, '/layers/:layerId/rooms', HttpMethod.GET, [validateLayerExists, getRoomsByLayerId])
   registerRoute(app, '/layers/:layerId/rooms/:roomId', HttpMethod.GET, [validateLayerExists, getRoomId])
   registerRoute(app, '/layers/:layerId', HttpMethod.PUT, [
-    requireServerReady(readyStateService),
     requireOneOf(['id', 'peerId'], (req) => req.body),
     validatePeerToken(getPeerJsRealm),
     putLayerId
   ])
   registerRoute(app, '/layers/:layerId/rooms/:roomId', HttpMethod.PUT, [
-    requireServerReady(readyStateService),
     validateLayerExists,
     requireOneOf(['id', 'peerId'], (req) => req.body),
     validatePeerToken(getPeerJsRealm),
     putRoomId
   ])
   registerRoute(app, '/layers/:layerId/rooms/:roomId/users/:userId', HttpMethod.DELETE, [
-    requireServerReady(readyStateService),
     validateLayerExists,
     validatePeerToken(getPeerJsRealm),
     deleteUserFromRoomById
   ])
   registerRoute(app, '/layers/:layerId/users/:userId', HttpMethod.DELETE, [
-    requireServerReady(readyStateService),
     validateLayerExists,
     validatePeerToken(getPeerJsRealm),
     deleteUserId
