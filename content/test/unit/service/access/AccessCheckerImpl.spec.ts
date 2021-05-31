@@ -48,12 +48,14 @@ describe('AccessCheckerImpl', function () {
   })
 
   it(`When urn network belongs to L2, then L2 subgraph is used`, async () => {
-    const l2Url = 'http://someUrl'
+    const collectionsL2Url = 'http://someUrl'
+    const blocksL2Url = 'http://blocksUrl'
     const { fetcher, mockedFetcher } = mockFetcher()
 
     const accessChecker = buildAccessChecker({
       fetcher,
-      collectionsL2SubgraphUrl: l2Url
+      collectionsL2SubgraphUrl: collectionsL2Url,
+      blocksL2SubgraphUrl: blocksL2Url
     })
 
     await accessChecker.hasAccess(
@@ -63,16 +65,19 @@ describe('AccessCheckerImpl', function () {
       'Unused Address'
     )
 
-    verify(mockedFetcher.queryGraph(l2Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(blocksL2Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(collectionsL2Url, anything(), anything())).once()
   })
 
   it(`When urn network belongs to L1, then L1 subgraph is used`, async () => {
-    const l1Url = 'http://someUrl'
+    const collectionsL1Url = 'http://someUrl'
+    const blocksL1Url = 'http://blocksUrl'
     const { fetcher, mockedFetcher } = mockFetcher()
 
     const accessChecker = buildAccessChecker({
       fetcher,
-      collectionsL1SubgraphUrl: l1Url
+      collectionsL1SubgraphUrl: collectionsL1Url,
+      blocksL1SubgraphUrl: blocksL1Url
     })
 
     await accessChecker.hasAccess(
@@ -82,7 +87,8 @@ describe('AccessCheckerImpl', function () {
       'Unused Address'
     )
 
-    verify(mockedFetcher.queryGraph(l1Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(blocksL1Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(collectionsL1Url, anything(), anything())).once()
   })
 
   function buildAccessChecker(params?: Partial<AccessCheckerImplParams>) {
@@ -92,6 +98,8 @@ describe('AccessCheckerImpl', function () {
       landManagerSubgraphUrl: 'Unused URL',
       collectionsL1SubgraphUrl: 'Unused URL',
       collectionsL2SubgraphUrl: 'Unused URL',
+      blocksL1SubgraphUrl: 'Unused URL',
+      blocksL2SubgraphUrl: 'Unused URL',
       ...params
     }
     return new AccessCheckerImpl(finalParams)
@@ -99,7 +107,14 @@ describe('AccessCheckerImpl', function () {
 
   function mockFetcher() {
     const mockedFetcher = mock(Fetcher)
-    when(mockedFetcher.fetchJson(anything(), anything())).thenResolve({ collections: [], items: [] })
+    when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenCall((url) => {
+      if (url.includes('block')) {
+        return Promise.resolve({ blocks: [{ number: 10 }] })
+      } else {
+        return Promise.resolve({ collections: [], items: [] })
+      }
+    })
+
     const fetcher = instance(mockedFetcher)
     return { fetcher, mockedFetcher }
   }
