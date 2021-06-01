@@ -21,7 +21,6 @@ import { LayersService } from './layersService'
 import { patchLog } from './logging'
 import { pickName } from './naming'
 import { PeersService } from './peersService'
-import { ReadyStateService } from './readyStateService'
 import { configureRoutes } from './routes'
 import { lighthouseConfigStorage } from './simpleStorage'
 
@@ -73,11 +72,9 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const idService = new IdService({ alphabet: idAlphabet, idLength })
 
-  const readyStateService = new ReadyStateService()
-
   configureRoutes(
     app,
-    { layersService, realmProvider: getPeerJsRealm, peersService, configService, readyStateService },
+    { layersService, realmProvider: getPeerJsRealm, peersService, configService },
     {
       name,
       version: LIGHTHOUSE_VERSION,
@@ -148,18 +145,6 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   })
 
   peerServer.on('error', console.log)
-
-  //@ts-ignore
-  peerServer.on('connection', (client: IClient) => {
-    if (!readyStateService.isReady()) {
-      client.send({
-        type: MessageType.ERROR,
-        payload: { msg: 'The lighthouse is not ready to accept connections yet' }
-      })
-
-      client.getSocket()?.close()
-    }
-  })
 
   //@ts-ignore
   peerServer.on('message', (client: IClient, message: IMessage) => {
