@@ -65,6 +65,7 @@ ts_library(
         "//commons/servers",
         "//commons/utils",
         "//contracts",
+        "@npm//@dcl/archipelago",
         "@npm//@types",
         "@npm//cors",
         "@npm//dcl-crypto",
