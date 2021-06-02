@@ -38,4 +38,12 @@ export class ConfigService {
   async getMaxPeersPerLayer(): Promise<number | undefined> {
     return await this.get('maxPeersPerLayer', () => parseInt(process.env.MAX_PER_LAYER ?? '100'))
   }
+
+  async getJoinDistance(): Promise<number> {
+    return await this.get('archipelagoJoinDistance', () => parseInt(process.env.ARCHIPELAGO_JOIN_DISTANCE ?? '64'))
+  }
+
+  async getLeaveDistance(): Promise<number> {
+    return await this.get('archipelagoLeaveDistance', () => parseInt(process.env.ARCHIPELAGO_LEAVE_DISTANCE ?? '80'))
+  }
 }

@@ -916,6 +916,13 @@
     source-map-support "0.5.9"
     tsutils "2.27.2"
 
+"@dcl/archipelago@^1.0.0-20210601202108.commit-7500d2d":
+  version "1.0.0-20210601202108.commit-7500d2d"
+  resolved "https://registry.yarnpkg.com/@dcl/archipelago/-/archipelago-1.0.0-20210601202108.commit-7500d2d.tgz#e5ba4dd136047e78c076db6ad3b0a4793f445b15"
+  integrity sha512-YtGLt/U5rv3H3VZUnuHOECIPwBY5EfU1Xz09K7U3zbPKhGTvUoT5hF2BTrXu6PJYlHmSa1RySnxhGKErbfelUA==
+  dependencies:
+    uuid "^8.3.2"
+
 "@dcl/schemas@^0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-0.2.0.tgz#2ba3161da61d1c1bde8d36290c13957960daaa65"
@@ -8790,6 +8797,11 @@ uuid@3.3.3, uuid@^3.2.1, uuid@^3.3.2, uuid@^3.3.3:
   version "3.3.3"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.3.3.tgz#4568f0216e78760ee1dbf3a4d2cf53e224112866"
   integrity sha512-pW0No1RGHgzlpHJO1nsVrHKpOEIxkGg1xB+v0ZmdNH5OAeAwzAVrCnI2/6Mtx+Uys6iaylxa+D3g4j63IKKjSQ==
+
+uuid@^8.3.2:
+  version "8.3.2"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
+  integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
 v8-compile-cache@^2.0.3:
   version "2.2.0"
