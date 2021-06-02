@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { NextFunction, Request, RequestHandler, Response } from 'express-serve-static-core'
 import { IRealm } from 'peerjs-server'
-import { ReadyStateService } from './readyStateService'
 
 enum PeerHeaders {
   PeerToken = 'X-Peer-Token'
@@ -56,16 +55,6 @@ export function validatePeerToken(realmProvider: () => IRealm): RequestHandler {
       res.status(401).send({ status: 'unauthorized' })
     } else {
       next()
-    }
-  }
-}
-
-export function requireServerReady(readyStateService: ReadyStateService): RequestHandler {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (readyStateService.isReady()) {
-      next()
-    } else {
-      res.status(503).send({ status: 'server-not-ready' })
     }
   }
 }
