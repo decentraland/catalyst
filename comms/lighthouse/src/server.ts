@@ -14,6 +14,7 @@ import { IConfig } from 'peerjs-server/dist/src/config'
 import { IdType, MessageType } from 'peerjs-server/dist/src/enums'
 import { IClient } from 'peerjs-server/dist/src/models/client'
 import { IMessage } from 'peerjs-server/dist/src/models/message'
+import { ArchipelagoService } from './archipelagoService'
 import { ConfigService } from './configService'
 import { DEFAULT_LAYERS } from './default_layers'
 import { IdService } from './idService'
@@ -71,6 +72,13 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService })
 
   const idService = new IdService({ alphabet: idAlphabet, idLength })
+
+  // TODO: Make config updatable without restart
+  const [joinDistance, leaveDistance] = await Promise.all([
+    configService.getJoinDistance(),
+    configService.getLeaveDistance()
+  ])
+  const archipelagoService = new ArchipelagoService({ archipelagoParameters: { joinDistance, leaveDistance } })
 
   configureRoutes(
     app,
@@ -152,6 +160,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
       peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds)
       peersService.updatePeerParcel(client.getId(), message.payload?.parcel)
       peersService.updatePeerPosition(client.getId(), message.payload?.position)
+      archipelagoService.updatePeerPosition(client.getId(), message.payload?.position)
 
       if (message.payload?.optimizeNetwork) {
         const optimalConnectionsResult = layersService.getOptimalConnectionsFor(
