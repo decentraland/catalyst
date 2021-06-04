@@ -1,6 +1,6 @@
 import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-katalyst-utils/util'
+import { delay } from 'decentraland-catalyst-utils/util'
 import ms from 'ms'
 import {
   assertContentNotIsDenylisted,

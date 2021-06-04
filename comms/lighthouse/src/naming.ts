@@ -1,6 +1,6 @@
+import { noReject } from 'decentraland-catalyst-utils/util'
 import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
-import { noReject } from 'decentraland-katalyst-utils/util'
 import { lighthouseStorage } from './simpleStorage'
 
 export const defaultNames = [

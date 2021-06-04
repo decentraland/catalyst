@@ -1,4 +1,4 @@
-import { discretizedPositionDistance, Position3D } from 'decentraland-katalyst-utils/Positions'
+import { discretizedPositionDistance, Position3D } from 'decentraland-catalyst-utils/Positions'
 
 describe('Discretize Positions', () => {
   it('should convert close positions to equivalent', () => {

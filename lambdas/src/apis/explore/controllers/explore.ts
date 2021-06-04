@@ -1,6 +1,6 @@
 import { Entity, EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { noReject } from 'decentraland-catalyst-utils/util'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
-import { noReject } from 'decentraland-katalyst-utils/util'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
 import { SmartContentClient } from '../../../utils/SmartContentClient'

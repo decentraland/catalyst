@@ -7,19 +7,15 @@ import { DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
 import express from 'express'
 import morgan from 'morgan'
 import * as path from 'path'
-import { ExpressPeerServer, IRealm } from 'peerjs-server'
-import { IConfig } from 'peerjs-server/dist/src/config'
-import { MessageType } from 'peerjs-server/dist/src/enums'
-import { IClient } from 'peerjs-server/dist/src/models/client'
-import { IMessage } from 'peerjs-server/dist/src/models/message'
+import { IRealm } from 'peerjs-server'
 import { ArchipelagoService } from './archipelagoService'
-import { peerAuthHandler } from './auth'
 import { ConfigService } from './configService'
 import { DEFAULT_LAYERS } from './default_layers'
 import { IdService } from './idService'
 import { LayersService } from './layersService'
 import { patchLog } from './logging'
 import { pickName } from './naming'
+import { initPeerJsServer } from './initPeerJsServer'
 import { PeersService } from './peersService'
 import { configureRoutes } from './routes'
 import { lighthouseConfigStorage } from './simpleStorage'
@@ -60,44 +56,19 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     console.info(`==> Lighthouse listening on port ${port}.`)
   })
 
-  const options: Partial<IConfig> = {
-    path: '/',
-    idGenerator: () => idService.nextId(),
-    authHandler: peerAuthHandler({ noAuth, peersServiceGetter: () => peersService, ethNetwork: CURRENT_ETH_NETWORK })
+  const peerServer = initPeerJsServer({
+    netServer: server,
+    idService,
+    noAuth,
+    ethNetwork: CURRENT_ETH_NETWORK,
+    peersServiceGetter: () => peersService,
+    layersServiceGetter: () => layersService,
+    archipelagoServiceGetter: () => archipelagoService
+  })
+
+  function getPeerJsRealm(): IRealm {
+    return peerServer.get('peerjs-realm')
   }
-
-  const peerServer = ExpressPeerServer(server, options)
-
-  peerServer.on('disconnect', (client: any) => {
-    console.log('User disconnected from server socket. Removing from all rooms & layers: ' + client.id)
-    layersService.removePeer(client.id)
-  })
-
-  peerServer.on('error', console.log)
-
-  //@ts-ignore
-  peerServer.on('message', (client: IClient, message: IMessage) => {
-    if (message.type === MessageType.HEARTBEAT && client.isAuthenticated()) {
-      peersService.updateTopology(client.getId(), message.payload?.connectedPeerIds)
-      peersService.updatePeerParcel(client.getId(), message.payload?.parcel)
-      peersService.updatePeerPosition(client.getId(), message.payload?.position)
-      archipelagoService.updatePeerPosition(client.getId(), message.payload?.position)
-
-      if (message.payload?.optimizeNetwork) {
-        const optimalConnectionsResult = layersService.getOptimalConnectionsFor(
-          client.getId(),
-          message.payload.targetConnections,
-          message.payload.maxDistance
-        )
-        client.send({
-          type: 'OPTIMAL_NETWORK_RESPONSE',
-          src: '__lighthouse_response__',
-          dst: client.getId(),
-          payload: optimalConnectionsResult
-        })
-      }
-    }
-  })
 
   if (enableMetrics) {
     Metrics.initialize()
@@ -138,10 +109,6 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
       }
     }
   )
-
-  function getPeerJsRealm(): IRealm {
-    return peerServer.get('peerjs-realm')
-  }
 
   app.use('/peerjs', peerServer)
 

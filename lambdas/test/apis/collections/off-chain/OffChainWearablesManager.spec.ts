@@ -2,7 +2,7 @@ import { OffChainWearablesManager } from '@katalyst/lambdas/apis/collections/off
 import { Wearable, WearableId } from '@katalyst/lambdas/apis/collections/types'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { EntityType } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-katalyst-utils/util'
+import { delay } from 'decentraland-catalyst-utils/util'
 import ms from 'ms'
 import { anything, deepEqual, instance, mock, resetCalls, verify, when } from 'ts-mockito'
 

@@ -4,7 +4,7 @@ import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-katalyst-utils/util'
+import { delay } from 'decentraland-catalyst-utils/util'
 import ms from 'ms'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import {

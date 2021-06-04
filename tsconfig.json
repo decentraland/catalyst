@@ -31,7 +31,7 @@
       "@katalyst/test-helpers/*": ["content/test/helpers/*"],
       "decentraland-katalyst-contracts/*": ["contracts/*"],
       "decentraland-katalyst-commons/*": ["commons/servers/*"],
-      "decentraland-katalyst-utils/*": ["commons/utils/*"],
+      "decentraland-catalyst-utils/*": ["commons/utils/*"],
       "katalyst/comms/peer/proto/*": ["dist/bin/comms/peer/proto/*"]
     }
   },
