@@ -103,7 +103,7 @@ export class ConfigService {
       if (this.envWrapper.isInEnv(configEnvironmentName)) {
         newConfigValue = config.fromText(this.envWrapper.readFromEnv(configEnvironmentName))
       } else if (configName in storageConfig) {
-        newConfigValue = storageConfig[configName]
+        newConfigValue = JSON.parse(storageConfig[configName])
       } else if (configName in globalConfig) {
         newConfigValue = globalConfig[configName]
       } else {

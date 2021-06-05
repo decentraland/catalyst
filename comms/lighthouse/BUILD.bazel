@@ -117,7 +117,6 @@ ts_library(
         "@npm//@types/jasmine",
         "@npm//isomorphic-fetch",
         "@npm//express",
-        "@npm//ts-mockito",
     ],
 )
 

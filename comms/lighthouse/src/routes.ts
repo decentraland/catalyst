@@ -152,6 +152,11 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   }
 
+  const getConfig = async (req, res) => {
+    const config = configService.getAllConfig()
+    res.send(config)
+  }
+
   registerRoute(app, '/status', HttpMethod.GET, [getStatus])
   registerRoute(app, '/layers', HttpMethod.GET, [getLayers])
   registerRoute(app, '/layers/:layerId', HttpMethod.GET, [validateLayerExists, getByLayerId])
@@ -190,6 +195,8 @@ export function configureRoutes(app: express.Express, services: Services, option
     ),
     putConfig
   ])
+
+  registerRoute(app, '/config', HttpMethod.GET, [getConfig])
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
