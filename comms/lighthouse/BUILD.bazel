@@ -69,6 +69,7 @@ ts_library(
         "@npm//@types",
         "@npm//cors",
         "@npm//dcl-crypto",
+        "@npm//dcl-catalyst-commons",
         "@npm//express",
         "@npm//fast-deep-equal",
         "@npm//fp-future",
@@ -116,6 +117,7 @@ ts_library(
         "@npm//@types/jasmine",
         "@npm//isomorphic-fetch",
         "@npm//express",
+        "@npm//ts-mockito",
     ],
 )
 

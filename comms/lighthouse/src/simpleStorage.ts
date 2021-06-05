@@ -9,7 +9,16 @@ const deepCopy = (obj: any) => {
   return v8.deserialize(v8.serialize(obj))
 }
 
-export class SimpleStorage {
+export interface ISimpleStorage {
+  clear(): Promise<void>
+  getAll(): Promise<any>
+  getString(key: string): Promise<string | undefined>
+  getOrSetString(key: string, value: string): Promise<string | undefined>
+  setString(key: string, value: string): Promise<void>
+  deleteKey(key: string): Promise<void>
+}
+
+export class SimpleStorage implements ISimpleStorage {
   private _currentItems: object | undefined
   private _lastFlush: object | undefined
 
