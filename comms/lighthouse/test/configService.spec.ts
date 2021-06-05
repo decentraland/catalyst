@@ -1,7 +1,7 @@
 import { Config, ConfigService, EnvironmentWrapper, LighthouseConfig } from '../src/configService'
 import { ISimpleStorage } from '../src/simpleStorage'
 
-fdescribe('Config service', () => {
+describe('Config service', () => {
   it('When the config service is built, then environment takes precedence over all', async () => {
     const config = LighthouseConfig.MAX_PEERS_PER_LAYER
 
