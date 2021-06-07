@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { PeerConnectionHint } from 'decentraland-catalyst-utils/Positions'
-import { IPeersService, NotificationType } from '../src/peersService'
+import { IPeersService, NotificationType } from '../src/peers/peersService'
 import { RoomsService } from '../src/roomsService'
 import { PeerInfo, PeerRequest } from '../src/types'
 

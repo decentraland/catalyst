@@ -1,4 +1,4 @@
-import { Config, ConfigService, EnvironmentWrapper, LighthouseConfig } from '../src/configService'
+import { Config, ConfigService, EnvironmentWrapper, LighthouseConfig } from '../src/config/configService'
 import { ISimpleStorage } from '../src/config/simpleStorage'
 
 describe('Config service', () => {
