@@ -14,7 +14,7 @@ import { IClient } from 'peerjs-server/dist/src/models/client'
 import { IMessage } from 'peerjs-server/dist/src/models/message'
 import { ArchipelagoService } from './archipelagoService'
 import { peerAuthHandler } from './auth'
-import { ConfigService } from './configService'
+import { ConfigService, LighthouseConfig } from './configService'
 import { DEFAULT_LAYERS } from './default_layers'
 import { IdService } from './idService'
 import { LayersService } from './layersService'
@@ -111,15 +111,18 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     app.use(morgan('combined'))
   }
 
-  const configService = new ConfigService(lighthouseConfigStorage)
+  const configService = await ConfigService.build({
+    storage: lighthouseConfigStorage,
+    globalConfig: { ethNetwork: CURRENT_ETH_NETWORK }
+  })
 
   const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService })
 
-  // TODO: Make config updatable without restart
-  const [joinDistance, leaveDistance] = await Promise.all([
-    configService.getJoinDistance(),
-    configService.getLeaveDistance()
-  ])
+  // TODO: Make the ArchipelagoService take the config service instead
+  const [joinDistance, leaveDistance] = [
+    configService.get(LighthouseConfig.ARCHIPELAGO_JOIN_DISTANCE),
+    configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE)
+  ]
 
   const archipelagoService = new ArchipelagoService({ archipelagoParameters: { joinDistance, leaveDistance } })
 

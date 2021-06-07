@@ -1,5 +1,5 @@
 import { Gauge } from 'prom-client'
-import { ConfigService } from './configService'
+import { ConfigService, LighthouseConfig } from './configService'
 import { LayerIsFullError, RequestError, UserMustBeInLayerError as PeerMustBeInLayerError } from './errors'
 import { NotificationType, PeersService } from './peersService'
 import { RoomsService } from './roomsService'
@@ -103,7 +103,7 @@ export class LayersService {
     return (this.layers[layerId] = this.newLayer(layerId))
   }
 
-  async setPeerLayer(layerId: string, peer: PeerRequest) {
+  setPeerLayer(layerId: string, peer: PeerRequest) {
     let layer = this.layers[layerId]
 
     if (!layer) {
@@ -117,7 +117,7 @@ export class LayersService {
 
       this.checkLayerPeersIfNeeded(layer)
 
-      const maxPeers = await this.getMaxPeersFor(layer)
+      const maxPeers = this.getMaxPeersFor(layer)
 
       if (maxPeers && layer.peers.length >= maxPeers) {
         throw new LayerIsFullError(layer, peerId)
@@ -141,8 +141,8 @@ export class LayersService {
     return layer
   }
 
-  async getMaxPeersFor(layer: Layer) {
-    return layer.maxPeers ?? (await this.config.configService.getMaxPeersPerLayer())
+  getMaxPeersFor(layer: Layer) {
+    return layer.maxPeers ?? this.config.configService.get(LighthouseConfig.MAX_PEERS_PER_LAYER)
   }
 
   checkLayerPeersIfNeeded(layer: Layer) {

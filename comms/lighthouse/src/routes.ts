@@ -2,7 +2,7 @@ import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { RequestHandler } from 'express'
 import { IRealm } from 'peerjs-server'
-import { ConfigService } from './configService'
+import { ConfigService, LighthouseConfig } from './configService'
 import { RequestError } from './errors'
 import { requireAll, requireOneOf, validatePeerToken } from './handlers'
 import { LayersService } from './layersService'
@@ -35,7 +35,7 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   }
 
-  const getStatus: RequestHandler = async (req, res) => {
+  const getStatus: RequestHandler = (req, res) => {
     const status: any = {
       name: options.name,
       version: options.version,
@@ -44,7 +44,7 @@ export function configureRoutes(app: express.Express, services: Services, option
       ready: true
     }
 
-    const globalMaxPerLayer = await configService.getMaxPeersPerLayer()
+    const globalMaxPerLayer = configService.get(LighthouseConfig.MAX_PEERS_PER_LAYER)
 
     if (req.query.includeLayers === 'true') {
       status.layers = layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, true))
@@ -53,15 +53,15 @@ export function configureRoutes(app: express.Express, services: Services, option
     res.send(status)
   }
 
-  const getLayers: RequestHandler = async (req, res) => {
-    const globalMaxPerLayer = await configService.getMaxPeersPerLayer()
+  const getLayers: RequestHandler = (req, res) => {
+    const globalMaxPerLayer = configService.get(LighthouseConfig.MAX_PEERS_PER_LAYER)
     res.send(
       layersService.getLayers().map((it) => mapLayerToJson(it, globalMaxPerLayer, req.query.usersParcels === 'true'))
     )
   }
 
-  const getByLayerId = async (req, res) => {
-    const globalMaxPerLayer = await configService.getMaxPeersPerLayer()
+  const getByLayerId = (req, res) => {
+    const globalMaxPerLayer = configService.get(LighthouseConfig.MAX_PEERS_PER_LAYER)
     res.send(mapLayerToJson(layersService.getLayer(req.params.layerId)!, globalMaxPerLayer))
   }
 
@@ -82,10 +82,10 @@ export function configureRoutes(app: express.Express, services: Services, option
     }
   }
 
-  const putLayerId = async (req, res, next) => {
+  const putLayerId = (req, res, next) => {
     const { layerId } = req.params
     try {
-      const layer = await layersService.setPeerLayer(layerId, req.body)
+      const layer = layersService.setPeerLayer(layerId, req.body)
       res.send(mapUsersToJson(peersService.getPeersInfo(layer.peers)))
     } catch (err) {
       handleError(err, res, next)
@@ -147,9 +147,14 @@ export function configureRoutes(app: express.Express, services: Services, option
         })
       )
     } else {
-      const config = await configService.updateConfigs(configKeyValues)
+      const config = await configService.updateStorageConfigs(configKeyValues)
       res.send(config)
     }
+  }
+
+  const getConfig = async (req, res) => {
+    const config = configService.getAllConfig()
+    res.send(config)
   }
 
   registerRoute(app, '/status', HttpMethod.GET, [getStatus])
@@ -190,6 +195,8 @@ export function configureRoutes(app: express.Express, services: Services, option
     ),
     putConfig
   ])
+
+  registerRoute(app, '/config', HttpMethod.GET, [getConfig])
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
