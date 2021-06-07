@@ -916,10 +916,10 @@
     source-map-support "0.5.9"
     tsutils "2.27.2"
 
-"@dcl/archipelago@^1.0.0-20210601202108.commit-7500d2d":
-  version "1.0.0-20210601202108.commit-7500d2d"
-  resolved "https://registry.yarnpkg.com/@dcl/archipelago/-/archipelago-1.0.0-20210601202108.commit-7500d2d.tgz#e5ba4dd136047e78c076db6ad3b0a4793f445b15"
-  integrity sha512-YtGLt/U5rv3H3VZUnuHOECIPwBY5EfU1Xz09K7U3zbPKhGTvUoT5hF2BTrXu6PJYlHmSa1RySnxhGKErbfelUA==
+"@dcl/archipelago@^1.0.0-20210603193143.commit-210fddf":
+  version "1.0.0-20210603193143.commit-210fddf"
+  resolved "https://registry.yarnpkg.com/@dcl/archipelago/-/archipelago-1.0.0-20210603193143.commit-210fddf.tgz#0cfe976a8d6902c0ee05d6c5531e760b9375b3cf"
+  integrity sha512-ELfe8ABwB02BzhxASj0VQ714ilPseSSm2zAgG4G8d5HxlP+UkK2myiW2SZzoWOvvJvCcZU6pK6QrSV4brF4Fjg==
   dependencies:
     uuid "^8.3.2"
 
@@ -6148,8 +6148,6 @@ node-abi@^2.7.0:
   version "2.18.0"
   resolved "https://registry.yarnpkg.com/node-abi/-/node-abi-2.18.0.tgz#1f5486cfd7d38bd4f5392fa44a4ad4d9a0dffbf4"
   integrity sha512-yi05ZoiuNNEbyT/xXfSySZE+yVnQW6fxPZuFbLyS1s6b5Kw3HzV2PHOM4XR+nsjzkHxByK+2Wg+yCQbe35l8dw==
-  dependencies:
-    semver "^5.4.1"
 
 node-addon-api@^2.0.0:
   version "2.0.1"

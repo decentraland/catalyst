@@ -1,20 +1,19 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import cors from 'cors'
-import { Authenticator } from 'dcl-crypto'
 import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
 import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import { DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
-import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
 import express from 'express'
 import morgan from 'morgan'
 import * as path from 'path'
 import { ExpressPeerServer, IRealm } from 'peerjs-server'
 import { IConfig } from 'peerjs-server/dist/src/config'
-import { IdType, MessageType } from 'peerjs-server/dist/src/enums'
+import { MessageType } from 'peerjs-server/dist/src/enums'
 import { IClient } from 'peerjs-server/dist/src/models/client'
 import { IMessage } from 'peerjs-server/dist/src/models/message'
 import { ArchipelagoService } from './archipelagoService'
+import { peerAuthHandler } from './auth'
 import { ConfigService, LighthouseConfig } from './configService'
 import { DEFAULT_LAYERS } from './default_layers'
 import { IdService } from './idService'
@@ -55,49 +54,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const app = express()
 
-  if (enableMetrics) {
-    Metrics.initialize()
-  }
-
-  const peersService = new PeersService(getPeerJsRealm)
-
-  app.use(cors())
-  app.use(express.json())
-  if (accessLogs) {
-    app.use(morgan('combined'))
-  }
-
-  const configService = await ConfigService.build({
-    storage: lighthouseConfigStorage,
-    globalConfig: { ethNetwork: CURRENT_ETH_NETWORK }
-  })
-
-  const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService })
-
   const idService = new IdService({ alphabet: idAlphabet, idLength })
-
-  // TODO: Make the ArchipelagoService take the config service instead
-  const [joinDistance, leaveDistance] = [
-    configService.get(LighthouseConfig.ARCHIPELAGO_JOIN_DISTANCE),
-    configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE)
-  ]
-  const archipelagoService = new ArchipelagoService({ archipelagoParameters: { joinDistance, leaveDistance } })
-
-  configureRoutes(
-    app,
-    { layersService, realmProvider: getPeerJsRealm, peersService, configService },
-    {
-      name,
-      version: LIGHTHOUSE_VERSION,
-      ethNetwork: CURRENT_ETH_NETWORK,
-      restrictedAccessSigner: restrictedAccessAddress,
-      env: {
-        secure,
-        commitHash: process.env.COMMIT_HASH,
-        catalystVersion: process.env.CATALYST_VERSION
-      }
-    }
-  )
 
   const server = app.listen(port, async () => {
     console.info(`==> Lighthouse listening on port ${port}.`)
@@ -106,46 +63,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const options: Partial<IConfig> = {
     path: '/',
     idGenerator: () => idService.nextId(),
-    authHandler: async (client, message) => {
-      if (noAuth) {
-        return true
-      }
-
-      if (!client) {
-        // client not registered
-        return false
-      }
-      if (
-        client.getIdType() === IdType.SELF_ASSIGNED &&
-        client.getId().toLowerCase() !== message.payload[0]?.payload?.toLowerCase()
-      ) {
-        // client id mistmaches with auth signer
-        return false
-      }
-      try {
-        const provider = httpProviderForNetwork(CURRENT_ETH_NETWORK)
-        const result = await Authenticator.validateSignature(client.getMsg(), message.payload, provider)
-
-        const address = message.payload[0].payload
-
-        if (!peersService.existsPeerWithAddress(address)) {
-          peersService.setPeerAddress(client.getId(), message.payload[0].payload)
-        } else {
-          client.send({
-            type: MessageType.ID_TAKEN,
-            payload: { msg: 'ETH Address is taken' }
-          })
-
-          await client.getSocket()?.close()
-          return false
-        }
-
-        return result.ok
-      } catch (e) {
-        console.log(`error while recovering address for client ${client.getId()}`, e)
-        return false
-      }
-    }
+    authHandler: peerAuthHandler({ noAuth, peersServiceGetter: () => peersService, ethNetwork: CURRENT_ETH_NETWORK })
   }
 
   const peerServer = ExpressPeerServer(server, options)
@@ -180,6 +98,49 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
       }
     }
   })
+
+  if (enableMetrics) {
+    Metrics.initialize()
+  }
+
+  const peersService = new PeersService(getPeerJsRealm)
+
+  app.use(cors())
+  app.use(express.json())
+  if (accessLogs) {
+    app.use(morgan('combined'))
+  }
+
+  const configService = await ConfigService.build({
+    storage: lighthouseConfigStorage,
+    globalConfig: { ethNetwork: CURRENT_ETH_NETWORK }
+  })
+
+  const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService })
+
+  // TODO: Make the ArchipelagoService take the config service instead
+  const [joinDistance, leaveDistance] = [
+    configService.get(LighthouseConfig.ARCHIPELAGO_JOIN_DISTANCE),
+    configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE)
+  ]
+
+  const archipelagoService = new ArchipelagoService({ archipelagoParameters: { joinDistance, leaveDistance } })
+
+  configureRoutes(
+    app,
+    { layersService, realmProvider: getPeerJsRealm, peersService, configService },
+    {
+      name,
+      version: LIGHTHOUSE_VERSION,
+      ethNetwork: CURRENT_ETH_NETWORK,
+      restrictedAccessSigner: restrictedAccessAddress,
+      env: {
+        secure,
+        commitHash: process.env.COMMIT_HASH,
+        catalystVersion: process.env.CATALYST_VERSION
+      }
+    }
+  )
 
   function getPeerJsRealm(): IRealm {
     return peerServer.get('peerjs-realm')

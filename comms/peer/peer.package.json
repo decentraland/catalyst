@@ -1,6 +1,6 @@
 {
-  "name": "decentraland-katalyst-peer",
-  "description": "Katalyst peer library",
+  "name": "@dcl/catalyst-peer",
+  "description": "Catalyst peer library",
   "main": "bundle.js",
   "types": "src/index.d.ts",
   "devDependencies": {
