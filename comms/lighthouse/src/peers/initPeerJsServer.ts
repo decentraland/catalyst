@@ -44,6 +44,7 @@ export function initPeerJsServer({
 
   peerServer.on('error', console.log)
 
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   peerServer.on('message', (client: IClient, message: IMessage) => {
     if (message.type === MessageType.HEARTBEAT && client.isAuthenticated()) {
