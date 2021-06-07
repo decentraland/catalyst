@@ -1,4 +1,4 @@
-import { Layer } from './types'
+import { Layer } from '../types'
 
 export class RequestError extends Error {
   constructor(message: string, public statusMessage?: string, public status: number = 400) {

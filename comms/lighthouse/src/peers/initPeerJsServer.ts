@@ -3,11 +3,11 @@ import { Server } from 'net'
 import { ExpressPeerServer } from 'peerjs-server'
 import { IConfig } from 'peerjs-server/dist/src/config'
 import { MessageType } from 'peerjs-server/dist/src/enums'
+import { LayersService } from '../layersService'
+import { PeersService } from '../peers/peersService'
 import { ArchipelagoService } from './archipelagoService'
 import { peerAuthHandler } from './auth'
 import { IdService } from './idService'
-import { LayersService } from './layersService'
-import { PeersService } from './peersService'
 
 export type PeerJSServerInitOptions = {
   netServer: Server
