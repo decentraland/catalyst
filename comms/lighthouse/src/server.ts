@@ -8,7 +8,7 @@ import express from 'express'
 import morgan from 'morgan'
 import * as path from 'path'
 import { IRealm } from 'peerjs-server'
-import { ConfigService, LighthouseConfig } from './config/configService'
+import { ConfigService } from './config/configService'
 import { DEFAULT_LAYERS } from './config/default_layers'
 import { lighthouseConfigStorage } from './config/simpleStorage'
 import { LayersService } from './layersService'
@@ -89,13 +89,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService })
 
-  // TODO: Make the ArchipelagoService take the config service instead
-  const [joinDistance, leaveDistance] = [
-    configService.get(LighthouseConfig.ARCHIPELAGO_JOIN_DISTANCE),
-    configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE)
-  ]
-
-  const archipelagoService = new ArchipelagoService({ archipelagoParameters: { joinDistance, leaveDistance } })
+  const archipelagoService = new ArchipelagoService({ configService })
 
   configureRoutes(
     app,
