@@ -20,7 +20,7 @@ export enum PeerOutgoingMessageType {
 
 export type PeerNotificationMessage = {
   type: PeerNotificationType
-  payload: object // This is too generic, but since we will remove the current notifications because they are related to rooms & layers, we don't need to improve this yet.
+  payload: Record<string, unknown> // This is too generic, but since we will remove the current notifications because they are related to rooms & layers, we don't need to improve this yet.
 }
 
 export type OptimalNetworkResponse = {
