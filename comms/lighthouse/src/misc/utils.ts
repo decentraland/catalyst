@@ -1,4 +1,5 @@
-import { IPeersService, NotificationType } from '../peers/peersService'
+import { PeerNotificationType } from '../peers/messageTypes'
+import { IPeersService } from '../peers/peersService'
 import { PeerRequest } from '../types'
 
 type PeerContainer = {
@@ -10,7 +11,7 @@ export function removePeerAndNotify<T extends PeerContainer>(
   containers: Record<string, T>,
   containerId: string,
   peerId: string,
-  notificationType: NotificationType,
+  notificationType: PeerNotificationType,
   containerKey: string,
   peersService?: IPeersService,
   deleteIfEmpty: boolean = true
