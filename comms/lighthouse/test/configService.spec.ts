@@ -1,5 +1,5 @@
-import { Config, ConfigService, EnvironmentWrapper, LighthouseConfig } from '../src/configService'
-import { ISimpleStorage } from '../src/simpleStorage'
+import { Config, ConfigService, EnvironmentWrapper, LighthouseConfig } from '../src/config/configService'
+import { ISimpleStorage } from '../src/config/simpleStorage'
 
 describe('Config service', () => {
   it('When the config service is built, then environment takes precedence over all', async () => {

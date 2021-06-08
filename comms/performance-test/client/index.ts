@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Position3D, Quaternion } from 'decentraland-katalyst-utils/Positions'
-import { randomBetween } from 'decentraland-katalyst-utils/util'
+import { Position3D, Quaternion } from 'decentraland-catalyst-utils/Positions'
+import { randomBetween } from 'decentraland-catalyst-utils/util'
 import { Reader } from 'protobufjs'
 import { PeerConfig } from '../../peer/src'
 import { PeerMessageTypes } from '../../peer/src/messageTypes'

@@ -1,5 +1,5 @@
 import express from 'express'
-import { IdService } from '../src/idService'
+import { IdService } from '../src/peers/idService'
 
 require('isomorphic-fetch')
 

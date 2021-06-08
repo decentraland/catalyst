@@ -3,7 +3,7 @@ import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
 import { IdType, MessageType } from 'peerjs-server/dist/src/enums'
 import { IClient } from 'peerjs-server/dist/src/models/client'
 import { IMessage } from 'peerjs-server/dist/src/models/message'
-import { PeersService } from './peersService'
+import { PeersService } from '../peers/peersService'
 
 export type AuthHandlerConfiguration = {
   noAuth: boolean

@@ -2,11 +2,11 @@ import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { RequestHandler } from 'express'
 import { IRealm } from 'peerjs-server'
-import { ConfigService, LighthouseConfig } from './configService'
-import { RequestError } from './errors'
-import { requireAll, requireOneOf, validatePeerToken } from './handlers'
+import { ConfigService, LighthouseConfig } from './config/configService'
 import { LayersService } from './layersService'
-import { PeersService } from './peersService'
+import { RequestError } from './misc/errors'
+import { requireAll, requireOneOf, validatePeerToken } from './misc/handlers'
+import { PeersService } from './peers/peersService'
 import { Layer, PeerInfo } from './types'
 
 export type RoutesOptions = {

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-katalyst-utils/Positions'
+import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
-import { PeerInfo, PeerRequest } from './types'
+import { PeerInfo, PeerRequest } from '../types'
 
 export enum NotificationType {
   PEER_LEFT_ROOM = 'PEER_LEFT_ROOM',

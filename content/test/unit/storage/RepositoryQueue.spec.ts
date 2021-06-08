@@ -1,6 +1,6 @@
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from '@katalyst/content/repository/RepositoryQueue'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
-import { delay } from 'decentraland-katalyst-utils/util'
+import { delay } from 'decentraland-catalyst-utils/util'
 import future from 'fp-future'
 
 describe('RepositoryQueue', () => {

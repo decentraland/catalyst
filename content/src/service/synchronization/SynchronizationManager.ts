@@ -1,7 +1,7 @@
 import { streamMap } from '@katalyst/content/service/synchronization/streaming/StreamHelper'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { delay } from 'decentraland-catalyst-utils/util'
 import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
-import { delay } from 'decentraland-katalyst-utils/util'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'

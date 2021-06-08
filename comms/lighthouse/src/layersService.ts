@@ -1,10 +1,10 @@
 import { Gauge } from 'prom-client'
-import { ConfigService, LighthouseConfig } from './configService'
-import { LayerIsFullError, RequestError, UserMustBeInLayerError as PeerMustBeInLayerError } from './errors'
-import { NotificationType, PeersService } from './peersService'
+import { ConfigService, LighthouseConfig } from './config/configService'
+import { LayerIsFullError, RequestError, UserMustBeInLayerError as PeerMustBeInLayerError } from './misc/errors'
+import { getPeerId, removePeerAndNotify } from './misc/utils'
+import { NotificationType, PeersService } from './peers/peersService'
 import { RoomsService } from './roomsService'
 import { Layer, PeerInfo, PeerRequest } from './types'
-import { getPeerId, removePeerAndNotify } from './utils'
 
 const ACTIVE_USERS_GAUGE = new Gauge({
   name: 'active_peers_count',

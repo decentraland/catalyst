@@ -1,5 +1,5 @@
 import { ArchipelagoController, ArchipelagoControllerOptions, defaultArchipelagoController } from '@dcl/archipelago'
-import { isPosition3D, Position } from 'decentraland-katalyst-utils/Positions'
+import { isPosition3D, Position } from 'decentraland-catalyst-utils/Positions'
 
 export class ArchipelagoService {
   private readonly controller: ArchipelagoController
@@ -12,5 +12,9 @@ export class ArchipelagoService {
     if (position && isPosition3D(position)) {
       this.controller.setPeersPositions({ id: peerId, position })
     }
+  }
+
+  clearPeer(id: string) {
+    this.controller.clearPeers(id)
   }
 }
