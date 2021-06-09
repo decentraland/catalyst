@@ -2,13 +2,11 @@
 import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
-import { PeerNotificationType, PeerOutgoingMessage } from './messageTypes'
+import { PeerOutgoingMessage } from './messageTypes'
 
 require('isomorphic-fetch')
 
 export interface IPeersService {
-  notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object): void
-
   getPeerInfo(peerId: string): PeerInfo
   getPeersInfo(peerIds: string[]): PeerInfo[]
 
@@ -42,15 +40,6 @@ export class PeersService implements IPeersService {
         src: '__lighthouse__'
       })
     }
-  }
-
-  notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object) {
-    peerIds.forEach((id) => {
-      this.sendMessageToPeer(id, {
-        type,
-        payload
-      })
-    })
   }
 
   updateTopology(peerId: string, connectedPeerIds: string[]) {
