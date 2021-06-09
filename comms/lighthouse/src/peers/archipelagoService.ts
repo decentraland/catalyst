@@ -73,7 +73,7 @@ export class ArchipelagoService {
             break
           }
           case 'leave': {
-            this.peersService.sendNotificationToIsland(id, island, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
+            this.peersService.sendChangeToIsland(id, island, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
             break
           }
         }

@@ -3,13 +3,11 @@ import { Island } from '@dcl/archipelago'
 import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
-import { PeerNotificationType, PeerOutgoingMessage, PeerOutgoingMessageType } from './messageTypes'
+import { PeerOutgoingMessage, PeerOutgoingMessageType } from './messageTypes'
 
 require('isomorphic-fetch')
 
 export interface IPeersService {
-  notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object): void
-
   getPeerInfo(peerId: string): PeerInfo
   getPeersInfo(peerIds: string[]): PeerInfo[]
 
@@ -43,15 +41,6 @@ export class PeersService implements IPeersService {
         src: '__lighthouse__'
       })
     }
-  }
-
-  notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object) {
-    peerIds.forEach((id) => {
-      this.sendMessageToPeer(id, {
-        type,
-        payload
-      })
-    })
   }
 
   updateTopology(peerId: string, connectedPeerIds: string[]) {
@@ -156,7 +145,7 @@ export class PeersService implements IPeersService {
     )
   }
 
-  sendNotificationToIsland(
+  sendChangeToIsland(
     peerChangingId: string,
     island: Island,
     type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
@@ -183,10 +172,10 @@ export class PeersService implements IPeersService {
       }
     })
 
-    this.sendNotificationToIsland(peerChangingId, island, PeerOutgoingMessageType.PEER_JOINED_ISLAND)
+    this.sendChangeToIsland(peerChangingId, island, PeerOutgoingMessageType.PEER_JOINED_ISLAND)
 
     if (fromIsland) {
-      this.sendNotificationToIsland(peerChangingId, fromIsland, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
+      this.sendChangeToIsland(peerChangingId, fromIsland, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
     }
   }
 }
