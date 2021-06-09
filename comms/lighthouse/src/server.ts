@@ -19,6 +19,8 @@ import { IdService } from './peers/idService'
 import { initPeerJsServer } from './peers/initPeerJsServer'
 import { PeersService } from './peers/peersService'
 import { configureRoutes } from './routes'
+import { AppServices } from './types'
+import { defaultPeerMessagesHandler } from './peers/peerMessagesHandler'
 
 const LIGHTHOUSE_VERSION = '0.2'
 const DEFAULT_ETH_NETWORK = 'ropsten'
@@ -56,14 +58,19 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     console.info(`==> Lighthouse listening on port ${port}.`)
   })
 
+  const appServices: AppServices = {
+    peersService: () => peersService,
+    layersService: () => layersService,
+    archipelagoService: () => archipelagoService,
+    idService
+  }
+
   const peerServer = initPeerJsServer({
     netServer: server,
-    idService,
     noAuth,
     ethNetwork: CURRENT_ETH_NETWORK,
-    peersServiceGetter: () => peersService,
-    layersServiceGetter: () => layersService,
-    archipelagoServiceGetter: () => archipelagoService
+    messagesHandler: defaultPeerMessagesHandler(appServices),
+    ...appServices
   })
 
   function getPeerJsRealm(): IRealm {

@@ -88,7 +88,7 @@ describe('Peer Integration Test', function () {
                   socket.onmessage({
                     data: JSON.stringify({
                       type: ServerMessageType.OptimalNetworkResponse,
-                      src: '__lighthouse_notification__',
+                      src: '__lighthouse__',
                       dst: peerId,
                       payload: {
                         layerId: layer,
@@ -297,7 +297,7 @@ describe('Peer Integration Test', function () {
       sockets[it.id]?.onmessage({
         data: JSON.stringify({
           type: notification,
-          src: '__lighthouse_notification__',
+          src: '__lighthouse__',
           dst: it.id,
           payload: { ...peerData, [notificationKey]: collectionId }
         })

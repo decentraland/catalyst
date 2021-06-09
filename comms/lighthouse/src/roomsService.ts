@@ -1,5 +1,6 @@
 import { removePeerAndNotify } from './misc/utils'
-import { IPeersService, NotificationType } from './peers/peersService'
+import { PeerOutgoingMessageType } from './peers/messageTypes'
+import { IPeersService } from './peers/peersService'
 import { PeerInfo, Room } from './types'
 
 type RoomsFilter = Partial<{
@@ -45,7 +46,7 @@ export class RoomsService {
     if (!room.peers.includes(peerId)) {
       const peersToNotify = room.peers.slice()
       room.peers.push(peerId)
-      this.config.peersService?.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_ROOM, {
+      this.config.peersService?.notifyPeersById(peersToNotify, PeerOutgoingMessageType.PEER_JOINED_ROOM, {
         id: peerId,
         userId: peerId,
         peerId,
@@ -61,7 +62,7 @@ export class RoomsService {
       this.rooms,
       roomId,
       peerId,
-      NotificationType.PEER_LEFT_ROOM,
+      PeerOutgoingMessageType.PEER_LEFT_ROOM,
       'roomId',
       this.peersService
     )

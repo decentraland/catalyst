@@ -2,7 +2,8 @@ import { Gauge } from 'prom-client'
 import { ConfigService, LighthouseConfig } from './config/configService'
 import { LayerIsFullError, RequestError, UserMustBeInLayerError as PeerMustBeInLayerError } from './misc/errors'
 import { getPeerId, removePeerAndNotify } from './misc/utils'
-import { NotificationType, PeersService } from './peers/peersService'
+import { PeerOutgoingMessageType } from './peers/messageTypes'
+import { PeersService } from './peers/peersService'
 import { RoomsService } from './roomsService'
 import { Layer, PeerInfo, PeerRequest } from './types'
 
@@ -88,7 +89,7 @@ export class LayersService {
       this.layers,
       layerId,
       peerId,
-      NotificationType.PEER_LEFT_LAYER,
+      PeerOutgoingMessageType.PEER_LEFT_LAYER,
       'layerId',
       this.peersService,
       !this.isDefaultLayer(layerId)
@@ -129,7 +130,7 @@ export class LayersService {
 
       const peersToNotify = layer.peers.slice()
       layer.peers.push(peerId)
-      this.peersService.notifyPeersById(peersToNotify, NotificationType.PEER_JOINED_LAYER, {
+      this.peersService.notifyPeersById(peersToNotify, PeerOutgoingMessageType.PEER_JOINED_LAYER, {
         id: peerId,
         userId: peerId,
         peerId,

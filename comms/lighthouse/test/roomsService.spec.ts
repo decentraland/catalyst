@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { PeerConnectionHint } from 'decentraland-catalyst-utils/Positions'
-import { IPeersService, NotificationType } from '../src/peers/peersService'
+import { PeerNotificationType } from '../src/peers/messageTypes'
+import { IPeersService } from '../src/peers/peersService'
 import { RoomsService } from '../src/roomsService'
 import { PeerInfo, PeerRequest } from '../src/types'
 
@@ -19,7 +20,7 @@ describe('Rooms service', () => {
 
   beforeEach(() => {
     peerService = {
-      notifyPeersById(peerIds: string[], type: NotificationType, payload: object) {
+      notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object) {
         peerIds.forEach((it) => this.sentMessages.push([it, { type, payload }]))
       },
       getPeerInfo(peerId: string) {

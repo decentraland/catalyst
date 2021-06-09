@@ -2,18 +2,12 @@
 import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
-
-export enum NotificationType {
-  PEER_LEFT_ROOM = 'PEER_LEFT_ROOM',
-  PEER_LEFT_LAYER = 'PEER_LEFT_LAYER',
-  PEER_JOINED_LAYER = 'PEER_JOINED_LAYER',
-  PEER_JOINED_ROOM = 'PEER_JOINED_ROOM'
-}
+import { PeerNotificationType, PeerOutgoingMessage } from './messageTypes'
 
 require('isomorphic-fetch')
 
 export interface IPeersService {
-  notifyPeersById(peerIds: string[], type: NotificationType, payload: object): void
+  notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object): void
 
   getPeerInfo(peerId: string): PeerInfo
   getPeersInfo(peerIds: string[]): PeerInfo[]
@@ -38,26 +32,24 @@ export class PeersService implements IPeersService {
     private distanceFunction: (p1: Position, p2: Position) => number = discretizedPositionDistance()
   ) {}
 
-  notifyPeers(peers: PeerInfo[], type: NotificationType, payload: object) {
-    this.notifyPeersById(
-      peers.map((it) => it.id),
-      type,
-      payload
-    )
+  sendMessageToPeer(peerId: string, message: Omit<PeerOutgoingMessage, 'src' | 'dst'>) {
+    const client = this.peerRealm.getClientById(peerId)
+
+    if (client) {
+      client.send({
+        ...message,
+        dst: peerId,
+        src: '__lighthouse__'
+      })
+    }
   }
 
-  notifyPeersById(peerIds: string[], type: NotificationType, payload: object) {
-    console.log(`Sending ${type} notification to: `, peerIds)
+  notifyPeersById(peerIds: string[], type: PeerNotificationType, payload: object) {
     peerIds.forEach((id) => {
-      const client = this.peerRealm!.getClientById(id)
-      if (client) {
-        client.send({
-          type,
-          src: '__lighthouse_notification__',
-          dst: id,
-          payload
-        })
-      }
+      this.sendMessageToPeer(id, {
+        type,
+        payload
+      })
     })
   }
 
