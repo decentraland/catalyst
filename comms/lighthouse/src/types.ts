@@ -1,4 +1,5 @@
 import { Position } from 'decentraland-catalyst-utils/Positions'
+import { ConfigService } from './config/configService'
 import { LayersService } from './layersService'
 import { ArchipelagoService } from './peers/archipelagoService'
 import { IdService } from './peers/idService'
@@ -36,6 +37,7 @@ export type Layer = {
 
 export type AppServices = {
   idService: IdService
+  configService: ConfigService
   peersService: () => PeersService
   archipelagoService: () => ArchipelagoService
   layersService: () => LayersService
