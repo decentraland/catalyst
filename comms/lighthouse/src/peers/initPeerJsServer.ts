@@ -19,7 +19,6 @@ export function initPeerJsServer({
   noAuth,
   peersService,
   archipelagoService,
-  layersService,
   messagesHandler,
   ethNetwork
 }: PeerJSServerInitOptions): Express {
@@ -33,7 +32,6 @@ export function initPeerJsServer({
 
   peerServer.on('disconnect', (client: any) => {
     console.log('User disconnected from server socket. Removing from all rooms & layers: ' + client.id)
-    layersService().removePeer(client.id)
     archipelagoService().clearPeer(client.id)
   })
 
