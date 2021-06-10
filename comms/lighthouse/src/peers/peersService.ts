@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { Island } from '@dcl/archipelago'
 import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
-import { PeerOutgoingMessage } from './messageTypes'
+import { PeerOutgoingMessage, PeerOutgoingMessageType } from './messageTypes'
 
 require('isomorphic-fetch')
 
@@ -142,5 +143,39 @@ export class PeersService implements IPeersService {
         // We don't send more than 100 peer positions for now
         .slice(0, 100)
     )
+  }
+
+  sendUpdateToIsland(
+    peerChangingId: string,
+    island: Island,
+    type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
+  ) {
+    for (const peer of island.peers) {
+      if (peer.id !== peerChangingId) {
+        this.sendMessageToPeer(peer.id, {
+          type,
+          payload: {
+            islandId: island.id,
+            peerId: peerChangingId
+          }
+        })
+      }
+    }
+  }
+
+  notifyIslandChange(peerChangingId: string, island: Island, fromIsland: Island | undefined) {
+    this.sendMessageToPeer(peerChangingId, {
+      type: PeerOutgoingMessageType.CHANGE_ISLAND,
+      payload: {
+        islandId: island.id,
+        peers: island.peers.map((it) => ({ id: it.id, position: it.position }))
+      }
+    })
+
+    this.sendUpdateToIsland(peerChangingId, island, PeerOutgoingMessageType.PEER_JOINED_ISLAND)
+
+    if (fromIsland) {
+      this.sendUpdateToIsland(peerChangingId, fromIsland, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
+    }
   }
 }

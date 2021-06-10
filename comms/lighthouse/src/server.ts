@@ -46,6 +46,11 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     return string.toLowerCase() === 'true'
   }
 
+  const configService = await ConfigService.build({
+    storage: lighthouseConfigStorage,
+    globalConfig: { ethNetwork: CURRENT_ETH_NETWORK }
+  })
+
   const app = express()
 
   const idService = new IdService({ alphabet: idAlphabet, idLength })
@@ -57,6 +62,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const appServices: AppServices = {
     peersService: () => peersService,
     archipelagoService: () => archipelagoService,
+    configService,
     idService
   }
 
@@ -84,12 +90,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     app.use(morgan('combined'))
   }
 
-  const configService = await ConfigService.build({
-    storage: lighthouseConfigStorage,
-    globalConfig: { ethNetwork: CURRENT_ETH_NETWORK }
-  })
-
-  const archipelagoService = new ArchipelagoService({ configService })
+  const archipelagoService = new ArchipelagoService(appServices)
 
   configureRoutes(
     app,
