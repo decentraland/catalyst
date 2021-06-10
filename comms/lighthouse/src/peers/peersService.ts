@@ -145,7 +145,7 @@ export class PeersService implements IPeersService {
     )
   }
 
-  sendChangeToIsland(
+  sendUpdateToIsland(
     peerChangingId: string,
     island: Island,
     type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
@@ -163,7 +163,7 @@ export class PeersService implements IPeersService {
     }
   }
 
-  sendIslandChange(peerChangingId: string, island: Island, fromIsland: Island | undefined) {
+  notifyIslandChange(peerChangingId: string, island: Island, fromIsland: Island | undefined) {
     this.sendMessageToPeer(peerChangingId, {
       type: PeerOutgoingMessageType.CHANGE_ISLAND,
       payload: {
@@ -172,10 +172,10 @@ export class PeersService implements IPeersService {
       }
     })
 
-    this.sendChangeToIsland(peerChangingId, island, PeerOutgoingMessageType.PEER_JOINED_ISLAND)
+    this.sendUpdateToIsland(peerChangingId, island, PeerOutgoingMessageType.PEER_JOINED_ISLAND)
 
     if (fromIsland) {
-      this.sendChangeToIsland(peerChangingId, fromIsland, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
+      this.sendUpdateToIsland(peerChangingId, fromIsland, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
     }
   }
 }

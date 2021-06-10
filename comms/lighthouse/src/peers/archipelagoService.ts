@@ -69,11 +69,11 @@ export class ArchipelagoService {
               ? await getIsland(update.fromIslandId)
               : undefined
 
-            this.peersService.sendIslandChange(id, island, fromIsland)
+            this.peersService.notifyIslandChange(id, island, fromIsland)
             break
           }
           case 'leave': {
-            this.peersService.sendChangeToIsland(id, island, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
+            this.peersService.sendUpdateToIsland(id, island, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
             break
           }
         }
