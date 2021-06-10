@@ -182,7 +182,7 @@ export class Controller {
       }
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send({ errors: [error.message] })
+      res.status(500)
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
