@@ -13,6 +13,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//commons/utils",
+        "//comms/protocol:comms-protocol",
         "@npm//@types",
         "@npm//eventemitter3",
         "@npm//fp-future",
@@ -51,8 +52,8 @@ npm_package(
     deps = [
         ":bundle.js",
         ":dpackage_gen_package_json",
-        "//commons/utils",
         ":peer",
+        "//commons/utils",
     ],
 )
 

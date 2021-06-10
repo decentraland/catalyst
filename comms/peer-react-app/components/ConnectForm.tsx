@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Button, Field } from 'decentraland-ui'
 import React, { useEffect, useState } from 'react'
-import { discretizedPositionDistance } from '../../../commons/utils/Positions'
+import { discretizedPositionDistanceXZ } from '../../../commons/utils/Positions'
 import { Peer } from '../../peer/src'
 import { util } from '../../peer/src/peerjs-server-connector/util'
-import { IPeer } from '../../peer/src/types'
 import { mouse } from './Mouse'
 import { PeerToken } from './PeerToken'
 
@@ -12,14 +11,12 @@ function fieldFor(label: string, value: string, setter: (s: string) => any) {
   return <Field label={label} onChange={(ev) => setter(ev.target.value)} value={value} />
 }
 
-export const layer = 'blue'
-
 declare const window: Window & { peer: Peer }
 
 export function ConnectForm(props: {
-  onConnected: (peer: IPeer, layer: string, room: string, url: string) => any
+  onConnected: (peer: Peer, room: string, url: string) => any
   peerClass: {
-    new (url: string, peerId: string, callback: any, config: any): IPeer
+    new (url: string, peerId: string, callback: any, config: any): Peer
   }
 }) {
   const [nickname, setNickname] = useState('')
@@ -43,7 +40,7 @@ export function ConnectForm(props: {
         positionConfig: {
           selfPosition: () => [mouse.x, mouse.y, 0],
           maxConnectionDistance: 3,
-          distance: discretizedPositionDistance([100, 200, 400, 600, 800]),
+          distance: discretizedPositionDistanceXZ([100, 200, 400, 600, 800]),
           nearbyPeersDistance: 10,
           disconnectDistance: 5
         },
@@ -76,10 +73,9 @@ export function ConnectForm(props: {
         authHandler: (msg) => Promise.resolve(msg)
       }))
       await peer.awaitConnectionEstablished()
-      await peer.setLayer(layer)
       await peer.joinRoom(aRoom)
       setLoading(false)
-      props.onConnected(peer, layer, aRoom, url)
+      props.onConnected(peer, aRoom, url)
     } catch (e) {
       setError(e.message ?? e.toString())
       console.log(e)

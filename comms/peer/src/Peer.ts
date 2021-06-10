@@ -1,7 +1,11 @@
 import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { future, IFuture } from 'fp-future'
 import { Reader } from 'protobufjs/minimal'
-import { discretizedPositionDistance, DISCRETIZE_POSITION_INTERVALS, Position } from '../../../commons/utils/Positions'
+import {
+  discretizedPositionDistanceXZ,
+  DISCRETIZE_POSITION_INTERVALS,
+  Position3D
+} from '../../../commons/utils/Positions'
 import { randomUint32 } from '../../../commons/utils/util'
 import { ConnectionRejectReasons, PEER_CONSTANTS } from './constants'
 import { PeerMessageType, PingMessageType, PongMessageType, SuspendRelayType } from './messageTypes'
@@ -15,7 +19,6 @@ import { GlobalStats } from './stats'
 import { TimeKeeper } from './TimeKeeper'
 import {
   ConnectedPeerData,
-  IPeer,
   KnownPeerData,
   LogLevel,
   MinPeerData,
@@ -44,7 +47,7 @@ function toParcel(position: any) {
 
 type NetworkOperation = () => Promise<KnownPeerData[]>
 
-export class Peer implements IPeer {
+export class Peer {
   private wrtcHandler: PeerWebRTCHandler
 
   private peerRelayData: Record<string, PeerRelayData> = {}
@@ -93,7 +96,7 @@ export class Peer implements IPeer {
     this.config.backoffMs = this.config.backoffMs ?? PEER_CONSTANTS.DEFAULT_RECONNECTION_BACKOFF_MS
 
     if (this.config.positionConfig) {
-      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistance()
+      this.config.positionConfig.distance = this.config.positionConfig.distance ?? discretizedPositionDistanceXZ()
       this.config.positionConfig.nearbyPeersDistance =
         this.config.positionConfig.nearbyPeersDistance ??
         DISCRETIZE_POSITION_INTERVALS[DISCRETIZE_POSITION_INTERVALS.length - 1]
@@ -173,6 +176,10 @@ export class Peer implements IPeer {
     this.stats = new GlobalStats(this.config.statsUpdateInterval ?? PEER_CONSTANTS.DEFAULT_STATS_UPDATE_INTERVAL)
 
     this.stats.startPeriod()
+  }
+
+  public getCurrentIslandId() {
+    return this.currentIslandId
   }
 
   public get peerId() {
@@ -350,6 +357,15 @@ export class Peer implements IPeer {
   //   const ignored = this.updateNetwork()
   // }
 
+  setIsland(islandId: string, peers: MinPeerData[]) {
+    if (this.disposed) return
+    this.currentIslandId = islandId
+    // This two methods should be atomic. Ensure they are not called asynchronously
+    this.setKnownPeers(peers)
+    this.disconnectFromUnknownPeers()
+    this.triggerUpdateNetwork(`changed to island ${islandId}`)
+  }
+
   private cleanStateAndConnections() {
     this.currentRooms.clear()
     this.knownPeers = {}
@@ -360,9 +376,21 @@ export class Peer implements IPeer {
     this.currentRooms.add(roomId)
   }
 
+  private setKnownPeers(peers: MinPeerData[]) {
+    this.knownPeers = {}
+    this.updateKnownPeers(peers)
+  }
+
+  private disconnectFromUnknownPeers() {
+    for (const peerId of this.wrtcHandler.connectedPeerIds()) {
+      if (!(peerId in this.knownPeers)) {
+        this.wrtcHandler.disconnectFrom(peerId)
+      }
+    }
+  }
+
   private updateKnownPeers(newPeers: MinPeerData[]) {
     //We don't need to remove existing peers since they will eventually expire
-
     newPeers.forEach((peer) => {
       if (peer.id !== this.peerId) {
         this.addKnownPeerIfNotExists(peer)
@@ -603,13 +631,13 @@ export class Peer implements IPeer {
     return this.wrtcHandler.beConnectedTo(peerId, timeout)
   }
 
-  setPeerPosition(peerId: string, position: Position) {
+  setPeerPosition(peerId: string, position: Position3D) {
     if (this.knownPeers[peerId]) {
       this.knownPeers[peerId].position = position
     }
   }
 
-  setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position) {
+  setPeerPositionIfExistingPositionIsOld(peerId: string, position: Position3D) {
     const timestamp = this.knownPeers[peerId]?.timestamp
     if (
       this.knownPeers[peerId] &&
@@ -1062,15 +1090,28 @@ export class Peer implements IPeer {
 
   // handles ws messages that are not handled by PeerWebRTCHandler
   private handleServerMessage(message: PeerOutgoingMessage): void {
-    const { type, payload } = message
-
-    switch (type) {
+    switch (message.type) {
       case PeerOutgoingMessageType.CHANGE_ISLAND: {
-        // const { peers}
+        const { islandId, peers } = message.payload
+        this.setIsland(islandId, peers)
+        break
       }
       case PeerOutgoingMessageType.PEER_LEFT_ISLAND: {
+        const { islandId, peer } = message.payload
+        if (islandId === this.currentIslandId) {
+          if (this.isConnectedTo(peer.id)) this.disconnectFrom(peer.id)
+          this.removeKnownPeer(peer.id)
+          this.triggerUpdateNetwork(`peer ${peer.id} joined island`)
+        }
+        break
       }
       case PeerOutgoingMessageType.PEER_JOINED_ISLAND: {
+        const { islandId, peer } = message.payload
+        if (islandId === this.currentIslandId) {
+          this.addKnownPeerIfNotExists(peer)
+          this.triggerUpdateNetwork(`peer ${peer.id} joined island`)
+        }
+        break
       }
     }
   }
@@ -1083,8 +1124,12 @@ export class Peer implements IPeer {
 
   private handlePeerConnectionLost(peerData: ConnectedPeerData) {
     delete this.peerRelayData[peerData.id]
+    this.triggerUpdateNetwork(`peer ${peerData.id} disconnected`)
+  }
+
+  private triggerUpdateNetwork(event: string) {
     this.updateNetwork().catch((e) => {
-      this.log(LogLevel.WARN, 'Error updating network after peer disconnected', e, peerData)
+      this.log(LogLevel.WARN, 'Error updating network after ' + event, e)
     })
   }
 

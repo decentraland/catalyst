@@ -1,4 +1,4 @@
-import { Position } from 'decentraland-catalyst-utils/Positions'
+import { Position3D } from 'decentraland-catalyst-utils/Positions'
 
 // OUTGOING
 export enum PeerOutgoingMessageType {
@@ -8,11 +8,16 @@ export enum PeerOutgoingMessageType {
   CHANGE_ISLAND = 'CHANGE_ISLAND'
 }
 
+export type PeerWithPosition = {
+  id: string
+  position: [number, number, number]
+}
+
 export type ChangeIsland = {
   type: PeerOutgoingMessageType.CHANGE_ISLAND
   payload: {
     islandId: string
-    peers: string[]
+    peers: PeerWithPosition[]
   }
 }
 
@@ -20,7 +25,7 @@ export type PeerJoinedIsland = {
   type: PeerOutgoingMessageType.PEER_LEFT_ISLAND
   payload: {
     islandId: string
-    peerId: string
+    peer: PeerWithPosition
   }
 }
 
@@ -28,7 +33,7 @@ export type PeerLeftIsland = {
   type: PeerOutgoingMessageType.PEER_JOINED_ISLAND
   payload: {
     islandId: string
-    peerId: string
+    peer: PeerWithPosition
   }
 }
 
@@ -46,7 +51,7 @@ export type HeartbeatMessage = {
   payload: {
     connectedPeerIds: string[]
     parcel?: [number, number]
-    position?: Position
+    position?: Position3D
   }
 }
 

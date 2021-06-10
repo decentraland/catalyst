@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Island } from '@dcl/archipelago'
-import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
+import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
 import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
@@ -28,7 +28,7 @@ export class PeersService implements IPeersService {
 
   constructor(
     private realmProvider: () => IRealm,
-    private distanceFunction: (p1: Position, p2: Position) => number = discretizedPositionDistance()
+    private distanceFunction: (p1: Position3D, p2: Position3D) => number = discretizedPositionDistanceXZ()
   ) {}
 
   sendMessageToPeer(peerId: string, message: Omit<PeerOutgoingMessage, 'src' | 'dst'>) {
@@ -106,7 +106,7 @@ export class PeersService implements IPeersService {
     }
   }
 
-  updatePeerPosition(peerId: string, position?: Position) {
+  updatePeerPosition(peerId: string, position?: Position3D) {
     if (this.peers[peerId]) {
       this.peers[peerId].position = position
     }
@@ -146,17 +146,24 @@ export class PeersService implements IPeersService {
   }
 
   sendUpdateToIsland(
-    peerChangingId: string,
+    peerId: string,
     island: Island,
     type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
   ) {
+    const info = this.getPeerInfo(peerId)
+
+    if (!info.position) {
+      console.warn("Tried to send updates of a peer for which we don't have a position. This shouldn't happen")
+      return
+    }
+
     for (const peer of island.peers) {
-      if (peer.id !== peerChangingId) {
+      if (peer.id !== info.id) {
         this.sendMessageToPeer(peer.id, {
           type,
           payload: {
             islandId: island.id,
-            peerId: peerChangingId
+            peer: { id: info.id, position: info.position }
           }
         })
       }

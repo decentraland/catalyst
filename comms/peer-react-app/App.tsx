@@ -1,19 +1,15 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // currently third part packages frmo npm are not available due to issue:
+import { Center } from 'decentraland-ui'
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { Center } from 'decentraland-ui'
-import { ConnectForm } from './components/ConnectForm'
 import { Peer } from '../peer/src/Peer'
-import { IPeer } from '../peer/src/types'
 import { Chat } from './components/Chat'
+import { ConnectForm } from './components/ConnectForm'
 
 type ScreenEnum = 'connect' | 'chat'
 
-class App extends React.Component<
-  unknown,
-  { screen: ScreenEnum; peer?: IPeer; room?: string; url?: string; layer?: string }
-> {
+class App extends React.Component<unknown, { screen: ScreenEnum; peer?: Peer; room?: string; url?: string }> {
   constructor(props: unknown) {
     super(props)
     this.state = { screen: 'connect' }
@@ -25,7 +21,7 @@ class App extends React.Component<
         return this.connectForm()
       case 'chat':
         if (this.state.peer && this.state.room) {
-          return <Chat peer={this.state.peer} room={this.state.room} url={this.state.url!} layer={this.state.layer!} />
+          return <Chat peer={this.state.peer} room={this.state.room} url={this.state.url!} />
         } else {
           return this.connectForm()
         }
@@ -41,8 +37,8 @@ class App extends React.Component<
   > {
     return (
       <ConnectForm
-        onConnected={(peer, layer, room, url) => {
-          this.setState({ screen: 'chat', peer, layer, room, url })
+        onConnected={(peer, room, url) => {
+          this.setState({ screen: 'chat', peer, room, url })
         }}
         peerClass={Peer}
       />

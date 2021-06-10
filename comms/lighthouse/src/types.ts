@@ -1,4 +1,4 @@
-import { Position } from 'decentraland-catalyst-utils/Positions'
+import { Position3D } from 'decentraland-catalyst-utils/Positions'
 import { ConfigService } from './config/configService'
 import { ArchipelagoService } from './peers/archipelagoService'
 import { IdService } from './peers/idService'
@@ -9,7 +9,7 @@ export type PeerInfo = {
   address?: string
   protocolVersion?: number
   parcel?: [number, number]
-  position?: Position
+  position?: Position3D
   layer?: string
   lastPing?: number
 }

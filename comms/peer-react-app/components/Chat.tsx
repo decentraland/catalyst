@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import React, { useState, useRef, useEffect } from 'react'
-import { IPeer } from '../../peer/src/types'
 import { Button, Radio } from 'decentraland-ui'
+import React, { useEffect, useRef, useState } from 'react'
+import { Peer } from '../../peer/src'
 import { PeerMessageTypes } from '../../peer/src/messageTypes'
 import { mouse } from './Mouse'
 
@@ -54,21 +54,22 @@ type Cursor = {
 
 let intervalId: number | undefined = undefined
 
-export function Chat(props: { peer: IPeer; layer: string; room: string; url: string }) {
+export function Chat(props: { peer: Peer; room: string; url: string }) {
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
   const [message, setMessage] = useState('')
   const [cursors, setCursors] = useState<Record<string, Cursor>>({})
   const [updatingCursors, setUpdatingCursors] = useState(!!new URLSearchParams(location.search).get('updatingCursors'))
   const [currentRoom, setCurrentRoom] = useState(props.room)
   const [availableRooms, setAvailableRooms] = useState([])
-  const [joinedRooms, setJoinedRooms] = useState(props.peer.currentRooms)
+  const [joinedRooms, setJoinedRooms] = useState([...props.peer.currentRooms])
+  const [currentIslandId, setCurrentIslandId] = useState(props.peer.getCurrentIslandId())
   const [newRoomName, setNewRoomName] = useState('')
   const messagesEndRef: any = useRef()
 
   document.title = props.peer.peerIdOrFail()
 
   props.peer.callback = (sender, room, payload) => {
-    if (!joinedRooms.some((joined) => joined.id === room)) {
+    if (!joinedRooms.some((joined) => joined === room)) {
       return
     }
     switch (payload.type) {
@@ -132,21 +133,19 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
 
   useEffect(() => {
     setInterval(async () => {
-      try {
-        const response = await fetch(`${props.url}/layers/${props.layer}/rooms`)
-        const rooms = await response.json()
-        setAvailableRooms(rooms.filter((room) => !joinedRooms.some((joined) => joined.id === room)))
-      } catch (e) {}
+      if (props.peer.getCurrentIslandId() !== currentIslandId) {
+        setCurrentIslandId(props.peer.getCurrentIslandId())
+      }
     }, 1000)
   }, [])
 
-  const users = [...(joinedRooms.find((r) => r.id === currentRoom)?.users?.values() ?? [])]
+  const users = [...Object.keys(props.peer.knownPeers)]
 
   async function joinRoom(room: string) {
     try {
       await props.peer.joinRoom(room)
       setAvailableRooms(availableRooms.filter((r) => r !== room))
-      setJoinedRooms(props.peer.currentRooms)
+      setJoinedRooms([...props.peer.currentRooms])
 
       // @ts-ignore
       Object.keys(props.peer.knownPeers).forEach((it) => {
@@ -163,14 +162,17 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
     <div className="chat">
       <h2 className="welcome-message">Welcome to the Chat {props.peer.peerId}</h2>
       <div className="side">
-        <h3>Available rooms</h3>
-        <ul className="available-rooms">
-          {availableRooms.map((room, i) => (
-            <li className="available-room clickable" key={`available-room-${i}`} onDoubleClick={() => joinRoom(room)}>
-              {room}
-            </li>
-          ))}
-        </ul>
+        <h3>Current Island: {currentIslandId}</h3>
+        <div>
+          <h3>Available rooms</h3>
+          <ul className="available-rooms">
+            {availableRooms.map((room, i) => (
+              <li className="available-room clickable" key={`available-room-${i}`} onDoubleClick={() => joinRoom(room)}>
+                {room}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
       <div className="main">
         <div className="rooms-details">
@@ -178,34 +180,31 @@ export function Chat(props: { peer: IPeer; layer: string; room: string; url: str
             <h3>Rooms joined</h3>
             <ul>
               {joinedRooms.map((room, i) => (
-                <li
-                  className={'room-joined' + (currentRoom === room.id ? ' active-room' : '')}
-                  key={`room-joined-${i}`}
-                >
+                <li className={'room-joined' + (currentRoom === room ? ' active-room' : '')} key={`room-joined-${i}`}>
                   <button
-                    disabled={room.id === currentRoom}
+                    disabled={room === currentRoom}
                     className="action-leave-room"
                     onClick={async () => {
                       try {
-                        await props.peer.leaveRoom(room.id)
-                        setJoinedRooms(joinedRooms.filter((joined) => room.id !== joined.id))
+                        await props.peer.leaveRoom(room)
+                        setJoinedRooms(joinedRooms.filter((joined) => room !== joined))
                       } catch (e) {
-                        console.log(`error while trying to leave room ${room.id}`, e)
+                        console.log(`error while trying to leave room ${room}`, e)
                       }
                     }}
                   >
                     x
                   </button>
                   <span
-                    className={room.id === currentRoom ? '' : 'clickable'}
+                    className={room === currentRoom ? '' : 'clickable'}
                     onClick={() => {
-                      const newRoom = room.id
+                      const newRoom = room
                       if (newRoom !== currentRoom) {
                         setCurrentRoom(newRoom)
                       }
                     }}
                   >
-                    {room.id}
+                    {room}
                   </span>
                 </li>
               ))}
