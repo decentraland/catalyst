@@ -1,18 +1,13 @@
+import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { future, IFuture } from 'fp-future'
 import { Reader } from 'protobufjs/minimal'
-import {
-  discretizedPositionDistance,
-  DISCRETIZE_POSITION_INTERVALS,
-  PeerConnectionHint,
-  Position
-} from '../../../commons/utils/Positions'
+import { discretizedPositionDistance, DISCRETIZE_POSITION_INTERVALS, Position } from '../../../commons/utils/Positions'
 import { randomUint32 } from '../../../commons/utils/util'
 import { ConnectionRejectReasons, PEER_CONSTANTS } from './constants'
 import { PeerMessageType, PingMessageType, PongMessageType, SuspendRelayType } from './messageTypes'
 import { PeerHttpClient } from './PeerHttpClient'
-import { PeerErrorType, ServerMessageType } from './peerjs-server-connector/enums'
+import { PeerErrorType } from './peerjs-server-connector/enums'
 import { HandshakeData } from './peerjs-server-connector/peerjsserverconnection'
-import { ServerMessage } from './peerjs-server-connector/servermessage'
 import { delay, pickBy, pickRandom } from './peerjs-server-connector/util'
 import { PeerWebRTCEvent, PeerWebRTCHandler } from './PeerWebRTCHandler'
 import { MessageData, Packet, PayloadEncoding, PingData, PongData, SuspendRelayData } from './proto/peer_protobuf'
@@ -27,19 +22,16 @@ import {
   PacketCallback,
   PeerConfig,
   PeerRelayData,
-  PingResult,
-  Room
+  PingResult
 } from './types'
 
-const PROTOCOL_VERSION = 4
+const PROTOCOL_VERSION = 5
 
 type PacketData =
   | { messageData: MessageData }
   | { pingData: PingData }
   | { pongData: PongData }
   | { suspendRelayData: SuspendRelayData }
-
-type PeerResponse = { id?: string; userId?: string; peerId?: string; position?: Position }
 
 type ActivePing = { results: PingResult[]; startTime?: number; future: IFuture<PingResult[]> }
 
@@ -61,10 +53,10 @@ export class Peer implements IPeer {
 
   private receivedPackets: Record<string, { timestamp: number; expirationTime: number }> = {}
 
-  private currentLayer?: string
-
-  public readonly currentRooms: Room[] = []
+  public readonly currentRooms: Set<string> = new Set()
   private httpClient: PeerHttpClient
+
+  private currentIslandId: string | undefined
 
   private updatingNetwork: boolean = false
   private currentMessageId: number = 0
@@ -78,8 +70,6 @@ export class Peer implements IPeer {
   private disposed: boolean = false
 
   public logLevel: keyof typeof LogLevel = 'INFO'
-
-  private timeToRequestOptimumNetwork: number = Number.MAX_SAFE_INTEGER
 
   private activePings: Record<string, ActivePing> = {}
 
@@ -118,15 +108,14 @@ export class Peer implements IPeer {
       socketBuilder: this.config.socketBuilder,
       heartbeatExtras: () => ({
         ...this.buildTopologyInfo(),
-        ...this.buildPositionInfo(),
-        ...this.optimizeNetworkRequest()
+        ...this.buildPositionInfo()
       }),
       authHandler: this.config.authHandler,
-      isReadyToEmitSignals: () => !!this.currentLayer,
+      isReadyToEmitSignals: () => !!this.currentIslandId,
       handshakePayloadExtras: () => ({
         protocolVersion: PROTOCOL_VERSION,
         lighthouseUrl: this.lighthouseUrl(),
-        layer: this.currentLayer,
+        islandId: this.currentIslandId,
         position: this.selfPosition()
       }),
       connectionToken: this.config.token,
@@ -151,8 +140,6 @@ export class Peer implements IPeer {
         if (!this.retryingConnection) await this.retryConnection()
       }
     })
-
-    this.setUpTimeToRequestOptimumNetwork()
 
     this.setLighthouseUrl(lighthouseUrl)
 
@@ -194,8 +181,6 @@ export class Peer implements IPeer {
 
   public setLighthouseUrl(lighthouseUrl: string) {
     this.cleanStateAndConnections()
-
-    this.currentLayer = undefined
 
     this.wrtcHandler.setPeerServerUrl(lighthouseUrl)
 
@@ -285,21 +270,6 @@ export class Peer implements IPeer {
       : {}
   }
 
-  private optimizeNetworkRequest() {
-    const shouldOptimize = TimeKeeper.now() > this.timeToRequestOptimumNetwork
-
-    if (shouldOptimize) {
-      this.setUpTimeToRequestOptimumNetwork()
-      return {
-        optimizeNetwork: true,
-        targetConnections: this.config.targetConnections,
-        maxDistance: this.config.positionConfig?.nearbyPeersDistance
-      }
-    } else {
-      return {}
-    }
-  }
-
   private markReceived(packet: Packet) {
     this.receivedPackets[this.packetKey(packet)] = {
       timestamp: TimeKeeper.now(),
@@ -322,8 +292,7 @@ export class Peer implements IPeer {
   private async retryConnection() {
     this.retryingConnection = true
 
-    const layer = this.currentLayer
-    const rooms = this.currentRooms.slice()
+    const rooms = new Set(this.currentRooms)
 
     const { reconnectionAttempts, backoffMs } = this.config
 
@@ -338,15 +307,9 @@ export class Peer implements IPeer {
         this.setLighthouseUrl(this.lighthouseUrl())
         await this.awaitConnectionEstablished()
 
-        if (layer) {
-          await this.setLayer(layer)
-          for (const room of rooms) {
-            await this.joinRoom(room.id)
-          }
+        for (const room of rooms) {
+          await this.joinRoom(room)
         }
-
-        // successfully reconnected
-        break
       } catch (e) {
         this.log(LogLevel.WARN, `Error while reconnecting (attempt ${i}) `, e)
         if (i >= reconnectionAttempts!) {
@@ -368,62 +331,33 @@ export class Peer implements IPeer {
     }
   }
 
-  async setLayer(layer: string): Promise<void> {
-    if (this.disposed) return
-    const id = this.peerIdOrFail()
-    const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
-      method: 'PUT',
-      // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-      bodyObject: { id, userId: id, peerId: id, protocolVersion: PROTOCOL_VERSION }
-    })
+  // async setLayer(layer: string): Promise<void> {
+  //   if (this.disposed) return
+  //   const id = this.peerIdOrFail()
+  //   const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
+  //     method: 'PUT',
+  //     // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
+  //     bodyObject: { id, userId: id, peerId: id, protocolVersion: PROTOCOL_VERSION }
+  //   })
 
-    const layerUsers: PeerResponse[] = json
+  //   const layerUsers: PeerResponse[] = json
 
-    this.currentLayer = layer
-    this.cleanStateAndConnections()
-    this.updateKnownPeers(layerUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position })))
+  //   this.currentLayer = layer
+  //   this.cleanStateAndConnections()
+  //   this.updateKnownPeers(layerUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position })))
 
-    //@ts-ignore
-    const ignored = this.updateNetwork()
-  }
+  //   //@ts-ignore
+  //   const ignored = this.updateNetwork()
+  // }
 
   private cleanStateAndConnections() {
-    this.currentRooms.length = 0
+    this.currentRooms.clear()
     this.knownPeers = {}
     this.wrtcHandler.cleanConnections()
   }
 
   async joinRoom(roomId: string): Promise<any> {
-    if (this.disposed) return
-    this.assertPeerInLayer()
-
-    let room = this.findRoom(roomId)
-
-    if (!room) {
-      room = {
-        id: roomId,
-        users: [] as string[]
-      }
-      this.currentRooms.push(room)
-    } else {
-      room.users = []
-    }
-
-    const id = this.peerIdOrFail()
-    const { json } = await this.httpClient.fetch(`/layers/${this.currentLayer}/rooms/${roomId}`, {
-      method: 'PUT',
-      // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-      bodyObject: { id, userId: id, peerId: id }
-    })
-
-    const roomUsers: PeerResponse[] = json
-
-    room.users = roomUsers.map((it) => (it.id ?? it.userId)!)
-
-    this.updateKnownPeers(roomUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position })))
-
-    await this.updateNetwork()
-    return await this.roomConnectionHealthy(roomId)
+    this.currentRooms.add(roomId)
   }
 
   private updateKnownPeers(newPeers: MinPeerData[]) {
@@ -456,24 +390,10 @@ export class Peer implements IPeer {
       hops: packet.hops + 1,
       timestamp: TimeKeeper.now()
     }
-
-    if (packet.messageData?.room) {
-      this.addUserToRoom(packet.messageData.room, minPeerData)
-    }
   }
 
   private removeKnownPeer(peerId: string) {
     delete this.knownPeers[peerId]
-    this.currentRooms.forEach((it) => this.removeUserFromRoom(it.id, peerId))
-  }
-
-  async roomConnectionHealthy(roomId: string) {
-    // - Send ping to each member of the room
-    // - Await responses. Once responces amount reach a certain threshold, assume healthy
-    // - If not healthy after 5 seconds (or configurable amount) and if max connections are not reached, establish connection with more peers
-    // - If after additional connections still not healthy, fail
-
-    return true
   }
 
   calculateConnectionCandidates() {
@@ -513,19 +433,13 @@ export class Peer implements IPeer {
   private isValidConnectionCandidate(it: KnownPeerData): boolean {
     return (
       !this.isConnectedTo(it.id) &&
-      (!this.config.positionConfig?.maxConnectionDistance ||
-        this.isValidConnectionByDistance(it) ||
-        this.isValidConnectionByRooms(it))
+      (!this.config.positionConfig?.maxConnectionDistance || this.isValidConnectionByDistance(it))
     )
   }
 
   private isValidConnectionByDistance(peer: KnownPeerData) {
     const distance = this.distanceTo(peer.id)
     return typeof distance !== 'undefined' && distance <= this.config.positionConfig!.maxConnectionDistance!
-  }
-
-  private isValidConnectionByRooms(peer: KnownPeerData): boolean {
-    return this.currentRooms.some((room) => room.users.includes(peer.id))
   }
 
   private peerSortCriteria() {
@@ -630,12 +544,7 @@ export class Peer implements IPeer {
       const connectionsToDrop = this.wrtcHandler.connectedPeerIds().filter((it) => {
         const distance = this.distanceTo(it)
         // We need to check that we are actually connected to the peer, and also only disconnect to it if we know we are far away and we don't have any rooms in common
-        return (
-          this.isConnectedTo(it) &&
-          distance &&
-          distance >= this.config.positionConfig!.disconnectDistance! &&
-          !this.isValidConnectionByRooms(this.knownPeers[it])
-        )
+        return this.isConnectedTo(it) && distance && distance >= this.config.positionConfig!.disconnectDistance!
       })
 
       if (connectionsToDrop.length > 0) {
@@ -686,26 +595,8 @@ export class Peer implements IPeer {
     return await this.wrtcHandler.connectTo(known.id)
   }
 
-  private assertPeerInLayer() {
-    if (!this.currentLayer) throw new Error('Peer needs to have joined a layer to operate with rooms')
-  }
-
   async leaveRoom(roomId: string) {
-    this.assertPeerInLayer()
-
-    await this.httpClient.fetch(
-      `/layers/${this.currentLayer}/rooms/${roomId}/users/${encodeURIComponent(this.peerIdOrFail())}`,
-      { method: 'DELETE' }
-    )
-
-    const index = this.currentRooms.findIndex((room) => room.id === roomId)
-
-    if (index === -1) {
-      // not in room -> do nothing
-      return Promise.resolve()
-    }
-
-    this.currentRooms.splice(index, 1)
+    this.currentRooms.delete(roomId)
   }
 
   beConnectedTo(peerId: string, timeout: number = 10000): Promise<void> {
@@ -732,10 +623,6 @@ export class Peer implements IPeer {
 
   public isConnectedTo(peerId: string): boolean {
     return this.wrtcHandler.isConnectedTo(peerId)
-  }
-
-  private findRoom(id: string) {
-    return this.currentRooms.find(($) => $.id === id)
   }
 
   private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number, sequenceId: number) {
@@ -1026,7 +913,7 @@ export class Peer implements IPeer {
   }
 
   private isInRoom(room: string) {
-    return this.currentRooms.some((it) => it.id === room)
+    return this.currentRooms.has(room)
   }
 
   private generateMessageId() {
@@ -1045,8 +932,7 @@ export class Peer implements IPeer {
   }
 
   sendMessage(roomId: string, payload: any, type: PeerMessageType) {
-    const room = this.currentRooms.find((_room) => _room.id === roomId)
-    if (!room) {
+    if (!this.isInRoom(roomId)) {
       return Promise.reject(new Error(`cannot send a message in a room not joined (${roomId})`))
     }
 
@@ -1175,79 +1061,18 @@ export class Peer implements IPeer {
   }
 
   // handles ws messages that are not handled by PeerWebRTCHandler
-  private handleServerMessage(message: ServerMessage): void {
+  private handleServerMessage(message: PeerOutgoingMessage): void {
     const { type, payload } = message
 
     switch (type) {
-      case ServerMessageType.PeerLeftRoom: {
-        const { roomId, userId, id } = payload
-        this.removeUserFromRoom(roomId, id ?? userId)
-        break
+      case PeerOutgoingMessageType.CHANGE_ISLAND: {
+        // const { peers}
       }
-      case ServerMessageType.PeerLeftLayer: {
-        const { layerId, userId, id } = payload
-        if (this.currentLayer === layerId) {
-          this.removeKnownPeer(id ?? userId)
-        }
-        break
+      case PeerOutgoingMessageType.PEER_LEFT_ISLAND: {
       }
-      case ServerMessageType.PeerJoinedRoom: {
-        const { roomId, userId, id } = payload
-        this.addUserToRoom(roomId, { id: id ?? userId })
-        break
-      }
-      case ServerMessageType.PeerJoinedLayer: {
-        const { layerId, userId, id } = payload
-        if (this.currentLayer === layerId) {
-          this.addKnownPeerIfNotExists({ id: id ?? userId })
-        }
-        break
-      }
-      case ServerMessageType.OptimalNetworkResponse: {
-        if (payload) {
-          const { layerId, optimalConnections } = payload
-
-          if (this.currentLayer === layerId) {
-            this.processOptimalConnectionsResponse(optimalConnections)
-          }
-        }
-        break
+      case PeerOutgoingMessageType.PEER_JOINED_ISLAND: {
       }
     }
-  }
-
-  private processOptimalConnectionsResponse(optimalConnections: PeerConnectionHint[]) {
-    const now = TimeKeeper.now()
-    optimalConnections.forEach((it) => {
-      this.addKnownPeerIfNotExists(it)
-
-      this.knownPeers[it.id].position = it.position
-      this.knownPeers[it.id].lastUpdated = now
-    })
-
-    this.updateNetwork().catch((e) => this.log(LogLevel.WARN, 'Error updating network for optimization', e))
-  }
-
-  private removeUserFromRoom(roomId: string, peerId: string) {
-    const room = this.findRoom(roomId)
-    if (room) {
-      const userIndex = room.users.indexOf(peerId)
-      if (userIndex >= 0) room.users.splice(userIndex, 1)
-    }
-  }
-
-  private addUserToRoom(roomId: string, peerData: MinPeerData) {
-    this.addKnownPeerIfNotExists(peerData)
-
-    const room = this.findRoom(roomId)
-    if (room && !room.users.includes(peerData.id)) {
-      room.users.push(peerData.id)
-    }
-  }
-
-  private setUpTimeToRequestOptimumNetwork() {
-    this.timeToRequestOptimumNetwork =
-      TimeKeeper.now() + (this.config.optimizeNetworkInterval ?? PEER_CONSTANTS.DEFAULT_OPTIMIZE_NETWORK_INTERVAL)
   }
 
   private handleConnectionRequestRejected(peerId: string, reason: string) {
@@ -1268,7 +1093,7 @@ export class Peer implements IPeer {
       return { ok: false, message: ConnectionRejectReasons.INCOMPATIBLE_PROTOCOL_VERSION }
     }
 
-    if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentLayer !== payload.layer) {
+    if (this.httpClient.lighthouseUrl !== payload.lighthouseUrl || this.currentIslandId !== payload.islandId) {
       return { ok: false, message: ConnectionRejectReasons.MUST_BE_IN_SAME_DOMAIN_AND_LAYER }
     }
 

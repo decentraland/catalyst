@@ -2,7 +2,7 @@ import { ArchipelagoController, defaultArchipelagoController, Island, IslandUpda
 import { isPosition3D, Position } from 'decentraland-catalyst-utils/Positions'
 import { LighthouseConfig } from '../config/configService'
 import { AppServices } from '../types'
-import { PeerOutgoingMessageType } from './messageTypes'
+import { PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { PeersService } from './peersService'
 
 export class ArchipelagoService {

@@ -8,9 +8,6 @@ type PacketSubtypeData = {
   lastTimestamp: number
   lastSequenceId: number
 }
-
-export type Room = { id: string; users: string[] }
-
 export type PeerRelay = { id: string; hops: number; timestamp: number }
 
 export type KnownPeerData = {
@@ -29,10 +26,9 @@ export type MinPeerData = { id: string; position?: Position }
 export interface IPeer {
   peerId?: string
   peerIdOrFail(): string
-  currentRooms: Room[]
+  currentRooms: Set<string>
   logLevel: LogLevelString
   callback: PacketCallback
-  setLayer(layer: string): Promise<void>
   joinRoom(room: string): Promise<void>
   leaveRoom(roomId: string): Promise<void>
   sendMessage(room: string, payload: any, type?: PeerMessageType): Promise<void>

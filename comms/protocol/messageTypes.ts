@@ -1,9 +1,6 @@
 import { Position } from 'decentraland-catalyst-utils/Positions'
-import { MessageType } from 'peerjs-server/dist/src/enums'
-import { IMessage } from 'peerjs-server/dist/src/models/message'
 
 // OUTGOING
-
 export enum PeerOutgoingMessageType {
   PEER_LEFT_ISLAND = 'PEER_LEFT_ISLAND',
   PEER_JOINED_ISLAND = 'PEER_JOINED_ISLAND',
@@ -37,12 +34,15 @@ export type PeerLeftIsland = {
 
 export type PeerOutgoingMessageContent = ChangeIsland | PeerJoinedIsland | PeerLeftIsland
 
-export type PeerOutgoingMessage = Omit<IMessage, 'type'> & PeerOutgoingMessageContent
+export type PeerOutgoingMessage = { readonly src: string; readonly dst: string } & PeerOutgoingMessageContent
 
 // INCOMING
+export enum PeerIncomingMessageType {
+  HEARTBEAT = 'HEARTBEAT'
+}
 
 export type HeartbeatMessage = {
-  type: MessageType.HEARTBEAT
+  type: PeerIncomingMessageType.HEARTBEAT
   payload: {
     connectedPeerIds: string[]
     parcel?: [number, number]

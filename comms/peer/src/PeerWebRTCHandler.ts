@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { PeerOutgoingMessage } from 'comms-protocol/messageTypes'
 import EventEmitter from 'eventemitter3'
 import { future } from 'fp-future'
 import SimplePeer, { SignalData } from 'simple-peer'
@@ -24,7 +24,7 @@ type OptionalConfig = {
   handshakePayloadExtras: () => Record<string, any>
   handshakeValidator: (payload: HandshakeData, peerId: string) => ValidationResult
   receivedOfferValidator: (payload: HandshakeData, peerId: string) => ValidationResult
-  serverMessageHandler: (message: ServerMessage) => void
+  serverMessageHandler: (message: PeerOutgoingMessage) => void
   rtcConnectionConfig: Record<string, any>
   oldConnectionsTimeout: number
   peerConnectTimeout: number
@@ -172,8 +172,8 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
 
   public isConnectedTo(peerId: string): boolean {
     return (
-      //@ts-ignore The `connected` property is not typed but it seems to be public
-      this.connectedPeers[peerId] && this.connectedPeers[peerId].connection.connected
+      //The `connected` property is not typed but it seems to be public
+      this.connectedPeers[peerId] && (this.connectedPeers[peerId].connection as any).connected
     )
   }
 
@@ -418,7 +418,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
           break
         }
         default: {
-          this.config.serverMessageHandler(message)
+          this.config.serverMessageHandler(message as PeerOutgoingMessage)
         }
       }
     }

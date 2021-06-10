@@ -1,7 +1,6 @@
-import { MessageType } from 'peerjs-server/dist/src/enums'
 import { IClient } from 'peerjs-server/dist/src/models/client'
 import { AppServices } from '../types'
-import { HeartbeatMessage, PeerIncomingMessage } from './messageTypes'
+import { HeartbeatMessage, PeerIncomingMessage, PeerIncomingMessageType } from 'comms-protocol/messageTypes'
 
 export type PeerMessagesHandler = (client: IClient, message: PeerIncomingMessage) => any
 
@@ -9,7 +8,7 @@ export function defaultPeerMessagesHandler({ peersService, archipelagoService }:
   return (client: IClient, message: PeerIncomingMessage) => {
     if (client.isAuthenticated()) {
       switch (message.type) {
-        case MessageType.HEARTBEAT:
+        case PeerIncomingMessageType.HEARTBEAT:
           handleHeartbeat(message, client)
       }
     }
