@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Island } from '@dcl/archipelago'
+import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
-import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 
 require('isomorphic-fetch')
 
@@ -12,12 +12,7 @@ export interface IPeersService {
   getPeersInfo(peerIds: string[]): PeerInfo[]
 
   ensurePeerInfo(peer: PeerRequest): PeerInfo
-  getOptimalConnectionsFor(
-    peer: PeerInfo,
-    otherPeers: PeerInfo[],
-    targetConnections: number,
-    maxDistance: number
-  ): PeerConnectionHint[]
+  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], maxDistance: number): PeerConnectionHint[]
 }
 
 export class PeersService implements IPeersService {
@@ -101,23 +96,16 @@ export class PeersService implements IPeersService {
   }
 
   updatePeerParcel(peerId: string, parcel?: [number, number]) {
-    if (this.peers[peerId]) {
-      this.peers[peerId].parcel = parcel
-    }
+    const peerInfo = this.ensurePeerInfo({ id: peerId })
+    peerInfo.parcel = parcel
   }
 
   updatePeerPosition(peerId: string, position?: Position3D) {
-    if (this.peers[peerId]) {
-      this.peers[peerId].position = position
-    }
+    const peerInfo = this.ensurePeerInfo({ id: peerId })
+    peerInfo.position = position
   }
 
-  getOptimalConnectionsFor(
-    peer: PeerInfo,
-    otherPeers: PeerInfo[],
-    targetConnections: number,
-    maxDistance: number
-  ): PeerConnectionHint[] {
+  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], maxDistance: number): PeerConnectionHint[] {
     const hints: PeerConnectionHint[] = []
 
     otherPeers.forEach((it) => {
@@ -153,7 +141,9 @@ export class PeersService implements IPeersService {
     const info = this.getPeerInfo(peerId)
 
     if (!info.position) {
-      console.warn("Tried to send updates of a peer for which we don't have a position. This shouldn't happen")
+      console.warn(
+        `Tried to send updates of a peer ${peerId} for which we don't have a position. This shouldn't happen.`
+      )
       return
     }
 
