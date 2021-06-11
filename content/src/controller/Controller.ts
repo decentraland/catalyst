@@ -178,11 +178,11 @@ export class Controller {
         res.send({ creationTimestamp: deploymentResult })
       } else {
         Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
-        res.status(400).send(deploymentResult.errors.join('\n'))
+        res.status(400).send({ errors: deploymentResult.errors })
       }
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message)
+      res.status(500)
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
