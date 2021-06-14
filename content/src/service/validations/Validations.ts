@@ -4,7 +4,6 @@ import {
   EntityId,
   EntityType,
   EntityVersion,
-  ENTITY_FILE_NAME,
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -266,10 +265,8 @@ export class ValidatorInstance {
           )
 
         // Validate that all hashes that belong to uploaded files are actually reported on the entity
-        Array.from(hashes.entries())
-          .filter(([, file]) => file.name !== ENTITY_FILE_NAME)
-          .map(([hash]) => hash)
-          .filter((hash) => !entityHashes.includes(hash))
+        Array.from(hashes.keys())
+          .filter((hash) => !entityHashes.includes(hash) || hash !== entity.id)
           .forEach((unreferencedHash) =>
             this.errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`)
           )
