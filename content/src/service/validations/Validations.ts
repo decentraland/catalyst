@@ -254,6 +254,8 @@ export class ValidatorInstance {
     if (validationContext.shouldValidate(Validation.CONTENT)) {
       if (entity.content) {
         const entityHashes: string[] = Array.from(entity.content?.values() ?? [])
+        console.log(entityHashes)
+        console.log(Array.from(hashes.keys()))
 
         // Validate that all hashes in entity were uploaded, or were already stored on the service
         entityHashes
@@ -266,7 +268,7 @@ export class ValidatorInstance {
 
         // Validate that all hashes that belong to uploaded files are actually reported on the entity
         Array.from(hashes.keys())
-          .filter((hash) => !entityHashes.includes(hash) || hash !== entity.id)
+          .filter((hash) => !entityHashes.includes(hash) && hash !== entity.id)
           .forEach((unreferencedHash) =>
             this.errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`)
           )
