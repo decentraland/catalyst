@@ -2,6 +2,7 @@ import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
 import { addModelToFormData } from 'dcl-catalyst-client'
+import { ContentFileHash } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
@@ -72,7 +73,7 @@ async function deployLegacy(server: TestServer, deployData: DeployData) {
   form.append('version', 'v2')
   form.append('migration_data', JSON.stringify({ data: 'data' }))
 
-  deployData.files.forEach((f: ContentFile) => form.append(f.name, f.content, { filename: f.name }))
+  deployData.files.forEach((f: ContentFile, hash: ContentFileHash) => form.append(hash, f.content, { filename: hash }))
 
   const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
   await assertResponseIsOkOrThrow(deployResponse)

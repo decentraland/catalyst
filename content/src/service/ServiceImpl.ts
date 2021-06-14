@@ -388,7 +388,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: ContentFile }[] = await Hashing.calculateHashes(files)
+      const hashEntries: { hash: ContentFileHash; file: ContentFile }[] = await Hashing.calculateHashes(
+        files.map(({ content }) => ({ name: 'empty', content })) // We need to add the name manually until we update the catalyst-commons library
+      )
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }

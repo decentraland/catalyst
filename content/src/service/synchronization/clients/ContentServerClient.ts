@@ -79,7 +79,7 @@ export class ContentServerClient {
 
   async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
     const content = await this.client.downloadContent(fileHash, { attempts: 3, waitTime: '0.5s' })
-    return { name: fileHash, content }
+    return { content }
   }
 
   getAddress(): ServerAddress {
