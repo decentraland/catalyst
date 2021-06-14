@@ -115,9 +115,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     // Hash all files, and validate them
     const hashes: Map<ContentFileHash, ContentFile> = await ServiceImpl.hashFiles(files)
 
-    // Find entity file and make sure its hash is the expected
+    // Find entity file
     const entityFile = hashes.get(entityId)
-
     if (!entityFile) {
       return { errors: [`Failed to find the entity file.`] }
     }
