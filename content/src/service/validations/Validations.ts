@@ -94,14 +94,6 @@ export class ValidatorInstance {
     }
   }
 
-  validateEntityHash(entityId: EntityId, entityFileHash: ContentFileHash, validationContext: ValidationContext) {
-    if (validationContext.shouldValidate(Validation.ENTITY_HASH)) {
-      if (entityId !== entityFileHash) {
-        this.errors.push("Entity file's hash didn't match the signed entity id.")
-      }
-    }
-  }
-
   /** Validate that the signature belongs to the Ethereum address */
   async validateSignature(
     entityId: EntityId,
@@ -124,7 +116,7 @@ export class ValidatorInstance {
 
   /** Validate that the full request size is within limits */
   validateRequestSize(
-    files: ContentFile[],
+    files: Map<ContentFileHash, ContentFile>,
     entityType: EntityType,
     pointers: Pointer[],
     validationContext: ValidationContext

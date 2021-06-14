@@ -15,6 +15,7 @@ import { Deployment, DeploymentOptions, PointerChangesFilters } from '../service
 import { Entity } from '../service/Entity'
 import { EntityFactory } from '../service/EntityFactory'
 import {
+  DeploymentFiles,
   DeploymentListener,
   DeploymentResult,
   LocalDeploymentAuditInfo,
@@ -81,7 +82,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 
   async deployToFix(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string
@@ -89,17 +90,17 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.repository.task(
       async (task) => {
         // Validate the deployment
-        await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+        const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
         // If all validations passed, then deploy the entity
-        return this.service.deployToFix(files, entityId, auditInfo, origin, task)
+        return this.service.deployToFix(hashedFiles, entityId, auditInfo, origin, task)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
   }
 
   async deployEntity(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string
@@ -107,27 +108,27 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.repository.task(
       async (task) => {
         // Validate the deployment
-        await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+        const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
         // If all validations passed, then deploy the entity
-        return this.service.deployEntity(files, entityId, auditInfo, origin, task)
+        return this.service.deployEntity(hashedFiles, entityId, auditInfo, origin, task)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
   }
 
   async deployLocalLegacy(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo
   ): Promise<DeploymentResult> {
     return this.repository.task(
       async (task) => {
         // Validate the deployment
-        await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+        const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
         // If all validations passed, then deploy the entity
-        return this.service.deployLocalLegacy(files, entityId, auditInfo, task)
+        return this.service.deployLocalLegacy(hashedFiles, entityId, auditInfo, task)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
@@ -261,7 +262,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   private async validateDeployment(
     denylistRepo: DenylistRepository,
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo
   ) {
@@ -272,7 +273,11 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
 
     // Find the entity file
-    const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
+    const hashes: Map<ContentFileHash, ContentFile> = await ServiceImpl.hashFiles(files)
+    const entityFile = hashes.get(entityId)
+    if (!entityFile) {
+      throw new Error(`Failed to find the entity file.`)
+    }
 
     // Parse entity file into an Entity
     const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
@@ -290,6 +295,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     if (await this.areDenylisted(denylistRepo, ...pointerTargets)) {
       throw new Error(`Can't allow the deployment since the entity contains a denylisted pointer.`)
     }
+
+    return hashes
   }
 
   /** Since entity ids are also file hashes, we need to check for all possible targets */
