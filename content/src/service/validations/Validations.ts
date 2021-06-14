@@ -254,8 +254,6 @@ export class ValidatorInstance {
     if (validationContext.shouldValidate(Validation.CONTENT)) {
       if (entity.content) {
         const entityHashes: string[] = Array.from(entity.content?.values() ?? [])
-        console.log(entityHashes)
-        console.log(Array.from(hashes.keys()))
 
         // Validate that all hashes in entity were uploaded, or were already stored on the service
         entityHashes
