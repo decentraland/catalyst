@@ -66,7 +66,7 @@ describe('AccessCheckerImpl', function () {
     )
 
     verify(mockedFetcher.queryGraph(blocksL2Url, anything(), anything())).once()
-    verify(mockedFetcher.queryGraph(collectionsL2Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(collectionsL2Url, anything(), anything())).twice()
   })
 
   it(`When urn network belongs to L1, then L1 subgraph is used`, async () => {
@@ -88,7 +88,7 @@ describe('AccessCheckerImpl', function () {
     )
 
     verify(mockedFetcher.queryGraph(blocksL1Url, anything(), anything())).once()
-    verify(mockedFetcher.queryGraph(collectionsL1Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(collectionsL1Url, anything(), anything())).twice()
   })
 
   function buildAccessChecker(params?: Partial<AccessCheckerImplParams>) {
@@ -109,7 +109,7 @@ describe('AccessCheckerImpl', function () {
     const mockedFetcher = mock(Fetcher)
     when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenCall((url) => {
       if (url.includes('block')) {
-        return Promise.resolve({ blocks: [{ number: 10 }] })
+        return Promise.resolve({ after: [{ number: 10 }], fiveMin: [{ number: 5 }] })
       } else {
         return Promise.resolve({ collections: [], items: [] })
       }
