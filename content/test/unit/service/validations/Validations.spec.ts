@@ -456,7 +456,7 @@ describe('Validations', function () {
   it(`when an entity is too big per pointer, then it fails`, async () => {
     const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
 
-    validation.validateRequestSize([getFileWithSize(3)], EntityType.SCENE, ['pointer1'], ValidationContext.ALL)
+    validation.validateRequestSize(getFileWithSize(3), EntityType.SCENE, ['pointer1'], ValidationContext.ALL)
 
     expect(validation.getErrors().length).toBe(1)
     expect(validation.getErrors()[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
@@ -466,7 +466,7 @@ describe('Validations', function () {
     const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
 
     validation.validateRequestSize(
-      [getFileWithSize(3)],
+      getFileWithSize(3),
       EntityType.SCENE,
       ['pointer1', 'pointer2'],
       ValidationContext.ALL
@@ -508,7 +508,7 @@ function getValidatorWithRealAccess() {
 }
 
 function getFileWithSize(sizeInMB: number) {
-  return { name: '', content: Buffer.alloc(sizeInMB * 1024 * 1024) }
+  return new Map([['someHash', { name: '', content: Buffer.alloc(sizeInMB * 1024 * 1024) }]])
 }
 
 function getValidatorWithMockedAccess(options?: { maxSizePerPointer: { type: EntityType; size: number } }) {

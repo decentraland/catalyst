@@ -13,14 +13,13 @@ import {
 } from '@katalyst/content/service/Service'
 import { ServiceFactory } from '@katalyst/content/service/ServiceFactory'
 import { ContentStorage, StorageContent } from '@katalyst/content/storage/ContentStorage'
-import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
 import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
 import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
 import assert from 'assert'
-import { ContentFileHash, EntityType, EntityVersion, ENTITY_FILE_NAME, Hashing } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { MockedStorage } from '../storage/MockedStorage'
 import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
@@ -62,19 +61,13 @@ describe('Service', function () {
     service = await buildService()
   })
 
-  it(`When no file called '${ENTITY_FILE_NAME}' is uploaded, then an exception is thrown`, async () => {
-    await assertPromiseRejectionIs(
-      () => service.deployEntity([randomFile], randomFileHash, auditInfo, ''),
-      `Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`
-    )
-  })
-
-  it(`When two or more files called '${ENTITY_FILE_NAME}' are uploaded, then an exception is thrown`, async () => {
-    const invalidEntityFile: ContentFile = { name: ENTITY_FILE_NAME, content: Buffer.from('Hello') }
-    await assertPromiseRejectionIs(
-      () => service.deployEntity([entityFile, invalidEntityFile], 'some-id', auditInfo, ''),
-      `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`
-    )
+  it(`When no file matches the given entity id, then deployment fails`, async () => {
+    const deploymentResult = await service.deployEntity([randomFile], 'not-actual-hash', auditInfo, '')
+    if (isInvalidDeployment(deploymentResult)) {
+      expect(deploymentResult.errors).toEqual([`Failed to find the entity file.`])
+    } else {
+      assert.fail('Expected the deployment to fail')
+    }
   })
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
