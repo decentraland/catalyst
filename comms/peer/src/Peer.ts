@@ -340,25 +340,6 @@ export class Peer {
     }
   }
 
-  // async setLayer(layer: string): Promise<void> {
-  //   if (this.disposed) return
-  //   const id = this.peerIdOrFail()
-  //   const { json } = await this.httpClient.fetch(`/layers/${layer}`, {
-  //     method: 'PUT',
-  //     // userId and peerId are deprecated but we leave them here for compatibility. When all lighthouses are safely updated they should be removed
-  //     bodyObject: { id, userId: id, peerId: id, protocolVersion: PROTOCOL_VERSION }
-  //   })
-
-  //   const layerUsers: PeerResponse[] = json
-
-  //   this.currentLayer = layer
-  //   this.cleanStateAndConnections()
-  //   this.updateKnownPeers(layerUsers.map((it) => ({ id: (it.id ?? it.userId)!, position: it.position })))
-
-  //   //@ts-ignore
-  //   const ignored = this.updateNetwork()
-  // }
-
   setIsland(islandId: string, peers: MinPeerData[]) {
     if (this.disposed) return
     this.currentIslandId = islandId
