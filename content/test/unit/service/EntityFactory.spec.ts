@@ -23,7 +23,7 @@ describe('Service', () => {
   })
 
   it(`When the entity file can't be parsed into an entity, then an exception is thrown`, () => {
-    const invalidFile: ContentFile = { name: `invalid-file`, content: Buffer.from('Hello') }
+    const invalidFile: ContentFile = { content: Buffer.from('Hello') }
 
     assertInvalidFile(invalidFile, `id`, `Failed to parse the entity file. Please make sure that it is a valid json.`)
   })

@@ -3,7 +3,6 @@ import {
   ContentFileHash,
   EntityId,
   EntityType,
-  ENTITY_FILE_NAME,
   Hashing,
   PartialDeploymentHistory,
   Pointer,
@@ -33,6 +32,7 @@ import { FailedDeploymentsManager, FailureReason } from './errors/FailedDeployme
 import { PointerManager } from './pointers/PointerManager'
 import {
   ClusterDeploymentsService,
+  DeploymentFiles,
   DeploymentListener,
   DeploymentResult,
   InvalidResult,
@@ -74,7 +74,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   deployEntity(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
@@ -84,7 +84,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   deployToFix(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
@@ -94,7 +94,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   deployLocalLegacy(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     task?: Database
@@ -103,7 +103,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   private async deployInternal(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: AuditInfo | LocalDeploymentAuditInfo,
     validationContext: ValidationContext,
@@ -112,10 +112,14 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   ): Promise<DeploymentResult> {
     const validation = this.validations.getInstance()
 
-    // Find entity file and make sure its hash is the expected
-    const entityFile: ContentFile = ServiceImpl.findEntityFile(files)
-    const entityFileHash = await Hashing.calculateHash(entityFile)
-    validation.validateEntityHash(entityId, entityFileHash, validationContext)
+    // Hash all files, and validate them
+    const hashes: Map<ContentFileHash, ContentFile> = await ServiceImpl.hashFiles(files)
+
+    // Find entity file
+    const entityFile = hashes.get(entityId)
+    if (!entityFile) {
+      return { errors: [`Failed to find the entity file.`] }
+    }
 
     // Parse entity file into an Entity
     const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
@@ -136,14 +140,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     validation.validateDecentralandAddress(ownerAddress, validationContext)
 
     // Validate request size
-    validation.validateRequestSize(files, entity.type, entity.pointers, validationContext)
+    validation.validateRequestSize(hashes, entity.type, entity.pointers, validationContext)
 
     // Validate ethAddress access
     await validation.validateAccess(entity.type, entity.pointers, entity.timestamp, ownerAddress, validationContext)
-
-    // Hash all files, and validate them
-    const hashEntries: { hash: ContentFileHash; file: ContentFile }[] = await Hashing.calculateHashes(files)
-    const hashes: Map<ContentFileHash, ContentFile> = new Map(hashEntries.map(({ hash, file }) => [hash, file]))
 
     // Check for if content is already stored
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
@@ -384,16 +384,20 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
-  static findEntityFile(files: ContentFile[]): ContentFile {
-    const filesWithName = files.filter((file) => file.name === ENTITY_FILE_NAME)
-    if (filesWithName.length === 0) {
-      throw new Error(`Failed to find the entity file. Please make sure that it is named '${ENTITY_FILE_NAME}'.`)
-    } else if (filesWithName.length > 1) {
-      throw new Error(
-        `Found more than one file called '${ENTITY_FILE_NAME}'. Please make sure you upload only one with that name.`
+  /**
+   * This function will take some deployment files and hash them. They might come already hashed, and if that is the case we will just return them.
+   * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
+   * them in the service (because there might be hundreds of files), we will send the hash result.
+   */
+  static async hashFiles(files: DeploymentFiles): Promise<Map<ContentFileHash, ContentFile>> {
+    if (files instanceof Map) {
+      return files
+    } else {
+      const hashEntries: { hash: ContentFileHash; file: ContentFile }[] = await Hashing.calculateHashes(
+        files.map(({ content }) => ({ name: 'empty', content })) // We need to add the name manually until we update the catalyst-commons library
       )
+      return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
-    return filesWithName[0]
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {

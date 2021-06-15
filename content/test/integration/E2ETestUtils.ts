@@ -1,4 +1,3 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { ControllerEntityFactory } from '@katalyst/content/controller/ControllerEntityFactory'
 import { retry } from '@katalyst/content/helpers/RetryHelper'
 import { Entity } from '@katalyst/content/service/Entity'
@@ -6,6 +5,7 @@ import { EntityFactory } from '@katalyst/content/service/EntityFactory'
 import { DeploymentResult, MetaverseContentService } from '@katalyst/content/service/Service'
 import { DeploymentBuilder } from 'dcl-catalyst-client'
 import {
+  ContentFile,
   ContentFileHash,
   Entity as ControllerEntity,
   EntityId,

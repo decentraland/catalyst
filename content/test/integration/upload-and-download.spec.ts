@@ -1,4 +1,3 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean } from '@katalyst/content/Environment'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
@@ -80,26 +79,14 @@ describe('End 2 end deploy test', () => {
 
     expect(scene.content).toBeDefined()
     expect(scene.content!.length).toBe(2)
-    expect(findInArray(scene.content, Array.from(deployData.files.values())[0].name)).toBeDefined()
-    expect(findInArray(scene.content, Array.from(deployData.files.values())[1].name)).toBeDefined()
 
     for (const contentElement of scene.content!) {
       const downloadedContent = await server.downloadContent(contentElement.hash)
-      expect(downloadedContent).toEqual(
-        findInFileArray(Array.from(deployData.files.values()), contentElement.file)?.content ?? Buffer.from([])
-      )
+      expect(downloadedContent).toEqual(deployData.files.get(contentElement.hash)!.content)
     }
   }
 })
 
 function equalsCaseInsensitive(text1: string, text2: string): boolean {
   return text1.toLowerCase() === text2.toLowerCase()
-}
-
-function findInArray<T extends { file: string }>(elements: T[] | undefined, key: string): T | undefined {
-  return elements?.find((e) => e.file === key)
-}
-
-function findInFileArray(elements: ContentFile[] | undefined, key: string): ContentFile | undefined {
-  return elements?.find((e) => e.name === key)
 }

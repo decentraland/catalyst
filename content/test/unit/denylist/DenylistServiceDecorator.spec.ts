@@ -316,6 +316,16 @@ describe('DenylistServiceDecorator', () => {
     )
   })
 
+  it(`When there is no file matching the entity id, then the deployment fails`, async () => {
+    const denylist = denylistWith()
+    const decorator = getDecorator(denylist)
+
+    await assertPromiseRejectionIs(
+      () => decorator.deployEntity([entityFile1], 'some-random-id', auditInfo, ''),
+      `Failed to find the entity file.`
+    )
+  })
+
   function deploymentEqualsNonSanitizableProperties(entity: Entity, deployment: Deployment) {
     expect(entity.id).toEqual(deployment.entityId)
     expect(entity.type).toEqual(deployment.entityType)

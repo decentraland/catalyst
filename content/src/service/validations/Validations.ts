@@ -4,7 +4,6 @@ import {
   EntityId,
   EntityType,
   EntityVersion,
-  ENTITY_FILE_NAME,
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -94,14 +93,6 @@ export class ValidatorInstance {
     }
   }
 
-  validateEntityHash(entityId: EntityId, entityFileHash: ContentFileHash, validationContext: ValidationContext) {
-    if (validationContext.shouldValidate(Validation.ENTITY_HASH)) {
-      if (entityId !== entityFileHash) {
-        this.errors.push("Entity file's hash didn't match the signed entity id.")
-      }
-    }
-  }
-
   /** Validate that the signature belongs to the Ethereum address */
   async validateSignature(
     entityId: EntityId,
@@ -124,7 +115,7 @@ export class ValidatorInstance {
 
   /** Validate that the full request size is within limits */
   validateRequestSize(
-    files: ContentFile[],
+    files: Map<ContentFileHash, ContentFile>,
     entityType: EntityType,
     pointers: Pointer[],
     validationContext: ValidationContext
@@ -274,10 +265,8 @@ export class ValidatorInstance {
           )
 
         // Validate that all hashes that belong to uploaded files are actually reported on the entity
-        Array.from(hashes.entries())
-          .filter(([, file]) => file.name !== ENTITY_FILE_NAME)
-          .map(([hash]) => hash)
-          .filter((hash) => !entityHashes.includes(hash))
+        Array.from(hashes.keys())
+          .filter((hash) => !entityHashes.includes(hash) && hash !== entity.id)
           .forEach((unreferencedHash) =>
             this.errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`)
           )
