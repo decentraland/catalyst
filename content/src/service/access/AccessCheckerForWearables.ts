@@ -79,23 +79,42 @@ export class AccessCheckerForWearables {
     ethAddress: EthAddress
   ): Promise<boolean> {
     try {
-      const blockNumber = await this.findBlockForTimestamp(blocksSubgraphUrl, timestamp)
-      const ethAddressLowercase = ethAddress.toLowerCase()
-      const permissions: WearableItemPermissionsData = await this.getCollectionItems(
-        collectionsSubgraphUrl,
-        collection,
-        itemId,
-        blockNumber
+      const { blockNumberNow, blockNumberFiveMinBefore } = await this.findBlocksForTimestamp(
+        blocksSubgraphUrl,
+        timestamp
       )
+      // It could happen that the subgraph hasn't synced yet, so someone who just lost access still managed to make a deployment. The problem would be that when other catalysts perform
+      // the same check, the subgraph managed to sync and the deployment is now invalid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
+      // have access now, or had access 5 minutes ago.
       return (
-        (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
-        (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
-        (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
+        (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberNow)) ||
+        (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberFiveMinBefore))
       )
     } catch (error) {
       this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
       return false
     }
+  }
+
+  private async hasPermission(
+    ethAddress: string,
+    subgraphUrl: string,
+    collection: string,
+    itemId: string,
+    block: number
+  ): Promise<boolean> {
+    const permissions: WearableItemPermissionsData = await this.getCollectionItems(
+      subgraphUrl,
+      collection,
+      itemId,
+      block
+    )
+    const ethAddressLowercase = ethAddress.toLowerCase()
+    return (
+      (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
+      (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
+      (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
+    )
   }
 
   private async getCollectionItems(
@@ -134,19 +153,34 @@ export class AccessCheckerForWearables {
     }
   }
 
-  private async findBlockForTimestamp(blocksSubgraphUrl: string, timestamp: Timestamp) {
+  private async findBlocksForTimestamp(blocksSubgraphUrl: string, timestamp: Timestamp) {
     const query = `
-      query getBlockForTimestamp($timestamp: Int!) {
-        blocks(where: { timestamp_lte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: desc) {
+      query getBlockForTimestamp($timestamp: Int!, $timestamp5Min: Int!) {
+        before: blocks(where: { timestamp_lte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: desc) {
+          number
+        }
+        after: blocks(where: { timestamp_gte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: asc) {
+          number
+        }
+        fiveMin: blocks(where: { timestamp_lte: $timestamp5Min }, first: 1, orderBy: timestamp, orderDirection: desc) {
           number
         }
       }
     `
     try {
-      const result = await this.fetcher.queryGraph<{ blocks: { number: number }[] }>(blocksSubgraphUrl, query, {
-        timestamp: Math.ceil(timestamp / 1000)
+      const timestampSec = Math.ceil(timestamp / 1000)
+      const result = await this.fetcher.queryGraph<{
+        before: { number: number }[]
+        after: { number: number }[]
+        fiveMin: { number: number }[]
+      }>(blocksSubgraphUrl, query, {
+        timestamp: timestampSec,
+        timestamp5Min: timestampSec - 60 * 5
       })
-      return result.blocks[0].number
+      // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
+      const blockNumberNow = result.after?.[0]?.number ?? result.before[0].number
+      const blockNumberFiveMinBefore = result.fiveMin[0].number
+      return { blockNumberNow, blockNumberFiveMinBefore }
     } catch (error) {
       this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
       throw error
