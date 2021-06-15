@@ -602,7 +602,7 @@ describe('Peer Integration Test', function () {
     )
   })
 
-  fit('connects to close peers when updating network', async () => {
+  it('connects to close peers when updating network', async () => {
     extraPeersConfig = {
       targetConnections: 2,
       maxConnections: 3,
