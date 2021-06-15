@@ -384,6 +384,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
+  /**
+   * This function will take some deployment files and hash them. They might come already hashed, and if that is the case we will just return them.
+   * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
+   * them in the service (because there might be hundreds of files), we will send the hash result.
+   */
   static async hashFiles(files: DeploymentFiles): Promise<Map<ContentFileHash, ContentFile>> {
     if (files instanceof Map) {
       return files
