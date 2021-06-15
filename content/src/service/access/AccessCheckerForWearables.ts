@@ -79,7 +79,7 @@ export class AccessCheckerForWearables {
     ethAddress: EthAddress
   ): Promise<boolean> {
     try {
-      const { blockNumberNow, blockNumberFiveMinBefore } = await this.findBlocksForTimestamp(
+      const { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment } = await this.findBlocksForTimestamp(
         blocksSubgraphUrl,
         timestamp
       )
@@ -87,8 +87,14 @@ export class AccessCheckerForWearables {
       // the same check, the subgraph might have synced and the deployment is no longer valid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
       // have access now, or had access 5 minutes ago.
       return (
-        (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberNow)) ||
-        (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberFiveMinBefore))
+        (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberAtDeployment)) ||
+        (await this.hasPermission(
+          ethAddress,
+          collectionsSubgraphUrl,
+          collection,
+          itemId,
+          blockNumberFiveMinBeforeDeployment
+        ))
       )
     } catch (error) {
       this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
@@ -178,9 +184,9 @@ export class AccessCheckerForWearables {
         timestamp5Min: timestampSec - 60 * 5
       })
       // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
-      const blockNumberNow = parseInt(result.after[0]?.number ?? result.before[0].number)
-      const blockNumberFiveMinBefore = parseInt(result.fiveMin[0].number)
-      return { blockNumberNow, blockNumberFiveMinBefore }
+      const blockNumberAtDeployment = parseInt(result.after[0]?.number ?? result.before[0].number)
+      const blockNumberFiveMinBeforeDeployment = parseInt(result.fiveMin[0].number)
+      return { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment }
     } catch (error) {
       this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
       throw error
