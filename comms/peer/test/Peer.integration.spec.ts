@@ -42,7 +42,7 @@ describe('Peer Integration Test', function () {
     onclose: any = () => {}
 
     set onopen(f: any) {
-      f()
+      setTimeout(f, 0)
     }
 
     readyState: number = 1
@@ -72,7 +72,9 @@ describe('Peer Integration Test', function () {
           const peerId = findPeerIdBySocket(socket)
           if (peerId) {
             Object.values(lighthouses).forEach((lighthouse) => {
-              lighthouse[peerId] = { id: peerId, position: position }
+              const peer = lighthouse[peerId] ?? { id: peerId, position: position }
+              peer.position = position
+              lighthouse[peerId] = peer
             })
           }
         }
@@ -103,7 +105,11 @@ describe('Peer Integration Test', function () {
     return socket
   }
 
-  function sendMessageToSocket(peerId: string, socket: SocketMock, content: PeerOutgoingMessageContent) {
+  function sendMessageToSocket(
+    peerId: string,
+    content: PeerOutgoingMessageContent,
+    socket: SocketMock = sockets[peerId]
+  ) {
     const message: PeerOutgoingMessage = { src: '__lighthouse__', dst: peerId, ...content }
 
     socket.onmessage({ data: JSON.stringify(message) })
@@ -148,22 +154,23 @@ describe('Peer Integration Test', function () {
   ) {
     getLighthouse(lighthouse)[peerId] = { id: peerId, position, islandId }
 
-    sendMessageToSocket(peerId, socket ?? sockets[peerId], {
-      type: PeerOutgoingMessageType.CHANGE_ISLAND,
-      payload: { islandId, peers: getIslandPeers(islandId) }
-    })
+    sendMessageToSocket(
+      peerId,
+      {
+        type: PeerOutgoingMessageType.CHANGE_ISLAND,
+        payload: { islandId, peers: getIslandPeers(islandId) }
+      },
+      socket ?? sockets[peerId]
+    )
 
-    // getIslandPeers(islandId).forEach((it) => {
-    //   if (it.id !== peerId) {
-    //     const peerSocket = sockets[it.id]
-    //     if (peerSocket) {
-    //       sendMessageToSocket(it.id, peerSocket, {
-    //         type: PeerOutgoingMessageType.PEER_JOINED_ISLAND,
-    //         payload: { islandId, peer: { id: peerId, position } }
-    //       })
-    //     }
-    //   }
-    // })
+    getIslandPeers(islandId).forEach((it) => {
+      if (it.id !== peerId) {
+        sendMessageToSocket(it.id, {
+          type: PeerOutgoingMessageType.PEER_JOINED_ISLAND,
+          payload: { islandId, peer: { id: peerId, position } }
+        })
+      }
+    })
   }
 
   async function connectPeers(
@@ -201,6 +208,7 @@ describe('Peer Integration Test', function () {
     await peer2.joinRoom(room)
 
     await peer1.beConnectedTo(peerId2)
+    await peer2.beConnectedTo(peerId1)
 
     return [peer1, peer2]
   }
@@ -249,6 +257,8 @@ describe('Peer Integration Test', function () {
           ...extraPeersConfig
         })
       }
+
+      putPeerInIsland(peerId, `I${i}`, socket) //TODO: Assign islands using archipelago? Or maybe pass islands through parameter?
 
       positionedPeers.push(positioned)
     }
@@ -575,7 +585,7 @@ describe('Peer Integration Test', function () {
     PEER_CONSTANTS.EXPIRATION_LOOP_INTERVAL = oldExpirationInterval
   })
 
-  xit('adds known peers when changing island', async () => {
+  it('adds known peers when changing island', async () => {
     const [socket1, peer1] = await createPeer('peer1')
 
     const peer2 = new Peer(DEFAULT_LIGHTHOUSE, 'peer2', messageHandler, {
@@ -586,14 +596,16 @@ describe('Peer Integration Test', function () {
 
     expect(Object.keys(peer2.knownPeers)).toContain('peer1')
 
-    await untilTrue(() => Object.keys(peer1.knownPeers).includes('peer2'))
+    await untilTrue(
+      () => Object.keys(peer1.knownPeers).includes('peer2'),
+      'Peer 1 should receive notification and add peer 2 to its known peers'
+    )
   })
 
   xit('connects to close peers when updating network', async () => {
     extraPeersConfig = {
       targetConnections: 2,
       maxConnections: 3,
-      optimizeNetworkInterval: 100,
       heartbeatInterval: 100
     }
 
@@ -608,63 +620,73 @@ describe('Peer Integration Test', function () {
       [0, 0, 1500]
     )
 
-    console.log('###### ###### Awaiting connections 0') // Since positions are distributed after the peers are created, we could have a couple of connections
-    await untilTrue(() => peers[0].peer.connectedCount() === 0)
+    function moveAndPutInIsland(peerIndex: number, position: Position3D, island: string = 'I1') {
+      peers[peerIndex].position = position
+      putPeerInIsland(peers[peerIndex].peer.peerIdOrFail(), island, undefined, position)
+    }
 
-    peers[0].position = [0, 0, 300]
+    await untilTrue(() => peers[0].peer.connectedCount() === 0, '###### ###### Awaiting connections 0')
+    // Since positions are distributed after the peers are created, we could have a couple of connections
 
-    console.log('###### ###### Awaiting connections 1')
+    moveAndPutInIsland(0, [0, 0, 300])
+
     await untilTrue(
       () =>
         peers[0].peer.connectedCount() > 0 &&
-        peers[0].peer.fullyConnectedPeerIds().includes(peers[1].peer.peerIdOrFail())
+        peers[0].peer.fullyConnectedPeerIds().includes(peers[1].peer.peerIdOrFail()),
+      '###### ###### Awaiting connections 1'
     )
 
-    peers[2].position = [0, 0, 350]
-    peers[3].position = [0, 0, 350]
+    moveAndPutInIsland(2, [0, 0, 350])
+    moveAndPutInIsland(3, [0, 0, 350])
 
-    console.log('###### ###### Awaiting connections 2')
     await untilTrue(
       () =>
         peers[0].peer.connectedCount() > 2 &&
-        peers[0].peer.fullyConnectedPeerIds().includes(peers[2].peer.peerIdOrFail()) &&
-        peers[0].peer.fullyConnectedPeerIds().includes(peers[3].peer.peerIdOrFail())
+        (peers[0].peer.fullyConnectedPeerIds().includes(peers[2].peer.peerIdOrFail()) ||
+          peers[0].peer.fullyConnectedPeerIds().includes(peers[3].peer.peerIdOrFail())),
+      '###### ###### Awaiting connections 2'
     )
 
-    peers[4].position = [0, 0, 300]
-    peers[5].position = [0, 0, 300]
+    moveAndPutInIsland(4, [0, 0, 300])
+    moveAndPutInIsland(5, [0, 0, 300])
 
-    console.log('###### ###### Awaiting connections 3')
+    sendMessageToSocket(peers[0].peer.peerIdOrFail(), {
+      type: PeerOutgoingMessageType.PEER_LEFT_ISLAND,
+      payload: { islandId: 'I1', peer: { id: peers[1].peer.peerIdOrFail(), position: [0, 0, 0] } }
+    })
+
     await untilTrue(
       () =>
         peers[0].peer.fullyConnectedPeerIds().includes(peers[4].peer.peerIdOrFail()) &&
         peers[0].peer.fullyConnectedPeerIds().includes(peers[5].peer.peerIdOrFail()) &&
-        peers[0].peer.connectedCount() === 3
+        peers[0].peer.connectedCount() === 3,
+      '###### ###### Awaiting connections 3'
     )
 
     expect(peers[0].peer.fullyConnectedPeerIds()).not.toContain(peers[2].peer.peerIdOrFail())
     expect(peers[0].peer.fullyConnectedPeerIds()).not.toContain(peers[3].peer.peerIdOrFail())
   })
 
-  xit('disconnects when over connected when updating network', () => {})
+  it('disconnects when over connected when updating network', () => {})
 
-  xit('removes local room representation when leaving room', () => {})
+  it('removes local room representation when leaving room', () => {})
 
-  xit('set peers position when updating known peers if their positions are old', () => {})
+  it('set peers position when updating known peers if their positions are old', () => {})
 
-  xit('performs only one network update at a time', () => {})
+  it('performs only one network update at a time', () => {})
 
-  xit('selects valid connection candidates for network updates', () => {})
+  it('selects valid connection candidates for network updates', () => {})
 
-  xit('finds the worst connected peer by distance', () => {})
+  it('finds the worst connected peer by distance', () => {})
 
-  xit('counts packet with statstics when received', () => {})
+  it('counts packet with statstics when received', () => {})
 
-  xit('marks a peer as reachable through when receiving a relayed packet', () => {})
+  it('marks a peer as reachable through when receiving a relayed packet', () => {})
 
-  xit('updates peer and room based on the packet', () => {})
+  it('updates peer and room based on the packet', () => {})
 
-  xit("doesn't process a package expired or duplicate and requests relay suspension", async () => {
+  it("doesn't process a package expired or duplicate and requests relay suspension", async () => {
     const [peer1, peer2] = await createConnectedPeers('peer1', 'peer2', 'room')
 
     const receivedMessages: { sender: string; room: string; payload: any }[] = []
@@ -759,27 +781,27 @@ describe('Peer Integration Test', function () {
     )
   })
 
-  xit('consolidates relay suspension request adding pending suspension', () => {})
+  it('consolidates relay suspension request adding pending suspension', () => {})
 
-  xit('ignores relay suspension request if only one link remains', () => {})
+  it('ignores relay suspension request if only one link remains', () => {})
 
-  xit('sends pending succession requests at its interval', () => {})
+  it('sends pending succession requests at its interval', () => {})
 
-  xit('sends the corresponding packet for a message', () => {})
+  it('sends the corresponding packet for a message', () => {})
 
-  xit('sends the corresponding packet to valid peers', () => {})
+  it('sends the corresponding packet to valid peers', () => {})
 
-  xit('rejects a connection from a peer of another lighthouse or layer', () => {})
+  it('rejects a connection from a peer of another lighthouse or layer', () => {})
 
-  xit('rejects a connection from a peer with another protocol version', () => {})
+  it('rejects a connection from a peer with another protocol version', () => {})
 
-  xit('rejects a connection from a peer when it has too many connections', () => {})
+  it('rejects a connection from a peer when it has too many connections', () => {})
 
-  xit('updates known peers and rooms with notifications from lighthouse', () => {})
+  it('updates known peers and rooms with notifications from lighthouse', () => {})
 
-  xit('handles authentication', () => {})
+  it('handles authentication', () => {})
 
-  xit('raises an specific error when the requested id is taken', async () => {
+  it('raises an specific error when the requested id is taken', async () => {
     let idTakenErrorReceived = false
     extraPeersConfig = {
       statusHandler: (status) => {
@@ -846,6 +868,8 @@ describe('Peer Integration Test', function () {
   }
 
   function expectPeerToHaveNConnections(n: number, peer: Peer) {
+    const connected = getConnectedPeers(peer)
+    if (Object.keys(connected).length !== n) console.log('WRONG CONNECTED PEERS', Object.keys(connected))
     expect(Object.entries(getConnectedPeers(peer)).length).toBe(n)
   }
 

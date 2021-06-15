@@ -49,7 +49,6 @@ export function ConnectForm(props: {
         maxConnections: 6,
         pingTimeout: 10000,
         pingInterval: 5000,
-        optimizeNetworkInterval: 10000,
         relaySuspensionConfig: {
           relaySuspensionInterval: 750,
           relaySuspensionDuration: 5000

@@ -241,6 +241,8 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     const connectionId = connectionIdFor(this.peerId(), peerData.id, peerData.sessionId)
     return (data: SignalData) => {
       if (this.disposed) return
+      // We ignore signals for connections that we are not referencing (could be old connections)
+      if (!this.connectedPeers[peerData.id] || this.connectedPeers[peerData.id].sessionId !== peerData.sessionId) return
 
       this.log(LogLevel.DEBUG, `Signal in peer connection ${connectionId}: ${data.type ?? 'candidate'}`)
       if (this.isReadyToEmitSignals()) {
@@ -281,7 +283,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
       if (peer.sessionId !== sessionId) {
         this.log(
           LogLevel.INFO,
-          `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`
+          `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}. Initiator: ${initiator}`
         )
         peer.connection.removeAllListeners()
         peer.connection.destroy()
@@ -399,7 +401,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     const { type, payload, src: peerId, dst } = message
 
     if (dst === this._peerId) {
-      this.log(LogLevel.DEBUG, `Received message from ${peerId}: ${type}`)
+      this.log(LogLevel.DEBUG, `Received message from ${peerId}: ${type}`, message)
       switch (type) {
         case ServerMessageType.Offer: {
           this.handleOfferPayload(payload, peerId)

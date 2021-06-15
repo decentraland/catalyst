@@ -63,7 +63,6 @@ export type PeerConfig = {
   logLevel?: LogLevelString
   reconnectionAttempts?: number
   backoffMs?: number
-  optimizeNetworkInterval?: number
   authHandler?: (msg: string) => Promise<string>
   positionConfig?: PositionConfig
   statusHandler?: (status: PeerStatus) => void
