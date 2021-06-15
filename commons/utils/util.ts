@@ -41,5 +41,5 @@ export function average(numbers: number[]) {
 
 // Using encodeURIComponent, all these characters seem to be safe. But if this causes issues in the future, we can use the alphabet below, which is safer
 export const DEFAULT_ID_ALPHABET =
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-!#$%&/()<>{}[]+*=,.;:|~'
+  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-!#$&/()<>{}[]+*=,.;:|~'
 // export const DEFAULT_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-!()*.~,;"
