@@ -84,7 +84,7 @@ export class AccessCheckerForWearables {
         timestamp
       )
       // It could happen that the subgraph hasn't synced yet, so someone who just lost access still managed to make a deployment. The problem would be that when other catalysts perform
-      // the same check, the subgraph managed to sync and the deployment is now invalid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
+      // the same check, the subgraph might have synced and the deployment is no longer valid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
       // have access now, or had access 5 minutes ago.
       return (
         (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberNow)) ||
@@ -178,7 +178,7 @@ export class AccessCheckerForWearables {
         timestamp5Min: timestampSec - 60 * 5
       })
       // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
-      const blockNumberNow = result.after?.[0]?.number ?? result.before[0].number
+      const blockNumberNow = result.after[0]?.number ?? result.before[0].number
       const blockNumberFiveMinBefore = result.fiveMin[0].number
       return { blockNumberNow, blockNumberFiveMinBefore }
     } catch (error) {
