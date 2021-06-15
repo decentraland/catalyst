@@ -64,12 +64,13 @@ ts_library(
     deps = [
         "//commons/servers",
         "//commons/utils",
+        "//comms/protocol:comms-protocol",
         "//contracts",
         "@npm//@dcl/archipelago",
         "@npm//@types",
         "@npm//cors",
-        "@npm//dcl-crypto",
         "@npm//dcl-catalyst-commons",
+        "@npm//dcl-crypto",
         "@npm//express",
         "@npm//fast-deep-equal",
         "@npm//fp-future",
@@ -115,8 +116,8 @@ ts_library(
         "//commons/utils",
         "@npm//@types/express",
         "@npm//@types/jasmine",
-        "@npm//isomorphic-fetch",
         "@npm//express",
+        "@npm//isomorphic-fetch",
     ],
 )
 

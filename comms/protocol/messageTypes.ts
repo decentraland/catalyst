@@ -1,9 +1,6 @@
-import { Position } from 'decentraland-catalyst-utils/Positions'
-import { MessageType } from 'peerjs-server/dist/src/enums'
-import { IMessage } from 'peerjs-server/dist/src/models/message'
+import { Position3D } from 'decentraland-catalyst-utils/Positions'
 
 // OUTGOING
-
 export enum PeerOutgoingMessageType {
   PEER_LEFT_ISLAND = 'PEER_LEFT_ISLAND',
   PEER_JOINED_ISLAND = 'PEER_JOINED_ISLAND',
@@ -11,11 +8,16 @@ export enum PeerOutgoingMessageType {
   CHANGE_ISLAND = 'CHANGE_ISLAND'
 }
 
+export type PeerWithPosition = {
+  id: string
+  position: [number, number, number]
+}
+
 export type ChangeIsland = {
   type: PeerOutgoingMessageType.CHANGE_ISLAND
   payload: {
     islandId: string
-    peers: string[]
+    peers: PeerWithPosition[]
   }
 }
 
@@ -23,7 +25,7 @@ export type PeerJoinedIsland = {
   type: PeerOutgoingMessageType.PEER_LEFT_ISLAND
   payload: {
     islandId: string
-    peerId: string
+    peer: PeerWithPosition
   }
 }
 
@@ -31,22 +33,25 @@ export type PeerLeftIsland = {
   type: PeerOutgoingMessageType.PEER_JOINED_ISLAND
   payload: {
     islandId: string
-    peerId: string
+    peer: PeerWithPosition
   }
 }
 
 export type PeerOutgoingMessageContent = ChangeIsland | PeerJoinedIsland | PeerLeftIsland
 
-export type PeerOutgoingMessage = Omit<IMessage, 'type'> & PeerOutgoingMessageContent
+export type PeerOutgoingMessage = { readonly src: string; readonly dst: string } & PeerOutgoingMessageContent
 
 // INCOMING
+export enum PeerIncomingMessageType {
+  HEARTBEAT = 'HEARTBEAT'
+}
 
 export type HeartbeatMessage = {
-  type: MessageType.HEARTBEAT
+  type: PeerIncomingMessageType.HEARTBEAT
   payload: {
     connectedPeerIds: string[]
     parcel?: [number, number]
-    position?: Position
+    position?: Position3D
   }
 }
 

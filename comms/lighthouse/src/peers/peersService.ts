@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Island } from '@dcl/archipelago'
-import { discretizedPositionDistance, PeerConnectionHint, Position } from 'decentraland-catalyst-utils/Positions'
+import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
+import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from 'peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
-import { PeerOutgoingMessage, PeerOutgoingMessageType } from './messageTypes'
 
 require('isomorphic-fetch')
 
@@ -12,12 +12,7 @@ export interface IPeersService {
   getPeersInfo(peerIds: string[]): PeerInfo[]
 
   ensurePeerInfo(peer: PeerRequest): PeerInfo
-  getOptimalConnectionsFor(
-    peer: PeerInfo,
-    otherPeers: PeerInfo[],
-    targetConnections: number,
-    maxDistance: number
-  ): PeerConnectionHint[]
+  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], maxDistance: number): PeerConnectionHint[]
 }
 
 export class PeersService implements IPeersService {
@@ -28,7 +23,7 @@ export class PeersService implements IPeersService {
 
   constructor(
     private realmProvider: () => IRealm,
-    private distanceFunction: (p1: Position, p2: Position) => number = discretizedPositionDistance()
+    private distanceFunction: (p1: Position3D, p2: Position3D) => number = discretizedPositionDistanceXZ()
   ) {}
 
   sendMessageToPeer(peerId: string, message: Omit<PeerOutgoingMessage, 'src' | 'dst'>) {
@@ -101,23 +96,16 @@ export class PeersService implements IPeersService {
   }
 
   updatePeerParcel(peerId: string, parcel?: [number, number]) {
-    if (this.peers[peerId]) {
-      this.peers[peerId].parcel = parcel
-    }
+    const peerInfo = this.ensurePeerInfo({ id: peerId })
+    peerInfo.parcel = parcel
   }
 
-  updatePeerPosition(peerId: string, position?: Position) {
-    if (this.peers[peerId]) {
-      this.peers[peerId].position = position
-    }
+  updatePeerPosition(peerId: string, position?: Position3D) {
+    const peerInfo = this.ensurePeerInfo({ id: peerId })
+    peerInfo.position = position
   }
 
-  getOptimalConnectionsFor(
-    peer: PeerInfo,
-    otherPeers: PeerInfo[],
-    targetConnections: number,
-    maxDistance: number
-  ): PeerConnectionHint[] {
+  getOptimalConnectionsFor(peer: PeerInfo, otherPeers: PeerInfo[], maxDistance: number): PeerConnectionHint[] {
     const hints: PeerConnectionHint[] = []
 
     otherPeers.forEach((it) => {
@@ -146,17 +134,26 @@ export class PeersService implements IPeersService {
   }
 
   sendUpdateToIsland(
-    peerChangingId: string,
+    peerId: string,
     island: Island,
     type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
   ) {
+    const info = this.getPeerInfo(peerId)
+
+    if (!info.position) {
+      console.warn(
+        `Tried to send updates of a peer ${peerId} for which we don't have a position. This shouldn't happen.`
+      )
+      return
+    }
+
     for (const peer of island.peers) {
-      if (peer.id !== peerChangingId) {
+      if (peer.id !== info.id) {
         this.sendMessageToPeer(peer.id, {
           type,
           payload: {
             islandId: island.id,
-            peerId: peerChangingId
+            peer: { id: info.id, position: info.position }
           }
         })
       }

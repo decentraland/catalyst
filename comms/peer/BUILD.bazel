@@ -13,6 +13,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//commons/utils",
+        "//comms/protocol:comms-protocol",
         "@npm//@types",
         "@npm//eventemitter3",
         "@npm//fp-future",
@@ -41,6 +42,7 @@ rollup_bundle(
     deps = [
         ":peer",
         "//commons/utils",
+        "//comms/protocol:comms-protocol",
         "@npm//@wessberg/rollup-plugin-ts",
         "@npm//rollup-plugin-json",
     ],
@@ -51,8 +53,9 @@ npm_package(
     deps = [
         ":bundle.js",
         ":dpackage_gen_package_json",
-        "//commons/utils",
         ":peer",
+        "//commons/utils",
+        "//comms/protocol:comms-protocol",
     ],
 )
 
@@ -63,6 +66,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":peer",
+        "//comms/protocol:comms-protocol",
         "@npm//@types/jasmine",
         "@npm//@types/sinon",
         "@npm//fp-future",

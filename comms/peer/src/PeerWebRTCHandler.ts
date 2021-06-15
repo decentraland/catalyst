@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { PeerOutgoingMessage } from 'comms-protocol/messageTypes'
 import EventEmitter from 'eventemitter3'
 import { future } from 'fp-future'
 import SimplePeer, { SignalData } from 'simple-peer'
@@ -24,7 +24,7 @@ type OptionalConfig = {
   handshakePayloadExtras: () => Record<string, any>
   handshakeValidator: (payload: HandshakeData, peerId: string) => ValidationResult
   receivedOfferValidator: (payload: HandshakeData, peerId: string) => ValidationResult
-  serverMessageHandler: (message: ServerMessage) => void
+  serverMessageHandler: (message: PeerOutgoingMessage) => void
   rtcConnectionConfig: Record<string, any>
   oldConnectionsTimeout: number
   peerConnectTimeout: number
@@ -172,8 +172,8 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
 
   public isConnectedTo(peerId: string): boolean {
     return (
-      //@ts-ignore The `connected` property is not typed but it seems to be public
-      this.connectedPeers[peerId] && this.connectedPeers[peerId].connection.connected
+      //The `connected` property is not typed but it seems to be public
+      this.connectedPeers[peerId] && (this.connectedPeers[peerId].connection as any).connected
     )
   }
 
@@ -241,6 +241,8 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     const connectionId = connectionIdFor(this.peerId(), peerData.id, peerData.sessionId)
     return (data: SignalData) => {
       if (this.disposed) return
+      // We ignore signals for connections that we are not referencing (could be old connections)
+      if (!this.connectedPeers[peerData.id] || this.connectedPeers[peerData.id].sessionId !== peerData.sessionId) return
 
       this.log(LogLevel.DEBUG, `Signal in peer connection ${connectionId}: ${data.type ?? 'candidate'}`)
       if (this.isReadyToEmitSignals()) {
@@ -281,7 +283,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
       if (peer.sessionId !== sessionId) {
         this.log(
           LogLevel.INFO,
-          `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}`
+          `Received new connection from peer with new session id. Peer: ${peer.id}. Old: ${peer.sessionId}. New: ${sessionId}. Initiator: ${initiator}`
         )
         peer.connection.removeAllListeners()
         peer.connection.destroy()
@@ -399,7 +401,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     const { type, payload, src: peerId, dst } = message
 
     if (dst === this._peerId) {
-      this.log(LogLevel.DEBUG, `Received message from ${peerId}: ${type}`)
+      this.log(LogLevel.DEBUG, `Received message from ${peerId}: ${type}`, message)
       switch (type) {
         case ServerMessageType.Offer: {
           this.handleOfferPayload(payload, peerId)
@@ -418,7 +420,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
           break
         }
         default: {
-          this.config.serverMessageHandler(message)
+          this.config.serverMessageHandler(message as PeerOutgoingMessage)
         }
       }
     }

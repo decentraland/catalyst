@@ -1,19 +1,8 @@
 export const DISCRETIZE_POSITION_INTERVALS = [32, 64, 80, 128, 160]
 
-export type Position3D = [number, number, number]
-export type Position2D = [number, number]
-
 export type Quaternion = [number, number, number, number]
 
-export type Position = Position2D | Position3D
-
-export function isPosition3D(position: any): position is Position3D {
-  return position instanceof Array && position.length === 3
-}
-
-export function isPosition2D(position: any): position is Position2D {
-  return position instanceof Array && position.length === 2
-}
+export type Position3D = [number, number, number]
 
 /**
  * Calculates the discretized distance between position a and position b, using the provided intervals (DISCRETIZE_POSITION_INTERVALS as default)
@@ -28,20 +17,16 @@ export function isPosition2D(position: any): position is Position2D {
  *
  * The @param intervals provided should be ordered from lower to greater
  */
-export function discretizedPositionDistance(intervals: number[] = DISCRETIZE_POSITION_INTERVALS) {
-  return (a: Position, b: Position) => {
+export function discretizedPositionDistanceXZ(intervals: number[] = DISCRETIZE_POSITION_INTERVALS) {
+  return (a: Position3D, b: Position3D) => {
     let dx = 0
-    let dy = 0
     let dz = 0
 
     dx = a[0] - b[0]
-    dy = a[1] - b[1]
 
-    if (isPosition3D(a) && isPosition3D(b)) {
-      dz = a[2] - b[2]
-    }
+    dz = a[2] - b[2]
 
-    const squaredDistance = dx * dx + dy * dy + dz * dz
+    const squaredDistance = dx * dx + dz * dz
 
     const intervalIndex = intervals.findIndex((it) => squaredDistance <= it * it)
 
@@ -52,5 +37,5 @@ export function discretizedPositionDistance(intervals: number[] = DISCRETIZE_POS
 export type PeerConnectionHint = {
   id: string
   distance: number
-  position: Position
+  position: Position3D
 }

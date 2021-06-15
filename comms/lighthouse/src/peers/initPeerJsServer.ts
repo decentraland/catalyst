@@ -31,7 +31,7 @@ export function initPeerJsServer({
   const peerServer = ExpressPeerServer(netServer, options)
 
   peerServer.on('disconnect', (client: any) => {
-    console.log('User disconnected from server socket. Removing from all rooms & layers: ' + client.id)
+    console.log('User disconnected from server socket. Removing from archipelago: ' + client.id)
     archipelagoService().clearPeer(client.id)
   })
 
