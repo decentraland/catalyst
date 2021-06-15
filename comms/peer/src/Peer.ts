@@ -136,6 +136,8 @@ export class Peer {
 
     this.wrtcHandler.on(PeerWebRTCEvent.PeerConnectionLost, this.handlePeerConnectionLost.bind(this))
 
+    this.wrtcHandler.on(PeerWebRTCEvent.PeerConnectionEstablished, this.handlePeerConnectionEstablished.bind(this))
+
     this.wrtcHandler.on(PeerWebRTCEvent.ServerConnectionError, async (err) => {
       if (err.type === PeerErrorType.UnavailableID) {
         this.config.statusHandler!('id-taken')
@@ -1125,6 +1127,12 @@ export class Peer {
   private handlePeerConnectionLost(peerData: ConnectedPeerData) {
     delete this.peerRelayData[peerData.id]
     this.triggerUpdateNetwork(`peer ${peerData.id} disconnected`)
+  }
+
+  private handlePeerConnectionEstablished(peerData: ConnectedPeerData) {
+    if (this.connectedCount() >= this.config.maxConnections!) {
+      this.triggerUpdateNetwork(`peer ${peerData.id} connected`)
+    }
   }
 
   private triggerUpdateNetwork(event: string) {

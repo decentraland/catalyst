@@ -35,12 +35,12 @@ describe('Discretize Positions', () => {
     const origin: Position3D = [0, 0, 0]
 
     expect(discretizedPositionDistanceXZ()(origin, [20, 0, 0])).toEqual(0)
-    expect(discretizedPositionDistanceXZ()(origin, [0, 32, 0])).toEqual(0)
+    expect(discretizedPositionDistanceXZ()(origin, [0, 0, 0])).toEqual(0)
     expect(discretizedPositionDistanceXZ()(origin, [0, 0, 48])).toEqual(1)
-    expect(discretizedPositionDistanceXZ()(origin, [30, 30, 30])).toEqual(1)
+    expect(discretizedPositionDistanceXZ()(origin, [30, 0, 30])).toEqual(1)
     expect(discretizedPositionDistanceXZ()(origin, [72, 0, 0])).toEqual(2)
-    expect(discretizedPositionDistanceXZ()(origin, [60, 60, 60])).toEqual(3)
-    expect(discretizedPositionDistanceXZ()(origin, [90, 90, 90])).toEqual(4)
-    expect(discretizedPositionDistanceXZ()(origin, [150, 150, 150])).toEqual(5)
+    expect(discretizedPositionDistanceXZ()(origin, [60, 0, 60])).toEqual(3)
+    expect(discretizedPositionDistanceXZ()(origin, [95, 0, 95])).toEqual(4)
+    expect(discretizedPositionDistanceXZ()(origin, [150, 0, 150])).toEqual(5)
   })
 })
