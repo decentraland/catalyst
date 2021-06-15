@@ -170,16 +170,16 @@ export class AccessCheckerForWearables {
     try {
       const timestampSec = Math.ceil(timestamp / 1000)
       const result = await this.fetcher.queryGraph<{
-        before: { number: number }[]
-        after: { number: number }[]
-        fiveMin: { number: number }[]
+        before: { number: string }[]
+        after: { number: string }[]
+        fiveMin: { number: string }[]
       }>(blocksSubgraphUrl, query, {
         timestamp: timestampSec,
         timestamp5Min: timestampSec - 60 * 5
       })
       // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
-      const blockNumberNow = result.after[0]?.number ?? result.before[0].number
-      const blockNumberFiveMinBefore = result.fiveMin[0].number
+      const blockNumberNow = parseInt(result.after[0]?.number ?? result.before[0].number)
+      const blockNumberFiveMinBefore = parseInt(result.fiveMin[0].number)
       return { blockNumberNow, blockNumberFiveMinBefore }
     } catch (error) {
       this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
