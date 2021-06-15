@@ -50,6 +50,52 @@ describe('AccessCheckerImpl', function () {
   it(`When urn network belongs to L2, then L2 subgraph is used`, async () => {
     const collectionsL2Url = 'http://someUrl'
     const blocksL2Url = 'http://blocksUrl'
+    const address = 'address'
+    const { fetcher, mockedFetcher } = mockedFetcherWithAccess(address)
+
+    const accessChecker = buildAccessChecker({
+      fetcher,
+      collectionsL2SubgraphUrl: collectionsL2Url,
+      blocksL2SubgraphUrl: blocksL2Url
+    })
+
+    await accessChecker.hasAccess(
+      EntityType.WEARABLE,
+      ['urn:decentraland:mumbai:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'],
+      Date.now(),
+      address
+    )
+
+    verify(mockedFetcher.queryGraph(blocksL2Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(collectionsL2Url, anything(), anything())).once()
+  })
+
+  it(`When urn network belongs to L1, then L1 subgraph is used`, async () => {
+    const collectionsL1Url = 'http://someUrl'
+    const blocksL1Url = 'http://blocksUrl'
+    const address = 'address'
+    const { fetcher, mockedFetcher } = mockedFetcherWithAccess(address)
+
+    const accessChecker = buildAccessChecker({
+      fetcher,
+      collectionsL1SubgraphUrl: collectionsL1Url,
+      blocksL1SubgraphUrl: blocksL1Url
+    })
+
+    await accessChecker.hasAccess(
+      EntityType.WEARABLE,
+      ['urn:decentraland:ethereum:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'],
+      Date.now(),
+      address
+    )
+
+    verify(mockedFetcher.queryGraph(blocksL1Url, anything(), anything())).once()
+    verify(mockedFetcher.queryGraph(collectionsL1Url, anything(), anything())).once()
+  })
+
+  it(`When urn network belongs to L2, and address doesn't have access, then L2 subgraph is used twice`, async () => {
+    const collectionsL2Url = 'http://someUrl'
+    const blocksL2Url = 'http://blocksUrl'
     const { fetcher, mockedFetcher } = mockFetcher()
 
     const accessChecker = buildAccessChecker({
@@ -69,7 +115,7 @@ describe('AccessCheckerImpl', function () {
     verify(mockedFetcher.queryGraph(collectionsL2Url, anything(), anything())).twice()
   })
 
-  it(`When urn network belongs to L1, then L1 subgraph is used`, async () => {
+  it(`When urn network belongs to L1, and address doesn't have access, then L1 subgraph is used twice`, async () => {
     const collectionsL1Url = 'http://someUrl'
     const blocksL1Url = 'http://blocksUrl'
     const { fetcher, mockedFetcher } = mockFetcher()
@@ -105,17 +151,21 @@ describe('AccessCheckerImpl', function () {
     return new AccessCheckerImpl(finalParams)
   }
 
-  function mockFetcher() {
+  function mockFetcher(creator?: string) {
     const mockedFetcher = mock(Fetcher)
     when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenCall((url) => {
       if (url.includes('block')) {
         return Promise.resolve({ after: [{ number: 10 }], fiveMin: [{ number: 5 }] })
       } else {
-        return Promise.resolve({ collections: [], items: [] })
+        return Promise.resolve({ collections: [{ creator }], items: [] })
       }
     })
 
     const fetcher = instance(mockedFetcher)
     return { fetcher, mockedFetcher }
+  }
+
+  function mockedFetcherWithAccess(creator: string) {
+    return mockFetcher(creator)
   }
 })
