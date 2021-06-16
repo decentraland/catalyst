@@ -147,7 +147,7 @@ export function Chat(props: { peer: Peer; room: string; url: string }) {
       setJoinedRooms([...props.peer.currentRooms])
 
       Object.keys(props.peer.knownPeers).forEach((it) => {
-        const position = { x: props.peer.knownPeers[it].position?[0], y: props.peer.knownPeers[it].position?[1] }
+        const position = { x: props.peer.knownPeers[it].position![0], y: props.peer.knownPeers[it].position![1] }
         setCursorPosition(it, position)
       })
     } catch (e) {
