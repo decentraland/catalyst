@@ -2,7 +2,7 @@
 import { Island } from '@dcl/archipelago'
 import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
-import { IRealm } from 'peerjs-server'
+import { IRealm } from '../peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
 
 require('isomorphic-fetch')

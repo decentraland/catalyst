@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { NextFunction, Request, RequestHandler, Response } from 'express-serve-static-core'
-import { IRealm } from 'peerjs-server'
+import { IRealm } from '../peerjs-server'
 
 enum PeerHeaders {
   PeerToken = 'X-Peer-Token'

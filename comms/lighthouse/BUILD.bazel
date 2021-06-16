@@ -76,7 +76,6 @@ ts_library(
         "@npm//fp-future",
         "@npm//isomorphic-fetch",
         "@npm//morgan",
-        "@npm//peerjs-server",
         "@npm//prom-client",
         "@npm//web3x",
         "@npm//wrtc",

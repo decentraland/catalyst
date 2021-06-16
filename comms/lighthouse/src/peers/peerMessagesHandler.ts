@@ -1,6 +1,6 @@
-import { IClient } from 'peerjs-server/dist/src/models/client'
-import { AppServices } from '../types'
 import { HeartbeatMessage, PeerIncomingMessage, PeerIncomingMessageType } from 'comms-protocol/messageTypes'
+import { IClient } from '../peerjs-server/models/client'
+import { AppServices } from '../types'
 
 export type PeerMessagesHandler = (client: IClient, message: PeerIncomingMessage) => any
 
