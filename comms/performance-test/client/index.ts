@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Position3D, Quaternion } from 'decentraland-catalyst-utils/Positions'
 import { randomBetween } from 'decentraland-catalyst-utils/util'
 import { Reader } from 'protobufjs'
@@ -332,10 +331,8 @@ async function createPeer() {
     setText('relayedpersecond', sumForAllPeers('relayed', 'packetsPerSecond'))
 
     setText('connected-peers', average(peers.map((it) => it.peer.fullyConnectedPeerIds().length)))
-    // @ts-ignore
     setText('known-peers', average(peers.map((it) => Object.keys(it.peer.knownPeers).length)))
-    // @ts-ignore
-    setText('latency', average(peers.flatMap((it) => Object.values(it.peer.knownPeers).map((kp) => kp.latency))))
+    setText('latency', average(peers.flatMap((it) => Object.values(it.peer.knownPeers).map((kp) => kp.latency!))))
 
     if (testOngoing()) {
       setTimeout(updateStats, 500)

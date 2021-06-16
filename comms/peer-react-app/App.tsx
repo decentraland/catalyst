@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// currently third part packages frmo npm are not available due to issue:
 import { Center } from 'decentraland-ui'
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -28,7 +26,6 @@ class App extends React.Component<unknown, { screen: ScreenEnum; peer?: Peer; ro
     }
   }
 
-  // @ts-ignore
   private connectForm(): React.ReactElement<
     any,
     | string

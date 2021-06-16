@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Button, Field } from 'decentraland-ui'
 import React, { useEffect, useState } from 'react'
 import { discretizedPositionDistanceXZ } from '../../../commons/utils/Positions'
@@ -16,7 +15,7 @@ declare const window: Window & { peer: Peer }
 export function ConnectForm(props: {
   onConnected: (peer: Peer, room: string, url: string) => any
   peerClass: {
-    new (url: string, peerId: string, callback: any, config: any): Peer
+    new (url: string, peerId: string | undefined, callback: any, config: any): Peer
   }
 }) {
   const [nickname, setNickname] = useState('')
@@ -34,7 +33,6 @@ export function ConnectForm(props: {
     setError('')
     setLoading(true)
     try {
-      //@ts-ignore
       const peer = (window.peer = new props.peerClass(url, undefined, () => {}, {
         token: PeerToken.getToken(aNickname),
         positionConfig: {
