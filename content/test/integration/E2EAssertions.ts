@@ -116,8 +116,7 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
 
 export function assertDeploymentFailsWith(promiseExecution: () => Promise<any>, errorMessage: string) {
   return assertPromiseRejectionGeneric(promiseExecution, (error) => {
-    console.log(error)
-    expect(error.endsWith(`Got status 400. Response was '${errorMessage}'`)).toBeTruthy()
+    expect(error.endsWith(`Got status 400. Response was '${JSON.stringify({ errors: [errorMessage] })}'`)).toBeTruthy()
   })
 }
 

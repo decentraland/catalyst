@@ -27,20 +27,20 @@ import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManag
 export interface MetaverseContentService {
   start(): Promise<void>
   deployEntity(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
     task?: Database
   ): Promise<DeploymentResult>
   deployLocalLegacy(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     task?: Database
   ): Promise<DeploymentResult>
   deployToFix(
-    files: ContentFile[],
+    files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     origin: string,
@@ -100,6 +100,8 @@ export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise
 export type InvalidResult = { errors: string[] }
 
 export type DeploymentResult = Timestamp | InvalidResult
+
+export type DeploymentFiles = ContentFile[] | Map<ContentFileHash, ContentFile>
 
 export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is Timestamp {
   return typeof deploymentResult === 'number'

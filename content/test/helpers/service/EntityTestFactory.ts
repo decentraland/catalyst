@@ -24,14 +24,14 @@ export async function buildEntityAndFile(
 }
 
 /** Build a file with the given entity as the content */
-export function entityToFile(entity: Entity, fileName?: string): ContentFile {
+export function entityToFile(entity: Entity): ContentFile {
   const copy: any = Object.assign({}, entity)
   copy.content =
     !copy.content || !(copy.content instanceof Map)
       ? copy.content
       : Array.from(copy.content.entries()).map(([key, value]) => ({ file: key, hash: value }))
   delete copy.id
-  return { name: fileName ?? 'name', content: Buffer.from(JSON.stringify(copy)) }
+  return { content: Buffer.from(JSON.stringify(copy)) }
 }
 
 export function randomEntity(type?: EntityType): Entity {

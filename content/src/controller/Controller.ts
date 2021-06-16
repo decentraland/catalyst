@@ -178,11 +178,11 @@ export class Controller {
         res.send({ creationTimestamp: deploymentResult })
       } else {
         Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
-        res.status(400).send(deploymentResult.errors.join('\n'))
+        res.status(400).send({ errors: deploymentResult.errors })
       }
     } catch (error) {
       Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message)
+      res.status(500)
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
@@ -197,14 +197,14 @@ export class Controller {
 
   private async readFiles(files: { [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[]) {
     if (files instanceof Array) {
-      return await Promise.all(files.map((f) => this.readFile(f.fieldname, f.path)))
+      return await Promise.all(files.map((f) => this.readFile(f.path)))
     } else {
       return []
     }
   }
 
-  private async readFile(name: string, path: string): Promise<ContentFile> {
-    return { name, path, content: await fs.promises.readFile(path) }
+  private async readFile(path: string): Promise<ContentFile> {
+    return { path, content: await fs.promises.readFile(path) }
   }
 
   private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void> {
@@ -715,7 +715,6 @@ export type ControllerDenylistData = {
 }
 
 export type ContentFile = {
-  name: string
   path?: string
   content: Buffer
 }

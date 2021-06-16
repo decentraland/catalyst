@@ -1,4 +1,4 @@
-import { ContentFileHash, DeploymentWithAuditInfo, ENTITY_FILE_NAME } from 'dcl-catalyst-commons'
+import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
 import { ContentFile } from '../../controller/Controller'
@@ -117,17 +117,11 @@ export class EventDeployer {
     return files
   }
 
-  private async getEntityFile(
+  private getEntityFile(
     deployment: DeploymentWithAuditInfo,
     source?: ContentServerClient
   ): Promise<ContentFile | undefined> {
-    const file: ContentFile | undefined = await this.getFileOrUndefined(deployment.entityId, source)
-
-    // If we could download the entity file, rename it
-    if (file) {
-      file.name = ENTITY_FILE_NAME
-    }
-    return file
+    return this.getFileOrUndefined(deployment.entityId, source)
   }
 
   /**
