@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import cors from 'cors'
 import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
 import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'

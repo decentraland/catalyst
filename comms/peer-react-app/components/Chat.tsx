@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Button, Radio } from 'decentraland-ui'
 import React, { useEffect, useRef, useState } from 'react'
 import { Peer } from '../../peer/src'
@@ -147,10 +146,8 @@ export function Chat(props: { peer: Peer; room: string; url: string }) {
       setAvailableRooms(availableRooms.filter((r) => r !== room))
       setJoinedRooms([...props.peer.currentRooms])
 
-      // @ts-ignore
       Object.keys(props.peer.knownPeers).forEach((it) => {
-        // @ts-ignore
-        const position = { x: props.peer.knownPeers[it].position[0], y: props.peer.knownPeers[it].position[1] }
+        const position = { x: props.peer.knownPeers[it].position?[0], y: props.peer.knownPeers[it].position?[1] }
         setCursorPosition(it, position)
       })
     } catch (e) {
