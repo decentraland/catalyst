@@ -497,9 +497,7 @@ function getValidatorWithRealAccess() {
       fetcher: new Fetcher(),
       landManagerSubgraphUrl: 'unused_url',
       collectionsL1SubgraphUrl: 'unused_url',
-      collectionsL2SubgraphUrl: 'unused_url',
-      blocksL1SubgraphUrl: 'unused_url',
-      blocksL2SubgraphUrl: 'unused_url'
+      collectionsL2SubgraphUrl: 'unused_url'
     }),
     authenticator,
     'ropsten',

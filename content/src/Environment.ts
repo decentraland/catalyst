@@ -43,15 +43,6 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
-export const DEFAULT_BLOCKS_SUBGRAPH_ROPSTEN =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-ropsten'
-export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-mainnet'
-export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mumbai'
-export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET =
-  'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
-
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
 export const DEFAULT_DATABASE_CONFIG = {
@@ -172,9 +163,7 @@ export enum EnvironmentConfig {
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
-  CACHE_SIZES,
-  BLOCKS_L1_SUBGRAPH_URL,
-  BLOCKS_L2_SUBGRAPH_URL
+  CACHE_SIZES
 }
 
 export class EnvironmentBuilder {
@@ -282,26 +271,6 @@ export class EnvironmentBuilder {
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
-    )
-
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL,
-      () =>
-        process.env.BLOCKS_L1_SUBGRAPH_URL ??
-        (env.getConfig(EnvironmentConfig.ETH_NETWORK) === 'mainnet'
-          ? DEFAULT_BLOCKS_SUBGRAPH_MAINNET
-          : DEFAULT_BLOCKS_SUBGRAPH_ROPSTEN)
-    )
-
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL,
-      () =>
-        process.env.BLOCKS_L2_SUBGRAPH_URL ??
-        (process.env.ETH_NETWORK === 'mainnet'
-          ? DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET
-          : DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI)
     )
 
     this.registerConfigIfNotAlreadySet(

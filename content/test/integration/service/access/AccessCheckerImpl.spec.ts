@@ -71,8 +71,6 @@ describe('Integration - AccessCheckerImpl', function () {
       landManagerSubgraphUrl: 'Unused URL',
       collectionsL1SubgraphUrl: 'Unused URL',
       collectionsL2SubgraphUrl: 'Unused URL',
-      blocksL1SubgraphUrl: 'Unused URL',
-      blocksL2SubgraphUrl: 'Unused URL',
       ...params
     }
     return new AccessCheckerImpl(finalParams)

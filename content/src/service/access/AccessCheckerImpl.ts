@@ -19,9 +19,7 @@ export class AccessCheckerImpl implements AccessChecker {
     fetcher,
     landManagerSubgraphUrl,
     collectionsL1SubgraphUrl,
-    collectionsL2SubgraphUrl,
-    blocksL1SubgraphUrl,
-    blocksL2SubgraphUrl
+    collectionsL2SubgraphUrl
   }: AccessCheckerImplParams) {
     this.accessCheckerForScenes = new AccessCheckerForScenes(
       authenticator,
@@ -34,8 +32,6 @@ export class AccessCheckerImpl implements AccessChecker {
       fetcher,
       collectionsL1SubgraphUrl,
       collectionsL2SubgraphUrl,
-      blocksL1SubgraphUrl,
-      blocksL2SubgraphUrl,
       AccessCheckerImpl.LOGGER
     )
   }
@@ -52,7 +48,7 @@ export class AccessCheckerImpl implements AccessChecker {
       case EntityType.PROFILE:
         return this.accessCheckerForProfiles.checkAccess(pointers, ethAddress)
       case EntityType.WEARABLE:
-        return this.accessCheckerForWearables.checkAccess(pointers, timestamp, ethAddress)
+        return this.accessCheckerForWearables.checkAccess(pointers, ethAddress)
       default:
         return ['Unknown type provided']
     }
@@ -65,6 +61,4 @@ export type AccessCheckerImplParams = {
   landManagerSubgraphUrl: string
   collectionsL1SubgraphUrl: string
   collectionsL2SubgraphUrl: string
-  blocksL1SubgraphUrl: string
-  blocksL2SubgraphUrl: string
 }
