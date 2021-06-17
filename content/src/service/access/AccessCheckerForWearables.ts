@@ -1,5 +1,5 @@
 import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
-import { Fetcher, Pointer } from 'dcl-catalyst-commons'
+import { Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 
@@ -11,10 +11,12 @@ export class AccessCheckerForWearables {
     private readonly fetcher: Fetcher,
     private readonly collectionsL1SubgraphUrl: string,
     private readonly collectionsL2SubgraphUrl: string,
+    private readonly blocksL1SubgraphUrl: string,
+    private readonly blocksL2SubgraphUrl: string,
     private readonly LOGGER: log4js.Logger
   ) {}
 
-  public async checkAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
+  public async checkAccess(pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
     const errors: string[] = []
 
     if (pointers.length != 1) {
@@ -24,18 +26,28 @@ export class AccessCheckerForWearables {
       const parsed = await this.parseUrnNoFail(pointer)
       if (parsed) {
         const { contractAddress: collection, id: itemId, network } = parsed
-        let subgraphUrl: string
+        let collectionsSubgraphUrl: string
+        let blocksSubgraphUrl: string
         if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
-          subgraphUrl = this.collectionsL1SubgraphUrl
+          collectionsSubgraphUrl = this.collectionsL1SubgraphUrl
+          blocksSubgraphUrl = this.blocksL1SubgraphUrl
         } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
-          subgraphUrl = this.collectionsL2SubgraphUrl
+          collectionsSubgraphUrl = this.collectionsL2SubgraphUrl
+          blocksSubgraphUrl = this.blocksL2SubgraphUrl
         } else {
           errors.push(`Found an unknown network on the urn '${network}'`)
           return errors
         }
 
         // Check that the address has access
-        const hasAccess = await this.checkCollectionAccess(subgraphUrl, collection, itemId, ethAddress)
+        const hasAccess = await this.checkCollectionAccess(
+          blocksSubgraphUrl,
+          collectionsSubgraphUrl,
+          collection,
+          itemId,
+          timestamp,
+          ethAddress
+        )
         if (!hasAccess) {
           errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
         }
@@ -59,18 +71,30 @@ export class AccessCheckerForWearables {
   }
 
   private async checkCollectionAccess(
-    subgraphUrl: string,
+    blocksSubgraphUrl: string,
+    collectionsSubgraphUrl: string,
     collection: string,
     itemId: string,
+    timestamp: Timestamp,
     ethAddress: EthAddress
   ): Promise<boolean> {
     try {
-      const ethAddressLowercase = ethAddress.toLowerCase()
-      const permissions: WearableItemPermissionsData = await this.getCollectionItems(subgraphUrl, collection, itemId)
+      const { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment } = await this.findBlocksForTimestamp(
+        blocksSubgraphUrl,
+        timestamp
+      )
+      // It could happen that the subgraph hasn't synced yet, so someone who just lost access still managed to make a deployment. The problem would be that when other catalysts perform
+      // the same check, the subgraph might have synced and the deployment is no longer valid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
+      // have access now, or had access 5 minutes ago.
       return (
-        (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
-        (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
-        (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
+        (await this.hasPermission(ethAddress, collectionsSubgraphUrl, collection, itemId, blockNumberAtDeployment)) ||
+        (await this.hasPermission(
+          ethAddress,
+          collectionsSubgraphUrl,
+          collection,
+          itemId,
+          blockNumberFiveMinBeforeDeployment
+        ))
       )
     } catch (error) {
       this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
@@ -78,14 +102,36 @@ export class AccessCheckerForWearables {
     }
   }
 
+  private async hasPermission(
+    ethAddress: string,
+    subgraphUrl: string,
+    collection: string,
+    itemId: string,
+    block: number
+  ): Promise<boolean> {
+    const permissions: WearableItemPermissionsData = await this.getCollectionItems(
+      subgraphUrl,
+      collection,
+      itemId,
+      block
+    )
+    const ethAddressLowercase = ethAddress.toLowerCase()
+    return (
+      (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
+      (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
+      (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
+    )
+  }
+
   private async getCollectionItems(
     subgraphUrl: string,
     collection: string,
-    itemId: string
+    itemId: string,
+    block: number
   ): Promise<WearableItemPermissionsData> {
     const query = `
-         query getCollectionRoles($collection: String!, $itemId: Int!) {
-            collections(where:{ id: $collection, isApproved: false, isCompleted: true }) {
+         query getCollectionRoles($collection: String!, $itemId: Int!, $block: Int!) {
+            collections(where:{ id: $collection, isApproved: false, isCompleted: true }, block: { number: $block }) {
               creator
               managers
               minters
@@ -100,7 +146,7 @@ export class AccessCheckerForWearables {
       const wearableCollectionsAndItems = await this.fetcher.queryGraph<WearableCollectionsAndItems>(
         subgraphUrl,
         query,
-        { collection, itemId: parseInt(itemId, 10) }
+        { collection, itemId: parseInt(itemId, 10), block }
       )
       return {
         collectionCreator: wearableCollectionsAndItems.collections[0]?.creator,
@@ -109,6 +155,40 @@ export class AccessCheckerForWearables {
       }
     } catch (error) {
       this.LOGGER.error(`Error fetching wearable: (${collection}-${itemId})`, error)
+      throw error
+    }
+  }
+
+  private async findBlocksForTimestamp(blocksSubgraphUrl: string, timestamp: Timestamp) {
+    const query = `
+      query getBlockForTimestamp($timestamp: Int!, $timestamp5Min: Int!) {
+        before: blocks(where: { timestamp_lte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: desc) {
+          number
+        }
+        after: blocks(where: { timestamp_gte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: asc) {
+          number
+        }
+        fiveMin: blocks(where: { timestamp_lte: $timestamp5Min }, first: 1, orderBy: timestamp, orderDirection: desc) {
+          number
+        }
+      }
+    `
+    try {
+      const timestampSec = Math.ceil(timestamp / 1000)
+      const result = await this.fetcher.queryGraph<{
+        before: { number: string }[]
+        after: { number: string }[]
+        fiveMin: { number: string }[]
+      }>(blocksSubgraphUrl, query, {
+        timestamp: timestampSec,
+        timestamp5Min: timestampSec - 60 * 5
+      })
+      // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
+      const blockNumberAtDeployment = parseInt(result.after[0]?.number ?? result.before[0].number)
+      const blockNumberFiveMinBeforeDeployment = parseInt(result.fiveMin[0].number)
+      return { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment }
+    } catch (error) {
+      this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
       throw error
     }
   }
