@@ -143,7 +143,8 @@ export class AccessCheckerForWearables {
       (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
       (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
 
-    // Deployments to the content server are made after the collection is completed, so that the committee can then approve it
+    // Deployments to the content server are made after the collection is completed, so that the committee can then approve it.
+    // That's why isCompleted must be true, but isApproved must be false. After the committee approves the wearable, there can't be any more changes
     const isCollectionValid = !permissions.isApproved && permissions.isCompleted
 
     return (addressHasAccess && isCollectionValid) || permissions.contentHash === entityId
