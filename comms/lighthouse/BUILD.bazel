@@ -117,6 +117,7 @@ ts_library(
         "@npm//@types/jasmine",
         "@npm//express",
         "@npm//isomorphic-fetch",
+        "@npm//mock-socket",
     ],
 )
 

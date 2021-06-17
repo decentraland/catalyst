@@ -49,6 +49,7 @@
     "karma-requirejs": "^1.1.0",
     "karma-sourcemap-loader": "^0.3.8",
     "karma-spec-reporter": "^0.0.32",
+    "mock-socket": "^9.0.3",
     "prettier": "^2.2.1",
     "protobufjs": "^6.10.2",
     "puppeteer": "^8.0.0",
