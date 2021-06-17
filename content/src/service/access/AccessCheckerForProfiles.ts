@@ -5,7 +5,13 @@ import { ContentAuthenticator } from '../auth/Authenticator'
 export class AccessCheckerForProfiles {
   constructor(private readonly authenticator: ContentAuthenticator) {}
 
-  public async checkAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
+  public async checkAccess({
+    pointers,
+    ethAddress
+  }: {
+    pointers: Pointer[]
+    ethAddress: EthAddress
+  }): Promise<string[]> {
     const errors: string[] = []
 
     if (pointers.length != 1) {

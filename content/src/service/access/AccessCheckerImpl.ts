@@ -1,8 +1,7 @@
-import { EntityType, Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
+import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { ContentAuthenticator } from '../auth/Authenticator'
-import { AccessChecker } from './AccessChecker'
+import { AccessChecker, AccessParams } from './AccessChecker'
 import { AccessCheckerForProfiles } from './AccessCheckerForProfiles'
 import { AccessCheckerForScenes } from './AccessCheckerForScenes'
 import { AccessCheckerForWearables } from './AccessCheckerForWearables'
@@ -40,19 +39,14 @@ export class AccessCheckerImpl implements AccessChecker {
     )
   }
 
-  async hasAccess(
-    entityType: EntityType,
-    pointers: Pointer[],
-    timestamp: Timestamp,
-    ethAddress: EthAddress
-  ): Promise<string[]> {
-    switch (entityType) {
+  async hasAccess(params: AccessParams): Promise<string[]> {
+    switch (params.entityType) {
       case EntityType.SCENE:
-        return this.accessCheckerForScenes.checkAccess(pointers, timestamp, ethAddress)
+        return this.accessCheckerForScenes.checkAccess(params)
       case EntityType.PROFILE:
-        return this.accessCheckerForProfiles.checkAccess(pointers, ethAddress)
+        return this.accessCheckerForProfiles.checkAccess(params)
       case EntityType.WEARABLE:
-        return this.accessCheckerForWearables.checkAccess(pointers, timestamp, ethAddress)
+        return this.accessCheckerForWearables.checkAccess(params)
       default:
         return ['Unknown type provided']
     }
