@@ -1,6 +1,5 @@
 import express from 'express'
 import { Server } from 'net'
-import { Api } from './api'
 import { IConfig } from './config'
 import { MessageHandler } from './messageHandler'
 import { IClient } from './models/client'
@@ -26,7 +25,6 @@ export const createInstance = ({
 
   const messageHandler = new MessageHandler(realm, config)
 
-  const api = Api({ config, realm, messageHandler })
   const messagesExpire: IMessagesExpire = new MessagesExpire({ realm, config, messageHandler })
   const checkBrokenConnections = new CheckBrokenConnections({
     realm,
@@ -35,8 +33,6 @@ export const createInstance = ({
       app.emit('disconnect', client)
     }
   })
-
-  app.use(options.path, api)
 
   const wss: IWebSocketServer = new WebSocketServer({
     server,
