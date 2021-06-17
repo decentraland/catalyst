@@ -9,7 +9,6 @@ export interface IConfig {
   readonly key: string
   readonly path: string
   readonly concurrent_limit: number
-  readonly allow_discovery: boolean
   readonly proxied: boolean | string
   readonly cleanup_out_msgs: number
   readonly ssl?: {
@@ -28,7 +27,6 @@ const defaultConfig: IConfig = {
   key: 'peerjs',
   path: '/myapp',
   concurrent_limit: 5000,
-  allow_discovery: false,
   proxied: false,
   cleanup_out_msgs: 1000,
   ssl: {
