@@ -34,7 +34,7 @@ describe('AccessCheckerForProfiles', function () {
 
     const errors = await accessChecker.checkAccess({ pointers: addresses, ethAddress: 'some-address' })
 
-    expect(errors).toBe([`Only one pointer is allowed when you create a Profile. Received: ${addresses}`])
+    expect(errors).toEqual([`Only one pointer is allowed when you create a Profile. Received: ${addresses}`])
   })
 
   it(`When a profile is created and the pointers does not match the signer, the access check fails`, async () => {
@@ -42,7 +42,7 @@ describe('AccessCheckerForProfiles', function () {
 
     const errors = await accessChecker.checkAccess({ pointers: ['some-address'], ethAddress: 'some-other-address' })
 
-    expect(errors).toBe([
+    expect(errors).toEqual([
       `You can only alter your own profile. The pointer address and the signer address are different.`
     ])
   })
