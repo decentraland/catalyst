@@ -14,8 +14,9 @@ export class AccessCheckerForProfiles {
   }): Promise<string[]> {
     const errors: string[] = []
 
-    if (pointers.length != 1) {
+    if (pointers.length !== 1) {
       errors.push(`Only one pointer is allowed when you create a Profile. Received: ${pointers}`)
+      return errors
     }
 
     const pointer: Pointer = pointers[0].toLowerCase()
