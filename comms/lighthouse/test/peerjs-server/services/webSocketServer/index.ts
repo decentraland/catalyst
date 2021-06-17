@@ -9,7 +9,7 @@ type Destroyable<T> = T & { destroy?: () => Promise<void> }
 
 const checkOpen = async (c: WebSocket): Promise<boolean> => {
   return new Promise((resolve) => {
-    c.onmessage = (event: object & { data?: string }): void => {
+    c.onmessage = (event: any & { data?: string }): void => {
       c.onmessage = () => {}
       const message = JSON.parse(event.data as string)
       resolve(message.type === MessageType.OPEN)
@@ -29,7 +29,7 @@ const checkSequence = async (
       resolve(success)
     }
 
-    c.onmessage = (event: object & { data?: string }): void => {
+    c.onmessage = (event: any & { data?: string }): void => {
       const [mes] = restMessages
 
       if (!mes) {
@@ -99,7 +99,7 @@ const createTestServer = ({
       ;((clientSocket as unknown) as WebSocket).listeners['server::close']?.forEach((s: () => void) => s())
     }
 
-    socket.onmessage = (event: object & { data?: string }): void => {
+    socket.onmessage = (event: any & { data?: string }): void => {
       const userId = socket.url
         .split('?')[1]
         ?.split('&')
@@ -113,7 +113,7 @@ const createTestServer = ({
       const clientSocket = client?.getSocket()
 
       if (!clientSocket) return
-      ;((clientSocket as unknown) as WebSocket).listeners['server::message']?.forEach((s: (data: object) => void) =>
+      ;((clientSocket as unknown) as WebSocket).listeners['server::message']?.forEach((s: (data: any) => void) =>
         s(event)
       )
     }

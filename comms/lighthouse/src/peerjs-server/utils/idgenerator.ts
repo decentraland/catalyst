@@ -1,8 +1,8 @@
 export function numericIdGenerator() {
-  let currentId = 0;
+  let currentId = 0
 
   return () => {
-    currentId++;
-    return currentId.toString();
-  };
+    currentId++
+    return currentId.toString()
+  }
 }

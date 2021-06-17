@@ -1,4 +1,4 @@
-import EventEmitter from "events";
-import WebSocketLib from "ws";
+import EventEmitter from 'events'
+import WebSocketLib from 'ws'
 
-export type MyWebSocket = WebSocketLib & EventEmitter;
+export type MyWebSocket = WebSocketLib & EventEmitter

@@ -56,8 +56,7 @@ function PeerServer(options: Optional<IConfig> = {}, callback?: (server: Server)
 
   if (newOptions.ssl && newOptions.ssl.key && newOptions.ssl.cert) {
     server = https.createServer(options.ssl!, app)
-    // @ts-ignore
-    delete newOptions.ssl
+    delete (newOptions as any).ssl
   } else {
     server = http.createServer(app)
   }
