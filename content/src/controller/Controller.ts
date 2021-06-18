@@ -324,6 +324,13 @@ export class Controller {
       return
     }
 
+    if (offset && offset > 5000) {
+      res
+        .status(400)
+        .send({ error: `Offset can't be higher than 5000. Please use the 'lastId' property for pagination.` })
+      return
+    }
+
     // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
     const fromFilter = from ?? fromLocalTimestamp
     const toFilter = to ?? toLocalTimestamp
@@ -416,6 +423,13 @@ export class Controller {
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
       res.status(400).send({ error: `Found an unrecognized entity type` })
+      return
+    }
+
+    if (offset && offset > 5000) {
+      res
+        .status(400)
+        .send({ error: `Offset can't be higher than 5000. Please use the 'lastId' property for pagination.` })
       return
     }
 
