@@ -37,6 +37,7 @@ export class ContentServerClient {
     const stream = this.client.streamAllDeployments(
       {
         filters: { from: this.lastLocalDeploymentTimestamp + 1 },
+        fields: DeploymentFields.AUDIT_INFO,
         errorListener: (errorMessage) => {
           error = true
           ContentServerClient.LOGGER.error(
