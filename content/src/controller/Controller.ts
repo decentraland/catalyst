@@ -327,7 +327,7 @@ export class Controller {
     if (offset && offset > 5000) {
       res
         .status(400)
-        .send({ error: `Offset can't be higher than 5000. Please use the 'lastId' property for pagination.` })
+        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
       return
     }
 
@@ -429,7 +429,7 @@ export class Controller {
     if (offset && offset > 5000) {
       res
         .status(400)
-        .send({ error: `Offset can't be higher than 5000. Please use the 'lastId' property for pagination.` })
+        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
       return
     }
 
