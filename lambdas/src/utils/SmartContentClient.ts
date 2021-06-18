@@ -1,8 +1,11 @@
 import {
+  BuildEntityOptions,
+  BuildEntityWithoutFilesOptions,
   ContentAPI,
   ContentClient,
   DeploymentData,
   DeploymentOptions,
+  DeploymentPreparationData,
   DeploymentWithMetadataContentAndPointers
 } from 'dcl-catalyst-client'
 import {
@@ -93,6 +96,18 @@ export class SmartContentClient implements ContentAPI {
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {
     const client = await this.getClient()
     return client.isContentAvailable(cids, options)
+  }
+
+  buildEntity({ type, pointers, files, metadata }: BuildEntityOptions): Promise<DeploymentPreparationData> {
+    throw new Error('New deployments are currently not supported')
+  }
+  buildEntityWithoutNewFiles({
+    type,
+    pointers,
+    hashesByKey,
+    metadata
+  }: BuildEntityWithoutFilesOptions): Promise<DeploymentPreparationData> {
+    throw new Error('New deployments are currently not supported')
   }
 
   deployEntity(deployData: DeploymentData, fix?: boolean, options?: RequestOptions): Promise<Timestamp> {
