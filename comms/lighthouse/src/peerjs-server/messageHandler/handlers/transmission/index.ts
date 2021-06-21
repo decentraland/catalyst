@@ -4,9 +4,11 @@ import { IMessage } from '../../../models/message'
 import { IRealm } from '../../../models/realm'
 
 export const TransmissionHandler = ({
-  realm
+  realm,
+  transmissionFilter
 }: {
   realm: IRealm
+  transmissionFilter?: (src: string, dst: string, message: IMessage) => boolean
 }): ((client: IClient | undefined, message: IMessage) => boolean) => {
   const handle = (client: IClient | undefined, message: IMessage) => {
     if (!client?.isAuthenticated()) {
@@ -17,6 +19,11 @@ export const TransmissionHandler = ({
     const type = message.type
     const srcId = message.src
     const dstId = message.dst
+
+    if (transmissionFilter && !transmissionFilter(srcId, dstId, message)) {
+      // We ignore transmission messages that are filtered
+      return true
+    }
 
     const destinationClient = realm.getClientById(dstId)
 

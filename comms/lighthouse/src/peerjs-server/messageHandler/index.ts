@@ -17,7 +17,7 @@ export class MessageHandler implements IMessageHandler {
     config: IConfig,
     private readonly handlersRegistry: IHandlersRegistry = new HandlersRegistry()
   ) {
-    const transmissionHandler: Handler = TransmissionHandler({ realm })
+    const transmissionHandler: Handler = TransmissionHandler({ realm, transmissionFilter: config.transmissionFilter })
     const heartbeatHandler: Handler = HeartbeatHandler
 
     const handleTransmission: Handler = (

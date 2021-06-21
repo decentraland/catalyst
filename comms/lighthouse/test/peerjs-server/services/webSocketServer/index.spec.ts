@@ -120,7 +120,10 @@ const createTestServer = ({
   })
 
   webSocketServer.destroy = async (): Promise<void> => {
-    server.close()
+    return new Promise((resolve) => {
+      server.close()
+      server.stop(() => resolve())
+    })
   }
 
   return webSocketServer
@@ -161,7 +164,6 @@ describe('WebSocketServer', () => {
       const webSocketServer = createTestServer({ url, realm, config })
 
       const ws = new WebSocket(url)
-
       const errorSent = await checkSequence(ws, [{ type: MessageType.ERROR, error: validError }])
 
       ws.close()
@@ -171,10 +173,10 @@ describe('WebSocketServer', () => {
       return errorSent
     }
 
-    expect(await getError(fakeURL)).toBeTrue()
-    expect(await getError(`${fakeURL}?key=${config.key}`)).toBeTrue()
-    expect(await getError(`${fakeURL}?key=${config.key}&id=1`)).toBeTrue()
-    expect(await getError(`${fakeURL}?key=notValidKey&id=userId&token=userToken`, Errors.INVALID_KEY)).toBeTrue()
+    expect(await getError(fakeURL)).toBe(true)
+    expect(await getError(`${fakeURL}?key=${config.key}`)).toBe(true)
+    expect(await getError(`${fakeURL}?key=${config.key}&id=1`)).toBe(true)
+    expect(await getError(`${fakeURL}?key=notValidKey&id=userId&token=userToken`, Errors.INVALID_KEY)).toBe(true)
   })
 
   it(`should assign a free id when no id is provided`, async () => {
@@ -194,7 +196,7 @@ describe('WebSocketServer', () => {
 
     await webSocketServer.destroy?.()
 
-    expect(assignedIdReceived).toBeTrue()
+    expect(assignedIdReceived).toBe(true)
   })
 
   it(`should check concurrent limit`, async () => {
@@ -224,11 +226,11 @@ describe('WebSocketServer', () => {
 
     const c1 = createClient('1')
 
-    expect(await checkOpen(c1)).toBeTrue()
+    expect(await checkOpen(c1)).toBe(true)
 
     const c2 = createClient('2')
 
-    expect(await checkSequence(c2, [{ type: MessageType.ERROR, error: Errors.CONNECTION_LIMIT_EXCEED }])).toBeTrue()
+    expect(await checkSequence(c2, [{ type: MessageType.ERROR, error: Errors.CONNECTION_LIMIT_EXCEED }])).toBe(true)
 
     await c1.destroy?.()
     await c2.destroy?.()
@@ -239,7 +241,7 @@ describe('WebSocketServer', () => {
 
     const c3 = createClient('3')
 
-    expect(await checkOpen(c3)).toBeTrue()
+    expect(await checkOpen(c3)).toBe(true)
 
     await c3.destroy?.()
   })

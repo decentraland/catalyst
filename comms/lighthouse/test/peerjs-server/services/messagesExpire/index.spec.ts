@@ -70,7 +70,7 @@ describe('MessagesExpire', () => {
     await wait(checkInterval * 2)
     await wait(expireTimeout)
 
-    expect(handled).toBeTrue()
+    expect(handled).toBe(true)
 
     messagesExpire.stopMessagesExpiration()
   })
