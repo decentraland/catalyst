@@ -17,7 +17,7 @@ export interface IConfig {
   }
   readonly authHandler: (client: IClient | undefined, message: IMessage) => Promise<boolean>
   readonly idGenerator: () => string
-  readonly transmissionFilter: (src: string, dst: string, message: IMessage) => boolean
+  readonly transmissionFilter: (src: string, dst: string, message: IMessage) => Promise<boolean>
   readonly maxIdIterations: number
 }
 
@@ -37,7 +37,7 @@ const defaultConfig: IConfig = {
   authHandler: () => Promise.resolve(true),
   idGenerator: numericIdGenerator(),
   maxIdIterations: 100000,
-  transmissionFilter: () => true
+  transmissionFilter: () => Promise.resolve(true)
 }
 
 export default defaultConfig

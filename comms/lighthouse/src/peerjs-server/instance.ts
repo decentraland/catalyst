@@ -40,14 +40,14 @@ export const createInstance = ({
     config
   })
 
-  wss.on('connection', (client: IClient) => {
+  wss.on('connection', async (client: IClient) => {
     const messageQueue = realm.getMessageQueueById(client.getId())
 
     if (messageQueue) {
       let message: IMessage | undefined
 
       while ((message = messageQueue.readMessage())) {
-        messageHandler.handle(client, message)
+        await messageHandler.handle(client, message)
       }
       realm.clearMessageQueue(client.getId())
     }
@@ -55,9 +55,9 @@ export const createInstance = ({
     app.emit('connection', client)
   })
 
-  wss.on('message', (client: IClient, message: IMessage) => {
+  wss.on('message', async (client: IClient, message: IMessage) => {
     app.emit('message', client, message)
-    messageHandler.handle(client, message)
+    await messageHandler.handle(client, message)
   })
 
   wss.on('close', (client: IClient) => {

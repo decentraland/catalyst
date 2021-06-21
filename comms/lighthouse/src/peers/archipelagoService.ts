@@ -80,4 +80,10 @@ export class ArchipelagoService {
       }
     }
   }
+
+  async areInSameIsland(peerId: string, ...otherPeerIds: string[]) {
+    const peersData = await this.controller.getPeersData([peerId, ...otherPeerIds])
+    const expectedIslandId = peersData[peerId]?.islandId
+    return !!expectedIslandId && Object.values(peersData).every((data) => data.islandId === expectedIslandId)
+  }
 }

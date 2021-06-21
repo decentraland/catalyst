@@ -93,9 +93,9 @@ describe('Transmission handler', () => {
     expect(sent).toBe(true)
   })
 
-  it('should filter a transmission message when a filter is provided', () => {
+  it('should filter a transmission message when a filter is provided', async () => {
     const realm = new Realm()
-    const filter = (src: string, dst: string) => src == 'id1' && dst == 'id2'
+    const filter = async (src: string, dst: string) => src == 'id1' && dst == 'id2'
 
     const handleTransmission = TransmissionHandler({ realm, transmissionFilter: filter })
 
@@ -107,18 +107,19 @@ describe('Transmission handler', () => {
     realm.setClient(clientTo, clientTo.getId())
 
     let sent = false
-    socketTo.send = (data: string): void => {
+    socketTo.send = async (data: string) => {
       const { src, dst } = JSON.parse(data)
-      if (filter(src, dst)) {
+      if (await filter(src, dst)) {
         sent = true
       } else {
         throw Error('This message should have been filtered: ' + data)
       }
     }
 
-    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
+    await handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
+
     expect(sent).toBe(true)
 
-    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: 'asd' })
+    await handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: 'asd' })
   })
 })

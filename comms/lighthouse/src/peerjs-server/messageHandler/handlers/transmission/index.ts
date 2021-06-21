@@ -8,9 +8,9 @@ export const TransmissionHandler = ({
   transmissionFilter
 }: {
   realm: IRealm
-  transmissionFilter?: (src: string, dst: string, message: IMessage) => boolean
-}): ((client: IClient | undefined, message: IMessage) => boolean) => {
-  const handle = (client: IClient | undefined, message: IMessage) => {
+  transmissionFilter?: (src: string, dst: string, message: IMessage) => Promise<boolean>
+}): ((client: IClient | undefined, message: IMessage) => Promise<boolean>) => {
+  const handle = async (client: IClient | undefined, message: IMessage) => {
     if (!client?.isAuthenticated()) {
       // We ignore transmission messages for peers that are not authenticated
       return true
@@ -20,7 +20,7 @@ export const TransmissionHandler = ({
     const srcId = message.src
     const dstId = message.dst
 
-    if (transmissionFilter && !transmissionFilter(srcId, dstId, message)) {
+    if (transmissionFilter && !(await transmissionFilter(srcId, dstId, message))) {
       // We ignore transmission messages that are filtered
       return true
     }
@@ -49,7 +49,7 @@ export const TransmissionHandler = ({
           realm.removeClientById(destinationClient.getId())
         }
 
-        handle(client, {
+        await handle(client, {
           type: MessageType.LEAVE,
           src: dstId,
           dst: srcId
