@@ -82,7 +82,7 @@ export class MessageHandler implements IMessageHandler {
     this.handlersRegistry.registerHandler(MessageType.EXPIRE, handleTransmission)
   }
 
-  public handle(client: IClient | undefined, message: IMessage): boolean | Promise<boolean> {
+  public handle(client: IClient | undefined, message: IMessage): Promise<boolean> {
     return this.handlersRegistry.handle(client, message)
   }
 }

@@ -56,7 +56,7 @@ describe('MessagesExpire', () => {
 
     let handled = false
 
-    messageHandler.handle = (client, message): boolean => {
+    messageHandler.handle = async (client, message): Promise<boolean> => {
       expect(client).toBeUndefined
       expect(message.type).toEqual(MessageType.EXPIRE)
 
