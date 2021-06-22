@@ -11,6 +11,7 @@ export class ArchipelagoService {
 
   constructor({ configService, peersService }: Pick<AppServices, 'configService' | 'peersService'>) {
     this.controller = defaultArchipelagoController({
+      flushFrequency: configService.get(LighthouseConfig.ARCHIPELAGO_FLUSH_FREQUENCY),
       archipelagoParameters: {
         joinDistance: configService.get(LighthouseConfig.ARCHIPELAGO_JOIN_DISTANCE),
         leaveDistance: configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE)

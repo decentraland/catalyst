@@ -6,6 +6,7 @@ import {
   PeerWithPosition
 } from 'comms-protocol/messageTypes'
 import { future } from 'fp-future'
+import { untilTrue, whileTrue } from '../../../commons/test-utils'
 import { Position3D } from '../src'
 import { PEER_CONSTANTS } from '../src/constants'
 import { PeerMessageType, PeerMessageTypes } from '../src/messageTypes'
@@ -874,34 +875,6 @@ describe('Peer Integration Test', function () {
     expect(Object.entries(getConnectedPeers(peer)).length).toBe(n)
   }
 
-  // function expectPeerToHaveConnectionsWith(peer: Peer, ...others: Peer[]) {
-  //   const peers = Object.values(getConnectedPeers(peer))
-
-  //   expect(peers.length).toBeGreaterThanOrEqual(others.length)
-
-  //   for (const other of others) {
-  //     expect(peers.some(($: any) => $.id === other.peerId)).toBeTrue()
-  //   }
-  // }
-
-  function delay(time: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, time))
-  }
-
-  async function whileTrue(
-    condition: () => boolean,
-    messageIfFailed: string = 'no message specified',
-    timeout: number = 5000
-  ) {
-    const started = Date.now()
-    while (condition()) {
-      if (Date.now() - started > timeout) {
-        throw new Error('Timed out awaiting condition: ' + messageIfFailed)
-      }
-      await delay(5)
-    }
-  }
-
   async function sendMessage(
     src: Peer,
     dst: Peer,
@@ -918,13 +891,5 @@ describe('Peer Integration Test', function () {
     await src.sendMessage(room, message, messageType)
 
     return await peer2MessagePromise
-  }
-
-  async function untilTrue(
-    condition: () => boolean,
-    messageIfFailed: string = 'no message specified',
-    timeout: number = 5000
-  ) {
-    await whileTrue(() => !condition(), messageIfFailed, timeout)
   }
 })
