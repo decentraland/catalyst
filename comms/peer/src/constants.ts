@@ -17,7 +17,7 @@ export const PEER_CONSTANTS = {
   DEFAULT_HEARTBEAT_INTERVAL: 5000
 }
 
-export const PeerSignals = { offer: 'offer', answer: 'answer' }
+export const PeerSignals = { offer: 'offer', answer: 'answer', candidate: 'candidate' }
 
 export enum ConnectionRejectReasons {
   INCOMPATIBLE_PROTOCOL_VERSION = 'INCOMPATIBLE_PROTOCOL_VERSION',
