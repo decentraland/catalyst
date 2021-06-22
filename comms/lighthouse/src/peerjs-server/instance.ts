@@ -40,25 +40,33 @@ export const createInstance = ({
     config
   })
 
-  wss.on('connection', async (client: IClient) => {
-    const messageQueue = realm.getMessageQueueById(client.getId())
+  function handleError(runnable: () => Promise<any>) {
+    runnable().catch((e) => wss.emit('error', e))
+  }
 
-    if (messageQueue) {
-      let message: IMessage | undefined
+  wss.on('connection', (client: IClient) =>
+    handleError(async () => {
+      const messageQueue = realm.getMessageQueueById(client.getId())
 
-      while ((message = messageQueue.readMessage())) {
-        await messageHandler.handle(client, message)
+      if (messageQueue) {
+        let message: IMessage | undefined
+
+        while ((message = messageQueue.readMessage())) {
+          await messageHandler.handle(client, message)
+        }
+        realm.clearMessageQueue(client.getId())
       }
-      realm.clearMessageQueue(client.getId())
-    }
 
-    app.emit('connection', client)
-  })
+      app.emit('connection', client)
+    })
+  )
 
-  wss.on('message', async (client: IClient, message: IMessage) => {
-    app.emit('message', client, message)
-    await messageHandler.handle(client, message)
-  })
+  wss.on('message', (client: IClient, message: IMessage) =>
+    handleError(async () => {
+      app.emit('message', client, message)
+      await messageHandler.handle(client, message)
+    })
+  )
 
   wss.on('close', (client: IClient) => {
     app.emit('disconnect', client)
