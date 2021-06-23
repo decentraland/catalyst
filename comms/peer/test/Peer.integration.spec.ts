@@ -134,7 +134,7 @@ describe('Peer Integration Test', function () {
 
     const peer = new Peer(lighthouse, peerId, callback, {
       socketBuilder: () => socket,
-      heartbeatInterval: 0.1,
+      heartbeatInterval: 5,
       positionConfig: {
         selfPosition: () => position
       },
