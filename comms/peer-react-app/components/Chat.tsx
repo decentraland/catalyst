@@ -83,7 +83,7 @@ export function Chat(props: { peer: Peer; room: string; url: string }) {
     }
   }
 
-  props.peer.onIslandChange = islandId => setCurrentIslandId(islandId)
+  props.peer.onIslandChange = (islandId) => setCurrentIslandId(islandId)
 
   function setCursorPosition(sender: string, position: { x: number; y: number }) {
     if (updatingCursors) {
