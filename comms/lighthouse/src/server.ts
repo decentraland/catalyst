@@ -19,7 +19,7 @@ import { PeersService } from './peers/peersService'
 import { configureRoutes } from './routes'
 import { AppServices } from './types'
 
-const LIGHTHOUSE_VERSION = '0.2'
+const LIGHTHOUSE_PROTOCOL_VERSION = '1.0.0'
 const DEFAULT_ETH_NETWORK = 'ropsten'
 
 const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
@@ -96,7 +96,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     { configService },
     {
       name,
-      version: LIGHTHOUSE_VERSION,
+      version: LIGHTHOUSE_PROTOCOL_VERSION,
       ethNetwork: CURRENT_ETH_NETWORK,
       restrictedAccessSigner: restrictedAccessAddress,
       env: {
