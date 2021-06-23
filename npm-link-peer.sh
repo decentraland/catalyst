@@ -8,7 +8,7 @@ show_separator "Building peer package..."
 
 BUILD_OUTPUT=$(yarn bazel run //comms/peer:package.pack 2>&1 | tee /dev/tty)
 
-REGEX='(decentraland-katalyst-peer-[0-9]*\.[0-9]*\.[0-9]*\.tgz)'
+REGEX='(dcl-catalyst-peer-\S*\.tgz)'
 
 if [[ $BUILD_OUTPUT =~ $REGEX ]] ; then
     ZIP_FILENAME=${BASH_REMATCH[1]}
@@ -21,4 +21,3 @@ if [[ $BUILD_OUTPUT =~ $REGEX ]] ; then
     show_separator "Making NPM Link"
     npm link
 fi
-
