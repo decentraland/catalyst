@@ -61,7 +61,7 @@ describe('Transmission handler', () => {
 
     handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
 
-    expect(sent).toBeTrue()
+    expect(sent).toBe(true)
   })
 
   it('should send LEAVE message to source client when sending to destination client failed', () => {
@@ -90,6 +90,36 @@ describe('Transmission handler', () => {
 
     handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
 
-    expect(sent).toBeTrue()
+    expect(sent).toBe(true)
+  })
+
+  it('should filter a transmission message when a filter is provided', async () => {
+    const realm = new Realm()
+    const filter = async (src: string, dst: string) => src == 'id1' && dst == 'id2'
+
+    const handleTransmission = TransmissionHandler({ realm, transmissionFilter: filter })
+
+    const clientFrom = createClient({ id: 'id1' })
+    const clientTo = createClient({ id: 'id2' })
+    const socketTo = createFakeSocket()
+    clientTo.setSocket(socketTo)
+    realm.setClient(clientFrom, clientFrom.getId())
+    realm.setClient(clientTo, clientTo.getId())
+
+    let sent = false
+    socketTo.send = async (data: string) => {
+      const { src, dst } = JSON.parse(data)
+      if (await filter(src, dst)) {
+        sent = true
+      } else {
+        throw Error('This message should have been filtered: ' + data)
+      }
+    }
+
+    await handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
+
+    expect(sent).toBe(true)
+
+    await handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: 'asd' })
   })
 })

@@ -55,7 +55,7 @@ describe('MessageQueue', () => {
 
       queue.readMessage()
 
-      expect(queue.getLastReadAt()).toBeGreaterThan(lastReadAt + 10)
+      expect(queue.getLastReadAt()).toBeGreaterThanOrEqual(lastReadAt + 10)
     })
   })
 })

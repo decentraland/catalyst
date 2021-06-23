@@ -8,7 +8,7 @@ describe('HandlersRegistry', () => {
 
     let handled = false
 
-    const handler: Handler = (): boolean => {
+    const handler: Handler = async (): Promise<boolean> => {
       handled = true
       return true
     }

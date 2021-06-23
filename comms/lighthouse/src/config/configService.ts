@@ -26,6 +26,12 @@ export class LighthouseConfig<T> {
     defaultValue: 80
   })
 
+  static readonly ARCHIPELAGO_FLUSH_FREQUENCY: LighthouseConfig<number> = new LighthouseConfig({
+    name: 'archipelagoFlushFrequency',
+    fromText: parseFloat,
+    defaultValue: 2.0
+  })
+
   readonly name: string
   readonly fromText: (config: string) => T
   readonly defaultValue: T

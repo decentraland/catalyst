@@ -66,6 +66,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         ":peer",
+        "//commons/test-utils",
         "//comms/protocol:comms-protocol",
         "@npm//@types/jasmine",
         "@npm//@types/sinon",

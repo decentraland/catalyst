@@ -8,7 +8,7 @@ import { HeartbeatHandler, TransmissionHandler } from './handlers'
 import { HandlersRegistry, IHandlersRegistry } from './handlersRegistry'
 
 export interface IMessageHandler {
-  handle(client: IClient | undefined, message: IMessage): boolean
+  handle(client: IClient | undefined, message: IMessage): boolean | Promise<boolean>
 }
 
 export class MessageHandler implements IMessageHandler {
@@ -17,13 +17,10 @@ export class MessageHandler implements IMessageHandler {
     config: IConfig,
     private readonly handlersRegistry: IHandlersRegistry = new HandlersRegistry()
   ) {
-    const transmissionHandler: Handler = TransmissionHandler({ realm })
+    const transmissionHandler: Handler = TransmissionHandler({ realm, transmissionFilter: config.transmissionFilter })
     const heartbeatHandler: Handler = HeartbeatHandler
 
-    const handleTransmission: Handler = (
-      client: IClient | undefined,
-      { type, src, dst, payload }: IMessage
-    ): boolean => {
+    const handleTransmission: Handler = (client: IClient | undefined, { type, src, dst, payload }: IMessage) => {
       return transmissionHandler(client, {
         type,
         src,
@@ -34,43 +31,44 @@ export class MessageHandler implements IMessageHandler {
 
     const handleHeartbeat = (client: IClient | undefined, message: IMessage) => heartbeatHandler(client, message)
 
-    const handleValidation = (client: IClient | undefined, message: IMessage) => {
-      config.authHandler(client, message).then((result) => {
-        const socket = client?.getSocket()
-        try {
-          if (socket) {
-            if (result) {
-              client!.setAuthenticated(true)
-            }
+    const handleValidation = async (client: IClient | undefined, message: IMessage) => {
+      const result = await config.authHandler(client, message)
+      const socket = client?.getSocket()
 
-            const data = JSON.stringify({ type: result ? MessageType.VALIDATION_OK : MessageType.VALIDATION_NOK })
-
-            socket.send(data)
-
-            if (!result) {
-              socket.close()
-            }
-          } else {
-            // Neither socket no res available. Peer dead?
-            throw new Error('Peer dead')
+      try {
+        if (socket) {
+          if (result) {
+            client!.setAuthenticated(true)
           }
-        } catch (e) {
-          // This happens when a peer disconnects without closing connections and
-          // the associated WebSocket has not closed.
-          // Tell other side to stop trying.
-          if (socket) {
+
+          const data = JSON.stringify({ type: result ? MessageType.VALIDATION_OK : MessageType.VALIDATION_NOK })
+
+          socket.send(data)
+
+          if (!result) {
             socket.close()
-          } else {
-            realm.removeClientById(client!.getId())
           }
-
-          this.handle(client, {
-            type: MessageType.LEAVE,
-            src: client!.getId(),
-            dst: client!.getId()
-          })
+        } else {
+          // Neither socket no res available. Peer dead?
+          throw new Error('Peer dead')
         }
-      })
+      } catch (e) {
+        // This happens when a peer disconnects without closing connections and
+        // the associated WebSocket has not closed.
+        // Tell other side to stop trying.
+        if (socket) {
+          socket.close()
+        } else {
+          realm.removeClientById(client!.getId())
+        }
+
+        await this.handle(client, {
+          type: MessageType.LEAVE,
+          src: client!.getId(),
+          dst: client!.getId()
+        })
+      }
+
       return true
     }
 
@@ -84,7 +82,7 @@ export class MessageHandler implements IMessageHandler {
     this.handlersRegistry.registerHandler(MessageType.EXPIRE, handleTransmission)
   }
 
-  public handle(client: IClient | undefined, message: IMessage): boolean {
+  public handle(client: IClient | undefined, message: IMessage): Promise<boolean> {
     return this.handlersRegistry.handle(client, message)
   }
 }

@@ -112,7 +112,10 @@ ts_library(
     deps = [
         ":lighthouse",
         "//commons/servers",
+        "//commons/test-utils",
         "//commons/utils",
+        "//comms/protocol:comms-protocol",
+        "@npm//@dcl/archipelago",
         "@npm//@types/express",
         "@npm//@types/jasmine",
         "@npm//express",

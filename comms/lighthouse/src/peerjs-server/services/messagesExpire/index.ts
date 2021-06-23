@@ -37,8 +37,12 @@ export class MessagesExpire implements IMessagesExpire {
     }
 
     // Clean up outstanding messages
-    this.timeoutId = setTimeout(() => {
-      this.pruneOutstanding()
+    this.timeoutId = setTimeout(async () => {
+      try {
+        await this.pruneOutstanding()
+      } catch (e) {
+        console.error('Error while prunning expired messages', e)
+      }
 
       this.timeoutId = null
 
@@ -53,7 +57,7 @@ export class MessagesExpire implements IMessagesExpire {
     }
   }
 
-  private pruneOutstanding(): void {
+  private async pruneOutstanding() {
     const destinationClientsIds = this.realm.getClientsIdsWithQueue()
 
     const now = new Date().getTime()
@@ -71,7 +75,7 @@ export class MessagesExpire implements IMessagesExpire {
 
       for (const message of messages) {
         if (!seen[message.src]) {
-          this.messageHandler.handle(undefined, {
+          await this.messageHandler.handle(undefined, {
             type: MessageType.EXPIRE,
             src: message.dst,
             dst: message.src
