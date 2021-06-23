@@ -3,7 +3,7 @@
   "description": "Catalyst Peer Library",
   "main": "bundle.js",
   "types": "src/index.d.ts",
-  "version": "1.0.1-0",
+  "version": "1.0.1-experimental.0",
   "devDependencies": {
     "@types/simple-peer": "^9.11.0"
   },
