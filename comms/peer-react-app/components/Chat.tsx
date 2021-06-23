@@ -83,6 +83,8 @@ export function Chat(props: { peer: Peer; room: string; url: string }) {
     }
   }
 
+  props.peer.onIslandChange = islandId => setCurrentIslandId(islandId)
+
   function setCursorPosition(sender: string, position: { x: number; y: number }) {
     if (updatingCursors) {
       const cursorColor = props.peer.isConnectedTo(sender) ? 'green' : 'red'
@@ -129,14 +131,6 @@ export function Chat(props: { peer: Peer; room: string; url: string }) {
 
     return () => window.clearInterval(intervalId)
   }, [updatingCursors])
-
-  useEffect(() => {
-    setInterval(async () => {
-      if (props.peer.getCurrentIslandId() !== currentIslandId) {
-        setCurrentIslandId(props.peer.getCurrentIslandId())
-      }
-    }, 1000)
-  }, [])
 
   const users = [...Object.keys(props.peer.knownPeers)]
 

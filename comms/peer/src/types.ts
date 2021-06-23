@@ -80,6 +80,8 @@ export type PeerConfig = {
    */
   relaySuspensionConfig?: RelaySuspensionConfig
   heartbeatInterval?: number
+
+  onIslandChange?: (islandId: string) => any
 }
 
 export type RelaySuspensionConfig = {
