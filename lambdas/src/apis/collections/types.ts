@@ -71,7 +71,6 @@ export type WearablesPagination = {
   lastId: WearableId | undefined
 }
 
-
 export type ERC721StandardTrait = {
   trait_type: string
   value: string

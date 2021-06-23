@@ -4,7 +4,13 @@ import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
-import { Collection, ERC721StandardTrait, WearableBodyShape, WearableMetadata, WearableMetadataRepresentation } from '../types'
+import {
+  Collection,
+  ERC721StandardTrait,
+  WearableBodyShape,
+  WearableMetadata,
+  WearableMetadataRepresentation
+} from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
@@ -28,14 +34,17 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
       const image = createExternalContentUrl(client, entity, wearableMetadata.image)
       const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
-      const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce((bodyShapes: ERC721StandardTrait[], bodyShape) => {
-        bodyShapes.push({
-          trait_type: 'Body Shapes',
-          value: bodyShape
-        })
+      const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
+        (bodyShapes: ERC721StandardTrait[], bodyShape) => {
+          bodyShapes.push({
+            trait_type: 'Body Shapes',
+            value: bodyShape
+          })
 
-        return bodyShapes
-      }, [])
+          return bodyShapes
+        },
+        []
+      )
 
       const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
         tags.push({
