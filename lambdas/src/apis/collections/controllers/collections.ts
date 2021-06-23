@@ -4,7 +4,7 @@ import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
-import { Collection, WearableMetadata } from '../types'
+import { Collection, ERC721StandardTrait, WearableBodyShape, WearableMetadata, WearableMetadataRepresentation } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
@@ -28,13 +28,47 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
       const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
       const image = createExternalContentUrl(client, entity, wearableMetadata.image)
       const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
+      const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce((bodyShapes: ERC721StandardTrait[], bodyShape) => {
+        bodyShapes.push({
+          trait_type: 'Body Shapes',
+          value: bodyShape
+        })
+
+        return bodyShapes
+      }, [])
+
+      const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
+        tags.push({
+          trait_type: 'Tag',
+          value: tag
+        })
+
+        return tags
+      }, [])
+
       const standardErc721 = {
         id: urn,
         name,
         description,
         language: 'en-US',
         image,
-        thumbnail
+        thumbnail,
+        attributes: [
+          {
+            trait_type: 'Rarity',
+            value: wearableMetadata.rarity
+          },
+          {
+            trait_type: 'Category',
+            value: wearableMetadata.data.category
+          },
+          {
+            trait_type: 'Category',
+            value: wearableMetadata.data.category
+          },
+          ...tagTraits,
+          ...bodyShapeTraits
+        ]
       }
       res.send(standardErc721)
     } else {
@@ -139,6 +173,16 @@ async function internalContents(
 async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity | undefined> {
   const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
   return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
+}
+
+export function getBodyShapes(representations: WearableMetadataRepresentation[]) {
+  const bodyShapes = new Set<WearableBodyShape>()
+  for (const representation of representations) {
+    for (const bodyShape of representation.bodyShapes) {
+      bodyShapes.add(bodyShape.split(':').pop()!)
+    }
+  }
+  return Array.from(bodyShapes)
 }
 
 const RARITIES_EMISSIONS = {

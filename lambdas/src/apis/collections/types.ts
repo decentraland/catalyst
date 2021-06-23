@@ -34,7 +34,7 @@ type WearableMetadataData = {
   representations: WearableMetadataRepresentation[]
   category: WearableCategory
 }
-type WearableBodyShape = WearableId
+export type WearableBodyShape = WearableId
 type WearableCategory = string
 type Rarity = string
 export type I18N = {
@@ -69,4 +69,10 @@ export type WearablesFilters = {
 export type WearablesPagination = {
   limit: number
   lastId: WearableId | undefined
+}
+
+
+export type ERC721StandardTrait = {
+  trait_type: string
+  value: string
 }
