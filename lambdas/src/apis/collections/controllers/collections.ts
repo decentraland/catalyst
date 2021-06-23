@@ -62,10 +62,6 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
             trait_type: 'Category',
             value: wearableMetadata.data.category
           },
-          {
-            trait_type: 'Category',
-            value: wearableMetadata.data.category
-          },
           ...tagTraits,
           ...bodyShapeTraits
         ]
