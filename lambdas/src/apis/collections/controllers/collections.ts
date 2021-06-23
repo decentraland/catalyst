@@ -37,7 +37,7 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
       const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
         (bodyShapes: ERC721StandardTrait[], bodyShape) => {
           bodyShapes.push({
-            trait_type: 'Body Shapes',
+            trait_type: 'Body Shape',
             value: bodyShape
           })
 
