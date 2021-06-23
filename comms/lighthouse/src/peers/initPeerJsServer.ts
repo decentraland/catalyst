@@ -26,7 +26,7 @@ export function initPeerJsServer({
     path: '/',
     idGenerator: () => idService.nextId(),
     authHandler: peerAuthHandler({ noAuth, peersServiceGetter: peersService, ethNetwork }),
-    transmissionFilter: async (src, dst) => await archipelagoService().areInSameIsland(src, dst)
+    transmissionFilter: (src, dst) => archipelagoService().areInSameIsland(src, dst)
   }
 
   const peerServer = ExpressPeerServer(netServer, options)
