@@ -260,7 +260,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
             connectionId,
             ...this.config.handshakePayloadExtras()
           })
-        } else if (data.candidate) {
+        } else if (data.type === PeerSignals.candidate) {
           this.peerJsConnection.sendCandidate(peerData, data, connectionId)
         }
       } else {
@@ -302,9 +302,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
       connection: new SimplePeer({
         initiator,
         config: this.config.rtcConnectionConfig,
-        channelConfig: {
-          label: connectionIdFor(this.peerId(), peerId, sessionId)
-        },
+        channelName: connectionIdFor(this.peerId(), peerId, sessionId),
         wrtc: this.config.wrtc,
         objectMode: true
       })
@@ -374,6 +372,7 @@ export class PeerWebRTCHandler extends EventEmitter<PeerWebRTCEvent> {
     const peer = this.getOrCreatePeer(peerId, false, payload.label, payload.sessionId)
 
     this.signalMessage(peer, {
+      type: 'candidate',
       candidate: payload.candidate
     })
   }
