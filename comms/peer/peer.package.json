@@ -3,13 +3,14 @@
   "description": "Catalyst Peer Library",
   "main": "bundle.js",
   "types": "src/index.d.ts",
+  "version": "1.0.0-experimental.0",
   "devDependencies": {
     "@types/simple-peer": "^9.11.0"
   },
   "dependencies": {
     "eventemitter3": "^4.0.0",
     "fp-future": "^1.0.1",
-    "simple-peer": "^9.11.0",
-    "protobufjs": "^6.8.8"
+    "protobufjs": "^6.8.8",
+    "simple-peer": "^9.11.0"
   }
 }

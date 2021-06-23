@@ -27,7 +27,7 @@ dataform_npm_package(
     name = "dpackage",
     package_layers = [
         "//:common.package.json",
-        "package.json",
+        "peer.package.json",
     ],
     deps = [":peer"],
 )
