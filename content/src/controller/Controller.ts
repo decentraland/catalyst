@@ -280,6 +280,7 @@ export class Controller {
     }
 
     const { deployments } = await this.service.getDeployments({
+      fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type] }
     })
 
@@ -308,7 +309,7 @@ export class Controller {
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
-    //deprecated
+    // deprecated
     const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
     // deprecated
     const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
@@ -434,7 +435,7 @@ export class Controller {
     }
 
     // Validate fields are correct or empty
-    let enumFields: DeploymentField[] = [...DEFAULT_FIELDS_ON_DEPLOYMENTS]
+    let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
     if (fields && fields.trim().length > 0) {
       const acceptedValues = Object.values(DeploymentField).map((e) => e.toString())
       enumFields = fields
@@ -487,6 +488,7 @@ export class Controller {
     }
 
     const deploymentOptions = {
+      fields: enumFields,
       filters: requestFilters,
       sortBy: sortBy,
       offset: offset,
@@ -525,8 +527,12 @@ export class Controller {
         nextFilters.to = lastDeployment.entityTimestamp
       }
     }
+
+    const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
+
     const nextQueryParams = toQueryParams({
       ...nextFilters,
+      fields,
       sortingField: field,
       sortingOrder: order,
       lastId: lastDeployment.entityId,

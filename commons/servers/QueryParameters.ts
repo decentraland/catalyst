@@ -12,10 +12,11 @@ function convertFiltersToQueryParams(filters?: Record<string, any>): Map<string,
   const entries = Object.entries(filters)
     .filter(([_, value]) => !!value)
     .map<[string, string[]]>(([name, value]) => {
-      const newName = name.endsWith('s') ? name.slice(0, -1) : name
+      let newName = name
       let newValues: string[]
       // Force coercion of number, boolean, or string into string
       if (Array.isArray(value)) {
+        newName = name.endsWith('s') ? name.slice(0, -1) : newName
         newValues = [...value].filter(isValidQueryParamValue).map((_) => `${_}`)
       } else if (isValidQueryParamValue(value)) {
         newValues = [`${value}`]
