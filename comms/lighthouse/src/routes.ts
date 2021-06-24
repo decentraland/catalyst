@@ -17,9 +17,7 @@ export type Services = {
   configService: ConfigService
 }
 
-export function asyncHandler(
-  handler: (req: Request, res: Response) => Promise<void>,
-): RequestHandler {
+export function asyncHandler(handler: (req: Request, res: Response) => Promise<void>): RequestHandler {
   return async (req, res) => {
     try {
       await handler(req, res)
@@ -30,7 +28,11 @@ export function asyncHandler(
   }
 }
 
-export function configureRoutes(app: express.Express, services: Pick<AppServices, 'configService' | 'peersService'>, options: RoutesOptions) {
+export function configureRoutes(
+  app: express.Express,
+  services: Pick<AppServices, 'configService' | 'peersService'>,
+  options: RoutesOptions
+) {
   const { configService } = services
 
   const getStatus: RequestHandler = (_req, res) => {

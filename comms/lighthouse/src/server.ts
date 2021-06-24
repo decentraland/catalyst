@@ -91,21 +91,17 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const archipelagoService = new ArchipelagoService(appServices)
 
-  configureRoutes(
-    app,
-    appServices,
-    {
-      name,
-      version: LIGHTHOUSE_PROTOCOL_VERSION,
-      ethNetwork: CURRENT_ETH_NETWORK,
-      restrictedAccessSigner: restrictedAccessAddress,
-      env: {
-        secure,
-        commitHash: process.env.COMMIT_HASH,
-        catalystVersion: process.env.CATALYST_VERSION
-      }
+  configureRoutes(app, appServices, {
+    name,
+    version: LIGHTHOUSE_PROTOCOL_VERSION,
+    ethNetwork: CURRENT_ETH_NETWORK,
+    restrictedAccessSigner: restrictedAccessAddress,
+    env: {
+      secure,
+      commitHash: process.env.COMMIT_HASH,
+      catalystVersion: process.env.CATALYST_VERSION
     }
-  )
+  })
 
   app.use('/peerjs', peerServer)
 
