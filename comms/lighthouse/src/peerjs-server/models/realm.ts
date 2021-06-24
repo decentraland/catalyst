@@ -23,6 +23,8 @@ export interface IRealm {
   clearMessageQueue(id: string): void
 
   generateClientId(): string
+
+  getClientsCount(): number
 }
 
 export class Realm implements IRealm {
@@ -83,5 +85,9 @@ export class Realm implements IRealm {
     }
 
     return clientId
+  }
+
+  public getClientsCount(): number {
+    return this.clients.size
   }
 }

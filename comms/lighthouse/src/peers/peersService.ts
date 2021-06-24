@@ -160,6 +160,10 @@ export class PeersService implements IPeersService {
     }
   }
 
+  getActivePeersCount() {
+    return this.peerRealm.getClientsCount()
+  }
+
   notifyIslandChange(peerChangingId: string, island: Island, fromIsland: Island | undefined) {
     this.sendMessageToPeer(peerChangingId, {
       type: PeerOutgoingMessageType.CHANGE_ISLAND,

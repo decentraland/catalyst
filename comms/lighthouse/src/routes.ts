@@ -1,8 +1,9 @@
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
-import express, { RequestHandler } from 'express'
+import express, { Request, RequestHandler, Response } from 'express'
 import { ConfigService } from './config/configService'
 import { requireAll } from './misc/handlers'
+import { AppServices } from './types'
 
 export type RoutesOptions = {
   env?: any
@@ -16,16 +17,32 @@ export type Services = {
   configService: ConfigService
 }
 
-export function configureRoutes(app: express.Express, services: Services, options: RoutesOptions) {
+export function asyncHandler(handler: (req: Request, res: Response) => Promise<void>): RequestHandler {
+  return async (req, res) => {
+    try {
+      await handler(req, res)
+    } catch (e) {
+      console.error(`Unexpected error while performing request ${req.method} ${req.originalUrl}`, e)
+      res.status(500).send({ status: 'server-error', message: 'Unexpected error' })
+    }
+  }
+}
+
+export function configureRoutes(
+  app: express.Express,
+  services: Pick<AppServices, 'configService' | 'peersService'>,
+  options: RoutesOptions
+) {
   const { configService } = services
 
-  const getStatus: RequestHandler = (req, res) => {
+  const getStatus: RequestHandler = (_req, res) => {
     const status: any = {
       name: options.name,
       version: options.version,
       currenTime: Date.now(),
       env: options.env,
-      ready: true
+      ready: true,
+      usersCount: services.peersService().getActivePeersCount()
     }
 
     res.send(status)
@@ -60,10 +77,10 @@ export function configureRoutes(app: express.Express, services: Services, option
       options.ethNetwork,
       (signer) => signer?.toLowerCase() == options.restrictedAccessSigner.toLowerCase()
     ),
-    putConfig
+    asyncHandler(putConfig)
   ])
 
-  registerRoute(app, '/config', HttpMethod.GET, [getConfig])
+  registerRoute(app, '/config', HttpMethod.GET, [asyncHandler(getConfig)])
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
