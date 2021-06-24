@@ -93,7 +93,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   configureRoutes(
     app,
-    { configService },
+    appServices,
     {
       name,
       version: LIGHTHOUSE_PROTOCOL_VERSION,
