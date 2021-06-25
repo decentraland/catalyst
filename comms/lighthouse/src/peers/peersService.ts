@@ -179,4 +179,17 @@ export class PeersService implements IPeersService {
       this.sendUpdateToIsland(peerChangingId, fromIsland, PeerOutgoingMessageType.PEER_LEFT_ISLAND)
     }
   }
+
+  getUsersParcels(): [number, number][] {
+    const result: [number, number][] = []
+
+    for (const peerId in this.peers) {
+      const parcel = this.peers[peerId].parcel
+      if (parcel) {
+        result.push(parcel)
+      }
+    }
+
+    return result
+  }
 }

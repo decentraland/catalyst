@@ -1,7 +1,6 @@
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { Request, RequestHandler, Response } from 'express'
-import { ConfigService } from './config/configService'
 import { requireAll } from './misc/handlers'
 import { AppServices } from './types'
 
@@ -13,8 +12,14 @@ export type RoutesOptions = {
   restrictedAccessSigner: string
 }
 
-export type Services = {
-  configService: ConfigService
+type CommsStatus = {
+  name: string
+  version: string
+  currenTime: number
+  env: Record<string, string | number | boolean>
+  ready: boolean
+  usersCount: number
+  userParcels?: [number, number][]
 }
 
 export function asyncHandler(handler: (req: Request, res: Response) => Promise<void>): RequestHandler {
@@ -35,14 +40,19 @@ export function configureRoutes(
 ) {
   const { configService } = services
 
-  const getStatus: RequestHandler = (_req, res) => {
-    const status: any = {
+  const getStatus: RequestHandler = (req, res) => {
+    const includeUserParcels = req.query.includeLayers === 'true' || req.query.includeUserParcels === 'true'
+    const status: CommsStatus = {
       name: options.name,
       version: options.version,
       currenTime: Date.now(),
       env: options.env,
       ready: true,
       usersCount: services.peersService().getActivePeersCount()
+    }
+
+    if (includeUserParcels) {
+      status.userParcels = services.peersService().getUsersParcels()
     }
 
     res.send(status)
