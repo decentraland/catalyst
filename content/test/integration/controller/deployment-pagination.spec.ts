@@ -270,7 +270,7 @@ describe('Integration - Deployment Pagination', () => {
 
     const url =
       server.getAddress() +
-      `/pointerChanges?` +
+      `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
     console.log('URL ', url)
     const pointerChanges = await fetchJson(url)
@@ -314,7 +314,7 @@ describe('Integration - Deployment Pagination', () => {
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url = server.getAddress() + `/pointerChanges?` + toQueryParams({ ...filters, limit: limit })
+    const url = server.getAddress() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
     const response = await fetchJson(url)
     return response
   }
