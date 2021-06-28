@@ -1,4 +1,4 @@
-import { Fetcher, ServerAddress, ServerName, Timestamp } from 'dcl-catalyst-commons'
+import { Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 import { delay } from 'decentraland-katalyst-utils/util'
@@ -171,12 +171,8 @@ export class ContentCluster implements IdentityProvider {
 
         if (serversWithMyChallengeText.length === 1) {
           const [address] = serversWithMyChallengeText[0]
-          const name = encodeURIComponent(address)
-          this.myIdentity = {
-            ...serversByAddresses.get(address)!,
-            name
-          }
-          ContentCluster.LOGGER.info(`Calculated my identity. My address is ${address} and my name is '${name}'`)
+          this.myIdentity = serversByAddresses.get(address)!
+          ContentCluster.LOGGER.info(`Calculated my identity. My address is ${address}`)
           break
         } else if (serversWithMyChallengeText.length > 1) {
           ContentCluster.LOGGER.warn(
@@ -216,4 +212,4 @@ export class ContentCluster implements IdentityProvider {
   }
 }
 
-type ServerIdentity = ServerMetadata & { name: ServerName }
+type ServerIdentity = ServerMetadata
