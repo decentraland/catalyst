@@ -3161,14 +3161,14 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.1.tgz#52a0fddda8b045092dae967f405ad42c16e2224f"
-  integrity sha512-wQrSjV4gflJZPdj30QNQHFWFWFnQfBMtPGcQ5Z0ZaZSYkVp+f/Zc/2xTukY0NPHS25yYKnM5iqijfh3VmLqfIg==
+dcl-catalyst-client@^5.0.4-20210628155008.commit-4d16d4f:
+  version "5.0.4-20210628155008.commit-4d16d4f"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.4-20210628155008.commit-4d16d4f.tgz#41205c1245bd6c75a50c8358f1097a33189530f9"
+  integrity sha512-Y0nxyRRLe89FNRzyZHGw8EScfzvEZmHzP8dZy99SnLMVoPXTleqXsbT0TIH1VDVhZbp+fmaGWxc+9ITtiHN0kw==
   dependencies:
     "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^4.0.0"
+    dcl-catalyst-commons "^4.0.1"
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
@@ -3176,6 +3176,27 @@ dcl-catalyst-commons@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.0.tgz#06591159f02da2d63fdb77d28932a05994db1957"
   integrity sha512-Xwf4ZlwAfhfTj8fD40+nwKh8DiEp6qTcy1OM19kdIJX1YgUMY18QMMUbPkAQHYNSsvOXOb2zZ8WAIYuwrtd8qg==
+  dependencies:
+    "@types/isomorphic-fetch" "0.0.35"
+    "@types/ms" "^0.7.31"
+    "@typescript-eslint/eslint-plugin" "^4.9.0"
+    "@typescript-eslint/parser" "^4.9.0"
+    abort-controller "^3.0.0"
+    blob-to-buffer "^1.2.9"
+    cids "^0.8.0"
+    cross-fetch "^3.0.5"
+    dcl-crypto "^2.1.0"
+    eslint "^7.14.0"
+    eslint-config-prettier "^7.2.0"
+    eslint-plugin-prettier "^3.2.0"
+    ms "^2.1.2"
+    multihashing-async "^0.8.1"
+    prettier "^2.2.1"
+
+dcl-catalyst-commons@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.1.tgz#5608ad0f3f240740093f7005147943ec36a4e7dd"
+  integrity sha512-yyXylwK3JmMZUFyISYpz6GLCfpocJ0lKLA7x/2fwcnOLqzBEsSEDauiwKnUzAd4MLmmX/+WvMloysXbriMsnYg==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
