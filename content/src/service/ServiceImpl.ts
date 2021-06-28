@@ -406,7 +406,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   getStatus(): ServerStatus {
     return {
-      name: '',
+      name: '', // TODO: Remove and communicate breaking change accordingly
       version: CURRENT_CONTENT_VERSION,
       currentTime: Date.now(),
       lastImmutableTime: 0,
