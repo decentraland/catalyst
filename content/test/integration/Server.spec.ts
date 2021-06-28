@@ -109,7 +109,7 @@ describe('Integration - Server', function () {
   })
 
   it(`PointerChanges`, async () => {
-    const response = await fetch(`${address}/pointerChanges?entityType=${entity1.type}`)
+    const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
     const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()
     expect(deltas.length).toBe(1)
@@ -126,7 +126,7 @@ describe('Integration - Server', function () {
   })
 
   it(`PointerChanges with offset too high`, async () => {
-    const response = await fetch(`${address}/pointerChanges?offset=5001`)
+    const response = await fetch(`${address}/pointer-changes?offset=5001`)
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({
       error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.`

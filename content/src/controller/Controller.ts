@@ -303,7 +303,7 @@ export class Controller {
 
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /pointerChanges
+    // Path: /pointer-changes
     // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
@@ -687,7 +687,7 @@ export class Controller {
 
   async getFailedDeployments(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /failedDeployments
+    // Path: /failed-deployments
 
     const failedDeployments = await this.service.getAllFailedDeployments()
     res.send(failedDeployments)
