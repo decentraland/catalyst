@@ -225,7 +225,7 @@ describe('Failed Deployments validations.', () => {
 })
 
 async function getFailedDeployments(): Promise<FailedDeployment[]> {
-  return fetchArray(`https://peer.decentraland.org/content/failedDeployments`)
+  return fetchArray(`https://peer.decentraland.org/content/failed-deployments`)
 }
 
 function onlyUnique<T>(value: T, index: number, self: T[]): boolean {

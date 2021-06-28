@@ -14,7 +14,7 @@
 - [Deployments](deployments/get.md) : `GET /deployments`
 - Post Entities: `POST /entities`
 - Get Entities: `GET /entities/:type`
-- Failed Deployments: `GET /failedDeployments`
+- Failed Deployments: `GET /failed-deployments`
 - [History](history/get.md) : `GET /history`
 - [Pointer Changes](pointer-changes/get.md) : `GET /pointer-changes'`
 - Snapshot: `GET /snapshot/:type`

@@ -687,7 +687,7 @@ export class Controller {
 
   async getFailedDeployments(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /failedDeployments
+    // Path: /failed-deployments
 
     const failedDeployments = await this.service.getAllFailedDeployments()
     res.send(failedDeployments)
