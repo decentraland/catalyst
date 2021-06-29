@@ -2,6 +2,7 @@ import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
 import { EntityId, Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
+import ms from 'ms'
 
 export class AccessCheckerForWearables {
   private static readonly L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
@@ -191,37 +192,69 @@ export class AccessCheckerForWearables {
     }
   }
 
+  // When we want to find a block for a specific timestamp, we define an access window. This means that
+  // we will place will try to find the closes block to the timestamp, but only if it's within the window
+  private static readonly ACCESS_WINDOW_IN_SECONDS = ms('15s') / 1000
+
   private async findBlocksForTimestamp(blocksSubgraphUrl: string, timestamp: Timestamp) {
     const query = `
-      query getBlockForTimestamp($timestamp: Int!, $timestamp5Min: Int!) {
-        before: blocks(where: { timestamp_lte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: desc) {
-          number
-        }
-        after: blocks(where: { timestamp_gte: $timestamp }, first: 1, orderBy: timestamp, orderDirection: asc) {
-          number
-        }
-        fiveMin: blocks(where: { timestamp_lte: $timestamp5Min }, first: 1, orderBy: timestamp, orderDirection: desc) {
-          number
-        }
+    query getBlockForTimestamp($timestamp: Int!, $timestampMin: Int!, $timestampMax: Int!, $timestamp5Min: Int!, $timestamp5MinMax: Int!, $timestamp5MinMin: Int!) {
+      before: blocks(where: { timestamp_lte: $timestamp, timestamp_gte: $timestampMin  }, first: 1, orderBy: timestamp, orderDirection: desc) {
+        number
       }
+      after: blocks(where: { timestamp_gte: $timestamp, timestamp_lte: $timestampMax }, first: 1, orderBy: timestamp, orderDirection: asc) {
+        number
+      }
+      fiveMinBefore: blocks(where: { timestamp_lte: $timestamp5Min, timestamp_gte: $timestamp5MinMin, }, first: 1, orderBy: timestamp, orderDirection: desc) {
+        number
+      }
+      fiveMinAfter: blocks(where: { timestamp_gte: $timestamp5Min, timestamp_lte: $timestamp5MinMax }, first: 1, orderBy: timestamp, orderDirection: asc) {
+        number
+      }
+    }
     `
     try {
       const timestampSec = Math.ceil(timestamp / 1000)
+      const timestamp5MinAgo = timestampSec - 60 * 5
+      const window = this.getWindowFromTimestamp(timestampSec)
+      const window5MinAgo = this.getWindowFromTimestamp(timestamp5MinAgo)
       const result = await this.fetcher.queryGraph<{
         before: { number: string }[]
         after: { number: string }[]
-        fiveMin: { number: string }[]
+        fiveMinBefore: { number: string }[]
+        fiveMinAfter: { number: string }[]
       }>(blocksSubgraphUrl, query, {
         timestamp: timestampSec,
-        timestamp5Min: timestampSec - 60 * 5
+        timestampMax: window.max,
+        timestampMin: window.min,
+        timestamp5Min: timestamp5MinAgo,
+        timestamp5MinMax: window5MinAgo.max,
+        timestamp5MinMin: window5MinAgo.min
       })
+
       // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
-      const blockNumberAtDeployment = parseInt(result.after[0]?.number ?? result.before[0].number)
-      const blockNumberFiveMinBeforeDeployment = parseInt(result.fiveMin[0].number)
-      return { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment }
+      const blockNumberAtDeployment = result.after[0]?.number ?? result.before[0]?.number
+      const blockNumberFiveMinBeforeDeployment = result.fiveMinAfter[0]?.number ?? result.fiveMinBefore[0]?.number
+      if (blockNumberAtDeployment === undefined || blockNumberFiveMinBeforeDeployment === undefined) {
+        throw new Error(`Failed to find blocks for the specific timestamp`)
+      }
+
+      return {
+        blockNumberAtDeployment: parseInt(blockNumberAtDeployment),
+        blockNumberFiveMinBeforeDeployment: parseInt(blockNumberFiveMinBeforeDeployment)
+      }
     } catch (error) {
       this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
       throw error
+    }
+  }
+
+  private getWindowFromTimestamp(timestamp: Timestamp) {
+    const windowMin = timestamp - Math.floor(AccessCheckerForWearables.ACCESS_WINDOW_IN_SECONDS / 2)
+    const windowMax = timestamp + Math.ceil(AccessCheckerForWearables.ACCESS_WINDOW_IN_SECONDS / 2)
+    return {
+      max: windowMax,
+      min: windowMin
     }
   }
 }
