@@ -68,7 +68,7 @@ export class TestServer extends Server {
   }
 
   getFailedDeployments(): Promise<FailedDeployment[]> {
-    return this.makeRequest(`${this.getAddress()}/failedDeployments`)
+    return this.makeRequest(`${this.getAddress()}/failed-deployments`)
   }
 
   getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
