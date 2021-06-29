@@ -14,7 +14,6 @@ export class ServiceFactory {
     return new ServiceImpl(
       serviceStorage,
       env.getBean(Bean.POINTER_MANAGER),
-      env.getBean(Bean.CONTENT_CLUSTER),
       env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER),
       env.getBean(Bean.DEPLOYMENT_MANAGER),
       env.getBean(Bean.VALIDATIONS),
