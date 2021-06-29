@@ -130,28 +130,29 @@ export class AccessCheckerForWearables {
     entityId: EntityId,
     block: number
   ): Promise<boolean> {
-    const permissions: WearableItemPermissionsData = await this.getCollectionItems(
-      subgraphUrl,
-      collection,
-      itemId,
-      block
-    )
+    try {
+      const permissions: WearableItemPermissionsData = await this.getCollectionItems(
+        subgraphUrl,
+        collection,
+        itemId,
+        block
+      )
 
-    const ethAddressLowercase = ethAddress.toLowerCase()
-    const addressHasAccess =
-      (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
-      (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
-      (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
+      const ethAddressLowercase = ethAddress.toLowerCase()
+      const addressHasAccess =
+        (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
+        (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
+        (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
 
-    // Deployments to the content server are made after the collection is completed, so that the committee can then approve it.
-    // That's why isCompleted must be true, but isApproved must be false. After the committee approves the wearable, there can't be any more changes
-    const isCollectionValid = !permissions.isApproved && permissions.isCompleted
+      // Deployments to the content server are made after the collection is completed, so that the committee can then approve it.
+      // That's why isCompleted must be true, but isApproved must be false. After the committee approves the wearable, there can't be any more changes
+      const isCollectionValid = !permissions.isApproved && permissions.isCompleted
 
-    const hasPermission = (addressHasAccess && isCollectionValid) || permissions.contentHash === entityId
-    if (!hasPermission) {
-      this.LOGGER.warn('No permission', block, permissions)
+      return (addressHasAccess && isCollectionValid) || permissions.contentHash === entityId
+    } catch (error) {
+      this.LOGGER.error(`Error checking permission for (${collection}-${itemId}) at block ${block}`, error)
+      return false
     }
-    return hasPermission
   }
 
   private async getCollectionItems(
@@ -173,25 +174,20 @@ export class AccessCheckerForWearables {
             }
         }`
 
-    try {
-      const result = await this.fetcher.queryGraph<WearableCollections>(subgraphUrl, query, {
-        collection,
-        itemId: parseInt(itemId, 10),
-        block
-      })
-      const collectionResult = result.collections[0]
-      const itemResult = collectionResult?.items[0]
-      return {
-        collectionCreator: collectionResult?.creator,
-        collectionManagers: collectionResult?.managers,
-        isApproved: collectionResult?.isApproved,
-        isCompleted: collectionResult?.isCompleted,
-        itemManagers: itemResult?.managers,
-        contentHash: itemResult?.contentHash
-      }
-    } catch (error) {
-      this.LOGGER.error(`Error fetching wearable: (${collection}-${itemId})`, error)
-      throw error
+    const result = await this.fetcher.queryGraph<WearableCollections>(subgraphUrl, query, {
+      collection,
+      itemId: parseInt(itemId, 10),
+      block
+    })
+    const collectionResult = result.collections[0]
+    const itemResult = collectionResult?.items[0]
+    return {
+      collectionCreator: collectionResult?.creator,
+      collectionManagers: collectionResult?.managers,
+      isApproved: collectionResult?.isApproved,
+      isCompleted: collectionResult?.isCompleted,
+      itemManagers: itemResult?.managers,
+      contentHash: itemResult?.contentHash
     }
   }
 
