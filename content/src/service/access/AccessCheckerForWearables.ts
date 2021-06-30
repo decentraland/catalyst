@@ -149,7 +149,7 @@ export class AccessCheckerForWearables {
       // That's why isCompleted must be true, but isApproved must be false. After the committee approves the wearable, there can't be any more changes
       const isCollectionValid = !permissions.isApproved && permissions.isCompleted
 
-      return (addressHasAccess && isCollectionValid) || permissions.contentHash === entityId
+      return (!permissions.contentHash && addressHasAccess && isCollectionValid) || permissions.contentHash === entityId
     } catch (error) {
       this.LOGGER.error(`Error checking permission for (${collection}-${itemId}) at block ${block}`, error)
       return false

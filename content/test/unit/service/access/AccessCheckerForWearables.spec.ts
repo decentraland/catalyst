@@ -8,7 +8,7 @@ import { EthAddress } from 'dcl-crypto'
 import { Logger } from 'log4js'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
 
-describe('AccessCheckerForScenes', function () {
+describe('AccessCheckerForWearables', function () {
   it(`When non-urns are used as pointers, then validation fails`, async () => {
     const accessChecker = buildAccessChecker()
 
@@ -143,6 +143,18 @@ describe('AccessCheckerForScenes', function () {
 
         expect(errors.length).toBe(0)
       })
+
+      it(`and deployer has access but entity id doesn't match, then deployment is invalid`, async () => {
+        const ethAddress = 'someAddress'
+        const { fetcher } = fetcherWithValidCollectionAndCreatorAndContentHash(ethAddress, 'some-content-hash')
+        const accessChecker = buildAccessChecker({ fetcher })
+
+        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+
+        expect(errors).toEqual([
+          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+        ])
+      })
     })
 
     describe('When the collection is invalid', () => {
@@ -254,7 +266,7 @@ describe('AccessCheckerForScenes', function () {
     const mockedFetcher = mock(Fetcher)
     when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenCall((url) => {
       if (url.includes('block')) {
-        return Promise.resolve({ after: [{ number: 10 }], fiveMin: [{ number: 5 }] })
+        return Promise.resolve({ after: [{ number: 10 }], fiveMinAfter: [{ number: 5 }] })
       } else {
         return Promise.resolve(withDefaults)
       }
@@ -281,6 +293,15 @@ describe('AccessCheckerForScenes', function () {
       items: [{ managers: [address.toLowerCase()], contentHash: '' }],
       isCompleted: true,
       isApproved: false
+    })
+  }
+
+  function fetcherWithValidCollectionAndCreatorAndContentHash(address: string, contentHash: string) {
+    return mockFetcher({
+      creator: address.toLowerCase(),
+      isCompleted: true,
+      isApproved: false,
+      items: [{ managers: [], contentHash }]
     })
   }
 
