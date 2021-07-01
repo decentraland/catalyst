@@ -171,6 +171,7 @@ export class AccessCheckerForWearables {
               isCompleted
               items(where:{ blockchainId: $itemId }) {
                 managers
+                contentHash
               }
             }
         }`
