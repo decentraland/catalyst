@@ -139,14 +139,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     validation.validateRequestSize(hashes, entity.type, entity.pointers, validationContext)
 
     // Validate ethAddress access
-    await validation.validateAccess(
-      entity.type,
-      entity.id,
-      entity.pointers,
-      entity.timestamp,
-      ownerAddress,
-      validationContext
-    )
+    await validation.validateAccess(entity, ownerAddress, validationContext)
 
     // Check for if content is already stored
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(

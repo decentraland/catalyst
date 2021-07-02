@@ -1,8 +1,9 @@
 import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
-import { EntityId, Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import ms from 'ms'
+import { AccessParams } from './AccessChecker'
 
 export class AccessCheckerForWearables {
   private static readonly L1_NETWORKS = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']
@@ -17,17 +18,7 @@ export class AccessCheckerForWearables {
     private readonly LOGGER: log4js.Logger
   ) {}
 
-  public async checkAccess({
-    entityId,
-    pointers,
-    timestamp,
-    ethAddress
-  }: {
-    entityId: EntityId
-    pointers: Pointer[]
-    timestamp: Timestamp
-    ethAddress: EthAddress
-  }): Promise<string[]> {
+  public async checkAccess({ pointers, ...accessParams }: AccessParams): Promise<string[]> {
     const errors: string[] = []
 
     if (pointers.length != 1) {
@@ -56,9 +47,7 @@ export class AccessCheckerForWearables {
           collectionsSubgraphUrl,
           collection,
           itemId,
-          entityId,
-          timestamp,
-          ethAddress
+          accessParams
         )
         if (!hasAccess) {
           errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
@@ -87,9 +76,7 @@ export class AccessCheckerForWearables {
     collectionsSubgraphUrl: string,
     collection: string,
     itemId: string,
-    entityId: EntityId,
-    timestamp: Timestamp,
-    ethAddress: EthAddress
+    { timestamp, ...accessParams }: Omit<AccessParams, 'pointers'>
   ): Promise<boolean> {
     try {
       const { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment } = await this.findBlocksForTimestamp(
@@ -100,36 +87,27 @@ export class AccessCheckerForWearables {
       // the same check, the subgraph might have synced and the deployment is no longer valid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
       // have access now, or had access 5 minutes ago.
       return (
+        (await this.hasPermission(collectionsSubgraphUrl, collection, itemId, blockNumberAtDeployment, accessParams)) ||
         (await this.hasPermission(
-          ethAddress,
           collectionsSubgraphUrl,
           collection,
           itemId,
-          entityId,
-          blockNumberAtDeployment
-        )) ||
-        (await this.hasPermission(
-          ethAddress,
-          collectionsSubgraphUrl,
-          collection,
-          itemId,
-          entityId,
-          blockNumberFiveMinBeforeDeployment
+          blockNumberFiveMinBeforeDeployment,
+          accessParams
         ))
       )
     } catch (error) {
-      this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${ethAddress}).`, error)
+      this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${accessParams.ethAddress}).`, error)
       return false
     }
   }
 
   private async hasPermission(
-    ethAddress: string,
     subgraphUrl: string,
     collection: string,
     itemId: string,
-    entityId: EntityId,
-    block: number
+    block: number,
+    { ethAddress, content, metadata }: Omit<AccessParams, 'pointers' | 'timestamp'>
   ): Promise<boolean> {
     try {
       const permissions: WearableItemPermissionsData = await this.getCollectionItems(
@@ -138,18 +116,27 @@ export class AccessCheckerForWearables {
         itemId,
         block
       )
-
       const ethAddressLowercase = ethAddress.toLowerCase()
-      const addressHasAccess =
-        (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
-        (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
-        (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
 
-      // Deployments to the content server are made after the collection is completed, so that the committee can then approve it.
-      // That's why isCompleted must be true, but isApproved must be false. After the committee approves the wearable, there can't be any more changes
-      const isCollectionValid = !permissions.isApproved && permissions.isCompleted
+      if (!!permissions.contentHash) {
+        const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
+        const entries = Array.from(content?.entries() ?? [])
+        const contentAsJson = entries.map(([key, hash]) => ({ key, hash }))
+        const buffer = Buffer.from(JSON.stringify({ contentAsJson, metadata }))
+        const hash = await Hashing.calculateBufferHash(buffer)
+        return deployedByCommittee && hash === permissions.contentHash
+      } else {
+        const addressHasAccess =
+          (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
+          (permissions.collectionManagers && permissions.collectionManagers.includes(ethAddressLowercase)) ||
+          (permissions.itemManagers && permissions.itemManagers.includes(ethAddressLowercase))
 
-      return (!permissions.contentHash && addressHasAccess && isCollectionValid) || permissions.contentHash === entityId
+        // Deployments to the content server are made after the collection is completed, so that the committee can then approve it.
+        // That's why isCompleted must be true, but isApproved must be false. After the committee approves the wearable, there can't be any more changes
+        const isCollectionValid = !permissions.isApproved && permissions.isCompleted
+
+        return addressHasAccess && isCollectionValid
+      }
     } catch (error) {
       this.LOGGER.error(`Error checking permission for (${collection}-${itemId}) at block ${block}`, error)
       return false
@@ -174,6 +161,10 @@ export class AccessCheckerForWearables {
                 contentHash
               }
             }
+
+            accounts(where:{ isCommitteeMember: true }, block: { number: $block }) {
+              id
+            }
         }`
 
     const result = await this.fetcher.queryGraph<WearableCollections>(subgraphUrl, query, {
@@ -189,7 +180,8 @@ export class AccessCheckerForWearables {
       isApproved: collectionResult?.isApproved,
       isCompleted: collectionResult?.isCompleted,
       itemManagers: itemResult?.managers,
-      contentHash: itemResult?.contentHash
+      contentHash: itemResult?.contentHash,
+      committee: result.accounts.map(({ id }) => id)
     }
   }
 
@@ -267,10 +259,12 @@ type WearableItemPermissionsData = {
   isApproved: boolean
   isCompleted: boolean
   contentHash: string
+  committee: EthAddress[]
 }
 
 type WearableCollections = {
   collections: WearableCollection[]
+  accounts: { id: EthAddress }[]
 }
 
 export type WearableCollection = {
