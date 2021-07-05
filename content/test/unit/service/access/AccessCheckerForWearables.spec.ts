@@ -3,12 +3,14 @@ import {
   WearableCollection
 } from '@katalyst/content/service/access/AccessCheckerForWearables'
 import { AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
-import { EntityId, Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Logger } from 'log4js'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
 
-describe('AccessCheckerForWearables', function () {
+describe('AccessCheckerForWearables', () => {
+  const COMMITTEE_MEMBER = '0x...'
+
   it(`When non-urns are used as pointers, then validation fails`, async () => {
     const accessChecker = buildAccessChecker()
 
@@ -113,43 +115,60 @@ describe('AccessCheckerForWearables', function () {
   describe('Validations', () => {
     const VALID_POINTER = 'urn:decentraland:ethereum:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'
 
-    describe('When the collection is valid', () => {
-      it(`and deployer is the collection's creator, then deployment is valid`, async () => {
-        const ethAddress = 'someAddress'
-        const { fetcher } = fetcherWithValidCollectionAndCreator(ethAddress)
+    describe('When content hash is set', () => {
+      const METADATA = { some: 'value' }
+      const CONTENT = new Map([['key', 'hash']])
+      let hash: ContentFileHash
+
+      beforeEach(async () => {
+        const entries = Array.from(CONTENT.entries())
+        const contentAsJson = entries.map(([key, hash]) => ({ key, hash }))
+        const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata: METADATA }))
+        hash = await Hashing.calculateBufferHash(buffer)
+      })
+
+      it(`and deployment hash matches and deployer is committee member, then deployment is valid`, async () => {
+        const { fetcher } = fetcherWithInvalidCollectionAndContentHash(hash)
         const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+        const errors = await checkAccess(accessChecker, {
+          pointers: [VALID_POINTER],
+          ethAddress: COMMITTEE_MEMBER,
+          content: CONTENT,
+          metadata: METADATA
+        })
 
         expect(errors.length).toBe(0)
       })
 
-      it(`and deployer is one of the collection's managers, then deployment is valid`, async () => {
+      it(`and deployment hash matches but deployer is owner, then deployment is invalid`, async () => {
         const ethAddress = 'someAddress'
-        const { fetcher } = fetcherWithValidCollectionAndCollectionManager(ethAddress)
+        const { fetcher } = fetcherWithValidCollectionAndCreatorAndContentHash(ethAddress, hash)
         const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+        const errors = await checkAccess(accessChecker, {
+          pointers: [VALID_POINTER],
+          ethAddress,
+          content: CONTENT,
+          metadata: METADATA
+        })
 
-        expect(errors.length).toBe(0)
+        expect(errors).toEqual([
+          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+        ])
       })
 
-      it(`and deployer is one of the item's managers, then deployment is valid`, async () => {
-        const ethAddress = 'someAddress'
-        const { fetcher } = fetcherWithValidCollectionAndItemManager(ethAddress)
-        const accessChecker = buildAccessChecker({ fetcher })
-
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
-
-        expect(errors.length).toBe(0)
-      })
-
-      it(`and deployer has access but entity id doesn't match, then deployment is invalid`, async () => {
+      it(`and deployer is committee member but deployment hash doesn't match, then deployment is invalid`, async () => {
         const ethAddress = 'someAddress'
         const { fetcher } = fetcherWithValidCollectionAndCreatorAndContentHash(ethAddress, 'some-content-hash')
         const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+        const errors = await checkAccess(accessChecker, {
+          pointers: [VALID_POINTER],
+          ethAddress: COMMITTEE_MEMBER,
+          content: CONTENT,
+          metadata: METADATA
+        })
 
         expect(errors).toEqual([
           `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
@@ -157,51 +176,75 @@ describe('AccessCheckerForWearables', function () {
       })
     })
 
-    describe('When the collection is invalid', () => {
-      it(`and deployer is the collection's creator, then deployment is invalid`, async () => {
-        const ethAddress = 'someAddress'
-        const { fetcher } = fetcherWithInvalidCollectionAndCreator(ethAddress)
-        const accessChecker = buildAccessChecker({ fetcher })
+    describe(`When content hash isn't set`, () => {
+      describe('and the collection is valid', () => {
+        it(`and deployer is the collection's creator, then deployment is valid`, async () => {
+          const ethAddress = 'someAddress'
+          const { fetcher } = fetcherWithValidCollectionAndCreator(ethAddress)
+          const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
 
-        expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
-        ])
+          expect(errors.length).toBe(0)
+        })
+
+        it(`and deployer is one of the collection's managers, then deployment is valid`, async () => {
+          const ethAddress = 'someAddress'
+          const { fetcher } = fetcherWithValidCollectionAndCollectionManager(ethAddress)
+          const accessChecker = buildAccessChecker({ fetcher })
+
+          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+
+          expect(errors.length).toBe(0)
+        })
+
+        it(`and deployer is one of the item's managers, then deployment is valid`, async () => {
+          const ethAddress = 'someAddress'
+          const { fetcher } = fetcherWithValidCollectionAndItemManager(ethAddress)
+          const accessChecker = buildAccessChecker({ fetcher })
+
+          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+
+          expect(errors.length).toBe(0)
+        })
       })
 
-      it(`and deployer is one of the collection's managers, then deployment is invalid`, async () => {
-        const ethAddress = 'someAddress'
-        const { fetcher } = fetcherWithInvalidCollectionAndCollectionManager(ethAddress)
-        const accessChecker = buildAccessChecker({ fetcher })
+      describe('and the collection is invalid', () => {
+        it(`and deployer is the collection's creator, then deployment is invalid`, async () => {
+          const ethAddress = 'someAddress'
+          const { fetcher } = fetcherWithInvalidCollectionAndCreator(ethAddress)
+          const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
 
-        expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
-        ])
-      })
+          expect(errors).toEqual([
+            `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+          ])
+        })
 
-      it(`and deployer is one of the item's managers, then deployment is invalid`, async () => {
-        const ethAddress = 'someAddress'
-        const { fetcher } = fetcherWithInvalidCollectionAndItemManager(ethAddress)
-        const accessChecker = buildAccessChecker({ fetcher })
+        it(`and deployer is one of the collection's managers, then deployment is invalid`, async () => {
+          const ethAddress = 'someAddress'
+          const { fetcher } = fetcherWithInvalidCollectionAndCollectionManager(ethAddress)
+          const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
 
-        expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
-        ])
-      })
+          expect(errors).toEqual([
+            `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+          ])
+        })
 
-      it(`but the content hash matches the entity's id, then deployment is valid`, async () => {
-        const entityId = 'entityId'
-        const { fetcher } = fetcherWithInvalidCollectionAndContentHash(entityId)
-        const accessChecker = buildAccessChecker({ fetcher })
+        it(`and deployer is one of the item's managers, then deployment is invalid`, async () => {
+          const ethAddress = 'someAddress'
+          const { fetcher } = fetcherWithInvalidCollectionAndItemManager(ethAddress)
+          const accessChecker = buildAccessChecker({ fetcher })
 
-        const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], entityId })
+          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
 
-        expect(errors.length).toBe(0)
+          expect(errors).toEqual([
+            `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+          ])
+        })
       })
     })
   })
@@ -228,14 +271,16 @@ describe('AccessCheckerForWearables', function () {
   function checkAccess(
     accessChecker: AccessCheckerForWearables,
     options: {
-      entityId?: EntityId
+      metadata?: any
+      content?: Map<string, ContentFileHash>
       pointers?: Pointer[]
       timestamp?: Timestamp
       ethAddress?: EthAddress
     }
   ) {
     const withDefaults = {
-      entityId: 'someId',
+      metadata: {},
+      content: new Map(),
       pointers: ['invalid pointer'],
       timestamp: Date.now(),
       ethAddress: 'some address',
@@ -244,7 +289,7 @@ describe('AccessCheckerForWearables', function () {
     return accessChecker.checkAccess(withDefaults)
   }
 
-  function mockFetcher(collection?: Partial<WearableCollection>) {
+  function mockFetcher(collection?: Partial<WearableCollection>, accounts?: string[]) {
     const withDefaults = {
       collections: [
         {
@@ -260,7 +305,8 @@ describe('AccessCheckerForWearables', function () {
           ],
           ...collection
         }
-      ]
+      ],
+      accounts: [{ id: COMMITTEE_MEMBER }]
     }
 
     const mockedFetcher = mock(Fetcher)

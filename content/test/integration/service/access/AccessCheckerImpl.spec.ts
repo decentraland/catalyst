@@ -11,8 +11,7 @@ describe('Integration - AccessCheckerImpl', function () {
     const accessChecker = buildAccessCheckerImpl({ landManagerSubgraphUrl: 'Wrong URL' })
 
     const errors = await accessChecker.hasAccess({
-      entityType: EntityType.SCENE,
-      entityId: 'entity id',
+      type: EntityType.SCENE,
       pointers: ['102,4'],
       timestamp: Date.now(),
       ethAddress: 'Some-address-without-permissions'
@@ -26,8 +25,7 @@ describe('Integration - AccessCheckerImpl', function () {
     const accessChecker = buildAccessCheckerImpl({ landManagerSubgraphUrl: DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN })
 
     const errors = await accessChecker.hasAccess({
-      entityType: EntityType.SCENE,
-      entityId: 'entity id',
+      type: EntityType.SCENE,
       pointers: ['102,4'],
       timestamp: Date.now(),
       ethAddress: 'Some-address-without-permissions'
@@ -41,8 +39,7 @@ describe('Integration - AccessCheckerImpl', function () {
     const accessChecker = buildAccessCheckerImpl({ collectionsL1SubgraphUrl: 'Wrong URL' })
     const pointer = 'urn:decentraland:ethereum:collections-v2:0x1b8ba74cc34c2927aac0a8af9c3b1ba2e61352f2:0'
     const errors = await accessChecker.hasAccess({
-      entityType: EntityType.WEARABLE,
-      entityId: 'entity id',
+      type: EntityType.WEARABLE,
       pointers: [pointer],
       timestamp: Date.now(),
       ethAddress: 'Some-address-without-permissions'
@@ -57,8 +54,7 @@ describe('Integration - AccessCheckerImpl', function () {
     const pointer = 'urn:decentraland:ethereum:collections-v2:0x1b8ba74cc34c2927aac0a8af9c3b1ba2e61352f2:0'
 
     const errors = await accessChecker.hasAccess({
-      entityType: EntityType.WEARABLE,
-      entityId: 'entity id',
+      type: EntityType.WEARABLE,
       pointers: [pointer],
       timestamp: Date.now(),
       ethAddress: 'Some-address-without-permissions'

@@ -18,10 +18,10 @@ export class AccessCheckerForWearables {
     private readonly LOGGER: log4js.Logger
   ) {}
 
-  public async checkAccess({ pointers, ...accessParams }: AccessParams): Promise<string[]> {
+  public async checkAccess({ pointers, ...accessParams }: WearablesAccessParams): Promise<string[]> {
     const errors: string[] = []
 
-    if (pointers.length != 1) {
+    if (pointers.length !== 1) {
       errors.push(`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`)
     } else {
       const pointer: Pointer = pointers[0].toLowerCase()
@@ -76,7 +76,7 @@ export class AccessCheckerForWearables {
     collectionsSubgraphUrl: string,
     collection: string,
     itemId: string,
-    { timestamp, ...accessParams }: Omit<AccessParams, 'pointers'>
+    { timestamp, ...accessParams }: Omit<WearablesAccessParams, 'pointers'>
   ): Promise<boolean> {
     try {
       const { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment } = await this.findBlocksForTimestamp(
@@ -107,7 +107,7 @@ export class AccessCheckerForWearables {
     collection: string,
     itemId: string,
     block: number,
-    { ethAddress, content, metadata }: Omit<AccessParams, 'pointers' | 'timestamp'>
+    { ethAddress, content, metadata }: Omit<WearablesAccessParams, 'pointers' | 'timestamp'>
   ): Promise<boolean> {
     try {
       const permissions: WearableItemPermissionsData = await this.getCollectionItems(
@@ -120,11 +120,13 @@ export class AccessCheckerForWearables {
 
       if (!!permissions.contentHash) {
         const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
-        const entries = Array.from(content?.entries() ?? [])
-        const contentAsJson = entries.map(([key, hash]) => ({ key, hash }))
-        const buffer = Buffer.from(JSON.stringify({ contentAsJson, metadata }))
-        const hash = await Hashing.calculateBufferHash(buffer)
-        return deployedByCommittee && hash === permissions.contentHash
+        const calculateHash = () => {
+          const entries = Array.from(content?.entries() ?? [])
+          const contentAsJson = entries.map(([key, hash]) => ({ key, hash }))
+          const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
+          return Hashing.calculateBufferHash(buffer)
+        }
+        return deployedByCommittee && (await calculateHash()) === permissions.contentHash
       } else {
         const addressHasAccess =
           (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
@@ -251,6 +253,8 @@ export class AccessCheckerForWearables {
     }
   }
 }
+
+type WearablesAccessParams = Omit<AccessParams, 'type'>
 
 type WearableItemPermissionsData = {
   collectionCreator: string
