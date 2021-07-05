@@ -5,6 +5,6 @@ export interface AccessChecker {
   hasAccess(params: AccessParams): Promise<string[]>
 }
 
-export type AccessParams = Entity & {
+export type AccessParams = Omit<Entity, 'id'> & {
   ethAddress: EthAddress
 }

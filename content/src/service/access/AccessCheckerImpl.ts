@@ -39,7 +39,7 @@ export class AccessCheckerImpl implements AccessChecker {
     )
   }
 
-  async hasAccess(params: Omit<AccessParams, 'id'>): Promise<string[]> {
+  async hasAccess(params: AccessParams): Promise<string[]> {
     switch (params.type) {
       case EntityType.SCENE:
         return this.accessCheckerForScenes.checkAccess(params)
