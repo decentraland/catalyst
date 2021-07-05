@@ -122,7 +122,8 @@ describe('AccessCheckerForWearables', () => {
 
       beforeEach(async () => {
         const entries = Array.from(CONTENT.entries())
-        const contentAsJson = entries.map(([key, hash]) => ({ key, hash }))
+        const contentAsJson =
+          entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1)) ?? []
         const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata: METADATA }))
         hash = await Hashing.calculateBufferHash(buffer)
       })
