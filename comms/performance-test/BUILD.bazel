@@ -8,9 +8,10 @@ ts_library(
     srcs = glob(["*.ts"]),
     tsconfig = "//:tsconfig.json",
     deps = [
+        "@npm//@dcl/catalyst-peer",
         "@npm//@types",
-        "@npm//puppeteer",
         "@npm//isomorphic-fetch",
+        "@npm//puppeteer",
         "@npm//tree-kill",
     ],
 )

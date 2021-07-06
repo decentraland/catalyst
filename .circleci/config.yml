@@ -33,7 +33,6 @@ references:
       - <<: *image_client
     working_directory: *workspace_root
 
-
   .testing_branches: &testing_branches
     filters:
       branches:
@@ -99,14 +98,6 @@ jobs:
           name: Run tests
           command: npx bazel test //comms/lighthouse:unit_test --test_output=all
 
-  build-peer:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Run tests
-          command: npx bazel test //comms/peer:config_test --test_output=all
-
   build-content:
     machine:
       docker_layer_caching: true
@@ -138,17 +129,6 @@ jobs:
       - run:
           name: Run utils tests
           command: npx bazel test //commons/utils:unit_test --test_output=all
-
-  publish-peer:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Set up NPM access tokens
-          command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-      - run:
-          name: Publish peer
-          command: npx bazel run //comms/peer:package.publish
 
   publish-docker:
     <<: *base_env
