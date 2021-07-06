@@ -121,8 +121,14 @@ export class AccessCheckerForWearables {
       if (!!permissions.contentHash) {
         const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
         const calculateHash = () => {
+          // Compare both by key and hash
+          const compare = (a: { key: string; hash: string }, b: { key: string; hash: string }) => {
+            if (a.hash > b.hash) return 1
+            else if (a.hash < b.hash) return -1
+            else return a.key > b.key ? 1 : -1
+          }
           const entries = Array.from(content?.entries() ?? [])
-          const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1))
+          const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort(compare)
           const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
           return Hashing.calculateBufferHash(buffer)
         }
