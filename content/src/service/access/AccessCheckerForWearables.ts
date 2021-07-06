@@ -122,8 +122,7 @@ export class AccessCheckerForWearables {
         const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
         const calculateHash = () => {
           const entries = Array.from(content?.entries() ?? [])
-          const contentAsJson =
-            entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1)) ?? []
+          const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1))
           const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
           return Hashing.calculateBufferHash(buffer)
         }
