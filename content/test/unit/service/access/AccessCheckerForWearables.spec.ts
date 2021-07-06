@@ -113,7 +113,7 @@ describe('AccessCheckerForWearables', () => {
   })
 
   describe('Validations', () => {
-    const VALID_POINTER = 'urn:decentraland:ethereum:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'
+    const URN_POINTER = 'urn:decentraland:ethereum:collections-v2:0x8dec2b9bd86108430a0c288ea1b76c749823d104:1'
 
     describe('When content hash is set', () => {
       const METADATA = { some: 'value' }
@@ -133,7 +133,7 @@ describe('AccessCheckerForWearables', () => {
         const accessChecker = buildAccessChecker({ fetcher })
 
         const errors = await checkAccess(accessChecker, {
-          pointers: [VALID_POINTER],
+          pointers: [URN_POINTER],
           ethAddress: COMMITTEE_MEMBER,
           content: CONTENT,
           metadata: METADATA
@@ -148,14 +148,14 @@ describe('AccessCheckerForWearables', () => {
         const accessChecker = buildAccessChecker({ fetcher })
 
         const errors = await checkAccess(accessChecker, {
-          pointers: [VALID_POINTER],
+          pointers: [URN_POINTER],
           ethAddress,
           content: CONTENT,
           metadata: METADATA
         })
 
         expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+          `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
         ])
       })
 
@@ -165,14 +165,14 @@ describe('AccessCheckerForWearables', () => {
         const accessChecker = buildAccessChecker({ fetcher })
 
         const errors = await checkAccess(accessChecker, {
-          pointers: [VALID_POINTER],
+          pointers: [URN_POINTER],
           ethAddress: COMMITTEE_MEMBER,
           content: CONTENT,
           metadata: METADATA
         })
 
         expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+          `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
         ])
       })
     })
@@ -184,7 +184,7 @@ describe('AccessCheckerForWearables', () => {
           const { fetcher } = fetcherWithValidCollectionAndCreator(ethAddress)
           const accessChecker = buildAccessChecker({ fetcher })
 
-          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors.length).toBe(0)
         })
@@ -194,7 +194,7 @@ describe('AccessCheckerForWearables', () => {
           const { fetcher } = fetcherWithValidCollectionAndCollectionManager(ethAddress)
           const accessChecker = buildAccessChecker({ fetcher })
 
-          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors.length).toBe(0)
         })
@@ -204,7 +204,7 @@ describe('AccessCheckerForWearables', () => {
           const { fetcher } = fetcherWithValidCollectionAndItemManager(ethAddress)
           const accessChecker = buildAccessChecker({ fetcher })
 
-          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors.length).toBe(0)
         })
@@ -216,10 +216,10 @@ describe('AccessCheckerForWearables', () => {
           const { fetcher } = fetcherWithInvalidCollectionAndCreator(ethAddress)
           const accessChecker = buildAccessChecker({ fetcher })
 
-          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors).toEqual([
-            `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+            `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
           ])
         })
 
@@ -228,10 +228,10 @@ describe('AccessCheckerForWearables', () => {
           const { fetcher } = fetcherWithInvalidCollectionAndCollectionManager(ethAddress)
           const accessChecker = buildAccessChecker({ fetcher })
 
-          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors).toEqual([
-            `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+            `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
           ])
         })
 
@@ -240,10 +240,10 @@ describe('AccessCheckerForWearables', () => {
           const { fetcher } = fetcherWithInvalidCollectionAndItemManager(ethAddress)
           const accessChecker = buildAccessChecker({ fetcher })
 
-          const errors = await checkAccess(accessChecker, { pointers: [VALID_POINTER], ethAddress })
+          const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors).toEqual([
-            `The provided Eth Address does not have access to the following wearable: (${VALID_POINTER})`
+            `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
           ])
         })
       })
