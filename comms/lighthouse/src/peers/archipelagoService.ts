@@ -1,9 +1,9 @@
 import { ArchipelagoController, defaultArchipelagoController, Island, IslandUpdates } from '@dcl/archipelago'
-import { PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { Position3D } from 'decentraland-catalyst-utils/Positions'
 import { LighthouseConfig } from '../config/configService'
 import { AppServices } from '../types'
 import { PeersService } from './peersService'
+import { PeerOutgoingMessageType } from './protocol/messageTypes'
 
 export class ArchipelagoService {
   private readonly controller: ArchipelagoController

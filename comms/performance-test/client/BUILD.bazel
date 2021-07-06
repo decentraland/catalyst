@@ -11,7 +11,7 @@ ts_library(
     tsconfig = "//:tsconfig.json",
     deps = [
         "//commons/utils",
-        "//comms/peer",
+        "@npm//@dcl/catalyst-peer",
         "@npm//protobufjs",
     ],
 )
@@ -31,8 +31,7 @@ ts_devserver(
     deps = [
         "config.js",
         ":peer-performance-test-client",
-        "@npm//eventemitter3:eventemitter3__umd",
-        "@npm//fp-future:fp-future__umd",
+        "@npm//@dcl/catalyst-peer:catalyst-peer__umd",
         "@npm//protobufjs:protobufjs__umd",
     ],
 )

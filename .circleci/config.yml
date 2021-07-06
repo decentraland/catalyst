@@ -33,7 +33,6 @@ references:
       - <<: *image_client
     working_directory: *workspace_root
 
-
   .testing_branches: &testing_branches
     filters:
       branches:
@@ -99,14 +98,6 @@ jobs:
           name: Run tests
           command: npx bazel test //comms/lighthouse:unit_test --test_output=all
 
-  build-peer:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Run tests
-          command: npx bazel test //comms/peer:config_test --test_output=all
-
   build-content:
     machine:
       docker_layer_caching: true
@@ -138,17 +129,6 @@ jobs:
       - run:
           name: Run utils tests
           command: npx bazel test //commons/utils:unit_test --test_output=all
-
-  publish-peer:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Set up NPM access tokens
-          command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-      - run:
-          name: Publish peer
-          command: npx bazel run //comms/peer:package.publish
 
   publish-docker:
     <<: *base_env
@@ -225,10 +205,6 @@ workflows:
             - checkout
 
       # build packages
-      - build-peer:
-          <<: *all_branches_and_tags
-          requires:
-            - linter
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
@@ -246,29 +222,12 @@ workflows:
           requires:
             - linter
 
-      # publish peer library
-      - accept-publish-peer:
-          <<: *master_and_tags
-          type: approval
-          requires:
-            - build-peer
-            # build-peer is the only real dependency. But we wait to reduce possibilities of bugs
-            # in other pipelines
-            - build-lighthouse
-            - build-content
-            - build-lambdas
-      - publish-peer:
-          <<: *master_and_tags
-          requires:
-            - accept-publish-peer
-
       # publish docker image in "master" and semver tags
       # master publishes to @next
       # semver tags publish to @latest
       - publish-docker:
           <<: *master_and_tags
           requires:
-            - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas
@@ -278,7 +237,6 @@ workflows:
           <<: *testing_branches
           type: approval
           requires:
-            - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas

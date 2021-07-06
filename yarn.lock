@@ -923,6 +923,16 @@
   dependencies:
     uuid "^8.3.2"
 
+"@dcl/catalyst-peer@^1.0.0-20210706172727.commit-a9877de":
+  version "1.0.0-20210706172727.commit-a9877de"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-peer/-/catalyst-peer-1.0.0-20210706172727.commit-a9877de.tgz#6b0e5d0196261dbd109bd12082a003e8bba167d9"
+  integrity sha512-QYZuhJRrCz1HUsUe2EBn6qxAiN/hmXeMeo6O3dTS+XXdvMOzhMXANvA6L2lhn8FLkhSTfxxlK1SPY/tzNC9m6Q==
+  dependencies:
+    eventemitter3 "^4.0.7"
+    fp-future "^1.0.1"
+    protobufjs "^6.11.2"
+    simple-peer "^9.11.0"
+
 "@dcl/schemas@^0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-0.2.0.tgz#2ba3161da61d1c1bde8d36290c13957960daaa65"
@@ -1487,6 +1497,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.41.tgz#045a4981318d31a581650ce70f340a32c3461198"
   integrity sha512-qLT9IvHiXJfdrje9VmsLzun7cQ65obsBTmtU3EOnCSLFOoSHx1hpiRHoBnpdbyFqnzqdUUIv81JcEJQCB8un9g==
 
+"@types/node@>=13.7.0":
+  version "16.0.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.0.0.tgz#067a6c49dc7a5c2412a505628e26902ae967bf6f"
+  integrity sha512-TmCW5HoZ2o2/z2EYi109jLqIaPIi9y/lc2LmDCWzuCi35bcaQ+OtUh6nwBiFK7SOu25FAU5+YKdqFZUwtqGSdg==
+
 "@types/node@^10.1.0", "@types/node@^10.12.18", "@types/node@^10.3.2":
   version "10.17.13"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.17.13.tgz#ccebcdb990bd6139cd16e84c39dc2fb1023ca90c"
@@ -1641,13 +1656,6 @@
   version "0.27.1"
   resolved "https://registry.yarnpkg.com/@types/sharp/-/sharp-0.27.1.tgz#26212ceb191b3de654a898a06577869afc200c57"
   integrity sha512-RbYmyPjDUzi3lI9Qm68I+82I+DNOe/jW5w+EC1FvpT/f2TYXDG6mmPZQQohy98ufq+u6OB6pQkqpcNMDxzVclg==
-  dependencies:
-    "@types/node" "*"
-
-"@types/simple-peer@^9.11.0":
-  version "9.11.0"
-  resolved "https://registry.yarnpkg.com/@types/simple-peer/-/simple-peer-9.11.0.tgz#72f369cb2bebd0023b265aa726d352bf744f9f4b"
-  integrity sha512-HjIGo3D5I2tdtl2FpngcDYHgqlDxZuZqmQn7f0TQrpYI4ZbuHbBg9THoiDjzKjCzZsHrG5Ag53m5O/cBYfjQWA==
   dependencies:
     "@types/node" "*"
 
@@ -4091,7 +4099,7 @@ eventemitter3@3.1.2:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
   integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
 
-eventemitter3@^4.0.0, eventemitter3@^4.0.4:
+eventemitter3@^4.0.0, eventemitter3@^4.0.4, eventemitter3@^4.0.7:
   version "4.0.7"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
   integrity sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==
@@ -6972,6 +6980,25 @@ protobufjs@^6.10.2, protobufjs@^6.8.8:
     "@protobufjs/utf8" "^1.1.0"
     "@types/long" "^4.0.1"
     "@types/node" "^13.7.0"
+    long "^4.0.0"
+
+protobufjs@^6.11.2:
+  version "6.11.2"
+  resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-6.11.2.tgz#de39fabd4ed32beaa08e9bb1e30d08544c1edf8b"
+  integrity sha512-4BQJoPooKJl2G9j3XftkIXjoC9C0Av2NOrWmbLWT1vH32GcSUHjM0Arra6UfTsVyfMAuFzaLucXn1sadxJydAw==
+  dependencies:
+    "@protobufjs/aspromise" "^1.1.2"
+    "@protobufjs/base64" "^1.1.2"
+    "@protobufjs/codegen" "^2.0.4"
+    "@protobufjs/eventemitter" "^1.1.0"
+    "@protobufjs/fetch" "^1.1.0"
+    "@protobufjs/float" "^1.0.2"
+    "@protobufjs/inquire" "^1.1.0"
+    "@protobufjs/path" "^1.1.2"
+    "@protobufjs/pool" "^1.1.0"
+    "@protobufjs/utf8" "^1.1.0"
+    "@types/long" "^4.0.1"
+    "@types/node" ">=13.7.0"
     long "^4.0.0"
 
 proxy-addr@~2.0.5:

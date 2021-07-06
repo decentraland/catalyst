@@ -64,7 +64,6 @@ ts_library(
     deps = [
         "//commons/servers",
         "//commons/utils",
-        "//comms/protocol:comms-protocol",
         "//contracts",
         "@npm//@dcl/archipelago",
         "@npm//@types",
@@ -114,7 +113,6 @@ ts_library(
         "//commons/servers",
         "//commons/test-utils",
         "//commons/utils",
-        "//comms/protocol:comms-protocol",
         "@npm//@dcl/archipelago",
         "@npm//@types/express",
         "@npm//@types/jasmine",

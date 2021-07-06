@@ -1,11 +1,8 @@
+import { buildCatalystPeerStatsData, GlobalStats, Peer, PeerConfig, PeerMessageTypes } from '@dcl/catalyst-peer'
+import { util } from '@dcl/catalyst-peer/dist/peerjs-server-connector/util'
 import { Position3D, Quaternion } from 'decentraland-catalyst-utils/Positions'
 import { randomBetween } from 'decentraland-catalyst-utils/util'
 import { Reader } from 'protobufjs'
-import { PeerConfig } from '../../peer/src'
-import { PeerMessageTypes } from '../../peer/src/messageTypes'
-import { Peer } from '../../peer/src/Peer'
-import { util } from '../../peer/src/peerjs-server-connector/util'
-import { buildCatalystPeerStatsData, GlobalStats } from '../../peer/src/stats'
 import { ChatData, CommsMessage, PositionData, ProfileData } from './protobuf/comms'
 
 const urlParams = new URLSearchParams(location.search)
@@ -266,7 +263,6 @@ async function createPeer() {
 
   await simulatedPeer.peer.awaitConnectionEstablished()
 
-  await retry(() => simulatedPeer.peer.setLayer('blue'))
   await retry(() => simulatedPeer.peer.joinRoom('room'))
 
   simulatedPeer.peer.stats.onPeriodicStatsUpdated = (stats) => {

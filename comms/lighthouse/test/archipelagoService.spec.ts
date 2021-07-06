@@ -1,9 +1,9 @@
 import { Island } from '@dcl/archipelago'
-import { PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { untilTrue } from '../../../commons/test-utils'
 import { ConfigService, LighthouseConfig } from '../src/config/configService'
 import { ArchipelagoService } from '../src/peers/archipelagoService'
 import { PeersService } from '../src/peers/peersService'
+import { PeerOutgoingMessageType } from '../src/peers/protocol/messageTypes'
 import { AppServices } from '../src/types'
 
 describe('Archipelago service', () => {

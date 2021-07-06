@@ -27,7 +27,6 @@
     "@types/puppeteer": "^5.4.3",
     "@types/react": "^16.8.6",
     "@types/react-dom": "^16.8.6",
-    "@types/simple-peer": "^9.11.0",
     "@types/sinon": "^9.0.10",
     "@types/uuid": "^3.4.6",
     "@types/web3": "^1.2.2",
@@ -86,7 +85,6 @@
     }
   },
   "scripts": {
-    "startClient": "ibazel run comms/peer-react-app:devserver",
     "startServer": "yarn ibazel run comms/lighthouse:server",
     "startContentServer": "yarn ibazel run content:server",
     "startLambdasServer": "yarn ibazel run lambdas:server",
@@ -96,6 +94,7 @@
   },
   "dependencies": {
     "@dcl/archipelago": "^1.0.0-20210609183931.commit-668cf2c",
+    "@dcl/catalyst-peer": "^1.0.0-20210706172727.commit-a9877de",
     "@dcl/schemas": "^1.0.0",
     "@dcl/urn-resolver": "1.1.1",
     "@types/destroy": "^1.0.0",
@@ -119,7 +118,6 @@
     "decentraland-ui": "^3.5.2",
     "destroy": "^1.0.4",
     "eth-crypto": "^1.6.0",
-    "eventemitter3": "^4.0.4",
     "express": "^4.17.1",
     "faker": "^5.4.0",
     "fast-deep-equal": "^3.1.3",
@@ -147,7 +145,6 @@
     "react-dom": "^16.8.6",
     "response-time": "^2.3.2",
     "sharp": "^0.27.2",
-    "simple-peer": "^9.11.0",
     "uuid": "^3.3.3",
     "viz.js": "^2.1.2",
     "web3": "^1.2.9",

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Island } from '@dcl/archipelago'
-import { PeerOutgoingMessage, PeerOutgoingMessageType } from 'comms-protocol/messageTypes'
 import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
 import { IRealm } from '../peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
+import { PeerOutgoingMessage, PeerOutgoingMessageType } from './protocol/messageTypes'
 
 require('isomorphic-fetch')
 
