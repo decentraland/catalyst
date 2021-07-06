@@ -205,10 +205,6 @@ workflows:
             - checkout
 
       # build packages
-      - build-peer:
-          <<: *all_branches_and_tags
-          requires:
-            - linter
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
@@ -226,29 +222,12 @@ workflows:
           requires:
             - linter
 
-      # publish peer library
-      - accept-publish-peer:
-          <<: *master_and_tags
-          type: approval
-          requires:
-            - build-peer
-            # build-peer is the only real dependency. But we wait to reduce possibilities of bugs
-            # in other pipelines
-            - build-lighthouse
-            - build-content
-            - build-lambdas
-      - publish-peer:
-          <<: *master_and_tags
-          requires:
-            - accept-publish-peer
-
       # publish docker image in "master" and semver tags
       # master publishes to @next
       # semver tags publish to @latest
       - publish-docker:
           <<: *master_and_tags
           requires:
-            - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas
@@ -258,7 +237,6 @@ workflows:
           <<: *testing_branches
           type: approval
           requires:
-            - build-peer
             - build-lighthouse
             - build-content
             - build-lambdas
