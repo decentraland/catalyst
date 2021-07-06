@@ -63,6 +63,7 @@ ts_library(
         "@npm//dcl-crypto",
         "@npm//eth-crypto",
         "@npm//faker",
+        "@npm//log4js",
         "@npm//ms",
         "@npm//ts-mockito",
         "@npm//fp-future",

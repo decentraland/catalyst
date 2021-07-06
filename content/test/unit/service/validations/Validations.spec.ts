@@ -1,10 +1,9 @@
-import { AccessCheckerImpl } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
 import { ValidationContext } from '@katalyst/content/service/validations/ValidationContext'
 import { Validations } from '@katalyst/content/service/validations/Validations'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { AuditInfo, Entity, EntityType, EntityVersion, Fetcher, Timestamp } from 'dcl-catalyst-commons'
+import { AuditInfo, Entity, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
@@ -417,42 +416,6 @@ describe('Validations', function () {
     expect(validation.getErrors()[0]).toMatch('The signature is invalid.*')
   })
 
-  it(`when a profile is created its access is checked`, async () => {
-    const validation = getValidatorWithRealAccess()
-    await validation.validateAccess(
-      EntityType.PROFILE,
-      ['some-address'],
-      Date.now(),
-      'some-address',
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(0)
-  })
-
-  it(`when a profile is created and too many pointers are sent, the access check fails`, async () => {
-    const validation = getValidatorWithRealAccess()
-    await validation.validateAccess(
-      EntityType.PROFILE,
-      ['some-address', 'other-address'],
-      Date.now(),
-      'some-address',
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(1)
-  })
-
-  it(`when a profile is created and the pointers does not match the signer, the access check fails`, async () => {
-    const validation = getValidatorWithRealAccess()
-    await validation.validateAccess(
-      EntityType.PROFILE,
-      ['other-address'],
-      Date.now(),
-      'some-address',
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(1)
-  })
-
   it(`when an entity is too big per pointer, then it fails`, async () => {
     const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
 
@@ -487,22 +450,6 @@ const notReferencedHashMessage = (hash) => {
 function buildEntity(options?: { timestamp?: Timestamp; content?: Map<string, string> }) {
   const opts = Object.assign({ timestamp: Date.now(), content: undefined }, options)
   return { id: 'id', type: EntityType.SCENE, pointers: ['P1'], timestamp: opts.timestamp, content: opts.content }
-}
-
-function getValidatorWithRealAccess() {
-  const authenticator = new ContentAuthenticator()
-  return new Validations(
-    new AccessCheckerImpl({
-      authenticator,
-      fetcher: new Fetcher(),
-      landManagerSubgraphUrl: 'unused_url',
-      collectionsL1SubgraphUrl: 'unused_url',
-      collectionsL2SubgraphUrl: 'unused_url'
-    }),
-    authenticator,
-    'ropsten',
-    ms('10m')
-  ).getInstance()
 }
 
 function getFileWithSize(sizeInMB: number) {
