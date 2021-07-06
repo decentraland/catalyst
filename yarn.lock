@@ -2965,6 +2965,11 @@ cookie@0.4.0:
   resolved "https://registry.yarnpkg.com/cookie/-/cookie-0.4.0.tgz#beb437e7022b3b6d49019d088665303ebe9c14ba"
   integrity sha512-+Hp8fLp57wnUSt0tY0tHEXh4voZRDnoIrZPqlo3DPiI4y9lwg/jqx+1Om94/W6ZaPDOUbnjOt/99w66zk+l1Xg==
 
+cookie@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/cookie/-/cookie-0.4.1.tgz#afd713fe26ebd21ba95ceb61f9a8116e50a537d1"
+  integrity sha512-ZwrFkGJxUR3EIoXtO+yVE69Eb7KlixbaeAWfBQB9vVsNn/o+Yw69gBWSSDK825hQNdN+wF8zELf3dFNl/kxkUA==
+
 cookiejar@^2.1.1:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/cookiejar/-/cookiejar-2.1.2.tgz#dd8a235530752f988f9a0844f3fc589e3111125c"
@@ -3161,21 +3166,22 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^5.0.4:
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.4.tgz#c15ad36a7d06bb46ca914a861829caa290a4d04d"
-  integrity sha512-NDnhGcySzwC+xyt2aPpN/w1OwQ2+dMLa94QkMFnkfed7v9WA2ilZQ3Mwc84H/Cr8EomvEbvvSCLXJ7d+YTyu7Q==
+dcl-catalyst-client@tag-client-with-pow-v1:
+  version "5.1.2-20210706194642.commit-489d435"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.1.2-20210706194642.commit-489d435.tgz#bb7d405c764394fc5ed42a054dcbf6c5aa53e657"
+  integrity sha512-ionmnInpQoAL9CZBm1wJrzRJw558LmvesZc0/MkOXTKaFRPIj0qjMnOEAuXP3AOjqX4FInjh+Abp7xzM7kQN2w==
   dependencies:
     "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^4.0.1"
+    cookie "^0.4.1"
+    dcl-catalyst-commons tag-add-cookies-v3
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@^4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.1.tgz#5608ad0f3f240740093f7005147943ec36a4e7dd"
-  integrity sha512-yyXylwK3JmMZUFyISYpz6GLCfpocJ0lKLA7x/2fwcnOLqzBEsSEDauiwKnUzAd4MLmmX/+WvMloysXbriMsnYg==
+dcl-catalyst-commons@tag-add-cookies-v3:
+  version "4.0.2-20210706145111.commit-33d10ab"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.2-20210706145111.commit-33d10ab.tgz#1b7706c41385b63810b4fd5e48974d832ac6c70b"
+  integrity sha512-mGPS5GxajxPtNgkXAa/+k1EkrzB/mK2v8Qj/5A7Jj4UsHlTDu/TBawDlTHbbTTNrL4BEQi24O6X/cuFMYzqNzw==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
@@ -3184,6 +3190,7 @@ dcl-catalyst-commons@^4.0.1:
     abort-controller "^3.0.0"
     blob-to-buffer "^1.2.9"
     cids "^0.8.0"
+    cookie "^0.4.1"
     cross-fetch "^3.0.5"
     dcl-crypto "^2.1.0"
     eslint "^7.14.0"
