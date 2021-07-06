@@ -142,7 +142,7 @@ describe('AccessCheckerForWearables', () => {
         expect(errors.length).toBe(0)
       })
 
-      it(`and deployment hash matches but deployer is owner, then deployment is invalid`, async () => {
+      it(`and deployment hash matches but deployer is not owner, then deployment is invalid`, async () => {
         const ethAddress = 'someAddress'
         const { fetcher } = fetcherWithValidCollectionAndCreatorAndContentHash(ethAddress, hash)
         const accessChecker = buildAccessChecker({ fetcher })
