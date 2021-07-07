@@ -280,6 +280,7 @@ export class Controller {
     }
 
     const { deployments } = await this.service.getDeployments({
+      fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type] }
     })
 
@@ -302,13 +303,13 @@ export class Controller {
 
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /pointerChanges
+    // Path: /pointer-changes
     // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
-    //deprecated
+    // deprecated
     const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
     // deprecated
     const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
@@ -321,6 +322,13 @@ export class Controller {
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
       res.status(400).send({ error: `Found an unrecognized entity type` })
+      return
+    }
+
+    if (offset && offset > 5000) {
+      res
+        .status(400)
+        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
       return
     }
 
@@ -419,8 +427,15 @@ export class Controller {
       return
     }
 
+    if (offset && offset > 5000) {
+      res
+        .status(400)
+        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
+      return
+    }
+
     // Validate fields are correct or empty
-    let enumFields: DeploymentField[] = [...DEFAULT_FIELDS_ON_DEPLOYMENTS]
+    let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
     if (fields && fields.trim().length > 0) {
       const acceptedValues = Object.values(DeploymentField).map((e) => e.toString())
       enumFields = fields
@@ -473,6 +488,7 @@ export class Controller {
     }
 
     const deploymentOptions = {
+      fields: enumFields,
       filters: requestFilters,
       sortBy: sortBy,
       offset: offset,
@@ -511,8 +527,12 @@ export class Controller {
         nextFilters.to = lastDeployment.entityTimestamp
       }
     }
+
+    const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
+
     const nextQueryParams = toQueryParams({
       ...nextFilters,
+      fields,
       sortingField: field,
       sortingOrder: order,
       lastId: lastDeployment.entityId,
@@ -667,7 +687,7 @@ export class Controller {
 
   async getFailedDeployments(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /failedDeployments
+    // Path: /failed-deployments
 
     const failedDeployments = await this.service.getAllFailedDeployments()
     res.send(failedDeployments)

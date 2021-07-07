@@ -6,7 +6,6 @@ import {
   Hashing,
   PartialDeploymentHistory,
   Pointer,
-  ServerName,
   ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
@@ -40,14 +39,12 @@ import {
   MetaverseContentService
 } from './Service'
 import { ServiceStorage } from './ServiceStorage'
-import { IdentityProvider } from './synchronization/ContentCluster'
 import { happenedBefore } from './time/TimeSorting'
 import { ValidationContext } from './validations/ValidationContext'
 import { Validations } from './validations/Validations'
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
   private static readonly LOGGER = log4js.getLogger('ServiceImpl')
-  private static readonly DEFAULT_SERVER_NAME = 'NOT_IN_DAO'
   private readonly listeners: DeploymentListener[] = []
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
   private historySize: number = 0
@@ -55,7 +52,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   constructor(
     private readonly storage: ServiceStorage,
     private readonly pointerManager: PointerManager,
-    private readonly identityProvider: IdentityProvider,
     private readonly failedDeploymentsManager: FailedDeploymentsManager,
     private readonly deploymentManager: DeploymentManager,
     private readonly validations: Validations,
@@ -143,7 +139,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     validation.validateRequestSize(hashes, entity.type, entity.pointers, validationContext)
 
     // Validate ethAddress access
-    await validation.validateAccess(entity.type, entity.pointers, entity.timestamp, ownerAddress, validationContext)
+    await validation.validateAccess(entity, ownerAddress, validationContext)
 
     // Check for if content is already stored
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
@@ -410,7 +406,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   getStatus(): ServerStatus {
     return {
-      name: this.getOwnName(),
+      name: '', // TODO: Remove and communicate breaking change accordingly
       version: CURRENT_CONTENT_VERSION,
       currentTime: Date.now(),
       lastImmutableTime: 0,
@@ -510,9 +506,5 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   private async isEntityAlreadyDeployed(entityId: EntityId, transaction: Database): Promise<boolean> {
     const result = await this.areEntitiesAlreadyDeployed([entityId], transaction)
     return result.get(entityId)!
-  }
-
-  private getOwnName(): ServerName {
-    return this.identityProvider.getIdentityInDAO()?.name ?? ServiceImpl.DEFAULT_SERVER_NAME
   }
 }

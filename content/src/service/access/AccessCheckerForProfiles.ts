@@ -5,11 +5,18 @@ import { ContentAuthenticator } from '../auth/Authenticator'
 export class AccessCheckerForProfiles {
   constructor(private readonly authenticator: ContentAuthenticator) {}
 
-  public async checkAccess(pointers: Pointer[], ethAddress: EthAddress): Promise<string[]> {
+  public async checkAccess({
+    pointers,
+    ethAddress
+  }: {
+    pointers: Pointer[]
+    ethAddress: EthAddress
+  }): Promise<string[]> {
     const errors: string[] = []
 
-    if (pointers.length != 1) {
+    if (pointers.length !== 1) {
       errors.push(`Only one pointer is allowed when you create a Profile. Received: ${pointers}`)
+      return errors
     }
 
     const pointer: Pointer = pointers[0].toLowerCase()

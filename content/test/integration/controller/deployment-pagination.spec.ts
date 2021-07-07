@@ -1,3 +1,4 @@
+import { DeploymentField } from '@katalyst/content/controller/Controller'
 import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { DeploymentOptions, PointerChangesFilters } from '@katalyst/content/service/deployments/DeploymentManager'
 import assert from 'assert'
@@ -143,6 +144,33 @@ describe('Integration - Deployment Pagination', () => {
     expect(nextLink).toContain('limit=2')
   })
 
+  it('When no fields are set, then next does not have them either', async () => {
+    // Deploy E1, E2 and E3 in that order
+    await deploy(E1, E2, E3)
+
+    const actualDeployments = await fetchDeployments({
+      limit: 2
+    })
+
+    expect(actualDeployments.deployments.length).toBe(2)
+    const nextLink = actualDeployments.pagination.next
+    expect(nextLink).not.toContain('fields')
+  })
+
+  it('When fields are set, then next shows the same fields', async () => {
+    // Deploy E1, E2 and E3 in that order
+    await deploy(E1, E2, E3)
+
+    const actualDeployments = await fetchDeployments({
+      limit: 2,
+      fields: [DeploymentField.CONTENT, DeploymentField.AUDIT_INFO]
+    })
+
+    expect(actualDeployments.deployments.length).toBe(2)
+    const nextLink = actualDeployments.pagination.next
+    expect(decodeURIComponent(nextLink)).toContain(`fields=${DeploymentField.CONTENT},${DeploymentField.AUDIT_INFO}`)
+  })
+
   it('When getting by last entityId then it returns the correct page', async () => {
     // Deploy E1, E2 in that order
     await deploy(E1, E2)
@@ -242,7 +270,7 @@ describe('Integration - Deployment Pagination', () => {
 
     const url =
       server.getAddress() +
-      `/pointerChanges?` +
+      `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
     console.log('URL ', url)
     const pointerChanges = await fetchJson(url)
@@ -268,7 +296,8 @@ describe('Integration - Deployment Pagination', () => {
     const composedOptions = {
       ...options.filters,
       sortingField: options.sortBy?.field,
-      sortingOrder: options.sortBy?.order
+      sortingOrder: options.sortBy?.order,
+      fields: options.fields ? options.fields.join(',') : undefined
     }
     const newOptions = Object.assign({}, options)
     newOptions.sortBy = undefined
@@ -285,8 +314,7 @@ describe('Integration - Deployment Pagination', () => {
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url = server.getAddress() + `/pointerChanges?` + toQueryParams({ ...filters, limit: limit })
-    console.log('URL ', url)
+    const url = server.getAddress() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
     const response = await fetchJson(url)
     return response
   }

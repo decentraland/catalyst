@@ -1,11 +1,10 @@
-import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
+import { Entity } from '../Entity'
 
 export interface AccessChecker {
-  hasAccess(
-    entityType: EntityType,
-    pointers: Pointer[],
-    timestamp: Timestamp,
-    ethAddress: EthAddress
-  ): Promise<string[]>
+  hasAccess(params: AccessParams): Promise<string[]>
+}
+
+export type AccessParams = Omit<Entity, 'id'> & {
+  ethAddress: EthAddress
 }

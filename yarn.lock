@@ -2818,9 +2818,9 @@ color-name@^1.0.0, color-name@~1.1.4:
   integrity sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==
 
 color-string@^1.5.4:
-  version "1.5.4"
-  resolved "https://registry.yarnpkg.com/color-string/-/color-string-1.5.4.tgz#dd51cd25cfee953d138fe4002372cc3d0e504cb6"
-  integrity sha512-57yF5yt8Xa3czSEW1jfQDE79Idk0+AkN/4KWad6tbdxUmAs3MvjxlWSWD4deYytcRfoZ9nhKyFl1kj5tBvidbw==
+  version "1.5.5"
+  resolved "https://registry.yarnpkg.com/color-string/-/color-string-1.5.5.tgz#65474a8f0e7439625f3d27a6a19d89fc45223014"
+  integrity sha512-jgIoum0OfQfq9Whcfc2z/VhCNcmQjWbey6qBX0vqt7YICflUmBCh9E9CiQD5GSJ+Uehixm3NUwHVhqUAWRivZg==
   dependencies:
     color-name "^1.0.0"
     simple-swizzle "^0.2.2"
@@ -3166,21 +3166,21 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.1.tgz#52a0fddda8b045092dae967f405ad42c16e2224f"
-  integrity sha512-wQrSjV4gflJZPdj30QNQHFWFWFnQfBMtPGcQ5Z0ZaZSYkVp+f/Zc/2xTukY0NPHS25yYKnM5iqijfh3VmLqfIg==
+dcl-catalyst-client@^5.0.4:
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.0.4.tgz#c15ad36a7d06bb46ca914a861829caa290a4d04d"
+  integrity sha512-NDnhGcySzwC+xyt2aPpN/w1OwQ2+dMLa94QkMFnkfed7v9WA2ilZQ3Mwc84H/Cr8EomvEbvvSCLXJ7d+YTyu7Q==
   dependencies:
     "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
-    dcl-catalyst-commons "^4.0.0"
+    dcl-catalyst-commons "^4.0.1"
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.0.tgz#06591159f02da2d63fdb77d28932a05994db1957"
-  integrity sha512-Xwf4ZlwAfhfTj8fD40+nwKh8DiEp6qTcy1OM19kdIJX1YgUMY18QMMUbPkAQHYNSsvOXOb2zZ8WAIYuwrtd8qg==
+dcl-catalyst-commons@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-4.0.1.tgz#5608ad0f3f240740093f7005147943ec36a4e7dd"
+  integrity sha512-yyXylwK3JmMZUFyISYpz6GLCfpocJ0lKLA7x/2fwcnOLqzBEsSEDauiwKnUzAd4MLmmX/+WvMloysXbriMsnYg==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"

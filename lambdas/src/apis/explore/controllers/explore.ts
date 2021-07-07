@@ -56,9 +56,9 @@ export async function realmsStatus(daoCache: DAOCache, req: Request, res: Respon
   }
 
   const realmsStatusData = await realmsStatusCache.get()
-  const hotScenesLastUpdate = hotSceneCache.lastUpdate()
+  const realmStatusLastUpdate = realmsStatusCache.lastUpdate()
 
-  res.setHeader('Last-Modified', hotScenesLastUpdate.toUTCString())
+  res.setHeader('Last-Modified', realmStatusLastUpdate.toUTCString())
   res.status(200).send(realmsStatusData)
 }
 

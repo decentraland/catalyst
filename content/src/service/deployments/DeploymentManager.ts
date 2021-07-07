@@ -1,3 +1,4 @@
+import { DeploymentField } from '@katalyst/content/controller/Controller'
 import { ContentFilesRepository } from '@katalyst/content/repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '@katalyst/content/repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
@@ -209,6 +210,7 @@ export type PartialDeploymentPointerChanges = {
 }
 
 export type DeploymentOptions = {
+  fields?: DeploymentField[]
   filters?: DeploymentFilters
   sortBy?: DeploymentSorting
   offset?: number

@@ -15,7 +15,15 @@ export class AccessCheckerForScenes {
     private readonly LOGGER: log4js.Logger
   ) {}
 
-  public async checkAccess(pointers: Pointer[], timestamp: Timestamp, ethAddress: EthAddress): Promise<string[]> {
+  public async checkAccess({
+    pointers,
+    timestamp,
+    ethAddress
+  }: {
+    pointers: Pointer[]
+    timestamp: Timestamp
+    ethAddress: EthAddress
+  }): Promise<string[]> {
     const errors: string[] = []
 
     await Promise.all(
