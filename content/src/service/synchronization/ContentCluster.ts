@@ -35,7 +35,7 @@ export class ContentCluster implements IdentityProvider {
     private readonly fetcher: Fetcher,
     private readonly systemProperties: SystemPropertiesManager,
     private readonly bootstrapFromScratch: boolean
-  ) { }
+  ) {}
 
   /** Connect to the DAO for the first time */
   async connect(): Promise<void> {
@@ -177,7 +177,7 @@ export class ContentCluster implements IdentityProvider {
         } else if (serversWithMyChallengeText.length > 1) {
           ContentCluster.LOGGER.warn(
             `Expected to find only one server with my challenge text '${this.challengeSupervisor.getChallengeText()}', but found ${
-            serversWithMyChallengeText.length
+              serversWithMyChallengeText.length
             }`
           )
           break
@@ -208,7 +208,7 @@ export class ContentCluster implements IdentityProvider {
     try {
       const { challengeText }: { challengeText: ChallengeText } = await this.fetcher.fetchJson(`${address}/challenge`)
       return challengeText
-    } catch (error) { }
+    } catch (error) {}
   }
 }
 
