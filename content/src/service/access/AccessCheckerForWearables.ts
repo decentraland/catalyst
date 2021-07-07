@@ -86,15 +86,13 @@ export class AccessCheckerForWearables {
       // It could happen that the subgraph hasn't synced yet, so someone who just lost access still managed to make a deployment. The problem would be that when other catalysts perform
       // the same check, the subgraph might have synced and the deployment is no longer valid. So, in order to prevent inconsistencies between catalysts, we will allow all deployments that
       // have access now, or had access 5 minutes ago.
+
+      const hasPermissionOnBlock = async (blockNumber: number | undefined) =>
+        !!blockNumber &&
+        (await this.hasPermission(collectionsSubgraphUrl, collection, itemId, blockNumber, accessParams))
       return (
-        (await this.hasPermission(collectionsSubgraphUrl, collection, itemId, blockNumberAtDeployment, accessParams)) ||
-        (await this.hasPermission(
-          collectionsSubgraphUrl,
-          collection,
-          itemId,
-          blockNumberFiveMinBeforeDeployment,
-          accessParams
-        ))
+        (await hasPermissionOnBlock(blockNumberAtDeployment)) ||
+        (await hasPermissionOnBlock(blockNumberFiveMinBeforeDeployment))
       )
     } catch (error) {
       this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${accessParams.ethAddress}).`, error)
@@ -236,13 +234,15 @@ export class AccessCheckerForWearables {
       // To get the deployment's block number, we check the one immediately after the entity's timestamp. Since it could not exist, we default to the one immediately before.
       const blockNumberAtDeployment = result.after[0]?.number ?? result.before[0]?.number
       const blockNumberFiveMinBeforeDeployment = result.fiveMinAfter[0]?.number ?? result.fiveMinBefore[0]?.number
-      if (blockNumberAtDeployment === undefined || blockNumberFiveMinBeforeDeployment === undefined) {
+      if (blockNumberAtDeployment === undefined && blockNumberFiveMinBeforeDeployment === undefined) {
         throw new Error(`Failed to find blocks for the specific timestamp`)
       }
 
       return {
-        blockNumberAtDeployment: parseInt(blockNumberAtDeployment),
-        blockNumberFiveMinBeforeDeployment: parseInt(blockNumberFiveMinBeforeDeployment)
+        blockNumberAtDeployment: !!blockNumberAtDeployment ? parseInt(blockNumberAtDeployment) : undefined,
+        blockNumberFiveMinBeforeDeployment: !!blockNumberFiveMinBeforeDeployment
+          ? parseInt(blockNumberFiveMinBeforeDeployment)
+          : undefined
       }
     } catch (error) {
       this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
