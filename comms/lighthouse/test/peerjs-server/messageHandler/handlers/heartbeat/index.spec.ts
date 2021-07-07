@@ -10,6 +10,6 @@ describe('Heartbeat handler', () => {
 
     HeartbeatHandler(client)
 
-    expect(client.getLastPing()).toBeCloseTo(nowTime, 2)
+    expect(client.getLastPing() - nowTime).toBeLessThanOrEqual(1000)
   })
 })
