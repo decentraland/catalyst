@@ -35,7 +35,7 @@ export function configureRoutes(
 ) {
   const { configService } = services
 
-  const getStatus: RequestHandler = (_req, res) => {
+  const getStatus: RequestHandler = (req, res) => {
     const status: any = {
       name: options.name,
       version: options.version,
@@ -43,6 +43,10 @@ export function configureRoutes(
       env: options.env,
       ready: true,
       usersCount: services.peersService().getActivePeersCount()
+    }
+
+    if (req.query.includeUsersParcels) {
+      status.usersParcels = services.peersService().getUsersParcels()
     }
 
     res.send(status)
