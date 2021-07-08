@@ -109,7 +109,7 @@
     "aws-sdk": "^2.854.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
-    "dcl-catalyst-client": "^5.1.2-20210708183741.commit-85cae83",
+    "dcl-catalyst-client": "^5.1.2-20210708193501.commit-22e8644",
     "dcl-catalyst-commons": "^4.0.1",
     "dcl-crypto": "^2.3.0",
     "decentraland-commons": "^5.2.0",
