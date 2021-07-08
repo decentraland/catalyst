@@ -174,7 +174,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
             // Validate if the entity can be re deployed
-            await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
+            validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
             // Validate that there is no entity with a higher version
             await validation.validateLegacyEntity(
