@@ -3161,10 +3161,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^5.1.2-20210708193501.commit-22e8644:
-  version "5.1.2-20210708193501.commit-22e8644"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-5.1.2-20210708193501.commit-22e8644.tgz#afe2ddd0bde1480fc35ee522529519b286715cd7"
-  integrity sha512-tS6cZncQURP1RNpB45IO/ehx2lMfinUFNANrb7k9/idu0ybr0XVKU1PEY0UnFNH30WZ48oz9NWKZiIrVTMq4Gw==
+dcl-catalyst-client@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-6.0.0.tgz#b915f82bc963dc80460425b3010b345853261df4"
+  integrity sha512-QMoBhRSa1FOtlEOw2ADJiXCdFRFYeuKyN6jlQZos5OupZxDUZ8EyNCT8XO7XJQVsdso70+M1LWdn/ttLy2FSqQ==
   dependencies:
     "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
