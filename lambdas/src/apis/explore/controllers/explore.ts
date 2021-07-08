@@ -13,9 +13,10 @@ type ParcelCoord = [number, number]
 
 type RealmInfo = {
   serverName: string
-  layer: string
+  url: string
+  layer?: string
   usersCount: number
-  usersMax: number
+  maxUsers?: number
   userParcels: ParcelCoord[]
 }
 
@@ -39,10 +40,26 @@ type Layer = {
   usersParcels: ParcelCoord[]
 }
 
-type ServerStatus = {
+type BaseServerStatus = {
   name: string
   url: string
+  layers?: Layer[]
+  maxUsers?: number
+}
+
+type LayersBasedServerStatus = {
   layers: Layer[]
+} & BaseServerStatus
+
+type IslandBasedServerStatus = {
+  usersParcels: ParcelCoord[]
+  usersCount: number
+} & BaseServerStatus
+
+type ServerStatus = LayersBasedServerStatus | IslandBasedServerStatus
+
+function isLayerBased(status: ServerStatus): status is LayersBasedServerStatus {
+  return "layers" in status;
 }
 
 let realmsStatusCache: TimeRefreshedDataHolder<RealmInfo[]>
@@ -79,20 +96,32 @@ export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentC
   res.status(200).send(hotScenesData)
 }
 
+function toRealmsInfo(server: ServerStatus): RealmInfo[] {
+  return isLayerBased(server) ?
+    server.layers.map((layer) => ({
+      serverName: server.name,
+      url: server.url,
+      layer: layer.name,
+      usersCount: layer.usersCount,
+      maxUsers: layer.maxUsers,
+      userParcels: layer.usersParcels
+    })) : [
+      {
+        serverName: server.name,
+        url: server.url,
+        usersCount: server.usersCount!,
+        maxUsers: server.maxUsers,
+        userParcels: server.usersParcels!
+      }
+    ]
+}
+
 async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
   const statuses = await fetchCatalystStatuses(daoCache)
 
   return statuses
-    .flatMap((server) =>
-      server.layers.map((layer) => ({
-        serverName: server.name,
-        url: server.url,
-        layer: layer.name,
-        usersCount: layer.usersCount,
-        usersMax: layer.maxUsers,
-        userParcels: layer.usersParcels
-      }))
-    )
+    .flatMap(
+      toRealmsInfo)
     .sort((realm1, realm2) => realm2.usersCount - realm1.usersCount)
 }
 
@@ -124,24 +153,29 @@ async function fetchCatalystStatuses(daoCache: DAOCache) {
 }
 
 function countUsers(hotScenes: HotSceneInfo[], statuses: ServerStatus[]) {
-  statuses.forEach((server) =>
-    server.layers.forEach((layer) => {
-      layer.usersParcels.forEach((parcel) => countUser(parcel, server, layer, hotScenes))
-    })
-  )
+  statuses.forEach((server) => {
+    if (isLayerBased(server)) {
+      server.layers.forEach((layer) => {
+        layer.usersParcels.forEach((parcel) => countUser(parcel, server, hotScenes, layer))
+      })
+    } else {
+      server.usersParcels.forEach(parcel => countUser(parcel, server, hotScenes))
+    }
+  })
 }
 
-function countUser(parcel: ParcelCoord, server: ServerStatus, layer: Layer, hotScenes: HotSceneInfo[]) {
+function countUser(parcel: ParcelCoord, server: ServerStatus, hotScenes: HotSceneInfo[], layer?: Layer) {
   const scene = hotScenes.find((it) => it.parcels?.some((sceneParcel) => parcelEqual(parcel, sceneParcel)))
   if (scene) {
     scene.usersTotalCount += 1
-    let realm = scene.realms.find((it) => it.serverName === server.name && it.layer === layer.name)
+    let realm = scene.realms.find((it) => it.serverName === server.name && it.layer === layer?.name)
     if (!realm) {
       realm = {
         serverName: server.name,
-        layer: layer.name,
+        url: server.url,
+        layer: layer?.name,
         usersCount: 0,
-        usersMax: layer.maxUsers,
+        maxUsers: layer?.maxUsers ?? server.maxUsers,
         userParcels: []
       }
       scene.realms.push(realm)
@@ -151,12 +185,17 @@ function countUser(parcel: ParcelCoord, server: ServerStatus, layer: Layer, hotS
   }
 }
 
+function getTilesOfServer(status: ServerStatus) {
+  function toTiles(parcelCoords: ParcelCoord[]) {
+    return parcelCoords.map((parcel) => `${parcel[0]},${parcel[1]}`)
+  }
+  return isLayerBased(status) ? status.layers.flatMap((layer) => toTiles(layer.usersParcels)) : toTiles(status.usersParcels)
+}
+
 function getOccupiedTiles(statuses: ServerStatus[]) {
   return [
     ...new Set(
-      statuses.flatMap((it) =>
-        it.layers.flatMap((layer) => layer.usersParcels.map((parcel) => `${parcel[0]},${parcel[1]}`))
-      )
+      statuses.flatMap((it) => getTilesOfServer(it))
     )
   ]
 }
