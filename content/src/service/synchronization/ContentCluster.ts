@@ -1,3 +1,4 @@
+import { FetcherFactory } from '@katalyst/content/helpers/FetcherFactory'
 import { Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
@@ -106,7 +107,11 @@ export class ContentCluster implements IdentityProvider {
           const lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
 
           // Create and store the new client
-          const newClient = new ContentServerClient(newAddress, lastDeploymentTimestamp, this.fetcher)
+          const newClient = new ContentServerClient(
+            newAddress,
+            lastDeploymentTimestamp,
+            FetcherFactory.copy(this.fetcher) // We need a Fetcher per catalyst
+          )
           this.serverClients.set(newAddress, newClient)
           ContentCluster.LOGGER.info(`Discovered new server '${newAddress}'`)
         }

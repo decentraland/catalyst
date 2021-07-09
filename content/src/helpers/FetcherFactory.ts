@@ -13,4 +13,8 @@ export class FetcherFactory {
       }
     })
   }
+
+  static copy(originalFetcher: Fetcher): Fetcher {
+    return new Fetcher(originalFetcher['customDefaults'])
+  }
 }
