@@ -76,7 +76,7 @@ export class ValidatorInstance {
   }
 
   /** Validate if the entity can be re deployed or not */
-  async validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed: boolean, validationContext: ValidationContext) {
+  validateThatEntityCanBeRedeployed(wasEntityAlreadyDeployed: boolean, validationContext: ValidationContext) {
     if (validationContext.shouldValidate(Validation.NO_REDEPLOYS)) {
       if (wasEntityAlreadyDeployed) {
         this.errors.push(`This entity was already deployed. You can't redeploy it`)

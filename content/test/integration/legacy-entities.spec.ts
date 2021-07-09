@@ -1,7 +1,6 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
 import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
-import { addModelToFormData } from 'dcl-catalyst-client'
+import { addModelToFormData, DeploymentData } from 'dcl-catalyst-client'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import FormData from 'form-data'
@@ -9,7 +8,7 @@ import fetch from 'node-fetch'
 import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
-import { buildDeployData, createIdentity, DeployData } from './E2ETestUtils'
+import { buildDeployData, createIdentity } from './E2ETestUtils'
 import { TestServer } from './TestServer'
 
 describe('End 2 end - Legacy Entities', () => {
@@ -64,7 +63,7 @@ describe('End 2 end - Legacy Entities', () => {
   })
 })
 
-async function deployLegacy(server: TestServer, deployData: DeployData) {
+async function deployLegacy(server: TestServer, deployData: DeploymentData) {
   const form = new FormData()
   form.append('entityId', deployData.entityId)
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -73,7 +72,7 @@ async function deployLegacy(server: TestServer, deployData: DeployData) {
   form.append('version', 'v2')
   form.append('migration_data', JSON.stringify({ data: 'data' }))
 
-  deployData.files.forEach((f: ContentFile, hash: ContentFileHash) => form.append(hash, f.content, { filename: hash }))
+  deployData.files.forEach((f: Buffer, hash: ContentFileHash) => form.append(hash, f, { filename: hash }))
 
   const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
   await assertResponseIsOkOrThrow(deployResponse)
