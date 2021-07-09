@@ -2,7 +2,6 @@ import { ContentClient, DeploymentFields } from 'dcl-catalyst-client'
 import { ContentFileHash, DeploymentWithAuditInfo, Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
-import { ContentFile } from '../../../controller/Controller'
 import { passThrough } from '../streaming/StreamHelper'
 
 export class ContentServerClient {
@@ -77,9 +76,8 @@ export class ContentServerClient {
     return stream.pipe(passTrough)
   }
 
-  async getContentFile(fileHash: ContentFileHash): Promise<ContentFile> {
-    const content = await this.client.downloadContent(fileHash, { attempts: 3, waitTime: '0.5s' })
-    return { content }
+  getContentFile(fileHash: ContentFileHash): Promise<Buffer> {
+    return this.client.downloadContent(fileHash, { attempts: 3, waitTime: '0.5s' })
   }
 
   getAddress(): ServerAddress {

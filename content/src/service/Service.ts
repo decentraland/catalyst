@@ -8,7 +8,6 @@ import {
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { ContentFile } from '../controller/Controller'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
 import {
@@ -77,9 +76,9 @@ export interface ClusterDeploymentsService {
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null>
-  deployEntityFromCluster(files: ContentFile[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult>
+  deployEntityFromCluster(files: Buffer[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult>
   deployOverwrittenEntityFromCluster(
-    entityFile: ContentFile,
+    entityFile: Buffer,
     entityId: EntityId,
     auditInfo: AuditInfo
   ): Promise<DeploymentResult>
@@ -101,7 +100,7 @@ export type InvalidResult = { errors: string[] }
 
 export type DeploymentResult = Timestamp | InvalidResult
 
-export type DeploymentFiles = ContentFile[] | Map<ContentFileHash, ContentFile>
+export type DeploymentFiles = Buffer[] | Map<ContentFileHash, Buffer>
 
 export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is Timestamp {
   return typeof deploymentResult === 'number'

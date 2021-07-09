@@ -134,7 +134,11 @@ export class Controller {
         }
       }
 
-      const deploymentResult: DeploymentResult = await this.service.deployLocalLegacy(deployFiles, entityId, auditInfo)
+      const deploymentResult: DeploymentResult = await this.service.deployLocalLegacy(
+        deployFiles.map(({ content }) => content),
+        entityId,
+        auditInfo
+      )
 
       if (isSuccessfulDeployment(deploymentResult)) {
         res.send({ creationTimestamp: deploymentResult })
@@ -169,9 +173,19 @@ export class Controller {
 
       let deploymentResult: DeploymentResult = { errors: [] }
       if (fixAttempt) {
-        deploymentResult = await this.service.deployToFix(deployFiles, entityId, auditInfo, origin)
+        deploymentResult = await this.service.deployToFix(
+          deployFiles.map(({ content }) => content),
+          entityId,
+          auditInfo,
+          origin
+        )
       } else {
-        deploymentResult = await this.service.deployEntity(deployFiles, entityId, auditInfo, origin)
+        deploymentResult = await this.service.deployEntity(
+          deployFiles.map(({ content }) => content),
+          entityId,
+          auditInfo,
+          origin
+        )
       }
 
       if (isSuccessfulDeployment(deploymentResult)) {
@@ -734,7 +748,7 @@ export type ControllerDenylistData = {
   }
 }
 
-export type ContentFile = {
+type ContentFile = {
   path?: string
   content: Buffer
 }

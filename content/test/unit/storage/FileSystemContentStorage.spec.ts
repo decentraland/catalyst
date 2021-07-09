@@ -1,4 +1,3 @@
-import { fromBuffer } from '@katalyst/content/storage/ContentStorage'
 import { FileSystemContentStorage } from '@katalyst/content/storage/FileSystemContentStorage'
 import { FileSystemUtils as fsu } from './FileSystemUtils'
 
@@ -16,12 +15,12 @@ describe('FileSystemContentStorage', () => {
   })
 
   it(`When content is stored, then the correct file structure is created`, async () => {
-    await fss.store(id, fromBuffer(content))
+    await fss.store(id, content)
     expect(fsu.fileExists(tmpRootDir, id)).toBe(true)
   })
 
   it(`When content is deleted, then the backing file is also deleted`, async () => {
-    await fss.store(id, fromBuffer(content))
+    await fss.store(id, content)
     expect(fsu.fileExists(tmpRootDir, id)).toBe(true)
 
     await fss.delete([id])

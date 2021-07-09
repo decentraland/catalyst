@@ -6,7 +6,6 @@ import {
   Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
-import { ContentFile } from '../controller/Controller'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -273,14 +272,14 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
 
     // Find the entity file
-    const hashes: Map<ContentFileHash, ContentFile> = await ServiceImpl.hashFiles(files)
+    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files)
     const entityFile = hashes.get(entityId)
     if (!entityFile) {
       throw new Error(`Failed to find the entity file.`)
     }
 
     // Parse entity file into an Entity
-    const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
+    const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
 
     // No deployments with denylisted hash are allowed
     const contentTargets: DenylistTarget[] = Array.from(entity.content?.values() ?? []).map((fileHash) =>

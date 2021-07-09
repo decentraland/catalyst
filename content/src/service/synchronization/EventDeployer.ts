@@ -1,7 +1,6 @@
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
-import { ContentFile } from '../../controller/Controller'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
@@ -36,7 +35,7 @@ export class EventDeployer {
     EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
 
     // Download the entity file
-    const entityFile: ContentFile | undefined = await this.getEntityFile(deployment, source)
+    const entityFile: Buffer | undefined = await this.getEntityFile(deployment, source)
 
     const { auditInfo } = deployment
 
@@ -48,10 +47,10 @@ export class EventDeployer {
         )
       } else {
         // Build entity
-        const entity: Entity = EntityFactory.fromFile(entityFile, deployment.entityId)
+        const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
         // Download all entity's files
-        const files: ContentFile[] | undefined = await this.getContentFiles(entity, source)
+        const files: Buffer[] | undefined = await this.getContentFiles(entity, source)
 
         if (files) {
           // Add the entity file to the list of files
@@ -77,7 +76,7 @@ export class EventDeployer {
   /**
    * Get all the files needed to deploy the new entity
    */
-  private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<ContentFile[] | undefined> {
+  private async getContentFiles(entity: Entity, source?: ContentServerClient): Promise<Buffer[] | undefined> {
     // Read the entity, and get all content file hashes
     const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
@@ -88,7 +87,7 @@ export class EventDeployer {
     )
 
     // Download all content files
-    const files: ContentFile[] = []
+    const files: Buffer[] = []
     for (let i = 0; i < unknownFileHashes.length; i++) {
       const fileHash = unknownFileHashes[i]
       EventDeployer.LOGGER.trace(
@@ -120,17 +119,14 @@ export class EventDeployer {
   private getEntityFile(
     deployment: DeploymentWithAuditInfo,
     source?: ContentServerClient
-  ): Promise<ContentFile | undefined> {
+  ): Promise<Buffer | undefined> {
     return this.getFileOrUndefined(deployment.entityId, source)
   }
 
   /**
    * This method tries to get a file from the other servers on the DAO. If all the request fail, then it returns 'undefined'.
    */
-  private getFileOrUndefined(
-    fileHash: ContentFileHash,
-    source?: ContentServerClient
-  ): Promise<ContentFile | undefined> {
+  private getFileOrUndefined(fileHash: ContentFileHash, source?: ContentServerClient): Promise<Buffer | undefined> {
     return this.tryOnClusterOrUndefined(
       (server) => server.getContentFile(fileHash),
       this.cluster,

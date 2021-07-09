@@ -124,7 +124,7 @@ describe('Integration - Deployment Filters', () => {
     for (const { deployData } of entities) {
       const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
       const deploymentResult: DeploymentResult = await service.deployEntity(
-        Array.from(deployData.files.values()).map((content) => ({ content })),
+        Array.from(deployData.files.values()),
         deployData.entityId,
         newAuditInfo,
         ''
