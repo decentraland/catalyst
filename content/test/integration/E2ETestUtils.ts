@@ -3,18 +3,9 @@ import { retry } from '@katalyst/content/helpers/RetryHelper'
 import { Entity } from '@katalyst/content/service/Entity'
 import { EntityFactory } from '@katalyst/content/service/EntityFactory'
 import { DeploymentResult, MetaverseContentService } from '@katalyst/content/service/Service'
-import { DeploymentBuilder } from 'dcl-catalyst-client'
-import {
-  ContentFile,
-  ContentFileHash,
-  Entity as ControllerEntity,
-  EntityId,
-  EntityType,
-  EntityVersion,
-  Pointer,
-  Timestamp
-} from 'dcl-catalyst-commons'
-import { AuthChain, Authenticator, EthAddress } from 'dcl-crypto'
+import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
+import { Entity as ControllerEntity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Authenticator, EthAddress } from 'dcl-crypto'
 import EthCrypto from 'eth-crypto'
 import fs from 'fs'
 import path from 'path'
@@ -60,7 +51,7 @@ export async function buildDeployData(pointers: Pointer[], options?: DeploymentO
     signature
   )
 
-  const entity: Entity = EntityFactory.fromFile(
+  const entity: Entity = EntityFactory.fromBufferWithId(
     deploymentPreparationData.files.get(deploymentPreparationData.entityId)!,
     deploymentPreparationData.entityId
   )
@@ -69,7 +60,7 @@ export async function buildDeployData(pointers: Pointer[], options?: DeploymentO
     delete entity.content
   }
 
-  const deployData: DeployData = {
+  const deployData: DeploymentData = {
     entityId: entity.id,
     authChain: authChain,
     files: deploymentPreparationData.files
@@ -126,19 +117,13 @@ export async function deployEntitiesCombo(
   let deploymentResult: DeploymentResult = { errors: [] }
   for (const { deployData } of entitiesCombo) {
     deploymentResult = await service.deployEntity(
-      Array.from(deployData.files.values()),
+      Array.from(deployData.files.values()).map((content) => ({ content })),
       deployData.entityId,
       { authChain: deployData.authChain, version: EntityVersion.V2 },
       ''
     )
   }
   return deploymentResult
-}
-
-export type DeployData = {
-  entityId: EntityId
-  authChain: AuthChain
-  files: Map<ContentFileHash, ContentFile>
 }
 
 export type Identity = {
@@ -155,7 +140,7 @@ type DeploymentOptions = {
 }
 
 export type EntityCombo = {
-  deployData: DeployData
+  deployData: DeploymentData
   controllerEntity: ControllerEntity
   entity: Entity
 }

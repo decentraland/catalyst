@@ -5,6 +5,7 @@ import { Server } from '@katalyst/content/Server'
 import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import {
   ContentClient,
+  DeploymentData,
   DeploymentFields,
   DeploymentOptions,
   DeploymentWithMetadataContentAndPointers
@@ -24,7 +25,7 @@ import {
 } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
-import { deleteFolderRecursive, DeployData, hashAndSignMessage, Identity } from './E2ETestUtils'
+import { deleteFolderRecursive, hashAndSignMessage, Identity } from './E2ETestUtils'
 
 /** A wrapper around a server that helps make tests more easily */
 export class TestServer extends Server {
@@ -63,7 +64,7 @@ export class TestServer extends Server {
     }
   }
 
-  async deploy(deployData: DeployData, fix: boolean = false): Promise<Timestamp> {
+  async deploy(deployData: DeploymentData, fix: boolean = false): Promise<Timestamp> {
     return this.client.deployEntity(deployData, fix)
   }
 
