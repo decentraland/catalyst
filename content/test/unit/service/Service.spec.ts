@@ -1,4 +1,3 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Bean, Environment } from '@katalyst/content/Environment'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { CacheManager } from '@katalyst/content/service/caching/CacheManager'
@@ -12,7 +11,7 @@ import {
   MetaverseContentService
 } from '@katalyst/content/service/Service'
 import { ServiceFactory } from '@katalyst/content/service/ServiceFactory'
-import { ContentStorage, StorageContent } from '@katalyst/content/storage/ContentStorage'
+import { ContentStorage } from '@katalyst/content/storage/ContentStorage'
 import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
@@ -35,22 +34,22 @@ describe('Service', function () {
 
   const initialAmountOfDeployments: number = 15
 
-  let randomFile: { name: string; content: Buffer }
+  let randomFile: Buffer
   let randomFileHash: ContentFileHash
   let entity: Entity
-  let entityFile: ContentFile
+  let entityFile: Buffer
   let storage: ContentStorage
   let service: MetaverseContentService
   let pointerManager: PointerManager
 
   beforeAll(async () => {
-    randomFile = { name: 'file', content: Buffer.from('1234') }
-    randomFileHash = await Hashing.calculateHash(randomFile)
+    randomFile = Buffer.from('1234')
+    randomFileHash = await Hashing.calculateBufferHash(randomFile)
     ;[entity, entityFile] = await buildEntityAndFile(
       EntityType.SCENE,
       POINTERS,
       Date.now(),
-      new Map([[randomFile.name, randomFileHash]]),
+      new Map([['file', randomFileHash]]),
       'metadata'
     )
   })
@@ -87,8 +86,8 @@ describe('Service', function () {
       const deltaMilliseconds = Date.now() - deploymentResult
       expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
       expect(deltaMilliseconds).toBeLessThanOrEqual(10)
-      expect(storageSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
-      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
+      expect(storageSpy).toHaveBeenCalledWith(entity.id, entityFile)
+      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, randomFile)
     }
   })
 
@@ -101,8 +100,8 @@ describe('Service', function () {
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
 
-    expect(storeSpy).toHaveBeenCalledWith(entity.id, equalDataOnStorageContent(entityFile.content))
-    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, equalDataOnStorageContent(randomFile.content))
+    expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile)
+    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
   })
 
   it(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
@@ -195,17 +194,6 @@ describe('Service', function () {
       .registerBean(Bean.REPOSITORY, MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]])))
       .registerBean(Bean.CACHE_MANAGER, new CacheManager())
     return ServiceFactory.create(env)
-  }
-
-  function equalDataOnStorageContent(data: Buffer): jasmine.AsymmetricMatcher<StorageContent> {
-    return {
-      asymmetricMatch: function (compareTo) {
-        return compareTo.data === data
-      },
-      jasmineToString: function () {
-        return `<StorageContent with Data: ${data}>`
-      }
-    }
   }
 
   function expectSpyToBeCalled(serviceSpy: jasmine.Spy, pointers: string[]) {

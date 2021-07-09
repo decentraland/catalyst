@@ -1,4 +1,3 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Entity } from '@katalyst/content/service/Entity'
 import { EntityFactory } from '@katalyst/content/service/EntityFactory'
 import { buildEntityAndFile, entityToFile } from '@katalyst/test-helpers/service/EntityTestFactory'
@@ -6,7 +5,7 @@ import { EntityId, EntityType } from 'dcl-catalyst-commons'
 
 describe('Service', () => {
   let entity: Entity
-  let entityFile: ContentFile
+  let entityFile: Buffer
 
   beforeAll(async () => {
     ;[entity, entityFile] = await buildEntityAndFile(
@@ -19,11 +18,11 @@ describe('Service', () => {
   })
 
   it(`When a valid entity file is used, then it is parsed correctly`, () => {
-    expect(EntityFactory.fromFile(entityFile, entity.id)).toEqual(entity)
+    expect(EntityFactory.fromBufferWithId(entityFile, entity.id)).toEqual(entity)
   })
 
   it(`When the entity file can't be parsed into an entity, then an exception is thrown`, () => {
-    const invalidFile: ContentFile = { content: Buffer.from('Hello') }
+    const invalidFile = Buffer.from('Hello')
 
     assertInvalidFile(invalidFile, `id`, `Failed to parse the entity file. Please make sure that it is a valid json.`)
   })
@@ -102,9 +101,9 @@ describe('Service', () => {
     assertInvalidFile(entityToFile(invalidEntity), invalidEntity.id, errorMessage)
   }
 
-  function assertInvalidFile(file: ContentFile, entityId: EntityId, errorMessage: string) {
+  function assertInvalidFile(file: Buffer, entityId: EntityId, errorMessage: string) {
     expect(() => {
-      EntityFactory.fromFile(file, entityId)
+      EntityFactory.fromBufferWithId(file, entityId)
     }).toThrowError(errorMessage)
   }
 })

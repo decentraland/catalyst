@@ -1,4 +1,3 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { CURRENT_CONTENT_VERSION } from '@katalyst/content/Environment'
 import { Database } from '@katalyst/content/repository/Database'
 import {
@@ -113,16 +112,16 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     )
   }
 
-  deployEntity(files: ContentFile[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
+  deployEntity(files: Buffer[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
     return Promise.resolve(Date.now())
   }
 
-  deployToFix(files: ContentFile[], entityId: EntityId): Promise<Timestamp> {
+  deployToFix(files: Buffer[], entityId: EntityId): Promise<Timestamp> {
     return Promise.resolve(Date.now())
   }
 
   deployLocalLegacy(
-    files: ContentFile[],
+    files: Buffer[],
     entityId: string,
     auditInfo: LocalDeploymentAuditInfo,
     task?: Database
@@ -222,7 +221,7 @@ export class MockedMetaverseContentServiceBuilder {
 export function buildEntity(
   pointers: Pointer[],
   ...content: { hash: ContentFileHash; buffer: Buffer }[]
-): Promise<[Entity, ContentFile]> {
+): Promise<[Entity, Buffer]> {
   const entityContent: Map<string, ContentFileHash> = new Map(
     content.map((aContent) => [random.alphaNumeric(10), aContent.hash])
   )

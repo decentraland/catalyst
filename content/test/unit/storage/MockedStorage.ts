@@ -1,15 +1,10 @@
-import {
-  ContentItem,
-  ContentStorage,
-  SimpleContentItem,
-  StorageContent
-} from '@katalyst/content/storage/ContentStorage'
+import { ContentItem, ContentStorage, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
 
 export class MockedStorage implements ContentStorage {
   private storage: Map<string, Buffer> = new Map()
 
-  store(id: string, content: StorageContent): Promise<void> {
-    this.storage.set(id, content.data)
+  store(id: string, content: Buffer): Promise<void> {
+    this.storage.set(id, content)
     return Promise.resolve()
   }
   delete(ids: string[]): Promise<void> {
