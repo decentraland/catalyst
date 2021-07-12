@@ -10,12 +10,11 @@ import {
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { TOTAL_AMOUNT_OF_DEPLOYMENTS } from '../ContentMetrics'
-import { ContentFile } from '../controller/Controller'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { ContentItem, fromBuffer, StorageContent } from '../storage/ContentStorage'
+import { ContentItem } from '../storage/ContentStorage'
 import { ContentAuthenticator } from './auth/Authenticator'
 import { CacheByType } from './caching/Cache'
 import {
@@ -109,7 +108,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const validation = this.validations.getInstance()
 
     // Hash all files, and validate them
-    const hashes: Map<ContentFileHash, ContentFile> = await ServiceImpl.hashFiles(files)
+    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -118,7 +117,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
 
     // Parse entity file into an Entity
-    const entity: Entity = EntityFactory.fromFile(entityFile, entityId)
+    const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
 
     // Validate signature
     await validation.validateSignature(entityId, entity.timestamp, auditInfo.authChain, validationContext)
@@ -174,7 +173,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
             // Validate if the entity can be re deployed
-            await validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
+            validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
 
             // Validate that there is no entity with a higher version
             await validation.validateLegacyEntity(
@@ -362,22 +361,15 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   private storeEntityContent(
-    hashes: Map<ContentFileHash, ContentFile>,
+    hashes: Map<ContentFileHash, Buffer>,
     alreadyStoredHashes: Map<ContentFileHash, boolean>
   ): Promise<any> {
     // If entity was committed, then store all it's content (that isn't already stored)
     const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
-      .filter(([fileHash, file]) => !alreadyStoredHashes.get(fileHash))
-      .map(([fileHash, file]) => this.storage.storeContent(fileHash, this.toStorageContent(file)))
+      .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
+      .map(([fileHash, file]) => this.storage.storeContent(fileHash, file))
 
     return Promise.all(contentStorageActions)
-  }
-
-  private toStorageContent(contentFile: ContentFile): StorageContent {
-    return {
-      path: contentFile.path,
-      data: contentFile.content
-    }
   }
 
   /**
@@ -385,13 +377,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles): Promise<Map<ContentFileHash, ContentFile>> {
+  static async hashFiles(files: DeploymentFiles): Promise<Map<ContentFileHash, Buffer>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: ContentFile }[] = await Hashing.calculateHashes(
-        files.map(({ content }) => ({ name: 'empty', content })) // We need to add the name manually until we update the catalyst-commons library
-      )
+      const hashEntries: { hash: ContentFileHash; file: Buffer }[] = await Hashing.calculateHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }
@@ -419,14 +409,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
-    return this.storage.storeContent(fileHash, fromBuffer(content))
+    return this.storage.storeContent(fileHash, content)
   }
 
-  async deployEntityFromCluster(
-    files: ContentFile[],
-    entityId: EntityId,
-    auditInfo: AuditInfo
-  ): Promise<DeploymentResult> {
+  async deployEntityFromCluster(files: Buffer[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult> {
     const legacy = !!auditInfo.migrationData
     return await this.deployInternal(
       files,
@@ -438,7 +424,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   async deployOverwrittenEntityFromCluster(
-    entityFile: ContentFile,
+    entityFile: Buffer,
     entityId: EntityId,
     auditInfo: AuditInfo
   ): Promise<DeploymentResult> {

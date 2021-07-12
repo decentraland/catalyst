@@ -1,4 +1,3 @@
-import { ContentFile } from '@katalyst/content/controller/Controller'
 import { Denylist } from '@katalyst/content/denylist/Denylist'
 import { DenylistServiceDecorator } from '@katalyst/content/denylist/DenylistServiceDecorator'
 import {
@@ -40,7 +39,7 @@ describe('DenylistServiceDecorator', () => {
 
   let entity1: Entity
   let entity2: Entity
-  let entityFile1: ContentFile
+  let entityFile1: Buffer
 
   let P1Target: DenylistTarget
   let content1Target: DenylistTarget

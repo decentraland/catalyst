@@ -1,12 +1,7 @@
 import { ContentFileHash, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
-import { ContentFile } from '../controller/Controller'
 import { Entity } from './Entity'
 
 export class EntityFactory {
-  static fromFile(file: ContentFile, id: EntityId): Entity {
-    return this.fromBufferWithId(file.content, id)
-  }
-
   static fromBufferWithId(buffer: Buffer, id: EntityId): Entity {
     const object = EntityFactory.parseJsonIntoObject(buffer)
     return EntityFactory.fromObject(object, id)
