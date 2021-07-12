@@ -3166,22 +3166,22 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-client-with-pow-with-logs-v8:
-  version "6.0.1-20210709131804.commit-c49dcff"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-6.0.1-20210709131804.commit-c49dcff.tgz#16791ab616b8a1e1a950c5034bfee994b4cf9c39"
-  integrity sha512-jt2+TFg31NA328CPYPmL+NHXLLm0KCXNewwqg1kEv0kbqmLQ4auBs5B/kvTg08keXAjvTl4tXK4VZ6Qx7k6pIg==
+dcl-catalyst-client@tag-client-with-pow-with-logs-v9:
+  version "6.0.1-20210712141638.commit-eedcf34"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-6.0.1-20210712141638.commit-eedcf34.tgz#a6af2eb6d1fd02a0936beddff3b0151f5d442d4b"
+  integrity sha512-eqkcLamE1w9SwdSBlCRVc+Ltqil+ZTb2YL6ENAZaPeBqHZK1ivOdlhRDKiG+B8rKAY10z9a3tGWlO2DfBgbLgA==
   dependencies:
     "@types/form-data" "^2.5.0"
     async-iterator-to-array "0.0.1"
     cookie "^0.4.1"
-    dcl-catalyst-commons tag-add-cookies-v7
+    dcl-catalyst-commons tag-add-cookies-v8
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@tag-add-cookies-v7:
-  version "5.0.1-20210709130849.commit-39eee55"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-5.0.1-20210709130849.commit-39eee55.tgz#7c1ebec918c459e3d177d0d9ff6f698b29af908f"
-  integrity sha512-+OIfth9o9/Sto5CsfPfbGmSttOimM7uheX8i202dv9r5wQBtXCm1Jxh7kpOf0OivhWUpdZvsgW3ceWkw9otQAA==
+dcl-catalyst-commons@tag-add-cookies-v8:
+  version "5.0.1-20210709170138.commit-8bcc693"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-5.0.1-20210709170138.commit-8bcc693.tgz#033b86067e990058c4d2711afda666ae211b1cdf"
+  integrity sha512-0TKfNL6DiA1IiSnKxnvrPk01TDZLsU5Io5fW0KNxsonWyEqn5LthjZSHbNadOGVcx06UmSeUYB5R7MKX+0bwhg==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
