@@ -142,7 +142,7 @@ export class SmartContentClient implements ContentAPI {
       } catch {
         SmartContentClient.LOGGER.info('Defaulting to external content server url: ', contentClientUrl)
       }
-      this.contentClient.resolve(new ContentClient(contentClientUrl, 'lambdas'))
+      this.contentClient.resolve(await ContentClient.createAsync(contentClientUrl, 'lambdas'))
     }
     return this.contentClient
   }
