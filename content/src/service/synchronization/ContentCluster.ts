@@ -107,7 +107,7 @@ export class ContentCluster implements IdentityProvider {
           const lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
 
           // Create and store the new client
-          const newClient = new ContentServerClient(
+          const newClient = await ContentServerClient.createAsync(
             newAddress,
             lastDeploymentTimestamp,
             FetcherFactory.copy(this.fetcher) // We need a Fetcher per catalyst
