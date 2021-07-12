@@ -17,12 +17,7 @@ describe('Validations', function () {
       ])
     })
     const validation = getValidatorWithMockedAccess()
-    validation.validateContent(
-      entity,
-      new Map([['hash-1', { name: 'name-1', content: Buffer.from([]) }]]),
-      new Map([]),
-      ValidationContext.ALL
-    )
+    validation.validateContent(entity, new Map([['hash-1', Buffer.from([])]]), new Map([]), ValidationContext.ALL)
 
     expect(validation.getErrors().length).toBe(1)
     expect(validation.getErrors()[0]).toBe(notAvailableHashMessage('hash-2'))
@@ -210,8 +205,8 @@ describe('Validations', function () {
     validation.validateContent(
       entity,
       new Map([
-        ['hash-1', { name: 'name-1', content: Buffer.from([]) }],
-        ['hash-2', { name: 'name-2', content: Buffer.from([]) }]
+        ['hash-1', Buffer.from([])],
+        ['hash-2', Buffer.from([])]
       ]),
       new Map([]),
       ValidationContext.ALL
@@ -226,7 +221,7 @@ describe('Validations', function () {
     const validation = getValidatorWithMockedAccess()
     validation.validateContent(
       entity,
-      new Map([['hash-1', { name: 'name-1', content: Buffer.from([]) }]]),
+      new Map([['hash-1', Buffer.from([])]]),
       new Map([['hash-2', true]]),
       ValidationContext.ALL
     )
@@ -453,7 +448,7 @@ function buildEntity(options?: { timestamp?: Timestamp; content?: Map<string, st
 }
 
 function getFileWithSize(sizeInMB: number) {
-  return new Map([['someHash', { name: '', content: Buffer.alloc(sizeInMB * 1024 * 1024) }]])
+  return new Map([['someHash', Buffer.alloc(sizeInMB * 1024 * 1024)]])
 }
 
 function getValidatorWithMockedAccess(options?: { maxSizePerPointer: { type: EntityType; size: number } }) {

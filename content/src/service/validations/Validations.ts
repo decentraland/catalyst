@@ -10,7 +10,6 @@ import {
 import { AuthChain, EthAddress } from 'dcl-crypto'
 import ms from 'ms'
 import { httpProviderForNetwork } from '../../../../contracts/utils'
-import { ContentFile } from '../../controller/Controller'
 import { AccessChecker } from '../access/AccessChecker'
 import { ContentAuthenticator } from '../auth/Authenticator'
 import { Deployment } from '../deployments/DeploymentManager'
@@ -115,7 +114,7 @@ export class ValidatorInstance {
 
   /** Validate that the full request size is within limits */
   validateRequestSize(
-    files: Map<ContentFileHash, ContentFile>,
+    files: Map<ContentFileHash, Buffer>,
     entityType: EntityType,
     pointers: Pointer[],
     validationContext: ValidationContext
@@ -128,7 +127,7 @@ export class ValidatorInstance {
       }
       const maxSizeInBytes = maxSizeInMB * 1024 * 1024
       let totalSize = 0
-      files.forEach((file) => (totalSize += file.content.byteLength))
+      files.forEach((file) => (totalSize += file.byteLength))
       const sizePerPointer = totalSize / pointers.length
       if (sizePerPointer > maxSizeInBytes) {
         this.errors.push(
@@ -241,7 +240,7 @@ export class ValidatorInstance {
   /** Validate that uploaded and reported hashes are corrects */
   validateContent(
     entity: Entity,
-    hashes: Map<ContentFileHash, ContentFile>,
+    hashes: Map<ContentFileHash, Buffer>,
     alreadyStoredHashes: Map<ContentFileHash, boolean>,
     validationContext: ValidationContext
   ) {
