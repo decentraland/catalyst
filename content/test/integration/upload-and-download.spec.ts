@@ -1,9 +1,10 @@
 import { Bean } from '@katalyst/content/Environment'
 import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
+import { DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
-import { buildDeployData, DeployData } from './E2ETestUtils'
+import { buildDeployData } from './E2ETestUtils'
 import { TestServer } from './TestServer'
 
 describe('End 2 end deploy test', () => {
@@ -67,7 +68,7 @@ describe('End 2 end deploy test', () => {
     await assertDeploymentsAreReported(server, deployment)
   })
 
-  async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeployData) {
+  async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeploymentData) {
     expect(receivedScenes.length).toBe(1)
     const scene: ControllerEntity = receivedScenes[0]
     expect(scene.id).toBe(deployData.entityId)
@@ -82,7 +83,7 @@ describe('End 2 end deploy test', () => {
 
     for (const contentElement of scene.content!) {
       const downloadedContent = await server.downloadContent(contentElement.hash)
-      expect(downloadedContent).toEqual(deployData.files.get(contentElement.hash)!.content)
+      expect(downloadedContent).toEqual(deployData.files.get(contentElement.hash)!)
     }
   }
 })
