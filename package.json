@@ -93,8 +93,8 @@
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "dependencies": {
-    "@dcl/archipelago": "^1.0.0-20210609183931.commit-668cf2c",
-    "@dcl/catalyst-peer": "^1.0.0-20210706172727.commit-a9877de",
+    "@dcl/archipelago": "^1.0.0-20210713173135.commit-dbc0d1c",
+    "@dcl/catalyst-peer": "^1.0.0-20210713201511.commit-523f1ac",
     "@dcl/schemas": "^1.0.0",
     "@dcl/urn-resolver": "1.1.1",
     "@types/destroy": "^1.0.0",
