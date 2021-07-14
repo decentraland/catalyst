@@ -52,6 +52,7 @@ export type HeartbeatMessage = {
     connectedPeerIds: string[]
     parcel?: [number, number]
     position?: Position3D
+    preferedIslandId?: string
   }
 }
 

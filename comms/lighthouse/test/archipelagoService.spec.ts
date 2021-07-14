@@ -44,7 +44,7 @@ describe('Archipelago service', () => {
 
   function setPeersPositions(service: ArchipelagoService, ...positions: [string, number, number, number][]) {
     for (const [id, ...pos] of positions) {
-      service.updatePeerPosition(id, pos)
+      service.updatePeerPosition(id, { position: pos })
     }
   }
 

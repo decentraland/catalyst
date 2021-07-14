@@ -1,3 +1,4 @@
+import { Position3D } from 'decentraland-catalyst-utils/Positions'
 import { IClient } from '../peerjs-server/models/client'
 import { AppServices } from '../types'
 import { HeartbeatMessage, PeerIncomingMessage, PeerIncomingMessageType } from './protocol/messageTypes'
@@ -19,6 +20,14 @@ export function defaultPeerMessagesHandler({ peersService, archipelagoService }:
     peersService().updateTopology(client.getId(), connectedPeerIds)
     peersService().updatePeerParcel(client.getId(), parcel)
     peersService().updatePeerPosition(client.getId(), position)
-    archipelagoService().updatePeerPosition(client.getId(), position)
+
+    if (position) {
+      const positionUpdate: { position: Position3D; preferedIslandId?: string } = { position }
+      if ('preferedIslandId' in message.payload) {
+        positionUpdate.preferedIslandId = message.payload.preferedIslandId
+      }
+
+      archipelagoService().updatePeerPosition(client.getId(), positionUpdate)
+    }
   }
 }

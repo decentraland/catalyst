@@ -1,5 +1,10 @@
-import { ArchipelagoController, defaultArchipelagoController, Island, IslandUpdates } from '@dcl/archipelago'
-import { Position3D } from 'decentraland-catalyst-utils/Positions'
+import {
+  ArchipelagoController,
+  defaultArchipelagoController,
+  Island,
+  IslandUpdates,
+  PeerPositionChange
+} from '@dcl/archipelago'
 import { LighthouseConfig } from '../config/configService'
 import { AppServices } from '../types'
 import { PeersService } from './peersService'
@@ -30,10 +35,8 @@ export class ArchipelagoService {
     this.peersServiceGetter = peersService
   }
 
-  updatePeerPosition(peerId: string, position?: Position3D) {
-    if (position) {
-      this.controller.setPeersPositions({ id: peerId, position })
-    }
+  updatePeerPosition(peerId: string, positionUpdate: Omit<PeerPositionChange, 'id'>) {
+    this.controller.setPeersPositions({ id: peerId, ...positionUpdate })
   }
 
   get peersService() {
