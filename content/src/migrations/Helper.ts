@@ -60,6 +60,6 @@ async function deleteInactiveDeploymentFromHistory(pgm: MigrationBuilder, entity
  * Note: only returns the first deployment that was overwritten, because it's meant to be used for entities with only one pointer.
  */
 async function findOverwrittenBy(pgm: MigrationBuilder, deploymentId: number): Promise<number | undefined> {
-  const { rows } = await pgm.db.query(`SELECT id FROM deployments WHERE deleter_deployment="${deploymentId}"`)
+  const { rows } = await pgm.db.query(`SELECT id FROM deployments WHERE deleter_deployment=${deploymentId}`)
   return rows[0]?.id
 }
