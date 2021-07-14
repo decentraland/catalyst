@@ -22,8 +22,8 @@ export function defaultPeerMessagesHandler({ peersService, archipelagoService }:
     peersService().updatePeerPosition(client.getId(), position)
 
     if (position) {
-      const positionUpdate: { position: Position3D, preferedIslandId?: string } = { position }
-      if ("preferedIslandId" in message.payload) {
+      const positionUpdate: { position: Position3D; preferedIslandId?: string } = { position }
+      if ('preferedIslandId' in message.payload) {
         positionUpdate.preferedIslandId = message.payload.preferedIslandId
       }
 

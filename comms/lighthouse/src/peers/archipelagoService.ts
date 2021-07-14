@@ -1,4 +1,10 @@
-import { ArchipelagoController, defaultArchipelagoController, Island, IslandUpdates, PeerPositionChange } from '@dcl/archipelago'
+import {
+  ArchipelagoController,
+  defaultArchipelagoController,
+  Island,
+  IslandUpdates,
+  PeerPositionChange
+} from '@dcl/archipelago'
 import { LighthouseConfig } from '../config/configService'
 import { AppServices } from '../types'
 import { PeersService } from './peersService'
