@@ -6,23 +6,17 @@ import { passThrough } from '../streaming/StreamHelper'
 
 export class ContentServerClient {
   private static readonly LOGGER = log4js.getLogger('ContentServerClient')
-
+  private readonly client: ContentClient
   private connectionState: ConnectionState = ConnectionState.NEVER_REACHED
   private potentialLocalDeploymentTimestamp: Timestamp | undefined
 
-  private constructor(
+  constructor(
     private readonly address: ServerAddress,
     private lastLocalDeploymentTimestamp: Timestamp,
-    private readonly client: ContentClient
-  ) {}
-
-  static async createAsync(
-    address: ServerAddress,
-    lastLocalDeploymentTimestamp: Timestamp,
-    fetcher: Fetcher
-  ): Promise<ContentServerClient> {
-    const client = await ContentClient.createAsync(address, '', fetcher)
-    return new ContentServerClient(address, lastLocalDeploymentTimestamp, client)
+    fetcher: Fetcher,
+    proofOfWorkEnabled: boolean
+  ) {
+    this.client = new ContentClient({ contentUrl: address, origin: '', proofOfWorkEnabled, fetcher })
   }
 
   /**

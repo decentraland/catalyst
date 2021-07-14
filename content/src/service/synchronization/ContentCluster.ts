@@ -35,7 +35,8 @@ export class ContentCluster implements IdentityProvider {
     private readonly challengeSupervisor: ChallengeSupervisor,
     private readonly fetcher: Fetcher,
     private readonly systemProperties: SystemPropertiesManager,
-    private readonly bootstrapFromScratch: boolean
+    private readonly bootstrapFromScratch: boolean,
+    private readonly proofOfWorkEnabled: boolean
   ) {}
 
   /** Connect to the DAO for the first time */
@@ -107,10 +108,11 @@ export class ContentCluster implements IdentityProvider {
           const lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
 
           // Create and store the new client
-          const newClient = await ContentServerClient.createAsync(
+          const newClient = new ContentServerClient(
             newAddress,
             lastDeploymentTimestamp,
-            FetcherFactory.copy(this.fetcher) // We need a Fetcher per catalyst
+            FetcherFactory.copy(this.fetcher), // We need a Fetcher per catalyst
+            this.proofOfWorkEnabled
           )
           this.serverClients.set(newAddress, newClient)
           ContentCluster.LOGGER.info(`Discovered new server '${newAddress}'`)

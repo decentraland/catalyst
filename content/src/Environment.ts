@@ -157,6 +157,7 @@ export enum EnvironmentConfig {
   SQS_QUEUE_URL_REPORTING,
   SQS_ACCESS_KEY_ID,
   SQS_SECRET_ACCESS_KEY,
+  PROOF_OF_WORK,
   PSQL_PASSWORD,
   PSQL_USER,
   PSQL_DATABASE,
@@ -314,6 +315,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.SQS_SECRET_ACCESS_KEY,
       () => process.env.SQS_SECRET_ACCESS_KEY
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.PROOF_OF_WORK,
+      () => process.env.PROOF_OF_WORK == 'enabled'
     )
     this.registerConfigIfNotAlreadySet(
       env,

@@ -36,25 +36,16 @@ export class TestServer extends Server {
 
   private readonly client: ContentClient
 
-  private constructor(env: Environment, client: ContentClient) {
+  constructor(env: Environment) {
     super(env)
     this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
     this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
-    this.client = client
-  }
-
-  static async createAsync(env: Environment): Promise<TestServer> {
-    const serverPort: string = env.getConfig(EnvironmentConfig.SERVER_PORT)
-    const client: ContentClient = await ContentClient.createAsync(
-      TestServer.getAddress(serverPort),
-      '',
-      env.getBean(Bean.FETCHER)
-    )
-    return new TestServer(env, client)
-  }
-
-  static getAddress(serverPort: string): ServerAddress {
-    return `http://localhost:${serverPort}`
+    this.client = new ContentClient({
+      contentUrl: this.getAddress(),
+      origin: '',
+      proofOfWorkEnabled: true,
+      fetcher: env.getBean(Bean.FETCHER)
+    })
   }
 
   getAddress(): ServerAddress {

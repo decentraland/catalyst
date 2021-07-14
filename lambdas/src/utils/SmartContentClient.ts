@@ -30,14 +30,13 @@ import { Readable } from 'stream'
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
  */
-
 export class SmartContentClient implements ContentAPI {
   private static INTERNAL_CONTENT_SERVER_URL: string = `http://content-server:6969`
   private static LOGGER = log4js.getLogger('SmartContentClient')
 
   private contentClient: IFuture<ContentAPI> | undefined
 
-  constructor(private readonly externalContentServerUrl: string) {}
+  constructor(private readonly externalContentServerUrl: string, private readonly proofOfWorkEnabled: boolean) {}
 
   async fetchEntitiesByPointers(type: EntityType, pointers: Pointer[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -142,7 +141,13 @@ export class SmartContentClient implements ContentAPI {
       } catch {
         SmartContentClient.LOGGER.info('Defaulting to external content server url: ', contentClientUrl)
       }
-      this.contentClient.resolve(await ContentClient.createAsync(contentClientUrl, 'lambdas'))
+      this.contentClient.resolve(
+        new ContentClient({
+          contentUrl: contentClientUrl,
+          origin: 'lambdas',
+          proofOfWorkEnabled: this.proofOfWorkEnabled
+        })
+      )
     }
     return this.contentClient
   }

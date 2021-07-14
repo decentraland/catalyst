@@ -179,7 +179,7 @@ export class ServerBuilder {
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
         .build()
-      servers[i] = await TestServer.createAsync(env)
+      servers[i] = new TestServer(env)
     }
 
     this.testEnvCalls.registerServers(servers)
