@@ -297,11 +297,7 @@ export class EnvironmentBuilder {
           ? DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI)
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.PROOF_OF_WORK,
-      () => process.env.PROOF_OF_WORK == 'enabled'
-    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROOF_OF_WORK, () => process.env.PROOF_OF_WORK == 'true')
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.PSQL_PASSWORD,

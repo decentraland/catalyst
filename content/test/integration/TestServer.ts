@@ -43,7 +43,7 @@ export class TestServer extends Server {
     this.client = new ContentClient({
       contentUrl: this.getAddress(),
       origin: '',
-      proofOfWorkEnabled: true,
+      proofOfWorkEnabled: false,
       fetcher: env.getBean(Bean.FETCHER)
     })
   }
