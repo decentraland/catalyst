@@ -27,20 +27,22 @@ export class DeploymentPointerChangesRepository {
       DeploymentId,
       Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT }>
     > = new Map()
-    const deltas = await this.db.any(
-      `
-            SELECT deployment, pointer, after, deployments.entity_id AS before
-            FROM deployment_deltas
-            LEFT JOIN deployments on deployments.id = deployment_deltas.before
-            WHERE deployment IN ($1:list)`,
-      [deploymentIds]
-    )
-    deltas.forEach(({ deployment, pointer, before, after }) => {
-      if (!result.has(deployment)) {
-        result.set(deployment, new Map())
-      }
-      result.get(deployment)!.set(pointer, { before: before ?? undefined, after })
-    })
+    if (deploymentIds.length > 0) {
+      const deltas = await this.db.any(
+        `
+              SELECT deployment, pointer, after, deployments.entity_id AS before
+              FROM deployment_deltas
+              LEFT JOIN deployments on deployments.id = deployment_deltas.before
+              WHERE deployment IN ($1:list)`,
+        [deploymentIds]
+      )
+      deltas.forEach(({ deployment, pointer, before, after }) => {
+        if (!result.has(deployment)) {
+          result.set(deployment, new Map())
+        }
+        result.get(deployment)!.set(pointer, { before: before ?? undefined, after })
+      })
+    }
     return result
   }
 }
