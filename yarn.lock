@@ -3166,24 +3166,24 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-client-with-pow-v15:
-  version "6.0.1-20210715190034.commit-29292f7"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-6.0.1-20210715190034.commit-29292f7.tgz#0e33ce03ef9c8897d6b5a68463835d0eadb7f545"
-  integrity sha512-3bdqpxASLJGUumXbi/mOzScYCm3lmOITtdiM44hmIxaeDyEFypjdfR+UyTY8b9/qHgyqlggxqCg2qf/ArHsAzg==
+dcl-catalyst-client@tag-client-with-pow-v16:
+  version "6.0.1-20210715202046.commit-3b2be83"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-6.0.1-20210715202046.commit-3b2be83.tgz#6e46ca485d804008160ecc40ea4d8c6231bf6a93"
+  integrity sha512-gFLjP0oZwOJUd/iyxHV5xDBz7/Iu3REN39xN1PWBRFR+BFB1d4aBs1F5NKdnbC7KeFrvTqPUCqR1nWZ8pqwCfw==
   dependencies:
     "@types/form-data" "^2.5.0"
     "@types/log4js" "^2.3.5"
     async-iterator-to-array "0.0.1"
     cookie "^0.4.1"
-    dcl-catalyst-commons tag-add-cookies-v10
+    dcl-catalyst-commons tag-add-cookies-v11
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
     log4js "^6.3.0"
 
-dcl-catalyst-commons@tag-add-cookies-v10:
-  version "5.0.1-20210714145539.commit-ce1a317"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-5.0.1-20210714145539.commit-ce1a317.tgz#8e1c41adc0011e58ab4c48d92eba44df2f1417ab"
-  integrity sha512-rFV8qbpoyweLs6XMlw5j51X1iyCzRH1sSaPG4gTvjBIXOlTKzbuIKXiLmQ9NAsg1AM/KYtaprUyeHez/5RWSPQ==
+dcl-catalyst-commons@tag-add-cookies-v11:
+  version "5.0.1-20210715201436.commit-7055cbe"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-5.0.1-20210715201436.commit-7055cbe.tgz#8d33afc1b6915281bbd5b15bf0b850c4fc8a4b73"
+  integrity sha512-dNSLJt8A65jV+zBWpUqc4ZqqW/pAdZNTcVIoKjGIQnHBMw27rqruBUeb7D7Xsyc7YgTLU2On3OGKKkjxhZhUjA==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
