@@ -17,7 +17,7 @@ export async function deleteInactiveDeploymentsFromHistory(
 
 async function deleteInactiveDeploymentFromHistory(pgm: MigrationBuilder, entityId: EntityId) {
   const { rows } = await pgm.db.query(
-    `SELECT id, entity_pointers, deleter_deployment FROM deployments WHERE entity_id="${entityId}"`
+    `SELECT id, entity_pointers, deleter_deployment FROM deployments WHERE entity_id='${entityId}'`
   )
   if (rows.length === 0) {
     // Nothing to do if there is no deployment with that entity id
@@ -42,18 +42,22 @@ async function deleteInactiveDeploymentFromHistory(pgm: MigrationBuilder, entity
 
   // Re-write overwrite history
   if (overwrittenByEntity) {
-    pgm.sql(`UPDATE deployment_deltas SET before=${overwrittenByEntity} WHERE deployment=${deleter_deployment}`)
-    pgm.sql(`UPDATE deployments SET deleter_deployment=${deleter_deployment} WHERE id=${overwrittenByEntity}`)
+    await pgm.db.query(
+      `UPDATE deployment_deltas SET before=${overwrittenByEntity} WHERE deployment=${deleter_deployment}`
+    )
+    await pgm.db.query(
+      `UPDATE deployments SET deleter_deployment=${deleter_deployment} WHERE id=${overwrittenByEntity}`
+    )
   } else {
-    pgm.sql(`UPDATE deployment_deltas SET before=NULL WHERE deployment=${deleter_deployment}`)
+    await pgm.db.query(`UPDATE deployment_deltas SET before=NULL WHERE deployment=${deleter_deployment}`)
   }
 
   // Delete from tables
-  pgm.sql(`DELETE FROM pointer_history WHERE deployment=${id}`)
-  pgm.sql(`DELETE FROM content_files WHERE deployment=${id}`)
-  pgm.sql(`DELETE FROM migration_data WHERE deployment=${id}`)
-  pgm.sql(`DELETE FROM deployment_deltas WHERE deployment=${id}`)
-  pgm.sql(`DELETE FROM deployments WHERE id=${id}`)
+  await pgm.db.query(`DELETE FROM pointer_history WHERE deployment=${id}`)
+  await pgm.db.query(`DELETE FROM content_files WHERE deployment=${id}`)
+  await pgm.db.query(`DELETE FROM migration_data WHERE deployment=${id}`)
+  await pgm.db.query(`DELETE FROM deployment_deltas WHERE deployment=${id}`)
+  await pgm.db.query(`DELETE FROM deployments WHERE id=${id}`)
 }
 /**
  * Given a deployment id, finds the deployment that was overwritten by it. If there isn't any, returns undefined
