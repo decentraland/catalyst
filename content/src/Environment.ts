@@ -15,8 +15,6 @@ import { DeploymentManagerFactory } from './service/deployments/DeploymentManage
 import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsManager'
 import { GarbageCollectionManagerFactory } from './service/garbage-collection/GarbageCollectionManagerFactory'
 import { PointerManagerFactory } from './service/pointers/PointerManagerFactory'
-import { SegmentIoAnalyticsFactory } from './service/reporters/SegmentIoAnalyticsFactory'
-import { SQSDeploymentReporterFactory } from './service/reporters/SQSDeploymentReporterFactory'
 import { ServiceFactory } from './service/ServiceFactory'
 import { SnapshotManagerFactory } from './service/snapshots/SnapshotManagerFactory'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
@@ -140,7 +138,6 @@ export enum EnvironmentConfig {
   SERVER_PORT,
   METRICS,
   LOG_REQUESTS,
-  SEGMENT_WRITE_KEY,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
   ALLOW_LEGACY_ENTITIES,
@@ -154,9 +151,6 @@ export enum EnvironmentConfig {
   LAND_MANAGER_SUBGRAPH_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
-  SQS_QUEUE_URL_REPORTING,
-  SQS_ACCESS_KEY_ID,
-  SQS_SECRET_ACCESS_KEY,
   PSQL_PASSWORD,
   PSQL_USER,
   PSQL_DATABASE,
@@ -214,7 +208,6 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SERVER_PORT,
       () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SEGMENT_WRITE_KEY, () => process.env.SEGMENT_WRITE_KEY)
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
@@ -304,17 +297,6 @@ export class EnvironmentBuilder {
           : DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI)
     )
 
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.SQS_QUEUE_URL_REPORTING,
-      () => process.env.SQS_QUEUE_URL_REPORTING
-    )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SQS_ACCESS_KEY_ID, () => process.env.SQS_ACCESS_KEY_ID)
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.SQS_SECRET_ACCESS_KEY,
-      () => process.env.SQS_SECRET_ACCESS_KEY
-    )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.PSQL_PASSWORD,
@@ -425,8 +407,6 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS, () => ValidationsFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SEGMENT_IO_ANALYTICS, () => SegmentIoAnalyticsFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SQS_DEPLOYMENT_REPORTER, () => SQSDeploymentReporterFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER, () => SnapshotManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
       GarbageCollectionManagerFactory.create(env)
