@@ -13,7 +13,7 @@ export class IdService {
   constructor(config: Partial<IdServiceConfig> = {}) {
     this.config = {
       alphabet: config.alphabet ?? DEFAULT_ID_ALPHABET,
-      idLength: config.idLength ?? 2
+      idLength: config.idLength ?? 3
     }
   }
 
