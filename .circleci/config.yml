@@ -33,7 +33,6 @@ references:
       - <<: *image_client
     working_directory: *workspace_root
 
-
   .testing_branches: &testing_branches
     filters:
       branches:

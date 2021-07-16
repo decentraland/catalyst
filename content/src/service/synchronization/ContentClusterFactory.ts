@@ -9,7 +9,8 @@ export class ContentClusterFactory {
       env.getBean(Bean.CHALLENGE_SUPERVISOR),
       env.getBean(Bean.FETCHER),
       env.getBean(Bean.SYSTEM_PROPERTIES_MANAGER),
-      env.getConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH)
+      env.getConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH),
+      env.getConfig(EnvironmentConfig.PROOF_OF_WORK)
     )
   }
 }

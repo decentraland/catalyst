@@ -13,9 +13,10 @@ export class ContentServerClient {
   constructor(
     private readonly address: ServerAddress,
     private lastLocalDeploymentTimestamp: Timestamp,
-    fetcher: Fetcher
+    fetcher: Fetcher,
+    proofOfWorkEnabled: boolean
   ) {
-    this.client = new ContentClient(address, '', fetcher)
+    this.client = new ContentClient({ contentUrl: address, origin: '', proofOfWorkEnabled, fetcher })
   }
 
   /**
