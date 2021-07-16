@@ -5,7 +5,7 @@ import {
   IslandUpdates,
   PeerPositionChange
 } from '@dcl/archipelago'
-import { LighthouseConfig } from '../config/configService'
+import { ConfigService, LighthouseConfig } from '../config/configService'
 import { AppServices } from '../types'
 import { PeersService } from './peersService'
 import { PeerOutgoingMessageType } from './protocol/messageTypes'
@@ -13,6 +13,7 @@ import { PeerOutgoingMessageType } from './protocol/messageTypes'
 export class ArchipelagoService {
   private readonly controller: ArchipelagoController
   private readonly peersServiceGetter: () => PeersService
+  private readonly configService: ConfigService
 
   constructor({ configService, peersService }: Pick<AppServices, 'configService' | 'peersService'>) {
     this.controller = defaultArchipelagoController({
@@ -29,6 +30,8 @@ export class ArchipelagoService {
     configService.listenTo(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE, (leaveDistance) =>
       this.controller.modifyOptions({ leaveDistance })
     )
+
+    this.configService = configService
 
     this.controller.subscribeToUpdates(this.onIslandUpdates.bind(this))
 
@@ -89,5 +92,13 @@ export class ArchipelagoService {
     const peersData = await this.controller.getPeersData([peerId, ...otherPeerIds])
     const expectedIslandId = peersData[peerId]?.islandId
     return !!expectedIslandId && Object.values(peersData).every((data) => data.islandId === expectedIslandId)
+  }
+
+  async getIslands(): Promise<{ ok: false, message: string } | { ok: true, islands: Island[] }> {
+    const peersCount = this.peersService.getActivePeersCount()
+
+    if (peersCount >= this.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT)) return { ok: false, message: 'Cannot query islands during high load' }
+
+    return { ok: true, islands: await this.controller.getIslands() }
   }
 }

@@ -32,6 +32,12 @@ export class LighthouseConfig<T> {
     defaultValue: 2.0
   })
 
+  static readonly HIGH_LOAD_PEERS_COUNT: LighthouseConfig<number> = new LighthouseConfig({
+    name: 'highLoadPeersCount',
+    fromText: parseInt,
+    defaultValue: 10000
+  })
+
   readonly name: string
   readonly fromText: (config: string) => T
   readonly defaultValue: T

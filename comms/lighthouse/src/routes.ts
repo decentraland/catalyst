@@ -1,3 +1,4 @@
+import { Island } from '@dcl/archipelago'
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { Request, RequestHandler, Response } from 'express'
@@ -30,7 +31,7 @@ export function asyncHandler(handler: (req: Request, res: Response) => Promise<v
 
 export function configureRoutes(
   app: express.Express,
-  services: Pick<AppServices, 'configService' | 'peersService'>,
+  services: Pick<AppServices, 'configService' | 'peersService' | 'archipelagoService'>,
   options: RoutesOptions
 ) {
   const { configService } = services
@@ -52,7 +53,7 @@ export function configureRoutes(
     res.send(status)
   }
 
-  const putConfig = async (req, res) => {
+  const putConfig = async (req: Request, res: Response) => {
     const configKeyValues = req.body.config
     if (!Array.isArray(configKeyValues) || configKeyValues.some((it) => !it.key)) {
       res.status(400).send(
@@ -67,10 +68,23 @@ export function configureRoutes(
     }
   }
 
-  const getConfig = async (req, res) => {
+  const getConfig = async (_req: Request, res: Response) => {
     const config = configService.getAllConfig()
     res.send(config)
   }
+
+  const getIslands = async (_req: Request, res: Response) => {
+    function toSimpleIsland(island: Island) {
+      return { id: island.id, peers: island.peers, maxPeers: island.maxPeers, center: island.center, radius: island.radius }
+    }
+    const islandsResponse = await services.archipelagoService().getIslands()
+    if (islandsResponse.ok) {
+      res.send({ ...islandsResponse, islands: islandsResponse.islands.map(toSimpleIsland) })
+    } else {
+      res.send(islandsResponse)
+    }
+  }
+
 
   registerRoute(app, '/status', HttpMethod.GET, [getStatus])
 
@@ -85,6 +99,9 @@ export function configureRoutes(
   ])
 
   registerRoute(app, '/config', HttpMethod.GET, [asyncHandler(getConfig)])
+
+  registerRoute(app, '/islands', HttpMethod.GET, [asyncHandler(getIslands)])
+
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
