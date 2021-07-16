@@ -916,21 +916,21 @@
     source-map-support "0.5.9"
     tsutils "2.27.2"
 
-"@dcl/archipelago@^1.0.0-20210713173135.commit-dbc0d1c":
-  version "1.0.0-20210713173135.commit-dbc0d1c"
-  resolved "https://registry.yarnpkg.com/@dcl/archipelago/-/archipelago-1.0.0-20210713173135.commit-dbc0d1c.tgz#e808cbb1266a1da547f48d7b4d95deb875508c42"
-  integrity sha512-apvpzOy5VVGMW1dlgd9oNwLbaUbjoJDfNQV+qeeLuC02F0ZFJDv3WyPzF61O4SjJfTKOQSMaBOGGNJKTyed+SQ==
+"@dcl/archipelago@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/archipelago/-/archipelago-1.0.0.tgz#769f2f8af85293477ef57563c3339e6791990918"
+  integrity sha512-Pc+GT5iau1orRvB3CCDiNxpQl74KOUB1HrlThOg6uvoUP44AoSeKLrVhkKT3pqftFiX33aBIRfB/leQnDGxD4A==
   dependencies:
     uuid "^8.3.2"
 
-"@dcl/catalyst-peer@^1.0.0-20210713201511.commit-523f1ac":
-  version "1.0.0-experimental.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-peer/-/catalyst-peer-1.0.0-experimental.0.tgz#3bfd00c8153b20fd5b11006506e18b9dbdbbbab1"
-  integrity sha512-T0mubiHQXDkr5fqRQpYYrnsYACsHZV2y84YiSFY17ISm92cpSXucjmAsVOBoTZtFQgBCJRqBItaOnkM7E2KgTw==
+"@dcl/catalyst-peer@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-peer/-/catalyst-peer-1.0.2.tgz#1038800d147bbb179fedcc33a71c7f5a51144d4a"
+  integrity sha512-Vc/gP5ykTLk4IQzGZDFSnhl9sK+zEDREBWUrD6PSdGKIGvMtLAnbb9eDCHlMONwJkNSQhzqdeG0rI6qLq6qSCA==
   dependencies:
-    eventemitter3 "^4.0.0"
+    eventemitter3 "^4.0.7"
     fp-future "^1.0.1"
-    protobufjs "^6.8.8"
+    protobufjs "^6.11.2"
     simple-peer "^9.11.0"
 
 "@dcl/schemas@^0.2.0":
@@ -1496,6 +1496,11 @@
   version "13.13.41"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.41.tgz#045a4981318d31a581650ce70f340a32c3461198"
   integrity sha512-qLT9IvHiXJfdrje9VmsLzun7cQ65obsBTmtU3EOnCSLFOoSHx1hpiRHoBnpdbyFqnzqdUUIv81JcEJQCB8un9g==
+
+"@types/node@>=13.7.0":
+  version "16.3.2"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.3.2.tgz#655432817f83b51ac869c2d51dd8305fb8342e16"
+  integrity sha512-jJs9ErFLP403I+hMLGnqDRWT0RYKSvArxuBVh2veudHV7ifEC1WAmjJADacZ7mRbA2nWgHtn8xyECMAot0SkAw==
 
 "@types/node@^10.1.0", "@types/node@^10.12.18", "@types/node@^10.3.2":
   version "10.17.13"
@@ -4094,7 +4099,7 @@ eventemitter3@3.1.2:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
   integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
 
-eventemitter3@^4.0.0, eventemitter3@^4.0.4:
+eventemitter3@^4.0.0, eventemitter3@^4.0.4, eventemitter3@^4.0.7:
   version "4.0.7"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
   integrity sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==
@@ -6975,6 +6980,25 @@ protobufjs@^6.10.2, protobufjs@^6.8.8:
     "@protobufjs/utf8" "^1.1.0"
     "@types/long" "^4.0.1"
     "@types/node" "^13.7.0"
+    long "^4.0.0"
+
+protobufjs@^6.11.2:
+  version "6.11.2"
+  resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-6.11.2.tgz#de39fabd4ed32beaa08e9bb1e30d08544c1edf8b"
+  integrity sha512-4BQJoPooKJl2G9j3XftkIXjoC9C0Av2NOrWmbLWT1vH32GcSUHjM0Arra6UfTsVyfMAuFzaLucXn1sadxJydAw==
+  dependencies:
+    "@protobufjs/aspromise" "^1.1.2"
+    "@protobufjs/base64" "^1.1.2"
+    "@protobufjs/codegen" "^2.0.4"
+    "@protobufjs/eventemitter" "^1.1.0"
+    "@protobufjs/fetch" "^1.1.0"
+    "@protobufjs/float" "^1.0.2"
+    "@protobufjs/inquire" "^1.1.0"
+    "@protobufjs/path" "^1.1.2"
+    "@protobufjs/pool" "^1.1.0"
+    "@protobufjs/utf8" "^1.1.0"
+    "@types/long" "^4.0.1"
+    "@types/node" ">=13.7.0"
     long "^4.0.0"
 
 proxy-addr@~2.0.5:
