@@ -75,7 +75,13 @@ export function configureRoutes(
 
   const getIslands = async (_req: Request, res: Response) => {
     function toSimpleIsland(island: Island) {
-      return { id: island.id, peers: island.peers, maxPeers: island.maxPeers, center: island.center, radius: island.radius }
+      return {
+        id: island.id,
+        peers: island.peers,
+        maxPeers: island.maxPeers,
+        center: island.center,
+        radius: island.radius
+      }
     }
     const islandsResponse = await services.archipelagoService().getIslands()
     if (islandsResponse.ok) {
@@ -84,7 +90,6 @@ export function configureRoutes(
       res.send(islandsResponse)
     }
   }
-
 
   registerRoute(app, '/status', HttpMethod.GET, [getStatus])
 
@@ -101,7 +106,6 @@ export function configureRoutes(
   registerRoute(app, '/config', HttpMethod.GET, [asyncHandler(getConfig)])
 
   registerRoute(app, '/islands', HttpMethod.GET, [asyncHandler(getIslands)])
-
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]

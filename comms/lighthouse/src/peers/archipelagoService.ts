@@ -94,10 +94,11 @@ export class ArchipelagoService {
     return !!expectedIslandId && Object.values(peersData).every((data) => data.islandId === expectedIslandId)
   }
 
-  async getIslands(): Promise<{ ok: false, message: string } | { ok: true, islands: Island[] }> {
+  async getIslands(): Promise<{ ok: false; message: string } | { ok: true; islands: Island[] }> {
     const peersCount = this.peersService.getActivePeersCount()
 
-    if (peersCount >= this.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT)) return { ok: false, message: 'Cannot query islands during high load' }
+    if (peersCount >= this.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT))
+      return { ok: false, message: 'Cannot query islands during high load' }
 
     return { ok: true, islands: await this.controller.getIslands() }
   }
