@@ -99,22 +99,22 @@ export async function hotScenes(daoCache: DAOCache, contentClient: SmartContentC
 function toRealmsInfo(server: ServerStatus): RealmInfo[] {
   return isLayerBased(server)
     ? server.layers.map((layer) => ({
-      serverName: server.name,
-      url: server.url,
-      layer: layer.name,
-      usersCount: layer.usersCount,
-      maxUsers: layer.maxUsers,
-      userParcels: layer.usersParcels
-    }))
-    : [
-      {
         serverName: server.name,
         url: server.url,
-        usersCount: server.usersCount!,
-        maxUsers: server.maxUsers,
-        userParcels: server.usersParcels!
-      }
-    ]
+        layer: layer.name,
+        usersCount: layer.usersCount,
+        maxUsers: layer.maxUsers,
+        userParcels: layer.usersParcels
+      }))
+    : [
+        {
+          serverName: server.name,
+          url: server.url,
+          usersCount: server.usersCount!,
+          maxUsers: server.maxUsers,
+          userParcels: server.usersParcels!
+        }
+      ]
 }
 
 async function fetchRealmsData(daoCache: DAOCache): Promise<RealmInfo[]> {
