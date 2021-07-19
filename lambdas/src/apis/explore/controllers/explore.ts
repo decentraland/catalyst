@@ -249,7 +249,7 @@ async function fetchStatus(serverData: ServerMetadata) {
   const fetcher = new Fetcher()
   return noReject(
     fetcher
-      .fetchJson(`${serverData.address}/comms/status?includeLayers=true`, { timeout: '10s' })
+      .fetchJson(`${serverData.address}/comms/status?includeLayers=true&includeUsersParcels=true`, { timeout: '10s' })
       .then((value) => ({ ...value, url: serverData.address }))
   )
 }
