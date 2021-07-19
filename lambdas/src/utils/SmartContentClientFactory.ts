@@ -4,7 +4,8 @@ import { SmartContentClient } from './SmartContentClient'
 export class SmartContentClientFactory {
   static create(env: Environment): SmartContentClient {
     const externalUrl = SmartContentClientFactory.baseContentServerUrl(env)
-    return new SmartContentClient(externalUrl)
+    const proofOfWorkEnabled: boolean = env.getConfig(EnvironmentConfig.PROOF_OF_WORK)
+    return new SmartContentClient(externalUrl, proofOfWorkEnabled)
   }
 
   private static baseContentServerUrl(env: Environment): string {
