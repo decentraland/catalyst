@@ -13,7 +13,7 @@ WORKDIR /app/build
 COPY . .
 
 # The following are all collapsed to reduce image size
-RUN yarn install &&\
+RUN yarn install --update-checksums &&\
   yarn bazel clean &&\
   yarn bazel build //comms/lighthouse:server &&\
   yarn bazel build //content:server &&\
