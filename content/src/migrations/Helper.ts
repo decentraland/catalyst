@@ -10,10 +10,10 @@ export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: Ent
 const SUPPORTED_TYPES = [EntityType.WEARABLE] // This has only been tested on wearables
 
 /**
- * It is truly extremely hard to re-write history, so the idea delete all relevant history and re-deploy these deployments. We will only
+ * It is extremely hard to re-write history, so the idea delete all relevant history and re-deploy these deployments. We will only
  * do this if the affected deployments are mono-pointer. This is because handling deployments with multiple pointers is way harder.
  * We will:
- * - Take a list of pointer
+ * - Take a list of pointers
  * - Check that all deployments in those pointers are mono-pointer
  * - Move these deployments to failed-deployments
  * - Delete these deployments from all other tables on the database
@@ -49,7 +49,7 @@ async function considerDeploymentsOnPointerAsFailed(pgm: MigrationBuilder, entit
   }
 
   for (const row of rows) {
-    const reason = FailureReason.FETCH_PROBLEM
+    const reason = FailureReason.DEPLOYMENT_ERROR
     const description = 'Moved to failed deployments by database migration'
 
     // Send to failed deployments
