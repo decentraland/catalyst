@@ -72,20 +72,18 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    origin: string,
     task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, origin, task)
+    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, task)
   }
 
   deployToFix(
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    origin: string,
     task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, origin, task)
+    return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, task)
   }
 
   deployLocalLegacy(
@@ -94,7 +92,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     auditInfo: LocalDeploymentAuditInfo,
     task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, 'legacy', task)
+    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, task)
   }
 
   private async deployInternal(
@@ -102,7 +100,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityId: EntityId,
     auditInfo: AuditInfo | LocalDeploymentAuditInfo,
     validationContext: ValidationContext,
-    origin: string,
     task?: Database
   ): Promise<DeploymentResult> {
     const validation = this.validations.getInstance()
@@ -270,9 +267,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return response
       } else if (response.wasEntityDeployed) {
         // Report deployment to listeners
-        await Promise.all(
-          this.listeners.map((listener) => listener({ entity, auditInfo: response.auditInfoComplete, origin }))
-        )
+        await Promise.all(this.listeners.map((listener) => listener({ entity, auditInfo: response.auditInfoComplete })))
 
         // Since we are still reporting the history size, add one to it
         this.historySize++
@@ -418,8 +413,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       files,
       entityId,
       auditInfo,
-      legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED,
-      'sync'
+      legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED
     )
   }
 
@@ -433,8 +427,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       [entityFile],
       entityId,
       auditInfo,
-      legacy ? ValidationContext.OVERWRITTEN_LEGACY_ENTITY : ValidationContext.OVERWRITTEN,
-      'sync'
+      legacy ? ValidationContext.OVERWRITTEN_LEGACY_ENTITY : ValidationContext.OVERWRITTEN
     )
   }
 

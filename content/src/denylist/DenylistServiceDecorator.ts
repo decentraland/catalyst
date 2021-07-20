@@ -83,8 +83,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   async deployToFix(
     files: DeploymentFiles,
     entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    origin: string
+    auditInfo: LocalDeploymentAuditInfo
   ): Promise<DeploymentResult> {
     return this.repository.task(
       async (task) => {
@@ -92,7 +91,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
         // If all validations passed, then deploy the entity
-        return this.service.deployToFix(hashedFiles, entityId, auditInfo, origin, task)
+        return this.service.deployToFix(hashedFiles, entityId, auditInfo, task)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
@@ -101,8 +100,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   async deployEntity(
     files: DeploymentFiles,
     entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    origin: string
+    auditInfo: LocalDeploymentAuditInfo
   ): Promise<DeploymentResult> {
     return this.repository.task(
       async (task) => {
@@ -110,7 +108,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
         // If all validations passed, then deploy the entity
-        return this.service.deployEntity(hashedFiles, entityId, auditInfo, origin, task)
+        return this.service.deployEntity(hashedFiles, entityId, auditInfo, task)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
