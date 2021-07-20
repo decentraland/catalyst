@@ -1,112 +1,82 @@
-import { EntityId } from 'dcl-catalyst-commons'
+import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { MigrationBuilder } from 'node-pg-migrate'
+import { FailureReason } from '../service/errors/FailedDeploymentsManager'
 
 export function deleteFailedDeployments(pgm: MigrationBuilder, ...entityIds: EntityId[]) {
   const inClause = entityIds.map((entityId) => `'${entityId}'`).join(',')
   pgm.sql(`DELETE FROM failed_deployments WHERE entity_id IN (${inClause})`)
 }
 
-export async function deleteInactiveDeploymentsFromHistory(
+const SUPPORTED_TYPES = [EntityType.WEARABLE] // This has only been tested on wearables
+
+/**
+ * It is truly extremely hard to re-write history, so the idea delete all relevant history and re-deploy these deployments. We will only
+ * do this if the affected deployments are mono-pointer. This is because handling deployments with multiple pointers is way harder.
+ * We will:
+ * - Take a list of pointer
+ * - Check that all deployments in those pointers are mono-pointer
+ * - Move these deployments to failed-deployments
+ * - Delete these deployments from all other tables on the database
+ *
+ * Then, deployments should be manually 'fixed' and everything will go back to normal. Ideally, in the future there will be a way for the content
+ * server to auto-fix its own failed deployments, but that has to be done manually for now.
+ */
+export async function considerDeploymentsOnPointersAsFailed(
   pgm: MigrationBuilder,
-  ...entityIds: EntityId[]
+  entityType: EntityType,
+  ...pointers: Pointer[]
 ): Promise<void> {
-  for (const entityId of entityIds) {
-    await deleteInactiveDeploymentFromHistory(pgm, entityId)
+  if (!SUPPORTED_TYPES.includes(entityType)) {
+    throw new Error(`${entityType} is not supported right now`)
+  }
+  for (const pointer of pointers) {
+    await considerDeploymentsOnPointerAsFailed(pgm, entityType, pointer)
   }
 }
 
-async function deleteInactiveDeploymentFromHistory(pgm: MigrationBuilder, entityId: EntityId) {
-  /*
-   There are two kind of histories that we need to modify here.
+async function considerDeploymentsOnPointerAsFailed(pgm: MigrationBuilder, entityType: EntityType, pointer: Pointer) {
+  const now = Date.now()
+  const { rows } = await pgm.db.query(`
+    SELECT id, entity_id, entity_pointers
+    FROM deployments
+    WHERE entity_type='${entityType}' AND entity_pointers && ARRAY['${pointer}']
+    ORDER BY entity_timestamp ASC
+    `)
 
-   -  Entities/global history:
-      This is the global history that all content server agree on. This is determined by the entity timestamp, which can't be modified,
-      so all content server should have the same order and agree on 'who overwrote who'. This overwrite information is stored
-      on the 'deployments' table, with the 'deleter_deployment' field. Each deployment will store who overwrote it (in this global order sense).
-
-   -  Deployments/local history:
-      This history is local to each content server. It depends on the order that deployments were made, so it will most likely be different for
-      each server. This information is stored on the 'deployment_deltas' table, and exposed by the /pointer-changes endpoint. The idea is that
-      this table will store changes made to the pointers. So if a deployment modifies a pointer in some way, this is where it will be recorded.
-      Possible modifications to a pointer could be: making the pointer reference the new entity or making the pointer point to nothing. Each
-      deployment will have a reference:
-      - The modified pointer
-      - The previous entity the pointer was referring to (if any)
-      - The changes that ocurred (point to new entity or point to nothing).
-      It is important to note that a new deployment could have no impact on pointers. This would happen when D1 overwrote D2 (on the global order sense),
-      and the content server locally deployed D1 before D2. In that case, no changes are recorded for that deployment.
-  */
-  const { rows } = await pgm.db.query(
-    `SELECT id, entity_pointers, deleter_deployment FROM deployments WHERE entity_id='${entityId}'`
-  )
-  if (rows.length === 0) {
-    // Nothing to do if there is no deployment with that entity id
-    return
-  } else if (rows.length > 1) {
-    throw new Error(`Expected to find one deployment with entity id '${entityId}"'. Instead found ${rows.length}`)
+  const areAllDeploymentsMonoPointer = rows.every((row) => row.entity_pointers.length === 1)
+  if (!areAllDeploymentsMonoPointer) {
+    throw new Error(`All entities should be mono-pointer, but found some that weren't`)
   }
 
-  const { id, entity_pointers, deleter_deployment } = rows[0]
+  for (const row of rows) {
+    const reason = FailureReason.FETCH_PROBLEM
+    const description = 'Moved to failed deployments by database migration'
 
-  if (!deleter_deployment) {
-    throw new Error('This script only works with entities that have been overwritten')
-  }
+    // Send to failed deployments
+    await pgm.db.query(`
+      INSERT INTO failed_deployments (
+        entity_type,
+        entity_id,
+        failure_timestamp,
+        reason,
+        error_description
+      ) VALUES ('${entityType}', '${row.entity_id}', to_timestamp(${now} / 1000.0), '${reason}', '${description}')
+      ON CONFLICT ON CONSTRAINT failed_deployments_uniq_entity_id_entity_type
+      DO UPDATE SET failure_timestamp = to_timestamp(${now} / 1000.0), reason = '${reason}', error_description = '${description}'`)
 
-  if (entity_pointers.length !== 1) {
-    throw new Error(
-      'This script only works with entities with only one pointer. Re-writing history for entities with more pointers is a lot harder'
-    )
-  }
-
-  // Re-write global history
-  const overwrittenByEntity = await findOverwrittenByDeployment(pgm, id)
-  if (overwrittenByEntity) {
-    // We know that the deployment being deleted (DBD) was overwritten by deleter_deployment, since that is a requirement for this script.
-    // Now, if DBD overwrote a previous deployment (overwrittenByEntity), we will mark that overwrittenByEntity was actually overwritten
-    // by deleter_deployment, and remove DBD from the equation.
-    await pgm.db.query(
-      `UPDATE deployments SET deleter_deployment=${deleter_deployment} WHERE id=${overwrittenByEntity}`
-    )
-  }
-
-  // Re-write local history
-  const madeInactiveBy = await findMadeInactiveBy(pgm, id)
-  if (madeInactiveBy) {
-    // If the deployment being deleted (DBD) was made inactive by a posterior deployment (PD), we will try to find if DBD did the same
-    // to a previous deployment (PRD). If that is the case, we will mark that it was actually PD who made PRD inactive, and remove DBD
-    // from the equation. If there is no PRD, then we will simply set that PD didn't affect any deployments.
-    const { rows } = await pgm.db.query(`SELECT before FROM deployment_deltas WHERE deployment=${id}`)
-    const before = rows[0]?.before
-    if (before) {
-      await pgm.db.query(`UPDATE deployment_deltas SET before=${before} WHERE deployment=${madeInactiveBy}`)
-    } else {
-      await pgm.db.query(`UPDATE deployment_deltas SET before=NULL WHERE deployment=${madeInactiveBy}`)
+    // Clear dependency on deployment_deltas table
+    const { rows } = await pgm.db.query(`SELECT deployment FROM deployment_deltas WHERE before=${row.id}`)
+    const deployment = rows[0]?.deployment
+    if (deployment) {
+      await pgm.db.query(`UPDATE deployment_deltas SET before=NULL WHERE deployment=${deployment}`)
     }
+
+    // Delete from all tables
+    await pgm.db.query(`DELETE FROM last_deployed_pointers WHERE deployment=${row.id}`)
+    await pgm.db.query(`DELETE FROM pointer_history WHERE deployment=${row.id}`)
+    await pgm.db.query(`DELETE FROM content_files WHERE deployment=${row.id}`)
+    await pgm.db.query(`DELETE FROM migration_data WHERE deployment=${row.id}`)
+    await pgm.db.query(`DELETE FROM deployment_deltas WHERE deployment=${row.id}`)
+    await pgm.db.query(`DELETE FROM deployments WHERE id=${row.id}`)
   }
-
-  // Delete from tables
-  await pgm.db.query(`DELETE FROM pointer_history WHERE deployment=${id}`)
-  await pgm.db.query(`DELETE FROM content_files WHERE deployment=${id}`)
-  await pgm.db.query(`DELETE FROM migration_data WHERE deployment=${id}`)
-  await pgm.db.query(`DELETE FROM deployment_deltas WHERE deployment=${id}`)
-  await pgm.db.query(`DELETE FROM deployments WHERE id=${id}`)
-}
-/**
- * Given a deployment id, finds the deployment that was overwritten by it. If there isn't any, returns undefined. Remember that this value
- * should be the same across all synced content servers, since this type of overwrites are calculated by entity timestamp.
- * Note: only returns the first deployment that was overwritten, because it's meant to be used for entities with only one pointer.
- */
-async function findOverwrittenByDeployment(pgm: MigrationBuilder, deploymentId: number): Promise<number | undefined> {
-  const { rows } = await pgm.db.query(`SELECT id FROM deployments WHERE deleter_deployment=${deploymentId}`)
-  return rows[0]?.id
-}
-
-/**
- * Given a deployment id finds the deployment that stopped the given deployment from being active.
- * It is important to notice that it could happen that the given deployment was never active. This would happen when
- * D1 overwrote D2, and the content server deployed D1 before D2. In that case, this function returns undefined.
- */
-async function findMadeInactiveBy(pgm: MigrationBuilder, deploymentId: number): Promise<number | undefined> {
-  const { rows } = await pgm.db.query(`SELECT deployment FROM deployment_deltas WHERE before=${deploymentId}`)
-  return rows[0]?.deployment
 }
