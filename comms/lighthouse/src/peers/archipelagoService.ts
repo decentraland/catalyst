@@ -20,7 +20,8 @@ export class ArchipelagoService {
       flushFrequency: configService.get(LighthouseConfig.ARCHIPELAGO_FLUSH_FREQUENCY),
       archipelagoParameters: {
         joinDistance: configService.get(LighthouseConfig.ARCHIPELAGO_JOIN_DISTANCE),
-        leaveDistance: configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE)
+        leaveDistance: configService.get(LighthouseConfig.ARCHIPELAGO_LEAVE_DISTANCE),
+        maxPeersPerIsland: configService.get(LighthouseConfig.MAX_PEERS_PER_ISLAND)
       }
     })
 

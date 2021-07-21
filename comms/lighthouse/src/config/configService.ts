@@ -8,8 +8,8 @@ export type ConfigKeyValue = {
 }
 
 export class LighthouseConfig<T> {
-  static readonly MAX_PEERS_PER_LAYER: LighthouseConfig<number> = new LighthouseConfig({
-    name: 'maxPeersPerLayer',
+  static readonly MAX_PEERS_PER_ISLAND: LighthouseConfig<number> = new LighthouseConfig({
+    name: 'maxPeersPerIsland',
     fromText: parseInt,
     defaultValue: 100
   })

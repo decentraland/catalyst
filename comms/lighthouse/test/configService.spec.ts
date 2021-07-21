@@ -3,7 +3,7 @@ import { ISimpleStorage } from '../src/config/simpleStorage'
 
 describe('Config service', () => {
   it('When the config service is built, then environment takes precedence over all', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
 
     const service = await buildServiceWith({
       env: envWrapperWith(config, '5'),
@@ -16,7 +16,7 @@ describe('Config service', () => {
   })
 
   it('When the config service is built, then storage takes precedence over global and defaults', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
 
     const service = await buildServiceWith({
       env: emptyWrapper(),
@@ -29,7 +29,7 @@ describe('Config service', () => {
   })
 
   it('When the config service is built, then global takes precedence over defaults', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
 
     const service = await buildServiceWith({
       env: emptyWrapper(),
@@ -42,7 +42,7 @@ describe('Config service', () => {
   })
 
   it('When the config service is built and no values were set, then defaults are used', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
 
     const service = await buildServiceWith({
       env: emptyWrapper(),
@@ -55,7 +55,7 @@ describe('Config service', () => {
   })
 
   it('When global config is updated, then config service reports it correctly', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
     const globalConfig = globalConfigWith(config, 20)
 
     const service = await buildServiceWith({
@@ -73,7 +73,7 @@ describe('Config service', () => {
   })
 
   it('When storage config is updated, then config service reports it correctly', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
     const storageConfig = storageWith(config, 20)
 
     const service = await buildServiceWith({
@@ -91,7 +91,7 @@ describe('Config service', () => {
   })
 
   it('When a change happens in global config, then the appropriate listener is called correctly', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
     const globalConfig = globalConfigWith(config, 20)
     let listenedMaxPeers: number | undefined = undefined
     let listenedJoinDistance: number | undefined = undefined
@@ -115,7 +115,7 @@ describe('Config service', () => {
   })
 
   it('When a change happens in storage config, then the appropriate listener is called correctly', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
     const storageConfig = storageWith(config, 20)
     let listenedMaxPeers: number | undefined = undefined
     let listenedJoinDistance: number | undefined = undefined
@@ -139,7 +139,7 @@ describe('Config service', () => {
   })
 
   it('When storage config is deleted, then config service reports it correctly', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
     const storageConfig = storageWith(config, 20)
 
     const service = await buildServiceWith({
@@ -156,7 +156,7 @@ describe('Config service', () => {
   })
 
   it('When global config is deleted, then config service reports it correctly', async () => {
-    const config = LighthouseConfig.MAX_PEERS_PER_LAYER
+    const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
     const globalConfig = globalConfigWith(config, 20)
 
     const service = await buildServiceWith({
