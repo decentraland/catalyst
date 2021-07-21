@@ -457,8 +457,7 @@ function getValidatorWithMockedAccess(options?: { maxSizePerPointer: { type: Ent
     : new Map()
   return new Validations(
     new MockedAccessChecker(),
-    new ContentAuthenticator(),
-    'ropsten',
+    new ContentAuthenticator('ropsten'),
     ms('10m'),
     maxSizeMap
   ).getInstance()

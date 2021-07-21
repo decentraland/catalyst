@@ -20,6 +20,7 @@ import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOp
 import assert from 'assert'
 import { ContentFileHash, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
+import { mock } from 'ts-mockito'
 import { MockedStorage } from '../storage/MockedStorage'
 import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
 import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsManager'
@@ -184,7 +185,7 @@ describe('Service', function () {
     const env = new Environment()
       .registerBean(Bean.STORAGE, storage)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
-      .registerBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
+      .registerBean(Bean.AUTHENTICATOR, mock<ContentAuthenticator>())
       .registerBean(Bean.VALIDATIONS, new NoOpValidations())
       .registerBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withoutIdentity())
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())

@@ -1,9 +1,12 @@
 import { AuthChain, Authenticator, EthAddress, ValidationResult } from 'dcl-crypto'
 import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
-import { EthereumProvider } from 'web3x/providers'
+import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
 
 export class ContentAuthenticator extends Authenticator {
-  constructor(private readonly decentralandAddress: EthAddress = DECENTRALAND_ADDRESS) {
+  constructor(
+    private readonly network: string,
+    private readonly decentralandAddress: EthAddress = DECENTRALAND_ADDRESS
+  ) {
     super()
   }
 
@@ -16,13 +19,12 @@ export class ContentAuthenticator extends Authenticator {
   async validateSignature(
     expectedFinalAuthority: string,
     authChain: AuthChain,
-    provider: EthereumProvider,
     dateToValidateExpirationInMillis: number
   ): Promise<ValidationResult> {
     return Authenticator.validateSignature(
       expectedFinalAuthority,
       authChain,
-      provider,
+      httpProviderForNetwork(this.network),
       dateToValidateExpirationInMillis
     )
   }
