@@ -186,7 +186,7 @@ describe('Service', function () {
       .registerBean(Bean.STORAGE, storage)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
       .registerBean(Bean.AUTHENTICATOR, mock<ContentAuthenticator>())
-      .registerBean(Bean.VALIDATIONS, new NoOpValidations())
+      .registerBean(Bean.VALIDATOR, new NoOpValidations())
       .registerBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withoutIdentity())
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
       .registerBean(Bean.POINTER_MANAGER, pointerManager)

@@ -27,7 +27,7 @@ describe('Integration - Snapshot Manager', () => {
     const env = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
       .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
-      .withBean(Bean.VALIDATIONS, new NoOpValidations())
+      .withBean(Bean.VALIDATOR, new NoOpValidations())
       .build()
 
     service = env.getBean(Bean.SERVICE)

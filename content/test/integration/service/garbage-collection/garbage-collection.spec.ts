@@ -46,7 +46,7 @@ describe('Integration - Garbage Collection', () => {
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
       .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
-      .withBean(Bean.VALIDATIONS, new NoOpValidations())
+      .withBean(Bean.VALIDATOR, new NoOpValidations())
       .build()
 
     service = env.getBean(Bean.SERVICE)

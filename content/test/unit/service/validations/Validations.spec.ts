@@ -1,6 +1,6 @@
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
-import { ValidationContext } from '@katalyst/content/service/validations/ValidationContext'
+import { ValidationContext } from '@katalyst/content/service/validations/validations/ValidationsV3'
 import { Validations } from '@katalyst/content/service/validations/Validations'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { AuditInfo, Entity, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'

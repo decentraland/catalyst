@@ -107,7 +107,7 @@ export class E2ETestEnvironment {
   /** Returns a service that connects to the database, with the migrations run */
   async buildService(): Promise<MetaverseContentService> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const env = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATIONS, new NoOpValidations()).build()
+    const env = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATOR, new NoOpValidations()).build()
     return env.getBean(Bean.SERVICE)
   }
 
