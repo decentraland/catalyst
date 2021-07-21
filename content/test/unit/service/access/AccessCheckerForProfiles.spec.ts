@@ -48,7 +48,7 @@ describe('AccessCheckerForProfiles', function () {
   })
 
   function buildAccessChecker() {
-    const authenticator = new ContentAuthenticator()
+    const authenticator = new ContentAuthenticator('')
     return new AccessCheckerForProfiles(authenticator)
   }
 })

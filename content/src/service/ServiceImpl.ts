@@ -98,7 +98,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   private async deployInternal(
     files: DeploymentFiles,
     entityId: EntityId,
-    auditInfo: AuditInfo | LocalDeploymentAuditInfo,
+    auditInfo: LocalDeploymentAuditInfo,
     validationContext: ValidationContext,
     task?: Database
   ): Promise<DeploymentResult> {

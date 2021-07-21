@@ -5,6 +5,7 @@ import {
 import { AccessCheckerImpl, AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { mock } from 'ts-mockito'
 
 describe('Integration - AccessCheckerImpl', function () {
   it(`When access URL is wrong while checking scene access it reports an error`, async () => {
@@ -66,7 +67,7 @@ describe('Integration - AccessCheckerImpl', function () {
 
   function buildAccessCheckerImpl(params: Partial<AccessCheckerImplParams>) {
     const finalParams = {
-      authenticator: new ContentAuthenticator(),
+      authenticator: mock<ContentAuthenticator>(),
       fetcher: new Fetcher(),
       landManagerSubgraphUrl: 'Unused URL',
       collectionsL1SubgraphUrl: 'Unused URL',

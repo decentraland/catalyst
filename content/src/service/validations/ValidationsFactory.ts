@@ -6,7 +6,6 @@ export class ValidationsFactory {
     return new Validations(
       env.getBean(Bean.ACCESS_CHECKER),
       env.getBean(Bean.AUTHENTICATOR),
-      env.getConfig(EnvironmentConfig.ETH_NETWORK),
       env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     )
   }

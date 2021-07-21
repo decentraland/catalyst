@@ -9,7 +9,6 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain, EthAddress } from 'dcl-crypto'
 import ms from 'ms'
-import { httpProviderForNetwork } from '../../../../contracts/utils'
 import { AccessChecker } from '../access/AccessChecker'
 import { ContentAuthenticator } from '../auth/Authenticator'
 import { Deployment } from '../deployments/DeploymentManager'
@@ -29,7 +28,6 @@ export class Validations {
   constructor(
     private readonly accessChecker: AccessChecker,
     private readonly authenticator: ContentAuthenticator,
-    private readonly network: string,
     private readonly requestTtlBackwards: number,
     private readonly maxUploadSizePerTypeInMB: Map<EntityType, number> = Validations.MAX_UPLOAD_SIZE_PER_POINTER_MB
   ) {}
@@ -38,7 +36,6 @@ export class Validations {
     return new ValidatorInstance(
       this.accessChecker,
       this.authenticator,
-      this.network,
       this.requestTtlBackwards,
       this.maxUploadSizePerTypeInMB
     )
@@ -51,7 +48,6 @@ export class ValidatorInstance {
   constructor(
     private readonly accessChecker: AccessChecker,
     private readonly authenticator: ContentAuthenticator,
-    private readonly network: string,
     private readonly requestTtlBackwards: number,
     private readonly maxUploadSizePerTypeInMB: Map<EntityType, number>
   ) {}
@@ -100,12 +96,7 @@ export class ValidatorInstance {
     validationContext: ValidationContext
   ): Promise<void> {
     if (validationContext.shouldValidate(Validation.SIGNATURE)) {
-      const validationResult = await this.authenticator.validateSignature(
-        entityId,
-        authChain,
-        httpProviderForNetwork(this.network),
-        entityTimestamp
-      )
+      const validationResult = await this.authenticator.validateSignature(entityId, authChain, entityTimestamp)
       if (!validationResult.ok) {
         this.errors.push('The signature is invalid. ' + validationResult.message)
       }
