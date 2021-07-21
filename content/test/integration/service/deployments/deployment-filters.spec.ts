@@ -126,8 +126,7 @@ describe('Integration - Deployment Filters', () => {
       const deploymentResult: DeploymentResult = await service.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,
-        newAuditInfo,
-        ''
+        newAuditInfo
       )
       if (isSuccessfulDeployment(deploymentResult)) {
         result.push(deploymentResult)

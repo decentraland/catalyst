@@ -163,7 +163,6 @@ export class Controller {
     const ethAddress: EthAddress = req.body.ethAddress
     const signature: Signature = req.body.signature
     const files = req.files
-    const origin = req.header('x-upload-origin') ?? 'unknown'
     const fixAttempt: boolean = req.query.fix === 'true'
 
     let deployFiles: ContentFile[] = []
@@ -176,15 +175,13 @@ export class Controller {
         deploymentResult = await this.service.deployToFix(
           deployFiles.map(({ content }) => content),
           entityId,
-          auditInfo,
-          origin
+          auditInfo
         )
       } else {
         deploymentResult = await this.service.deployEntity(
           deployFiles.map(({ content }) => content),
           entityId,
-          auditInfo,
-          origin
+          auditInfo
         )
       }
 

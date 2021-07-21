@@ -61,7 +61,7 @@ describe('Service', function () {
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
-    const deploymentResult = await service.deployEntity([randomFile], 'not-actual-hash', auditInfo, '')
+    const deploymentResult = await service.deployEntity([randomFile], 'not-actual-hash', auditInfo)
     if (isInvalidDeployment(deploymentResult)) {
       expect(deploymentResult.errors).toEqual([`Failed to find the entity file.`])
     } else {
@@ -75,8 +75,7 @@ describe('Service', function () {
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
       entity.id,
-      auditInfo,
-      ''
+      auditInfo
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
@@ -98,7 +97,7 @@ describe('Service', function () {
     )
     const storeSpy = spyOn(storage, 'store')
 
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
 
     expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile)
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
@@ -114,7 +113,7 @@ describe('Service', function () {
 
   it(`When a new deployment is made, then the amount of deployments is increased`, async () => {
     await service.start()
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
 
     const status = service.getStatus()
 
@@ -124,7 +123,7 @@ describe('Service', function () {
   it(`When a new deployment is made and fails, then the amount of deployments is not modified`, async () => {
     await service.start()
     try {
-      await service.deployEntity([randomFile], randomFileHash, auditInfo, '')
+      await service.deployEntity([randomFile], randomFileHash, auditInfo)
     } catch {}
 
     const status = service.getStatus()
@@ -173,7 +172,7 @@ describe('Service', function () {
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
 
     // Reset spy and call again
     serviceSpy.calls.reset()
