@@ -5,8 +5,8 @@ import { DeploymentId } from './DeploymentsRepository'
 export class LastDeployedPointersRepository {
   constructor(private readonly db: Database) {}
 
-  /** Returns the last deployments (could be active or not) on the given pointers */
-  getLastDeploymentsOnPointers(
+  /** Returns the last deployments that were active on the given pointers (could be active or not right now) */
+  getLastActiveDeploymentsOnPointers(
     entityType: EntityType,
     pointers: Pointer[]
   ): Promise<
@@ -42,7 +42,7 @@ export class LastDeployedPointersRepository {
     )
   }
 
-  async setAsLastDeployedOnPointers(
+  async setAsLastActiveDeploymentsOnPointers(
     deploymentId: DeploymentId,
     entityType: EntityType,
     pointers: Pointer[]

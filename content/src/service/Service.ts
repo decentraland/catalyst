@@ -29,7 +29,6 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    origin: string,
     task?: Database
   ): Promise<DeploymentResult>
   deployLocalLegacy(
@@ -42,7 +41,6 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    origin: string,
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
@@ -91,7 +89,6 @@ export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'version' | 'authChain' |
 export type DeploymentEvent = {
   entity: Entity
   auditInfo: AuditInfo
-  origin: string
 }
 
 export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>

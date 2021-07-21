@@ -282,7 +282,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith()
     const decorator = getDecorator(denylist)
 
-    await decorator.deployEntity([entityFile1], entity1.id, auditInfo, '')
+    await decorator.deployEntity([entityFile1], entity1.id, auditInfo)
   })
 
   it(`When address is denylisted, then it can't deploy entities`, async () => {
@@ -290,7 +290,7 @@ describe('DenylistServiceDecorator', () => {
     const decorator = getDecorator(denylist)
 
     await assertPromiseRejectionIs(
-      () => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
+      () => decorator.deployEntity([entityFile1], entity1.id, auditInfo),
       `Can't allow a deployment from address '${ethAddress}' since it was denylisted.`
     )
   })
@@ -300,7 +300,7 @@ describe('DenylistServiceDecorator', () => {
     const decorator = getDecorator(denylist)
 
     await assertPromiseRejectionIs(
-      () => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
+      () => decorator.deployEntity([entityFile1], entity1.id, auditInfo),
       `Can't allow the deployment since the entity contains a denylisted pointer.`
     )
   })
@@ -310,7 +310,7 @@ describe('DenylistServiceDecorator', () => {
     const decorator = getDecorator(denylist)
 
     await assertPromiseRejectionIs(
-      () => decorator.deployEntity([entityFile1], entity1.id, auditInfo, ''),
+      () => decorator.deployEntity([entityFile1], entity1.id, auditInfo),
       `Can't allow the deployment since the entity contains a denylisted content.`
     )
   })
@@ -320,7 +320,7 @@ describe('DenylistServiceDecorator', () => {
     const decorator = getDecorator(denylist)
 
     await assertPromiseRejectionIs(
-      () => decorator.deployEntity([entityFile1], 'some-random-id', auditInfo, ''),
+      () => decorator.deployEntity([entityFile1], 'some-random-id', auditInfo),
       `Failed to find the entity file.`
     )
   })
