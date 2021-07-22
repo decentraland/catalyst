@@ -1,6 +1,7 @@
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '@katalyst/content/Environment'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '@katalyst/content/service/snapshots/SnapshotManager'
+import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
@@ -26,7 +27,7 @@ describe('Integration - Snapshot Manager', () => {
     const env = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
       .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
-      .withBean(Bean.VALIDATOR, new NoNoOpValidator())
+      .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
 
     service = env.getBean(Bean.SERVICE)
