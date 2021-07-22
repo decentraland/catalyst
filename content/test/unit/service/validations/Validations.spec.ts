@@ -352,18 +352,6 @@ function getFileWithSize(sizeInMB: number) {
   return new Map([['someHash', Buffer.alloc(sizeInMB * 1024 * 1024)]])
 }
 
-// function getValidatorWithMockedAccess(options?: { maxSizePerPointer: { type: EntityType; size: number } }) {
-//   const maxSizeMap: Map<EntityType, number> = options
-//     ? new Map([[options.maxSizePerPointer.type, options.maxSizePerPointer.size]])
-//     : new Map()
-//   return new Validations(
-//     new MockedAccessChecker(),
-//     new ContentAuthenticator('ropsten'),
-//     ms('10m'),
-//     maxSizeMap
-//   ).getInstance()
-// }
-
 async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
   const actualErrors = await result
   expect(actualErrors).toBeDefined()
