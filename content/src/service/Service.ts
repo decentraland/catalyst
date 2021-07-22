@@ -106,3 +106,13 @@ export function isSuccessfulDeployment(deploymentResult: DeploymentResult): depl
 export function isInvalidDeployment(deploymentResult: DeploymentResult): deploymentResult is InvalidResult {
   return !isSuccessfulDeployment(deploymentResult)
 }
+
+export enum DeploymentContext {
+  LOCAL = 'LOCAL',
+  LOCAL_LEGACY_ENTITY = 'LOCAL_LEGACY_ENTITY',
+  SYNCED = 'SYNCED',
+  SYNCED_LEGACY_ENTITY = 'SYNCED_LEGACY_ENTITY',
+  OVERWRITTEN = 'OVERWRITTEN',
+  OVERWRITTEN_LEGACY_ENTITY = 'OVERWRITTEN_LEGACY_ENTITY',
+  FIX_ATTEMPT = 'FIX_ATTEMPT'
+}

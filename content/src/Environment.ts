@@ -23,7 +23,7 @@ import { ClusterSynchronizationManagerFactory } from './service/synchronization/
 import { ContentClusterFactory } from './service/synchronization/ContentClusterFactory'
 import { EventDeployerFactory } from './service/synchronization/EventDeployerFactory'
 import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
-import { ValidationsFactory } from './service/validations/ValidationsFactory'
+import { ValidatorFactory } from './service/validations/ValidatorFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
@@ -123,7 +123,7 @@ export const enum Bean {
   AUTHENTICATOR,
   FAILED_DEPLOYMENTS_MANAGER,
   FETCHER,
-  VALIDATIONS,
+  VALIDATOR,
   CHALLENGE_SUPERVISOR,
   REPOSITORY,
   MIGRATION_MANAGER,
@@ -406,7 +406,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER, () => PointerManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER, () => AccessCheckerImplFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
-    this.registerBeanIfNotAlreadySet(env, Bean.VALIDATIONS, () => ValidationsFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER, () => SnapshotManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
