@@ -9,6 +9,7 @@ import {
 import { Entity } from '@katalyst/content/service/Entity'
 import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import {
+  DeploymentContext,
   DeploymentListener,
   LocalDeploymentAuditInfo,
   MetaverseContentService
@@ -112,21 +113,13 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     )
   }
 
-  deployEntity(files: Buffer[], entityId: EntityId, auditInfo: LocalDeploymentAuditInfo): Promise<Timestamp> {
-    return Promise.resolve(Date.now())
-  }
-
-  deployToFix(files: Buffer[], entityId: EntityId): Promise<Timestamp> {
-    return Promise.resolve(Date.now())
-  }
-
-  deployLocalLegacy(
+  deployEntity(
     files: Buffer[],
-    entityId: string,
+    entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<number> {
-    throw new Error('Method not implemented.')
+    context: DeploymentContext
+  ): Promise<Timestamp> {
+    return Promise.resolve(Date.now())
   }
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {

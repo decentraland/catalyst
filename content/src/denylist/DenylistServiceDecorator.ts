@@ -14,6 +14,7 @@ import { Deployment, DeploymentOptions, PointerChangesFilters } from '../service
 import { Entity } from '../service/Entity'
 import { EntityFactory } from '../service/EntityFactory'
 import {
+  DeploymentContext,
   DeploymentFiles,
   DeploymentListener,
   DeploymentResult,
@@ -80,27 +81,11 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return availability
   }
 
-  async deployToFix(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo
-  ): Promise<DeploymentResult> {
-    return this.repository.task(
-      async (task) => {
-        // Validate the deployment
-        const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
-
-        // If all validations passed, then deploy the entity
-        return this.service.deployToFix(hashedFiles, entityId, auditInfo, task)
-      },
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
-  }
-
   async deployEntity(
     files: DeploymentFiles,
     entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo
+    auditInfo: LocalDeploymentAuditInfo,
+    context: DeploymentContext = DeploymentContext.LOCAL
   ): Promise<DeploymentResult> {
     return this.repository.task(
       async (task) => {
@@ -108,24 +93,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
 
         // If all validations passed, then deploy the entity
-        return this.service.deployEntity(hashedFiles, entityId, auditInfo, task)
-      },
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
-  }
-
-  async deployLocalLegacy(
-    files: DeploymentFiles,
-    entityId: string,
-    auditInfo: LocalDeploymentAuditInfo
-  ): Promise<DeploymentResult> {
-    return this.repository.task(
-      async (task) => {
-        // Validate the deployment
-        const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
-
-        // If all validations passed, then deploy the entity
-        return this.service.deployLocalLegacy(hashedFiles, entityId, auditInfo, task)
+        return this.service.deployEntity(hashedFiles, entityId, auditInfo, context, task)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
