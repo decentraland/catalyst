@@ -67,38 +67,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
-  deployEntity(
+  async deployEntity(
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, DeploymentContext.LOCAL, task)
-  }
-
-  deployToFix(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, DeploymentContext.FIX_ATTEMPT, task)
-  }
-
-  deployLocalLegacy(
-    files: DeploymentFiles,
-    entityId: string,
-    auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, DeploymentContext.LOCAL_LEGACY_ENTITY, task)
-  }
-
-  private async deployInternal(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
+    context: DeploymentContext = DeploymentContext.LOCAL,
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
@@ -362,30 +335,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
     return this.storage.storeContent(fileHash, content)
-  }
-
-  async deployEntityFromCluster(files: Buffer[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult> {
-    const legacy = !!auditInfo.migrationData
-    return await this.deployInternal(
-      files,
-      entityId,
-      auditInfo,
-      legacy ? DeploymentContext.SYNCED_LEGACY_ENTITY : DeploymentContext.SYNCED
-    )
-  }
-
-  async deployOverwrittenEntityFromCluster(
-    entityFile: Buffer,
-    entityId: EntityId,
-    auditInfo: AuditInfo
-  ): Promise<DeploymentResult> {
-    const legacy = !!auditInfo.migrationData
-    return await this.deployInternal(
-      [entityFile],
-      entityId,
-      auditInfo,
-      legacy ? DeploymentContext.OVERWRITTEN_LEGACY_ENTITY : DeploymentContext.OVERWRITTEN
-    )
   }
 
   areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {
