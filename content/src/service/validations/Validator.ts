@@ -8,7 +8,15 @@ import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'
 import { VALIDATIONS_V2 } from './validations/ValidationsV2'
 import { VALIDATIONS_V3 } from './validations/ValidationsV3'
 
-export class Validator {
+export interface Validator {
+  validate(
+    deployment: DeploymentToValidate,
+    context: DeploymentContext,
+    calls: ExternalCalls
+  ): Promise<{ ok: true } | { ok: false; errors: Errors }>
+}
+
+export class ValidatorImpl implements Validator {
   private static readonly VALIDATIONS: ValidationsForVersion = {
     [EntityVersion.V2]: VALIDATIONS_V2,
     [EntityVersion.V3]: VALIDATIONS_V3
@@ -21,7 +29,7 @@ export class Validator {
     context: DeploymentContext,
     calls: ExternalCalls
   ): Promise<{ ok: true } | { ok: false; errors: Errors }> {
-    const validationsForVersion = Validator.VALIDATIONS[deployment.auditInfo.version]
+    const validationsForVersion = ValidatorImpl.VALIDATIONS[deployment.auditInfo.version]
     if (!validationsForVersion) {
       return { ok: false, errors: [`Unknown entity version ${deployment.auditInfo.version}`] }
     }
@@ -43,27 +51,25 @@ export class Validator {
 }
 
 // Determines the validations that need to be used, based on the entity's version
-type ValidationsForVersion = {
-  [Version in EntityVersion]: ValidationsForContext
-}
+type ValidationsForVersion = { [Version in EntityVersion]: ValidationsForContext }
 
 // Determines the validations that need to be executed, based on the deployment's context
 export type ValidationsForContext = { [Context in DeploymentContext]: Validation[] }
 
-type DeploymentToValidate = {
+export type DeploymentToValidate = {
   entity: Entity
   files: Map<ContentFileHash, Buffer>
   auditInfo: LocalDeploymentAuditInfo
 }
 
-type ServerEnvironment = {
+export type ServerEnvironment = {
   accessChecker: AccessChecker
   authenticator: ContentAuthenticator
   requestTtlBackwards: number
   maxUploadSizePerTypeInMB: Map<EntityType, number>
 }
 
-type ExternalCalls = {
+export type ExternalCalls = {
   fetchDeployments: (filters: DeploymentFilters) => Promise<{ deployments: Deployment[] }>
   areThereNewerEntities: (entity: Entity) => Promise<boolean>
   fetchDeploymentStatus: (entityType: EntityType, entityId: EntityId) => Promise<DeploymentStatus>
@@ -71,11 +77,13 @@ type ExternalCalls = {
   isEntityDeployedAlready: (entityId: EntityId) => Promise<boolean>
 }
 
-// Will return an empty array if there deployment is valid
-export type Validation = (args: {
+// Will return undefined if there deployment is valid
+export type Validation = (args: ValidationArgs) => undefined | Errors | Promise<undefined | Errors>
+
+export type ValidationArgs = {
   deployment: DeploymentToValidate
   env: ServerEnvironment
   externalCalls: ExternalCalls
-}) => undefined | Errors | Promise<undefined | Errors>
+}
 
 type Errors = string[]

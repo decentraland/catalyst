@@ -16,7 +16,7 @@ import { MockedRepository } from '@katalyst/test-helpers/repository/MockedReposi
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import assert from 'assert'
 import { ContentFileHash, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
@@ -186,7 +186,7 @@ describe('Service', function () {
       .registerBean(Bean.STORAGE, storage)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
       .registerBean(Bean.AUTHENTICATOR, mock<ContentAuthenticator>())
-      .registerBean(Bean.VALIDATOR, new NoOpValidations())
+      .registerBean(Bean.VALIDATOR, new NoOpValidator())
       .registerBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withoutIdentity())
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
       .registerBean(Bean.POINTER_MANAGER, pointerManager)

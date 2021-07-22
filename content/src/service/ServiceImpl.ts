@@ -113,11 +113,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     // Parse entity file into an Entity
     const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
 
-    // Check for if content is already stored
-    const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
-      Array.from(entity.content?.values() ?? [])
-    )
-
     // Validate that the entity's pointers are not currently being modified
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
     const overlappingPointers = entity.pointers.filter((pointer) => pointersCurrentlyBeingDeployed.has(pointer))
@@ -133,6 +128,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
+    // Check for if content is already stored
+    const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
+      Array.from(entity.content?.values() ?? [])
+    )
     try {
       const response:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }

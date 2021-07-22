@@ -10,7 +10,7 @@ export class Validations {
   static readonly SIGNATURE: Validation = async ({ deployment, env }) => {
     const { entity, auditInfo } = deployment
     const validationResult = await env.authenticator.validateSignature(entity.id, auditInfo.authChain, entity.timestamp)
-    return !validationResult.ok ? ['The signature is invalid. ' + validationResult.message] : []
+    return !validationResult.ok ? ['The signature is invalid. ' + validationResult.message] : undefined
   }
 
   /** Validate that the full request size is within limits */
@@ -97,7 +97,7 @@ export class Validations {
         pointers: entityToBeDeployed.pointers,
         onlyCurrentlyPointed: true
       })
-      deployments.forEach((currentDeployment) => {
+      for (const currentDeployment of deployments) {
         const currentAuditInfo = currentDeployment.auditInfo
         if (happenedBefore(currentDeployment, entityToBeDeployed)) {
           if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
@@ -115,7 +115,7 @@ export class Validations {
             }
           }
         }
-      })
+      }
     } else {
       return [`Found a legacy entity without original metadata or the original version might not be considered legacy.`]
     }
