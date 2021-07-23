@@ -16,7 +16,7 @@ export class ContentServerClient {
     fetcher: Fetcher,
     proofOfWorkEnabled: boolean
   ) {
-    this.client = new ContentClient({ contentUrl: address, origin: '', proofOfWorkEnabled, fetcher })
+    this.client = new ContentClient({ contentUrl: address, proofOfWorkEnabled, fetcher })
   }
 
   /**

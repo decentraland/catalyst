@@ -3166,10 +3166,10 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-7.0.0.tgz#56928a2463261f8037f0c7762d019bb1e00c8f80"
-  integrity "sha1-rz8nnuDo8BBOCtAiDnfGd3r0P18= sha512-tyc2ya/XaqVcf9epU8wTaCpFY77gDBCs0l+lPDpMGC/YHOVhzIoB1q3uqkNLrmgX0EKjPpnCBsArDNHUZPS2ow=="
+dcl-catalyst-client@7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-7.0.1.tgz#72c7304d14fdc908d0699f4841a324f46826c5d8"
+  integrity sha512-0jJKztSqfMEafhA4UG/eAYYzt3JuC+u9H7CCIIA1agVjs/kNH88jyR5WWgoVC3WvE9rzGlv/dAlz7v9/rUoqhg==
   dependencies:
     "@types/form-data" "^2.5.0"
     "@types/log4js" "^2.3.5"
