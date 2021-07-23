@@ -118,7 +118,7 @@ export async function deployEntitiesCombo(
   for (const { deployData } of entitiesCombo) {
     deploymentResult = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, {
       authChain: deployData.authChain,
-      version: EntityVersion.V2
+      version: EntityVersion.V3
     })
   }
   return deploymentResult
