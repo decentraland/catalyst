@@ -12,8 +12,8 @@ commands:
       - run:
           name: Update node version
           command: |
-            nvm install v14.16.1
-            nvm alias default v14.16.1
+            nvm install v14.17.3
+            nvm alias default v14.17.3
 
 references:
   .workspace_root: &workspace_root /tmp/repo
@@ -107,6 +107,8 @@ jobs:
           command: npx bazel test //comms/peer:config_test --test_output=all
 
   build-content:
+    machine:
+      docker_layer_caching: true
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
@@ -155,6 +157,7 @@ jobs:
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
       - <<: *attach_root
+      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Prepare to build Docker image
           command: ./prepare_for_docker_image.sh
@@ -191,6 +194,7 @@ jobs:
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
       - <<: *attach_root
+      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Prepare to build Docker image
           command: ./prepare_for_docker_image.sh
