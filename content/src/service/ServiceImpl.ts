@@ -3,6 +3,7 @@ import {
   ContentFileHash,
   EntityId,
   EntityType,
+  EntityVersion,
   Hashing,
   PartialDeploymentHistory,
   Pointer,
@@ -75,7 +76,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
-    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files)
+    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files, auditInfo.version)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -302,11 +303,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles): Promise<Map<ContentFileHash, Buffer>> {
+  static async hashFiles(files: DeploymentFiles, version: EntityVersion): Promise<Map<ContentFileHash, Buffer>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: Buffer }[] = await Hashing.calculateHashes(files)
+      const hashEntries: { hash: ContentFileHash; file: Buffer }[] =
+        version === EntityVersion.V3 ? await Hashing.calculateHashes(files) : await Hashing.calculateIPFSHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }

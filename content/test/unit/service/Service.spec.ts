@@ -45,7 +45,7 @@ describe('Service', function () {
 
   beforeAll(async () => {
     randomFile = Buffer.from('1234')
-    randomFileHash = await Hashing.calculateBufferHash(randomFile)
+    randomFileHash = await Hashing.calculateIPFSHash(randomFile)
     ;[entity, entityFile] = await buildEntityAndFile(
       EntityType.SCENE,
       POINTERS,

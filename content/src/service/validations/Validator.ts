@@ -7,6 +7,7 @@ import { DeploymentStatus } from '../errors/FailedDeploymentsManager'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'
 import { VALIDATIONS_V2 } from './validations/ValidationsV2'
 import { VALIDATIONS_V3 } from './validations/ValidationsV3'
+import { VALIDATIONS_V4 } from './validations/ValidationsV4'
 
 export interface Validator {
   validate(
@@ -19,7 +20,8 @@ export interface Validator {
 export class ValidatorImpl implements Validator {
   private static readonly VALIDATIONS: ValidationsForVersion = {
     [EntityVersion.V2]: VALIDATIONS_V2,
-    [EntityVersion.V3]: VALIDATIONS_V3
+    [EntityVersion.V3]: VALIDATIONS_V3,
+    [EntityVersion.V4]: VALIDATIONS_V4
   }
 
   constructor(private readonly env: ServerEnvironment) {}

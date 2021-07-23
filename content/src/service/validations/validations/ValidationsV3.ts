@@ -4,6 +4,7 @@ import { ValidationsForContext } from '../Validator'
 
 export const VALIDATIONS_V3: ValidationsForContext = {
   [DeploymentContext.LOCAL]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.REQUEST_SIZE_V3,
     Validations.ACCESS,
@@ -14,6 +15,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.CONTENT
   ],
   [DeploymentContext.LOCAL_LEGACY_ENTITY]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ENTITY_STRUCTURE,
     Validations.NO_NEWER,
@@ -24,26 +26,35 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.DECENTRALAND_ADDRESS
   ],
   [DeploymentContext.SYNCED]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
     Validations.CONTENT
   ],
   [DeploymentContext.SYNCED_LEGACY_ENTITY]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ENTITY_STRUCTURE,
     Validations.LEGACY_ENTITY,
     Validations.CONTENT,
     Validations.DECENTRALAND_ADDRESS
   ],
-  [DeploymentContext.OVERWRITTEN]: [Validations.SIGNATURE, Validations.ACCESS, Validations.ENTITY_STRUCTURE],
+  [DeploymentContext.OVERWRITTEN]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
+    Validations.SIGNATURE,
+    Validations.ACCESS,
+    Validations.ENTITY_STRUCTURE
+  ],
   [DeploymentContext.OVERWRITTEN_LEGACY_ENTITY]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ENTITY_STRUCTURE,
     Validations.LEGACY_ENTITY,
     Validations.DECENTRALAND_ADDRESS
   ],
   [DeploymentContext.FIX_ATTEMPT]: [
+    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
