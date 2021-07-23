@@ -1,4 +1,4 @@
-FROM node:14.17.3-slim
+FROM node:14.16.1-slim
 
 RUN apt-get update && \
   apt-get upgrade -yq && \
