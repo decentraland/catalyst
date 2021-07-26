@@ -9,7 +9,7 @@ import {
   ValidationArgs
 } from '@katalyst/content/service/validations/Validator'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { AuditInfo, Entity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { AuditInfo, Entity, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
 
@@ -348,16 +348,62 @@ describe('Validations', function () {
       await assertNoErrors(result)
     })
   })
+
+  describe('IFPS hashing', () => {
+    it(`when an entity's id is not an ipfs hash, then it fails`, async () => {
+      const entity = buildEntity({ id: 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' })
+      const args = buildArgs({ deployment: { entity } })
+
+      const result = Validations.IPFS_HASHING(args)
+
+      await assertErrorsWere(
+        result,
+        `This hash 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' is not valid. It should be IPFS v2 format.`
+      )
+    })
+
+    it(`when an entity's content file is not an ipfs hash, then it fails`, async () => {
+      const entity = buildEntity({ content: new Map([['key', 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P']]) })
+      const args = buildArgs({ deployment: { entity } })
+
+      const result = Validations.IPFS_HASHING(args)
+
+      await assertErrorsWere(
+        result,
+        `This hash 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P' is not valid. It should be IPFS v2 format.`
+      )
+    })
+
+    it(`when all entity's hashes are ipfs, then no errors are reported`, async () => {
+      const someHash = await Hashing.calculateIPFSHash(Buffer.from('some file'))
+      const entity = buildEntity({ content: new Map([['key', someHash]]) })
+      const args = buildArgs({ deployment: { entity } })
+
+      const result = Validations.IPFS_HASHING(args)
+
+      await assertNoErrors(result)
+    })
+  })
 })
 
-function buildEntity(options?: { timestamp?: Timestamp; content?: Map<string, string>; pointers?: Pointer[] }) {
-  const opts = Object.assign({ timestamp: Date.now(), content: undefined }, options)
+function buildEntity(options?: {
+  id?: string
+  timestamp?: Timestamp
+  content?: Map<string, string>
+  pointers?: Pointer[]
+}) {
+  const opts = Object.assign(
+    {
+      timestamp: Date.now(),
+      content: undefined,
+      id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
+      pointers: ['P1']
+    },
+    options
+  )
   return {
-    id: 'id',
-    type: EntityType.SCENE,
-    pointers: options?.pointers ?? ['P1'],
-    timestamp: opts.timestamp,
-    content: opts.content
+    ...opts,
+    type: EntityType.SCENE
   }
 }
 

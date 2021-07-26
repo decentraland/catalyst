@@ -122,7 +122,7 @@ describe('Integration - Deployment Filters', () => {
   async function deployWithAuditInfo(entities: EntityCombo[], overrideAuditInfo?: Partial<AuditInfo>) {
     const result: Timestamp[] = []
     for (const { deployData } of entities) {
-      const newAuditInfo = { version: EntityVersion.V2, authChain: deployData.authChain, ...overrideAuditInfo }
+      const newAuditInfo = { version: EntityVersion.V3, authChain: deployData.authChain, ...overrideAuditInfo }
       const deploymentResult: DeploymentResult = await service.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,

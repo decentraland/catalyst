@@ -125,7 +125,7 @@ describe('AccessCheckerForWearables', () => {
         const contentAsJson =
           entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1)) ?? []
         const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata: METADATA }))
-        hash = await Hashing.calculateBufferHash(buffer)
+        hash = await Hashing.calculateIPFSHash(buffer)
       })
 
       it(`and deployment hash matches and deployer is committee member, then deployment is valid`, async () => {

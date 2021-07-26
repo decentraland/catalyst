@@ -158,6 +158,22 @@ export class Validations {
     }
   }
 
+  /** Validate that all hashes used by the entity were actually IPFS hashes */
+  static readonly IPFS_HASHING: Validation = ({ deployment }) => {
+    const isIPFSHash = (hash: string) => hash.startsWith('bafy') && hash.length === 59
+
+    const { entity } = deployment
+
+    const hashesInContent = Array.from(entity.content?.values() ?? [])
+    const allHashes = [entity.id, ...hashesInContent]
+
+    const errors: string[] = allHashes
+      .filter((hash) => !isIPFSHash(hash))
+      .map((hash) => `This hash '${hash}' is not valid. It should be IPFS v2 format.`)
+
+    return errors.length > 0 ? errors : undefined
+  }
+
   static readonly FAIL_ALWAYS: Validation = async (_) => {
     return ['This deployment is invalid. What are you doing?']
   }
