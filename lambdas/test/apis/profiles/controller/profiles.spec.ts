@@ -8,7 +8,7 @@ import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
 import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
 import { WearablesOwnership } from '@katalyst/lambdas/apis/profiles/WearablesOwnership'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { anything, instance, mock, when } from 'ts-mockito'
 
@@ -161,6 +161,7 @@ function profileWith(
 
   const entity = {
     id: '',
+    version: EntityVersion.V3,
     type: EntityType.PROFILE,
     pointers: [ethAddress],
     timestamp: 10,
