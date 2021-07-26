@@ -29,18 +29,7 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult>
-  deployLocalLegacy(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult>
-  deployToFix(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
+    context?: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
@@ -74,11 +63,12 @@ export interface ClusterDeploymentsService {
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null>
-  deployEntityFromCluster(files: Buffer[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult>
-  deployOverwrittenEntityFromCluster(
-    entityFile: Buffer,
+  deployEntity(
+    files: Buffer[],
     entityId: EntityId,
-    auditInfo: AuditInfo
+    auditInfo: LocalDeploymentAuditInfo,
+    context: DeploymentContext,
+    task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
@@ -105,4 +95,14 @@ export function isSuccessfulDeployment(deploymentResult: DeploymentResult): depl
 
 export function isInvalidDeployment(deploymentResult: DeploymentResult): deploymentResult is InvalidResult {
   return !isSuccessfulDeployment(deploymentResult)
+}
+
+export enum DeploymentContext {
+  LOCAL = 'LOCAL',
+  LOCAL_LEGACY_ENTITY = 'LOCAL_LEGACY_ENTITY',
+  SYNCED = 'SYNCED',
+  SYNCED_LEGACY_ENTITY = 'SYNCED_LEGACY_ENTITY',
+  OVERWRITTEN = 'OVERWRITTEN',
+  OVERWRITTEN_LEGACY_ENTITY = 'OVERWRITTEN_LEGACY_ENTITY',
+  FIX_ATTEMPT = 'FIX_ATTEMPT'
 }

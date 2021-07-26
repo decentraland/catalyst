@@ -3,6 +3,7 @@ import {
   ContentFileHash,
   EntityId,
   EntityType,
+  EntityVersion,
   Hashing,
   PartialDeploymentHistory,
   Pointer,
@@ -15,7 +16,6 @@ import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
-import { ContentAuthenticator } from './auth/Authenticator'
 import { CacheByType } from './caching/Cache'
 import {
   Deployment,
@@ -30,6 +30,7 @@ import { FailedDeploymentsManager, FailureReason } from './errors/FailedDeployme
 import { PointerManager } from './pointers/PointerManager'
 import {
   ClusterDeploymentsService,
+  DeploymentContext,
   DeploymentFiles,
   DeploymentListener,
   DeploymentResult,
@@ -39,8 +40,7 @@ import {
 } from './Service'
 import { ServiceStorage } from './ServiceStorage'
 import { happenedBefore } from './time/TimeSorting'
-import { ValidationContext } from './validations/ValidationContext'
-import { Validations } from './validations/Validations'
+import { Validator } from './validations/Validator'
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
   private static readonly LOGGER = log4js.getLogger('ServiceImpl')
@@ -53,7 +53,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly pointerManager: PointerManager,
     private readonly failedDeploymentsManager: FailedDeploymentsManager,
     private readonly deploymentManager: DeploymentManager,
-    private readonly validations: Validations,
+    private readonly validator: Validator,
     private readonly repository: Repository,
     private readonly cache: CacheByType<Pointer, Entity>
   ) {}
@@ -68,44 +68,15 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
-  deployEntity(
+  async deployEntity(
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
+    context: DeploymentContext = DeploymentContext.LOCAL,
     task?: Database
   ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL, task)
-  }
-
-  deployToFix(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.FIX_ATTEMPT, task)
-  }
-
-  deployLocalLegacy(
-    files: DeploymentFiles,
-    entityId: string,
-    auditInfo: LocalDeploymentAuditInfo,
-    task?: Database
-  ): Promise<DeploymentResult> {
-    return this.deployInternal(files, entityId, auditInfo, ValidationContext.LOCAL_LEGACY_ENTITY, task)
-  }
-
-  private async deployInternal(
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    validationContext: ValidationContext,
-    task?: Database
-  ): Promise<DeploymentResult> {
-    const validation = this.validations.getInstance()
-
-    // Hash all files, and validate them
-    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files)
+    // Hash all files
+    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files, auditInfo.version)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -115,35 +86,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
     // Parse entity file into an Entity
     const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
-
-    // Validate signature
-    await validation.validateSignature(entityId, entity.timestamp, auditInfo.authChain, validationContext)
-
-    // Validate entity
-    validation.validateEntity(entity, validationContext)
-
-    // Validate that the entity is recent
-    validation.validateDeploymentIsRecent(entity, validationContext)
-
-    // Calculate the owner address from the auth chain
-    const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo.authChain)
-
-    // Validate that Decentraland performed the deployment (only for legacy entities)
-    validation.validateDecentralandAddress(ownerAddress, validationContext)
-
-    // Validate request size
-    validation.validateRequestSize(hashes, entity.type, entity.pointers, validationContext)
-
-    // Validate ethAddress access
-    await validation.validateAccess(entity, ownerAddress, validationContext)
-
-    // Check for if content is already stored
-    const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
-      Array.from(entity.content?.values() ?? [])
-    )
-
-    // Validate the entity's content property
-    validation.validateContent(entity, hashes, alreadyStoredContent, validationContext)
 
     // Validate that the entity's pointers are not currently being modified
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
@@ -160,6 +102,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
+    // Check for if content is already stored
+    const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
+      Array.from(entity.content?.values() ?? [])
+    )
     try {
       const response:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
@@ -169,33 +115,18 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           db.txIf(async (transaction) => {
             const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
-            // Validate if the entity can be re deployed
-            validation.validateThatEntityCanBeRedeployed(isEntityAlreadyDeployed, validationContext)
+            const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
+              fetchDeployments: (filters) => this.getDeployments({ filters }, transaction),
+              areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
+              fetchDeploymentStatus: (type, id) =>
+                this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
+              isContentStoredAlready: (hashes) => Promise.resolve(alreadyStoredContent), // We know that the validation asks for the same content we already checked
+              isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
+                Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck)
+            })
 
-            // Validate that there is no entity with a higher version
-            await validation.validateLegacyEntity(
-              entity,
-              auditInfo,
-              (filters) => this.getDeployments({ filters }, transaction),
-              validationContext
-            )
-
-            // Validate that there are no newer entities on pointers
-            await validation.validateNoNewerEntitiesOnPointers(
-              entity,
-              (entity: Entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
-              validationContext
-            )
-
-            // Validate that if the entity was already deployed, the status it was left is what we expect
-            await validation.validateThatEntityFailedBefore(
-              entity,
-              (type, id) => this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
-              validationContext
-            )
-
-            if (validation.getErrors().length > 0) {
-              return { errors: validation.getErrors() }
+            if (!validationResult.ok) {
+              return { errors: validationResult.errors }
             }
 
             const localTimestamp = Date.now()
@@ -372,11 +303,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles): Promise<Map<ContentFileHash, Buffer>> {
+  static async hashFiles(files: DeploymentFiles, version: EntityVersion): Promise<Map<ContentFileHash, Buffer>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: Buffer }[] = await Hashing.calculateHashes(files)
+      const hashEntries: { hash: ContentFileHash; file: Buffer }[] =
+        version === EntityVersion.V3 ? await Hashing.calculateHashes(files) : await Hashing.calculateIPFSHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
   }
@@ -405,30 +337,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
     return this.storage.storeContent(fileHash, content)
-  }
-
-  async deployEntityFromCluster(files: Buffer[], entityId: EntityId, auditInfo: AuditInfo): Promise<DeploymentResult> {
-    const legacy = !!auditInfo.migrationData
-    return await this.deployInternal(
-      files,
-      entityId,
-      auditInfo,
-      legacy ? ValidationContext.SYNCED_LEGACY_ENTITY : ValidationContext.SYNCED
-    )
-  }
-
-  async deployOverwrittenEntityFromCluster(
-    entityFile: Buffer,
-    entityId: EntityId,
-    auditInfo: AuditInfo
-  ): Promise<DeploymentResult> {
-    const legacy = !!auditInfo.migrationData
-    return await this.deployInternal(
-      [entityFile],
-      entityId,
-      auditInfo,
-      legacy ? ValidationContext.OVERWRITTEN_LEGACY_ENTITY : ValidationContext.OVERWRITTEN
-    )
   }
 
   areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {

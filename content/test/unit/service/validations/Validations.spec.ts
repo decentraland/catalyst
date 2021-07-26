@@ -1,466 +1,421 @@
 import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
 import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
-import { ValidationContext } from '@katalyst/content/service/validations/ValidationContext'
+import { NoFailure } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import { Validations } from '@katalyst/content/service/validations/Validations'
+import {
+  DeploymentToValidate,
+  ExternalCalls,
+  ServerEnvironment,
+  ValidationArgs
+} from '@katalyst/content/service/validations/Validator'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { AuditInfo, Entity, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
-import { AuthChain, AuthLinkType } from 'dcl-crypto'
+import { AuditInfo, Entity, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
 
 describe('Validations', function () {
-  it(`When a non uploaded hash is referenced, it is reported`, () => {
-    const entity = buildEntity({
-      content: new Map([
-        ['name-1', 'hash-1'],
-        ['name-2', 'hash-2']
-      ])
+  describe('Recent', () => {
+    it(`When an entity with a timestamp too far into the past is deployed, then an error is returned`, async () => {
+      const entity = buildEntity({ timestamp: Date.now() - ms('25m') })
+      const args = buildArgs({ deployment: { entity } })
+
+      const result = Validations.RECENT(args)
+
+      await assertErrorsWere(result, 'The request is not recent enough, please submit it again with a new timestamp.')
     })
-    const validation = getValidatorWithMockedAccess()
-    validation.validateContent(entity, new Map([['hash-1', Buffer.from([])]]), new Map([]), ValidationContext.ALL)
 
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toBe(notAvailableHashMessage('hash-2'))
+    it(`When an entity with a timestamp too far into the future is deployed, then an error is returned`, async () => {
+      const entity = buildEntity({ timestamp: Date.now() + ms('20m') })
+      const args = buildArgs({ deployment: { entity } })
+
+      const result = Validations.RECENT(args)
+
+      await assertErrorsWere(
+        result,
+        'The request is too far in the future, please submit it again with a new timestamp.'
+      )
+    })
+
+    it(`When an entity with the correct timestamp is deployed, then no error is returned`, async () => {
+      const entity = buildEntity({ timestamp: Date.now() })
+      const args = buildArgs({ deployment: { entity } })
+
+      const result = Validations.RECENT(args)
+
+      await assertNoErrors(result)
+    })
   })
 
-  it(`When an entity with a timestamp too far into the past is deployed, then an error is returned`, () => {
-    const entity = buildEntity({ timestamp: Date.now() - ms('25m') })
-    const validation = getValidatorWithMockedAccess()
-    validation.validateDeploymentIsRecent(entity, ValidationContext.ALL)
-
-    expect(validation.getErrors()).toEqual([
-      'The request is not recent enough, please submit it again with a new timestamp.'
-    ])
-  })
-
-  it(`When an entity with a timestamp too far into the future is deployed, then an error is returned`, () => {
-    const entity = buildEntity({ timestamp: Date.now() + ms('20m') })
-    const validation = getValidatorWithMockedAccess()
-    validation.validateDeploymentIsRecent(entity, ValidationContext.ALL)
-
-    expect(validation.getErrors()).toEqual([
-      'The request is too far in the future, please submit it again with a new timestamp.'
-    ])
-  })
-
-  it(`When an entity with the correct timestamp is deployed, then no error is returned`, () => {
-    const entity = buildEntity({ timestamp: Date.now() })
-    const validation = getValidatorWithMockedAccess()
-    validation.validateDeploymentIsRecent(entity, ValidationContext.ALL)
-    expect(validation.getErrors().length).toBe(0)
-  })
-
-  const LEGACY_AUDIT_INFO = {
-    version: EntityVersion.V3,
-    deployedTimestamp: 10,
-    authChain: [],
-    migrationData: {
-      // This is used for migrations
-      originalVersion: EntityVersion.V2,
-      data: 'data'
-    }
-  }
-
-  const LEGACY_ENTITY = buildEntity({ timestamp: 1000 })
-
-  it(`When a legacy entity is deployed and there is no entity, then no error is returned`, async () => {
-    const validation = getValidatorWithMockedAccess()
-    const history = { deployments: [] }
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      LEGACY_AUDIT_INFO,
-      () => Promise.resolve(history),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(0)
-  })
-
-  it(`When a legacy entity is deployed and there is an entity with a higher timestamp, then no error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 1001 })
-    const auditInfo = {
-      version: EntityVersion.V3,
-      deployedTimestamp: 10,
-      authChain: []
-    }
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      LEGACY_AUDIT_INFO,
-      () => Promise.resolve(deploymentWith(entity, auditInfo)),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(0)
-  })
-
-  it(`When a legacy entity is deployed and there is a previous entity with a higher version, then an error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 999 })
-    const legacyAuditInfo = { ...LEGACY_AUDIT_INFO, version: EntityVersion.V2 }
-    const auditInfo = {
-      version: EntityVersion.V3,
-      deployedTimestamp: 10,
-      authChain: []
-    }
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      legacyAuditInfo,
-      () => Promise.resolve(deploymentWith(entity, auditInfo)),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`])
-  })
-
-  it(`When a legacy entity is deployed and there is a previous entity with a lower version, then no error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 999 })
-    const auditInfo = {
-      version: EntityVersion.V2,
-      deployedTimestamp: 10,
-      authChain: []
-    }
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      LEGACY_AUDIT_INFO,
-      () => Promise.resolve(deploymentWith(entity, auditInfo)),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(0)
-  })
-
-  it(`When a legacy entity is deployed and there is a previous entity without original metadata, then an error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 999 })
-    const auditInfo = {
-      version: EntityVersion.V3,
-      authChain: []
-    }
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      LEGACY_AUDIT_INFO,
-      () => Promise.resolve(deploymentWith(entity, auditInfo)),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`])
-  })
-
-  it(`When a legacy entity is deployed and there is a previous entity with a higher original version, then an error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 999 })
-    const auditInfo = {
-      version: EntityVersion.V3,
-      deployedTimestamp: 10,
-      authChain: [],
-      originalMetadata: {
-        originalVersion: EntityVersion.V3,
-        data: 'data'
-      }
-    }
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      LEGACY_AUDIT_INFO,
-      () => Promise.resolve(deploymentWith(entity, auditInfo)),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors()).toEqual([`Found an overlapping entity with a higher version already deployed.`])
-  })
-
-  it(`When a legacy entity is deployed and there is a previous entity with the same original version, then no error is returned`, async () => {
-    const entity = buildEntity({ timestamp: 999 })
-    const auditInfo = {
+  describe('Legacy entity', () => {
+    const LEGACY_AUDIT_INFO = {
       version: EntityVersion.V3,
       deployedTimestamp: 10,
       authChain: [],
       migrationData: {
+        // This is used for migrations
         originalVersion: EntityVersion.V2,
         data: 'data'
       }
     }
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateLegacyEntity(
-      LEGACY_ENTITY,
-      LEGACY_AUDIT_INFO,
-      () => Promise.resolve(deploymentWith(entity, auditInfo)),
-      ValidationContext.ALL
-    )
-    expect(validation.getErrors().length).toBe(0)
-  })
 
-  it(`When a non available hash is referenced, it is reported`, () => {
-    const entity = buildEntity({
-      content: new Map([
-        ['name-1', 'hash-1'],
-        ['name-2', 'hash-2']
-      ])
+    const LEGACY_ENTITY = buildEntity({ timestamp: 1000 })
+
+    it(`When a legacy entity is deployed and there is no entity, then no error is returned`, async () => {
+      const args = buildArgs({ deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO } })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertNoErrors(result)
     })
-    const validation = getValidatorWithMockedAccess()
-    validation.validateContent(entity, new Map([]), new Map([['hash-2', true]]), ValidationContext.ALL)
 
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toBe(notAvailableHashMessage('hash-1'))
+    it(`When a legacy entity is deployed and there is an entity with a higher timestamp, then no error is returned`, async () => {
+      const entity = buildEntity({ timestamp: 1001 })
+      const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: []
+      }
+      const args = buildArgs({
+        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
+        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
+      })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`When a legacy entity is deployed and there is a previous entity with a higher version, then an error is returned`, async () => {
+      const entity = buildEntity({ timestamp: 999 })
+      const legacyAuditInfo = { ...LEGACY_AUDIT_INFO, version: EntityVersion.V2 }
+      const auditInfo = {
+        version: EntityVersion.V3,
+        authChain: []
+      }
+      const args = buildArgs({
+        deployment: { entity: LEGACY_ENTITY, auditInfo: legacyAuditInfo },
+        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
+      })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertErrorsWere(result, `Found an overlapping entity with a higher version already deployed.`)
+    })
+
+    it(`When a legacy entity is deployed and there is a previous entity with a lower version, then no error is returned`, async () => {
+      const entity = buildEntity({ timestamp: 999 })
+      const auditInfo = {
+        version: EntityVersion.V2,
+        deployedTimestamp: 10,
+        authChain: []
+      }
+      const args = buildArgs({
+        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
+        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
+      })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`When a legacy entity is deployed and there is a previous entity without original metadata, then an error is returned`, async () => {
+      const entity = buildEntity({ timestamp: 999 })
+      const auditInfo = {
+        version: EntityVersion.V3,
+        authChain: []
+      }
+      const args = buildArgs({
+        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
+        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
+      })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertErrorsWere(result, `Found an overlapping entity with a higher version already deployed.`)
+    })
+
+    it(`When a legacy entity is deployed and there is a previous entity with a higher original version, then an error is returned`, async () => {
+      const entity = buildEntity({ timestamp: 999 })
+      const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: [],
+        originalMetadata: {
+          originalVersion: EntityVersion.V3,
+          data: 'data'
+        }
+      }
+      const args = buildArgs({
+        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
+        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
+      })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertErrorsWere(result, `Found an overlapping entity with a higher version already deployed.`)
+    })
+
+    it(`When a legacy entity is deployed and there is a previous entity with the same original version, then no error is returned`, async () => {
+      const entity = buildEntity({ timestamp: 999 })
+      const auditInfo = {
+        version: EntityVersion.V3,
+        deployedTimestamp: 10,
+        authChain: [],
+        migrationData: {
+          originalVersion: EntityVersion.V2,
+          data: 'data'
+        }
+      }
+      const args = buildArgs({
+        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
+        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
+      })
+
+      const result = Validations.LEGACY_ENTITY(args)
+
+      await assertNoErrors(result)
+    })
   })
 
-  it(`When a hash is uploaded but not referenced, it is reported`, () => {
-    const entity = buildEntity({ content: new Map([['name-1', 'hash-1']]) })
-    const validation = getValidatorWithMockedAccess()
-    validation.validateContent(
-      entity,
-      new Map([
-        ['hash-1', Buffer.from([])],
-        ['hash-2', Buffer.from([])]
-      ]),
-      new Map([]),
-      ValidationContext.ALL
-    )
+  describe('Content', () => {
+    it(`When a hash that was not uploaded and not present is referenced, it is reported`, async () => {
+      const entity = buildEntity({
+        content: new Map([['name', 'hash']])
+      })
+      const args = buildArgs({ deployment: { entity, files: new Map() } })
 
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toBe(notReferencedHashMessage('hash-2'))
+      const result = Validations.CONTENT(args)
+
+      await assertErrorsWere(result, notAvailableHashMessage('hash'))
+    })
+
+    it(`When a hash that was not uploaded was already stored, then no error is returned`, async () => {
+      const entity = buildEntity({
+        content: new Map([['name', 'hash']])
+      })
+      const args = buildArgs({
+        deployment: { entity, files: new Map() },
+        externalCalls: { isContentStoredAlready: () => Promise.resolve(new Map([['hash', true]])) }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`When a hash that was uploaded wasn't already stored, then no error is returned`, async () => {
+      const entity = buildEntity({
+        content: new Map([['name', 'hash']])
+      })
+      const args = buildArgs({
+        deployment: { entity, files: new Map([['hash', Buffer.from([])]]) }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`When a hash is uploaded but not referenced, it is reported`, async () => {
+      const entity = buildEntity({ content: new Map([['name-1', 'hash-1']]) })
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([
+            ['hash-1', Buffer.from([])],
+            ['hash-2', Buffer.from([])]
+          ])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertErrorsWere(result, notReferencedHashMessage('hash-2'))
+    })
+
+    const notAvailableHashMessage = (hash) => {
+      return `This hash is referenced in the entity but was not uploaded or previously available: ${hash}`
+    }
+
+    const notReferencedHashMessage = (hash) => {
+      return `This hash was uploaded but is not referenced in the entity: ${hash}`
+    }
   })
 
-  it(`Already available but not referenced hashes are not reported`, () => {
-    const entity = buildEntity()
-    const validation = getValidatorWithMockedAccess()
-    validation.validateContent(
-      entity,
-      new Map([['hash-1', Buffer.from([])]]),
-      new Map([['hash-2', true]]),
-      ValidationContext.ALL
-    )
+  describe('Signature', () => {
+    it(`When signature is invalid, it's reported`, async () => {
+      const entity = buildEntity()
+      const args = buildArgs({
+        deployment: {
+          entity,
+          auditInfo: {
+            version: EntityVersion.V3,
+            authChain: ContentAuthenticator.createSimpleAuthChain(
+              entity.id,
+              '0x29d7d1dd5b6f9c864d9db560d72a247c178ae86b',
+              'some-signature'
+            )
+          }
+        }
+      })
 
-    expect(validation.getErrors().length).toBe(0)
-  })
+      const result = Validations.SIGNATURE(args)
 
-  it(`signature test`, async () => {
-    const identity = EthCrypto.createIdentity()
+      await assertSignatureInInvalid(result)
+    })
 
-    const message = 'foobar'
-    const messageHash = EthCrypto.hash.keccak256(message)
-    const signature = EthCrypto.sign(identity.privateKey, messageHash)
-
-    const signer = EthCrypto.recover(signature, messageHash)
-
-    expect(signer).toBe(identity.address)
-  })
-
-  it(`signature test on ipfs hash`, async () => {
-    const message = 'QmUX9jcGbUATv4MAZaMGT9qiDJb59KBhN8TkyeGsWwzHon'
-    const signature =
-      '0x7f34bc8e3bce648c7e31705172f10b171777eda2d6b87cc53d581faa0ed0f518281691afc6ac51fd7848ba5464642878ae7728e13819dd359f1c9a15e15013fb1b'
-    const expectedSigner = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message`, async () => {
-    const message =
-      'Decentraland Login\nEphemeral address: 0x1F19d3EC0BE294f913967364c1D5B416e6A74555\nExpiration: Tue Jan 21 2020 16:34:32 GMT+0000 (Coordinated Universal Time)'
-    const signature =
-      '0x49c5d57fc804e6a06f83ee8d499aec293a84328766864d96349db599ef9ebacc072892ec1f3e2777bdc8265b53d8b84edd646bdc711dd5290c18adcc5de4a2831b'
-    const expectedSigner = '0x1f19d3ec0be294f913967364c1d5b416e6a74555'
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message 2`, async () => {
-    const identity = EthCrypto.createIdentity()
-    const expiration = new Date()
-    expiration.setMinutes(expiration.getMinutes() + 30)
-
-    const message = `Decentraland Login\nEphemeral address: ${identity.address}\nExpiration: ${expiration}`
-    const signature = ContentAuthenticator.createSignature(identity, message)
-    const expectedSigner = identity.address.toLowerCase()
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message 3`, async () => {
-    const message = 'Decentraland Login\nEphemeral address: ${ephemeralIdentity.address}\nExpiration: ${expiration}'
-    const signature =
-      '0x93e6c60fbe79e5a6b94c2f560730eaf1b8eeac4859046ac90d3cff14f9be65aa6d7fad907ce320979d56848d7d7c13cb10295d739eb2a3d99f0e6e9cba56ff7c1b'
-    const expectedSigner = '0xe4d3ba99ffdae47c003f1756c01d8e7ee8fef7c9'
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message 4`, async () => {
-    const identity = EthCrypto.createIdentity()
-    const message = 'Decentraland Login\nEphemeral'
-    const signature = ContentAuthenticator.createSignature(identity, message)
-    const expectedSigner = identity.address.toLowerCase()
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message 4b`, async () => {
-    const message = 'Decentraland Login\nEphemeral'
-    const signature =
-      '0x4163812d18beaa732edc4c9d106c4824b7efa565b96841e0a3d9c1863112cab627fb1d7ff7c1b3330d7c5021b76852080d349f7dfd26d59afdac21fc378d51a21b'
-    const expectedSigner = '0xd5af26a5adfc888843d765da9a5cda6f1416eb9d'
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message 5`, async () => {
-    const identity = EthCrypto.createIdentity()
-    const message = 'Decentraland Login Ephemeral'
-    const signature = ContentAuthenticator.createSignature(identity, message)
-    const expectedSigner = identity.address.toLowerCase()
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  it(`signature test on human readable message 5b`, async () => {
-    const message = 'Decentraland Login Ephemeral'
-    const signature =
-      '0x29561864c8c058688dc5043e04a1dc234d7cbd9201d26029402c0ca4d86d3a337e200f4136dbf40ada341674c79ece56946720b20bc645dd3cc029ab824680891b'
-    const expectedSigner = '0xf37cb6620d0efcfdaf4a166e3ddd75daa4975b39'
-    validateExpectedAddress(message, signature, expectedSigner)
-  })
-
-  function validateExpectedAddress(message: string, signature: string, expectedSigner: string) {
-    const messageHash = ContentAuthenticator.createEthereumMessageHash(message)
-
-    const signer = EthCrypto.recover(signature, messageHash).toLowerCase()
-
-    expect(signer).toBe(expectedSigner)
-  }
-
-  it(`when signature is invalid, it's reported`, async () => {
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateSignature(
-      'some-entity-id',
-      Date.now(),
-      ContentAuthenticator.createSimpleAuthChain('some-entity-id', 'some-address', 'some-signature'),
-      ValidationContext.ALL
-    )
-
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toMatch('The signature is invalid.*')
-  })
-
-  it(`when signature is valid, it's recognized`, async () => {
-    const identity = EthCrypto.createIdentity()
-    const entityId = 'some-entity-id'
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateSignature(
-      entityId,
-      Date.now(),
-      ContentAuthenticator.createSimpleAuthChain(
-        entityId,
+    it(`when signature is valid, it's recognized`, async () => {
+      const entity = buildEntity()
+      const identity = EthCrypto.createIdentity()
+      const authChain = ContentAuthenticator.createSimpleAuthChain(
+        entity.id,
         identity.address,
-        EthCrypto.sign(identity.privateKey, ContentAuthenticator.createEthereumMessageHash(entityId))
-      ),
-      ValidationContext.ALL
-    )
+        EthCrypto.sign(identity.privateKey, ContentAuthenticator.createEthereumMessageHash(entity.id))
+      )
+      const args = buildArgs({
+        deployment: {
+          entity,
+          auditInfo: {
+            version: EntityVersion.V3,
+            authChain
+          }
+        }
+      })
 
-    expect(validation.getErrors().length).toBe(0)
+      const result = Validations.SIGNATURE(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`when a valid chained signature is used, it's recognized`, async () => {
+      const entity = buildEntity()
+      const ownerIdentity = EthCrypto.createIdentity()
+      const ephemeralIdentity = EthCrypto.createIdentity()
+      const authChain = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entity.id)
+      const args = buildArgs({
+        deployment: {
+          entity,
+          auditInfo: { version: EntityVersion.V3, authChain }
+        }
+      })
+
+      const result = Validations.SIGNATURE(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`when no signature is provided, it's reported`, async () => {
+      const entity = buildEntity()
+      const args = buildArgs({
+        deployment: {
+          entity,
+          auditInfo: { version: EntityVersion.V3, authChain: [] }
+        }
+      })
+
+      const result = Validations.SIGNATURE(args)
+
+      await assertSignatureInInvalid(result)
+    })
   })
 
-  it(`when a valid chained signature is used, it's recognized`, async () => {
-    const entityId = 'some-entity-id'
+  describe('Request size (v3)', () => {
+    it(`when an entity is too big per pointer, then it fails`, async () => {
+      const entity = buildEntity()
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3) },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 2]]) }
+      })
 
-    const ownerIdentity = EthCrypto.createIdentity()
-    const ephemeralIdentity = EthCrypto.createIdentity()
+      const result = Validations.REQUEST_SIZE_V3(args)
 
-    const authChain = ContentAuthenticator.createAuthChain(ownerIdentity, ephemeralIdentity, 30, entityId)
+      const actualErrors = await result
+      expect(actualErrors).toBeDefined()
+      expect(actualErrors!.length).toBe(1)
+      expect(actualErrors![0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+    })
 
-    const validation = getValidatorWithMockedAccess()
-    await validation.validateSignature(entityId, Date.now(), authChain, ValidationContext.ALL)
-    expect(validation.getErrors().length).toBe(0)
+    it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
+      const entity = buildEntity({ pointers: ['P1', 'P2'] })
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3) },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 2]]) }
+      })
+
+      const result = Validations.REQUEST_SIZE_V3(args)
+
+      await assertNoErrors(result)
+    })
   })
 
-  it(`when an invalid chained signature is used, it's reported`, async () => {
-    const entityId = 'some-entity-id'
+  describe('IFPS hashing', () => {
+    it(`when an entity's id is not an ipfs hash, then it fails`, async () => {
+      const entity = buildEntity({ id: 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' })
+      const args = buildArgs({ deployment: { entity } })
 
-    const ownerIdentity = EthCrypto.createIdentity()
-    const ephemeralIdentity = EthCrypto.createIdentity()
+      const result = Validations.IPFS_HASHING(args)
 
-    const signatures_second_is_invalid = ContentAuthenticator.createAuthChain(
-      ownerIdentity,
-      ephemeralIdentity,
-      30,
-      entityId
-    )
-    signatures_second_is_invalid[2].signature = 'invalid-signature'
+      await assertErrorsWere(
+        result,
+        `This hash 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' is not valid. It should be IPFS v2 format.`
+      )
+    })
 
-    let validation = getValidatorWithMockedAccess()
-    await validation.validateSignature(entityId, Date.now(), signatures_second_is_invalid, ValidationContext.ALL)
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toMatch('The signature is invalid.*')
+    it(`when an entity's content file is not an ipfs hash, then it fails`, async () => {
+      const entity = buildEntity({ content: new Map([['key', 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P']]) })
+      const args = buildArgs({ deployment: { entity } })
 
-    const signatures_first_is_invalid = ContentAuthenticator.createAuthChain(
-      ownerIdentity,
-      ephemeralIdentity,
-      30,
-      entityId
-    )
-    signatures_first_is_invalid[1].signature = 'invalid-signature'
+      const result = Validations.IPFS_HASHING(args)
 
-    validation = getValidatorWithMockedAccess()
-    await validation.validateSignature(entityId, Date.now(), signatures_first_is_invalid, ValidationContext.ALL)
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toMatch('The signature is invalid.*')
-  })
+      await assertErrorsWere(
+        result,
+        `This hash 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P' is not valid. It should be IPFS v2 format.`
+      )
+    })
 
-  it(`when no signature are provided, it's reported`, async () => {
-    const validation = getValidatorWithMockedAccess()
-    const invalidAuthChain: AuthChain = []
-    await validation.validateSignature('some-entity-id', Date.now(), invalidAuthChain, ValidationContext.ALL)
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toMatch('The signature is invalid.*')
-  })
+    it(`when all entity's hashes are ipfs, then no errors are reported`, async () => {
+      const someHash = await Hashing.calculateIPFSHash(Buffer.from('some file'))
+      const entity = buildEntity({ content: new Map([['key', someHash]]) })
+      const args = buildArgs({ deployment: { entity } })
 
-  it(`when only signer link is provided, it's reported`, async () => {
-    const validation = getValidatorWithMockedAccess()
-    const ownerIdentity = EthCrypto.createIdentity()
-    const invalidAuthChain: AuthChain = [{ type: AuthLinkType.SIGNER, payload: ownerIdentity.address, signature: '' }]
-    await validation.validateSignature('some-entity-id', Date.now(), invalidAuthChain, ValidationContext.ALL)
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toMatch('The signature is invalid.*')
-  })
+      const result = Validations.IPFS_HASHING(args)
 
-  it(`when an entity is too big per pointer, then it fails`, async () => {
-    const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
-
-    validation.validateRequestSize(getFileWithSize(3), EntityType.SCENE, ['pointer1'], ValidationContext.ALL)
-
-    expect(validation.getErrors().length).toBe(1)
-    expect(validation.getErrors()[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
-  })
-
-  it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
-    const validation = getValidatorWithMockedAccess({ maxSizePerPointer: { type: EntityType.SCENE, size: 2 } })
-
-    validation.validateRequestSize(
-      getFileWithSize(3),
-      EntityType.SCENE,
-      ['pointer1', 'pointer2'],
-      ValidationContext.ALL
-    )
-
-    expect(validation.getErrors().length).toBe(0)
+      await assertNoErrors(result)
+    })
   })
 })
 
-const notAvailableHashMessage = (hash) => {
-  return `This hash is referenced in the entity but was not uploaded or previously available: ${hash}`
-}
-
-const notReferencedHashMessage = (hash) => {
-  return `This hash was uploaded but is not referenced in the entity: ${hash}`
-}
-
-function buildEntity(options?: { timestamp?: Timestamp; content?: Map<string, string> }) {
-  const opts = Object.assign({ timestamp: Date.now(), content: undefined }, options)
-  return { id: 'id', type: EntityType.SCENE, pointers: ['P1'], timestamp: opts.timestamp, content: opts.content }
+function buildEntity(options?: {
+  id?: string
+  timestamp?: Timestamp
+  content?: Map<string, string>
+  pointers?: Pointer[]
+}) {
+  const opts = Object.assign(
+    {
+      timestamp: Date.now(),
+      content: undefined,
+      id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
+      pointers: ['P1']
+    },
+    options
+  )
+  return {
+    ...opts,
+    type: EntityType.SCENE
+  }
 }
 
 function getFileWithSize(sizeInMB: number) {
   return new Map([['someHash', Buffer.alloc(sizeInMB * 1024 * 1024)]])
 }
 
-function getValidatorWithMockedAccess(options?: { maxSizePerPointer: { type: EntityType; size: number } }) {
-  const maxSizeMap: Map<EntityType, number> = options
-    ? new Map([[options.maxSizePerPointer.type, options.maxSizePerPointer.size]])
-    : new Map()
-  return new Validations(
-    new MockedAccessChecker(),
-    new ContentAuthenticator('ropsten'),
-    ms('10m'),
-    maxSizeMap
-  ).getInstance()
+async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
+  const actualErrors = await result
+  expect(actualErrors).toBeDefined()
+  expect(actualErrors!.length).toBe(1)
+  expect(actualErrors![0]).toMatch('The signature is invalid.*')
 }
 
 function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
@@ -479,4 +434,53 @@ function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
     }
   }
   return { deployments: [deployment] }
+}
+
+async function assertErrorsWere(
+  result: undefined | string[] | Promise<undefined | string[]>,
+  ...expectedErrors: string[]
+) {
+  const actualErrors = await result
+  expect(actualErrors).toBeDefined()
+  expect(actualErrors!).toEqual(expectedErrors)
+}
+
+async function assertNoErrors(
+  result: undefined | string[] | Promise<undefined | string[]>,
+  ...expectedErrors: string[]
+) {
+  const actualErrors = await result
+  expect(actualErrors).toBeUndefined()
+}
+
+function buildArgs(args: {
+  deployment: { entity: Entity } & Partial<DeploymentToValidate>
+  env?: Partial<ServerEnvironment>
+  externalCalls?: Partial<ExternalCalls>
+}): ValidationArgs {
+  return {
+    deployment: {
+      files: new Map(),
+      auditInfo: {
+        version: EntityVersion.V3,
+        authChain: []
+      },
+      ...args.deployment
+    },
+    env: {
+      accessChecker: new MockedAccessChecker(),
+      authenticator: new ContentAuthenticator('ropsten'),
+      requestTtlBackwards: ms('10m'),
+      maxUploadSizePerTypeInMB: new Map(),
+      ...args?.env
+    },
+    externalCalls: {
+      fetchDeployments: (_) => Promise.resolve({ deployments: [] }),
+      areThereNewerEntities: (_) => Promise.resolve(false),
+      fetchDeploymentStatus: (_, __) => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
+      isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
+      isEntityDeployedAlready: (_) => Promise.resolve(false),
+      ...args?.externalCalls
+    }
+  }
 }

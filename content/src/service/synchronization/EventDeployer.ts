@@ -4,7 +4,7 @@ import { Readable } from 'stream'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
-import { ClusterDeploymentsService, DeploymentResult, isInvalidDeployment } from '../Service'
+import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, isInvalidDeployment } from '../Service'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { tryOnCluster } from './ClusterUtils'
 import { ContentCluster } from './ContentCluster'
@@ -40,10 +40,16 @@ export class EventDeployer {
     const { auditInfo } = deployment
 
     if (entityFile) {
+      const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
         // Deploy the entity as overwritten
         return this.buildDeploymentExecution(deployment, () =>
-          this.service.deployOverwrittenEntityFromCluster(entityFile, deployment.entityId, auditInfo)
+          this.service.deployEntity(
+            [entityFile],
+            deployment.entityId,
+            auditInfo,
+            isLegacyEntity ? DeploymentContext.OVERWRITTEN_LEGACY_ENTITY : DeploymentContext.OVERWRITTEN
+          )
         )
       } else {
         // Build entity
@@ -58,7 +64,12 @@ export class EventDeployer {
 
           // Since we could fetch all files, deploy the new entity normally
           return this.buildDeploymentExecution(deployment, () =>
-            this.service.deployEntityFromCluster(files, deployment.entityId, auditInfo)
+            this.service.deployEntity(
+              files,
+              deployment.entityId,
+              auditInfo,
+              isLegacyEntity ? DeploymentContext.SYNCED_LEGACY_ENTITY : DeploymentContext.SYNCED
+            )
           )
         } else {
           // Looks like there was a problem fetching one of the files
