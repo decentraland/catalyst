@@ -261,14 +261,17 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   private mapDeploymentsToEntities(history: PartialDeploymentHistory<Deployment>): Entity[] {
-    return history.deployments.map(({ entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
-      id: entityId,
-      type: entityType,
-      pointers,
-      timestamp: entityTimestamp,
-      content,
-      metadata
-    }))
+    return history.deployments.map(
+      ({ entityVersion, entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
+        version: entityVersion,
+        id: entityId,
+        type: entityType,
+        pointers,
+        timestamp: entityTimestamp,
+        content,
+        metadata
+      })
+    )
   }
 
   /** Check if there are newer entities on the given entity's pointers */
