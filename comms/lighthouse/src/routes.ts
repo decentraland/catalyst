@@ -1,10 +1,9 @@
-import { Island } from '@dcl/archipelago'
+import { Island, PeerData } from '@dcl/archipelago'
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { Request, RequestHandler, Response } from 'express'
-import { ConfigService } from './config/configService'
 import { requireAll } from './misc/handlers'
-import { AppServices } from './types'
+import { AppServices, PeerInfo } from './types'
 
 export type RoutesOptions = {
   env?: any
@@ -12,10 +11,6 @@ export type RoutesOptions = {
   ethNetwork: string
   version: string
   restrictedAccessSigner: string
-}
-
-export type Services = {
-  configService: ConfigService
 }
 
 export function asyncHandler(handler: (req: Request, res: Response) => Promise<void>): RequestHandler {
@@ -73,21 +68,38 @@ export function configureRoutes(
     res.send(config)
   }
 
-  const getIslands = async (_req: Request, res: Response) => {
-    function toSimpleIsland(island: Island) {
-      return {
-        id: island.id,
-        peers: island.peers,
-        maxPeers: island.maxPeers,
-        center: island.center,
-        radius: island.radius
-      }
+  function toSimpleIsland(island: Island) {
+    function toPeerInfo(peer: PeerData): PeerInfo & { preferedIslandId?: string } {
+      const info = services.peersService().getPeerInfo(peer.id)
+
+      return { ...info, preferedIslandId: peer.preferedIslandId }
     }
+
+    return {
+      id: island.id,
+      peers: island.peers.map(toPeerInfo),
+      maxPeers: island.maxPeers,
+      center: island.center,
+      radius: island.radius
+    }
+  }
+
+  const getIslands = async (_req: Request, res: Response) => {
     const islandsResponse = await services.archipelagoService().getIslands()
     if (islandsResponse.ok) {
       res.send({ ...islandsResponse, islands: islandsResponse.islands.map(toSimpleIsland) })
     } else {
       res.send(islandsResponse)
+    }
+  }
+
+  const getIsland = async (req: Request, res: Response) => {
+    const island = await services.archipelagoService().getIsland(req.params.islandId)
+
+    if (island) {
+      res.send(toSimpleIsland(island))
+    } else {
+      res.status(404).send({ "status": "not-found" })
     }
   }
 
@@ -106,6 +118,8 @@ export function configureRoutes(
   registerRoute(app, '/config', HttpMethod.GET, [asyncHandler(getConfig)])
 
   registerRoute(app, '/islands', HttpMethod.GET, [asyncHandler(getIslands)])
+
+  registerRoute(app, '/islands/:islandId', HttpMethod.GET, [asyncHandler(getIsland)])
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]

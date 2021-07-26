@@ -103,4 +103,8 @@ export class ArchipelagoService {
 
     return { ok: true, islands: await this.controller.getIslands() }
   }
+
+  async getIsland(islandId: string): Promise<Island | undefined> {
+    return this.controller.getIsland(islandId)
+  }
 }
