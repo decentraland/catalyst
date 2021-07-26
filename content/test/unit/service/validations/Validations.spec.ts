@@ -351,21 +351,27 @@ describe('Validations', function () {
 
   describe('IFPS hashing', () => {
     it(`when an entity's id is not an ipfs hash, then it fails`, async () => {
-      const entity = buildEntity({ id: 'some-id' })
+      const entity = buildEntity({ id: 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' })
       const args = buildArgs({ deployment: { entity } })
 
       const result = Validations.IPFS_HASHING(args)
 
-      await assertErrorsWere(result, `This hash 'some-id' is not valid. It should be IPFS v2 format.`)
+      await assertErrorsWere(
+        result,
+        `This hash 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' is not valid. It should be IPFS v2 format.`
+      )
     })
 
     it(`when an entity's content file is not an ipfs hash, then it fails`, async () => {
-      const entity = buildEntity({ content: new Map([['key', 'some-invalid-hash']]) })
+      const entity = buildEntity({ content: new Map([['key', 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P']]) })
       const args = buildArgs({ deployment: { entity } })
 
       const result = Validations.IPFS_HASHING(args)
 
-      await assertErrorsWere(result, `This hash 'some-invalid-hash' is not valid. It should be IPFS v2 format.`)
+      await assertErrorsWere(
+        result,
+        `This hash 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P' is not valid. It should be IPFS v2 format.`
+      )
     })
 
     it(`when all entity's hashes are ipfs, then no errors are reported`, async () => {
