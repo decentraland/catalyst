@@ -42,7 +42,6 @@ export class TestServer extends Server {
     this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
     this.client = new ContentClient({
       contentUrl: this.getAddress(),
-      origin: '',
       proofOfWorkEnabled: false,
       fetcher: env.getBean(Bean.FETCHER)
     })

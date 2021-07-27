@@ -25,12 +25,12 @@ http_archive(
 load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "yarn_install")
 
 node_repositories(
-    node_version = "12.18.1",
     node_repositories = {
-        "12.18.1-darwin_amd64": ("node-v12.18.1-darwin-x64.tar.gz", "node-v12.18.1-darwin-x64", "80e1d644fe78838da47cd16de234b612c20e06ffe14447125db9622e381ed1ba"),
-        "12.18.1-linux_amd64": ("node-v12.18.1-linux-x64.tar.xz", "node-v12.18.1-linux-x64", "863f816967e297c9eb221ad3cf32521f7ac46fffc66750e60f159ed63809affa"),
-        "12.18.1-windows_amd64": ("node-v12.18.1-win-x64.zip", "node-v12.18.1-win-x64", "93039ebfc7c5bfad168b015f77667757925070fff3ae84c3eb73348b3123a82a"),
+        "14.16.1-darwin_amd64": ("node-v14.16.1-darwin-x64.tar.gz", "node-v14.16.1-darwin-x64", "b762b72fc149629b7e394ea9b75a093cad709a9f2f71480942945d8da0fc1218"),
+        "14.16.1-linux_amd64": ("node-v14.16.1-linux-x64.tar.xz", "node-v14.16.1-linux-x64", "85a89d2f68855282c87851c882d4c4bbea4cd7f888f603722f0240a6e53d89df"),
+        "14.16.1-windows_amd64": ("node-v14.16.1-win-x64.zip", "node-v14.16.1-win-x64", "e469db37b4df74627842d809566c651042d86f0e6006688f0f5fe3532c6dfa41"),
     },
+    node_version = "14.16.1",
 )
 
 yarn_install(
@@ -89,7 +89,6 @@ go_rules_dependencies()
 
 go_register_toolchains()
 
-
 #Protobuf
 
 http_archive(
@@ -105,6 +104,7 @@ http_archive(
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 
 rules_proto_dependencies()
+
 rules_proto_toolchains()
 
 http_archive(
@@ -112,7 +112,7 @@ http_archive(
     sha256 = "0c76ae0d04eaa4d4c5f12556615cb70d294082ee672aee6dd849fea4ec2075ee",
     strip_prefix = "rules_typescript_proto-0.0.3",
     urls = [
-	"https://github.com/Dig-Doug/rules_typescript_proto/archive/0.0.3.tar.gz",
+        "https://github.com/Dig-Doug/rules_typescript_proto/archive/0.0.3.tar.gz",
     ],
 )
 

@@ -33,7 +33,7 @@ describe('AccessCheckerForScenes', function () {
 
   function buildAccessChecker(params?: Partial<AccessCheckerImplParams>): AccessCheckerForScenes {
     const { authenticator, fetcher, landManagerSubgraphUrl } = {
-      authenticator: new ContentAuthenticator(),
+      authenticator: new ContentAuthenticator(''),
       fetcher: new Fetcher(),
       landManagerSubgraphUrl: 'Unused URL',
       ...params

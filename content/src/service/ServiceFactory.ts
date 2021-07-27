@@ -16,7 +16,7 @@ export class ServiceFactory {
       env.getBean(Bean.POINTER_MANAGER),
       env.getBean(Bean.FAILED_DEPLOYMENTS_MANAGER),
       env.getBean(Bean.DEPLOYMENT_MANAGER),
-      env.getBean(Bean.VALIDATIONS),
+      env.getBean(Bean.VALIDATOR),
       env.getBean(Bean.REPOSITORY),
       cache
     )

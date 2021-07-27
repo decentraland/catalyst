@@ -16,10 +16,11 @@ import { MockedRepository } from '@katalyst/test-helpers/repository/MockedReposi
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { buildEntityAndFile } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import assert from 'assert'
 import { ContentFileHash, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
+import { mock } from 'ts-mockito'
 import { MockedStorage } from '../storage/MockedStorage'
 import { NoOpDeploymentManager } from './deployments/NoOpDeploymentManager'
 import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsManager'
@@ -61,7 +62,7 @@ describe('Service', function () {
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
-    const deploymentResult = await service.deployEntity([randomFile], 'not-actual-hash', auditInfo, '')
+    const deploymentResult = await service.deployEntity([randomFile], 'not-actual-hash', auditInfo)
     if (isInvalidDeployment(deploymentResult)) {
       expect(deploymentResult.errors).toEqual([`Failed to find the entity file.`])
     } else {
@@ -75,8 +76,7 @@ describe('Service', function () {
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
       entity.id,
-      auditInfo,
-      ''
+      auditInfo
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
@@ -98,7 +98,7 @@ describe('Service', function () {
     )
     const storeSpy = spyOn(storage, 'store')
 
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
 
     expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile)
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
@@ -114,7 +114,7 @@ describe('Service', function () {
 
   it(`When a new deployment is made, then the amount of deployments is increased`, async () => {
     await service.start()
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
 
     const status = service.getStatus()
 
@@ -124,7 +124,7 @@ describe('Service', function () {
   it(`When a new deployment is made and fails, then the amount of deployments is not modified`, async () => {
     await service.start()
     try {
-      await service.deployEntity([randomFile], randomFileHash, auditInfo, '')
+      await service.deployEntity([randomFile], randomFileHash, auditInfo)
     } catch {}
 
     const status = service.getStatus()
@@ -173,7 +173,7 @@ describe('Service', function () {
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, '')
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
 
     // Reset spy and call again
     serviceSpy.calls.reset()
@@ -185,8 +185,8 @@ describe('Service', function () {
     const env = new Environment()
       .registerBean(Bean.STORAGE, storage)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
-      .registerBean(Bean.AUTHENTICATOR, new ContentAuthenticator())
-      .registerBean(Bean.VALIDATIONS, new NoOpValidations())
+      .registerBean(Bean.AUTHENTICATOR, mock<ContentAuthenticator>())
+      .registerBean(Bean.VALIDATOR, new NoOpValidator())
       .registerBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withoutIdentity())
       .registerBean(Bean.FAILED_DEPLOYMENTS_MANAGER, NoOpFailedDeploymentsManager.build())
       .registerBean(Bean.POINTER_MANAGER, pointerManager)

@@ -1,4 +1,4 @@
-FROM node:12.18.1-slim
+FROM node:14.16.1-slim
 
 RUN apt-get update && \
   apt-get upgrade -yq && \
@@ -27,7 +27,7 @@ RUN yarn install &&\
 WORKDIR /app
 
 ENV COMMIT_HASH=bc34832282cfa746cfb1f27184cf3b53f321a164
-ENV CATALYST_VERSION=1.1.9
+ENV CATALYST_VERSION=1.2.0
 
 EXPOSE 6969
 EXPOSE 7070

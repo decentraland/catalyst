@@ -17,8 +17,11 @@ export class PointerManager {
     deploymentId: DeploymentId,
     entity: Entity
   ): Promise<DeploymentResult> {
-    // Fetch last deployments on pointers
-    const lastDeployments = await lastDeployedPointersRepo.getLastDeploymentsOnPointers(entity.type, entity.pointers)
+    // Fetch active last deployments on pointers
+    const lastDeployments = await lastDeployedPointersRepo.getLastActiveDeploymentsOnPointers(
+      entity.type,
+      entity.pointers
+    )
 
     // Add a made up deployments for the pointers where there was no deployment yet
     const pointersWithDeployments = lastDeployments
@@ -60,7 +63,7 @@ export class PointerManager {
           overwrite.add(pointer)
         })
 
-        // If the last deployment wasn't already deleted, then the pointers not pointing to the new entity, will point to nothing
+        // If the last deployment wasn't already deleted, then the pointers not pointing to the new entity will point to nothing
         if (!lastDeployment.deleted) {
           const onlyOnLastDeployed: Set<Pointer> = diff(lastDeployment.pointers, entity.pointers)
           onlyOnLastDeployed.forEach((pointer) =>
@@ -71,7 +74,7 @@ export class PointerManager {
     })
 
     // Overwrite the currently last entities that need to be overwritten
-    await lastDeployedPointersRepo.setAsLastDeployedOnPointers(
+    await lastDeployedPointersRepo.setAsLastActiveDeploymentsOnPointers(
       deploymentId,
       entity.type,
       Array.from(overwrite.values())

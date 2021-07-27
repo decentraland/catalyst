@@ -11,7 +11,7 @@ import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactor
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import ms from 'ms'
@@ -107,7 +107,7 @@ export class E2ETestEnvironment {
   /** Returns a service that connects to the database, with the migrations run */
   async buildService(): Promise<MetaverseContentService> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const env = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATIONS, new NoOpValidations()).build()
+    const env = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATOR, new NoOpValidator()).build()
     return env.getBean(Bean.SERVICE)
   }
 

@@ -118,7 +118,7 @@ export class AccessCheckerForWearables {
 
       if (!!permissions.contentHash) {
         const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
-        const calculateHash = () => {
+        const calculateHashes = () => {
           // Compare both by key and hash
           const compare = (a: { key: string; hash: string }, b: { key: string; hash: string }) => {
             if (a.hash > b.hash) return 1
@@ -128,9 +128,9 @@ export class AccessCheckerForWearables {
           const entries = Array.from(content?.entries() ?? [])
           const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort(compare)
           const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
-          return Hashing.calculateBufferHash(buffer)
+          return Promise.all([Hashing.calculateBufferHash(buffer), Hashing.calculateIPFSHash(buffer)])
         }
-        return deployedByCommittee && (await calculateHash()) === permissions.contentHash
+        return deployedByCommittee && (await calculateHashes()).includes(permissions.contentHash)
       } else {
         const addressHasAccess =
           (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||

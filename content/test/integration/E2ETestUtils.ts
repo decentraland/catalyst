@@ -116,12 +116,10 @@ export async function deployEntitiesCombo(
 ): Promise<DeploymentResult> {
   let deploymentResult: DeploymentResult = { errors: [] }
   for (const { deployData } of entitiesCombo) {
-    deploymentResult = await service.deployEntity(
-      Array.from(deployData.files.values()),
-      deployData.entityId,
-      { authChain: deployData.authChain, version: EntityVersion.V2 },
-      ''
-    )
+    deploymentResult = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, {
+      authChain: deployData.authChain,
+      version: EntityVersion.V3
+    })
   }
   return deploymentResult
 }
