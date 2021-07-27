@@ -3224,24 +3224,24 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^7.0.2-20210726181815.commit-fc92801:
-  version "7.0.2-20210726181815.commit-fc92801"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-7.0.2-20210726181815.commit-fc92801.tgz#397978dfda138e89f626c2991e367150b0a2d593"
-  integrity sha512-MNRzTNAxoER2dn7+hjA5waqVZvgH4bXqRbwjRBb+04UVzTUggHzWSiTJyt9XRPJFR+Rd5tj4YkqAkQHLX7X9KQ==
+dcl-catalyst-client@^8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-8.0.0.tgz#b86ac2e759b76f1abbe69f5b793379d31b663e4a"
+  integrity sha512-1LcLKObQZ70zKTEufv2ZkLOPp0OFsfE/HfVtrA+hUIusgop3hzCpwx/b1+VeL0TDRIF9c8yzTViOcg1qSZtjsA==
   dependencies:
     "@types/form-data" "^2.5.0"
     "@types/log4js" "^2.3.5"
     async-iterator-to-array "0.0.1"
     cookie "^0.4.1"
-    dcl-catalyst-commons "^6.0.1-20210726154210.commit-ca328ff"
+    dcl-catalyst-commons "^7.0.0"
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
     log4js "^6.3.0"
 
-dcl-catalyst-commons@^6.0.1-20210726154210.commit-ca328ff:
-  version "6.0.1-20210726154210.commit-ca328ff"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-6.0.1-20210726154210.commit-ca328ff.tgz#5eea86deedc36ed1dafe9f0b385c0fa824c7d05a"
-  integrity sha512-AfUDExkmB9MHIcjCqdexCNtEkuCuHy2rq5ufSfW1m5WbDSTuQOicyaHTUm9GmlDdF9jujYA7k+fd60tSGEUB6A==
+dcl-catalyst-commons@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.0.0.tgz#ce75861ea93d32a536873294f7204814587e7415"
+  integrity sha512-OdwCxGcjyx/rk9PuEHZs6I0XNKVbgdVxJfkFTFm+u2O6e/4HtqkC63gEnZxuDbw5UOmzaJH1lMbapHo0h1QheA==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
