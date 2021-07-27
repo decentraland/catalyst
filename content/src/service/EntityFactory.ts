@@ -1,4 +1,4 @@
-import { ContentFileHash, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityId, EntityType, EntityVersion, Pointer } from 'dcl-catalyst-commons'
 import { Entity } from './Entity'
 
 export class EntityFactory {
@@ -43,12 +43,20 @@ export class EntityFactory {
       content = this.parseContent(object.content)
     }
 
+    let version: EntityVersion
+    if (!object.version || !Object.values(EntityVersion).includes(object.version)) {
+      version = EntityVersion.V3
+    } else {
+      version = object.version
+    }
+
     const type: EntityType = EntityType[object.type.toUpperCase().trim()]
     return {
       id,
       type,
       pointers: object.pointers.map((pointer: Pointer) => pointer.toLowerCase()),
       timestamp: object.timestamp,
+      version,
       content,
       metadata: object.metadata
     }

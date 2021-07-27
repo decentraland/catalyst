@@ -4,6 +4,7 @@ import {
   buildEntityAndFile as buildEntityAndFileHelper,
   ContentFileHash,
   EntityType,
+  EntityVersion,
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -18,7 +19,14 @@ export async function buildEntityAndFile(
   metadata?: any
 ): Promise<[Entity, Buffer]> {
   const newContent = Array.from((content ?? new Map()).entries()).map(([file, hash]) => ({ file, hash }))
-  const { entity, entityFile } = await buildEntityAndFileHelper(type, pointers, timestamp, newContent, metadata)
+  const { entity, entityFile } = await buildEntityAndFileHelper({
+    version: EntityVersion.V3,
+    type,
+    pointers,
+    timestamp,
+    content: newContent,
+    metadata
+  })
   return [EntityFactory.fromJsonObject(entity), entityFile]
 }
 
@@ -35,6 +43,7 @@ export function entityToFile(entity: Entity): Buffer {
 
 export function randomEntity(type?: EntityType): Entity {
   return {
+    version: EntityVersion.V3,
     id: random.alphaNumeric(10),
     type: type ?? EntityType.PROFILE,
     pointers: [random.alphaNumeric(1)],

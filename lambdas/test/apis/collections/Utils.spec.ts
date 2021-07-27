@@ -1,7 +1,7 @@
 import { WearableMetadata } from '@katalyst/lambdas/apis/collections/types'
 import { translateEntityIntoWearable } from '@katalyst/lambdas/apis/collections/Utils'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { Entity, EntityType } from 'dcl-catalyst-commons'
+import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { instance, mock, when } from 'ts-mockito'
 
 const EXTERNAL_URL = 'https://external.com'
@@ -54,6 +54,7 @@ describe('Collection Utils', () => {
 
 function buildEntity(): Entity {
   return {
+    version: EntityVersion.V3,
     id: '',
     type: EntityType.WEARABLE,
     pointers: [],
