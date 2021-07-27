@@ -31,9 +31,9 @@ export class ValidatorImpl implements Validator {
     context: DeploymentContext,
     calls: ExternalCalls
   ): Promise<{ ok: true } | { ok: false; errors: Errors }> {
-    const validationsForVersion = ValidatorImpl.VALIDATIONS[deployment.auditInfo.version]
+    const validationsForVersion = ValidatorImpl.VALIDATIONS[deployment.entity.version]
     if (!validationsForVersion) {
-      return { ok: false, errors: [`Unknown entity version ${deployment.auditInfo.version}`] }
+      return { ok: false, errors: [`Unknown entity version ${deployment.entity.version}`] }
     }
     const validationsForContext = validationsForVersion[context]
     if (!validationsForContext) {

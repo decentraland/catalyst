@@ -74,7 +74,7 @@ export interface ClusterDeploymentsService {
   areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
 }
 
-export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'version' | 'authChain' | 'migrationData'>
+export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'migrationData'>
 
 export type DeploymentEvent = {
   entity: Entity

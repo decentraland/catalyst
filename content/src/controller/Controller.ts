@@ -128,7 +128,6 @@ export class Controller {
       deployFiles = await this.readFiles(files)
       const auditInfo: LocalDeploymentAuditInfo = {
         authChain,
-        version: CURRENT_CONTENT_VERSION,
         migrationData: {
           originalVersion,
           data: migrationInformation
