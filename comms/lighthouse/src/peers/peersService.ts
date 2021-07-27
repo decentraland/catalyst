@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Island } from '@dcl/archipelago'
+
 import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
+import { LighthouseConfig, ConfigService } from '../config/configService'
 import { IRealm } from '../peerjs-server'
 import { PeerInfo, PeerRequest } from '../types'
 import { PeerOutgoingMessage, PeerOutgoingMessageType } from './protocol/messageTypes'
@@ -23,6 +25,7 @@ export class PeersService implements IPeersService {
 
   constructor(
     private realmProvider: () => IRealm,
+    private configService: ConfigService,
     private distanceFunction: (p1: Position3D, p2: Position3D) => number = discretizedPositionDistanceXZ()
   ) {}
 
@@ -76,7 +79,9 @@ export class PeersService implements IPeersService {
     return peer
   }
 
-  getPeersInfo(peerIds: string[]): PeerInfo[] {
+  getPeersInfo(peerIds?: string[]): PeerInfo[] {
+    if (!peerIds) peerIds = Object.keys(this.peers)
+
     return peerIds.map((id) => this.getPeerInfo(id))
   }
 
@@ -191,5 +196,14 @@ export class PeersService implements IPeersService {
     }
 
     return result
+  }
+
+  getAllPeers(): { ok: true; peers: PeerInfo[] } | { ok: false; message: string } {
+    const peersCount = this.getActivePeersCount()
+
+    if (peersCount >= this.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT))
+      return { ok: false, message: 'Cannot query islands during high load' }
+
+    return { ok: true, peers: this.getPeersInfo(Object.keys(this.peers)) }
   }
 }

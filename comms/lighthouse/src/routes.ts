@@ -99,8 +99,14 @@ export function configureRoutes(
     if (island) {
       res.send(toSimpleIsland(island))
     } else {
-      res.status(404).send({ "status": "not-found" })
+      res.status(404).send({ status: 'not-found' })
     }
+  }
+
+  const getPeers = async (_req: Request, res: Response) => {
+    const peersResponse = services.peersService().getAllPeers()
+
+    res.send(peersResponse)
   }
 
   registerRoute(app, '/status', HttpMethod.GET, [getStatus])
@@ -120,6 +126,8 @@ export function configureRoutes(
   registerRoute(app, '/islands', HttpMethod.GET, [asyncHandler(getIslands)])
 
   registerRoute(app, '/islands/:islandId', HttpMethod.GET, [asyncHandler(getIsland)])
+
+  registerRoute(app, '/peers', HttpMethod.GET, [asyncHandler(getPeers)])
 
   function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
     const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]

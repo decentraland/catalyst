@@ -81,7 +81,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     Metrics.initialize()
   }
 
-  const peersService = new PeersService(getPeerJsRealm)
+  const peersService = new PeersService(getPeerJsRealm, configService)
 
   app.use(cors())
   app.use(express.json())
