@@ -41,7 +41,26 @@ export class Server {
       this.app.use(compression({ filter: (req, res) => true }))
     }
 
-    this.app.use(cors())
+    const corsOptions: cors.CorsOptions = {
+      origin: true,
+      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,OPTIONS,TRACE,PATCH',
+      allowedHeaders: [
+        'DNT',
+        'X-Mx-ReqToken',
+        'Keep-Alive',
+        'User-Agent',
+        'X-Requested-With',
+        'If-Modified-Since',
+        'Cache-Control',
+        'Content-Type',
+        'Origin',
+        'Accept',
+        'X-Peer-Token'
+      ],
+      credentials: true
+    }
+
+    this.app.use(cors(corsOptions))
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
@@ -57,6 +76,8 @@ export class Server {
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
+
+    this.app.options('*', cors(corsOptions))
 
     // Base endpoints
     this.app.use('/', statusRouter(env))

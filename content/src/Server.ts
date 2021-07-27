@@ -44,6 +44,26 @@ export class Server {
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
     this.app = express()
+
+    const corsOptions: cors.CorsOptions = {
+      origin: true,
+      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,OPTIONS,TRACE,PATCH',
+      allowedHeaders: [
+        'DNT',
+        'X-Mx-ReqToken',
+        'Keep-Alive',
+        'User-Agent',
+        'X-Requested-With',
+        'If-Modified-Since',
+        'Cache-Control',
+        'Content-Type',
+        'Origin',
+        'Accept',
+        'X-Peer-Token'
+      ],
+      credentials: true
+    }
+
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
     const controller: Controller = env.getBean(Bean.CONTROLLER)
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
@@ -57,7 +77,7 @@ export class Server {
       this.app.use(compression({ filter: (req, res) => true }))
     }
 
-    this.app.use(cors())
+    this.app.use(cors(corsOptions))
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
@@ -67,6 +87,7 @@ export class Server {
       Metrics.initialize()
     }
 
+    this.app.options('*', cors(corsOptions))
     this.registerRoute('/entities/:type', controller, controller.getEntities)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any())
     this.registerRoute('/contents/:hashId', controller, controller.getContent)
