@@ -7,8 +7,8 @@ export class ControllerDeploymentFactory {
     deployment: Deployment,
     fields: DeploymentField[]
   ): T {
-    const { entityType, entityId, entityTimestamp, deployedBy, pointers, auditInfo } = deployment
-    const result: any = { entityType, entityId, entityTimestamp, deployedBy }
+    const { pointers, auditInfo, content, metadata, ...other } = deployment
+    const result: any = { ...other }
     if (fields.includes(DeploymentField.POINTERS)) {
       result.pointers = pointers
     }

@@ -24,6 +24,7 @@ export async function buildDeployDataAfterEntity(
 export async function buildDeployData(pointers: Pointer[], options?: DeploymentOptions): Promise<EntityCombo> {
   const opts = Object.assign(
     {
+      version: EntityVersion.V3,
       type: EntityType.SCENE,
       timestamp: Date.now(),
       metadata: 'metadata',
@@ -37,13 +38,11 @@ export async function buildDeployData(pointers: Pointer[], options?: DeploymentO
       ? new Map(opts.contentPaths.map((filePath) => [path.basename(filePath), fs.readFileSync(filePath)]))
       : undefined
 
-  const deploymentPreparationData = await DeploymentBuilder.buildEntity(
-    opts.type,
+  const deploymentPreparationData = await DeploymentBuilder.buildEntity({
+    ...opts,
     pointers,
-    buffers,
-    opts.metadata,
-    opts.timestamp
-  )
+    files: buffers
+  })
   const [, signature] = hashAndSignMessage(deploymentPreparationData.entityId, opts.identity)
   const authChain = Authenticator.createSimpleAuthChain(
     deploymentPreparationData.entityId,
