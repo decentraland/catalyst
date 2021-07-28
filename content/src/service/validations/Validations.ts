@@ -2,6 +2,7 @@ import { EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
+import { ServiceImpl } from '../ServiceImpl'
 import { happenedBefore } from '../time/TimeSorting'
 import { Validation } from './Validator'
 
@@ -100,12 +101,9 @@ export class Validations {
       for (const currentDeployment of deployments) {
         const currentAuditInfo = currentDeployment.auditInfo
         if (happenedBefore(currentDeployment, entityToBeDeployed)) {
-          if (currentAuditInfo.version > auditInfoBeingDeployed.version) {
+          if (currentAuditInfo.version > entityToBeDeployed.version) {
             return [`Found an overlapping entity with a higher version already deployed.`]
-          } else if (
-            currentAuditInfo.version == auditInfoBeingDeployed.version &&
-            auditInfoBeingDeployed.migrationData
-          ) {
+          } else if (currentAuditInfo.version == entityToBeDeployed.version && auditInfoBeingDeployed.migrationData) {
             if (!currentAuditInfo.migrationData) {
               return [`Found an overlapping entity with a higher version already deployed.`]
             } else if (
@@ -160,15 +158,13 @@ export class Validations {
 
   /** Validate that all hashes used by the entity were actually IPFS hashes */
   static readonly IPFS_HASHING: Validation = ({ deployment }) => {
-    const isIPFSHash = (hash: string) => hash.startsWith('bafy') && hash.length === 59
-
     const { entity } = deployment
 
     const hashesInContent = Array.from(entity.content?.values() ?? [])
     const allHashes = [entity.id, ...hashesInContent]
 
     const errors: string[] = allHashes
-      .filter((hash) => !isIPFSHash(hash))
+      .filter((hash) => !ServiceImpl.isIPFSHash(hash))
       .map((hash) => `This hash '${hash}' is not valid. It should be IPFS v2 format.`)
 
     return errors.length > 0 ? errors : undefined

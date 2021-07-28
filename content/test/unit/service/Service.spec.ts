@@ -29,8 +29,7 @@ import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 describe('Service', function () {
   const POINTERS = ['X1,Y1', 'X2,Y2']
   const auditInfo: LocalDeploymentAuditInfo = {
-    authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature'),
-    version: EntityVersion.V3
+    authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature')
   }
 
   const initialAmountOfDeployments: number = 15
@@ -215,6 +214,7 @@ describe('Service', function () {
       pointers: POINTERS,
       auditInfo: {
         ...auditInfo,
+        version: EntityVersion.V3,
         localTimestamp: 10
       }
     }
