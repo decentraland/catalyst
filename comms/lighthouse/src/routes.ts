@@ -104,7 +104,7 @@ export function configureRoutes(
   }
 
   const getPeers = async (_req: Request, res: Response) => {
-    const peersResponse = services.peersService().getAllPeers()
+    const peersResponse = services.peersService().getConnectedPeersInfo()
 
     res.send(peersResponse)
   }

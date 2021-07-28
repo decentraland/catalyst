@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Island } from '@dcl/archipelago'
-
 import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from 'decentraland-catalyst-utils/Positions'
-import { LighthouseConfig, ConfigService } from '../config/configService'
+import { LighthouseConfig } from '../config/configService'
 import { IRealm } from '../peerjs-server'
-import { PeerInfo, PeerRequest } from '../types'
+import { AppServices, PeerInfo, PeerRequest } from '../types'
 import { PeerOutgoingMessage, PeerOutgoingMessageType } from './protocol/messageTypes'
 
 require('isomorphic-fetch')
@@ -20,12 +19,12 @@ export interface IPeersService {
 export class PeersService implements IPeersService {
   private peersTopology: Record<string, string[]> = {}
 
-  // This structure contains information of all peers, even those that have disconnected. To know if a peer is disconnected, check the realm
+  // This structure may contain information of peers that have already disconnected. To know if a peer is disconnected, check the realm
   private peers: Record<string, PeerInfo> = {}
 
   constructor(
     private realmProvider: () => IRealm,
-    private configService: ConfigService,
+    private services: Pick<AppServices, 'configService' | 'archipelagoService'>,
     private distanceFunction: (p1: Position3D, p2: Position3D) => number = discretizedPositionDistanceXZ()
   ) {}
 
@@ -198,12 +197,27 @@ export class PeersService implements IPeersService {
     return result
   }
 
-  getAllPeers(): { ok: true; peers: PeerInfo[] } | { ok: false; message: string } {
+  getConnectedPeersInfo(): { ok: true; peers: PeerInfo[] } | { ok: false; message: string } {
     const peersCount = this.getActivePeersCount()
 
-    if (peersCount >= this.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT))
-      return { ok: false, message: 'Cannot query islands during high load' }
+    if (peersCount >= this.services.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT))
+      return { ok: false, message: 'Cannot query peers during high load' }
 
-    return { ok: true, peers: this.getPeersInfo(Object.keys(this.peers)) }
+    return { ok: true, peers: this.getPeersInfo(this.realmProvider().getClientsIds()) }
+  }
+
+  clearPeer(peerId: string) {
+    delete this.peers[peerId]
+    delete this.peersTopology[peerId]
+  }
+
+  clearNotConnectedPeers() {
+    for (const id in this.peers) {
+      if (!this.realmProvider().hasClient(id)) {
+        console.warn(`Clearing peer ${id} because it wasn't connected to the lighthouse`)
+        this.clearPeer(id)
+        this.services.archipelagoService().clearPeer(id)
+      }
+    }
   }
 }

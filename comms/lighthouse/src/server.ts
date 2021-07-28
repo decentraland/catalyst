@@ -15,6 +15,7 @@ import { ArchipelagoService } from './peers/archipelagoService'
 import { IdService } from './peers/idService'
 import { initPeerJsServer } from './peers/initPeerJsServer'
 import { defaultPeerMessagesHandler } from './peers/peerMessagesHandler'
+import { peersCheckJob } from './peers/peersCheckJob'
 import { PeersService } from './peers/peersService'
 import { configureRoutes } from './routes'
 import { AppServices } from './types'
@@ -81,7 +82,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     Metrics.initialize()
   }
 
-  const peersService = new PeersService(getPeerJsRealm, configService)
+  const peersService = new PeersService(getPeerJsRealm, appServices)
 
   app.use(cors())
   app.use(express.json())
@@ -108,6 +109,10 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const _static = path.join(__dirname, '../static')
 
   app.use('/monitor', express.static(_static + '/monitor'))
+
+  const peersCheckJobInstance = await peersCheckJob(appServices)
+
+  peersCheckJobInstance.start()
 })().catch((e) => {
   console.error('Exiting process because of unhandled exception', e)
   process.exit(1)

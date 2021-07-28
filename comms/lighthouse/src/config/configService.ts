@@ -38,6 +38,12 @@ export class LighthouseConfig<T> {
     defaultValue: 10000
   })
 
+  static readonly PEERS_CHECK_INTERVAL: LighthouseConfig<number> = new LighthouseConfig({
+    name: 'peersCheckInterval',
+    fromText: parseInt,
+    defaultValue: 60000
+  })
+
   readonly name: string
   readonly fromText: (config: string) => T
   readonly defaultValue: T
