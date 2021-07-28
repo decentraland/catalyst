@@ -250,7 +250,6 @@ describe('Validations', function () {
         deployment: {
           entity,
           auditInfo: {
-            version: EntityVersion.V3,
             authChain: ContentAuthenticator.createSimpleAuthChain(
               entity.id,
               '0x29d7d1dd5b6f9c864d9db560d72a247c178ae86b',
@@ -276,10 +275,7 @@ describe('Validations', function () {
       const args = buildArgs({
         deployment: {
           entity,
-          auditInfo: {
-            version: EntityVersion.V3,
-            authChain
-          }
+          auditInfo: { authChain }
         }
       })
 
@@ -296,7 +292,7 @@ describe('Validations', function () {
       const args = buildArgs({
         deployment: {
           entity,
-          auditInfo: { version: EntityVersion.V3, authChain }
+          auditInfo: { authChain }
         }
       })
 
@@ -310,7 +306,7 @@ describe('Validations', function () {
       const args = buildArgs({
         deployment: {
           entity,
-          auditInfo: { version: EntityVersion.V3, authChain: [] }
+          auditInfo: { authChain: [] }
         }
       })
 
@@ -387,6 +383,7 @@ describe('Validations', function () {
 })
 
 function buildEntity(options?: {
+  version?: EntityVersion
   id?: string
   timestamp?: Timestamp
   content?: Map<string, string>
@@ -394,6 +391,7 @@ function buildEntity(options?: {
 }) {
   const opts = Object.assign(
     {
+      version: EntityVersion.V3,
       timestamp: Date.now(),
       content: undefined,
       id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
@@ -403,7 +401,6 @@ function buildEntity(options?: {
   )
   return {
     ...opts,
-    version: EntityVersion.V3,
     type: EntityType.SCENE
   }
 }
@@ -429,7 +426,7 @@ function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
     deployedBy: '0x...',
     content: undefined,
     auditInfo: {
-      version: EntityVersion.V2,
+      version: EntityVersion.V3,
       authChain: [],
       localTimestamp: 20,
       ...auditInfo
@@ -463,10 +460,7 @@ function buildArgs(args: {
   return {
     deployment: {
       files: new Map(),
-      auditInfo: {
-        version: EntityVersion.V3,
-        authChain: []
-      },
+      auditInfo: { authChain: [] },
       ...args.deployment
     },
     env: {
