@@ -2,7 +2,7 @@ import { getWearablesByOwner } from '@katalyst/lambdas/apis/collections/controll
 import { WearableId } from '@katalyst/lambdas/apis/collections/types'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
@@ -79,6 +79,7 @@ function emptyContentServer() {
 
 function contentServerThatReturns(id?: WearableId) {
   const entity = {
+    version: EntityVersion.V3,
     id: '',
     type: EntityType.WEARABLE,
     pointers: [id ?? ''],

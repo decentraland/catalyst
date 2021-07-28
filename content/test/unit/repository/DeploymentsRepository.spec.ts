@@ -307,7 +307,13 @@ describe('DeploymentRepository', () => {
 
     describe('when there is no metadata', () => {
       it('should call the db with the expected query and null metadata', async () => {
-        const entity: Entity = { id: '1', pointers: [], timestamp: 1, type: EntityType.PROFILE }
+        const entity: Entity = {
+          version: EntityVersion.V3,
+          id: '1',
+          pointers: [],
+          timestamp: 1,
+          type: EntityType.PROFILE
+        }
         const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
@@ -336,7 +342,14 @@ describe('DeploymentRepository', () => {
     describe('when there is no metadata', () => {
       it('should call the db with the expected query and the metadata value', async () => {
         const metadata = { aField: 'aValue' }
-        const entity: Entity = { id: '1', pointers: [], timestamp: 1, type: EntityType.PROFILE, metadata }
+        const entity: Entity = {
+          version: EntityVersion.V3,
+          id: '1',
+          pointers: [],
+          timestamp: 1,
+          type: EntityType.PROFILE,
+          metadata
+        }
         const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)

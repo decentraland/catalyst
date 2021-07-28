@@ -207,6 +207,7 @@ describe('Service', function () {
 
   function fakeDeployment(): Deployment {
     return {
+      entityVersion: EntityVersion.V3,
       entityType: EntityType.SCENE,
       entityId: '',
       entityTimestamp: 10,

@@ -403,6 +403,7 @@ function buildEntity(options?: {
   )
   return {
     ...opts,
+    version: EntityVersion.V3,
     type: EntityType.SCENE
   }
 }
@@ -421,6 +422,7 @@ async function assertSignatureInInvalid(result: undefined | string[] | Promise<u
 function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
   const deployment: Deployment = {
     ...entity,
+    entityVersion: EntityVersion.V3,
     entityId: entity.id,
     entityTimestamp: entity.timestamp,
     entityType: entity.type,
