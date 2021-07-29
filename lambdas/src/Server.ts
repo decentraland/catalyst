@@ -43,20 +43,7 @@ export class Server {
 
     const corsOptions: cors.CorsOptions = {
       origin: true,
-      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,OPTIONS,TRACE,PATCH',
-      allowedHeaders: [
-        'DNT',
-        'X-Mx-ReqToken',
-        'Keep-Alive',
-        'User-Agent',
-        'X-Requested-With',
-        'If-Modified-Since',
-        'Cache-Control',
-        'Content-Type',
-        'Origin',
-        'Accept',
-        'X-Peer-Token'
-      ],
+      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
       credentials: true
     }
 
@@ -76,8 +63,6 @@ export class Server {
     const contentClient: SmartContentClient = env.getBean(Bean.SMART_CONTENT_SERVER_CLIENT)
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
-
-    this.app.options('*', cors(corsOptions))
 
     // Base endpoints
     this.app.use('/', statusRouter(env))

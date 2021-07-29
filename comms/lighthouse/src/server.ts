@@ -62,20 +62,8 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const corsOptions: cors.CorsOptions = {
     origin: true,
-    methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,OPTIONS,TRACE,PATCH',
-    allowedHeaders: [
-      'DNT',
-      'X-Mx-ReqToken',
-      'Keep-Alive',
-      'User-Agent',
-      'X-Requested-With',
-      'If-Modified-Since',
-      'Cache-Control',
-      'Content-Type',
-      'Origin',
-      'Accept',
-      'X-Peer-Token'
-    ],
+    methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
+    allowedHeaders: ['X-Peer-Token'],
     credentials: true
   }
 
@@ -90,8 +78,6 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const layersService = new LayersService({ peersService, existingLayers, allowNewLayers, configService })
 
   const idService = new IdService({ alphabet: idAlphabet, idLength })
-
-  app.options('*', cors(corsOptions))
 
   configureRoutes(
     app,

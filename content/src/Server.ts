@@ -47,20 +47,7 @@ export class Server {
 
     const corsOptions: cors.CorsOptions = {
       origin: true,
-      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,OPTIONS,TRACE,PATCH',
-      allowedHeaders: [
-        'DNT',
-        'X-Mx-ReqToken',
-        'Keep-Alive',
-        'User-Agent',
-        'X-Requested-With',
-        'If-Modified-Since',
-        'Cache-Control',
-        'Content-Type',
-        'Origin',
-        'Accept',
-        'X-Peer-Token'
-      ],
+      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
       credentials: true
     }
 
@@ -87,7 +74,6 @@ export class Server {
       Metrics.initialize()
     }
 
-    this.app.options('*', cors(corsOptions))
     this.registerRoute('/entities/:type', controller, controller.getEntities)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any())
     this.registerRoute('/contents/:hashId', controller, controller.getContent)
