@@ -6,7 +6,7 @@ import {
 import { Wearable, WearableId } from '@katalyst/lambdas/apis/collections/types'
 import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
 
 const OFF_CHAIN_WEARABLE_ID = 'urn:decentraland:off-chain:base-avatars:wearable'
@@ -140,6 +140,7 @@ function offChainManagerWith(
 
 function contentServerThatReturns(id?: WearableId) {
   const entity = {
+    version: EntityVersion.V3,
     id: '',
     type: EntityType.WEARABLE,
     pointers: [id ?? ''],

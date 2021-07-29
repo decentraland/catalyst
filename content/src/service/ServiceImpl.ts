@@ -3,7 +3,6 @@ import {
   ContentFileHash,
   EntityId,
   EntityType,
-  EntityVersion,
   Hashing,
   PartialDeploymentHistory,
   Pointer,
@@ -76,7 +75,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
-    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files, auditInfo.version)
+    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files, entityId)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -133,6 +132,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
             const auditInfoComplete: AuditInfo = {
               ...auditInfo,
+              version: entity.version,
               localTimestamp
             }
 
@@ -261,14 +261,17 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   private mapDeploymentsToEntities(history: PartialDeploymentHistory<Deployment>): Entity[] {
-    return history.deployments.map(({ entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
-      id: entityId,
-      type: entityType,
-      pointers,
-      timestamp: entityTimestamp,
-      content,
-      metadata
-    }))
+    return history.deployments.map(
+      ({ entityVersion, entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
+        version: entityVersion,
+        id: entityId,
+        type: entityType,
+        pointers,
+        timestamp: entityTimestamp,
+        content,
+        metadata
+      })
+    )
   }
 
   /** Check if there are newer entities on the given entity's pointers */
@@ -303,14 +306,19 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles, version: EntityVersion): Promise<Map<ContentFileHash, Buffer>> {
+  static async hashFiles(files: DeploymentFiles, entityId: EntityId): Promise<Map<ContentFileHash, Buffer>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: Buffer }[] =
-        version === EntityVersion.V3 ? await Hashing.calculateHashes(files) : await Hashing.calculateIPFSHashes(files)
+      const hashEntries: { hash: ContentFileHash; file: Buffer }[] = this.isIPFSHash(entityId)
+        ? await Hashing.calculateIPFSHashes(files)
+        : await Hashing.calculateHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
     }
+  }
+
+  static isIPFSHash(hash: string) {
+    return hash.startsWith('bafy') && hash.length === 59
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {

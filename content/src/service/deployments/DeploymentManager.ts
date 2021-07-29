@@ -57,6 +57,7 @@ export class DeploymentManager {
     const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
 
     const deployments: Deployment[] = deploymentsResult.map((result) => ({
+      entityVersion: result.version,
       entityType: result.entityType,
       entityId: result.entityId,
       pointers: result.pointers,

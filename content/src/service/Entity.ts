@@ -1,6 +1,7 @@
-import { ContentFileHash, EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityId, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
 
 export type Entity = {
+  version: EntityVersion
   id: EntityId
   type: EntityType
   pointers: Pointer[]

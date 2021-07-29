@@ -20,7 +20,7 @@ import {
   MockedMetaverseContentService,
   MockedMetaverseContentServiceBuilder
 } from '@katalyst/test-helpers/service/MockedMetaverseContentService'
-import { EntityVersion, Pointer } from 'dcl-catalyst-commons'
+import { Pointer } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { random } from 'faker'
 import { anything, instance, mock, when } from 'ts-mockito'
@@ -33,8 +33,7 @@ describe('DenylistServiceDecorator', () => {
   const content2 = buildRandomContent()
   const ethAddress = random.alphaNumeric(10)
   const auditInfo: LocalDeploymentAuditInfo = {
-    authChain: Authenticator.createSimpleAuthChain('', ethAddress, random.alphaNumeric(10)),
-    version: EntityVersion.V3
+    authChain: Authenticator.createSimpleAuthChain('', ethAddress, random.alphaNumeric(10))
   }
 
   let entity1: Entity
