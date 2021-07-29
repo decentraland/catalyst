@@ -5,7 +5,7 @@ import { EntityField } from './Controller'
 
 export class ControllerEntityFactory {
   static maskEntity(fullEntity: Entity, fields?: EntityField[]): ControllerEntity {
-    const { id, type, timestamp } = fullEntity
+    const { id, type, timestamp, version } = fullEntity
     let content: EntityContentItemReference[] | undefined = undefined
     let metadata: any
     let pointers: string[] = []
@@ -18,12 +18,13 @@ export class ControllerEntityFactory {
     if ((!fields || fields.includes(EntityField.POINTERS)) && fullEntity.pointers) {
       pointers = fullEntity.pointers
     }
-    return { id, type, timestamp, pointers, content, metadata }
+    return { version, id, type, timestamp, pointers, content, metadata }
   }
 
   static maskDeployment(fullDeployment: Deployment, fields?: EntityField[]): ControllerEntity {
     const entity: Entity = {
       ...fullDeployment,
+      version: fullDeployment.entityVersion,
       id: fullDeployment.entityId,
       timestamp: fullDeployment.entityTimestamp,
       type: fullDeployment.entityType

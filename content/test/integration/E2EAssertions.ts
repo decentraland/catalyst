@@ -247,6 +247,7 @@ export function buildDeployment(
 ): ControllerDeployment {
   return {
     ...entity,
+    entityVersion: EntityVersion.V3,
     content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : undefined,
     entityType: entity.type,
     entityId: entity.id,

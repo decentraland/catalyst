@@ -307,12 +307,18 @@ describe('DeploymentRepository', () => {
 
     describe('when there is no metadata', () => {
       it('should call the db with the expected query and null metadata', async () => {
-        const entity: Entity = { id: '1', pointers: [], timestamp: 1, type: EntityType.PROFILE }
+        const entity: Entity = {
+          version: EntityVersion.V3,
+          id: '1',
+          pointers: [],
+          timestamp: 1,
+          type: EntityType.PROFILE
+        }
         const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
 
-        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(auditInfo.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
+        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
 
         const args = capture(db.one).last()
         expect(args[0]).toEqual(expectedQuery)
@@ -336,12 +342,19 @@ describe('DeploymentRepository', () => {
     describe('when there is no metadata', () => {
       it('should call the db with the expected query and the metadata value', async () => {
         const metadata = { aField: 'aValue' }
-        const entity: Entity = { id: '1', pointers: [], timestamp: 1, type: EntityType.PROFILE, metadata }
+        const entity: Entity = {
+          version: EntityVersion.V3,
+          id: '1',
+          pointers: [],
+          timestamp: 1,
+          type: EntityType.PROFILE,
+          metadata
+        }
         const auditInfo = { authChain: [], localTimestamp: 2, version: EntityVersion.V3 }
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
 
-        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(auditInfo.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
+        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
 
         const args = capture(db.one).last()
         expect(args[0]).toEqual(expectedQuery)

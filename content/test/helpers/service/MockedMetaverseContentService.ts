@@ -20,6 +20,7 @@ import {
   ContentFileHash,
   EntityId,
   EntityType,
+  EntityVersion,
   LegacyAuditInfo,
   PartialDeploymentHistory,
   Pointer,
@@ -33,7 +34,7 @@ import { buildEntityAndFile } from './EntityTestFactory'
 export class MockedMetaverseContentService implements MetaverseContentService {
   static readonly STATUS: ServerStatus = {
     name: 'name',
-    version: '4.20',
+    version: EntityVersion.V3,
     currentTime: Date.now(),
     lastImmutableTime: 0,
     historySize: 0
@@ -173,6 +174,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
   private entityToDeployment(entity: Entity): Deployment {
     return {
       ...entity,
+      entityVersion: EntityVersion.V3,
       entityType: entity.type,
       entityId: entity.id,
       entityTimestamp: entity.timestamp,
