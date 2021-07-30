@@ -63,7 +63,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const corsOptions: cors.CorsOptions = {
     origin: true,
     methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
-    allowedHeaders: ['X-Peer-Token', 'content-type'],
+    allowedHeaders: ['X-Peer-Token', 'Content-Type'],
     credentials: true
   }
 
