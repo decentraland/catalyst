@@ -48,6 +48,7 @@ export class Server {
     const corsOptions: cors.CorsOptions = {
       origin: true,
       methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
+      allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept'],
       credentials: true
     }
 
