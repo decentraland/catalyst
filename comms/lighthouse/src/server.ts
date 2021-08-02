@@ -79,6 +79,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const idService = new IdService({ alphabet: idAlphabet, idLength })
 
+  
   configureRoutes(
     app,
     { layersService, realmProvider: getPeerJsRealm, peersService, configService },
