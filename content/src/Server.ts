@@ -44,6 +44,14 @@ export class Server {
     this.port = env.getConfig(EnvironmentConfig.SERVER_PORT)
 
     this.app = express()
+
+    const corsOptions: cors.CorsOptions = {
+      origin: true,
+      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
+      allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
+      credentials: true
+    }
+
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
     const controller: Controller = env.getBean(Bean.CONTROLLER)
     this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
@@ -57,7 +65,7 @@ export class Server {
       this.app.use(compression({ filter: (req, res) => true }))
     }
 
-    this.app.use(cors())
+    this.app.use(cors(corsOptions))
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))

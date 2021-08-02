@@ -60,7 +60,14 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const peersService = new PeersService(getPeerJsRealm)
 
-  app.use(cors())
+  const corsOptions: cors.CorsOptions = {
+    origin: true,
+    methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
+    allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Peer-Token'],
+    credentials: true
+  }
+
+  app.use(cors(corsOptions))
   app.use(express.json())
   if (accessLogs) {
     app.use(morgan('combined'))
@@ -72,6 +79,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
   const idService = new IdService({ alphabet: idAlphabet, idLength })
 
+  
   configureRoutes(
     app,
     { layersService, realmProvider: getPeerJsRealm, peersService, configService },

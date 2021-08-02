@@ -41,7 +41,14 @@ export class Server {
       this.app.use(compression({ filter: (req, res) => true }))
     }
 
-    this.app.use(cors())
+    const corsOptions: cors.CorsOptions = {
+      origin: true,
+      methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
+      allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent'],
+      credentials: true
+    }
+
+    this.app.use(cors(corsOptions))
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
