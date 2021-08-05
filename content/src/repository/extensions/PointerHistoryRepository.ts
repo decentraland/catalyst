@@ -33,7 +33,7 @@ export class PointerHistoryRepository {
                     pointer_history.pointer IN ($2:list) AND
                     (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
                 ORDER BY deployments.entity_timestamp ASC, deployments.entity_id ASC
-                LIMIT 3`,
+                LIMIT 100`,
         [entity.type, entity.pointers, entity.timestamp, entity.id]
       )
       let overwrittenBy: DeploymentId | null = null
