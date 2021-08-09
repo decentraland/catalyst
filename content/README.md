@@ -48,3 +48,28 @@ These are some of the more important configuration values:
 
 ## Run integration tests
     `yarn bazel run content:integration_test`
+
+
+
+## Project Structure: History
+
+
+There are two kind of histories.
+
+### Entities/global history
+
+This is the global history that all content servers agree on. This is determined by the entity timestamp, which can't be modified,
+so all content servers should have the same order and agree on 'who overwrote who'. This overwrite information is stored
+on the 'deployments' table, with the 'deleter_deployment' field. Each deployment will store who overwrote it (in this global order sense).
+
+###  Deployments/local history
+
+This history is local to each content server. It depends on the order that deployments were made, so it will most likely be different for each server. This information is stored on the 'deployment_deltas' table, and exposed by the /pointer-changes endpoint. The idea is that this table will store changes made to the pointers. So if a deployment modifies a pointer in some way, this is where it will be recorded.
+
+Possible modifications to a pointer could be: making the pointer reference the new entity or making the pointer point to nothing. Each deployment will have a reference:
+
+- The modified pointer
+- The previous entity the pointer was referring to (if any)
+- The changes that occurred (point to new entity or point to nothing).
+-
+It is important to note that a new deployment could have no impact on pointers. This would happen when D1 overwrote D2 (on the global order sense), and the content server locally deployed D1 before D2. In that case, no changes are recorded for that deployment.
