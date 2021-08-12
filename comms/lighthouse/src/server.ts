@@ -48,10 +48,6 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
     const app = express()
 
-    if (enableMetrics) {
-      Metrics.initialize()
-    }
-
     const corsOptions: cors.CorsOptions = {
       origin: true,
       methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
