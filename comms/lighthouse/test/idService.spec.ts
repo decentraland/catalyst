@@ -1,5 +1,5 @@
 import express from 'express'
-import { IdService } from '../src/idService'
+import { IdService } from '../src/peers/idService'
 
 require('isomorphic-fetch')
 
@@ -11,7 +11,7 @@ describe('id service generation', function () {
   beforeEach(() => {
     originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
-    idService = new IdService()
+    idService = new IdService({ idLength: 2 })
   })
 
   afterEach(function () {
