@@ -1,7 +1,7 @@
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '@katalyst/content/Environment'
 import { GarbageCollectionManager } from '@katalyst/content/service/garbage-collection/GarbageCollectionManager'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { NoOpValidations } from '@katalyst/test-helpers/service/validations/NoOpValidations'
+import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import { delay } from 'decentraland-katalyst-utils/util'
@@ -46,7 +46,7 @@ describe('Integration - Garbage Collection', () => {
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
       .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
-      .withBean(Bean.VALIDATIONS, new NoOpValidations())
+      .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
 
     service = env.getBean(Bean.SERVICE)

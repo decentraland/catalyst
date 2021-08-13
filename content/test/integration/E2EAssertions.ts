@@ -157,8 +157,11 @@ async function assertEntityIsOnServer(server: TestServer, entity: ControllerEnti
 
 export async function assertFileIsOnServer(server: TestServer, hash: ContentFileHash) {
   const content = await server.downloadContent(hash)
-  const downloadedContentHash = await Hashing.calculateBufferHash(content)
-  assert.equal(downloadedContentHash, hash)
+  const downloadedContentHashes = await Promise.all([
+    Hashing.calculateBufferHash(content),
+    Hashing.calculateIPFSHash(content)
+  ])
+  assert.ok(downloadedContentHashes.includes(hash))
 }
 
 export async function assertFileIsNotOnServer(server: TestServer, hash: ContentFileHash) {
@@ -244,6 +247,7 @@ export function buildDeployment(
 ): ControllerDeployment {
   return {
     ...entity,
+    entityVersion: EntityVersion.V3,
     content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : undefined,
     entityType: entity.type,
     entityId: entity.id,

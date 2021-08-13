@@ -29,6 +29,7 @@ import {
 } from '../service/deployments/DeploymentManager'
 import { Entity } from '../service/Entity'
 import {
+  DeploymentContext,
   DeploymentResult,
   isSuccessfulDeployment,
   LocalDeploymentAuditInfo,
@@ -127,17 +128,17 @@ export class Controller {
       deployFiles = await this.readFiles(files)
       const auditInfo: LocalDeploymentAuditInfo = {
         authChain,
-        version: CURRENT_CONTENT_VERSION,
         migrationData: {
           originalVersion,
           data: migrationInformation
         }
       }
 
-      const deploymentResult: DeploymentResult = await this.service.deployLocalLegacy(
+      const deploymentResult: DeploymentResult = await this.service.deployEntity(
         deployFiles.map(({ content }) => content),
         entityId,
-        auditInfo
+        auditInfo,
+        DeploymentContext.LOCAL_LEGACY_ENTITY
       )
 
       if (isSuccessfulDeployment(deploymentResult)) {
@@ -163,7 +164,6 @@ export class Controller {
     const ethAddress: EthAddress = req.body.ethAddress
     const signature: Signature = req.body.signature
     const files = req.files
-    const origin = req.header('x-upload-origin') ?? 'unknown'
     const fixAttempt: boolean = req.query.fix === 'true'
 
     let deployFiles: ContentFile[] = []
@@ -173,18 +173,18 @@ export class Controller {
 
       let deploymentResult: DeploymentResult = { errors: [] }
       if (fixAttempt) {
-        deploymentResult = await this.service.deployToFix(
+        deploymentResult = await this.service.deployEntity(
           deployFiles.map(({ content }) => content),
           entityId,
           auditInfo,
-          origin
+          DeploymentContext.FIX_ATTEMPT
         )
       } else {
         deploymentResult = await this.service.deployEntity(
           deployFiles.map(({ content }) => content),
           entityId,
           auditInfo,
-          origin
+          DeploymentContext.LOCAL
         )
       }
 

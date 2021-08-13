@@ -144,7 +144,6 @@ export class SmartContentClient implements ContentAPI {
       this.contentClient.resolve(
         new ContentClient({
           contentUrl: contentClientUrl,
-          origin: 'lambdas',
           proofOfWorkEnabled: contentClientUrl === this.externalContentServerUrl && this.proofOfWorkEnabled
         })
       )

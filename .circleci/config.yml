@@ -12,8 +12,8 @@ commands:
       - run:
           name: Update node version
           command: |
-            nvm install v12.18.1
-            nvm alias default v12.18.1
+            nvm install v14.16.1
+            nvm alias default v14.16.1
 
 references:
   .workspace_root: &workspace_root /tmp/repo
@@ -23,7 +23,7 @@ references:
       at: *workspace_root
 
   .image_client: &image_client
-    image: circleci/node:12-browsers
+    image: circleci/node:14-browsers
 
   .working_directory_root: &working_directory_root
     working_directory: *workspace_root
@@ -152,12 +152,12 @@ jobs:
   publish-docker:
     <<: *base_env
     docker:
-      - image: circleci/node:12-browsers
+      - image: circleci/node:14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
       - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true }
+      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Prepare to build Docker image
           command: ./prepare_for_docker_image.sh
@@ -189,12 +189,12 @@ jobs:
   publish-docker-without-tag:
     <<: *base_env
     docker:
-      - image: circleci/node:12-browsers
+      - image: circleci/node:14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
       - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true }
+      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
           name: Prepare to build Docker image
           command: ./prepare_for_docker_image.sh

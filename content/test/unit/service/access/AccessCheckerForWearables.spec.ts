@@ -3,7 +3,7 @@ import {
   WearableCollection
 } from '@katalyst/content/service/access/AccessCheckerForWearables'
 import { AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
-import { ContentFileHash, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityVersion, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Logger } from 'log4js'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
@@ -125,7 +125,7 @@ describe('AccessCheckerForWearables', () => {
         const contentAsJson =
           entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1)) ?? []
         const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata: METADATA }))
-        hash = await Hashing.calculateBufferHash(buffer)
+        hash = await Hashing.calculateIPFSHash(buffer)
       })
 
       it(`and deployment hash matches and deployer is committee member, then deployment is valid`, async () => {
@@ -280,6 +280,7 @@ describe('AccessCheckerForWearables', () => {
     }
   ) {
     const withDefaults = {
+      version: EntityVersion.V3,
       metadata: {},
       content: new Map(),
       pointers: ['invalid pointer'],

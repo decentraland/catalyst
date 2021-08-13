@@ -37,3 +37,8 @@ yarn add husky
 yarn husky install
 yarn husky add .husky/pre-commit "yarn lint-staged"
 ```
+
+## Release
+
+- Modify the version in https://github.com/decentraland/catalyst/blob/master/Dockerfile#L30
+- Create a tag release in Git with the same version

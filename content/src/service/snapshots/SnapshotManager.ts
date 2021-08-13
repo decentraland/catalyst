@@ -78,7 +78,7 @@ export class SnapshotManager {
           const buffer = Buffer.from(JSON.stringify(inArrayFormat))
 
           // Calculate the snapshot's hash
-          const hash = await Hashing.calculateBufferHash(buffer)
+          const hash = await Hashing.calculateIPFSHash(buffer)
 
           // Store the new snapshot
           await this.service.storeContent(hash, buffer)

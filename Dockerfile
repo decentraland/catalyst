@@ -1,4 +1,4 @@
-FROM node:12.18.1-slim
+FROM node:14.16.1-slim
 
 RUN apt-get update && \
   apt-get upgrade -yq && \
@@ -13,7 +13,7 @@ WORKDIR /app/build
 COPY . .
 
 # The following are all collapsed to reduce image size
-RUN yarn install --update-checksums &&\
+RUN yarn install &&\
   yarn bazel clean &&\
   yarn bazel build //comms/lighthouse:server &&\
   yarn bazel build //content:server &&\
@@ -27,7 +27,7 @@ RUN yarn install --update-checksums &&\
 WORKDIR /app
 
 ENV COMMIT_HASH=bc34832282cfa746cfb1f27184cf3b53f321a164
-ENV CATALYST_VERSION=1.1.9
+ENV CATALYST_VERSION=1.3.3
 
 EXPOSE 6969
 EXPOSE 7070
