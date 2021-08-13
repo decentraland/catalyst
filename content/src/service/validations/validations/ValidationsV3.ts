@@ -3,6 +3,7 @@ import { Validations } from '../Validations'
 import { ValidationsForContext } from '../Validator'
 
 export const VALIDATIONS_V3: ValidationsForContext = {
+  // This is the context used when deploying an entity to the Catalyst directly
   [DeploymentContext.LOCAL]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
@@ -25,6 +26,8 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.CONTENT,
     Validations.DECENTRALAND_ADDRESS
   ],
+  // This is a context during synchronization: when the deployment is already deployed.
+  // That's why here it's not present NO_REDEPLOY, during sync you can receive the same deployment from different catalysts.
   [DeploymentContext.SYNCED]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
@@ -40,6 +43,8 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.CONTENT,
     Validations.DECENTRALAND_ADDRESS
   ],
+  // This is during synchronization when a deployment needs to  be done, but you already have a newer which overwrites it.
+  // So, at this momento the files from the entity of the overwritten deployment are not download.
   [DeploymentContext.OVERWRITTEN]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
@@ -53,6 +58,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.LEGACY_ENTITY,
     Validations.DECENTRALAND_ADDRESS
   ],
+  // This context is used only when running the fix deployments script
   [DeploymentContext.FIX_ATTEMPT]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
