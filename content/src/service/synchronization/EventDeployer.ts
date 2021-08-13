@@ -42,7 +42,7 @@ export class EventDeployer {
     if (entityFile) {
       const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
-        // Deploy the entity as overwritten
+        // Deploy the entity as overwritten and only download entity file
         return this.buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
             [entityFile],
@@ -55,7 +55,7 @@ export class EventDeployer {
         // Build entity
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
-        // Download all entity's files
+        // Download all entity's files as we need all content
         const files: Buffer[] | undefined = await this.getContentFiles(entity, source)
 
         if (files) {
