@@ -1,11 +1,15 @@
-import { Position } from 'decentraland-katalyst-utils/Positions'
+import { Position3D } from 'decentraland-catalyst-utils/Positions'
+import { ConfigService } from './config/configService'
+import { ArchipelagoService } from './peers/archipelagoService'
+import { IdService } from './peers/idService'
+import { PeersService } from './peers/peersService'
 
 export type PeerInfo = {
   id: string
   address?: string
   protocolVersion?: number
   parcel?: [number, number]
-  position?: Position
+  position?: Position3D
   layer?: string
   lastPing?: number
 }
@@ -28,4 +32,11 @@ export type Layer = {
   rooms: Record<string, Room>
   maxPeers?: number
   lastCheckTimestamp: number
+}
+
+export type AppServices = {
+  idService: IdService
+  configService: ConfigService
+  peersService: () => PeersService
+  archipelagoService: () => ArchipelagoService
 }

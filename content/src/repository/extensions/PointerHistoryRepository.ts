@@ -24,7 +24,7 @@ export class PointerHistoryRepository {
         (row) => row.id
       )
 
-      const overwrittenBy: DeploymentId | null = await task.oneOrNone(
+      const overwrittenByMany = await task.manyOrNone(
         `
                 SELECT deployments.id
                 FROM pointer_history
@@ -33,10 +33,13 @@ export class PointerHistoryRepository {
                     pointer_history.pointer IN ($2:list) AND
                     (deployments.entity_timestamp > to_timestamp($3 / 1000.0) OR (deployments.entity_timestamp = to_timestamp($3 / 1000.0) AND deployments.entity_id > $4))
                 ORDER BY deployments.entity_timestamp ASC, deployments.entity_id ASC
-                LIMIT 1`,
-        [entity.type, entity.pointers, entity.timestamp, entity.id],
-        (row) => row && row.id
+                LIMIT 10`,
+        [entity.type, entity.pointers, entity.timestamp, entity.id]
       )
+      let overwrittenBy: DeploymentId | null = null
+      if (overwrittenByMany.length > 0) {
+        overwrittenBy = overwrittenByMany[0].id
+      }
 
       return {
         overwrote: new Set(overwrote),

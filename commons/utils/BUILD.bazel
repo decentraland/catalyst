@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:public"])
 ts_library(
     name = "utils",
     srcs = glob(["*.ts"]),
-    module_name = "decentraland-katalyst-utils",
+    module_name = "decentraland-catalyst-utils",
     tsconfig = "//:tsconfig.json",
 )
 

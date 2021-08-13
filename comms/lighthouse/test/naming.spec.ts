@@ -1,22 +1,20 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 // Because of Bazel sandboxing, we need this for the time being
 process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 
 import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
 import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
-import { defaultNames, pickName } from '../src/naming'
-import { lighthouseStorage } from '../src/simpleStorage'
+import { lighthouseStorage } from '../src/config/simpleStorage'
+import { defaultNames, pickName } from '../src/misc/naming'
 
 declare let global: any
 
 const oldFetch = global.fetch
 
-// @ts-ignore
 const daoClient: DAOClient = {
   async getAllServers(): Promise<Set<ServerMetadata>> {
     return new Set([{ id: 'id', address: '0x...', owner: '0x...' }])
   }
-}
+} as DAOClient
 
 let existingName = 'fenrir'
 
