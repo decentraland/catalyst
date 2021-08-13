@@ -8,10 +8,17 @@ A Catalyst is a server that runs different services. These services currently wo
 
 If you just want to run a Catalyst server, please check the [Catalyst Owner](https://github.com/decentraland/catalyst-owner) repository. This repository is mostly used for developing.
 
+
 ## Services
 
 - [Content Server](content)
 - [Lighthouse](comms)
+- [Lambdas](lambdas)
+- [PoW](https://github.com/decentraland/pow-authorization-server)
+
+## Catalyst API
+
+This Server implements the v1 of the API Specification detailed [here](https://github.com/decentraland/catalyst-api-specs)
 
 ## Monitoring
 
