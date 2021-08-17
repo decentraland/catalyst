@@ -5,13 +5,6 @@ import { globalConfig } from 'dcl-ops-lib/values'
 const { defaultSecurityGroupName } = globalConfig[env]
 
 async function main() {
-  const builder = buildStatic({
-    domain: `catalysts.decentraland.${envTLD}`
-  })
 
-  return {
-    cloudfrontDistribution: builder.cloudfrontDistribution,
-    bucketName: builder.contentBucket
-  }
 }
 export = main
