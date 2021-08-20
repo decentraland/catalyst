@@ -38,6 +38,12 @@ export class LighthouseConfig<T> {
     defaultValue: 10000
   })
 
+  static readonly MAX_CONCURRENT_USERS: LighthouseConfig<number> = new LighthouseConfig({
+    name: 'maxConcurrentUsers',
+    fromText: parseInt,
+    defaultValue: 5000
+  })
+
   static readonly PEERS_CHECK_INTERVAL: LighthouseConfig<number> = new LighthouseConfig({
     name: 'peersCheckInterval',
     fromText: parseInt,

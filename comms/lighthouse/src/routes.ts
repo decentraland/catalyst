@@ -2,6 +2,7 @@ import { Island, PeerData } from '@dcl/archipelago'
 import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
 import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import express, { Request, RequestHandler, Response } from 'express'
+import { LighthouseConfig } from './config/configService'
 import { requireAll } from './misc/handlers'
 import { AppServices, PeerInfo } from './types'
 
@@ -38,7 +39,8 @@ export function configureRoutes(
       currenTime: Date.now(),
       env: options.env,
       ready: true,
-      usersCount: services.peersService().getActivePeersCount()
+      usersCount: services.peersService().getActivePeersCount(),
+      maxUsers: configService.get(LighthouseConfig.MAX_CONCURRENT_USERS)
     }
 
     if (req.query.includeUsersParcels) {
