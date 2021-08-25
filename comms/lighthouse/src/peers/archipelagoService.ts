@@ -45,7 +45,7 @@ export class ArchipelagoService {
   }
 
   updatePeerPosition(peerId: string, positionUpdate: Omit<PeerPositionChange, 'id'>) {
-    this.controller.setPeersPositions({ id: peerId, ...positionUpdate })
+    this.controller.setPeersPositions({ ...positionUpdate, id: peerId })
   }
 
   get peersService() {
