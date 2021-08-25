@@ -6,9 +6,14 @@ import {
   PeerPositionChange
 } from '@dcl/archipelago'
 import { ConfigService, LighthouseConfig } from '../config/configService'
+import { DCL_LIGHTHOUSE_ISLANDS_COUNT } from '../metrics'
 import { AppServices } from '../types'
 import { PeersService } from './peersService'
 import { PeerOutgoingMessageType } from './protocol/messageTypes'
+
+function updateIslandsMetrics(numberOfIslands: number) {
+  DCL_LIGHTHOUSE_ISLANDS_COUNT.set(numberOfIslands)
+}
 
 export class ArchipelagoService {
   private readonly controller: ArchipelagoController
@@ -86,6 +91,12 @@ export class ArchipelagoService {
           }
         }
       }
+    }
+
+    try {
+      updateIslandsMetrics(await this.controller.getIslandsCount())
+    } catch {
+      // mordor
     }
   }
 
