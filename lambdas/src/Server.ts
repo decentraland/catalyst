@@ -71,6 +71,7 @@ export class Server {
     // Backwards compatibility for older Content API
     this.app.use('/contentv2', initializeContentV2Routes(createMetricsProxy(), fetcher))
 
+    // TODO: Remove the route /profile/{id} as it has been migrated to /profiles/{id}
     // Profile API implementation
     this.app.use(
       '/profile',
