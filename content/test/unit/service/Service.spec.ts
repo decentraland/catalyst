@@ -142,6 +142,7 @@ describe('Service', function () {
 
     // Call the first time
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    // When a pointer is asked the first time, then the database is reached
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
