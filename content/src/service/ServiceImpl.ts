@@ -252,7 +252,15 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       const entries: [Pointer, Entity][][] = entities.map((entity) =>
         entity.pointers.map((pointer) => [pointer, entity])
       )
-      return new Map(entries.flat())
+
+      // Get Deployments only retrieves the active entities, so if a pointer has a null value we need to manually define it
+      const map = new Map<Pointer, Entity | undefined>(entries.flat())
+
+      for (const pointer of pointers) {
+        if (!map.has(pointer)) map.set(pointer, undefined)
+      }
+
+      return map
     })
 
     // Since the same entity might appear many times, we must remove duplicates
