@@ -1,7 +1,7 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { CacheByType } from './Cache'
 
-/** This manger is used to create cache instances, based on some pre-configured defaults */
+/** This manager is used to create cache instances, based on some pre-configured defaults */
 export class CacheManager {
   private readonly cacheSizes: Map<string, number>
 

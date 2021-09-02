@@ -382,7 +382,12 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.CACHE_SIZES,
-      () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
+      () =>
+        new Map(
+          Object.entries(process.env)
+            .filter(([name]) => name.startsWith('CACHE'))
+            .map(([key, value]) => [key, Number(value)])
+        )
     )
 
     // Please put special attention on the bean registration order.
