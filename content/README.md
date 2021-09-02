@@ -17,11 +17,11 @@ If you set up a local content server, it will receive all updates by those other
 
 * Start the database
 
-    `yarn bazel run content:db`
+    `yarn content:db`
 
 * Start the content server
 
-    `yarn bazel run content:server`
+    `yarn start:content`
 
 * To connect to the database locally
 
@@ -32,7 +32,7 @@ If you set up a local content server, it will receive all updates by those other
 
 There are many ways to configure the content server. You can provide these configurations when starting the server like this:
 
-`CONFIG_NAME1=CONFIG_VALUE1 CONFIG_NAME2=CONFIG_VALUE2 yarn bazel run content:server`
+`CONFIG_NAME1=CONFIG_VALUE1 CONFIG_NAME2=CONFIG_VALUE2 yarn start:content`
 
 These are some of the more important configuration values:
 
@@ -44,10 +44,10 @@ These are some of the more important configuration values:
 | LOG_LEVEL | Minimum log level | 'info' |
 
 ## Run unit tests
-    `yarn bazel run content:unit_test`
+    `yarn test:content`
 
 ## Run integration tests
-    `yarn bazel run content:integration_test`
+    `yarn integration-test:content`
 
 
 

@@ -16,7 +16,7 @@ More information about the Peer Library component is available in this repositor
 
 - Set up a lighthouse instance on localhost:9000
 
-  `yarn bazel run comms/lighthouse:server`
+  `yarn start:comms`
 
 ## Lighthouse endpoints
 

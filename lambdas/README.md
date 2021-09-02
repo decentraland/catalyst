@@ -14,14 +14,14 @@
 
 * Start the content server
 
-    `yarn bazel run lambdas:server`
+    `yarn start:lambdas`
 
 
 ## Configuration
 
 You can provide these configurations when starting the server like this:
 
-`CONFIG_NAME1=CONFIG_VALUE1 CONFIG_NAME2=CONFIG_VALUE2 yarn bazel run lambdas:server`
+`CONFIG_NAME1=CONFIG_VALUE1 CONFIG_NAME2=CONFIG_VALUE2 yarn start:lambdas`
 
 These are some of the more important configuration values when running locally:
 
@@ -34,7 +34,7 @@ These are some of the more important configuration values when running locally:
 | MAX_DEPLOYMENT_OBTENTION_TIME | It's the max time that the service will allow for the content service to obtain a single deployment before considering it Loaded | '3s' |
 
 ## Run unit tests
-    `yarn bazel run lambdas:unit_test`
+    `yarn test`
 
 ## Run integration tests
-    `yarn bazel run lambdas:integration_test`
+    `yarn integration-test`
