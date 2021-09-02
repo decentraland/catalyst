@@ -1,5 +1,4 @@
 dist
-bazel-out
 .git
 .gitignore
 .vscode

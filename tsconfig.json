@@ -1,8 +1,4 @@
 {
-  "bazelOpts": {
-    "es5Mode": true,
-    "devmodeTargetOverride": "es2017"
-  },
   "compilerOptions": {
     "module": "esnext",
     "target": "es2017",
@@ -24,15 +20,36 @@
     "noUnusedLocals": true,
     "jsx": "react",
     "baseUrl": ".",
-    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
+    "lib": [
+      "es2017",
+      "dom",
+      "esnext.asynciterable",
+      "esnext"
+    ],
     "paths": {
-      "@katalyst/content/*": ["content/src/*"],
-      "@katalyst/lambdas/*": ["lambdas/src/*"],
-      "@katalyst/test-helpers/*": ["content/test/helpers/*"],
-      "decentraland-katalyst-contracts/*": ["contracts/*"],
-      "decentraland-katalyst-commons/*": ["commons/servers/*"],
-      "decentraland-catalyst-utils/*": ["commons/utils/*"]
+      "@katalyst/content/*": [
+        "content/src/*"
+      ],
+      "@katalyst/lambdas/*": [
+        "lambdas/src/*"
+      ],
+      "@katalyst/test-helpers/*": [
+        "content/test/helpers/*"
+      ],
+      "decentraland-katalyst-contracts/*": [
+        "contracts/*"
+      ],
+      "decentraland-katalyst-commons/*": [
+        "commons/servers/*"
+      ],
+      "decentraland-catalyst-utils/*": [
+        "commons/utils/*"
+      ]
     }
   },
-  "exclude": ["node_modules", "bazel-*", "**/node_modules/*", "dist"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*",
+    "dist"
+  ]
 }
