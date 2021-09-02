@@ -32,7 +32,7 @@ export function configureRoutes(
 ) {
   const { configService } = services
 
-  const getStatus: RequestHandler = (req, res) => {
+  const getStatus = async (req: Request, res: Response) => {
     const status: any = {
       name: options.name,
       version: options.version,
@@ -40,6 +40,7 @@ export function configureRoutes(
       env: options.env,
       ready: true,
       usersCount: services.peersService().getActivePeersCount(),
+      islandsCount: await services.archipelagoService().getIslandsCount(),
       maxUsers: configService.get(LighthouseConfig.MAX_CONCURRENT_USERS)
     }
 
@@ -111,7 +112,7 @@ export function configureRoutes(
     res.send(peersResponse)
   }
 
-  registerRoute(app, '/status', HttpMethod.GET, [getStatus])
+  registerRoute(app, '/status', HttpMethod.GET, [asyncHandler(getStatus)])
 
   registerRoute(app, '/config', HttpMethod.PUT, [
     requireAll(['config'], (req) => req.body),

@@ -94,7 +94,7 @@ export class ArchipelagoService {
     }
 
     try {
-      updateIslandsMetrics(await this.controller.getIslandsCount())
+      updateIslandsMetrics(await this.getIslandsCount())
     } catch {
       // mordor
     }
@@ -117,5 +117,9 @@ export class ArchipelagoService {
 
   async getIsland(islandId: string): Promise<Island | undefined> {
     return this.controller.getIsland(islandId)
+  }
+
+  async getIslandsCount(): Promise<number> {
+    return this.controller.getIslandsCount()
   }
 }
