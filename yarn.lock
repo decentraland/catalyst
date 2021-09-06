@@ -3224,24 +3224,24 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^8.1.0:
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-8.1.0.tgz#27876a4642b4ecb42b1a65cc596045e5b1d77fe2"
-  integrity sha512-QqDtY52fwAqq7E/dhe3NSOwTpSwmZE6FAxmQBuLj6buTjkWf6LEZtkS1wKrxPUKX3IDSeuahO5kKYRxS4F9P1Q==
+dcl-catalyst-client@tag-trace-logging:
+  version "8.1.1-20210906181444.commit-b015d56"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-8.1.1-20210906181444.commit-b015d56.tgz#7b9ed3ba4144421d683ba922d93d9382394fbcbd"
+  integrity sha512-Q/0iE9dYlz2yJ1tUUL4YUVtQbpvN/UNnzcV7wuUtYcCZsixhyUgl3TYe9UYICwvOWt8mV7PM8le35TPay3C8wg==
   dependencies:
     "@types/form-data" "^2.5.0"
     "@types/log4js" "^2.3.5"
     async-iterator-to-array "0.0.1"
     cookie "^0.4.1"
-    dcl-catalyst-commons "^7.0.0"
+    dcl-catalyst-commons tag-trace-logging
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
     log4js "^6.3.0"
 
-dcl-catalyst-commons@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.0.0.tgz#ce75861ea93d32a536873294f7204814587e7415"
-  integrity sha512-OdwCxGcjyx/rk9PuEHZs6I0XNKVbgdVxJfkFTFm+u2O6e/4HtqkC63gEnZxuDbw5UOmzaJH1lMbapHo0h1QheA==
+dcl-catalyst-commons@tag-trace-logging:
+  version "7.0.1-20210906180705.commit-6c9f46b"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.0.1-20210906180705.commit-6c9f46b.tgz#7189988101177660c3a243d6b847cc89c23c4f49"
+  integrity sha512-OUHN3fTeiYia+BM7YsmhxG1CgkZJBlLAoo4rZy31Vjf9M6+yBrpSOX5vExe4brXESwwDaDp/Kck4UQKsBHg6KA==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
@@ -6438,6 +6438,8 @@ node-abi@^2.7.0:
   version "2.18.0"
   resolved "https://registry.yarnpkg.com/node-abi/-/node-abi-2.18.0.tgz#1f5486cfd7d38bd4f5392fa44a4ad4d9a0dffbf4"
   integrity "sha1-H1SGz9fTi9T1OS+kSkrU2aDf+/Q= sha512-yi05ZoiuNNEbyT/xXfSySZE+yVnQW6fxPZuFbLyS1s6b5Kw3HzV2PHOM4XR+nsjzkHxByK+2Wg+yCQbe35l8dw=="
+  dependencies:
+    semver "^5.4.1"
 
 node-addon-api@^2.0.0:
   version "2.0.1"
