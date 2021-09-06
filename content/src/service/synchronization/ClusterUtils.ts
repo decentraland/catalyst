@@ -14,17 +14,22 @@ export async function tryOnCluster<T>(
   description: string,
   options?: { retries?: number; preferred?: ContentServerClient }
 ): Promise<T> {
+  const clusters = cluster.getAllServersInCluster()
+  LOGGER.debug(`Will try the request on ${clusters}`)
   // Re order server list
-  const servers = reorderAccordingToPreference(cluster.getAllServersInCluster(), options?.preferred)
+  const servers = reorderAccordingToPreference(clusters, options?.preferred)
+  LOGGER.debug(`Sorted clusters are: ${servers}`)
 
   // Calculate amount of retries. Default is one
   const retries = options?.retries ?? 1
+  LOGGER.debug(`Will retry the request times: ${retries}`)
 
   return retry(
     async () => {
       // Try on every cluster server, until one answers the request
       for (const server of servers) {
         try {
+          LOGGER.debug(`Executing for : ${server}`)
           return await execution(server)
         } catch (error) {
           LOGGER.debug(`Tried to ${description} on '${server.getAddress()}' but it failed because of: ${error}`)

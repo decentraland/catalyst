@@ -39,7 +39,7 @@ import {
 } from './Service'
 import { ServiceStorage } from './ServiceStorage'
 import { happenedBefore } from './time/TimeSorting'
-import { Validator } from './validations/Validator'
+import { ExternalCalls, Validator } from './validations/Validator'
 
 export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
   private static readonly LOGGER = log4js.getLogger('ServiceImpl')
@@ -114,15 +114,19 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           db.txIf(async (transaction) => {
             const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
-            const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
+            const deploymentToValidate = { entity, auditInfo, files: hashes }
+
+            const externalCalls: ExternalCalls = {
               fetchDeployments: (filters) => this.getDeployments({ filters }, transaction),
               areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
               fetchDeploymentStatus: (type, id) =>
                 this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
-              isContentStoredAlready: (hashes) => Promise.resolve(alreadyStoredContent), // We know that the validation asks for the same content we already checked
+              isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
               isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
                 Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck)
-            })
+            }
+
+            const validationResult = await this.validator.validate(deploymentToValidate, context, externalCalls)
 
             if (!validationResult.ok) {
               return { errors: validationResult.errors }
@@ -324,7 +328,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
-  static isIPFSHash(hash: string) {
+  static isIPFSHash(hash: string): boolean {
     return hash.startsWith('bafy') && hash.length === 59
   }
 
@@ -354,6 +358,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     return this.storage.storeContent(fileHash, content)
   }
 
+  // Checks if the entities to be syncqued are already deployed
   areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {
     return this.repository.reuseIfPresent(
       task,
