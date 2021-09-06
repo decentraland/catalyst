@@ -142,6 +142,26 @@ describe('Service', function () {
 
     // Call the first time
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    // When a pointer is asked the first time, then the database is reached
+    expectSpyToBeCalled(serviceSpy, POINTERS)
+
+    // Reset spy and call again
+    serviceSpy.calls.reset()
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expect(serviceSpy).not.toHaveBeenCalled()
+  })
+
+  it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
+    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+      Promise.resolve({
+        deployments: [],
+        filters: {},
+        pagination: { offset: 0, limit: 0, moreData: true }
+      })
+    )
+
+    // Call the first time
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
@@ -173,6 +193,43 @@ describe('Service', function () {
 
     // Make deployment that should invalidate the cache
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
+
+    // Reset spy and call again
+    serviceSpy.calls.reset()
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expectSpyToBeCalled(serviceSpy, POINTERS)
+  })
+
+  it(`When a pointer has no entity after a deployment, then it is invalidated from the cache`, async () => {
+    spyOn(pointerManager, 'referenceEntityFromPointers').and.callFake(() =>
+      Promise.resolve(
+        new Map([
+          [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
+          [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.SET }]
+        ])
+      )
+    )
+    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+      Promise.resolve({
+        deployments: [fakeDeployment()],
+        filters: {},
+        pagination: { offset: 0, limit: 0, moreData: true }
+      })
+    )
+
+    // Call the first time
+    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    expectSpyToBeCalled(serviceSpy, POINTERS)
+
+    // Make deployment that should invalidate the cache
+    const [deleterEntity, deleterEntityFile] = await buildEntityAndFile(
+      EntityType.SCENE,
+      POINTERS.slice(0, 1),
+      Date.now(),
+      new Map([['file', randomFileHash]]),
+      'metadata'
+    )
+    await service.deployEntity([deleterEntityFile, randomFile], deleterEntity.id, auditInfo)
 
     // Reset spy and call again
     serviceSpy.calls.reset()

@@ -1,5 +1,6 @@
 import { Express } from 'express'
 import { Server } from 'net'
+import { LighthouseConfig } from '../config/configService'
 import { ExpressPeerServer } from '../peerjs-server'
 import { IConfig } from '../peerjs-server/config'
 import { AppServices } from '../types'
@@ -20,12 +21,14 @@ export function initPeerJsServer({
   peersService,
   archipelagoService,
   messagesHandler,
+  configService,
   ethNetwork
 }: PeerJSServerInitOptions): Express {
   const options: Partial<IConfig> = {
     path: '/',
     idGenerator: () => idService.nextId(),
     authHandler: peerAuthHandler({ noAuth, peersServiceGetter: peersService, ethNetwork }),
+    concurrent_limit: configService.get(LighthouseConfig.MAX_CONCURRENT_USERS),
     transmissionFilter: (src, dst) => archipelagoService().areInSameIsland(src, dst)
   }
 
