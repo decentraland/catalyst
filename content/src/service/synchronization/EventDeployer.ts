@@ -21,7 +21,7 @@ export class EventDeployer {
       (event, source) => this.wrapDeployment(this.prepareDeployment(event, source))
     )
   }
-
+  x
   async processAllDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
     // Process history and deploy it
     return this.eventProcessor.processDeployments(deployments, options)
@@ -42,7 +42,7 @@ export class EventDeployer {
     if (entityFile) {
       const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
-        // Deploy the entity as overwritten and only download entity file
+        // Deploy the entity as overwritten and only download entity file to avoid storing content files for deployments that are no pointed at
         return this.buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
             [entityFile],
@@ -52,7 +52,7 @@ export class EventDeployer {
           )
         )
       } else {
-        // Build entity
+        // Parse as JSON the entity and create an object
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
         // Download all entity's files as we need all content
@@ -180,7 +180,7 @@ export class EventDeployer {
 
   /** Wrap the deployment, so if it fails, we can take action */
   private async wrapDeployment(deploymentPreparation: Promise<DeploymentExecution>): Promise<() => Promise<void>> {
-    const deploymentExecution = await deploymentPreparation
+    const deploymentExecution: DeploymentExecution = await deploymentPreparation
     return async () => {
       try {
         const deploymentResult: DeploymentResult = await deploymentExecution.execution()

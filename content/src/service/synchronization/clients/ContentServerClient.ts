@@ -78,6 +78,7 @@ export class ContentServerClient {
   }
 
   getContentFile(fileHash: ContentFileHash): Promise<Buffer> {
+    ContentServerClient.LOGGER.debug(`Getting file: ${fileHash}`)
     return this.client.downloadContent(fileHash, { attempts: 3, waitTime: '0.5s' })
   }
 

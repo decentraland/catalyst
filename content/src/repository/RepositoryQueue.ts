@@ -6,8 +6,8 @@ import {
 } from '../ContentMetrics'
 
 /**
- * All database requests go through this queue. All pending requests will be queued as long as the limit isn't reached. If if it, then
- * low priority requests will be rejected before being queued.
+ * All database requests go through this queue. All pending requests will be queued as long as the limit isn't reached.
+ * If it is, then low priority requests will be rejected before being queued.
  */
 export class RepositoryQueue {
   public static readonly TOO_MANY_QUEUED_ERROR =
