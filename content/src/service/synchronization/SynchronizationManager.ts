@@ -14,7 +14,7 @@ import { DeploymentWithSource } from './streaming/EventStreamProcessor'
 export interface SynchronizationManager {
   start(): Promise<void>
   stop(): Promise<void>
-  getStatus()
+  getStatus(): void
 }
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
@@ -117,7 +117,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
     } catch (error) {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
-      ClusterSynchronizationManager.LOGGER.warn(`Failed to sync with servers. Reason:\n${error}`)
+      ClusterSynchronizationManager.LOGGER.error(`Failed to sync with servers. Reason:\n${error}`)
     } finally {
       if (!this.stopping) {
         // Set the timeout again
