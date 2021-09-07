@@ -1,3 +1,7 @@
+import {
+  DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL,
+  DCL_CONTENT_GARBAGE_COLLECTION_TIME
+} from '@katalyst/content/ContentMetrics'
 import { Repository } from '@katalyst/content/repository/Repository'
 import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
 import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
@@ -50,7 +54,12 @@ export class GarbageCollectionManager {
     try {
       await this.repository.tx(
         async (transaction) => {
+          const endTimer = DCL_CONTENT_GARBAGE_COLLECTION_TIME.startTimer()
+
           const hashes = await transaction.content.findContentHashesNotBeingUsedAnymore(this.lastTimeOfCollection)
+
+          DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL.inc(hashes.length)
+
           GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
           await this.service.deleteContent(hashes)
           await this.systemPropertiesManager.setSystemProperty(
@@ -59,6 +68,8 @@ export class GarbageCollectionManager {
             transaction
           )
           this.hashesDeletedInLastSweep = new Set(hashes)
+
+          endTimer()
         },
         { priority: DB_REQUEST_PRIORITY.HIGH }
       )

@@ -1,3 +1,4 @@
+import { DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL } from '@katalyst/content/ContentMetrics'
 import {
   awaitablePipeline,
   mergeStreams,
@@ -50,14 +51,20 @@ export class EventStreamProcessor {
     }
   }
 
+  /**
+   * Since deployments propagate across servers, it is very probable that we are receiving
+   * duplicated entries. For each stream processing, we use a set to filter duplicated deployments
+   * by entityId.
+   */
   private filterOutDuplicates() {
     const known: Set<EntityId> = new Set()
     return streamFilter(({ deployment }: DeploymentWithSource) => {
       if (known.has(deployment.entityId)) {
         return false
+      } else {
+        known.add(deployment.entityId)
+        return true
       }
-      known.add(deployment.entityId)
-      return true
     })
   }
 
@@ -79,7 +86,7 @@ export class EventStreamProcessor {
           )
           done(null, [deploymentEvent.entityType, deploymentEvent.entityId, execution])
         } catch (error) {
-          EventStreamProcessor.LOGGER.debug(
+          EventStreamProcessor.LOGGER.error(
             `Failed preparing the deployment. Entity is (${deploymentEvent.entityType}, ${deploymentEvent.entityId}). Error was:\n${error}`
           )
           done(null, null)
@@ -102,7 +109,8 @@ export class EventStreamProcessor {
           }
           done()
         } catch (error) {
-          EventStreamProcessor.LOGGER.debug(
+          DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL.inc()
+          EventStreamProcessor.LOGGER.error(
             `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
           )
           done()
