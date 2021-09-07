@@ -2384,11 +2384,6 @@ blakejs@^1.1.0:
   resolved "https://registry.yarnpkg.com/blakejs/-/blakejs-1.1.0.tgz#69df92ef953aa88ca51a32df6ab1c54a155fc7a5"
   integrity sha1-ad+S75U6qIylGjLfarHFShVfx6U=
 
-blob-to-buffer@^1.2.9:
-  version "1.2.9"
-  resolved "https://registry.yarnpkg.com/blob-to-buffer/-/blob-to-buffer-1.2.9.tgz#a17fd6c1c564011408f8971e451544245daaa84a"
-  integrity sha512-BF033y5fN6OCofD3vgHmNtwZWRcq9NLyyxyILx9hfMy1sXYy4ojFl765hJ2lP0YaN2fuxPaLO2Vzzoxy0FLFFA==
-
 blob@0.0.5:
   version "0.0.5"
   resolved "https://registry.yarnpkg.com/blob/-/blob-0.0.5.tgz#d680eeef25f8cd91ad533f5b01eed48e64caf683"
@@ -3224,31 +3219,30 @@ date-format@^3.0.0:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-3.0.0.tgz#eb8780365c7d2b1511078fb491e6479780f3ad95"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@tag-trace-logging:
-  version "8.1.1-20210906181444.commit-b015d56"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-8.1.1-20210906181444.commit-b015d56.tgz#7b9ed3ba4144421d683ba922d93d9382394fbcbd"
-  integrity sha512-Q/0iE9dYlz2yJ1tUUL4YUVtQbpvN/UNnzcV7wuUtYcCZsixhyUgl3TYe9UYICwvOWt8mV7PM8le35TPay3C8wg==
+dcl-catalyst-client@tag-blob-not-necessary:
+  version "8.1.1-20210907204511.commit-cb6e0fc"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-8.1.1-20210907204511.commit-cb6e0fc.tgz#2b441f5cc9bd9363e632ddfc593ef3d1ac016d68"
+  integrity sha512-qbGgAL1/5NVkSwuCiujxc5k8tWhLMUHC61Yp1YlbXR3kO+U6KHOlMb06kjplGr/lhw7iFaV65BklWuWi3HtJFQ==
   dependencies:
     "@types/form-data" "^2.5.0"
     "@types/log4js" "^2.3.5"
     async-iterator-to-array "0.0.1"
     cookie "^0.4.1"
-    dcl-catalyst-commons tag-trace-logging
+    dcl-catalyst-commons tag-blob-not-necessary
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
     log4js "^6.3.0"
 
-dcl-catalyst-commons@tag-trace-logging:
-  version "7.0.1-20210906180705.commit-6c9f46b"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.0.1-20210906180705.commit-6c9f46b.tgz#7189988101177660c3a243d6b847cc89c23c4f49"
-  integrity sha512-OUHN3fTeiYia+BM7YsmhxG1CgkZJBlLAoo4rZy31Vjf9M6+yBrpSOX5vExe4brXESwwDaDp/Kck4UQKsBHg6KA==
+dcl-catalyst-commons@tag-blob-not-necessary:
+  version "7.0.1-20210907204024.commit-fb9912d"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.0.1-20210907204024.commit-fb9912d.tgz#b5657d3a25cb4b653fbb0ac99d22a78359f12556"
+  integrity sha512-rP0318l3ElXfuE9pEDQciCqyIbqIiushrYOs4NQH3GUrd51WA+pDWOLHYqN7DdjBGOUoDoSe0V2as0jzYcyLgQ==
   dependencies:
     "@types/isomorphic-fetch" "0.0.35"
     "@types/ms" "^0.7.31"
     "@typescript-eslint/eslint-plugin" "^4.9.0"
     "@typescript-eslint/parser" "^4.9.0"
     abort-controller "^3.0.0"
-    blob-to-buffer "^1.2.9"
     cids "^0.8.0"
     cookie "^0.4.1"
     cross-fetch "^3.0.5"

@@ -56,7 +56,6 @@ export class EventDeployer {
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
         // Download all entity's files as we need all content
-        // TODO: Avoid downloading content that is already stored, like base avatars
         const files: Buffer[] | undefined = await this.getContentFiles(entity, source)
 
         if (files) {
@@ -93,7 +92,6 @@ export class EventDeployer {
     const allFileHashes: ContentFileHash[] = Array.from(entity.content?.values() ?? [])
 
     // Check which files we already have
-    // TODO: Check why this isn't happening
     const unknownFileHashes = await this.filterOutKnownFiles(allFileHashes)
     EventDeployer.LOGGER.trace(
       `In total, will need to download ${unknownFileHashes.length} files for entity (${entity.type}, ${entity.id})`

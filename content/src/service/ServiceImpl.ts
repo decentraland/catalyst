@@ -121,6 +121,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
               areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
               fetchDeploymentStatus: (type, id) =>
                 this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
+              // We know that the validation asks for the same content we already checked
               isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
               isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
                 Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck)
