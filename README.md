@@ -8,7 +8,6 @@ A Catalyst is a server that runs different services. These services currently wo
 
 If you just want to run a Catalyst server, please check the [Catalyst Owner](https://github.com/decentraland/catalyst-owner) repository. This repository is mostly used for developing.
 
-
 ## Services
 
 - [Content Server](content)
@@ -24,6 +23,13 @@ This Server implements the v1 of the API Specification detailed [here](https://g
 
 For monitoring see [the following doc](docs/MONITORING.md)
 
+## Tests
+
+```
+yarn build
+yarn test
+```
+
 ## Contributions
 
 If using Visual Studio, please download:
@@ -32,6 +38,7 @@ If using Visual Studio, please download:
 - [`eslint` extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
 
 ### Install Husky
+
 ```
 yarn add husky
 yarn husky install

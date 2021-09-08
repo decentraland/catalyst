@@ -7,7 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "test": "echo No tests to run!"
   },
   "dependencies": {
     "bn.js": "5.2.0",
