@@ -10,4 +10,3 @@ local/certbot/conf/**
 local/nginx/conf.d/00-katalyst.conf
 tmpbin
 linked-peer-package
-.husky
