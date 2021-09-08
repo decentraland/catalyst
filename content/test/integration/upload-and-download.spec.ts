@@ -1,7 +1,7 @@
-import { Bean } from '@katalyst/content/Environment'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
+import { Bean } from '../../src/Environment'
+import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
@@ -41,10 +41,7 @@ describe('End 2 end deploy test', () => {
     //------------------------------
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData([POINTER0, POINTER1], {
       metadata: 'this is just some metadata',
-      contentPaths: [
-        'content/test/integration/resources/some-binary-file.png',
-        'content/test/integration/resources/some-text-file.txt'
-      ]
+      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
     })
 
     const creationTimestamp = await server.deploy(deployData)

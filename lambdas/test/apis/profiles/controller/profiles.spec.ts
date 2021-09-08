@@ -1,16 +1,16 @@
-import { WearableId } from '@katalyst/lambdas/apis/collections/types'
+import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EthAddress } from 'dcl-crypto'
+import { anything, instance, mock, when } from 'ts-mockito'
+import { WearableId } from '../../../../src/apis/collections/types'
 import {
   fetchProfiles,
   fetchProfilesForSnapshots,
   ProfileMetadata
-} from '@katalyst/lambdas/apis/profiles/controllers/profiles'
-import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
-import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
-import { WearablesOwnership } from '@katalyst/lambdas/apis/profiles/WearablesOwnership'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
-import { anything, instance, mock, when } from 'ts-mockito'
+} from '../../../../src/apis/profiles/controllers/profiles'
+import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
+import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
+import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
+import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 
 const EXTERNAL_URL = 'https://content-url.com'
 

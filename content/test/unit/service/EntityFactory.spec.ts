@@ -1,7 +1,7 @@
-import { Entity } from '@katalyst/content/service/Entity'
-import { EntityFactory } from '@katalyst/content/service/EntityFactory'
-import { buildEntityAndFile, entityToFile } from '@katalyst/test-helpers/service/EntityTestFactory'
 import { EntityId, EntityType } from 'dcl-catalyst-commons'
+import { Entity } from '../../../src/service/Entity'
+import { EntityFactory } from '../../../src/service/EntityFactory'
+import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTestFactory'
 
 describe('Service', () => {
   let entity: Entity

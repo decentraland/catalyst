@@ -1,8 +1,7 @@
 // Because of Bazel sandboxing, we need this for the time being
 process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 
-import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
+import { DAOClient, ServerMetadata } from '@katalyst/commons'
 import { lighthouseStorage } from '../src/config/simpleStorage'
 import { defaultNames, pickName } from '../src/misc/naming'
 

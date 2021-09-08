@@ -1,10 +1,10 @@
-import { ActiveDenylist } from '@katalyst/content/denylist/ActiveDenylist'
-import { DenylistTarget } from '@katalyst/content/denylist/DenylistTarget'
-import { DenylistRepository } from '@katalyst/content/repository/extensions/DenylistRepository'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import { ContentCluster } from '@katalyst/content/service/synchronization/ContentCluster'
 import { anything, instance, mock, verify } from 'ts-mockito'
+import { ActiveDenylist } from '../../../src/denylist/ActiveDenylist'
+import { DenylistTarget } from '../../../src/denylist/DenylistTarget'
+import { DenylistRepository } from '../../../src/repository/extensions/DenylistRepository'
+import { Repository } from '../../../src/repository/Repository'
+import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
+import { ContentCluster } from '../../../src/service/synchronization/ContentCluster'
 
 describe('ActiveDenylist', () => {
   const repository: Repository = mock<Repository>()

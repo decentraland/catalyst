@@ -1,7 +1,7 @@
-import { DCL_CONTENT_IGNORED_DEPLOYMENTS_TOTAL } from '@katalyst/content/ContentMetrics'
 import { EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Transform } from 'stream'
+import { DCL_CONTENT_IGNORED_DEPLOYMENTS_TOTAL } from '../../../ContentMetrics'
 import { DeploymentWithSource } from './EventStreamProcessor'
 
 /**

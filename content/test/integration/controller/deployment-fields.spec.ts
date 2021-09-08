@@ -1,7 +1,7 @@
-import { DeploymentField } from '@katalyst/content/controller/Controller'
-import { Bean } from '@katalyst/content/Environment'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { Deployment, Fetcher } from 'dcl-catalyst-commons'
+import { DeploymentField } from '../../../src/controller/Controller'
+import { Bean } from '../../../src/Environment'
+import { MockedSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
@@ -22,7 +22,7 @@ describe('Integration - Deployment Fields', () => {
   it('When deployments fields filter is used, then the result is the expected', async () => {
     const { deployData } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy entity

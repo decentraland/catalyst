@@ -1,8 +1,8 @@
-import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/apis/status/health'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Logger } from 'log4js'
 import sinon from 'sinon'
 import { anything, instance, mock, when } from 'ts-mockito'
+import { HealthStatus, refreshContentServerStatus } from '../../../src/apis/status/health'
+import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
 describe("Lambda's Controller Utils", () => {
   describe('refreshContentServerStatus', () => {

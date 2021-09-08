@@ -1,11 +1,11 @@
-import { ControllerDenylistData } from '@katalyst/content/controller/Controller'
-import { DenylistServiceDecorator } from '@katalyst/content/denylist/DenylistServiceDecorator'
-import { buildEntityTarget, DenylistTargetType } from '@katalyst/content/denylist/DenylistTarget'
-import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
-import { assertPromiseIsRejected } from '@katalyst/test-helpers/PromiseAssertions'
-import { MockedContentCluster } from '@katalyst/test-helpers/service/synchronization/MockedContentCluster'
-import { MockedSynchronizationManager } from '@katalyst/test-helpers/service/synchronization/MockedSynchronizationManager'
 import { Entity as ControllerEntity } from 'dcl-catalyst-commons'
+import { ControllerDenylistData } from '../../../src/controller/Controller'
+import { DenylistServiceDecorator } from '../../../src/denylist/DenylistServiceDecorator'
+import { buildEntityTarget, DenylistTargetType } from '../../../src/denylist/DenylistTarget'
+import { Bean, EnvironmentConfig } from '../../../src/Environment'
+import { assertPromiseIsRejected } from '../../helpers/PromiseAssertions'
+import { MockedContentCluster } from '../../helpers/service/synchronization/MockedContentCluster'
+import { MockedSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
 import {
   assertContentIsDenylisted,
   assertContentNotIsDenylisted,
@@ -42,7 +42,7 @@ describe('Integration - Denylist', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy the entity
@@ -78,7 +78,7 @@ describe('Integration - Denylist', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy the entity
@@ -105,7 +105,7 @@ describe('Integration - Denylist', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy the entity
@@ -126,7 +126,7 @@ describe('Integration - Denylist', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const contentHash = entityBeingDeployed.content![0].hash
 
@@ -209,7 +209,7 @@ describe('Integration - Denylist', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const contentHash = entityBeingDeployed.content![0].hash
 
@@ -238,7 +238,7 @@ describe('Integration - Denylist', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata,
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const contentHash = entityBeingDeployed.content![0].hash
 

@@ -1,13 +1,13 @@
-import { getWearables } from '@katalyst/lambdas/apis/collections/controllers/wearables'
+import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
+import { getWearables } from '../../../../../src/apis/collections/controllers/wearables'
 import {
   BASE_AVATARS_COLLECTION_ID,
   OffChainWearablesManager
-} from '@katalyst/lambdas/apis/collections/off-chain/OffChainWearablesManager'
-import { Wearable, WearableId } from '@katalyst/lambdas/apis/collections/types'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
-import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
+} from '../../../../../src/apis/collections/off-chain/OffChainWearablesManager'
+import { Wearable, WearableId } from '../../../../../src/apis/collections/types'
+import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
+import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 
 const OFF_CHAIN_WEARABLE_ID = 'urn:decentraland:off-chain:base-avatars:wearable'
 const ON_CHAIN_WEARABLE_ID = 'someOtherCollection-someOtherWearable'
@@ -129,9 +129,10 @@ function emptyOffChainManager(): { instance: OffChainWearablesManager; mock: Off
   return offChainManagerWith()
 }
 
-function offChainManagerWith(
-  ...wearables: Wearable[]
-): { instance: OffChainWearablesManager; mock: OffChainWearablesManager } {
+function offChainManagerWith(...wearables: Wearable[]): {
+  instance: OffChainWearablesManager
+  mock: OffChainWearablesManager
+} {
   const mockedManager = mock(OffChainWearablesManager)
   when(mockedManager.find(anything())).thenResolve(wearables)
   when(mockedManager.find(anything(), anything())).thenResolve(wearables)
