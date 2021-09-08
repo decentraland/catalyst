@@ -1,8 +1,8 @@
-import { retry } from '@katalyst/content/helpers/RetryHelper'
 import { Fetcher, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import ms from 'ms'
+import { retry } from '../../helpers/RetryHelper'
 import { ContentAuthenticator } from '../auth/Authenticator'
 
 export class AccessCheckerForScenes {

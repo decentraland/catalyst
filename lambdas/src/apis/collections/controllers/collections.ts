@@ -1,8 +1,8 @@
 import { ChainId } from '@dcl/schemas'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
+import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
 import {
   Collection,
@@ -162,7 +162,7 @@ async function internalContents(
       const wearableMetadata: WearableMetadata = entity.metadata
       const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
-        const headers: Map<string, string> = await client.pipeContent(hash, (res as any) as ReadableStream<Uint8Array>)
+        const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
         headers.forEach((value: string, key: string) => {
           res.setHeader(key, value)
         })

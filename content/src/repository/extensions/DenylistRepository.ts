@@ -1,11 +1,11 @@
-import { DenylistAction, DenylistMetadata } from '@katalyst/content/denylist/Denylist'
+import { DenylistAction, DenylistMetadata } from '../../denylist/Denylist'
 import {
   DenylistTarget,
   DenylistTargetId,
   DenylistTargetType,
   parseDenylistTypeAndId
-} from '@katalyst/content/denylist/DenylistTarget'
-import { Database } from '@katalyst/content/repository/Database'
+} from '../../denylist/DenylistTarget'
+import { Database } from '../../repository/Database'
 
 export class DenylistRepository {
   constructor(private readonly db: Database) {}

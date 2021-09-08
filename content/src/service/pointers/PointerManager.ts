@@ -1,9 +1,9 @@
-import { DeploymentId } from '@katalyst/content/repository/extensions/DeploymentsRepository'
-import { LastDeployedPointersRepository } from '@katalyst/content/repository/extensions/LastDeployedPointersRepository'
-import { PointerHistoryRepository } from '@katalyst/content/repository/extensions/PointerHistoryRepository'
-import { Entity } from '@katalyst/content/service/Entity'
-import { happenedBefore } from '@katalyst/content/service/time/TimeSorting'
 import { Pointer } from 'dcl-catalyst-commons'
+import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
+import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
+import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
+import { Entity } from '../../service/Entity'
+import { happenedBefore } from '../../service/time/TimeSorting'
 
 /**
  * Manage all pointer data

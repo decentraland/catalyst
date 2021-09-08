@@ -6,8 +6,6 @@ export async function getCommsServerUrl(
   internalCommsServerUrl: string,
   externalCommsServerUrl?: string
 ): Promise<string> {
-  this.commsServerUrl = externalCommsServerUrl
-
   try {
     await fetchJson(`${internalCommsServerUrl}/status`, {
       attempts: 6,
