@@ -1,15 +1,10 @@
 #!/bin/bash
 set -eo pipefail
 
-cd bin
-
 if [ "$1" = 'comms' ]; then
-    cd comms/lighthouse
+    node comms/lighthouse/server.js
 elif [ "$1" == 'content' ]; then
-    cd content
+    node content/entrypoints/run-server.js
 elif [ "$1" == 'lambdas' ]; then
-    cd lambdas
+    node lambdas/entrypoints/run-server.js
 fi
-
-RUNFILES_DIR=server.sh.runfiles ./server.sh
- 
