@@ -1,23 +1,23 @@
-import {
-  Bean,
-  DEFAULT_DATABASE_CONFIG,
-  Environment,
-  EnvironmentBuilder,
-  EnvironmentConfig
-} from '@katalyst/content/Environment'
-import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactory'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
-import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import ms from 'ms'
 import { GenericContainer, StartedTestContainer } from 'testcontainers'
 import { Container } from 'testcontainers/dist/container'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
+import {
+  Bean,
+  DEFAULT_DATABASE_CONFIG,
+  Environment,
+  EnvironmentBuilder,
+  EnvironmentConfig
+} from '../../src/Environment'
+import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
+import { Repository } from '../../src/repository/Repository'
+import { RepositoryFactory } from '../../src/repository/RepositoryFactory'
+import { MetaverseContentService } from '../../src/service/Service'
+import { MockedAccessChecker } from '../helpers/service/access/MockedAccessChecker'
+import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
+import { NoOpValidator } from '../helpers/service/validations/NoOpValidator'
 import { TestServer } from './TestServer'
 
 export class E2ETestEnvironment {

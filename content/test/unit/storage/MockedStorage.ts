@@ -1,4 +1,4 @@
-import { ContentItem, ContentStorage, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
+import { ContentItem, ContentStorage, SimpleContentItem } from '../../../src/storage/ContentStorage'
 
 export class MockedStorage implements ContentStorage {
   private storage: Map<string, Buffer> = new Map()

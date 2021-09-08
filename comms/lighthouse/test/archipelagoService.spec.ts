@@ -1,5 +1,5 @@
 import { Island } from '@dcl/archipelago'
-import { untilTrue } from '../../../commons/test-utils'
+import { untilTrue } from '@katalyst/commons'
 import { ConfigService, LighthouseConfig } from '../src/config/configService'
 import { ArchipelagoService } from '../src/peers/archipelagoService'
 import { PeersService } from '../src/peers/peersService'

@@ -1,20 +1,3 @@
-import { CURRENT_CONTENT_VERSION } from '@katalyst/content/Environment'
-import { Database } from '@katalyst/content/repository/Database'
-import {
-  Deployment,
-  DeploymentOptions,
-  DeploymentPointerChanges,
-  PointerChangesFilters
-} from '@katalyst/content/service/deployments/DeploymentManager'
-import { Entity } from '@katalyst/content/service/Entity'
-import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import {
-  DeploymentContext,
-  DeploymentListener,
-  LocalDeploymentAuditInfo,
-  MetaverseContentService
-} from '@katalyst/content/service/Service'
-import { ContentItem, SimpleContentItem } from '@katalyst/content/storage/ContentStorage'
 import {
   AuditInfo,
   ContentFileHash,
@@ -29,6 +12,23 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
+import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
+import { Database } from '../../../src/repository/Database'
+import {
+  Deployment,
+  DeploymentOptions,
+  DeploymentPointerChanges,
+  PointerChangesFilters
+} from '../../../src/service/deployments/DeploymentManager'
+import { Entity } from '../../../src/service/Entity'
+import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
+import {
+  DeploymentContext,
+  DeploymentListener,
+  LocalDeploymentAuditInfo,
+  MetaverseContentService
+} from '../../../src/service/Service'
+import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStorage'
 import { buildEntityAndFile } from './EntityTestFactory'
 
 export class MockedMetaverseContentService implements MetaverseContentService {

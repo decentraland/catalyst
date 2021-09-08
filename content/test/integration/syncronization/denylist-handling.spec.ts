@@ -1,7 +1,7 @@
-import { EnvironmentConfig } from '@katalyst/content/Environment'
+import { delay } from '@katalyst/commons'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-catalyst-utils/util'
 import ms from 'ms'
+import { EnvironmentConfig } from '../../../src/Environment'
 import {
   assertContentNotIsDenylisted,
   assertDeploymentsAreReported,
@@ -64,7 +64,7 @@ describe('End 2 end - Denylist handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const contentHash: ContentFileHash = entityBeingDeployed.content![0].hash
 
@@ -94,7 +94,7 @@ describe('End 2 end - Denylist handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy the entity
@@ -132,7 +132,7 @@ describe('End 2 end - Denylist handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const contentHash: ContentFileHash = entityBeingDeployed.content![0].hash
 

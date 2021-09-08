@@ -1,14 +1,14 @@
-import { Repository } from '@katalyst/content/repository/Repository'
-import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactory'
+import { EntityId, EntityType } from 'dcl-catalyst-commons'
+import { random } from 'faker'
+import { Repository } from '../../../src/repository/Repository'
+import { RepositoryFactory } from '../../../src/repository/RepositoryFactory'
 import {
   DeploymentStatus,
   FailedDeployment,
   FailedDeploymentsManager,
   FailureReason,
   NoFailure
-} from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { EntityId, EntityType } from 'dcl-catalyst-commons'
-import { random } from 'faker'
+} from '../../../src/service/errors/FailedDeploymentsManager'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 
 describe('Integration - Failed Deployments Manager', function () {
