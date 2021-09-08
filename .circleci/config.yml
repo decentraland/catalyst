@@ -14,6 +14,11 @@ commands:
           command: |
             nvm install v14.16.1
             nvm alias default v14.16.1
+      - run:
+          name: Install yarn
+          command: |
+            curl -o- -L https://yarnpkg.com/install.sh | bash
+            echo 'export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"' >> $BASH_ENV
 
 references:
   .workspace_root: &workspace_root /tmp/repo
@@ -63,17 +68,19 @@ jobs:
 
       # Download and cache dependencies
       - restore_cache:
+          name: Restore Yarn Package Cache
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+            - yarn-packages-{{ checksum "yarn.lock" }}
 
-      - run: yarn install
+      - run:
+          name: Install Dependencies
+          command: yarn --frozen-lockfile --cache-folder ~/.cache/yarn
 
       - save_cache:
+          name: Save Yarn Package Cache
+          key: yarn-packages-{{ checksum "yarn.lock" }}
           paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+            - ~/.cache/yarn
 
       # persist to workspace to use in downstream jobs
       - persist_to_workspace:
@@ -93,10 +100,10 @@ jobs:
       - <<: *attach_root
       - run:
           name: Build lighthouse
-          command: npx bazel build //comms/lighthouse:server --test_output=all
+          command: yarn workspace @katalyst/lighthouse-server build
       - run:
           name: Run tests
-          command: npx bazel test //comms/lighthouse:unit_test --test_output=all
+          command: yarn workspace @katalyst/lighthouse-server test
 
   build-content:
     machine:
@@ -106,29 +113,35 @@ jobs:
       - <<: *attach_root
       - update_node_version
       - run:
+          name: Build content
+          command: yarn workspace @katalyst/content-server build
+      - run:
           name: Run unit tests
-          command: npx bazel test //content:unit_test --test_output=all
+          command: yarn workspace @katalyst/content-server test:unit
       - run:
           name: Run integration tests
-          command: npx bazel test //content:integration_test --test_output=all --test_timeout 600
+          command: yarn workspace @katalyst/content-server test:integration
 
   build-lambdas:
     <<: *base_env
     steps:
       - <<: *attach_root
       - run:
+          name: Build content
+          command: yarn workspace @katalyst/lambdas-server build
+      - run:
           name: Run tests
-          command: npx bazel test //lambdas:unit_test --test_output=all
+          command: yarn workspace @katalyst/lambdas-server test
   build-commons:
     <<: *base_env
     steps:
       - <<: *attach_root
       - run:
-          name: Run servers tests
-          command: npx bazel test //commons/servers:unit_test --test_output=all
+          name: Build commons
+          command: yarn workspace @katalyst/commons build
       - run:
-          name: Run utils tests
-          command: npx bazel test //commons/utils:unit_test --test_output=all
+          name: Run commons tests
+          command: yarn workspace @katalyst/commons test
 
   publish-docker:
     <<: *base_env
