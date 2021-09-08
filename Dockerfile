@@ -26,8 +26,14 @@ RUN yarn install &&\
 
 WORKDIR /app
 
-ENV COMMIT_HASH=bc34832282cfa746cfb1f27184cf3b53f321a164
-ENV CATALYST_VERSION=2.1.0
+
+# https://docs.docker.com/engine/reference/builder/#arg
+ARG CATALYST_VERSION=0.0.0
+ENV CATALYST_VERSION=${CATALYST_VERSION:-0.0.0}
+
+# https://docs.docker.com/engine/reference/builder/#arg
+ARG COMMIT_HASH=local
+ENV COMMIT_HASH=${COMMIT_HASH:-local}
 
 EXPOSE 6969
 EXPOSE 7070
