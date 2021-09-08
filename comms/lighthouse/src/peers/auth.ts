@@ -1,5 +1,5 @@
+import { httpProviderForNetwork } from '@katalyst/contracts/utils'
 import { Authenticator } from 'dcl-crypto'
-import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
 import { IdType, MessageType } from '../peerjs-server/enums'
 import { IClient } from '../peerjs-server/models/client'
 import { IMessage } from '../peerjs-server/models/message'

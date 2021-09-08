@@ -1,6 +1,5 @@
-import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
-import { DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
-import { DAOListContract, DAOListContractsKeys } from 'decentraland-katalyst-contracts/DAOListContract'
+import { DAOContractClient } from '@katalyst/commons'
+import { DAOContract, DAOListContract, DAOListContractsKeys } from '@katalyst/contracts'
 import { Environment, EnvironmentConfig } from '../../Environment'
 import { DAOCache } from './DAOCache'
 import { DAOListContractClient } from './DAOListsClient'

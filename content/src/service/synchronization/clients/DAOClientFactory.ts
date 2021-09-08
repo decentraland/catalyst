@@ -1,5 +1,5 @@
-import { DAOClient, DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
-import { DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
+import { DAOClient, DAOContractClient } from '@katalyst/commons'
+import { DAOContract } from '@katalyst/contracts'
 import { Environment, EnvironmentConfig } from '../../../Environment'
 import { DAOHardcodedClient } from './HardcodedDAOClient'
 

@@ -8,7 +8,8 @@
     "composite": false,
     "sourceMap": false,
     "declarationMap": false,
-    "declaration": false
+    "declaration": false,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
   "references": [
     { "path": "../commons" },

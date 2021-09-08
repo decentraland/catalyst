@@ -1,9 +1,3 @@
-import { DeploymentField } from '@katalyst/content/controller/Controller'
-import { ContentFilesRepository } from '@katalyst/content/repository/extensions/ContentFilesRepository'
-import { DeploymentPointerChangesRepository } from '@katalyst/content/repository/extensions/DeploymentPointerChangesRepository'
-import { DeploymentId, DeploymentsRepository } from '@katalyst/content/repository/extensions/DeploymentsRepository'
-import { MigrationDataRepository } from '@katalyst/content/repository/extensions/MigrationDataRepository'
-import { Entity } from '@katalyst/content/service/Entity'
 import {
   AuditInfo,
   ContentFileHash,
@@ -17,6 +11,12 @@ import {
   SortingField,
   Timestamp
 } from 'dcl-catalyst-commons'
+import { DeploymentField } from '../../controller/Controller'
+import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
+import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
+import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
+import { MigrationDataRepository } from '../../repository/extensions/MigrationDataRepository'
+import { Entity } from '../../service/Entity'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {

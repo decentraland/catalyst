@@ -1,5 +1,5 @@
+import { DECENTRALAND_ADDRESS } from '@katalyst/commons'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
 import log4js from 'log4js'
 import ms from 'ms'
 import { ControllerFactory } from './controller/ControllerFactory'

@@ -1,4 +1,4 @@
-import v4 from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * This class will handle the challenge. The idea is for each server to figure out their identity on the DAO by themselves, so they will
@@ -8,7 +8,7 @@ export class ChallengeSupervisor {
   private readonly challengeText: ChallengeText
 
   constructor() {
-    this.challengeText = v4()
+    this.challengeText = uuidv4()
   }
 
   getChallengeText(): ChallengeText {

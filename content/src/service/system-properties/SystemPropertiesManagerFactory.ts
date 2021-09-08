@@ -1,4 +1,4 @@
-import { Bean, Environment } from '@katalyst/content/Environment'
+import { Bean, Environment } from '../../Environment'
 import { SystemPropertiesManager } from './SystemProperties'
 
 export class SystemPropertiesManagerFactory {

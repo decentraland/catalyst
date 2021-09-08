@@ -89,7 +89,7 @@ export class SmartContentClient implements ContentAPI {
     options?: Partial<CompleteRequestOptions>
   ): Promise<Map<string, string>> {
     const client = await this.getClient()
-    return await client.pipeContent(contentHash, (responseTo as any) as ReadableStream<Uint8Array>, options)
+    return await client.pipeContent(contentHash, responseTo as any as ReadableStream<Uint8Array>, options)
   }
 
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {
