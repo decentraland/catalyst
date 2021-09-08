@@ -8,15 +8,26 @@ The following docs show how to run a local instance of the Lighthouse.
 
 More information about the Peer Library component is available in this repository: https://github.com/decentraland/catalyst-comms-peer
 
+## Run tests
+
+```
+yarn build
+yarn test
+```
+
 ## Set up
 
 - Install libs
 
   `yarn install`
 
+- Build package
+
+  `yarn build`
+
 - Set up a lighthouse instance on localhost:9000
 
-  `yarn start:comms`
+  `yarn start`
 
 ## Lighthouse endpoints
 

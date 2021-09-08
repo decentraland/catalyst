@@ -44,11 +44,11 @@ These are some of the more important configuration values:
 
 ## Run unit tests
 
-    `yarn test`
+    `yarn test:unit`
 
 ## Run integration tests
 
-    `yarn integration-test`
+    `yarn test:integration`
 
 ## Project Structure: History
 
