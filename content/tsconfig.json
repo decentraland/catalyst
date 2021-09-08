@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": ["src", "test"],
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "composite": false,
+    "sourceMap": false,
+    "declarationMap": false,
+    "declaration": false
+  },
+  "references": [
+    { "path": "../commons" },
+    { "path": "../contracts" }
+  ]
+}
