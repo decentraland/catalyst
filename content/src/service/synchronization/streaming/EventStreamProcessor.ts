@@ -1,4 +1,3 @@
-
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import parallelTransform from 'parallel-transform'
@@ -7,11 +6,7 @@ import { DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL } from '../../../ContentMetrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
 import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'
-import {
-  awaitablePipeline,
-  mergeStreams,
-  streamFilter
-} from './StreamHelper'
+import { awaitablePipeline, mergeStreams, streamFilter } from './StreamHelper'
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
