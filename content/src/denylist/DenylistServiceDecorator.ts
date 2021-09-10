@@ -221,7 +221,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         return this.sanitizeEntities(task.denylist, entities)
       },
       {
-        priority: DB_REQUEST_PRIORITY.LOW
+        priority: DB_REQUEST_PRIORITY.HIGH
       }
     )
   }
@@ -236,7 +236,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         return this.sanitizeEntities(task.denylist, entities)
       },
       {
-        priority: DB_REQUEST_PRIORITY.LOW
+        priority: DB_REQUEST_PRIORITY.HIGH
       }
     )
   }
