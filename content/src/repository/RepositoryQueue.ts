@@ -1,3 +1,4 @@
+import ms from 'ms'
 import PQueue from 'p-queue'
 import {
   REPOSITORY_QUEUE_EXECUTED_QUERIES,
@@ -46,7 +47,7 @@ export class RepositoryQueue {
           endTimer()
         }
       },
-      { priority }
+      { priority, timeout: ms('10m') }
     )
   }
 
