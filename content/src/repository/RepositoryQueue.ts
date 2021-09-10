@@ -13,9 +13,9 @@ import {
 export class RepositoryQueue {
   public static readonly TOO_MANY_QUEUED_ERROR =
     'There are too many requests being made to the database right now. Please try again in a few minutes'
-  public static readonly DEFAULT_MAX_CONCURRENCY = 20
-  public static readonly DEFAULT_MAX_QUEUED = 100
-  public static readonly DEFAULT_TIMEOUT = '10m'
+  public static readonly DEFAULT_MAX_CONCURRENCY = 50
+  public static readonly DEFAULT_MAX_QUEUED = 300
+  public static readonly DEFAULT_TIMEOUT = '1m'
   private readonly maxQueued: number
   private readonly queue: PQueue
 
