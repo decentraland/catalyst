@@ -20,7 +20,8 @@ export class RepositoryFactory {
       database,
       new RepositoryQueue({
         maxConcurrency: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY),
-        maxQueued: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED)
+        maxQueued: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED),
+        timeout: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_TIMEOUT)
       })
     )
   }
