@@ -1,4 +1,3 @@
-
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import ms from 'ms'
@@ -21,7 +20,6 @@ import { MockedAccessChecker } from '../helpers/service/access/MockedAccessCheck
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { NoOpValidator } from '../helpers/service/validations/NoOpValidator'
 import { TestServer } from './TestServer'
-
 
 export class E2ETestEnvironment {
   private static TEST_SCHEMA = 'e2etest'

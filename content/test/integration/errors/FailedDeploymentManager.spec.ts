@@ -1,4 +1,3 @@
-
 import { EntityId, EntityType } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import { Repository } from '../../../src/repository/Repository'
