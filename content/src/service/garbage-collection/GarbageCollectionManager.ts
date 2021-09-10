@@ -1,14 +1,10 @@
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import {
-  DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL,
-  DCL_CONTENT_GARBAGE_COLLECTION_TIME
-} from '../../ContentMetrics'
+import { DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL, DCL_CONTENT_GARBAGE_COLLECTION_TIME } from '../../ContentMetrics'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
 import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { MetaverseContentService } from '../Service'
-
 
 export class GarbageCollectionManager {
   private static readonly LOGGER = log4js.getLogger('GarbageCollectionManager')
