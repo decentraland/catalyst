@@ -1,6 +1,6 @@
 import { parseUrn } from '@dcl/urn-resolver'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity } from 'dcl-catalyst-commons'
+import { SmartContentClient } from '../../utils/SmartContentClient'
 import {
   I18N,
   Wearable,

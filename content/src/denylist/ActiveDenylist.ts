@@ -1,5 +1,5 @@
+import { validateSignature } from '@catalyst/commons'
 import { EthAddress } from 'dcl-crypto'
-import { validateSignature } from 'decentraland-katalyst-commons/signatures'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'

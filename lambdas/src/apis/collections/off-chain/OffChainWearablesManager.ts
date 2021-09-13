@@ -1,6 +1,6 @@
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TimeRefreshedDataHolder } from '@katalyst/lambdas/utils/TimeRefreshedDataHolder'
 import { EntityType } from 'dcl-catalyst-commons'
+import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { TimeRefreshedDataHolder } from '../../../utils/TimeRefreshedDataHolder'
 import { Wearable, WearableId, WearablesFilters } from '../types'
 import { preferEnglish, translateEntityIntoWearable } from '../Utils'
 import baseAvatars from './base-avatars'

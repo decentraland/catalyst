@@ -1,5 +1,5 @@
-import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
 import { EntityType } from 'dcl-catalyst-commons'
+import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 import { Validator, ValidatorImpl } from './Validator'
 
 export class ValidatorFactory {

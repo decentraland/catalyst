@@ -1,6 +1,6 @@
-import { PointerChanges } from '@katalyst/content/service/deployments/DeploymentManager'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { Pointer } from 'dcl-catalyst-commons'
+import { PointerChanges } from '../../../../src/service/deployments/DeploymentManager'
+import { MetaverseContentService } from '../../../../src/service/Service'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 

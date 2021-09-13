@@ -1,12 +1,9 @@
-import {
-  DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL,
-  DCL_CONTENT_GARBAGE_COLLECTION_TIME
-} from '@katalyst/content/ContentMetrics'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
-import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL, DCL_CONTENT_GARBAGE_COLLECTION_TIME } from '../../ContentMetrics'
+import { Repository } from '../../repository/Repository'
+import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
+import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { MetaverseContentService } from '../Service'
 
 export class GarbageCollectionManager {

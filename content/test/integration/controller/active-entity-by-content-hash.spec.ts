@@ -1,6 +1,6 @@
-import { EnvironmentConfig } from '@katalyst/content/Environment'
 import { EntityId } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
@@ -27,12 +27,12 @@ describe('Integration - Get Active Entities By Content Hash', () => {
   it('When the deployment exists returns the entity id', async () => {
     const deployResult = await buildDeployData(['0,0', '0,1'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     const secondDeployResult = await buildDeployData(['0,3', '0,2'], {
       metadata: 'this is just some metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy entity

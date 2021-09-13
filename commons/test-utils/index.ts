@@ -1,6 +1,4 @@
-export function delay(time: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, time))
-}
+import { delay } from '../utils/util'
 
 export async function whileTrue(
   condition: () => boolean,

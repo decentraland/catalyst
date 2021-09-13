@@ -13,7 +13,7 @@ const createFakeSocket = (): MyWebSocket => {
   }
   /* eslint-enable @typescript-eslint/no-empty-function */
 
-  return (sock as unknown) as MyWebSocket
+  return sock as unknown as MyWebSocket
 }
 
 describe('Transmission handler', () => {

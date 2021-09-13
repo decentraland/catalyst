@@ -1,7 +1,7 @@
-import { DCL_CONTENT_DOWNLOADED_TOTAL, DCL_CONTENT_DOWNLOAD_TIME } from '@katalyst/content/ContentMetrics'
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
+import { DCL_CONTENT_DOWNLOADED_TOTAL, DCL_CONTENT_DOWNLOAD_TIME } from '../../ContentMetrics'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
 import { FailureReason } from '../errors/FailedDeploymentsManager'

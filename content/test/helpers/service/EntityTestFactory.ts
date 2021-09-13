@@ -1,5 +1,3 @@
-import { Entity } from '@katalyst/content/service/Entity'
-import { EntityFactory } from '@katalyst/content/service/EntityFactory'
 import {
   buildEntityAndFile as buildEntityAndFileHelper,
   ContentFileHash,
@@ -9,6 +7,8 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { random } from 'faker'
+import { Entity } from '../../../src/service/Entity'
+import { EntityFactory } from '../../../src/service/EntityFactory'
 
 /** Builds an entity with the given params, and also the file what represents it */
 export async function buildEntityAndFile(

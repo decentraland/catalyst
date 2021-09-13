@@ -1,7 +1,7 @@
-import { asArray } from '@katalyst/lambdas/utils/ControllerUtils'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
 import fetch, { Response as NodeFetchResponse } from 'node-fetch'
+import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
 const LOGGER = log4js.getLogger('ContentTranslator')
@@ -11,10 +11,10 @@ export async function getScenes(fetcher: SmartContentServerFetcher, req: Request
   // Method: GET
   // Path: /scenes
   // Query String: ?x1={number}&x2={number}&y1={number}&y2={number}
-  const x1: number = parseInt(req.query.x1)
-  const x2: number = parseInt(req.query.x2)
-  const y1: number = parseInt(req.query.y1)
-  const y2: number = parseInt(req.query.y2)
+  const x1: number = parseInt(req.query.x1 as string)
+  const x2: number = parseInt(req.query.x2 as string)
+  const y1: number = parseInt(req.query.y1 as string)
+  const y2: number = parseInt(req.query.y2 as string)
 
   // Make sure that all params are set, and that they are numbers
   if (isNaN(x1) || isNaN(x2) || isNaN(y1) || isNaN(y2)) {
@@ -68,7 +68,7 @@ export async function getScenes(fetcher: SmartContentServerFetcher, req: Request
   const data: ScenesItem[] = []
 
   // Read the response, and transform it
-  const entities: V3ControllerEntity[] = await response.json()
+  const entities = (await response.json()) as V3ControllerEntity[]
   entities.forEach((entity: V3ControllerEntity) => {
     entity.pointers.forEach((pointer) => {
       data.push({
@@ -112,7 +112,7 @@ export async function getInfo(fetcher: SmartContentServerFetcher, req: Request, 
   // Method: GET
   // Path: /parcel_info
   // Query String: ?cids={id[]}
-  const cids: string[] = asArray(req.query.cids)
+  const cids: string[] = asArray(req.query.cids as string[])
   const ids = cids.map((cid) => `id=${cid}`)
   const idParams = ids.join('&')
   const v3Url = (await fetcher.getContentServerUrl()) + `/entities/scenes?${idParams}`
@@ -186,7 +186,7 @@ export async function getContents(fetcher: SmartContentServerFetcher, req: Reque
 function copySuccessResponse(responseFrom: NodeFetchResponse, responseTo: Response) {
   copyHeaders(responseFrom, responseTo)
   responseTo.status(200)
-  responseFrom.body.pipe(responseTo)
+  responseFrom.body?.pipe(responseTo)
 }
 
 const KNOWN_HEADERS: string[] = [

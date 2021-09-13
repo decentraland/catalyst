@@ -1,4 +1,4 @@
-import { Database } from '@katalyst/content/repository/Database'
+import { Database } from '../../repository/Database'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class MigrationDataRepository {

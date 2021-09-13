@@ -1,17 +1,17 @@
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
-import { NoFailure } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { Validations } from '@katalyst/content/service/validations/Validations'
+import { AuditInfo, Entity, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import * as EthCrypto from 'eth-crypto'
+import ms from 'ms'
+import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
+import { Deployment } from '../../../../src/service/deployments/DeploymentManager'
+import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
+import { Validations } from '../../../../src/service/validations/Validations'
 import {
   DeploymentToValidate,
   ExternalCalls,
   ServerEnvironment,
   ValidationArgs
-} from '@katalyst/content/service/validations/Validator'
-import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { AuditInfo, Entity, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
-import * as EthCrypto from 'eth-crypto'
-import ms from 'ms'
+} from '../../../../src/service/validations/Validator'
+import { MockedAccessChecker } from '../../../helpers/service/access/MockedAccessChecker'
 
 describe('Validations', function () {
   describe('Recent', () => {
