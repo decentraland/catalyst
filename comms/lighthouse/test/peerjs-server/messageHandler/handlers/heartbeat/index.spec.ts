@@ -8,7 +8,7 @@ describe('Heartbeat handler', () => {
 
     const nowTime = new Date().getTime()
 
-    HeartbeatHandler(client)
+    HeartbeatHandler(client).catch(console.error)
 
     expect(client.getLastPing() - nowTime).toBeLessThanOrEqual(1000)
   })
