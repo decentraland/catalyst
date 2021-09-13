@@ -131,7 +131,7 @@ jobs:
           command: yarn workspace @catalyst/lambdas-server build
       - run:
           name: Run tests
-          command: yarn workspace @catalyst/lambdas-server test\
+          command: yarn workspace @catalyst/lambdas-server test
 
   build-commons:
     <<: *base_env
