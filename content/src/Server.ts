@@ -32,6 +32,7 @@ export class Server {
   private readonly migrationManager: MigrationManager
   private readonly service: MetaverseContentService
   private readonly repository: Repository
+  private readonly metricsServer: ReturnType<typeof initializeMetricsServer>
 
   constructor(env: Environment) {
     // Set logger
@@ -46,7 +47,7 @@ export class Server {
 
     this.app = express()
 
-    initializeMetricsServer(this.app, metricsComponent)
+    this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
 
     const corsOptions: cors.CorsOptions = {
       origin: true,
@@ -141,6 +142,7 @@ export class Server {
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`)
+    await this.metricsServer.start()
     await this.snapshotManager.start()
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
@@ -151,6 +153,7 @@ export class Server {
     if (this.httpServer) {
       await this.closeHTTPServer()
     }
+    await this.metricsServer.stop()
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()

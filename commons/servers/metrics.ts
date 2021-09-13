@@ -12,12 +12,6 @@ export function initializeMetricsServer<T extends string>(
 ) {
   const metricsExpressApp = express()
 
-  const port = parseInt(process.env.METRICS_PORT ?? '9090')
-  if (isNaN(port)) {
-    throw new Error('Invalid non-numeric METRICS_PORT')
-  }
-  console.log(`Starting the collection of metrics, the metrics are available on :${port}/metrics`)
-
   const register = metricsComponent.register
 
   addMetricsEndpointToServer(metricsExpressApp, register)
@@ -31,14 +25,24 @@ export function initializeMetricsServer<T extends string>(
 
   installMetricsMiddlewares(serverToInstrument, metricsComponent)
 
-  const metricsServer = metricsExpressApp.listen(port)
+  let server: { close(): void } | undefined
 
-  // close metrics server when main app closes.
-  serverToInstrument.on('close', () => {
-    metricsServer.close()
-  })
+  return {
+    async start(port?: number) {
+      const usedPort = port === undefined ? parseInt(process.env.METRICS_PORT ?? '9090') : port
+      if (isNaN(usedPort)) {
+        throw new Error('Invalid non-numeric METRICS_PORT')
+      }
+      console.log(`Starting the collection of metrics, the metrics are available on :${usedPort}/metrics`)
 
-  return { app: metricsExpressApp }
+      server = metricsExpressApp.listen(usedPort)
+    },
+    async stop() {
+      if (server) {
+        server.close()
+      }
+    }
+  }
 }
 
 function addMetricsEndpointToServer(app: express.Express, registry: Registry) {
