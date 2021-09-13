@@ -5,4 +5,3 @@ dist
 node_modules
 *.log
 tmpbin
-comms/performance-test
