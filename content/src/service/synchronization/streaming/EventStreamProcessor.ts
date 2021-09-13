@@ -1,4 +1,4 @@
-import { DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL } from '@katalyst/content/ContentMetrics'
+import { metricsComponent } from '@katalyst/content/metrics'
 import {
   awaitablePipeline,
   mergeStreams,
@@ -109,7 +109,7 @@ export class EventStreamProcessor {
           }
           done()
         } catch (error) {
-          DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL.inc()
+          metricsComponent.increment('dcl_content_failed_deployments_total')
           EventStreamProcessor.LOGGER.error(
             `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
           )

@@ -126,12 +126,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
-  private waitUntilSyncFinishes(): Promise<void> {
-    return new Promise(async (resolve) => {
-      while (this.synchronizationState === SynchronizationState.SYNCING) {
-        await delay(ms('1s'))
-      }
-      resolve()
-    })
+  private async waitUntilSyncFinishes(): Promise<void> {
+    while (this.synchronizationState === SynchronizationState.SYNCING) {
+      await delay(ms('1s'))
+    }
   }
 }

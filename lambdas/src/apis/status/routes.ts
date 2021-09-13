@@ -23,11 +23,18 @@ export default (environment: Environment): Router => {
     })
   })
 
-  router.get('/health', async (req: Request, res: Response) => {
+  router.get('/health', (req: Request, res: Response) => {
     // Method: GET
     // Path: /health
 
-    res.send(await peerHealthStatus.getPeerStatus())
+    peerHealthStatus
+      .getPeerStatus()
+      .then(($) => res.send($))
+      .catch((err) => {
+        console.error(err)
+        res.status(500)
+        res.end()
+      })
   })
 
   return router

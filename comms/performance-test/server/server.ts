@@ -1,4 +1,5 @@
 import cors from 'cors'
+import { asyncHandler } from 'decentraland-katalyst-commons/asyncHandler'
 import express from 'express'
 import fs from 'fs'
 import fetch from 'isomorphic-fetch'
@@ -117,24 +118,24 @@ function generateId(timestamp: number) {
 
 // HANDLERS
 
-const validateTestExists = async (req, res, next) => {
+const validateTestExists = asyncHandler(async (req, res, next) => {
   const testExists = await exists(req.params.testId)
   if (testExists) {
     next()
   } else {
     res.status(404).send({ status: 'test-not-found' })
   }
-}
+})
 
 // This handler assumes the test exists
-const validateTestOngoing = async (req, res, next) => {
+const validateTestOngoing = asyncHandler(async (req, res, next) => {
   const test = await getTest(req.params.testId)
   if (!test.finished && test.started) {
     next()
   } else {
     res.status(400).send({ status: test.started ? 'test-already-finished' : 'test-not-started' })
   }
-}
+})
 
 // ROUTES
 
@@ -151,42 +152,55 @@ function createTestAndRespond(
   res.json({ id: test.id, started: test.started })
 }
 
-app.get('/test/:testId', validateTestExists, async (req, res, next) => {
-  const { testId } = req.params
-  const includeDataPoints = req.query.dataPoints === 'true'
+app.get(
+  '/test/:testId',
+  validateTestExists,
+  asyncHandler(async (req, res, next) => {
+    const { testId } = req.params
+    const includeDataPoints = req.query.dataPoints === 'true'
 
-  const test = await getTest(testId)
+    const test = await getTest(testId)
 
-  res.json(
-    includeDataPoints
-      ? test
-      : {
-          id: test.id,
-          started: test.started,
-          finished: test.finished
-        }
-  )
-})
+    res.json(
+      includeDataPoints
+        ? test
+        : {
+            id: test.id,
+            started: test.started,
+            finished: test.finished
+          }
+    )
+  })
+)
 
-app.put('/test/:testId/start', validateTestExists, async (req, res, next) => {
-  const { testId } = req.params
+app.put(
+  '/test/:testId/start',
+  validateTestExists,
+  asyncHandler(async (req, res, next) => {
+    const { testId } = req.params
 
-  const test = await getTest(testId)
-  test.started = Date.now()
+    const test = await getTest(testId)
+    test.started = Date.now()
 
-  res.json({ id: test.id, started: test.started })
-})
+    res.json({ id: test.id, started: test.started })
+  })
+)
 
-app.put('/test/:testId/topology', validateTestExists, validateTestOngoing, async (req, res, next) => {
-  const { testId } = req.params
+app.put(
+  '/test/:testId/topology',
+  validateTestExists,
+  validateTestOngoing,
+  asyncHandler(async (req, res, next) => {
+    const { testId } = req.params
 
-  const test = await getTest(testId)
-  const topology = req.body
+    const test = await getTest(testId)
+    const topology = req.body
 
-  test.topologyDataPoints.push({ timestamp: Date.now(), topology })
+    test.topologyDataPoints.push({ timestamp: Date.now(), topology })
 
-  res.json({ id: test.id, started: test.started })
-})
+    res.json({ id: test.id, started: test.started })
+  })
+)
 
 app.post('/test', (req, res, next) => {
   const timestamp = Date.now()
@@ -202,56 +216,72 @@ app.post('/test/:testId', (req, res, next) => {
   createTestAndRespond(testId, req, res)
 })
 
-app.put('/test/:testId/peer/:peerId/metrics', validateTestExists, validateTestOngoing, async (req, res, next) => {
-  const { testId, peerId } = req.params
+app.put(
+  '/test/:testId/peer/:peerId/metrics',
+  validateTestExists,
+  validateTestOngoing,
+  asyncHandler(async (req, res, next) => {
+    const { testId, peerId } = req.params
 
-  const timestamp = Date.now()
+    const timestamp = Date.now()
 
-  const test = await getTest(testId)
+    const test = await getTest(testId)
 
-  const dataPoint = {
-    peerId,
-    timestamp,
-    metrics: req.body
-  }
+    const dataPoint = {
+      peerId,
+      timestamp,
+      metrics: req.body
+    }
 
-  if (STATS_SERVER_URL) {
-    pushDataPointToStatsServer(testId, peerId, req, timestamp)
-  }
+    if (STATS_SERVER_URL) {
+      pushDataPointToStatsServer(testId, peerId, req, timestamp)
+    }
 
-  test.dataPoints.push(dataPoint)
+    test.dataPoints.push(dataPoint)
 
-  res.json(dataPoint)
-})
+    res.json(dataPoint)
+  })
+)
 
-app.put('/test/:testId/peer/:peerId/results', validateTestExists, validateTestOngoing, async (req, res, next) => {
-  const { testId, peerId } = req.params
+app.put(
+  '/test/:testId/peer/:peerId/results',
+  validateTestExists,
+  validateTestOngoing,
+  asyncHandler(async (req, res, next) => {
+    const { testId, peerId } = req.params
 
-  const timestamp = Date.now()
+    const timestamp = Date.now()
 
-  const test = await getTest(testId)
+    const test = await getTest(testId)
 
-  test.results[peerId] = {
-    ...req.body,
-    timestamp
-  }
+    test.results[peerId] = {
+      ...req.body,
+      timestamp
+    }
 
-  res.json(test.results[peerId])
-})
+    res.json(test.results[peerId])
+  })
+)
 
-app.put('/test/:testId/finish', validateTestExists, validateTestOngoing, async (req, res, next) => {
-  const { testId } = req.params
+app.put(
+  '/test/:testId/finish',
+  validateTestExists,
+  validateTestOngoing,
+  asyncHandler(async (req, res, next) => {
+    const { testId } = req.params
 
-  const timestamp = Date.now()
+    const timestamp = Date.now()
 
-  const test = await getTest(testId)
+    const test = await getTest(testId)
 
-  test.finished = timestamp
+    test.finished = timestamp
 
-  await persistTestData(test)
+    await persistTestData(test)
 
-  res.json(test)
-})
+    res.json(test)
+  })
+)
+
 function pushDataPointToStatsServer(testId: string, peerId: string, req, timestamp: number) {
   const header = `test-${testId},peer=${peerId}`
   const byteLines = ['sent', 'received', 'relayed', 'all', 'relevant', 'duplicate', 'expired'].map(

@@ -66,6 +66,7 @@ ts_library(
         "//commons/utils",
         "//contracts",
         "@npm//@dcl/archipelago",
+        "@npm//@well-known-components",
         "@npm//@types",
         "@npm//cors",
         "@npm//dcl-catalyst-commons",

@@ -26,6 +26,7 @@ ts_library(
         "@npm//@types/parallel-transform",
         "@npm//@types/pg-promise",
         "@npm//@types/uuid",
+        "@npm//@well-known-components",
         "@npm//abort-controller",
         "@npm//analytics-node",
         "@npm//aws-sdk",
