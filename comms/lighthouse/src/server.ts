@@ -92,7 +92,7 @@ async function main() {
   }
 
   const metricsServer = initializeMetricsServer(app, metricsComponent)
-  metricsServer.start()
+  await metricsServer.start()
 
   const peersService = new PeersService(getPeerJsRealm, appServices)
 
