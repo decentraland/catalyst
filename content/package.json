@@ -5,8 +5,8 @@
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
-    "start:server": "node -r ts-path-mapping/register ./dist/src/entrypoints/run-server.js",
-    "start:db": "node -r ts-path-mapping/register ./dist/src/entrypoints/run-local-database.js",
+    "start:server": "node ./dist/src/entrypoints/run-server.js",
+    "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "copy-test-resources": "yarn cpy test/integration/resources/* dist --parents",
     "test": "run-p 'test:*'",
     "test:unit": "jasmine --config=jasmine.unit.json",
