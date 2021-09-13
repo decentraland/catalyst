@@ -1,4 +1,4 @@
-import { Metrics } from '@katalyst/commons'
+import { initializeMetricsServer } from '@catalyst/commons/metrics'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'
@@ -11,6 +11,7 @@ import multer from 'multer'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
+import { metricsComponent } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { Repository } from './repository/Repository'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -45,11 +46,14 @@ export class Server {
 
     this.app = express()
 
+    initializeMetricsServer(this.app, metricsComponent)
+
     const corsOptions: cors.CorsOptions = {
       origin: true,
       methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
       allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
-      credentials: true
+      credentials: true,
+      maxAge: 86400
     }
 
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
@@ -69,10 +73,6 @@ export class Server {
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
-    }
-
-    if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize()
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
@@ -102,18 +102,13 @@ export class Server {
   private registerRoute(
     route: string,
     controller: Controller,
-    action: (req: express.Request, res: express.Response) => void,
+    action: (this: Controller, req: express.Request, res: express.Response) => void,
     method: HttpMethod = HttpMethod.GET,
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
-      ...Metrics.requestHandlers(),
-      async (req: express.Request, res: express.Response, next: NextFunction) => {
-        try {
-          await action.call(controller, req, res)
-        } catch (error) {
-          next(error)
-        }
+      (req: express.Request, res: express.Response, next: NextFunction) => {
+        action.call(controller, req, res).catch(next)
       }
     ]
     if (extraHandler) {

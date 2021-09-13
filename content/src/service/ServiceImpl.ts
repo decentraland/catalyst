@@ -9,7 +9,7 @@ import {
   ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { TOTAL_AMOUNT_OF_DEPLOYMENTS } from '../ContentMetrics'
+import { metricsComponent } from '../metrics'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
@@ -61,9 +61,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const amountOfDeployments = await this.repository.task((task) => task.deployments.getAmountOfDeployments(), {
       priority: DB_REQUEST_PRIORITY.HIGH
     })
-    for (const [entityType, amount] of amountOfDeployments) {
+    for (const [_, amount] of amountOfDeployments) {
       this.historySize += amount
-      TOTAL_AMOUNT_OF_DEPLOYMENTS.inc({ entity_type: entityType }, amount)
     }
   }
 
@@ -202,7 +201,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
         // Since we are still reporting the history size, add one to it
         this.historySize++
-        TOTAL_AMOUNT_OF_DEPLOYMENTS.inc({ entity_type: entity.type })
+        metricsComponent.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache
         response.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))

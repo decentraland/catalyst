@@ -30,7 +30,6 @@
     "jasmine-core": "3.9.0",
     "jasmine-ts": "0.4.0",
     "ts-mockito": "2.6.1",
-    "ts-node": "10.2.1",
-    "typescript": "^3.9.9"
+    "ts-node": "10.2.1"
   }
 }

@@ -136,6 +136,7 @@ export const enum Bean {
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
   SERVER_PORT,
+  // @deprecated
   METRICS,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
