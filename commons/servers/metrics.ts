@@ -25,7 +25,7 @@ export function initializeMetricsServer<T extends string>(
 
   installMetricsMiddlewares(serverToInstrument, metricsComponent)
 
-  let server: { close(): void } | undefined
+  let server: { close(cb: (err?: any) => void): void } | undefined
 
   return {
     async start(port?: number) {
@@ -39,7 +39,16 @@ export function initializeMetricsServer<T extends string>(
     },
     async stop() {
       if (server) {
-        server.close()
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => {
+            if (error) {
+              reject(error)
+            } else {
+              resolve()
+            }
+          })
+        })
+        server = undefined
       }
     }
   }
