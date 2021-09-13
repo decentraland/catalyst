@@ -105,7 +105,7 @@ jobs:
           name: Run tests
           command: yarn workspace @catalyst/lighthouse-server test
           environment:
-            COLLECT_DEFAULT_METRICS: 'false'
+            CI: 'true'
 
   build-content:
     machine:
@@ -121,7 +121,7 @@ jobs:
           name: Run unit tests
           command: yarn workspace @catalyst/content-server test:unit
           environment:
-            COLLECT_DEFAULT_METRICS: 'false'
+            CI: 'true'
       - run:
           name: Run integration tests
           command: yarn workspace @catalyst/content-server test:integration

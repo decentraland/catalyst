@@ -22,7 +22,10 @@ export function initializeMetricsServer<T extends string>(
 
   addMetricsEndpointToServer(metricsExpressApp, register)
 
-  if (process.env.COLLECT_DEFAULT_METRICS != 'false') {
+  // due to the hardcoded nature of our "global instance of metricsComponent"
+  // running tests and registering default metrics twice breaks the execution
+  // that way we disable the default metrics for CI environments
+  if (process.env.CI !== 'true') {
     collectDefaultMetrics({ register })
   }
 
