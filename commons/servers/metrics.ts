@@ -22,7 +22,9 @@ export function initializeMetricsServer<T extends string>(
 
   addMetricsEndpointToServer(metricsExpressApp, register)
 
-  collectDefaultMetrics({ register })
+  if (process.env.COLLECT_DEFAULT_METRICS != 'false') {
+    collectDefaultMetrics({ register })
+  }
 
   installMetricsMiddlewares(serverToInstrument, metricsComponent)
 
