@@ -73,7 +73,12 @@ export class ActiveDenylist extends Denylist {
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
-    this.empty = (await this.repository.run((db) => db.denylist.getAllDenylistedTargets())).length === 0
+    this.empty =
+      (
+        await this.repository.run((db) => db.denylist.getAllDenylistedTargets(), {
+          priority: DB_REQUEST_PRIORITY.HIGH
+        })
+      ).length === 0
     return { status: DenylistOperationStatus.OK, type: DenylistValidationType.SIGNATURE_VALIDATION }
   }
 
@@ -81,14 +86,18 @@ export class ActiveDenylist extends Denylist {
     if (this.empty) {
       return []
     }
-    return this.repository.run((db) => db.denylist.getAllDenylistedTargets())
+    return this.repository.run((db) => db.denylist.getAllDenylistedTargets(), {
+      priority: DB_REQUEST_PRIORITY.LOW
+    })
   }
 
   async isTargetDenylisted(target: DenylistTarget): Promise<boolean> {
     if (this.empty) {
       return false
     }
-    const map = await this.repository.run((db) => this.areTargetsDenylisted(db.denylist, [target]))
+    const map = await this.repository.run((db) => this.areTargetsDenylisted(db.denylist, [target]), {
+      priority: DB_REQUEST_PRIORITY.LOW
+    })
     return map.get(target.getType())?.get(target.getId()) ?? false
   }
 

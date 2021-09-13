@@ -369,18 +369,24 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         db.taskIf((task) =>
           this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
         ),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
+      {
+        priority: DB_REQUEST_PRIORITY.HIGH
+      }
     )
   }
 
+  // This endpoint is for debugging purposes
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
     return this.repository.reuseIfPresent(
       task,
       (db) => db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
     )
   }
 
+  // This endpoint is not currently used for the sync
   getPointerChanges(
     filters?: PointerChangesFilters,
     offset?: number,
@@ -401,12 +407,16 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             lastId
           )
         ),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
     )
   }
 
   getAllFailedDeployments() {
-    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments))
+    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments), {
+      priority: DB_REQUEST_PRIORITY.LOW
+    })
   }
 
   listenToDeployments(listener: DeploymentListener): void {

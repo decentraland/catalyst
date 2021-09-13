@@ -8,6 +8,7 @@ import {
 import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
 import { Repository } from '@katalyst/content/repository/Repository'
 import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactory'
+import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
 import { MetaverseContentService } from '@katalyst/content/service/Service'
 import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
@@ -65,7 +66,9 @@ export class E2ETestEnvironment {
   }
 
   async clearDatabases(): Promise<void> {
-    await this.repository.run((db) => db.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`))
+    await this.repository.run((db) => db.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
+      priority: DB_REQUEST_PRIORITY.HIGH
+    })
   }
 
   async stopServers(): Promise<void> {
@@ -124,10 +127,12 @@ export class E2ETestEnvironment {
   }
 
   private async createDatabases(amount: number) {
-    await this.repository.run((db) => db.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`))
+    await this.repository.run((db) => db.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`), {
+      priority: DB_REQUEST_PRIORITY.HIGH
+    })
     const dbNames = new Array(amount).fill(0).map((_) => 'db' + random.alphaNumeric(8))
     for (const dbName of dbNames) {
-      await this.repository.run((db) => db.none(`CREATE DATABASE ${dbName}`))
+      await this.repository.run((db) => db.none(`CREATE DATABASE ${dbName}`), { priority: DB_REQUEST_PRIORITY.HIGH })
     }
     return dbNames
   }
