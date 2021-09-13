@@ -38,18 +38,18 @@ export function initializeMetricsServer<T extends string>(
       server = metricsExpressApp.listen(usedPort)
     },
     async stop() {
-      if (server) {
-        await new Promise<void>((resolve, reject) => {
-          server.close((error) => {
+      await new Promise<void>((resolve, reject) => {
+        if (server) {
+          server!.close((error) => {
             if (error) {
               reject(error)
             } else {
               resolve()
             }
           })
-        })
-        server = undefined
-      }
+          server = undefined
+        }
+      })
     }
   }
 }
