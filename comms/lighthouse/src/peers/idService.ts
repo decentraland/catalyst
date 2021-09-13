@@ -1,4 +1,4 @@
-import { DEFAULT_ID_ALPHABET } from '@katalyst/commons'
+import { DEFAULT_ID_ALPHABET } from '@catalyst/commons'
 
 export type IdServiceConfig = {
   alphabet: string

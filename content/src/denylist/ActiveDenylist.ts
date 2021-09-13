@@ -1,4 +1,4 @@
-import { validateSignature } from '@katalyst/commons'
+import { validateSignature } from '@catalyst/commons'
 import { EthAddress } from 'dcl-crypto'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'

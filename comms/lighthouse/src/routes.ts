@@ -1,5 +1,5 @@
+import { Metrics, validateSignatureHandler } from '@catalyst/commons'
 import { Island, PeerData } from '@dcl/archipelago'
-import { Metrics, validateSignatureHandler } from '@katalyst/commons'
 import express, { Request, RequestHandler, Response } from 'express'
 import { LighthouseConfig } from './config/configService'
 import { requireAll } from './misc/handlers'

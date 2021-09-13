@@ -1,4 +1,4 @@
-import { delay } from '@katalyst/commons'
+import { delay } from '@catalyst/commons'
 import future from 'fp-future'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from '../../../src/repository/RepositoryQueue'
 import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'

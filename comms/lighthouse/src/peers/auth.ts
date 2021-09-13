@@ -1,4 +1,4 @@
-import { httpProviderForNetwork } from '@katalyst/contracts/utils'
+import { httpProviderForNetwork } from '@catalyst/contracts/utils'
 import { Authenticator } from 'dcl-crypto'
 import { IdType, MessageType } from '../peerjs-server/enums'
 import { IClient } from '../peerjs-server/models/client'

@@ -1,4 +1,4 @@
-import { Metrics } from '@katalyst/commons'
+import { Metrics } from '@catalyst/commons'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'

@@ -1,4 +1,4 @@
-import { ensureDirectoryExists, existPath } from '@katalyst/commons'
+import { ensureDirectoryExists, existPath } from '@catalyst/commons'
 import fs from 'fs'
 import path from 'path'
 import { ContentItem, ContentStorage, SimpleContentItem } from './ContentStorage'

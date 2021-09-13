@@ -1,5 +1,5 @@
-import { DAOContractClient, DECENTRALAND_ADDRESS, Metrics } from '@katalyst/commons'
-import { DAOContract } from '@katalyst/contracts'
+import { DAOContractClient, DECENTRALAND_ADDRESS, Metrics } from '@catalyst/commons'
+import { DAOContract } from '@catalyst/contracts'
 import cors from 'cors'
 import express from 'express'
 import morgan from 'morgan'

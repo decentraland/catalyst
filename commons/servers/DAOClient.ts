@@ -1,4 +1,4 @@
-import { CatalystData, CatalystId, DAOContract } from '@katalyst/contracts'
+import { CatalystData, CatalystId, DAOContract } from '@catalyst/contracts'
 import { ServerMetadata } from './ServerMetadata'
 
 export interface DAOClient {

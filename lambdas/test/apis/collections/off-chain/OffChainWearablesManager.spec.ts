@@ -1,4 +1,4 @@
-import { delay } from '@katalyst/commons'
+import { delay } from '@catalyst/commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { anything, deepEqual, instance, mock, resetCalls, verify, when } from 'ts-mockito'

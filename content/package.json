@@ -1,5 +1,5 @@
 {
-  "name": "@katalyst/content-server",
+  "name": "@catalyst/content-server",
   "description": "Content server",
   "version": "0.1.0",
   "scripts": {
@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@dcl/urn-resolver": "1.2.1",
-    "@katalyst/commons": "0.1.0",
-    "@katalyst/contracts": "0.1.0",
+    "@catalyst/commons": "0.1.0",
+    "@catalyst/contracts": "0.1.0",
     "aws-sdk": "2.854.0",
     "compression": "1.7.4",
     "cors": "2.8.5",

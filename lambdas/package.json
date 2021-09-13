@@ -1,5 +1,5 @@
 {
-  "name": "@katalyst/lambdas-server",
+  "name": "@catalyst/lambdas-server",
   "version": "0.1.0",
   "description": "Lambdas server",
   "scripts": {
@@ -11,8 +11,8 @@
   "dependencies": {
     "@dcl/schemas": "1.6.1",
     "@dcl/urn-resolver": "1.2.1",
-    "@katalyst/commons": "0.1.0",
-    "@katalyst/contracts": "0.1.0",
+    "@catalyst/commons": "0.1.0",
+    "@catalyst/contracts": "0.1.0",
     "@types/sharp": "0.28.6",
     "compression": "1.7.4",
     "cors": "2.8.5",

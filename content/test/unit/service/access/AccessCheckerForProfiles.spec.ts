@@ -1,4 +1,4 @@
-import { DECENTRALAND_ADDRESS } from '@katalyst/commons'
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { AccessCheckerForProfiles } from '../../../../src/service/access/AccessCheckerForProfiles'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 

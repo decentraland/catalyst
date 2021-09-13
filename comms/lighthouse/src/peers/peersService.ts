@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from '@catalyst/commons'
 import { Island } from '@dcl/archipelago'
-import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from '@katalyst/commons'
 import { LighthouseConfig } from '../config/configService'
 import { IRealm } from '../peerjs-server'
 import { AppServices, PeerInfo, PeerRequest } from '../types'

@@ -1,4 +1,4 @@
-import { delay } from '@katalyst/commons'
+import { delay } from '@catalyst/commons'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import ms from 'ms'

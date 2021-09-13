@@ -1,4 +1,4 @@
-import { noReject } from '@katalyst/commons'
+import { noReject } from '@catalyst/commons'
 import { Entity, EntityType, Fetcher, ServerMetadata } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
