@@ -2,6 +2,7 @@ import { EntityId, EntityType } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import { Repository } from '../../../src/repository/Repository'
 import { RepositoryFactory } from '../../../src/repository/RepositoryFactory'
+import { DB_REQUEST_PRIORITY } from '../../../src/repository/RepositoryQueue'
 import {
   DeploymentStatus,
   FailedDeployment,
@@ -46,8 +47,9 @@ describe('Integration - Failed Deployments Manager', function () {
     })
     await reportDeployment({ deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    const [failed1, failed2]: Array<FailedDeployment> = await repository.run((db) =>
-      manager.getAllFailedDeployments(db.failedDeployments)
+    const [failed1, failed2]: Array<FailedDeployment> = await repository.run(
+      (db) => manager.getAllFailedDeployments(db.failedDeployments),
+      { priority: DB_REQUEST_PRIORITY.LOW }
     )
 
     assertFailureWasDueToDeployment(failed1, deployment2)
@@ -63,8 +65,9 @@ describe('Integration - Failed Deployments Manager', function () {
 
     await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    await repository.run((db) =>
-      manager.reportSuccessfulDeployment(db.failedDeployments, deployment.entityType, deployment.entityId)
+    await repository.run(
+      (db) => manager.reportSuccessfulDeployment(db.failedDeployments, deployment.entityType, deployment.entityId),
+      { priority: DB_REQUEST_PRIORITY.LOW }
     )
 
     const status = await getDeploymentStatus(deployment)
@@ -86,14 +89,16 @@ describe('Integration - Failed Deployments Manager', function () {
     description?: string
   }): Promise<null> {
     const { entityType, entityId } = deployment
-    return repository.run((db) =>
-      manager.reportFailure(db.failedDeployments, entityType, entityId, reason, description)
+    return repository.run(
+      (db) => manager.reportFailure(db.failedDeployments, entityType, entityId, reason, description),
+      { priority: DB_REQUEST_PRIORITY.LOW }
     )
   }
 
   function getDeploymentStatus(deployment: FakeDeployment): Promise<DeploymentStatus> {
-    return repository.run((db) =>
-      manager.getDeploymentStatus(db.failedDeployments, deployment.entityType, deployment.entityId)
+    return repository.run(
+      (db) => manager.getDeploymentStatus(db.failedDeployments, deployment.entityType, deployment.entityId),
+      { priority: DB_REQUEST_PRIORITY.LOW }
     )
   }
 

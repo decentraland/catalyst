@@ -1,3 +1,4 @@
+import ms from 'ms'
 import PQueue from 'p-queue'
 import { metricsComponent } from '../metrics'
 
@@ -8,19 +9,21 @@ import { metricsComponent } from '../metrics'
 export class RepositoryQueue {
   public static readonly TOO_MANY_QUEUED_ERROR =
     'There are too many requests being made to the database right now. Please try again in a few minutes'
-  public static readonly DEFAULT_MAX_CONCURRENCY = 20
-  public static readonly DEFAULT_MAX_QUEUED = 100
+  public static readonly DEFAULT_MAX_CONCURRENCY = 50
+  public static readonly DEFAULT_MAX_QUEUED = 300
+  public static readonly DEFAULT_TIMEOUT = '1m'
   private readonly maxQueued: number
   private readonly queue: PQueue
 
   constructor(options?: Partial<QueueOptions>) {
     const withoutUndefined = options ? copyWithoutUndefinedValues(options) : {}
-    const { maxConcurrency, maxQueued } = {
+    const { maxConcurrency, maxQueued, timeout } = {
       maxConcurrency: RepositoryQueue.DEFAULT_MAX_CONCURRENCY,
       maxQueued: RepositoryQueue.DEFAULT_MAX_QUEUED,
+      timeout: RepositoryQueue.DEFAULT_TIMEOUT,
       ...withoutUndefined
     }
-    this.queue = new PQueue({ concurrency: maxConcurrency })
+    this.queue = new PQueue({ concurrency: maxConcurrency, timeout: ms(timeout) })
     this.maxQueued = maxQueued
   }
 
@@ -60,7 +63,7 @@ export enum DB_REQUEST_PRIORITY {
   LOW = 0
 }
 
-type QueueOptions = { maxConcurrency: number; maxQueued: number }
+type QueueOptions = { maxConcurrency: number; maxQueued: number; timeout: string }
 
 function copyWithoutUndefinedValues<T extends Record<string, any>>(object: T): T {
   const newLocal = Object.entries(object).filter(([, value]) => value)

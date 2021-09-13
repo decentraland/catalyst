@@ -100,10 +100,10 @@ jobs:
       - <<: *attach_root
       - run:
           name: Build lighthouse
-          command: yarn workspace @katalyst/lighthouse-server build
+          command: yarn workspace @catalyst/lighthouse-server build
       - run:
           name: Run tests
-          command: yarn workspace @katalyst/lighthouse-server test
+          command: yarn workspace @catalyst/lighthouse-server test
 
   build-content:
     machine:
@@ -114,13 +114,13 @@ jobs:
       - update_node_version
       - run:
           name: Build content
-          command: yarn workspace @katalyst/content-server build
+          command: yarn workspace @catalyst/content-server build
       - run:
           name: Run unit tests
-          command: yarn workspace @katalyst/content-server test:unit
+          command: yarn workspace @catalyst/content-server test:unit
       - run:
           name: Run integration tests
-          command: yarn workspace @katalyst/content-server test:integration
+          command: yarn workspace @catalyst/content-server test:integration
 
   build-lambdas:
     <<: *base_env
@@ -128,20 +128,21 @@ jobs:
       - <<: *attach_root
       - run:
           name: Build content
-          command: yarn workspace @katalyst/lambdas-server build
+          command: yarn workspace @catalyst/lambdas-server build
       - run:
           name: Run tests
-          command: yarn workspace @katalyst/lambdas-server test
+          command: yarn workspace @catalyst/lambdas-server test\
+
   build-commons:
     <<: *base_env
     steps:
       - <<: *attach_root
       - run:
           name: Build commons
-          command: yarn workspace @katalyst/commons build
+          command: yarn workspace @catalyst/commons build
       - run:
           name: Run commons tests
-          command: yarn workspace @katalyst/commons test
+          command: yarn workspace @catalyst/commons test
 
   publish-docker:
     <<: *base_env

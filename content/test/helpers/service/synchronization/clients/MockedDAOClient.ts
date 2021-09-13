@@ -1,4 +1,4 @@
-import { DAOClient, ServerMetadata } from '@katalyst/commons'
+import { DAOClient, ServerMetadata } from '@catalyst/commons'
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 

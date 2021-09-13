@@ -1,5 +1,5 @@
 {
-  "name": "@katalyst/commons",
+  "name": "@catalyst/commons",
   "description": "Commons",
   "version": "0.1.0",
   "private": true,
@@ -11,7 +11,7 @@
     "test": "jasmine --config=jasmine.json"
   },
   "dependencies": {
-    "@katalyst/contracts": "^0.1.0",
+    "@catalyst/contracts": "^0.1.0",
     "dcl-crypto": "2.3.0",
     "express": "4.17.1",
     "jasmine-spec-reporter": "7.0.0",

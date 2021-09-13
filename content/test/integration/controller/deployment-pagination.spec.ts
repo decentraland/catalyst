@@ -1,4 +1,4 @@
-import { toQueryParams } from '@katalyst/commons'
+import { toQueryParams } from '@catalyst/commons'
 import assert from 'assert'
 import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'

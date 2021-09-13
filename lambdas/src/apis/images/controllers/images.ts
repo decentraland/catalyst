@@ -1,4 +1,4 @@
-import { ensureDirectoryExists } from '@katalyst/commons'
+import { ensureDirectoryExists } from '@catalyst/commons'
 import { Request, Response } from 'express'
 import future, { IFuture } from 'fp-future'
 import fs from 'fs'

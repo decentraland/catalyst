@@ -1,4 +1,4 @@
-import { DECENTRALAND_ADDRESS } from '@katalyst/commons'
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
@@ -168,6 +168,7 @@ export enum EnvironmentConfig {
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
+  REPOSITORY_QUEUE_TIMEOUT,
   CACHE_SIZES,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL
@@ -374,6 +375,12 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED,
       () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? RepositoryQueue.DEFAULT_MAX_QUEUED
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.REPOSITORY_QUEUE_TIMEOUT,
+      () => process.env.REPOSITORY_QUEUE_TIMEOUT ?? RepositoryQueue.DEFAULT_TIMEOUT
     )
 
     /*

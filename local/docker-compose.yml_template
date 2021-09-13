@@ -12,7 +12,7 @@ volumes:
 
 services:
   comms-server:
-    image: decentraland/katalyst:latest
+    image: decentraland/catalyst:latest
     working_dir: /app
     command: comms
     environment:
@@ -22,7 +22,7 @@ services:
     restart: always
 
   content-server:
-    image: decentraland/katalyst:latest
+    image: decentraland/catalyst:latest
     working_dir: /app
     command: content
     environment:
@@ -36,10 +36,10 @@ services:
       - "6969:6969"
     restart: always
     volumes:
-      - /srv/katalyst_content/storage:/app/storage/content_server/
+      - /srv/catalyst_content/storage:/app/storage/content_server/
 
   lambdas:
-    image: decentraland/katalyst:latest
+    image: decentraland/catalyst:latest
     working_dir: /app
     command: lambdas
     environment:
@@ -92,7 +92,7 @@ services:
     env_file:
       - ./local/grafana/provisioning/config.monitoring
     restart: always
-  
+
   nginx:
     image: nginx:1.15-alpine
     ports:
@@ -109,7 +109,7 @@ services:
        - lambdas
        - content-server
        - comms-server
-       
+
   certbot:
     image: certbot/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"

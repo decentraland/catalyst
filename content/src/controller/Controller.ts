@@ -1,4 +1,4 @@
-import { toQueryParams } from '@katalyst/commons'
+import { toQueryParams } from '@catalyst/commons'
 import {
   ContentFileHash,
   Entity as ControllerEntity,

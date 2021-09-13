@@ -1,4 +1,4 @@
-import { DAOClient, delay, ServerMetadata } from '@katalyst/commons'
+import { DAOClient, delay, ServerMetadata } from '@catalyst/commons'
 import { Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'

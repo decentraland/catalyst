@@ -1,4 +1,4 @@
-import { DECENTRALAND_ADDRESS } from '@katalyst/commons'
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { Logger } from 'log4js'
 import { mock } from 'ts-mockito'

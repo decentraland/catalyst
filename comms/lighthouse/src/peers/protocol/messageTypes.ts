@@ -1,4 +1,4 @@
-import { Position3D } from '@katalyst/commons'
+import { Position3D } from '@catalyst/commons'
 
 // OUTGOING
 export enum PeerOutgoingMessageType {

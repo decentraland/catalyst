@@ -1,5 +1,5 @@
 {
-  "name": "@katalyst/lighthouse-server",
+  "name": "@catalyst/lighthouse-server",
   "version": "0.1.0",
   "description": "Lighthouse server",
   "scripts": {
@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@dcl/archipelago": "1.0.0",
-    "@katalyst/commons": "0.1.0",
-    "@katalyst/contracts": "0.1.0",
+    "@catalyst/commons": "0.1.0",
+    "@catalyst/contracts": "0.1.0",
     "cors": "2.8.5",
     "dcl-catalyst-commons": "7.0.2",
     "dcl-crypto": "2.3.0",

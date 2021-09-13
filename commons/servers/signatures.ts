@@ -1,4 +1,4 @@
-import { httpProviderForNetwork } from '@katalyst/contracts'
+import { httpProviderForNetwork } from '@catalyst/contracts'
 import { AuthChain, Authenticator, EthAddress, Signature, ValidationResult } from 'dcl-crypto'
 import { EthereumProvider } from 'web3x/providers'
 

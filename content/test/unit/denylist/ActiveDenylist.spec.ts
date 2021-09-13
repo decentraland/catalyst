@@ -20,7 +20,7 @@ describe('ActiveDenylist', () => {
   it(`Given an empty denylist, when getAllDenylistedTargets, then the database is not accessed`, async () => {
     await denylist.getAllDenylistedTargets()
 
-    verify(repository.run(anything())).never()
+    verify(repository.run(anything(), anything())).never()
     verify(repository.tx(anything(), anything())).never()
   })
 
@@ -28,7 +28,7 @@ describe('ActiveDenylist', () => {
     const target: DenylistTarget = mock<DenylistTarget>()
     await denylist.isTargetDenylisted(instance(target))
 
-    verify(repository.run(anything())).never()
+    verify(repository.run(anything(), anything())).never()
     verify(repository.tx(anything(), anything())).never()
   })
 
@@ -37,7 +37,7 @@ describe('ActiveDenylist', () => {
     const denylistRepo: DenylistRepository = mock<DenylistRepository>()
     await denylist.areTargetsDenylisted(instance(denylistRepo), [instance(target)])
 
-    verify(repository.run(anything())).never()
+    verify(repository.run(anything(), anything())).never()
     verify(repository.tx(anything(), anything())).never()
     verify(denylistRepo.getDenylistedTargets(anything())).never()
   })

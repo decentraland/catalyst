@@ -1,5 +1,5 @@
 {
-  "name": "katalyst",
+  "name": "catalyst",
   "version": "0.1.0",
   "private": true,
   "workspaces": [
@@ -12,13 +12,13 @@
   "scripts": {
     "cleanup": "yarn workspaces run cleanup && shx rm -rf node_modules",
     "build": "yarn workspaces run build",
-    "build:lambdas": "yarn workspace @katalyst/lambdas-server build",
-    "build:content": "yarn workspace @katalyst/content-server build",
-    "build:comms": "yarn workspace @katalyst/lighthouse-server build",
+    "build:lambdas": "yarn workspace @catalyst/lambdas-server build",
+    "build:content": "yarn workspace @catalyst/content-server build",
+    "build:comms": "yarn workspace @catalyst/lighthouse-server build",
     "start": "yarn workspaces run start",
-    "start:lambdas": "yarn workspace @katalyst/lambdas-server start",
-    "start:content": "yarn workspace @katalyst/content-server start",
-    "start:comms": "yarn workspace @katalyst/lighthouse-server start",
+    "start:lambdas": "yarn workspace @catalyst/lambdas-server start",
+    "start:content": "yarn workspace @catalyst/content-server start",
+    "start:comms": "yarn workspace @catalyst/lighthouse-server start",
     "test": "yarn workspaces run test",
     "lint:fix": "yarn eslint '**/*.{js,ts,tsx}' --quiet --fix",
     "lint:check": "yarn eslint '**/*.{js,ts,tsx}' --quiet",

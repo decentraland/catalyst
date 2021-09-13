@@ -1,4 +1,4 @@
-import { delay } from '@katalyst/commons'
+import { delay } from '@catalyst/commons'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'

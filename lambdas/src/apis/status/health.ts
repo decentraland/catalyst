@@ -1,4 +1,4 @@
-import { SynchronizationState } from '@katalyst/commons'
+import { SynchronizationState } from '@catalyst/commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { Logger } from 'log4js'
 import ms from 'ms'

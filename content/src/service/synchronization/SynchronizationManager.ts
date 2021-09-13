@@ -1,4 +1,4 @@
-import { delay, SynchronizationState } from '@katalyst/commons'
+import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'

@@ -362,19 +362,30 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
-    return this.repository.reuseIfPresent(task, (db) =>
-      db.taskIf((task) =>
-        this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
-      )
+    return this.repository.reuseIfPresent(
+      task,
+      (db) =>
+        db.taskIf((task) =>
+          this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
+        ),
+      {
+        priority: DB_REQUEST_PRIORITY.HIGH
+      }
     )
   }
 
+  // This endpoint is for debugging purposes
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.repository.reuseIfPresent(task, (db) =>
-      db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash))
+    return this.repository.reuseIfPresent(
+      task,
+      (db) => db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
     )
   }
 
+  // This endpoint is not currently used for the sync
   getPointerChanges(
     filters?: PointerChangesFilters,
     offset?: number,
@@ -382,22 +393,29 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     lastId?: string,
     task?: Database
   ): Promise<PartialDeploymentPointerChanges> {
-    return this.repository.reuseIfPresent(task, (db) =>
-      db.taskIf((task) =>
-        this.deploymentManager.getPointerChanges(
-          task.deploymentPointerChanges,
-          task.deployments,
-          filters,
-          offset,
-          limit,
-          lastId
-        )
-      )
+    return this.repository.reuseIfPresent(
+      task,
+      (db) =>
+        db.taskIf((task) =>
+          this.deploymentManager.getPointerChanges(
+            task.deploymentPointerChanges,
+            task.deployments,
+            filters,
+            offset,
+            limit,
+            lastId
+          )
+        ),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
     )
   }
 
   getAllFailedDeployments() {
-    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments))
+    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments), {
+      priority: DB_REQUEST_PRIORITY.LOW
+    })
   }
 
   listenToDeployments(listener: DeploymentListener): void {
