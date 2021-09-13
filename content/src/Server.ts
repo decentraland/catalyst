@@ -1,4 +1,4 @@
-import { initializeMetricsServer } from '@catalyst/commons/dist/servers/metrics'
+import { initializeMetricsServer } from '@catalyst/commons'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'

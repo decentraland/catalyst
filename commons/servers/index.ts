@@ -1,4 +1,5 @@
 export * from './addresses'
+export * from './asyncHandler'
 export * from './DAOClient'
 export * from './fsutils'
 export * from './handlers'
