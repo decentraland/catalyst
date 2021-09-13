@@ -53,6 +53,7 @@ export class TestServer extends Server {
 
   start(): Promise<void> {
     this.started = true
+    this.metricsServer = undefined
     return super.start()
   }
 
