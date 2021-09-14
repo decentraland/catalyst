@@ -26,6 +26,7 @@ export class Server {
   private port: number
   private app: express.Express
   private httpServer: http.Server
+  private metricsPort: ReturnType<typeof initializeMetricsServer>
 
   constructor(env: Environment) {
     // Set logger
@@ -55,7 +56,7 @@ export class Server {
       this.app.use(morgan('combined'))
     }
 
-    initializeMetricsServer(this.app, metricsComponent)
+    this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
     const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
     const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
@@ -107,6 +108,7 @@ export class Server {
     this.httpServer = this.app.listen(this.port, () => {
       console.info(`==> Lambdas Server listening on port ${this.port}.`)
     })
+    await this.metricsPort.start()
   }
 
   async stop(): Promise<void> {
@@ -114,6 +116,9 @@ export class Server {
       this.httpServer.close(() => {
         console.info(`==> Lambdas Server stopped.`)
       })
+    }
+    if (this.metricsPort) {
+      await this.metricsPort.stop()
     }
   }
 }
