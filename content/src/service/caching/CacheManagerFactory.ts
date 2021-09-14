@@ -1,4 +1,4 @@
-import { Environment, EnvironmentConfig } from '@katalyst/content/Environment'
+import { Environment, EnvironmentConfig } from '../../Environment'
 import { CacheManager } from './CacheManager'
 
 export class CacheManagerFactory {

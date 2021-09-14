@@ -1,5 +1,5 @@
+import { SynchronizationState } from '@catalyst/commons'
 import { EntityType } from 'dcl-catalyst-commons'
-import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import { Logger } from 'log4js'
 import ms from 'ms'
 import { SmartContentClient } from '../../utils/SmartContentClient'

@@ -1,6 +1,6 @@
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { Request, Response, Router } from 'express'
+import { SmartContentClient } from '../../utils/SmartContentClient'
+import { TheGraphClient } from '../../utils/TheGraphClient'
 import { contentsImage, contentsThumbnail, getCollectionsHandler, getStandardErc721 } from './controllers/collections'
 import {
   getWearablesByOwnerEndpoint as getWearablesByOwnerHandler,

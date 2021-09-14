@@ -1,5 +1,5 @@
 import { Authenticator, EthAddress } from 'dcl-crypto'
-import { NextFunction, Request, RequestHandler, Response } from 'express-serve-static-core'
+import { NextFunction, Request, RequestHandler, Response } from 'express'
 import { EthereumProvider } from 'web3x/providers'
 import { SignatureValidator, SignerData, validateSignature } from './signatures'
 

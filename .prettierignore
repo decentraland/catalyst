@@ -1,5 +1,4 @@
 dist
-bazel-out
 tmpbin
 linked-peer-package
 **/*.json

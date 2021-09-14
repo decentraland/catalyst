@@ -1,7 +1,6 @@
 
 .env
 dist
-bazel-out
 **/node_modules
 yarn-error.log
 **/package-lock.json
@@ -10,4 +9,4 @@ local/certbot/conf/**
 local/nginx/conf.d/00-katalyst.conf
 tmpbin
 linked-peer-package
-.husky
+**/tsconfig.tsbuildinfo

@@ -1,4 +1,4 @@
-import { validateSignatureHandler } from 'decentraland-katalyst-commons/handlers'
+import { validateSignatureHandler } from '../handlers'
 
 describe('validate signature handler', () => {
   let request: any

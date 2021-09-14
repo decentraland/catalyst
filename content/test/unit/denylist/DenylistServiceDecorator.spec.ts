@@ -1,5 +1,9 @@
-import { Denylist } from '@katalyst/content/denylist/Denylist'
-import { DenylistServiceDecorator } from '@katalyst/content/denylist/DenylistServiceDecorator'
+import { Pointer } from 'dcl-catalyst-commons'
+import { Authenticator } from 'dcl-crypto'
+import { random } from 'faker'
+import { anything, instance, mock, when } from 'ts-mockito'
+import { Denylist } from '../../../src/denylist/Denylist'
+import { DenylistServiceDecorator } from '../../../src/denylist/DenylistServiceDecorator'
 import {
   buildAddressTarget,
   buildContentTarget,
@@ -8,22 +12,18 @@ import {
   DenylistTarget,
   DenylistTargetId,
   DenylistTargetType
-} from '@katalyst/content/denylist/DenylistTarget'
-import { Deployment } from '@katalyst/content/service/deployments/DeploymentManager'
-import { Entity } from '@katalyst/content/service/Entity'
-import { LocalDeploymentAuditInfo } from '@katalyst/content/service/Service'
-import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
-import { MockedRepository } from '@katalyst/test-helpers/repository/MockedRepository'
+} from '../../../src/denylist/DenylistTarget'
+import { Deployment } from '../../../src/service/deployments/DeploymentManager'
+import { Entity } from '../../../src/service/Entity'
+import { LocalDeploymentAuditInfo } from '../../../src/service/Service'
+import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
+import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import {
   buildContent as buildRandomContent,
   buildEntity,
   MockedMetaverseContentService,
   MockedMetaverseContentServiceBuilder
-} from '@katalyst/test-helpers/service/MockedMetaverseContentService'
-import { Pointer } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
-import { random } from 'faker'
-import { anything, instance, mock, when } from 'ts-mockito'
+} from '../../helpers/service/MockedMetaverseContentService'
 
 describe('DenylistServiceDecorator', () => {
   const P1: Pointer = 'p1'

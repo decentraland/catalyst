@@ -1,8 +1,8 @@
-import { Bean, EnvironmentConfig } from '@katalyst/content/Environment'
-import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
 import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
+import { Bean, EnvironmentConfig } from '../../../src/Environment'
+import { FailedDeployment, FailureReason } from '../../../src/service/errors/FailedDeploymentsManager'
+import { MockedAccessChecker } from '../../helpers/service/access/MockedAccessChecker'
 import {
   assertDeploymentFailed,
   assertDeploymentFailsWith,
@@ -62,7 +62,7 @@ describe('End 2 end - Error handling', () => {
     // Prepare entity to deploy
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const entity1Content = entityBeingDeployed1.content![0].hash
 
@@ -76,10 +76,11 @@ describe('End 2 end - Error handling', () => {
     await awaitUntil(() => assertThereIsAFailedDeployment(server2))
 
     // Prepare entity to deploy
-    const {
-      deployData: deployData2,
-      controllerEntity: entityBeingDeployed2
-    } = await buildDeployDataAfterEntity(entityBeingDeployed1, ['0,1'], { metadata: 'metadata2' })
+    const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
+      entityBeingDeployed1,
+      ['0,1'],
+      { metadata: 'metadata2' }
+    )
 
     // Deploy entity 2 on server 2
     await server2.deploy(deployData2)
@@ -140,7 +141,7 @@ describe('End 2 end - Error handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
 
     // Deploy the entity

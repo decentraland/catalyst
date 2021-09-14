@@ -1,7 +1,5 @@
  # We need to skip that file as it makes eslint to hang
-status/**/*
 comms/lighthouse/rollup.config.js
 dist
-bazel-out
 **/node_modules
 tmpbin

@@ -1,6 +1,6 @@
+import { Metrics } from '@catalyst/commons'
 import compression from 'compression'
 import cors from 'cors'
-import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import { once } from 'events'
 import express, { NextFunction, RequestHandler } from 'express'
 import fs from 'fs'

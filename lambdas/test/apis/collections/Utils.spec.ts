@@ -1,8 +1,8 @@
-import { WearableMetadata } from '@katalyst/lambdas/apis/collections/types'
-import { translateEntityIntoWearable } from '@katalyst/lambdas/apis/collections/Utils'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
 import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { instance, mock, when } from 'ts-mockito'
+import { WearableMetadata } from '../../../src/apis/collections/types'
+import { translateEntityIntoWearable } from '../../../src/apis/collections/Utils'
+import { SmartContentClient } from '../../../src/utils/SmartContentClient'
 
 const EXTERNAL_URL = 'https://external.com'
 const [CONTENT_KEY1, CONTENT_KEY2, CONTENT_KEY3] = ['key1', 'key2', 'key3']

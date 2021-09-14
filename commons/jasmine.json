@@ -1,0 +1,5 @@
+{
+  "helpers": ["test-utils/reporter.js"],
+  "spec_dir": "dist",
+  "spec_files": ["**/*[sS]pec.js"]
+}

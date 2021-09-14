@@ -55,14 +55,14 @@ describe('End 2 end synchronization tests', function () {
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['X1,Y1'], {
       metadata: 'metadata',
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
       entityBeingDeployed1,
       ['X2,Y2'],
       {
         metadata: 'metadata',
-        contentPaths: ['content/test/integration/resources/some-binary-file.png']
+        contentPaths: ['test/integration/resources/some-binary-file.png']
       }
     )
 

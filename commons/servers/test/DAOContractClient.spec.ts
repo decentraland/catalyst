@@ -1,7 +1,7 @@
-import { DAOContractClient } from 'decentraland-katalyst-commons/DAOClient'
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
-import { CatalystData, CatalystId, DAOContract } from 'decentraland-katalyst-contracts/DAOContract'
+import { CatalystData, CatalystId, DAOContract } from '@catalyst/contracts'
 import { anyNumber, anyString, instance, mock, verify, when } from 'ts-mockito'
+import { DAOContractClient } from '../DAOClient'
+import { ServerMetadata } from '../ServerMetadata'
 
 describe('DAOContractClient', () => {
   const id1: CatalystId = 'id1'

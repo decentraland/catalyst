@@ -1,10 +1,10 @@
-import { asArray, asInt } from '@katalyst/lambdas/utils/ControllerUtils'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
+import { toQueryParams } from '@catalyst/commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
-import { toQueryParams } from 'decentraland-katalyst-commons/QueryParameters'
 import { Request, Response } from 'express'
+import { asArray, asInt } from '../../../utils/ControllerUtils'
+import { SmartContentClient } from '../../../utils/SmartContentClient'
+import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
@@ -76,11 +76,11 @@ export async function getWearablesEndpoint(
   // Method: GET
   // Path: /wearables/?filters&limit={number}&lastId={string}
 
-  const collectionIds: string[] = asArray<string>(req.query.collectionId).map((id) => id.toLowerCase())
-  const wearableIds: string[] = asArray<string>(req.query.wearableId).map((id) => id.toLowerCase())
-  const textSearch: string | undefined = req.query.textSearch?.toLowerCase()
+  const collectionIds: string[] = asArray<string>(req.query.collectionId as string).map((id) => id.toLowerCase())
+  const wearableIds: string[] = asArray<string>(req.query.wearableId as string).map((id) => id.toLowerCase())
+  const textSearch: string | undefined = (req.query.textSearch as string | undefined)?.toLowerCase()
   const limit: number | undefined = asInt(req.query.limit)
-  const lastId: string | undefined = req.query.lastId?.toLowerCase()
+  const lastId: string | undefined = (req.query.lastId as string | undefined)?.toLowerCase()
 
   if (collectionIds.length === 0 && wearableIds.length === 0 && !textSearch) {
     return res.status(400).send(`You must use one of the filters: 'textSearch', 'collectionId' or 'wearableId'`)

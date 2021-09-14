@@ -1,4 +1,4 @@
-import uuidv4 from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import { DCL_LIGHTHOUSE_CONNECTED_PEERS_COUNT } from '../../metrics'
 import { IClient } from './client'
 import { IMessage } from './message'

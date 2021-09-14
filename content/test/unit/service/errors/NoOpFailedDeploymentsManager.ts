@@ -1,6 +1,6 @@
-import { FailedDeploymentsManager, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import { EntityType } from 'dcl-catalyst-commons'
 import { anything, instance, mock, when } from 'ts-mockito'
+import { FailedDeploymentsManager, FailureReason } from '../../../../src/service/errors/FailedDeploymentsManager'
 
 export class NoOpFailedDeploymentsManager {
   static build(): FailedDeploymentsManager {

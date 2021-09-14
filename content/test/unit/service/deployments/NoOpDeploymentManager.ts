@@ -1,5 +1,5 @@
-import { DeploymentManager } from '@katalyst/content/service/deployments/DeploymentManager'
 import { anything, instance, mock, when } from 'ts-mockito'
+import { DeploymentManager } from '../../../../src/service/deployments/DeploymentManager'
 
 export class NoOpDeploymentManager {
   static build(): DeploymentManager {

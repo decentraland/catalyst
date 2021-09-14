@@ -1,4 +1,4 @@
-import { DEFAULT_ID_ALPHABET } from 'decentraland-catalyst-utils/util'
+import { DEFAULT_ID_ALPHABET } from '@catalyst/commons'
 
 export type IdServiceConfig = {
   alphabet: string

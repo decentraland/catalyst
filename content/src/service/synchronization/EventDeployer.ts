@@ -1,6 +1,7 @@
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
+import { DCL_CONTENT_DOWNLOADED_TOTAL, DCL_CONTENT_DOWNLOAD_TIME } from '../../ContentMetrics'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
@@ -35,13 +36,16 @@ export class EventDeployer {
     EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
 
     // Download the entity file
+    const stopTimer = DCL_CONTENT_DOWNLOAD_TIME.startTimer({ remote_catalyst: source?.getAddress() || 'undefined' })
     const entityFile: Buffer | undefined = await this.getEntityFile(deployment, source)
+    stopTimer()
 
     const { auditInfo } = deployment
 
     if (entityFile) {
       const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
+        DCL_CONTENT_DOWNLOADED_TOTAL.inc({ overwritten: 'true' })
         // Deploy the entity as overwritten and only download entity file
         return this.buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
@@ -52,6 +56,7 @@ export class EventDeployer {
           )
         )
       } else {
+        DCL_CONTENT_DOWNLOADED_TOTAL.inc({ overwritten: 'false' })
         // Build entity
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
@@ -115,7 +120,7 @@ export class EventDeployer {
           }). Hash was ${fileHash}`
         )
       } else {
-        EventDeployer.LOGGER.trace(
+        EventDeployer.LOGGER.error(
           `Failed to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${
             entity.id
           }). Hash was ${fileHash}. Will cancel content download`
@@ -215,6 +220,7 @@ export class EventDeployer {
     try {
       return await tryOnCluster(execution, cluster, description, options)
     } catch (error) {
+      EventDeployer.LOGGER.error(error)
       return undefined
     }
   }

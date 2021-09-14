@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "module": "commonjs",
+    "target": "es2017",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "stripInternal": true,
+    "strictNullChecks": true,
+    "pretty": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "incremental": true,
+    "emitDecoratorMetadata": true,
+    "noUnusedLocals": true,
+    "jsx": "react",
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "lib": [
+      "es2017",
+      "dom",
+      "esnext.asynciterable",
+      "esnext"
+    ]
+  },
+  "references": [
+    { "path": "./contracts" },
+    { "path": "./commons" },
+    { "path": "./content" },
+    { "path": "./comms/lighthouse" },
+    { "path": "./lambdas" }
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*",
+    "**/dist/*"
+  ]
+}

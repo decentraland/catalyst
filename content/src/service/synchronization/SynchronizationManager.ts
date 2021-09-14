@@ -1,10 +1,9 @@
-import { streamMap } from '@katalyst/content/service/synchronization/streaming/StreamHelper'
+import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-catalyst-utils/util'
-import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
+import { streamMap } from '../../service/synchronization/streaming/StreamHelper'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
@@ -14,7 +13,7 @@ import { DeploymentWithSource } from './streaming/EventStreamProcessor'
 export interface SynchronizationManager {
   start(): Promise<void>
   stop(): Promise<void>
-  getStatus()
+  getStatus(): void
 }
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
@@ -117,7 +116,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
     } catch (error) {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
-      ClusterSynchronizationManager.LOGGER.warn(`Failed to sync with servers. Reason:\n${error}`)
+      ClusterSynchronizationManager.LOGGER.error(`Failed to sync with servers. Reason:\n${error}`)
     } finally {
       if (!this.stopping) {
         // Set the timeout again

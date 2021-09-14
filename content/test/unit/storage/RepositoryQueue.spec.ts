@@ -1,7 +1,7 @@
-import { DB_REQUEST_PRIORITY, RepositoryQueue } from '@katalyst/content/repository/RepositoryQueue'
-import { assertPromiseRejectionIs } from '@katalyst/test-helpers/PromiseAssertions'
-import { delay } from 'decentraland-catalyst-utils/util'
+import { delay } from '@catalyst/commons'
 import future from 'fp-future'
+import { DB_REQUEST_PRIORITY, RepositoryQueue } from '../../../src/repository/RepositoryQueue'
+import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
 
 describe('RepositoryQueue', () => {
   it(`When a requests is added to the queue, it starts automatically if concurrency limit allows it`, async () => {
