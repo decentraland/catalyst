@@ -20,8 +20,8 @@
     "start:content": "yarn workspace @catalyst/content-server start",
     "start:comms": "yarn workspace @catalyst/lighthouse-server start",
     "test": "yarn workspaces run test",
-    "lint:fix": "yarn eslint '**/*.{js,ts,tsx}' --quiet --fix",
-    "lint:check": "yarn eslint '**/*.{js,ts,tsx}' --quiet",
+    "lint:fix": "yarn eslint '**/*.{js,ts}' --fix",
+    "lint:check": "yarn eslint '**/*.{js,ts}'",
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "lint-staged": {
@@ -70,6 +70,6 @@
     "ts-node": "10.2.1",
     "ts-path-mapping": "0.1.4",
     "tsc": "2.0.3",
-    "typescript": "^3.9.9"
+    "typescript": "^4.4.3"
   }
 }

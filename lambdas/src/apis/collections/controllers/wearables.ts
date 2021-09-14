@@ -173,16 +173,13 @@ export async function getWearables(
   return { wearables: slice, lastId: moreData ? slice[slice.length - 1]?.id : undefined }
 }
 
-function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): Promise<Wearable[]> {
+async function fetchWearables(wearableIds: WearableId[], client: SmartContentClient): Promise<Wearable[]> {
   if (wearableIds.length === 0) {
-    return Promise.resolve([])
+    return []
   }
-  return client
-    .fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
-    .then((entities) => entities.map((entity) => translateEntityIntoWearable(client, entity)))
-    .then((wearables) =>
-      wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
-    )
+  const entities = await client.fetchEntitiesByPointers(EntityType.WEARABLE, wearableIds)
+  const wearables = entities.map((entity) => translateEntityIntoWearable(client, entity))
+  return wearables.sort((wearable1, wearable2) => wearable1.id.toLowerCase().localeCompare(wearable2.id.toLowerCase()))
 }
 
 async function fetchDefinitions(wearableIds: WearableId[], client: SmartContentClient): Promise<Map<string, Wearable>> {

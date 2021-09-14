@@ -228,7 +228,8 @@ export class Controller {
           try {
             return await fs.promises.unlink(deployFile.path)
           } catch (error) {
-            // Ignore these errors
+            // log and ignore errors
+            console.error(error)
           }
         }
         return Promise.resolve()
