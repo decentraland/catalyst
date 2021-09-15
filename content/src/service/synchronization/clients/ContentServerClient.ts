@@ -63,7 +63,7 @@ export class ContentServerClient {
       }
     })
 
-    for await (let deployment of stream as AsyncIterable<
+    for await (const deployment of stream as AsyncIterable<
       DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo
     >) {
       this.potentialLocalDeploymentTimestamp = Math.max(

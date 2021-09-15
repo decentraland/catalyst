@@ -94,7 +94,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
           remote_catalyst: contentServer.getAddress()
         })
         try {
-          for await (let deployment of contentServer.getNewDeployments()) {
+          for await (const deployment of contentServer.getNewDeployments()) {
             yield {
               deployment,
               source: contentServer

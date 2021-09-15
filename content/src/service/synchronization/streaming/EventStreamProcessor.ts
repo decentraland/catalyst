@@ -21,7 +21,7 @@ export class EventStreamProcessor {
   async processDeployments(deploymentStream: AsyncIterable<DeploymentWithSource>, options?: HistoryDeploymentOptions) {
     const filtered: Set<EntityId> = new Set()
 
-    for await (let it of deploymentStream) {
+    for await (const it of deploymentStream) {
       if (!it) continue
 
       /**
