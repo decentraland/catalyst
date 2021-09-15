@@ -89,6 +89,10 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         metricsComponent.increment('dcl_content_deployments_streams_open_total', {
           remote_catalyst: contentServer.getAddress()
         })
+        // measure how much time the streams remain open
+        const { end: endTimer } = metricsComponent.startTimer('dcl_content_deployments_streams_open_time_seconds', {
+          remote_catalyst: contentServer.getAddress()
+        })
         try {
           for await (let deployment of contentServer.getNewDeployments()) {
             yield {
@@ -97,16 +101,12 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
             }
           }
         } catch (error) {
-          ClusterSynchronizationManager.LOGGER.error(`Error processing stream:` + error)
+          ClusterSynchronizationManager.LOGGER.error(`Error processing stream: ` + error)
           ClusterSynchronizationManager.LOGGER.error(error)
           metricsComponent.increment('dcl_content_deployments_streams_error_total', {
             remote_catalyst: contentServer.getAddress()
           })
         } finally {
-          // measure how much time the streams remain open
-          const { end: endTimer } = metricsComponent.startTimer('dcl_content_deployments_streams_open_time_seconds', {
-            remote_catalyst: contentServer.getAddress()
-          })
           endTimer()
           metricsComponent.increment('dcl_content_deployments_streams_closed_total', {
             remote_catalyst: contentServer.getAddress()
