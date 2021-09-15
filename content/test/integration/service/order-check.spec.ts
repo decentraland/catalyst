@@ -34,11 +34,10 @@ describe('Integration - Order Check', () => {
 
   permutator([0, 1, 2, 3, 4]).forEach(function (indices) {
     const names = indices.map((idx) => `E${idx + 1}`).join(' -> ')
-    it(names, async (done) => {
+    it(names, async () => {
       const entityCombos = indices.map((idx) => allEntities[idx])
       await deployEntitiesCombo(service, ...entityCombos)
       await assertCommitsWhereDoneCorrectly()
-      done()
     })
   })
 
