@@ -23,7 +23,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
   private stopping: boolean = false
   private timeOfLastSync: Timestamp = 0
-  private timeoutStreamId: NodeJS.Timeout
 
   constructor(
     private readonly cluster: ContentCluster,
@@ -126,7 +125,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
       ClusterSynchronizationManager.LOGGER.error(`Failed to sync with servers. Reason:\n${error}`)
     } finally {
-      clearTimeout(this.timeoutStreamId)
       if (!this.stopping) {
         // Set the timeout again
         this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
