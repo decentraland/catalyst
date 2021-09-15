@@ -46,7 +46,6 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.PSQL_PORT, mappedPort)
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
       .setConfig(EnvironmentConfig.PSQL_HOST, this.postgresContainer.getContainerIpAddress())
-      .setConfig(EnvironmentConfig.METRICS, false)
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)

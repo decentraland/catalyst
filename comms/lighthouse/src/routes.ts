@@ -1,6 +1,6 @@
-import { Metrics, validateSignatureHandler } from '@catalyst/commons'
+import { asyncHandler, validateSignatureHandler } from '@catalyst/commons'
 import { Island, PeerData } from '@dcl/archipelago'
-import express, { Request, RequestHandler, Response } from 'express'
+import express, { Request, Response } from 'express'
 import { LighthouseConfig } from './config/configService'
 import { requireAll } from './misc/handlers'
 import { AppServices, PeerInfo } from './types'
@@ -11,17 +11,6 @@ export type RoutesOptions = {
   ethNetwork: string
   version: string
   restrictedAccessSigner: string
-}
-
-export function asyncHandler(handler: (req: Request, res: Response) => Promise<void>): RequestHandler {
-  return async (req, res) => {
-    try {
-      await handler(req, res)
-    } catch (e) {
-      console.error(`Unexpected error while performing request ${req.method} ${req.originalUrl}`, e)
-      res.status(500).send({ status: 'server-error', message: 'Unexpected error' })
-    }
-  }
 }
 
 export function configureRoutes(
@@ -111,9 +100,9 @@ export function configureRoutes(
     res.send(peersResponse)
   }
 
-  registerRoute(app, '/status', HttpMethod.GET, [asyncHandler(getStatus)])
+  app.get('/status', asyncHandler(getStatus))
 
-  registerRoute(app, '/config', HttpMethod.PUT, [
+  app.put('/config', [
     requireAll(['config'], (req) => req.body),
     validateSignatureHandler(
       (body) => JSON.stringify(body.config),
@@ -123,32 +112,8 @@ export function configureRoutes(
     asyncHandler(putConfig)
   ])
 
-  registerRoute(app, '/config', HttpMethod.GET, [asyncHandler(getConfig)])
-
-  registerRoute(app, '/islands', HttpMethod.GET, [asyncHandler(getIslands)])
-
-  registerRoute(app, '/islands/:islandId', HttpMethod.GET, [asyncHandler(getIsland)])
-
-  registerRoute(app, '/peers', HttpMethod.GET, [asyncHandler(getPeers)])
-
-  function registerRoute(app: express.Express, route: string, method: HttpMethod, actions: RequestHandler[]) {
-    const handlers: RequestHandler[] = [...Metrics.requestHandlers(), ...actions]
-    switch (method) {
-      case HttpMethod.GET:
-        app.get(route, handlers)
-        break
-      case HttpMethod.PUT:
-        app.put(route, handlers)
-        break
-      case HttpMethod.DELETE:
-        app.delete(route, handlers)
-        break
-    }
-  }
-}
-
-enum HttpMethod {
-  GET,
-  PUT,
-  DELETE
+  app.get('/config', asyncHandler(getConfig))
+  app.get('/islands', asyncHandler(getIslands))
+  app.get('/islands/:islandId', asyncHandler(getIsland))
+  app.get('/peers', asyncHandler(getPeers))
 }

@@ -17,10 +17,10 @@ export class MockedFetcher extends Fetcher {
   }
 
   async fetchJson(url: string): Promise<any> {
-    return Promise.resolve(this.jsonResultByUrl.get(url)!)
+    return this.jsonResultByUrl.get(url)!
   }
 
   async fetchBuffer(url: string): Promise<Buffer> {
-    return Promise.resolve(this.bufferResultByUrl.get(url)!)
+    return this.bufferResultByUrl.get(url)!
   }
 }
