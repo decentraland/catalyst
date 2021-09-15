@@ -2,7 +2,6 @@ import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import { Transform } from 'stream'
 import { clearTimeout, setTimeout } from 'timers'
 import { streamMap } from '../../service/synchronization/streaming/StreamHelper'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
@@ -31,32 +30,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly systemProperties: SystemPropertiesManager,
     private readonly deployer: EventDeployer,
     private readonly timeBetweenSyncs: number,
-    private readonly disableSynchronization: boolean,
-    private readonly syncStreamTimeout: string
+    private readonly disableSynchronization: boolean
   ) {}
-
-  timeoutStreams(streams: Transform[]): void {
-    this.timeoutStreamId = setTimeout(() => {
-      // Update flag
-      ClusterSynchronizationManager.LOGGER.warn(`Sync stream has timeouted`)
-      const isBootstrapping = this.synchronizationState === SynchronizationState.BOOTSTRAPPING
-
-      if (isBootstrapping) {
-        ClusterSynchronizationManager.LOGGER.info(`It was bootstrapping, ignoring timeout`)
-        clearTimeout(this.timeoutStreamId)
-        return
-      }
-
-      ClusterSynchronizationManager.LOGGER.warn(`Ending all open streams`)
-      streams.forEach((stream) => {
-        try {
-          stream.end()
-        } catch (error) {
-          ClusterSynchronizationManager.LOGGER.warn(`Error ending stream ${JSON.stringify(error, null, 3)}`)
-        }
-      })
-    }, ms(this.syncStreamTimeout))
-  }
 
   async start(): Promise<void> {
     if (this.disableSynchronization) {
@@ -118,8 +93,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         }))
         return deploymentStream.pipe(sourceData)
       })
-
-      this.timeoutStreams(streams)
 
       // Process them together
       await this.deployer.processAllDeployments(streams)

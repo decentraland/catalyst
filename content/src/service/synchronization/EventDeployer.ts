@@ -16,10 +16,15 @@ export class EventDeployer {
 
   private readonly eventProcessor: EventStreamProcessor
 
-  constructor(private readonly cluster: ContentCluster, private readonly service: ClusterDeploymentsService) {
+  constructor(
+    private readonly cluster: ContentCluster,
+    private readonly service: ClusterDeploymentsService,
+    syncStreamTimeout: string
+  ) {
     this.eventProcessor = new EventStreamProcessor(
       (entityIds) => this.service.areEntitiesAlreadyDeployed(entityIds),
-      (event, source) => this.wrapDeployment(this.prepareDeployment(event, source))
+      (event, source) => this.wrapDeployment(this.prepareDeployment(event, source)),
+      syncStreamTimeout
     )
   }
 
