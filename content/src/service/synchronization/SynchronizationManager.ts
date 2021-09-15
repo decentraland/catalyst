@@ -36,7 +36,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   ) {}
 
   timeoutStreams(streams: Transform[]): void {
-    console.log(`this.syncStreamTimeout: ${this.syncStreamTimeout}`)
     this.timeoutStreamId = setTimeout(() => {
       // Update flag
       ClusterSynchronizationManager.LOGGER.warn(`Sync stream has timeouted`)
