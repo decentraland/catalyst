@@ -1,5 +1,6 @@
 import { DAOClient, noReject, ServerMetadata } from '@catalyst/commons'
 import { lighthouseStorage } from '../config/simpleStorage'
+import fetch from 'cross-fetch'
 
 export const defaultNames = [
   'zeus',

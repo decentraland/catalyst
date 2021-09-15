@@ -26,6 +26,7 @@ import {
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
 import { Readable } from 'stream'
+
 /**
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
@@ -85,11 +86,11 @@ export class SmartContentClient implements ContentAPI {
 
   async pipeContent(
     contentHash: string,
-    responseTo: ReadableStream<Uint8Array>,
+    pipeTo: any,
     options?: Partial<CompleteRequestOptions>
   ): Promise<Map<string, string>> {
     const client = await this.getClient()
-    return await client.pipeContent(contentHash, responseTo as any as ReadableStream<Uint8Array>, options)
+    return await client.pipeContent(contentHash, pipeTo as any, options)
   }
 
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {

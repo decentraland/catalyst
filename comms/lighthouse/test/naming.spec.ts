@@ -4,6 +4,7 @@ process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 import { DAOClient, ServerMetadata } from '@catalyst/commons'
 import { lighthouseStorage } from '../src/config/simpleStorage'
 import { defaultNames, pickName } from '../src/misc/naming'
+import { Response } from 'cross-fetch'
 
 declare let global: any
 

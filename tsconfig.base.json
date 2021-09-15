@@ -2,7 +2,7 @@
   "compilerOptions": {
     "composite": true,
     "module": "commonjs",
-    "target": "es2017",
+    "target": "es2020",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -19,18 +19,27 @@
     "skipLibCheck": true,
     "outDir": "./dist",
     "lib": [
-      "es2017",
-      "dom",
+      "es2020",
       "esnext.asynciterable",
       "esnext"
     ]
   },
   "references": [
-    { "path": "./contracts" },
-    { "path": "./commons" },
-    { "path": "./content" },
-    { "path": "./comms/lighthouse" },
-    { "path": "./lambdas" }
+    {
+      "path": "./contracts"
+    },
+    {
+      "path": "./commons"
+    },
+    {
+      "path": "./content"
+    },
+    {
+      "path": "./comms/lighthouse"
+    },
+    {
+      "path": "./lambdas"
+    }
   ],
   "exclude": [
     "node_modules",

@@ -1,7 +1,6 @@
 import express from 'express'
 import { IdService } from '../src/peers/idService'
-
-require('isomorphic-fetch')
+import fetch from 'cross-fetch'
 
 describe('id service generation', function () {
   let originalTimeout

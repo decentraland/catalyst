@@ -1,8 +1,6 @@
-import { ContentClient, DeploymentFields } from 'dcl-catalyst-client'
+import { ContentClient, DeploymentFields, DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
 import { ContentFileHash, DeploymentWithAuditInfo, Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { Readable } from 'stream'
-import { passThrough } from '../streaming/StreamHelper'
 
 export class ContentServerClient {
   private static readonly LOGGER = log4js.getLogger('ContentServerClient')
@@ -30,7 +28,7 @@ export class ContentServerClient {
   }
 
   /** Return all new deployments, and store the local timestamp of the newest one. */
-  getNewDeployments(): Readable {
+  async *getNewDeployments(): AsyncIterable<DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo> {
     let error = false
 
     // Fetch the deployments
@@ -46,15 +44,6 @@ export class ContentServerClient {
         }
       },
       { timeout: '20s' }
-    )
-
-    // Listen to all deployments passing through, and store the newest one's timestamps
-    const passTrough = passThrough(
-      (deployment: DeploymentWithAuditInfo) =>
-        (this.potentialLocalDeploymentTimestamp = Math.max(
-          this.potentialLocalDeploymentTimestamp ?? 0,
-          deployment.auditInfo.localTimestamp
-        ))
     )
 
     // Wait for stream to end to update connection state
@@ -74,7 +63,16 @@ export class ContentServerClient {
       }
     })
 
-    return stream.pipe(passTrough)
+    for await (let deployment of stream as AsyncIterable<
+      DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo
+    >) {
+      this.potentialLocalDeploymentTimestamp = Math.max(
+        this.potentialLocalDeploymentTimestamp ?? 0,
+        deployment.auditInfo.localTimestamp
+      )
+
+      yield deployment
+    }
   }
 
   getContentFile(fileHash: ContentFileHash): Promise<Buffer> {

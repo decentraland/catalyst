@@ -1,9 +1,10 @@
 import { delay, SynchronizationState } from '@catalyst/commons'
-import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import mergeIterators from 'fast-merge-async-iterators'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
-import { streamMap } from '../../service/synchronization/streaming/StreamHelper'
+import { metricsComponent } from '../../metrics'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
@@ -84,17 +85,37 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
 
       // Fetch all new deployments
-      const streams = contentServers.map((contentServer) => {
-        const deploymentStream = contentServer.getNewDeployments()
-        const sourceData = streamMap<DeploymentWithAuditInfo, DeploymentWithSource>((deployment) => ({
-          deployment,
-          source: contentServer
-        }))
-        return deploymentStream.pipe(sourceData)
+      const streams = contentServers.map(async function* (contentServer): AsyncIterable<DeploymentWithSource> {
+        metricsComponent.increment('dcl_content_deployments_streams_open_total', {
+          remote_catalyst: contentServer.getAddress()
+        })
+        try {
+          for await (let deployment of contentServer.getNewDeployments()) {
+            yield {
+              deployment,
+              source: contentServer
+            }
+          }
+        } catch (error) {
+          ClusterSynchronizationManager.LOGGER.error(`Error processing stream:` + error)
+          ClusterSynchronizationManager.LOGGER.error(error)
+          metricsComponent.increment('dcl_content_deployments_streams_error_total', {
+            remote_catalyst: contentServer.getAddress()
+          })
+        } finally {
+          // measure how much time the streams remain open
+          const { end: endTimer } = metricsComponent.startTimer('dcl_content_deployments_streams_open_time_seconds', {
+            remote_catalyst: contentServer.getAddress()
+          })
+          endTimer()
+          metricsComponent.increment('dcl_content_deployments_streams_closed_total', {
+            remote_catalyst: contentServer.getAddress()
+          })
+        }
       })
 
       // Process them together
-      await this.deployer.processAllDeployments(streams)
+      await this.deployer.processAllDeployments(mergeIterators('iters-close-wait', ...streams))
 
       ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
 

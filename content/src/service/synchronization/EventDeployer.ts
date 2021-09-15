@@ -1,6 +1,5 @@
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { Readable } from 'stream'
 import { metricsComponent } from '../../metrics'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
@@ -9,7 +8,7 @@ import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, isInval
 import { ContentServerClient } from './clients/ContentServerClient'
 import { tryOnCluster } from './ClusterUtils'
 import { ContentCluster } from './ContentCluster'
-import { EventStreamProcessor } from './streaming/EventStreamProcessor'
+import { DeploymentWithSource, EventStreamProcessor } from './streaming/EventStreamProcessor'
 
 export class EventDeployer {
   private static readonly LOGGER = log4js.getLogger('EventDeployer')
@@ -23,9 +22,9 @@ export class EventDeployer {
     )
   }
 
-  async processAllDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processAllDeployments(iterable: AsyncIterable<DeploymentWithSource>, options?: HistoryDeploymentOptions) {
     // Process history and deploy it
-    return this.eventProcessor.processDeployments(deployments, options)
+    return this.eventProcessor.processDeployments(iterable, options)
   }
 
   /** Download and prepare everything necessary to deploy an entity */

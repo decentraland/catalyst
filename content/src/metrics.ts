@@ -61,6 +61,30 @@ export const metrics = validateMetricsDeclaration({
     help: 'Total failed deployments',
     type: 'counter',
     labelNames: []
+  },
+
+  dcl_content_deployments_streams_open_time_seconds: {
+    help: 'Histogram of open-time of sinchronization streams',
+    type: 'histogram',
+    labelNames: ['remote_catalyst']
+  },
+
+  // the following two metrics should ALWAYS be the same
+  dcl_content_deployments_streams_open_total: {
+    help: 'Counter of total deployment streams opened',
+    type: 'counter',
+    labelNames: ['remote_catalyst']
+  },
+  dcl_content_deployments_streams_closed_total: {
+    help: 'Counter of total deployment streams closed',
+    type: 'counter',
+    labelNames: ['remote_catalyst']
+  },
+
+  dcl_content_deployments_streams_error_total: {
+    help: 'Counter of total deployment streams with errors',
+    type: 'counter',
+    labelNames: ['remote_catalyst']
   }
 })
 
