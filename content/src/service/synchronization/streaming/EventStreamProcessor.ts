@@ -26,11 +26,17 @@ export class EventStreamProcessor {
   /**
    * This method takes many deployment streams and tries to deploy them locally.
    */
-  async processDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processDeployments(
+    deployments: Readable[],
+    options?: HistoryDeploymentOptions,
+    shouldIgnoreTimeout: boolean = false
+  ) {
     // Merge the streams from the different servers
     const merged = mergeStreams(deployments)
 
-    setupStreamTimeout(merged, ms(this.syncStreamTimeout))
+    if (!shouldIgnoreTimeout) {
+      setupStreamTimeout(merged, ms(this.syncStreamTimeout))
+    }
 
     // A transform that will filter out duplicate deployments
     const filterOutDuplicates = this.filterOutDuplicates()

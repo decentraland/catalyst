@@ -94,7 +94,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       })
 
       // Process them together
-      await this.deployer.processAllDeployments(streams)
+      await this.deployer.processAllDeployments(
+        streams,
+        undefined,
+        this.synchronizationState === SynchronizationState.BOOTSTRAPPING
+      )
 
       ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
 
