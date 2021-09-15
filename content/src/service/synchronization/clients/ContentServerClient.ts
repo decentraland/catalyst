@@ -1,6 +1,7 @@
 import { ContentClient, DeploymentFields, DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
 import { ContentFileHash, DeploymentWithAuditInfo, Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { iteratorFromStream } from '../streamHelpers'
 
 export class ContentServerClient {
   private static readonly LOGGER = log4js.getLogger('ContentServerClient')
@@ -63,15 +64,15 @@ export class ContentServerClient {
       }
     })
 
-    for await (const deployment of stream as AsyncIterable<
-      DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo
-    >) {
+    const iterator = iteratorFromStream<DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo>(stream)
+
+    for await (const deployment of iterator) {
+      yield deployment
+
       this.potentialLocalDeploymentTimestamp = Math.max(
         this.potentialLocalDeploymentTimestamp ?? 0,
         deployment.auditInfo.localTimestamp
       )
-
-      yield deployment
     }
   }
 
