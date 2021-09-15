@@ -28,9 +28,13 @@ export class EventDeployer {
     )
   }
 
-  async processAllDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processAllDeployments(
+    deployments: Readable[],
+    options?: HistoryDeploymentOptions,
+    shouldIgnoreTimeout = false
+  ) {
     // Process history and deploy it
-    return this.eventProcessor.processDeployments(deployments, options)
+    return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
 
   /** Download and prepare everything necessary to deploy an entity */
