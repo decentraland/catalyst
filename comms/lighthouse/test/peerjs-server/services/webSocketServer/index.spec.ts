@@ -96,7 +96,7 @@ const createTestServer = ({
       const clientSocket = client?.getSocket()
 
       if (!clientSocket) return
-      ;(clientSocket as unknown as WebSocket).listeners['server::close']?.forEach((s: () => void) => s())
+      ;((clientSocket as unknown) as WebSocket).listeners['server::close']?.forEach((s: () => void) => s())
     }
 
     socket.onmessage = (event: any & { data?: string }): void => {
@@ -113,7 +113,7 @@ const createTestServer = ({
       const clientSocket = client?.getSocket()
 
       if (!clientSocket) return
-      ;(clientSocket as unknown as WebSocket).listeners['server::message']?.forEach((s: (data: any) => void) =>
+      ;((clientSocket as unknown) as WebSocket).listeners['server::message']?.forEach((s: (data: any) => void) =>
         s(event)
       )
     }

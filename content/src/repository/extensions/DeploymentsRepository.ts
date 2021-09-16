@@ -30,7 +30,10 @@ export class DeploymentsRepository {
   }
 
   async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
-    const entries: [EntityType, number][] = await this.db.map(
+    const entries: [
+      EntityType,
+      number
+    ][] = await this.db.map(
       `SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`,
       [],
       (row) => [row.entity_type, parseInt(row.count)]

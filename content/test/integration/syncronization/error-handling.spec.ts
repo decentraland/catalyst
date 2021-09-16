@@ -76,11 +76,10 @@ describe('End 2 end - Error handling', () => {
     await awaitUntil(() => assertThereIsAFailedDeployment(server2))
 
     // Prepare entity to deploy
-    const { deployData: deployData2, controllerEntity: entityBeingDeployed2 } = await buildDeployDataAfterEntity(
-      entityBeingDeployed1,
-      ['0,1'],
-      { metadata: 'metadata2' }
-    )
+    const {
+      deployData: deployData2,
+      controllerEntity: entityBeingDeployed2
+    } = await buildDeployDataAfterEntity(entityBeingDeployed1, ['0,1'], { metadata: 'metadata2' })
 
     // Deploy entity 2 on server 2
     await server2.deploy(deployData2)

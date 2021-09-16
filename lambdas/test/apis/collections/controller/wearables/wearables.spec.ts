@@ -129,7 +129,9 @@ function emptyOffChainManager(): { instance: OffChainWearablesManager; mock: Off
   return offChainManagerWith()
 }
 
-function offChainManagerWith(...wearables: Wearable[]): {
+function offChainManagerWith(
+  ...wearables: Wearable[]
+): {
   instance: OffChainWearablesManager
   mock: OffChainWearablesManager
 } {

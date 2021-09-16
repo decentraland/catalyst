@@ -162,7 +162,7 @@ async function internalContents(
       const wearableMetadata: WearableMetadata = entity.metadata
       const hash = findHashForFile(entity, selector(wearableMetadata))
       if (hash) {
-        const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
+        const headers: Map<string, string> = await client.pipeContent(hash, (res as any) as ReadableStream<Uint8Array>)
         headers.forEach((value: string, key: string) => {
           res.setHeader(key, value)
         })

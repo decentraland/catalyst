@@ -356,11 +356,12 @@ export class Controller {
       from: fromFilter,
       to: toFilter
     }
-    const {
-      pointerChanges: deltas,
-      filters,
-      pagination
-    } = await this.service.getPointerChanges(requestFilters, offset, limit, lastId)
+    const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(
+      requestFilters,
+      offset,
+      limit,
+      lastId
+    )
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
@@ -656,7 +657,7 @@ export class Controller {
     // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
 
     const blocker: EthAddress = req.query.blocker as EthAddress
-    const timestamp: Timestamp = req.query.timestamp as unknown as Timestamp
+    const timestamp: Timestamp = (req.query.timestamp as unknown) as Timestamp
     const signature: Signature = req.query.signature as Signature
 
     const type = req.params.type
