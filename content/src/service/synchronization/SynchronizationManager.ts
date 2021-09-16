@@ -79,12 +79,12 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   }
 
   private async failIfSyncHangs(): Promise<void> {
-    await delay(ms('30m'))
+    await delay(ms('30s'))
 
     while (true) {
-      await delay(ms('5m'))
+      await delay(ms('30s'))
 
-      const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCING
+      const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCED
       const lastSync: number = Date.now() - this.timeOfLastSync
 
       // If it is a lot of time in the syncing state and it has not stored new deployments, then we should restart the service
