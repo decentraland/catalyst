@@ -1,5 +1,6 @@
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import PQueue from 'p-queue'
 import { metricsComponent } from '../../../metrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
@@ -21,6 +22,12 @@ export class EventStreamProcessor {
   async processDeployments(deploymentStream: AsyncIterable<DeploymentWithSource>, options?: HistoryDeploymentOptions) {
     const filtered: Set<EntityId> = new Set()
 
+    const jobQueue = new PQueue({
+      concurrency: 10,
+      autoStart: true,
+      timeout: 600000 /* 10min */
+    })
+
     for await (const it of deploymentStream) {
       if (!it) continue
 
@@ -37,22 +44,31 @@ export class EventStreamProcessor {
       // Filter out entities that have already been deployed locally
       const deployed = await this.checkIfAlreadyDeployed([it.deployment.entityId])
       if (deployed.get(it.deployment.entityId)) {
+        EventStreamProcessor.LOGGER.info(
+          `Skipping deployed entity (${it.deployment.entityType}, ${it.deployment.entityId})`
+        )
         continue
       }
 
-      try {
-        // Prepare the deployer function
-        EventStreamProcessor.LOGGER.info(`Deploying entity (${it.deployment.entityType}, ${it.deployment.entityId})`)
-        const performDeployment = await this.deploymentBuilder(it.deployment, it.source)
-        // Perform the deployment
-        await performDeployment()
-        EventStreamProcessor.LOGGER.info(`Deployed entity (${it.deployment.entityType}, ${it.deployment.entityId})`)
-      } catch (error) {
-        metricsComponent.increment('dcl_content_failed_deployments_total')
-        EventStreamProcessor.LOGGER.error(
-          `Failed when trying to deploy entity is (${it.deployment.entityType}, ${it.deployment.entityId}). Error was:\n${error}`
-        )
-      }
+      jobQueue.add(async () => {
+        try {
+          // Prepare the deployer function
+          EventStreamProcessor.LOGGER.info(`Deploying entity (${it.deployment.entityType}, ${it.deployment.entityId})`)
+          const performDeployment = await this.deploymentBuilder(it.deployment, it.source)
+          // Perform the deployment
+          await performDeployment()
+          EventStreamProcessor.LOGGER.info(`Deployed entity (${it.deployment.entityType}, ${it.deployment.entityId})`)
+        } catch (error) {
+          metricsComponent.increment('dcl_content_failed_deployments_total')
+          EventStreamProcessor.LOGGER.error(
+            `Failed when trying to deploy entity is (${it.deployment.entityType}, ${it.deployment.entityId}). Error was:\n${error}`
+          )
+        }
+      })
+    }
+
+    if (jobQueue.pending) {
+      await jobQueue.onEmpty()
     }
   }
 }
