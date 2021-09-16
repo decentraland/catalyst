@@ -1,5 +1,9 @@
  # We need to skip that file as it makes eslint to hang
 comms/lighthouse/rollup.config.js
+
 dist
 **/node_modules
-tmpbin
+tmp
+bin
+linked-peer-package
+**/*.json
