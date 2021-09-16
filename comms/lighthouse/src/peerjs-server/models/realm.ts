@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { DCL_LIGHTHOUSE_CONNECTED_PEERS_COUNT } from '../../metrics'
+import { metricsComponent } from '../../metrics'
 import { IClient } from './client'
 import { IMessage } from './message'
 import { IMessageQueue, MessageQueue } from './messageQueue'
@@ -28,10 +28,6 @@ export interface IRealm {
   getClientsCount(): number
 }
 
-function updateConnectedPeerMetrics(connectedPeers: number) {
-  DCL_LIGHTHOUSE_CONNECTED_PEERS_COUNT.set(connectedPeers)
-}
-
 export class Realm implements IRealm {
   private readonly clients: Map<string, IClient> = new Map()
   private readonly messageQueues: Map<string, IMessageQueue> = new Map()
@@ -54,7 +50,7 @@ export class Realm implements IRealm {
 
   public setClient(client: IClient, id: string): void {
     this.clients.set(id, client)
-    updateConnectedPeerMetrics(this.clients.size)
+    metricsComponent.observe('dcl_lighthouse_connected_peers_count', {}, this.clients.size)
   }
 
   public removeClientById(id: string): boolean {
@@ -63,7 +59,7 @@ export class Realm implements IRealm {
     if (!client) return false
 
     this.clients.delete(id)
-    updateConnectedPeerMetrics(this.clients.size)
+    metricsComponent.observe('dcl_lighthouse_connected_peers_count', {}, this.clients.size)
 
     return true
   }

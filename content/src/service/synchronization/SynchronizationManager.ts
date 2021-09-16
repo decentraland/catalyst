@@ -116,14 +116,21 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // Process them together
       await this.deployer.processAllDeployments(streams)
 
+      ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
+
       // If everything worked, then update the last deployment timestamp
       contentServers.forEach((client) => {
         // Update the client, so it knows from when to ask next time
         const newTimestamp = client.allDeploymentsWereSuccessful()
 
+        ClusterSynchronizationManager.LOGGER.debug(
+          `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
+        )
         // Update the map, so we can store in on the database
         this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
       })
+
+      ClusterSynchronizationManager.LOGGER.debug(`Updating system properties`)
 
       // Update the database
       await this.systemProperties.setSystemProperty(
@@ -145,12 +152,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
-  private waitUntilSyncFinishes(): Promise<void> {
-    return new Promise(async (resolve) => {
-      while (this.synchronizationState === SynchronizationState.SYNCING) {
-        await delay(ms('1s'))
-      }
-      resolve()
-    })
+  private async waitUntilSyncFinishes(): Promise<void> {
+    while (this.synchronizationState === SynchronizationState.SYNCING) {
+      await delay(ms('1s'))
+    }
   }
 }

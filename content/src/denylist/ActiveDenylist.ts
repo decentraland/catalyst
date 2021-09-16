@@ -138,7 +138,7 @@ export class ActiveDenylist extends Denylist {
     const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
     const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       validateSignature(
         metadata,
         messageToSign,
@@ -155,7 +155,7 @@ export class ActiveDenylist extends Denylist {
           }),
         (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
         this.network
-      )
+      ).catch(reject)
     })
   }
 }

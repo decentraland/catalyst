@@ -1,7 +1,7 @@
 import { EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Transform } from 'stream'
-import { DCL_CONTENT_IGNORED_DEPLOYMENTS_TOTAL } from '../../../ContentMetrics'
+import { metricsComponent } from '../../../metrics'
 import { DeploymentWithSource } from './EventStreamProcessor'
 
 /**
@@ -48,7 +48,7 @@ export class OnlyNotDeployedFilter extends Transform {
       OnlyNotDeployedFilter.LOGGER.debug(
         `Ignoring ${ignoredDeployments} deployments because they were already deployed.`
       )
-      DCL_CONTENT_IGNORED_DEPLOYMENTS_TOTAL.inc(ignoredDeployments)
+      metricsComponent.increment('dcl_content_ignored_deployments_total', {}, ignoredDeployments)
     }
 
     // Filter out already deployed entities and push the new ones

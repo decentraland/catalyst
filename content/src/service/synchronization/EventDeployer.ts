@@ -1,7 +1,7 @@
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
-import { DCL_CONTENT_DOWNLOADED_TOTAL, DCL_CONTENT_DOWNLOAD_TIME } from '../../ContentMetrics'
+import { metricsComponent } from '../../metrics'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
@@ -36,7 +36,9 @@ export class EventDeployer {
     EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
 
     // Download the entity file
-    const stopTimer = DCL_CONTENT_DOWNLOAD_TIME.startTimer({ remote_catalyst: source?.getAddress() || 'undefined' })
+    const { end: stopTimer } = metricsComponent.startTimer('dcl_content_download_time', {
+      remote_catalyst: source?.getAddress() || 'undefined'
+    })
     const entityFile: Buffer | undefined = await this.getEntityFile(deployment, source)
     stopTimer()
 
@@ -45,7 +47,7 @@ export class EventDeployer {
     if (entityFile) {
       const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
-        DCL_CONTENT_DOWNLOADED_TOTAL.inc({ overwritten: 'true' })
+        metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'true' })
         // Deploy the entity as overwritten and only download entity file
         return this.buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
@@ -56,7 +58,7 @@ export class EventDeployer {
           )
         )
       } else {
-        DCL_CONTENT_DOWNLOADED_TOTAL.inc({ overwritten: 'false' })
+        metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'false' })
         // Build entity
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
