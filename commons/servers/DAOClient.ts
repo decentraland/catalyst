@@ -1,16 +1,22 @@
 import { CatalystData, CatalystId, DAOContract } from '@catalyst/contracts'
+import { fetch } from 'cross-fetch'
 import { ServerMetadata } from './ServerMetadata'
 
 export interface DAOClient {
   getAllContentServers(): Promise<Set<ServerMetadata>>
   getAllServers(): Promise<Set<ServerMetadata>>
+  fetcher: typeof fetch
 }
 
-export class DAOContractClient {
+export class DAOContractClient implements DAOClient {
   // We will store the server metadata by id. Take into account that the id is unique, and even if we remove and re-add a domain, its id will change
   private servers: Map<CatalystId, ServerMetadata>
 
-  constructor(private readonly contract: DAOContract, initialServerList?: Map<CatalystId, ServerMetadata>) {
+  constructor(
+    private readonly contract: DAOContract,
+    initialServerList?: Map<CatalystId, ServerMetadata>,
+    public fetcher: typeof fetch = fetch
+  ) {
     this.servers = initialServerList ?? new Map()
   }
 

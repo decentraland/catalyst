@@ -1,9 +1,12 @@
 import { DAOClient, ServerMetadata } from '@catalyst/commons'
+import { fetch } from 'cross-fetch'
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 
 export class MockedDAOClient implements DAOClient {
   private readonly serversByAddress: Map<ServerAddress, ServerMetadata>
+
+  fetcher = fetch
 
   private constructor(servers: { address: ServerAddress; owner: EthAddress }[]) {
     this.serversByAddress = new Map(servers.map((server) => [server.address, { ...server, id: 'Id' }]))

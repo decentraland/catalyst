@@ -2,33 +2,27 @@
 process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 
 import { DAOClient, ServerMetadata } from '@catalyst/commons'
+import { Response } from 'cross-fetch'
 import { lighthouseStorage } from '../src/config/simpleStorage'
 import { defaultNames, pickName } from '../src/misc/naming'
-import { Response } from 'cross-fetch'
-
-declare let global: any
-
-const oldFetch = global.fetch
 
 const daoClient: DAOClient = {
+  fetcher(input, init) {
+    return Promise.resolve(new Response(`{"name": "${existingName}"}`))
+  },
+
   async getAllServers(): Promise<Set<ServerMetadata>> {
-    return new Set([{ id: 'id', address: '0x...', owner: '0x...' }])
+    return new Set([{ id: 'id', address: 'domain', owner: '0x...' }])
+  },
+
+  async getAllContentServers(): Promise<Set<ServerMetadata>> {
+    throw 'not implemented'
   }
-} as DAOClient
+}
 
 let existingName = 'fenrir'
 
 describe('picking a name', function () {
-  beforeAll(() => {
-    global.fetch = (input, init) => {
-      return Promise.resolve(new Response(`{"name": "${existingName}"}`))
-    }
-  })
-
-  afterAll(() => {
-    global.fetch = oldFetch
-  })
-
   afterEach(async () => {
     await lighthouseStorage.clear()
   })

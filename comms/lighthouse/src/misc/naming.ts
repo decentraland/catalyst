@@ -1,5 +1,5 @@
 import { DAOClient, noReject, ServerMetadata } from '@catalyst/commons'
-import fetch from 'cross-fetch'
+import type { fetch } from 'cross-fetch'
 import { lighthouseStorage } from '../config/simpleStorage'
 
 export const defaultNames = [
@@ -49,16 +49,19 @@ export async function pickName(configuredNames: string | undefined, daoClient: D
 
 async function getLighthousesNames(daoClient: DAOClient) {
   const servers = await daoClient.getAllServers()
-  const namePromises = await Promise.all(Array.from(servers).map(getName).map(noReject))
+  const namePromises = await Promise.all(
+    Array.from(servers)
+      .map(($) => getName($, daoClient.fetcher))
+      .map(noReject)
+  )
   const existingNames: string[] = namePromises.filter((result) => result[0] === 'fulfilled').map((result) => result[1])
   return existingNames
 }
 
-async function getName(server: ServerMetadata): Promise<string> {
+async function getName(server: ServerMetadata, fetcher: typeof fetch): Promise<string> {
   //Timeout is an option that is supported server side, but not browser side, so it doesn't compile if we don't cast it to any
   try {
-    console.dir(server)
-    const statusResponse = await fetch(`${server.address}/comms/status`, { timeout: 5000 } as any)
+    const statusResponse = await fetcher(`${server.address}/comms/status`, { timeout: 5000 } as any)
     const json = await statusResponse.json()
 
     if (json.name) {

@@ -1,7 +1,9 @@
 import { DAOClient, ServerMetadata } from '@catalyst/commons'
 import { ServerAddress } from 'dcl-catalyst-commons'
+import { fetch } from 'cross-fetch'
 
 export class DAOHardcodedClient implements DAOClient {
+  public fetcher = fetch
   constructor(private readonly servers: ServerAddress[]) {}
 
   async getAllContentServers(): Promise<Set<ServerMetadata>> {
