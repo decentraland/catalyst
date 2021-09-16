@@ -1,8 +1,9 @@
-import { DAOContractClient, DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { initializeMetricsServer } from '@catalyst/commons'
+import { DAOContractClient, DECENTRALAND_ADDRESS, initializeMetricsServer } from '@catalyst/commons'
 import { DAOContract } from '@catalyst/contracts'
+import { COMMS_API } from '@dcl/catalyst-api-specs'
 import cors from 'cors'
 import express from 'express'
+import * as OpenApiValidator from 'express-openapi-validator'
 import morgan from 'morgan'
 import * as path from 'path'
 import { ConfigService } from './config/configService'
@@ -37,6 +38,7 @@ async function main() {
   const port = parseInt(process.env.PORT ?? '9000')
   const noAuth = parseBoolean(process.env.NO_AUTH ?? 'false')
   const secure = parseBoolean(process.env.SECURE ?? 'false')
+  const validateAPI = parseBoolean(process.env.VALIDATE_API ?? 'true')
   const idAlphabet = process.env.ID_ALPHABET ? process.env.ID_ALPHABET : undefined
   const idLength = process.env.ID_LENGTH ? parseInt(process.env.ID_LENGTH) : undefined
   const restrictedAccessAddress = process.env.RESTRICTED_ACCESS_ADDRESS ?? DECENTRALAND_ADDRESS
@@ -59,6 +61,13 @@ async function main() {
   app.use(express.json())
   if (accessLogs) {
     app.use(morgan('combined'))
+  }
+  if (validateAPI) {
+    OpenApiValidator.middleware({
+      apiSpec: COMMS_API,
+      // validateResponses: true, // false by default
+      validateRequests: true // (default)
+    })
   }
 
   const configService = await ConfigService.build({

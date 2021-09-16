@@ -1,7 +1,9 @@
 import { initializeMetricsServer } from '@catalyst/commons'
+import { LAMBDAS_API } from '@dcl/catalyst-api-specs'
 import compression from 'compression'
 import cors from 'cors'
 import express from 'express'
+import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
@@ -21,7 +23,6 @@ import { metricsComponent } from './metrics'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
 import { TheGraphClient } from './utils/TheGraphClient'
-
 export class Server {
   private port: number
   private app: express.Express
@@ -41,6 +42,14 @@ export class Server {
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))
+    }
+    if (env.getConfig(EnvironmentConfig.VALIDATE_API)) {
+      this.app.use(
+        OpenApiValidator.middleware({
+          apiSpec: LAMBDAS_API,
+          validateRequests: true
+        })
+      )
     }
 
     const corsOptions: cors.CorsOptions = {
