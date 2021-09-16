@@ -23,6 +23,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
   private stopping: boolean = false
   private timeOfLastSync: Timestamp = 0
+  private static readonly CHECK_SYNC_RANGE = ms('20m')
 
   constructor(
     private readonly cluster: ContentCluster,
@@ -48,6 +49,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
     )
 
+    // Configure fail if sync hangs
+    setTimeout(() => this.failIfSyncHangs(), ms('30m'))
+
     // Sync with other servers
     await this.syncWithServers()
   }
@@ -69,6 +73,22 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ...clusterStatus,
       synchronizationState: this.synchronizationState,
       lastSyncWithOtherServers: this.timeOfLastSync
+    }
+  }
+
+  private async failIfSyncHangs(): Promise<void> {
+    while (true) {
+      await delay(ms('10m'))
+
+      const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCING
+      const lastSync: number = Date.now() - this.timeOfLastSync
+
+      if (isSyncing && lastSync > ClusterSynchronizationManager.CHECK_SYNC_RANGE) {
+        ClusterSynchronizationManager.LOGGER.error(
+          'Restarting server because the last sync was at least 20 minutes ago, at: ' + lastSync
+        )
+        process.exit(1)
+      }
     }
   }
 
