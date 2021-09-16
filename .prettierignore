@@ -1,4 +1,5 @@
 dist
-tmpbin
+tmp
+bin
 linked-peer-package
 **/*.json
