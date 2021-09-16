@@ -227,7 +227,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.CHECK_SYNC_RANGE,
-      () => process.env.CHECK_SYNC_RANGE ?? ms('1m')
+      () => process.env.CHECK_SYNC_RANGE ?? ms('30m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(
