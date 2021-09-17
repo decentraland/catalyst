@@ -15,7 +15,7 @@
   "dependencies": {
     "@catalyst/commons": "0.1.0",
     "@catalyst/contracts": "0.1.0",
-    "@dcl/catalyst-api-specs": "1.0.0-20210915200841.commit-564158f",
+    "@dcl/catalyst-api-specs": "1.0.1",
     "@dcl/urn-resolver": "1.2.1",
     "aws-sdk": "2.854.0",
     "compression": "1.7.4",
