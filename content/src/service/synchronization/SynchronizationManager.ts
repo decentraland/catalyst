@@ -29,7 +29,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly systemProperties: SystemPropertiesManager,
     private readonly deployer: EventDeployer,
     private readonly timeBetweenSyncs: number,
-    private readonly disableSynchronization: boolean
+    private readonly disableSynchronization: boolean,
+    private readonly checkSyncRange: number
   ) {}
 
   async start(): Promise<void> {
@@ -46,6 +47,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     // Read last deployments
     this.lastKnownDeployments = new Map(
       await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
+    )
+
+    // Configure fail if sync hangs
+    this.failIfSyncHangs().catch((e) =>
+      ClusterSynchronizationManager.LOGGER.error('There was an error during the check of synchronization.')
     )
 
     // Sync with other servers
@@ -69,6 +75,25 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ...clusterStatus,
       synchronizationState: this.synchronizationState,
       lastSyncWithOtherServers: this.timeOfLastSync
+    }
+  }
+
+  private async failIfSyncHangs(): Promise<void> {
+    await delay(ms('30m'))
+
+    while (true) {
+      await delay(ms('5m'))
+
+      const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCING
+      const lastSync: number = Date.now() - this.timeOfLastSync
+
+      // If it is a lot of time in the syncing state and it has not stored new deployments, then we should restart the service
+      if (isSyncing && lastSync > this.checkSyncRange) {
+        ClusterSynchronizationManager.LOGGER.error(
+          `Restarting server because the last sync was at least ${this.checkSyncRange} seconds ago, at: ${lastSync}`
+        )
+        process.exit(1)
+      }
     }
   }
 

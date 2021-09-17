@@ -141,6 +141,7 @@ export enum EnvironmentConfig {
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
+  CHECK_SYNC_RANGE,
   ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
   ETH_NETWORK,
@@ -222,6 +223,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL,
       () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s')
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.CHECK_SYNC_RANGE,
+      () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(
