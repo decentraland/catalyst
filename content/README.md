@@ -15,13 +15,16 @@ If you set up a local content server, it will receive all updates by those other
 
   `yarn install`
 
+- Build the project
+  `yarn build`
+
 - Start the database
 
-  `yarn content:db`
+  `yarn start:db`
 
 - Start the content server
 
-  `yarn start:content`
+  `yarn start:server`
 
 - To connect to the database locally
 

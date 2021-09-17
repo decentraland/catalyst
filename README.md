@@ -45,6 +45,7 @@ yarn husky install
 yarn husky add .husky/pre-commit "yarn lint-staged"
 ```
 
+
 ## Release
 
 - Modify the version in https://github.com/decentraland/catalyst/blob/master/Dockerfile#L30
