@@ -1,5 +1,5 @@
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EthAddress } from 'dcl-crypto'
+import { TheGraphClient } from '../../utils/TheGraphClient'
 import { NFTOwnership } from './NFTOwnership'
 
 export class EnsOwnership extends NFTOwnership {

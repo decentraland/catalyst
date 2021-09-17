@@ -1,25 +1,25 @@
 {
-    "files.exclude": {
-        "bazel*": true,
-        "node_modules": true,
-        "data*": true,
-        "dist/**/*": true
-    },
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "editor.formatOnSave": true,
-    "cSpell.words": [
-        "Ethereum",
-        "comms"
-    ],
-    "editor.rulers": [120],
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true,
-        "source.organizeImports": true
-    },
-    "eslint.validate": [
-        "typescript"
-    ],
-    "files.insertFinalNewline": true,
-    "files.trimTrailingWhitespace": true,
-    "files.trimFinalNewlines": true,
+  "files.exclude": {
+    "data*": true,
+    "dist/**/*": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": true,
+  "cSpell.words": [
+    "Ethereum",
+    "comms"
+  ],
+  "editor.rulers": [
+    120
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.organizeImports": true
+  },
+  "eslint.validate": [
+    "typescript"
+  ],
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
 }

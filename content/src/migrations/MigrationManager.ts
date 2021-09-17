@@ -1,5 +1,5 @@
-import runner from 'node-pg-migrate'
-import { ClientConfig, MigrationDirection, RunnerOption } from 'node-pg-migrate/dist/types'
+import runner, { RunnerOption } from 'node-pg-migrate'
+import { ClientConfig, MigrationDirection } from 'node-pg-migrate/dist/types'
 import { join } from 'path'
 
 export class MigrationManager {

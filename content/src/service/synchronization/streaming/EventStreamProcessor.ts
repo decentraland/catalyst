@@ -1,16 +1,12 @@
-import { DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL } from '@katalyst/content/ContentMetrics'
-import {
-  awaitablePipeline,
-  mergeStreams,
-  streamFilter
-} from '@katalyst/content/service/synchronization/streaming/StreamHelper'
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import parallelTransform from 'parallel-transform'
 import { Readable, Writable } from 'stream'
+import { metricsComponent } from '../../../metrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
 import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'
+import { awaitablePipeline, mergeStreams, streamFilter } from './StreamHelper'
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -109,7 +105,7 @@ export class EventStreamProcessor {
           }
           done()
         } catch (error) {
-          DCL_CONTENT_FAILED_DEPLOYMENTS_TOTAL.inc()
+          metricsComponent.increment('dcl_content_failed_deployments_total')
           EventStreamProcessor.LOGGER.error(
             `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
           )

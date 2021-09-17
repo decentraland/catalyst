@@ -1,3 +1,4 @@
+import { toQueryParams } from '@catalyst/commons'
 import {
   ContentFileHash,
   Entity as ControllerEntity,
@@ -11,7 +12,6 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
-import { toQueryParams } from 'decentraland-katalyst-commons/QueryParameters'
 import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
@@ -59,9 +59,9 @@ export class Controller {
     // Path: /entities/:type
     // Query String: ?{filter}&fields={fieldList}
     const type: EntityType = this.parseEntityType(req.params.type)
-    const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase()) ?? []
-    const ids: EntityId[] = this.asArray<EntityId>(req.query.id) ?? []
-    const fields: string = req.query.fields
+    const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
+    const ids: EntityId[] = this.asArray<EntityId>(req.query.id as string) ?? []
+    const fields: string = req.query.fields as string
 
     // Validate type is valid
     if (!type) {
@@ -103,7 +103,7 @@ export class Controller {
     return type
   }
 
-  private asArray<T>(elements: T[]): T[] | undefined {
+  private asArray<T>(elements: any | T | T[]): T[] | undefined {
     if (!elements) {
       return undefined
     }
@@ -125,7 +125,7 @@ export class Controller {
 
     let deployFiles: ContentFile[] = []
     try {
-      deployFiles = await this.readFiles(files)
+      deployFiles = files ? await this.readFiles(files) : []
       const auditInfo: LocalDeploymentAuditInfo = {
         authChain,
         migrationData: {
@@ -168,7 +168,7 @@ export class Controller {
 
     let deployFiles: ContentFile[] = []
     try {
-      deployFiles = await this.readFiles(files)
+      deployFiles = files ? await this.readFiles(files) : []
       const auditInfo: LocalDeploymentAuditInfo = this.buildAuditInfo(authChain, ethAddress, signature, entityId)
 
       let deploymentResult: DeploymentResult = { errors: [] }
@@ -228,7 +228,8 @@ export class Controller {
           try {
             return await fs.promises.unlink(deployFile.path)
           } catch (error) {
-            // Ignore these errors
+            // log and ignore errors
+            console.error(error)
           }
         }
         return Promise.resolve()
@@ -331,7 +332,7 @@ export class Controller {
     const to: Timestamp | undefined = this.asInt(req.query.to)
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
-    const lastId: string | undefined = req.query.lastId?.toLowerCase()
+    const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -355,12 +356,11 @@ export class Controller {
       from: fromFilter,
       to: toFilter
     }
-    const { pointerChanges: deltas, filters, pagination } = await this.service.getPointerChanges(
-      requestFilters,
-      offset,
-      limit,
-      lastId
-    )
+    const {
+      pointerChanges: deltas,
+      filters,
+      pagination
+    } = await this.service.getPointerChanges(requestFilters, offset, limit, lastId)
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
@@ -412,7 +412,7 @@ export class Controller {
     // Path: /deployments
     // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-    const stringEntityTypes = this.asArray<string>(req.query.entityType)
+    const stringEntityTypes = this.asArray<string>(req.query.entityType as string)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
@@ -424,10 +424,16 @@ export class Controller {
     const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase())
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
-    const fields: string | undefined = req.query.fields
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, req.query.sortingField)
-    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(SortingOrder, req.query.sortingOrder)
-    const lastId: string | undefined = req.query.lastId?.toLowerCase()
+    const fields: string | undefined = req.query.fields as string | undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(
+      SortingField,
+      req.query.sortingField as string
+    )
+    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
+      SortingOrder,
+      req.query.sortingOrder as string
+    )
+    const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
     // deprecated
     const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
     // deprecated
@@ -649,9 +655,9 @@ export class Controller {
     // Path: /denylist/{type}/{id}
     // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
 
-    const blocker: EthAddress = req.query.blocker
-    const timestamp: Timestamp = req.query.timestamp
-    const signature: Signature = req.query.signature
+    const blocker: EthAddress = req.query.blocker as EthAddress
+    const timestamp: Timestamp = req.query.timestamp as unknown as Timestamp
+    const signature: Signature = req.query.signature as Signature
 
     const type = req.params.type
     const id = req.params.id

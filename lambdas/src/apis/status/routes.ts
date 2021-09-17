@@ -1,6 +1,6 @@
-import PeerHealthStatus from '@katalyst/lambdas/apis/status/PeerHealthStatus'
-import { Bean, Environment, EnvironmentConfig } from '@katalyst/lambdas/Environment'
 import { Request, Response, Router } from 'express'
+import PeerHealthStatus from '../../apis/status/PeerHealthStatus'
+import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 
 export default (environment: Environment): Router => {
   const router = Router()
@@ -23,11 +23,18 @@ export default (environment: Environment): Router => {
     })
   })
 
-  router.get('/health', async (req: Request, res: Response) => {
+  router.get('/health', (req: Request, res: Response) => {
     // Method: GET
     // Path: /health
 
-    res.send(await peerHealthStatus.getPeerStatus())
+    peerHealthStatus
+      .getPeerStatus()
+      .then(($) => res.send($))
+      .catch((err) => {
+        console.error(err)
+        res.status(500)
+        res.end()
+      })
   })
 
   return router

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { NextFunction, Request, RequestHandler, Response } from 'express-serve-static-core'
+import { NextFunction, Request, RequestHandler, Response } from 'express'
 import { IRealm } from '../peerjs-server'
 
 enum PeerHeaders {

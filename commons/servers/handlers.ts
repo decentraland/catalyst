@@ -1,5 +1,5 @@
 import { Authenticator, EthAddress } from 'dcl-crypto'
-import { NextFunction, Request, RequestHandler, Response } from 'express-serve-static-core'
+import { NextFunction, Request, RequestHandler, Response } from 'express'
 import { EthereumProvider } from 'web3x/providers'
 import { SignatureValidator, SignerData, validateSignature } from './signatures'
 
@@ -16,10 +16,10 @@ export function validateSignatureHandler(
   signerDataBuilder: (body: any) => SignerData = (b) => b,
   signatureValidator: SignatureValidator = Authenticator.validateSignature
 ): RequestHandler {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     const signerData = signerDataBuilder(req.body)
 
-    await validateSignature(
+    validateSignature(
       signerData,
       `${messageToSignBuilder(req.body)}${signerData.timestamp}`,
       next,
@@ -27,6 +27,6 @@ export function validateSignatureHandler(
       (signer) => authorizedSignerPredicate(signer, req.body),
       networkOrProvider,
       signatureValidator
-    )
+    ).catch(next)
   }
 }

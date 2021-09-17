@@ -1,10 +1,10 @@
-import { ActiveDenylist } from '@katalyst/content/denylist/ActiveDenylist'
-import { DenylistTarget } from '@katalyst/content/denylist/DenylistTarget'
-import { DenylistRepository } from '@katalyst/content/repository/extensions/DenylistRepository'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import { ContentCluster } from '@katalyst/content/service/synchronization/ContentCluster'
 import { anything, instance, mock, verify } from 'ts-mockito'
+import { ActiveDenylist } from '../../../src/denylist/ActiveDenylist'
+import { DenylistTarget } from '../../../src/denylist/DenylistTarget'
+import { DenylistRepository } from '../../../src/repository/extensions/DenylistRepository'
+import { Repository } from '../../../src/repository/Repository'
+import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
+import { ContentCluster } from '../../../src/service/synchronization/ContentCluster'
 
 describe('ActiveDenylist', () => {
   const repository: Repository = mock<Repository>()
@@ -20,7 +20,7 @@ describe('ActiveDenylist', () => {
   it(`Given an empty denylist, when getAllDenylistedTargets, then the database is not accessed`, async () => {
     await denylist.getAllDenylistedTargets()
 
-    verify(repository.run(anything())).never()
+    verify(repository.run(anything(), anything())).never()
     verify(repository.tx(anything(), anything())).never()
   })
 
@@ -28,7 +28,7 @@ describe('ActiveDenylist', () => {
     const target: DenylistTarget = mock<DenylistTarget>()
     await denylist.isTargetDenylisted(instance(target))
 
-    verify(repository.run(anything())).never()
+    verify(repository.run(anything(), anything())).never()
     verify(repository.tx(anything(), anything())).never()
   })
 
@@ -37,7 +37,7 @@ describe('ActiveDenylist', () => {
     const denylistRepo: DenylistRepository = mock<DenylistRepository>()
     await denylist.areTargetsDenylisted(instance(denylistRepo), [instance(target)])
 
-    verify(repository.run(anything())).never()
+    verify(repository.run(anything(), anything())).never()
     verify(repository.tx(anything(), anything())).never()
     verify(denylistRepo.getDenylistedTargets(anything())).never()
   })

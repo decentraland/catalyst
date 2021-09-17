@@ -1,7 +1,6 @@
+import { DAOClient, ServerMetadata } from '@catalyst/commons'
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
-import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 
 export class MockedDAOClient implements DAOClient {
   private readonly serversByAddress: Map<ServerAddress, ServerMetadata>

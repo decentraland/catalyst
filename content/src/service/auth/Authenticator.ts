@@ -1,6 +1,6 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { httpProviderForNetwork } from '@catalyst/contracts'
 import { AuthChain, Authenticator, EthAddress, ValidationResult } from 'dcl-crypto'
-import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
-import { httpProviderForNetwork } from 'decentraland-katalyst-contracts/utils'
 
 export class ContentAuthenticator extends Authenticator {
   constructor(

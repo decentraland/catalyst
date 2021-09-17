@@ -1,12 +1,9 @@
-import {
-  DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL,
-  DCL_CONTENT_GARBAGE_COLLECTION_TIME
-} from '@katalyst/content/ContentMetrics'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
-import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { metricsComponent } from '../../metrics'
+import { Repository } from '../../repository/Repository'
+import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
+import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { MetaverseContentService } from '../Service'
 
 export class GarbageCollectionManager {
@@ -54,11 +51,11 @@ export class GarbageCollectionManager {
     try {
       await this.repository.tx(
         async (transaction) => {
-          const endTimer = DCL_CONTENT_GARBAGE_COLLECTION_TIME.startTimer()
+          const { end: endTimer } = metricsComponent.startTimer('dcl_content_garbage_collection_time')
 
           const hashes = await transaction.content.findContentHashesNotBeingUsedAnymore(this.lastTimeOfCollection)
 
-          DCL_CONTENT_GARBAGE_COLLECTION_ITEMS_TOTAL.inc(hashes.length)
+          metricsComponent.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 
           GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
           await this.service.deleteContent(hashes)

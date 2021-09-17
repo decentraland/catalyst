@@ -1,4 +1,4 @@
-import { Position3D } from 'decentraland-catalyst-utils/Positions'
+import { Position3D } from '@catalyst/commons'
 
 // OUTGOING
 export enum PeerOutgoingMessageType {

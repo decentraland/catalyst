@@ -1,10 +1,10 @@
-import { AccessCheckerForScenes } from '@katalyst/content/service/access/AccessCheckerForScenes'
-import { AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
 import { Logger } from 'log4js'
 import { mock } from 'ts-mockito'
+import { AccessCheckerForScenes } from '../../../../src/service/access/AccessCheckerForScenes'
+import { AccessCheckerImplParams } from '../../../../src/service/access/AccessCheckerImpl'
+import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 
 describe('AccessCheckerForScenes', function () {
   it(`When a non-decentraland address tries to deploy an default scene, then an error is returned`, async () => {

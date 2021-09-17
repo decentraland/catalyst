@@ -1,4 +1,4 @@
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
+import { ServerMetadata } from '@catalyst/commons'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
 

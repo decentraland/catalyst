@@ -1,12 +1,9 @@
-import {
-  AccessCheckerForWearables,
-  WearableCollection
-} from '@katalyst/content/service/access/AccessCheckerForWearables'
-import { AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
 import { ContentFileHash, EntityVersion, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Logger } from 'log4js'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
+import { AccessCheckerForWearables, WearableCollection } from '../../../../src/service/access/AccessCheckerForWearables'
+import { AccessCheckerImplParams } from '../../../../src/service/access/AccessCheckerImpl'
 
 describe('AccessCheckerForWearables', () => {
   const COMMITTEE_MEMBER = '0x...'

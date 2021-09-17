@@ -1,8 +1,8 @@
-import { asArray } from '@katalyst/lambdas/utils/ControllerUtils'
 import { ContentFileHash, Entity, EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
+import { asArray } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { WearableId } from '../../collections/types'
 import { isBaseAvatar, translateWearablesIdFormat } from '../../collections/Utils'
@@ -33,8 +33,8 @@ export async function getProfilesById(
   req: Request,
   res: Response
 ) {
-  const profileIds: EthAddress[] | undefined = asArray(req.query.id)
-  const fields: string[] | undefined = asArray(req.query.field)
+  const profileIds: EthAddress[] | undefined = asArray(req.query.id as string)
+  const fields: string[] | undefined = asArray(req.query.field as string)
   if (!profileIds) {
     return res.status(400).send({ error: 'You must specify at least one profile id' })
   }

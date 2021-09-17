@@ -1,5 +1,5 @@
-import { Database } from '@katalyst/content/repository/Database'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
+import { Database } from '../../repository/Database'
 import { DeploymentId } from './DeploymentsRepository'
 
 export class ContentFilesRepository {

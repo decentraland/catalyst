@@ -1,4 +1,4 @@
-import { Position3D } from 'decentraland-catalyst-utils/Positions'
+import { Position3D } from '@catalyst/commons'
 import { IClient } from '../peerjs-server/models/client'
 import { AppServices } from '../types'
 import { HeartbeatMessage, PeerIncomingMessage, PeerIncomingMessageType } from './protocol/messageTypes'

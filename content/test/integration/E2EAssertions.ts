@@ -1,5 +1,3 @@
-import { FailedDeployment, FailureReason } from '@katalyst/content/service/errors/FailedDeploymentsManager'
-import { DeploymentResult, isSuccessfulDeployment } from '@katalyst/content/service/Service'
 import assert from 'assert'
 import { DeploymentData } from 'dcl-catalyst-client'
 import {
@@ -14,6 +12,8 @@ import {
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { Response } from 'node-fetch'
+import { FailedDeployment, FailureReason } from '../../src/service/errors/FailedDeploymentsManager'
+import { DeploymentResult, isSuccessfulDeployment } from '../../src/service/Service'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestServer } from './TestServer'
 

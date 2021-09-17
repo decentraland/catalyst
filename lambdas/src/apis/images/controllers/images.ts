@@ -1,4 +1,4 @@
-import { ensureDirectoryExists } from 'decentraland-katalyst-commons/fsutils'
+import { ensureDirectoryExists } from '@catalyst/commons'
 import { Request, Response } from 'express'
 import future, { IFuture } from 'fp-future'
 import fs from 'fs'
@@ -125,7 +125,8 @@ export async function getResizedImage(
   }
 }
 async function existingDownloadOf(filePath: string): Promise<boolean> {
-  if (existingDownloadsFutures[filePath]) {
+  const downloadFuture = existingDownloadsFutures[filePath]
+  if (downloadFuture !== undefined) {
     await existingDownloadsFutures[filePath]
     return true
   }

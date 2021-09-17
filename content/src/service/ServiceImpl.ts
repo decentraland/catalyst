@@ -9,7 +9,7 @@ import {
   ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { TOTAL_AMOUNT_OF_DEPLOYMENTS } from '../ContentMetrics'
+import { metricsComponent } from '../metrics'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
@@ -61,9 +61,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const amountOfDeployments = await this.repository.task((task) => task.deployments.getAmountOfDeployments(), {
       priority: DB_REQUEST_PRIORITY.HIGH
     })
-    for (const [entityType, amount] of amountOfDeployments) {
+    for (const [_, amount] of amountOfDeployments) {
       this.historySize += amount
-      TOTAL_AMOUNT_OF_DEPLOYMENTS.inc({ entity_type: entityType }, amount)
     }
   }
 
@@ -202,7 +201,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
         // Since we are still reporting the history size, add one to it
         this.historySize++
-        TOTAL_AMOUNT_OF_DEPLOYMENTS.inc({ entity_type: entity.type })
+        metricsComponent.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache
         response.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
@@ -363,19 +362,30 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
-    return this.repository.reuseIfPresent(task, (db) =>
-      db.taskIf((task) =>
-        this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
-      )
+    return this.repository.reuseIfPresent(
+      task,
+      (db) =>
+        db.taskIf((task) =>
+          this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
+        ),
+      {
+        priority: DB_REQUEST_PRIORITY.HIGH
+      }
     )
   }
 
+  // This endpoint is for debugging purposes
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.repository.reuseIfPresent(task, (db) =>
-      db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash))
+    return this.repository.reuseIfPresent(
+      task,
+      (db) => db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
     )
   }
 
+  // This endpoint is not currently used for the sync
   getPointerChanges(
     filters?: PointerChangesFilters,
     offset?: number,
@@ -383,22 +393,29 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     lastId?: string,
     task?: Database
   ): Promise<PartialDeploymentPointerChanges> {
-    return this.repository.reuseIfPresent(task, (db) =>
-      db.taskIf((task) =>
-        this.deploymentManager.getPointerChanges(
-          task.deploymentPointerChanges,
-          task.deployments,
-          filters,
-          offset,
-          limit,
-          lastId
-        )
-      )
+    return this.repository.reuseIfPresent(
+      task,
+      (db) =>
+        db.taskIf((task) =>
+          this.deploymentManager.getPointerChanges(
+            task.deploymentPointerChanges,
+            task.deployments,
+            filters,
+            offset,
+            limit,
+            lastId
+          )
+        ),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
     )
   }
 
   getAllFailedDeployments() {
-    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments))
+    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments), {
+      priority: DB_REQUEST_PRIORITY.LOW
+    })
   }
 
   listenToDeployments(listener: DeploymentListener): void {

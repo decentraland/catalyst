@@ -1,4 +1,4 @@
-import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
+import { Bean, Environment, EnvironmentConfig } from '../../Environment'
 import { AccessCheckerImpl } from './AccessCheckerImpl'
 
 export class AccessCheckerImplFactory {

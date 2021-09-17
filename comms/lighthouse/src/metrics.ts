@@ -1,13 +1,16 @@
-import { Gauge } from 'prom-client'
+import { createTestMetricsComponent, validateMetricsDeclaration } from '@well-known-components/metrics'
+import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
 
-export const DCL_LIGHTHOUSE_CONNECTED_PEERS_COUNT = new Gauge({
-  name: 'dcl_lighthouse_connected_peers_count',
-  help: 'Number of connected peers',
-  labelNames: []
+export const metrics = validateMetricsDeclaration({
+  ...getDefaultHttpMetrics(),
+  dcl_lighthouse_connected_peers_count: {
+    help: 'Number of connected peers',
+    type: 'gauge'
+  },
+  dcl_lighthouse_islands_count: {
+    help: 'Number of alive islands',
+    type: 'gauge'
+  }
 })
 
-export const DCL_LIGHTHOUSE_ISLANDS_COUNT = new Gauge({
-  name: 'dcl_lighthouse_islands_count',
-  help: 'Number of alive islands',
-  labelNames: []
-})
+export const metricsComponent = createTestMetricsComponent(metrics)

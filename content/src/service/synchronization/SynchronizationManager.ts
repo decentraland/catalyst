@@ -1,10 +1,9 @@
-import { streamMap } from '@katalyst/content/service/synchronization/streaming/StreamHelper'
+import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-catalyst-utils/util'
-import { SynchronizationState } from 'decentraland-katalyst-commons/synchronizationState'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
+import { streamMap } from '../../service/synchronization/streaming/StreamHelper'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
@@ -97,14 +96,21 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // Process them together
       await this.deployer.processAllDeployments(streams)
 
+      ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
+
       // If everything worked, then update the last deployment timestamp
       contentServers.forEach((client) => {
         // Update the client, so it knows from when to ask next time
         const newTimestamp = client.allDeploymentsWereSuccessful()
 
+        ClusterSynchronizationManager.LOGGER.debug(
+          `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
+        )
         // Update the map, so we can store in on the database
         this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
       })
+
+      ClusterSynchronizationManager.LOGGER.debug(`Updating system properties`)
 
       // Update the database
       await this.systemProperties.setSystemProperty(
@@ -126,12 +132,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
-  private waitUntilSyncFinishes(): Promise<void> {
-    return new Promise(async (resolve) => {
-      while (this.synchronizationState === SynchronizationState.SYNCING) {
-        await delay(ms('1s'))
-      }
-      resolve()
-    })
+  private async waitUntilSyncFinishes(): Promise<void> {
+    while (this.synchronizationState === SynchronizationState.SYNCING) {
+      await delay(ms('1s'))
+    }
   }
 }

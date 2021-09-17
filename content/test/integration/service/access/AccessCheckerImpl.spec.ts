@@ -1,11 +1,11 @@
+import { EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { mock } from 'ts-mockito'
 import {
   DEFAULT_COLLECTIONS_SUBGRAPH_ROPSTEN,
   DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN
-} from '@katalyst/content/Environment'
-import { AccessCheckerImpl, AccessCheckerImplParams } from '@katalyst/content/service/access/AccessCheckerImpl'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import { EntityType, Fetcher } from 'dcl-catalyst-commons'
-import { mock } from 'ts-mockito'
+} from '../../../../src/Environment'
+import { AccessCheckerImpl, AccessCheckerImplParams } from '../../../../src/service/access/AccessCheckerImpl'
+import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 
 describe('Integration - AccessCheckerImpl', function () {
   it(`When access URL is wrong while checking scene access it reports an error`, async () => {
