@@ -60,6 +60,7 @@ export const DEFAULT_DATABASE_CONFIG = {
   schema: 'public',
   port: 5432
 }
+const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
 export class Environment {
   private static readonly LOGGER = log4js.getLogger('Environment')
@@ -360,7 +361,11 @@ export class EnvironmentBuilder {
       EnvironmentConfig.DISABLE_SYNCHRONIZATION,
       () => process.env.DISABLE_SYNCHRONIZATION === 'true'
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.SYNC_STREAM_TIMEOUT, () => '10m')
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.SYNC_STREAM_TIMEOUT,
+      () => process.env.SYNC_STREAM_TIMEOUT || DEFAULT_SYNC_STREAM_TIMEOUT
+    )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.DISABLE_DENYLIST,
