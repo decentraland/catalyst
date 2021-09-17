@@ -16,7 +16,7 @@ export class Repository {
    */
   reuseIfPresent<T>(
     db: Database | undefined,
-    execution: (db: Database | Database) => Promise<T>,
+    execution: (db: Database) => Promise<T>,
     options: ExecutionOptions
   ): Promise<T> {
     if (db) {
@@ -38,13 +38,6 @@ export class Repository {
    */
   task<T>(execution: (task: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
     return this.run((db) => db.task(execution), options)
-  }
-
-  /**
-   * Convenience method to start a task directly
-   */
-  taskIf<T>(execution: (task: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
-    return this.run((db) => db.taskIf(execution), options)
   }
 
   /**

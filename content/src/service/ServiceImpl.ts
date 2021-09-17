@@ -207,8 +207,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         response.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
       }
       return response.auditInfoComplete.localTimestamp
-    } catch (error) {
-      throw error
     } finally {
       // Update the current list of pointers being deployed
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
@@ -222,7 +220,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null> {
-    ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
+    ServiceImpl.LOGGER.warn(
+      `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}' Description: '${errorDescription}'`
+    )
     return this.repository.run(
       (db) =>
         this.failedDeploymentsManager.reportFailure(

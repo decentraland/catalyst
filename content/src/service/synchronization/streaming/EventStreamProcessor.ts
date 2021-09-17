@@ -3,7 +3,6 @@ import log4js from 'log4js'
 import PQueue from 'p-queue'
 import { metricsComponent } from '../../../metrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
-import { HistoryDeploymentOptions } from '../EventDeployer'
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -18,18 +17,29 @@ export class EventStreamProcessor {
 
   /**
    * This method takes many deployment streams and tries to deploy them locally.
+   *
+   * Returns false if it had to break synchronization due to the size of the job.
    */
-  async processDeployments(deploymentStream: AsyncIterable<DeploymentWithSource>, options?: HistoryDeploymentOptions) {
+  async processDeployments(deploymentStream: AsyncIterable<DeploymentWithSource>): Promise<boolean> {
     const filtered: Set<EntityId> = new Set()
 
+    const CONCURRENCY = 50
+    const ENTITY_DEPLOYMENT_TIMEOUT = 600000 /* 10min */
+    const MAX_QUEUED = 1000
+
     const jobQueue = new PQueue({
-      concurrency: 10,
+      concurrency: CONCURRENCY,
       autoStart: true,
-      timeout: 600000 /* 10min */
+      timeout: ENTITY_DEPLOYMENT_TIMEOUT
     })
 
     for await (const it of deploymentStream) {
       if (!it) continue
+
+      if (jobQueue.size > MAX_QUEUED) {
+        EventStreamProcessor.LOGGER.info(`Queued jobs: ${jobQueue.size}. Waiting to finish before continuing`)
+        await jobQueue.onEmpty()
+      }
 
       /**
        * Since deployments propagate across servers, it is very probable that we are receiving
@@ -44,20 +54,21 @@ export class EventStreamProcessor {
       // Filter out entities that have already been deployed locally
       const deployed = await this.checkIfAlreadyDeployed([it.deployment.entityId])
       if (deployed.get(it.deployment.entityId)) {
-        EventStreamProcessor.LOGGER.info(
-          `Skipping deployed entity (${it.deployment.entityType}, ${it.deployment.entityId})`
-        )
         continue
       }
 
       jobQueue.add(async () => {
         try {
           // Prepare the deployer function
-          EventStreamProcessor.LOGGER.info(`Deploying entity (${it.deployment.entityType}, ${it.deployment.entityId})`)
+          EventStreamProcessor.LOGGER.info(
+            `Deploying entity (${it.deployment.entityType}, ${it.deployment.entityId}, ${new Date(
+              it.deployment.entityTimestamp
+            ).toISOString()})`
+          )
           const performDeployment = await this.deploymentBuilder(it.deployment, it.source)
           // Perform the deployment
           await performDeployment()
-          EventStreamProcessor.LOGGER.info(`Deployed entity (${it.deployment.entityType}, ${it.deployment.entityId})`)
+          it.source.deploymentsSuccessful(it.deployment)
         } catch (error) {
           metricsComponent.increment('dcl_content_failed_deployments_total')
           EventStreamProcessor.LOGGER.error(
@@ -67,9 +78,9 @@ export class EventStreamProcessor {
       })
     }
 
-    if (jobQueue.pending) {
-      await jobQueue.onEmpty()
-    }
+    await jobQueue.onIdle()
+
+    return false
   }
 }
 

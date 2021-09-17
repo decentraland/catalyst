@@ -1,7 +1,14 @@
 import { ContentClient, DeploymentFields, DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
-import { ContentFileHash, DeploymentWithAuditInfo, Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import {
+  ContentFileHash,
+  DeploymentWithAuditInfo,
+  Fetcher,
+  ServerAddress,
+  SortingField,
+  SortingOrder,
+  Timestamp
+} from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { iteratorFromStream } from '../streamHelpers'
 
 export class ContentServerClient {
   private static readonly LOGGER = log4js.getLogger('ContentServerClient')
@@ -21,7 +28,11 @@ export class ContentServerClient {
   /**
    * After entities have been deployed (or set as failed deployments), we can finally update the last deployment timestamp.
    */
-  allDeploymentsWereSuccessful(): Timestamp {
+  deploymentsSuccessful(deployment: DeploymentWithAuditInfo): Timestamp {
+    this.potentialLocalDeploymentTimestamp = Math.max(
+      this.potentialLocalDeploymentTimestamp || 0,
+      deployment.entityTimestamp
+    )
     return (this.lastLocalDeploymentTimestamp = Math.max(
       this.lastLocalDeploymentTimestamp,
       this.potentialLocalDeploymentTimestamp ?? 0
@@ -30,49 +41,37 @@ export class ContentServerClient {
 
   /** Return all new deployments, and store the local timestamp of the newest one. */
   async *getNewDeployments(): AsyncIterable<DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo> {
-    let error = false
-
     // Fetch the deployments
-    const stream = this.client.streamAllDeployments(
+    const iterator: AsyncIterable<DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo> = (
+      this.client as any
+    ).iterateThroughDeployments(
       {
         filters: { from: this.lastLocalDeploymentTimestamp + 1 },
         fields: DeploymentFields.AUDIT_INFO,
         errorListener: (errorMessage) => {
-          error = true
           ContentServerClient.LOGGER.error(
             `Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`
           )
+          // this throw is important!!!!!! it breaks the iterator preventing hanging forever
+          throw errorMessage
+        },
+        sortBy: {
+          field: SortingField.ENTITY_TIMESTAMP,
+          order: SortingOrder.ASCENDING
         }
       },
       { timeout: '20s' }
     )
 
-    // Wait for stream to end to update connection state
-    stream.once('end', () => {
-      if (!error) {
-        // Update connection state
-        if (this.connectionState !== ConnectionState.CONNECTED) {
-          ContentServerClient.LOGGER.info(`Could connect to '${this.address}'`)
-        }
+    try {
+      for await (const it of iterator) {
         this.connectionState = ConnectionState.CONNECTED
-      } else {
-        // Update connection state
-        if (this.connectionState === ConnectionState.CONNECTED) {
-          this.connectionState = ConnectionState.CONNECTION_LOST
-        }
-        this.potentialLocalDeploymentTimestamp = undefined
+        yield it
       }
-    })
-
-    const iterator = iteratorFromStream<DeploymentWithMetadataContentAndPointers & DeploymentWithAuditInfo>(stream)
-
-    for await (const deployment of iterator) {
-      yield deployment
-
-      this.potentialLocalDeploymentTimestamp = Math.max(
-        this.potentialLocalDeploymentTimestamp ?? 0,
-        deployment.auditInfo.localTimestamp
-      )
+    } catch (error) {
+      ContentServerClient.LOGGER.error(error)
+      // Update connection state
+      this.connectionState = ConnectionState.CONNECTION_LOST
     }
   }
 
@@ -90,6 +89,10 @@ export class ContentServerClient {
 
   getLastLocalDeploymentTimestamp() {
     return this.lastLocalDeploymentTimestamp
+  }
+
+  getPotentialLocalDeploymentTimestamp() {
+    return this.potentialLocalDeploymentTimestamp
   }
 }
 

@@ -22,9 +22,9 @@ export class EventDeployer {
     )
   }
 
-  async processAllDeployments(iterable: AsyncIterable<DeploymentWithSource>, options?: HistoryDeploymentOptions) {
+  async processAllDeployments(iterable: AsyncIterable<DeploymentWithSource>): Promise<boolean> {
     // Process history and deploy it
-    return this.eventProcessor.processDeployments(iterable, options)
+    return this.eventProcessor.processDeployments(iterable)
   }
 
   /** Download and prepare everything necessary to deploy an entity */

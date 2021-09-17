@@ -18,8 +18,6 @@ export class MockedRepository {
     const mockedRepository: Repository = mock<Repository>()
     when(mockedRepository.task(anything(), anything())).thenCall((call) => call(dbInstance))
     when(mockedRepository.task(anything(), anything())).thenCall((call) => call(dbInstance))
-    when(mockedRepository.taskIf(anything(), anything())).thenCall((call) => call(dbInstance))
-    when(mockedRepository.taskIf(anything(), anything())).thenCall((call) => call(dbInstance))
     when(mockedRepository.tx(anything(), anything())).thenCall((call) => call(dbInstance))
     when(mockedRepository.tx(anything(), anything())).thenCall((call) => call(dbInstance))
     when(mockedRepository.txIf(anything(), anything())).thenCall((call) => call(dbInstance))

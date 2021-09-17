@@ -10,7 +10,7 @@ export class RepositoryQueue {
   public static readonly TOO_MANY_QUEUED_ERROR =
     'There are too many requests being made to the database right now. Please try again in a few minutes'
   public static readonly DEFAULT_MAX_CONCURRENCY = 50
-  public static readonly DEFAULT_MAX_QUEUED = 300
+  public static readonly DEFAULT_MAX_QUEUED = 3000
   public static readonly DEFAULT_TIMEOUT = '1m'
   private readonly maxQueued: number
   private readonly queue: PQueue
@@ -29,7 +29,7 @@ export class RepositoryQueue {
 
   addDatabaseRequest<T>(priority: DB_REQUEST_PRIORITY, execution: () => Promise<T>): Promise<T> {
     const priorityLabel = DB_REQUEST_PRIORITY[priority]
-    metricsComponent.increment('db_queued_queries_count')
+    metricsComponent.increment('db_queued_queries_count', { priority: priorityLabel })
     if (this.queue.size >= this.maxQueued && priority === DB_REQUEST_PRIORITY.LOW) {
       metricsComponent.increment('db_queued_queries_rejected_count')
       return Promise.reject(new Error(RepositoryQueue.TOO_MANY_QUEUED_ERROR))

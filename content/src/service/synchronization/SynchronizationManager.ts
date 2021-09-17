@@ -80,6 +80,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
 
     ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
+    let hasPendingDeployments = false
+
     try {
       // Gather all servers
       const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
@@ -115,14 +117,15 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       })
 
       // Process them together
-      await this.deployer.processAllDeployments(mergeIterators('iters-close-wait', ...streams))
+      hasPendingDeployments = await this.deployer.processAllDeployments(mergeIterators('iters-close-wait', ...streams))
 
       ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
 
       // If everything worked, then update the last deployment timestamp
       contentServers.forEach((client) => {
-        // Update the client, so it knows from when to ask next time
-        const newTimestamp = client.allDeploymentsWereSuccessful()
+        const newTimestamp = client.getPotentialLocalDeploymentTimestamp()
+
+        if (!newTimestamp) return
 
         ClusterSynchronizationManager.LOGGER.debug(
           `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
@@ -139,8 +142,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         Array.from(this.lastKnownDeployments.entries())
       )
 
-      this.synchronizationState = SynchronizationState.SYNCED
-      this.timeOfLastSync = Date.now()
+      if (!hasPendingDeployments) {
+        this.synchronizationState = SynchronizationState.SYNCED
+        this.timeOfLastSync = Date.now()
+      }
+
       ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
     } catch (error) {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
@@ -148,13 +154,16 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     } finally {
       if (!this.stopping) {
         // Set the timeout again
-        this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
+        this.syncWithNodesTimeout = setTimeout(
+          () => this.syncWithServers(),
+          hasPendingDeployments ? 0 : this.timeBetweenSyncs
+        )
       }
     }
   }
 
   private async waitUntilSyncFinishes(): Promise<void> {
-    while (this.synchronizationState === SynchronizationState.SYNCING) {
+    while (this.synchronizationState !== SynchronizationState.SYNCED) {
       await delay(ms('1s'))
     }
   }
