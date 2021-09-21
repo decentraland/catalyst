@@ -65,7 +65,7 @@ export class E2ETestEnvironment {
   }
 
   async clearDatabases(): Promise<void> {
-    await this.repository.run((db) => db.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
+    await this.repository.run((db) => db.query(`DROP SCHEMA IF EXISTS ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
       priority: DB_REQUEST_PRIORITY.HIGH
     })
   }
