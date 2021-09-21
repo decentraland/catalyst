@@ -16,16 +16,25 @@ export class EventDeployer {
 
   private readonly eventProcessor: EventStreamProcessor
 
-  constructor(private readonly cluster: ContentCluster, private readonly service: ClusterDeploymentsService) {
+  constructor(
+    private readonly cluster: ContentCluster,
+    private readonly service: ClusterDeploymentsService,
+    syncStreamTimeout: string
+  ) {
     this.eventProcessor = new EventStreamProcessor(
       (entityIds) => this.service.areEntitiesAlreadyDeployed(entityIds),
-      (event, source) => this.wrapDeployment(this.prepareDeployment(event, source))
+      (event, source) => this.wrapDeployment(this.prepareDeployment(event, source)),
+      syncStreamTimeout
     )
   }
 
-  async processAllDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processAllDeployments(
+    deployments: Readable[],
+    options?: HistoryDeploymentOptions,
+    shouldIgnoreTimeout = false
+  ) {
     // Process history and deploy it
-    return this.eventProcessor.processDeployments(deployments, options)
+    return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
 
   /** Download and prepare everything necessary to deploy an entity */

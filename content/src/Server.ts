@@ -1,8 +1,10 @@
 import { initializeMetricsServer } from '@catalyst/commons'
+import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'
 import express, { NextFunction, RequestHandler } from 'express'
+import * as OpenApiValidator from 'express-openapi-validator'
 import fs from 'fs'
 import http from 'http'
 import log4js from 'log4js'
@@ -74,6 +76,15 @@ export class Server {
     this.app.use(express.json())
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
+    }
+    if (env.getConfig(EnvironmentConfig.VALIDATE_API)) {
+      this.app.use(
+        OpenApiValidator.middleware({
+          apiSpec: CONTENT_API,
+          validateResponses: process.env.CI == 'true',
+          validateRequests: true
+        })
+      )
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
