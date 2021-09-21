@@ -1,4 +1,5 @@
-import { EntityVersion } from 'dcl-catalyst-commons'
+import { Profile, Scene, Wearable } from '@dcl/schemas'
+import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
@@ -170,7 +171,18 @@ export class Validations {
     return errors.length > 0 ? errors : undefined
   }
 
-  static readonly FAIL_ALWAYS: Validation = async (_) => {
+  static readonly FAIL_ALWAYS: Validation = async () => {
     return ['This deployment is invalid. What are you doing?']
+  }
+
+  static readonly METADATA_SCHEMA: Validation = async ({ deployment }) => {
+    const validate = {
+      [EntityType.PROFILE]: Profile.validate,
+      [EntityType.SCENE]: Scene.validate,
+      [EntityType.WEARABLE]: Wearable.validate
+    }
+
+    if (!validate[deployment.entity.type](deployment.entity.metadata))
+      return [`The metadata for this entity type (${deployment.entity.type}) is not valid.`]
   }
 }
