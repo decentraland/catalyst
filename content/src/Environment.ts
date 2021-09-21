@@ -60,6 +60,7 @@ export const DEFAULT_DATABASE_CONFIG = {
   schema: 'public',
   port: 5432
 }
+const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
 export class Environment {
   private static readonly LOGGER = log4js.getLogger('Environment')
@@ -165,6 +166,7 @@ export enum EnvironmentConfig {
   SNAPSHOT_FREQUENCY,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
+  SYNC_STREAM_TIMEOUT,
   DISABLE_DENYLIST,
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
@@ -359,6 +361,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.DISABLE_SYNCHRONIZATION,
       () => process.env.DISABLE_SYNCHRONIZATION === 'true'
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.SYNC_STREAM_TIMEOUT,
+      () => process.env.SYNC_STREAM_TIMEOUT || DEFAULT_SYNC_STREAM_TIMEOUT
     )
     this.registerConfigIfNotAlreadySet(
       env,

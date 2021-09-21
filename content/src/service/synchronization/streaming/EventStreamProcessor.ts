@@ -1,5 +1,6 @@
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import ms from 'ms'
 import parallelTransform from 'parallel-transform'
 import { Readable, Writable } from 'stream'
 import { metricsComponent } from '../../../metrics'
@@ -7,6 +8,7 @@ import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
 import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'
 import { awaitablePipeline, mergeStreams, streamFilter } from './StreamHelper'
+import { setupStreamTimeout } from './utils'
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -17,15 +19,24 @@ export class EventStreamProcessor {
 
   constructor(
     private readonly checkIfAlreadyDeployed: (entityIds: EntityId[]) => Promise<Map<EntityId, boolean>>,
-    private readonly deploymentBuilder: DeploymentPreparation
+    private readonly deploymentBuilder: DeploymentPreparation,
+    private readonly syncStreamTimeout: string
   ) {}
 
   /**
    * This method takes many deployment streams and tries to deploy them locally.
    */
-  async processDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processDeployments(
+    deployments: Readable[],
+    options?: HistoryDeploymentOptions,
+    shouldIgnoreTimeout: boolean = false
+  ) {
     // Merge the streams from the different servers
     const merged = mergeStreams(deployments)
+
+    if (!shouldIgnoreTimeout) {
+      setupStreamTimeout(merged, ms(this.syncStreamTimeout))
+    }
 
     // A transform that will filter out duplicate deployments
     const filterOutDuplicates = this.filterOutDuplicates()
