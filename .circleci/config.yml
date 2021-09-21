@@ -157,11 +157,13 @@ jobs:
       - <<: *attach_root
       - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
-          name: Prepare to build Docker image
-          command: ./prepare_for_docker_image.sh
-      - run:
           name: Build Docker image
-          command: docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} .
+          command: |
+            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
+              docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
+            else
+              docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
+            fi
       - run:
           name: Log into DockerHub
           command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
@@ -194,11 +196,13 @@ jobs:
       - <<: *attach_root
       - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
-          name: Prepare to build Docker image
-          command: ./prepare_for_docker_image.sh
-      - run:
           name: Build Docker image
-          command: docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} .
+          command: |
+            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
+              docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
+            else
+              docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
+            fi
       - run:
           name: Log into DockerHub
           command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
