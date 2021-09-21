@@ -47,6 +47,7 @@ export class Server {
       this.app.use(
         OpenApiValidator.middleware({
           apiSpec: LAMBDAS_API,
+          validateResponses: process.env.CI == 'true',
           validateRequests: true
         })
       )

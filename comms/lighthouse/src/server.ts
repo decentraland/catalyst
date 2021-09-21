@@ -65,7 +65,7 @@ async function main() {
   if (validateAPI) {
     OpenApiValidator.middleware({
       apiSpec: COMMS_API,
-      // validateResponses: true, // false by default
+      validateResponses: process.env.CI == 'true',
       validateRequests: true // (default)
     })
   }

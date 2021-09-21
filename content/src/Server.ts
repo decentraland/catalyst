@@ -81,6 +81,7 @@ export class Server {
       this.app.use(
         OpenApiValidator.middleware({
           apiSpec: CONTENT_API,
+          validateResponses: process.env.CI == 'true',
           validateRequests: true
         })
       )
