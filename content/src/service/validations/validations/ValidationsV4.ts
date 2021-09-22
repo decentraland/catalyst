@@ -6,7 +6,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
   [DeploymentContext.LOCAL]: [
     Validations.IPFS_HASHING,
     // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
@@ -18,7 +18,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
   [DeploymentContext.SYNCED]: [
     Validations.IPFS_HASHING,
     // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
@@ -27,7 +27,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
   [DeploymentContext.OVERWRITTEN]: [
     Validations.IPFS_HASHING,
     // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE
@@ -35,7 +35,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
   [DeploymentContext.FIX_ATTEMPT]: [
     Validations.IPFS_HASHING,
     // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
