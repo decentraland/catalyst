@@ -1,6 +1,8 @@
-import { AuditInfo, Entity, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, WearableRepresentation } from '@dcl/schemas'
+import { AuditInfo, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
+import { Entity } from 'src/service/Entity'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 import { Deployment } from '../../../../src/service/deployments/DeploymentManager'
 import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
@@ -328,8 +330,8 @@ describe('Validations', function () {
 
       const actualErrors = await result
       expect(actualErrors).toBeDefined()
-      expect(actualErrors!.length).toBe(1)
-      expect(actualErrors![0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+      expect(actualErrors?.length).toBe(1)
+      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
     })
 
     it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
@@ -380,7 +382,131 @@ describe('Validations', function () {
       await assertNoErrors(result)
     })
   })
+
+  describe('Metadata schema', () => {
+    const testType = (type: EntityType, validMetadata: any, invalidMetadata: any) => {
+      it('when entity metadata is valid should not report errors', async () => {
+        const entity = buildEntityV4(type, validMetadata)
+        const args = buildArgs({ deployment: { entity } })
+        const result = Validations.METADATA_SCHEMA(args)
+
+        await assertNoErrors(result)
+      })
+      it('when entity metadata is invalid should report an error', async () => {
+        const entity = buildEntityV4(type, invalidMetadata)
+        const args = buildArgs({ deployment: { entity } })
+        const result = Validations.METADATA_SCHEMA(args)
+
+        await assertErrorsWere(result, `The metadata for this entity type (${type}) is not valid.`)
+      })
+    }
+    describe('PROFILE: ', () => {
+      const avatarInfo = {
+        bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
+        snapshots: {
+          face: 'https://peer.decentraland.org/content/contents/QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi',
+          face128: 'https://peer.decentraland.org/content/contents/QmefLJryuN2Zyv44iHALWsGghAF3MsAthauoAnHAbFi5Mv',
+          face256: 'https://peer.decentraland.org/content/contents/QmNj97kkczscWiJKax44hZQq9ahfBdA5nNKTs9s9AYidh9',
+          body: 'https://peer.decentraland.org/content/contents/QmWDjKPd9oac2KwzUvWdqHefjvcm66CrNM393QFwkS7Dhu'
+        },
+        eyes: { color: { r: 0.23046875, g: 0.625, b: 0.3125 } },
+        hair: { color: { r: 0.35546875, g: 0.19140625, b: 0.05859375 } },
+        skin: { color: { r: 0.94921875, g: 0.76171875, b: 0.6484375 } },
+        wearables: [
+          'urn:decentraland:off-chain:base-avatars:tall_front_01',
+          'urn:decentraland:off-chain:base-avatars:eyes_08',
+          'urn:decentraland:off-chain:base-avatars:eyebrows_00',
+          'urn:decentraland:off-chain:base-avatars:mouth_05',
+          'urn:decentraland:matic:collections-v2:0xf6f601efee04e74cecac02c8c5bdc8cc0fc1c721:0',
+          'urn:decentraland:off-chain:base-avatars:classic_shoes',
+          'urn:decentraland:off-chain:base-avatars:red_tshirt',
+          'urn:decentraland:off-chain:base-avatars:trash_jean'
+        ]
+      }
+
+      const avatar = {
+        userId: '0x87956abc4078a0cc3b89b419628b857b8af826ed',
+        email: 'some@email.com',
+        name: 'Some Name',
+        hasClaimedName: true,
+        description: 'Some Description',
+        ethAddress: '0x87956abC4078a0Cc3b89b419628b857B8AF826Ed',
+        version: 44,
+        avatar: avatarInfo,
+        tutorialStep: 355,
+        interests: []
+      }
+      const validMetadata = { avatars: [avatar] }
+      const invalidMetadata = {}
+      testType(EntityType.PROFILE, validMetadata, invalidMetadata)
+    })
+
+    describe('SCENE: ', () => {
+      const validMetadata = {
+        main: 'bin/main.js',
+        scene: {
+          base: '0,0',
+          parcels: ['0,0']
+        }
+      }
+      const invalidMetadata = {}
+      testType(EntityType.SCENE, validMetadata, invalidMetadata)
+    })
+
+    describe('WEARABLE: ', () => {
+      const representation: WearableRepresentation = {
+        bodyShapes: [WearableBodyShape.FEMALE],
+        mainFile: 'file1',
+        contents: ['file1', 'file2'],
+        overrideHides: [],
+        overrideReplaces: []
+      }
+
+      const wearable: Wearable = {
+        id: 'some id',
+        descriptions: [
+          {
+            code: Locale.EN,
+            text: 'some description'
+          },
+          {
+            code: Locale.ES,
+            text: 'una descripcion'
+          }
+        ],
+        collectionAddress: '0x...',
+        rarity: Rarity.LEGENDARY,
+        names: [
+          {
+            code: Locale.EN,
+            text: 'name'
+          }
+        ],
+        data: {
+          replaces: [],
+          hides: [],
+          tags: ['tag1'],
+          representations: [representation],
+          category: WearableCategory.UPPER_BODY
+        },
+        thumbnail: 'thumbnail.png',
+        image: 'image.png'
+      }
+      const validMetadata = wearable
+      const invalidMetadata = {}
+      testType(EntityType.WEARABLE, validMetadata, invalidMetadata)
+    })
+  })
 })
+
+function buildEntityV4(type = EntityType.PROFILE, metadata = {}) {
+  return {
+    ...buildEntity(),
+    version: EntityVersion.V4,
+    metadata,
+    type
+  }
+}
 
 function buildEntity(options?: {
   version?: EntityVersion
@@ -388,6 +514,7 @@ function buildEntity(options?: {
   timestamp?: Timestamp
   content?: Map<string, string>
   pointers?: Pointer[]
+  type?: EntityType
 }) {
   const opts = Object.assign(
     {
@@ -401,7 +528,7 @@ function buildEntity(options?: {
   )
   return {
     ...opts,
-    type: EntityType.SCENE
+    type: options?.type ?? EntityType.SCENE
   }
 }
 
@@ -412,8 +539,8 @@ function getFileWithSize(sizeInMB: number) {
 async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
   const actualErrors = await result
   expect(actualErrors).toBeDefined()
-  expect(actualErrors!.length).toBe(1)
-  expect(actualErrors![0]).toMatch('The signature is invalid.*')
+  expect(actualErrors?.length).toBe(1)
+  expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
 }
 
 function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
@@ -441,7 +568,7 @@ async function assertErrorsWere(
 ) {
   const actualErrors = await result
   expect(actualErrors).toBeDefined()
-  expect(actualErrors!).toEqual(expectedErrors)
+  expect(actualErrors).toEqual(expectedErrors)
 }
 
 async function assertNoErrors(
@@ -453,7 +580,7 @@ async function assertNoErrors(
 }
 
 function buildArgs(args: {
-  deployment: { entity: Entity } & Partial<DeploymentToValidate>
+  deployment: Pick<DeploymentToValidate, 'entity'> & Partial<DeploymentToValidate>
   env?: Partial<ServerEnvironment>
   externalCalls?: Partial<ExternalCalls>
 }): ValidationArgs {
@@ -471,11 +598,11 @@ function buildArgs(args: {
       ...args?.env
     },
     externalCalls: {
-      fetchDeployments: (_) => Promise.resolve({ deployments: [] }),
-      areThereNewerEntities: (_) => Promise.resolve(false),
-      fetchDeploymentStatus: (_, __) => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
+      fetchDeployments: () => Promise.resolve({ deployments: [] }),
+      areThereNewerEntities: () => Promise.resolve(false),
+      fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
       isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
-      isEntityDeployedAlready: (_) => Promise.resolve(false),
+      isEntityDeployedAlready: () => Promise.resolve(false),
       ...args?.externalCalls
     }
   }
