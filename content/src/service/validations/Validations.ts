@@ -148,15 +148,13 @@ export class Validations {
       if (entity.type === EntityType.PROFILE) {
         // Validate all content files correspond to at least one avatar snapshot
         if (Profile.validate(entity.metadata)) {
-          Array.from(entity.content.keys())
-            .filter((fileName) => {
-              const fileNameWithoutExtension = fileName.replace(/.[^/.]+$/, '')
-              const testIsSnapshot = (avatar: Avatar) => avatar.avatar.snapshots[fileNameWithoutExtension] !== undefined
-              return entity.metadata.avatars.find(testIsSnapshot) === undefined
-            })
-            .forEach((fileName) => {
-              errors.push(`This file is not expected: ${fileName}. Please, include only snapshot files.`)
-            })
+          Array.from(entity.content.entries())
+            .filter(([fileName, hash]) => !Validations.correspondsToASnapshot(fileName, hash, entity.metadata))
+            .forEach(([fileName, hash]) =>
+              errors.push(
+                `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
+              )
+            )
         }
       }
 
@@ -199,5 +197,16 @@ export class Validations {
 
     if (!validate[deployment.entity.type](deployment.entity.metadata))
       return [`The metadata for this entity type (${deployment.entity.type}) is not valid.`]
+  }
+
+  private static correspondsToASnapshot(fileName: string, hash: string, metadata: Profile) {
+    const fileNameWithoutExtension = fileName.replace(/.[^/.]+$/, '')
+
+    return metadata.avatars.some((avatar: Avatar) => {
+      console.log(
+        `Snapshot file: ${fileNameWithoutExtension} - hash: ${avatar.avatar.snapshots[fileNameWithoutExtension]}`
+      )
+      return avatar.avatar.snapshots[fileNameWithoutExtension] === hash
+    })
   }
 }

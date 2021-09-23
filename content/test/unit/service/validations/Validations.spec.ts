@@ -18,10 +18,10 @@ import { MockedAccessChecker } from '../../../helpers/service/access/MockedAcces
 const avatarInfo = {
   bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
   snapshots: {
-    face: 'https://peer.decentraland.org/content/contents/QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi',
-    face128: 'https://peer.decentraland.org/content/contents/QmefLJryuN2Zyv44iHALWsGghAF3MsAthauoAnHAbFi5Mv',
-    face256: 'https://peer.decentraland.org/content/contents/QmNj97kkczscWiJKax44hZQq9ahfBdA5nNKTs9s9AYidh9',
-    body: 'https://peer.decentraland.org/content/contents/QmWDjKPd9oac2KwzUvWdqHefjvcm66CrNM393QFwkS7Dhu'
+    face: 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi',
+    face128: 'QmefLJryuN2Zyv44iHALWsGghAF3MsAthauoAnHAbFi5Mv',
+    face256: 'QmNj97kkczscWiJKax44hZQq9ahfBdA5nNKTs9s9AYidh9',
+    body: 'QmWDjKPd9oac2KwzUvWdqHefjvcm66CrNM393QFwkS7Dhu'
   },
   eyes: { color: { r: 0.23046875, g: 0.625, b: 0.3125 } },
   hair: { color: { r: 0.35546875, g: 0.19140625, b: 0.05859375 } },
@@ -278,13 +278,13 @@ describe('Validations', function () {
       const expectedFile = 'face.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[expectedFile, 'hash-1']])
+        content: new Map([[expectedFile, 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi']])
       }
 
       const args = buildArgs({
         deployment: {
           entity,
-          files: new Map([['hash-1', Buffer.from([])]])
+          files: new Map([['QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi', Buffer.from([])]])
         }
       })
 
@@ -293,17 +293,17 @@ describe('Validations', function () {
       await assertNoErrors(result)
     })
 
-    it(`When profile content files don't correspond to any shapshot, it is reported`, async () => {
-      const unexpectedFile = 'unexpected-file.png'
+    it(`When a profile content file hash doesn't correspond to any shapshot, it is reported`, async () => {
+      const expectedFile = 'face.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[unexpectedFile, 'hash-1']])
+        content: new Map([[expectedFile, 'someInvalidHash']])
       }
 
       const args = buildArgs({
         deployment: {
           entity,
-          files: new Map([['hash-1', Buffer.from([])]])
+          files: new Map([['someInvalidHash', Buffer.from([])]])
         }
       })
 
@@ -311,7 +311,29 @@ describe('Validations', function () {
 
       await assertErrorsWere(
         result,
-        `This file is not expected: ${unexpectedFile}. Please, include only snapshot files.`
+        `This file is not expected: '${expectedFile}' or its hash is invalid: 'someInvalidHash'. Please, include only valid snapshot files.`
+      )
+    })
+
+    it(`When profile content files don't correspond to any shapshot, it is reported`, async () => {
+      const unexpectedFile = 'unexpected-file.png'
+      const entity = {
+        ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
+        content: new Map([[unexpectedFile, 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi']])
+      }
+
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([['QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi', Buffer.from([])]])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertErrorsWere(
+        result,
+        `This file is not expected: '${unexpectedFile}' or its hash is invalid: 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi'. Please, include only valid snapshot files.`
       )
     })
 
@@ -557,7 +579,6 @@ function buildEntity(options?: {
   timestamp?: Timestamp
   content?: Map<string, string>
   pointers?: Pointer[]
-  type?: EntityType
 }) {
   const opts = Object.assign(
     {
@@ -565,14 +586,12 @@ function buildEntity(options?: {
       timestamp: Date.now(),
       content: undefined,
       id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
-      pointers: ['P1']
+      pointers: ['P1'],
+      type: EntityType.SCENE
     },
     options
   )
-  return {
-    ...opts,
-    type: options?.type ?? EntityType.SCENE
-  }
+  return opts
 }
 
 function getFileWithSize(sizeInMB: number) {
