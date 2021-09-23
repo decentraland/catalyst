@@ -1,3 +1,4 @@
+import { IPFSv2 } from '@dcl/schemas'
 import {
   AuditInfo,
   ContentFileHash,
@@ -9,8 +10,8 @@ import {
   ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { metricsComponent } from '../metrics'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
+import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -324,7 +325,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   static isIPFSHash(hash: string) {
-    return hash.startsWith('bafy') && hash.length === 59
+    return IPFSv2.validate(hash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {

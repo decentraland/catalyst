@@ -18,10 +18,10 @@ import { MockedAccessChecker } from '../../../helpers/service/access/MockedAcces
 const avatarInfo = {
   bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
   snapshots: {
-    face: 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi',
-    face128: 'QmefLJryuN2Zyv44iHALWsGghAF3MsAthauoAnHAbFi5Mv',
-    face256: 'QmNj97kkczscWiJKax44hZQq9ahfBdA5nNKTs9s9AYidh9',
-    body: 'QmWDjKPd9oac2KwzUvWdqHefjvcm66CrNM393QFwkS7Dhu'
+    face: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q',
+    face128: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5r',
+    face256: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5s',
+    body: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5t'
   },
   eyes: { color: { r: 0.23046875, g: 0.625, b: 0.3125 } },
   hair: { color: { r: 0.35546875, g: 0.19140625, b: 0.05859375 } },
@@ -278,13 +278,13 @@ describe('Validations', function () {
       const expectedFile = 'face.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[expectedFile, 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi']])
+        content: new Map([[expectedFile, 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q']])
       }
 
       const args = buildArgs({
         deployment: {
           entity,
-          files: new Map([['QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi', Buffer.from([])]])
+          files: new Map([['bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q', Buffer.from([])]])
         }
       })
 
@@ -319,13 +319,13 @@ describe('Validations', function () {
       const unexpectedFile = 'unexpected-file.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[unexpectedFile, 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi']])
+        content: new Map([[unexpectedFile, 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q']])
       }
 
       const args = buildArgs({
         deployment: {
           entity,
-          files: new Map([['QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi', Buffer.from([])]])
+          files: new Map([['bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q', Buffer.from([])]])
         }
       })
 
@@ -333,7 +333,7 @@ describe('Validations', function () {
 
       await assertErrorsWere(
         result,
-        `This file is not expected: '${unexpectedFile}' or its hash is invalid: 'QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi'. Please, include only valid snapshot files.`
+        `This file is not expected: '${unexpectedFile}' or its hash is invalid: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q'. Please, include only valid snapshot files.`
       )
     })
 
