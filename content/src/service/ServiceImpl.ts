@@ -9,8 +9,8 @@ import {
   ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
-import { metricsComponent } from '../metrics'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
+import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -118,9 +118,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
               areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
               fetchDeploymentStatus: (type, id) =>
                 this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
-              isContentStoredAlready: (hashes) => Promise.resolve(alreadyStoredContent), // We know that the validation asks for the same content we already checked
+              isContentStoredAlready: () => Promise.resolve(alreadyStoredContent), // We know that the validation asks for the same content we already checked
               isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
-                Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck)
+                Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
+              isEntityRateLimited: (entity, authChain) => this.isEntityRateLimited(entity, authChain)
             })
 
             if (!validationResult.ok) {
@@ -205,6 +206,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
         // Invalidate cache
         response.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
+
+        // Insert in cache the updated entities
+        // TODO
       }
       return response.auditInfoComplete.localTimestamp
     } catch (error) {
@@ -294,6 +298,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
     return false
   }
+
+  /** Check if    */
+  private isEntityRateLimited() {}
 
   private storeEntityContent(
     hashes: Map<ContentFileHash, Buffer>,
