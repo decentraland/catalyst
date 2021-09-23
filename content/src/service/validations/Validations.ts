@@ -1,4 +1,4 @@
-import { Profile, Scene, Wearable } from '@dcl/schemas'
+import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
@@ -144,6 +144,21 @@ export class Validations {
         .forEach((unreferencedHash) =>
           errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`)
         )
+
+      if (entity.type === EntityType.PROFILE) {
+        // Validate all content files correspond to at least one avatar snapshot
+        if (Profile.validate(entity.metadata)) {
+          Array.from(entity.content.keys())
+            .filter((fileName) => {
+              const fileNameWithoutExtension = fileName.replace(/.[^/.]+$/, '')
+              const testIsSnapshot = (avatar: Avatar) => avatar.avatar.snapshots[fileNameWithoutExtension] !== undefined
+              return entity.metadata.avatars.find(testIsSnapshot) === undefined
+            })
+            .forEach((fileName) => {
+              errors.push(`This file is not expected: ${fileName}. Please, include only snapshot files.`)
+            })
+        }
+      }
 
       return errors.length > 0 ? errors : undefined
     }

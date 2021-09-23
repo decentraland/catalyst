@@ -15,6 +15,44 @@ import {
 } from '../../../../src/service/validations/Validator'
 import { MockedAccessChecker } from '../../../helpers/service/access/MockedAccessChecker'
 
+const avatarInfo = {
+  bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
+  snapshots: {
+    face: 'https://peer.decentraland.org/content/contents/QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi',
+    face128: 'https://peer.decentraland.org/content/contents/QmefLJryuN2Zyv44iHALWsGghAF3MsAthauoAnHAbFi5Mv',
+    face256: 'https://peer.decentraland.org/content/contents/QmNj97kkczscWiJKax44hZQq9ahfBdA5nNKTs9s9AYidh9',
+    body: 'https://peer.decentraland.org/content/contents/QmWDjKPd9oac2KwzUvWdqHefjvcm66CrNM393QFwkS7Dhu'
+  },
+  eyes: { color: { r: 0.23046875, g: 0.625, b: 0.3125 } },
+  hair: { color: { r: 0.35546875, g: 0.19140625, b: 0.05859375 } },
+  skin: { color: { r: 0.94921875, g: 0.76171875, b: 0.6484375 } },
+  wearables: [
+    'urn:decentraland:off-chain:base-avatars:tall_front_01',
+    'urn:decentraland:off-chain:base-avatars:eyes_08',
+    'urn:decentraland:off-chain:base-avatars:eyebrows_00',
+    'urn:decentraland:off-chain:base-avatars:mouth_05',
+    'urn:decentraland:matic:collections-v2:0xf6f601efee04e74cecac02c8c5bdc8cc0fc1c721:0',
+    'urn:decentraland:off-chain:base-avatars:classic_shoes',
+    'urn:decentraland:off-chain:base-avatars:red_tshirt',
+    'urn:decentraland:off-chain:base-avatars:trash_jean'
+  ]
+}
+
+const avatar = {
+  userId: '0x87956abc4078a0cc3b89b419628b857b8af826ed',
+  email: 'some@email.com',
+  name: 'Some Name',
+  hasClaimedName: true,
+  description: 'Some Description',
+  ethAddress: '0x87956abC4078a0Cc3b89b419628b857B8AF826Ed',
+  version: 44,
+  avatar: avatarInfo,
+  tutorialStep: 355,
+  interests: []
+}
+
+export const VALID_PROFILE_METADATA = { avatars: [avatar] }
+
 describe('Validations', function () {
   describe('Recent', () => {
     it(`When an entity with a timestamp too far into the past is deployed, then an error is returned`, async () => {
@@ -236,6 +274,47 @@ describe('Validations', function () {
       await assertErrorsWere(result, notReferencedHashMessage('hash-2'))
     })
 
+    it(`When profile content files correspond to any shapshot, then no error is returned`, async () => {
+      const expectedFile = 'face.png'
+      const entity = {
+        ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
+        content: new Map([[expectedFile, 'hash-1']])
+      }
+
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([['hash-1', Buffer.from([])]])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`When profile content files don't correspond to any shapshot, it is reported`, async () => {
+      const unexpectedFile = 'unexpected-file.png'
+      const entity = {
+        ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
+        content: new Map([[unexpectedFile, 'hash-1']])
+      }
+
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([['hash-1', Buffer.from([])]])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertErrorsWere(
+        result,
+        `This file is not expected: ${unexpectedFile}. Please, include only snapshot files.`
+      )
+    })
+
     const notAvailableHashMessage = (hash) => {
       return `This hash is referenced in the entity but was not uploaded or previously available: ${hash}`
     }
@@ -401,44 +480,8 @@ describe('Validations', function () {
       })
     }
     describe('PROFILE: ', () => {
-      const avatarInfo = {
-        bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
-        snapshots: {
-          face: 'https://peer.decentraland.org/content/contents/QmZdwrWnF2kLghFJ9kSj2brFEmywfAiqssr2LCqFj9HVWi',
-          face128: 'https://peer.decentraland.org/content/contents/QmefLJryuN2Zyv44iHALWsGghAF3MsAthauoAnHAbFi5Mv',
-          face256: 'https://peer.decentraland.org/content/contents/QmNj97kkczscWiJKax44hZQq9ahfBdA5nNKTs9s9AYidh9',
-          body: 'https://peer.decentraland.org/content/contents/QmWDjKPd9oac2KwzUvWdqHefjvcm66CrNM393QFwkS7Dhu'
-        },
-        eyes: { color: { r: 0.23046875, g: 0.625, b: 0.3125 } },
-        hair: { color: { r: 0.35546875, g: 0.19140625, b: 0.05859375 } },
-        skin: { color: { r: 0.94921875, g: 0.76171875, b: 0.6484375 } },
-        wearables: [
-          'urn:decentraland:off-chain:base-avatars:tall_front_01',
-          'urn:decentraland:off-chain:base-avatars:eyes_08',
-          'urn:decentraland:off-chain:base-avatars:eyebrows_00',
-          'urn:decentraland:off-chain:base-avatars:mouth_05',
-          'urn:decentraland:matic:collections-v2:0xf6f601efee04e74cecac02c8c5bdc8cc0fc1c721:0',
-          'urn:decentraland:off-chain:base-avatars:classic_shoes',
-          'urn:decentraland:off-chain:base-avatars:red_tshirt',
-          'urn:decentraland:off-chain:base-avatars:trash_jean'
-        ]
-      }
-
-      const avatar = {
-        userId: '0x87956abc4078a0cc3b89b419628b857b8af826ed',
-        email: 'some@email.com',
-        name: 'Some Name',
-        hasClaimedName: true,
-        description: 'Some Description',
-        ethAddress: '0x87956abC4078a0Cc3b89b419628b857B8AF826Ed',
-        version: 44,
-        avatar: avatarInfo,
-        tutorialStep: 355,
-        interests: []
-      }
-      const validMetadata = { avatars: [avatar] }
       const invalidMetadata = {}
-      testType(EntityType.PROFILE, validMetadata, invalidMetadata)
+      testType(EntityType.PROFILE, VALID_PROFILE_METADATA, invalidMetadata)
     })
 
     describe('SCENE: ', () => {
