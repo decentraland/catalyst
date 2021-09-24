@@ -127,34 +127,27 @@ export class Validations {
       const errors: string[] = []
       const alreadyStoredHashes = await externalCalls.isContentStoredAlready(Array.from(files.keys()))
 
-      const entityHashes: string[] = Array.from(entity.content?.values() ?? [])
+      for (const [fileName, hash] of entity.content) {
+        // Validate that all hashes in entity were uploaded, or were already stored on the service
+        if (!(files.has(hash) || alreadyStoredHashes.get(hash))) {
+          errors.push(`This hash is referenced in the entity but was not uploaded or previously available: ${hash}`)
+        }
 
-      // Validate that all hashes in entity were uploaded, or were already stored on the service
-      entityHashes
-        .filter((hash) => !(files.has(hash) || alreadyStoredHashes.get(hash)))
-        .forEach((notAvailableHash) =>
-          errors.push(
-            `This hash is referenced in the entity but was not uploaded or previously available: ${notAvailableHash}`
-          )
-        )
+        // Validate all content files correspond to at least one avatar snapshot
+        if (entity.type === EntityType.PROFILE) {
+          if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
+            errors.push(
+              `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
+            )
+          }
+        }
+      }
 
       // Validate that all hashes that belong to uploaded files are actually reported on the entity
-      Array.from(files.keys())
-        .filter((hash) => !entityHashes.includes(hash) && hash !== entity.id)
-        .forEach((unreferencedHash) =>
-          errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`)
-        )
-
-      if (entity.type === EntityType.PROFILE) {
-        // Validate all content files correspond to at least one avatar snapshot
-        if (Profile.validate(entity.metadata)) {
-          for (const [fileName, hash] of entity.content.entries()) {
-            if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
-              errors.push(
-                `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
-              )
-            }
-          }
+      const entityHashes = new Set(entity.content.values())
+      for (const [hash] of files) {
+        if (!entityHashes.has(hash) && hash !== entity.id) {
+          errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
         }
       }
 
