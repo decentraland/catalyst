@@ -148,13 +148,12 @@ export class Validations {
       if (entity.type === EntityType.PROFILE) {
         // Validate all content files correspond to at least one avatar snapshot
         if (Profile.validate(entity.metadata)) {
-          Array.from(entity.content.entries())
-            .filter(([fileName, hash]) => !Validations.correspondsToASnapshot(fileName, hash, entity.metadata))
-            .forEach(([fileName, hash]) =>
+          for (const [fileName, hash] of entity.content.entries()) {
+            if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
               errors.push(
-                `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
-              )
-            )
+                `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`)
+            }
+          }
         }
       }
 
