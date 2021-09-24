@@ -151,7 +151,8 @@ export class Validations {
           for (const [fileName, hash] of entity.content.entries()) {
             if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
               errors.push(
-                `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`)
+                `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
+              )
             }
           }
         }
