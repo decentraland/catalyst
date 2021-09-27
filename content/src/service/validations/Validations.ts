@@ -194,7 +194,7 @@ export class Validations {
 
   /** Validate the deployment is not rate limited */
   static readonly RATE_LIMIT: Validation = async ({ deployment, externalCalls }) => {
-    if (!(await externalCalls.isEntityRateLimited(deployment.entity))) {
+    if (await externalCalls.isEntityRateLimited(deployment.entity)) {
       return [`The entity with id (${deployment.entity.id}) has been rate limited.`]
     }
   }
