@@ -1,3 +1,4 @@
+import { IPFSv2 } from '@dcl/schemas'
 import {
   AuditInfo,
   ContentFileHash,
@@ -331,7 +332,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   static isIPFSHash(hash: string) {
-    return hash.startsWith('bafy') && hash.length === 59
+    return IPFSv2.validate(hash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {

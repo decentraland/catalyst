@@ -78,6 +78,13 @@
   dependencies:
     ajv "^7.1.0"
 
+"@dcl/schemas@1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-1.8.0.tgz#e97af6f881542681e3b72f4a50e44dd7269b723f"
+  integrity sha512-hWIL7lfabqBOtHq5hQ/cICegYOUnIQ/4Ds1LvfaFQ/1azDmkbdyRJmkr6JBztdp3emgzojuCyacIJTDBNXA0gw==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/urn-resolver@1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.2.1.tgz#b5de639881cecb0ad59dd7791da836d18e364323"

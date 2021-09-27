@@ -1,6 +1,8 @@
-import { AuditInfo, Entity, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, WearableRepresentation } from '@dcl/schemas'
+import { AuditInfo, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
+import { Entity } from 'src/service/Entity'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 import { Deployment } from '../../../../src/service/deployments/DeploymentManager'
 import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
@@ -12,6 +14,44 @@ import {
   ValidationArgs
 } from '../../../../src/service/validations/Validator'
 import { MockedAccessChecker } from '../../../helpers/service/access/MockedAccessChecker'
+
+const avatarInfo = {
+  bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
+  snapshots: {
+    face: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q',
+    face128: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5r',
+    face256: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5s',
+    body: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5t'
+  },
+  eyes: { color: { r: 0.23046875, g: 0.625, b: 0.3125 } },
+  hair: { color: { r: 0.35546875, g: 0.19140625, b: 0.05859375 } },
+  skin: { color: { r: 0.94921875, g: 0.76171875, b: 0.6484375 } },
+  wearables: [
+    'urn:decentraland:off-chain:base-avatars:tall_front_01',
+    'urn:decentraland:off-chain:base-avatars:eyes_08',
+    'urn:decentraland:off-chain:base-avatars:eyebrows_00',
+    'urn:decentraland:off-chain:base-avatars:mouth_05',
+    'urn:decentraland:matic:collections-v2:0xf6f601efee04e74cecac02c8c5bdc8cc0fc1c721:0',
+    'urn:decentraland:off-chain:base-avatars:classic_shoes',
+    'urn:decentraland:off-chain:base-avatars:red_tshirt',
+    'urn:decentraland:off-chain:base-avatars:trash_jean'
+  ]
+}
+
+const avatar = {
+  userId: '0x87956abc4078a0cc3b89b419628b857b8af826ed',
+  email: 'some@email.com',
+  name: 'Some Name',
+  hasClaimedName: true,
+  description: 'Some Description',
+  ethAddress: '0x87956abC4078a0Cc3b89b419628b857B8AF826Ed',
+  version: 44,
+  avatar: avatarInfo,
+  tutorialStep: 355,
+  interests: []
+}
+
+export const VALID_PROFILE_METADATA = { avatars: [avatar] }
 
 describe('Validations', function () {
   describe('Recent', () => {
@@ -234,6 +274,69 @@ describe('Validations', function () {
       await assertErrorsWere(result, notReferencedHashMessage('hash-2'))
     })
 
+    it(`When profile content files correspond to any shapshot, then no error is returned`, async () => {
+      const expectedFile = 'face.png'
+      const entity = {
+        ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
+        content: new Map([[expectedFile, 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q']])
+      }
+
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([['bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q', Buffer.from([])]])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`When a profile content file hash doesn't correspond to any shapshot, it is reported`, async () => {
+      const expectedFile = 'face.png'
+      const entity = {
+        ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
+        content: new Map([[expectedFile, 'someInvalidHash']])
+      }
+
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([['someInvalidHash', Buffer.from([])]])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertErrorsWere(
+        result,
+        `This file is not expected: '${expectedFile}' or its hash is invalid: 'someInvalidHash'. Please, include only valid snapshot files.`
+      )
+    })
+
+    it(`When profile content files don't correspond to any shapshot, it is reported`, async () => {
+      const unexpectedFile = 'unexpected-file.png'
+      const entity = {
+        ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
+        content: new Map([[unexpectedFile, 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q']])
+      }
+
+      const args = buildArgs({
+        deployment: {
+          entity,
+          files: new Map([['bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q', Buffer.from([])]])
+        }
+      })
+
+      const result = Validations.CONTENT(args)
+
+      await assertErrorsWere(
+        result,
+        `This file is not expected: '${unexpectedFile}' or its hash is invalid: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q'. Please, include only valid snapshot files.`
+      )
+    })
+
     const notAvailableHashMessage = (hash) => {
       return `This hash is referenced in the entity but was not uploaded or previously available: ${hash}`
     }
@@ -328,8 +431,8 @@ describe('Validations', function () {
 
       const actualErrors = await result
       expect(actualErrors).toBeDefined()
-      expect(actualErrors!.length).toBe(1)
-      expect(actualErrors![0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+      expect(actualErrors?.length).toBe(1)
+      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
     })
 
     it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
@@ -380,7 +483,95 @@ describe('Validations', function () {
       await assertNoErrors(result)
     })
   })
+
+  describe('Metadata schema', () => {
+    const testType = (type: EntityType, validMetadata: any, invalidMetadata: any) => {
+      it('when entity metadata is valid should not report errors', async () => {
+        const entity = buildEntityV4(type, validMetadata)
+        const args = buildArgs({ deployment: { entity } })
+        const result = Validations.METADATA_SCHEMA(args)
+
+        await assertNoErrors(result)
+      })
+      it('when entity metadata is invalid should report an error', async () => {
+        const entity = buildEntityV4(type, invalidMetadata)
+        const args = buildArgs({ deployment: { entity } })
+        const result = Validations.METADATA_SCHEMA(args)
+
+        await assertErrorsWere(result, `The metadata for this entity type (${type}) is not valid.`)
+      })
+    }
+    describe('PROFILE: ', () => {
+      const invalidMetadata = {}
+      testType(EntityType.PROFILE, VALID_PROFILE_METADATA, invalidMetadata)
+    })
+
+    describe('SCENE: ', () => {
+      const validMetadata = {
+        main: 'bin/main.js',
+        scene: {
+          base: '0,0',
+          parcels: ['0,0']
+        }
+      }
+      const invalidMetadata = {}
+      testType(EntityType.SCENE, validMetadata, invalidMetadata)
+    })
+
+    describe('WEARABLE: ', () => {
+      const representation: WearableRepresentation = {
+        bodyShapes: [WearableBodyShape.FEMALE],
+        mainFile: 'file1',
+        contents: ['file1', 'file2'],
+        overrideHides: [],
+        overrideReplaces: []
+      }
+
+      const wearable: Wearable = {
+        id: 'some id',
+        descriptions: [
+          {
+            code: Locale.EN,
+            text: 'some description'
+          },
+          {
+            code: Locale.ES,
+            text: 'una descripcion'
+          }
+        ],
+        collectionAddress: '0x...',
+        rarity: Rarity.LEGENDARY,
+        names: [
+          {
+            code: Locale.EN,
+            text: 'name'
+          }
+        ],
+        data: {
+          replaces: [],
+          hides: [],
+          tags: ['tag1'],
+          representations: [representation],
+          category: WearableCategory.UPPER_BODY
+        },
+        thumbnail: 'thumbnail.png',
+        image: 'image.png'
+      }
+      const validMetadata = wearable
+      const invalidMetadata = {}
+      testType(EntityType.WEARABLE, validMetadata, invalidMetadata)
+    })
+  })
 })
+
+function buildEntityV4(type = EntityType.PROFILE, metadata = {}) {
+  return {
+    ...buildEntity(),
+    version: EntityVersion.V4,
+    metadata,
+    type
+  }
+}
 
 function buildEntity(options?: {
   version?: EntityVersion
@@ -395,14 +586,12 @@ function buildEntity(options?: {
       timestamp: Date.now(),
       content: undefined,
       id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
-      pointers: ['P1']
+      pointers: ['P1'],
+      type: EntityType.SCENE
     },
     options
   )
-  return {
-    ...opts,
-    type: EntityType.SCENE
-  }
+  return opts
 }
 
 function getFileWithSize(sizeInMB: number) {
@@ -412,8 +601,8 @@ function getFileWithSize(sizeInMB: number) {
 async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
   const actualErrors = await result
   expect(actualErrors).toBeDefined()
-  expect(actualErrors!.length).toBe(1)
-  expect(actualErrors![0]).toMatch('The signature is invalid.*')
+  expect(actualErrors?.length).toBe(1)
+  expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
 }
 
 function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
@@ -441,7 +630,7 @@ async function assertErrorsWere(
 ) {
   const actualErrors = await result
   expect(actualErrors).toBeDefined()
-  expect(actualErrors!).toEqual(expectedErrors)
+  expect(actualErrors).toEqual(expectedErrors)
 }
 
 async function assertNoErrors(
@@ -453,7 +642,7 @@ async function assertNoErrors(
 }
 
 function buildArgs(args: {
-  deployment: { entity: Entity } & Partial<DeploymentToValidate>
+  deployment: Pick<DeploymentToValidate, 'entity'> & Partial<DeploymentToValidate>
   env?: Partial<ServerEnvironment>
   externalCalls?: Partial<ExternalCalls>
 }): ValidationArgs {
@@ -471,11 +660,11 @@ function buildArgs(args: {
       ...args?.env
     },
     externalCalls: {
-      fetchDeployments: (_) => Promise.resolve({ deployments: [] }),
-      areThereNewerEntities: (_) => Promise.resolve(false),
-      fetchDeploymentStatus: (_, __) => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
+      fetchDeployments: () => Promise.resolve({ deployments: [] }),
+      areThereNewerEntities: () => Promise.resolve(false),
+      fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
       isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
-      isEntityDeployedAlready: (_) => Promise.resolve(false),
+      isEntityDeployedAlready: () => Promise.resolve(false),
       ...args?.externalCalls
     }
   }
