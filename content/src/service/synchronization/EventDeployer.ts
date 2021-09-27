@@ -32,7 +32,7 @@ export class EventDeployer {
     deployments: Readable[],
     options?: HistoryDeploymentOptions,
     shouldIgnoreTimeout = false
-  ) {
+  ): Promise<void> {
     // Process history and deploy it
     return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }

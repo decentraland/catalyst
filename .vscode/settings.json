@@ -6,8 +6,9 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "comms",
     "Ethereum",
-    "comms"
+    "IPFS"
   ],
   "editor.rulers": [
     120

@@ -2,6 +2,8 @@ import { DeploymentContext } from '../../Service'
 import { Validations } from '../Validations'
 import { ValidationsForContext } from '../Validator'
 
+// TODO: Check if it's okay to add rate limit validation for all contexts
+
 export const VALIDATIONS_V3: ValidationsForContext = {
   // This is the context used when deploying an entity to the Catalyst directly
   [DeploymentContext.LOCAL]: [
@@ -13,7 +15,8 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.NO_NEWER,
     Validations.RECENT,
     Validations.NO_REDEPLOYS,
-    Validations.CONTENT
+    Validations.CONTENT,
+    Validations.RATE_LIMIT
   ],
   [DeploymentContext.LOCAL_LEGACY_ENTITY]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
@@ -24,7 +27,8 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.NO_REDEPLOYS,
     Validations.LEGACY_ENTITY,
     Validations.CONTENT,
-    Validations.DECENTRALAND_ADDRESS
+    Validations.DECENTRALAND_ADDRESS,
+    Validations.RATE_LIMIT
   ],
   // This is a context during synchronization: when the deployment is already deployed.
   // That's why here it's not present NO_REDEPLOY, during sync you can receive the same deployment from different catalysts.
@@ -33,7 +37,8 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
-    Validations.CONTENT
+    Validations.CONTENT,
+    Validations.RATE_LIMIT
   ],
   [DeploymentContext.SYNCED_LEGACY_ENTITY]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
@@ -41,22 +46,25 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.ENTITY_STRUCTURE,
     Validations.LEGACY_ENTITY,
     Validations.CONTENT,
-    Validations.DECENTRALAND_ADDRESS
+    Validations.DECENTRALAND_ADDRESS,
+    Validations.RATE_LIMIT
   ],
   // This is during synchronization when a deployment needs to  be done, but you already have a newer which overwrites it.
-  // So, at this momento the files from the entity of the overwritten deployment are not download.
+  // So, at this moment the files from the entity of the overwritten deployment are not download.
   [DeploymentContext.OVERWRITTEN]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ACCESS,
-    Validations.ENTITY_STRUCTURE
+    Validations.ENTITY_STRUCTURE,
+    Validations.RATE_LIMIT
   ],
   [DeploymentContext.OVERWRITTEN_LEGACY_ENTITY]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ENTITY_STRUCTURE,
     Validations.LEGACY_ENTITY,
-    Validations.DECENTRALAND_ADDRESS
+    Validations.DECENTRALAND_ADDRESS,
+    Validations.RATE_LIMIT
   ],
   // This context is used only when running the fix deployments script
   [DeploymentContext.FIX_ATTEMPT]: [
@@ -65,6 +73,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
     Validations.MUST_HAVE_FAILED_BEFORE,
-    Validations.CONTENT
+    Validations.CONTENT,
+    Validations.RATE_LIMIT
   ]
 }

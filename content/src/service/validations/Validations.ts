@@ -192,6 +192,13 @@ export class Validations {
       return [`The metadata for this entity type (${deployment.entity.type}) is not valid.`]
   }
 
+  /** Validate the deployment is not rate limited */
+  static readonly RATE_LIMIT: Validation = async ({ deployment, externalCalls }) => {
+    if (!(await externalCalls.isEntityRateLimited(deployment.entity))) {
+      return [`The entity with id (${deployment.entity.id}) has been rate limited.`]
+    }
+  }
+
   private static correspondsToASnapshot(fileName: string, hash: string, metadata: Profile) {
     const fileNameWithoutExtension = fileName.replace(/.[^/.]+$/, '')
 

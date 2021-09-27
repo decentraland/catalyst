@@ -665,6 +665,7 @@ function buildArgs(args: {
       fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
       isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
       isEntityDeployedAlready: () => Promise.resolve(false),
+      isEntityRateLimited: () => Promise.resolve(false),
       ...args?.externalCalls
     }
   }
