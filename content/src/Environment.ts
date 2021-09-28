@@ -148,6 +148,7 @@ export enum EnvironmentConfig {
   ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
   DEPLOYMENTS_RATE_LIMIT_TTL,
+  DEPLOYMENTS_RATE_LIMIT_MAX,
   ETH_NETWORK,
   LOG_LEVEL,
   FETCH_REQUEST_TIMEOUT,
@@ -236,10 +237,13 @@ export class EnvironmentBuilder {
       () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL, () =>
+      Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1s') as string) / 1000)
+    )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL,
-      () => process.env.ALLOW_LEGACY_ENTITIES ?? 1000
+      EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX,
+      () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 100
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -438,10 +442,11 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER, () => PointerManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER, () => AccessCheckerImplFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
+    const ttl = env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
     this.registerBeanIfNotAlreadySet(
       env,
       Bean.DEPLOYMENTS_RATE_LIMIT_CACHE,
-      () => new NodeCache({ stdTTL: env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) })
+      () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
     )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))

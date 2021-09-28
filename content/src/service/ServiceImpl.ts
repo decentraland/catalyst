@@ -57,7 +57,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly validator: Validator,
     private readonly repository: Repository,
     private readonly cache: CacheByType<Pointer, Entity>,
-    private readonly deploymentsCache: NodeCache
+    private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {}
 
   async start(): Promise<void> {
@@ -139,7 +139,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         if (entity.type == EntityType.PROFILE) {
           // Currently we are only checking profile deployments, in the future this may be refactored
           entity.pointers.forEach((address) => {
-            this.deploymentsCache.set(address, storeResult.auditInfoComplete.localTimestamp)
+            this.deploymentsCache.cache.set(address, storeResult.auditInfoComplete.localTimestamp)
           })
         }
       }
@@ -330,9 +330,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     return false
   }
 
-  /** Check if the entity should be rate limit   */
+  /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
+   * and no more than max size of deployments were made either   */
   private isEntityRateLimited(entity: Entity): boolean {
-    return entity.pointers.some((p) => !!this.deploymentsCache.get(p))
+    return (
+      entity.pointers.some((p) => !!this.deploymentsCache.cache.get(p)) ||
+      this.deploymentsCache.cache.stats.keys > this.deploymentsCache.maxSize
+    )
   }
 
   private storeEntityContent(
