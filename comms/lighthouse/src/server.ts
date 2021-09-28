@@ -38,7 +38,7 @@ async function main() {
   const port = parseInt(process.env.PORT ?? '9000')
   const noAuth = parseBoolean(process.env.NO_AUTH ?? 'false')
   const secure = parseBoolean(process.env.SECURE ?? 'false')
-  const validateAPI = parseBoolean(process.env.VALIDATE_API ?? 'true')
+  const validateAPI = parseBoolean(process.env.VALIDATE_API ?? 'false')
   const idAlphabet = process.env.ID_ALPHABET ? process.env.ID_ALPHABET : undefined
   const idLength = process.env.ID_LENGTH ? parseInt(process.env.ID_LENGTH) : undefined
   const restrictedAccessAddress = process.env.RESTRICTED_ACCESS_ADDRESS ?? DECENTRALAND_ADDRESS

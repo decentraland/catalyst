@@ -419,7 +419,7 @@ export class EnvironmentBuilder {
       () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
     )
 
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API !== 'false')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
