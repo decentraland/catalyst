@@ -222,7 +222,7 @@ export class EnvironmentBuilder {
       EnvironmentConfig.OFF_CHAIN_WEARABLES_REFRESH_TIME,
       () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '1d'
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API !== 'false')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
