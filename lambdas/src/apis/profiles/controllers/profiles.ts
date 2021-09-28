@@ -11,6 +11,45 @@ import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
+function setCacheHeaders(res: Response, profiles: ProfileMetadata[]) {
+  if (profiles.length === 0) return
+
+  let maxTimestamp = profiles[0]?.timestamp
+  for (let i = 1; i < profiles.length; i++) {
+    maxTimestamp = Math.max(maxTimestamp, profiles[i].timestamp)
+  }
+
+  if (maxTimestamp) {
+    res.header('Last-Modified', new Date(maxTimestamp).toUTCString())
+    res.header('Cache-Control', 'public, max-age=0,s-maxage=0')
+  }
+}
+
+function getIfModifiedSinceTimestamp(req: Request): number | undefined {
+  const headerValue = req.header('If-Modified-Since')
+  if (!headerValue) return
+  try {
+    const timestamp = Date.parse(headerValue)
+    return isNaN(timestamp) ? undefined : timestamp
+  } catch (e) {
+    LOGGER.warn('Received an invalid header for IfModifiedSince ', headerValue)
+  }
+}
+
+function sendProfilesResponse(res: Response, profiles: ProfileMetadata[] | undefined, singleProfile: boolean = false) {
+  if (profiles) {
+    setCacheHeaders(res, profiles)
+    if (singleProfile) {
+      const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [], timestamp: 0 }
+      res.send(returnProfile)
+    } else {
+      res.send(profiles)
+    }
+  } else {
+    res.status(304).send()
+  }
+}
+
 export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
@@ -21,9 +60,15 @@ export async function getIndividualProfileById(
   // Method: GET
   // Path: /:id
   const profileId: string = req.params.id
-  const profiles = await fetchProfiles([profileId], client, ensOwnership, wearables, false)
-  const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [] }
-  res.send(returnProfile)
+  const profiles = await fetchProfiles(
+    [profileId],
+    client,
+    ensOwnership,
+    wearables,
+    getIfModifiedSinceTimestamp(req),
+    false
+  )
+  sendProfilesResponse(res, profiles, true)
 }
 
 export async function getProfilesById(
@@ -43,9 +88,14 @@ export async function getProfilesById(
     const profiles = await fetchProfilesForSnapshots(profileIds, client)
     res.send(profiles)
   } else {
-    const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables)
-    res.send(profiles)
+    const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
+    sendProfilesResponse(res, profiles)
   }
+}
+
+// Dates received from If-Modified-Since headers have precisions of seconds, so we need to round
+function roundToSeconds(timestamp: number) {
+  return Math.floor(timestamp / 1000) * 1000
 }
 
 // Visible for testing purposes
@@ -54,10 +104,15 @@ export async function fetchProfiles(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearablesOwnership: WearablesOwnership,
+  ifModifiedSinceTimestamp?: number | undefined,
   performWearableSanitization: boolean = true
-): Promise<ProfileMetadata[]> {
+): Promise<ProfileMetadata[] | undefined> {
   try {
     const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.PROFILE, ethAddresses)
+
+    if (ifModifiedSinceTimestamp && entities.every((it) => roundToSeconds(it.timestamp) <= ifModifiedSinceTimestamp))
+      return
+
     const profiles: Map<EthAddress, { metadata: ProfileMetadata; content: Map<string, ContentFileHash> }> = new Map()
     const names: Map<EthAddress, string[]> = new Map()
     const wearables: Map<EthAddress, WearableId[]> = new Map()
@@ -68,6 +123,7 @@ export async function fetchProfiles(
       .map(async (entity) => {
         const ethAddress = entity.pointers[0]
         const metadata: ProfileMetadata = entity.metadata
+        metadata.timestamp = entity.timestamp
         const content = new Map((entity.content ?? []).map(({ file, hash }) => [file, hash]))
         profiles.set(ethAddress, { metadata, content })
         const filteredNames = metadata.avatars.map(({ name }) => name).filter((name) => name && name.trim().length > 0)
@@ -112,7 +168,7 @@ export async function fetchProfiles(
             : fixWearableId(profileData.avatar.wearables)
         }
       }))
-      return { avatars: await Promise.all(avatars) }
+      return { timestamp: profile.metadata.timestamp, avatars: await Promise.all(avatars) }
     })
     return await Promise.all(result)
   } catch (error) {
@@ -206,6 +262,7 @@ function addBaseUrlToSnapshots(
 }
 
 export type ProfileMetadata = {
+  timestamp: number
   avatars: {
     name: string
     description: string
