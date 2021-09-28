@@ -20,19 +20,24 @@ function setCacheHeaders(res: Response, profiles: ProfileMetadata[]) {
   }
 
   if (maxTimestamp) {
+    // These headers are HTTP standard. See the links below for more information about how they are used
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
     res.header('Last-Modified', new Date(maxTimestamp).toUTCString())
     res.header('Cache-Control', 'public, max-age=0,s-maxage=0')
   }
 }
 
 function getIfModifiedSinceTimestamp(req: Request): number | undefined {
+  // This is a standard HTTP header. See the link below for more information
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
   const headerValue = req.header('If-Modified-Since')
   if (!headerValue) return
   try {
     const timestamp = Date.parse(headerValue)
     return isNaN(timestamp) ? undefined : timestamp
   } catch (e) {
-    LOGGER.warn('Received an invalid header for IfModifiedSince ', headerValue)
+    LOGGER.warn('Received an invalid header for If-Modified-Since ', headerValue)
   }
 }
 
@@ -46,6 +51,9 @@ function sendProfilesResponse(res: Response, profiles: ProfileMetadata[] | undef
       res.send(profiles)
     }
   } else {
+    // The only case in which we receive undefined profiles is when no profile was updated after de If-Modified-Since specified moment.
+    // In this case, as per spec, we return 304 (not modified) and empty body
+    // See here: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
     res.status(304).send()
   }
 }
