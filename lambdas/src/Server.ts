@@ -1,7 +1,9 @@
-import { Metrics } from '@catalyst/commons'
+import { initializeMetricsServer } from '@catalyst/commons'
+import { LAMBDAS_API } from '@dcl/catalyst-api-specs'
 import compression from 'compression'
 import cors from 'cors'
-import express, { Router } from 'express'
+import express from 'express'
+import * as OpenApiValidator from 'express-openapi-validator'
 import http from 'http'
 import log4js from 'log4js'
 import morgan from 'morgan'
@@ -17,14 +19,15 @@ import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './a
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
 import statusRouter from './apis/status/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
+import { metricsComponent } from './metrics'
 import { SmartContentClient } from './utils/SmartContentClient'
 import { SmartContentServerFetcher } from './utils/SmartContentServerFetcher'
 import { TheGraphClient } from './utils/TheGraphClient'
-
 export class Server {
   private port: number
   private app: express.Express
   private httpServer: http.Server
+  private metricsPort: ReturnType<typeof initializeMetricsServer>
 
   constructor(env: Environment) {
     // Set logger
@@ -40,6 +43,15 @@ export class Server {
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (req, res) => true }))
     }
+    if (env.getConfig(EnvironmentConfig.VALIDATE_API)) {
+      this.app.use(
+        OpenApiValidator.middleware({
+          apiSpec: LAMBDAS_API,
+          validateResponses: process.env.CI == 'true',
+          validateRequests: true
+        })
+      )
+    }
 
     const corsOptions: cors.CorsOptions = {
       origin: true,
@@ -54,9 +66,7 @@ export class Server {
       this.app.use(morgan('combined'))
     }
 
-    if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize()
-    }
+    this.metricsPort = initializeMetricsServer(this.app, metricsComponent)
 
     const ensOwnership: EnsOwnership = env.getBean(Bean.ENS_OWNERSHIP)
     const wearablesOwnership: WearablesOwnership = env.getBean(Bean.WEARABLES_OWNERSHIP)
@@ -69,45 +79,46 @@ export class Server {
     this.app.use('/', statusRouter(env))
 
     // Backwards compatibility for older Content API
-    this.app.use('/contentv2', initializeContentV2Routes(createMetricsProxy(), fetcher))
+    this.app.use('/contentv2', initializeContentV2Routes(express.Router(), fetcher))
 
     // TODO: Remove the route /profile/{id} as it has been migrated to /profiles/{id}
     // Profile API implementation
     this.app.use(
       '/profile',
-      initializeIndividualProfileRoutes(createMetricsProxy(), contentClient, ensOwnership, wearablesOwnership)
+      initializeIndividualProfileRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
     )
     this.app.use(
       '/profiles',
-      initializeProfilesRoutes(createMetricsProxy(), contentClient, ensOwnership, wearablesOwnership)
+      initializeProfilesRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
     )
 
     // DCL-Crypto API implementation
-    this.app.use('/crypto', initializeCryptoRoutes(createMetricsProxy(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))
+    this.app.use('/crypto', initializeCryptoRoutes(express.Router(), env.getConfig(EnvironmentConfig.ETH_NETWORK)))
 
     // Images API for resizing contents
     this.app.use(
       '/images',
-      initializeImagesRoutes(createMetricsProxy(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
+      initializeImagesRoutes(express.Router(), fetcher, env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION))
     )
 
     // DAO cached access API
-    this.app.use('/contracts', initializeContractRoutes(createMetricsProxy(), env.getBean(Bean.DAO)))
+    this.app.use('/contracts', initializeContractRoutes(express.Router(), env.getBean(Bean.DAO)))
 
     // DAO Collections access API
     this.app.use(
       '/collections',
-      initializeCollectionsRoutes(createMetricsProxy(), contentClient, theGraphClient, offChainManager)
+      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
     )
 
     // Functionality for Explore use case
-    this.app.use('/explore', initializeExploreRoutes(createMetricsProxy(), env.getBean(Bean.DAO), contentClient))
+    this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
   }
 
   async start(): Promise<void> {
     this.httpServer = this.app.listen(this.port, () => {
       console.info(`==> Lambdas Server listening on port ${this.port}.`)
     })
+    await this.metricsPort.start()
   }
 
   async stop(): Promise<void> {
@@ -116,22 +127,8 @@ export class Server {
         console.info(`==> Lambdas Server stopped.`)
       })
     }
-  }
-}
-
-const METHODS_TO_PROXY = ['get', 'post', 'put', 'delete', 'patch']
-/** Create an ES6 proxy that will inject the appropriate handlers to record metrics */
-function createMetricsProxy(): Router {
-  return new Proxy<Router>(express.Router(), {
-    get: (target: Router, p: string | symbol, receiver: any) => {
-      if (typeof p === 'string' && METHODS_TO_PROXY.includes(p)) {
-        return (route, handler) => {
-          const handlers = [...Metrics.requestHandlers(), handler]
-          return target[p](route, handlers)
-        }
-      } else {
-        return Reflect.get(target, p, receiver)
-      }
+    if (this.metricsPort) {
+      await this.metricsPort.stop()
     }
-  })
+  }
 }

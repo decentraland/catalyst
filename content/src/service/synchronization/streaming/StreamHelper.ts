@@ -28,7 +28,7 @@ export function streamMap<T1, T2>(mapping: (value: T1) => T2) {
   })
 }
 
-export function mergeStreams(readables: Readable[]): NodeJS.ReadableStream {
+export function mergeStreams(readables: Readable[]): Readable {
   return mergeStream(readables)
 }
 

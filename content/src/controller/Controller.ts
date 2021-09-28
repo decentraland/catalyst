@@ -228,7 +228,8 @@ export class Controller {
           try {
             return await fs.promises.unlink(deployFile.path)
           } catch (error) {
-            // Ignore these errors
+            // log and ignore errors
+            console.error(error)
           }
         }
         return Promise.resolve()
@@ -411,7 +412,7 @@ export class Controller {
     // Path: /deployments
     // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
 
-    const stringEntityTypes = this.asArray<string>(req.query.entityType as string)
+    const stringEntityTypes = this.asArray<string>(req.query.entityType as string | string[])
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined

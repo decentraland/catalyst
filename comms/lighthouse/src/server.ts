@@ -1,11 +1,14 @@
-import { DAOContractClient, DECENTRALAND_ADDRESS, Metrics } from '@catalyst/commons'
+import { DAOContractClient, DECENTRALAND_ADDRESS, initializeMetricsServer } from '@catalyst/commons'
 import { DAOContract } from '@catalyst/contracts'
+import { COMMS_API } from '@dcl/catalyst-api-specs'
 import cors from 'cors'
 import express from 'express'
+import * as OpenApiValidator from 'express-openapi-validator'
 import morgan from 'morgan'
 import * as path from 'path'
 import { ConfigService } from './config/configService'
 import { lighthouseConfigStorage } from './config/simpleStorage'
+import { metricsComponent } from './metrics'
 import { patchLog } from './misc/logging'
 import { pickName } from './misc/naming'
 import { IRealm } from './peerjs-server'
@@ -23,7 +26,7 @@ const DEFAULT_ETH_NETWORK = 'ropsten'
 
 const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
 
-;(async function () {
+async function main() {
   const daoClient = new DAOContractClient(DAOContract.withNetwork(CURRENT_ETH_NETWORK))
 
   const name = await pickName(process.env.LIGHTHOUSE_NAMES, daoClient)
@@ -35,7 +38,7 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const port = parseInt(process.env.PORT ?? '9000')
   const noAuth = parseBoolean(process.env.NO_AUTH ?? 'false')
   const secure = parseBoolean(process.env.SECURE ?? 'false')
-  const enableMetrics = parseBoolean(process.env.METRICS ?? 'true')
+  const validateAPI = parseBoolean(process.env.VALIDATE_API ?? 'false')
   const idAlphabet = process.env.ID_ALPHABET ? process.env.ID_ALPHABET : undefined
   const idLength = process.env.ID_LENGTH ? parseInt(process.env.ID_LENGTH) : undefined
   const restrictedAccessAddress = process.env.RESTRICTED_ACCESS_ADDRESS ?? DECENTRALAND_ADDRESS
@@ -50,13 +53,21 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     origin: true,
     methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
     allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Peer-Token'],
-    credentials: true
+    credentials: true,
+    maxAge: 86400
   }
 
   app.use(cors(corsOptions))
   app.use(express.json())
   if (accessLogs) {
     app.use(morgan('combined'))
+  }
+  if (validateAPI) {
+    OpenApiValidator.middleware({
+      apiSpec: COMMS_API,
+      validateResponses: process.env.CI == 'true',
+      validateRequests: true // (default)
+    })
   }
 
   const configService = await ConfigService.build({
@@ -89,17 +100,10 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
     return peerServer.get('peerjs-realm')
   }
 
-  if (enableMetrics) {
-    Metrics.initialize()
-  }
+  const metricsServer = initializeMetricsServer(app, metricsComponent)
+  await metricsServer.start()
 
   const peersService = new PeersService(getPeerJsRealm, appServices)
-
-  app.use(cors())
-  app.use(express.json())
-  if (accessLogs) {
-    app.use(morgan('combined'))
-  }
 
   const archipelagoService = new ArchipelagoService(appServices)
 
@@ -124,7 +128,9 @@ const CURRENT_ETH_NETWORK = process.env.ETH_NETWORK ?? DEFAULT_ETH_NETWORK
   const peersCheckJobInstance = await peersCheckJob(appServices)
 
   peersCheckJobInstance.start()
-})().catch((e) => {
+}
+
+main().catch((e) => {
   console.error('Exiting process because of unhandled exception', e)
   process.exit(1)
 })

@@ -1,10 +1,6 @@
 import ms from 'ms'
 import PQueue from 'p-queue'
-import {
-  REPOSITORY_QUEUE_EXECUTED_QUERIES,
-  REPOSITORY_QUEUE_REJECTED_QUERIES,
-  REPOSITORY_QUEUE_TOTAL_QUERIES
-} from '../ContentMetrics'
+import { metricsComponent } from '../metrics'
 
 /**
  * All database requests go through this queue. All pending requests will be queued as long as the limit isn't reached. If if it, then
@@ -33,13 +29,13 @@ export class RepositoryQueue {
 
   addDatabaseRequest<T>(priority: DB_REQUEST_PRIORITY, execution: () => Promise<T>): Promise<T> {
     const priorityLabel = DB_REQUEST_PRIORITY[priority]
-    REPOSITORY_QUEUE_TOTAL_QUERIES.inc({ priority: priorityLabel })
+    metricsComponent.increment('db_queued_queries_count')
     if (this.queue.size >= this.maxQueued && priority === DB_REQUEST_PRIORITY.LOW) {
-      REPOSITORY_QUEUE_REJECTED_QUERIES.inc({ priority: priorityLabel })
+      metricsComponent.increment('db_queued_queries_rejected_count')
       return Promise.reject(new Error(RepositoryQueue.TOO_MANY_QUEUED_ERROR))
     }
 
-    const endTimer = REPOSITORY_QUEUE_EXECUTED_QUERIES.startTimer({ priority: priorityLabel })
+    const { end: endTimer } = metricsComponent.startTimer('db_queued_queries_executed', { priority: priorityLabel })
 
     return this.queue.add(
       async () => {

@@ -46,7 +46,6 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.PSQL_PORT, mappedPort)
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
       .setConfig(EnvironmentConfig.PSQL_HOST, this.postgresContainer.getContainerIpAddress())
-      .setConfig(EnvironmentConfig.METRICS, false)
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
@@ -66,7 +65,7 @@ export class E2ETestEnvironment {
   }
 
   async clearDatabases(): Promise<void> {
-    await this.repository.run((db) => db.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
+    await this.repository.run((db) => db.query(`DROP SCHEMA IF EXISTS ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
       priority: DB_REQUEST_PRIORITY.HIGH
     })
   }

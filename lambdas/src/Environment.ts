@@ -95,7 +95,8 @@ export const enum EnvironmentConfig {
   MAX_SYNCHRONIZATION_TIME,
   MAX_DEPLOYMENT_OBTENTION_TIME,
   METRICS,
-  OFF_CHAIN_WEARABLES_REFRESH_TIME
+  OFF_CHAIN_WEARABLES_REFRESH_TIME,
+  VALIDATE_API
 }
 
 export class EnvironmentBuilder {
@@ -221,6 +222,7 @@ export class EnvironmentBuilder {
       EnvironmentConfig.OFF_CHAIN_WEARABLES_REFRESH_TIME,
       () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '1d'
     )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before

@@ -1,4 +1,5 @@
-import { EntityVersion } from 'dcl-catalyst-commons'
+import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
+import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
@@ -126,23 +127,29 @@ export class Validations {
       const errors: string[] = []
       const alreadyStoredHashes = await externalCalls.isContentStoredAlready(Array.from(files.keys()))
 
-      const entityHashes: string[] = Array.from(entity.content?.values() ?? [])
+      for (const [fileName, hash] of entity.content) {
+        // Validate that all hashes in entity were uploaded, or were already stored on the service
+        if (!(files.has(hash) || alreadyStoredHashes.get(hash))) {
+          errors.push(`This hash is referenced in the entity but was not uploaded or previously available: ${hash}`)
+        }
 
-      // Validate that all hashes in entity were uploaded, or were already stored on the service
-      entityHashes
-        .filter((hash) => !(files.has(hash) || alreadyStoredHashes.get(hash)))
-        .forEach((notAvailableHash) =>
-          errors.push(
-            `This hash is referenced in the entity but was not uploaded or previously available: ${notAvailableHash}`
-          )
-        )
+        // Validate all content files correspond to at least one avatar snapshot
+        if (entity.type === EntityType.PROFILE) {
+          if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
+            errors.push(
+              `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
+            )
+          }
+        }
+      }
 
       // Validate that all hashes that belong to uploaded files are actually reported on the entity
-      Array.from(files.keys())
-        .filter((hash) => !entityHashes.includes(hash) && hash !== entity.id)
-        .forEach((unreferencedHash) =>
-          errors.push(`This hash was uploaded but is not referenced in the entity: ${unreferencedHash}`)
-        )
+      const entityHashes = new Set(entity.content.values())
+      for (const [hash] of files) {
+        if (!entityHashes.has(hash) && hash !== entity.id) {
+          errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
+        }
+      }
 
       return errors.length > 0 ? errors : undefined
     }
@@ -170,7 +177,29 @@ export class Validations {
     return errors.length > 0 ? errors : undefined
   }
 
-  static readonly FAIL_ALWAYS: Validation = async (_) => {
+  static readonly FAIL_ALWAYS: Validation = async () => {
     return ['This deployment is invalid. What are you doing?']
+  }
+
+  static readonly METADATA_SCHEMA: Validation = async ({ deployment }) => {
+    const validate = {
+      [EntityType.PROFILE]: Profile.validate,
+      [EntityType.SCENE]: Scene.validate,
+      [EntityType.WEARABLE]: Wearable.validate
+    }
+
+    if (!validate[deployment.entity.type](deployment.entity.metadata))
+      return [`The metadata for this entity type (${deployment.entity.type}) is not valid.`]
+  }
+
+  private static correspondsToASnapshot(fileName: string, hash: string, metadata: Profile) {
+    const fileNameWithoutExtension = fileName.replace(/.[^/.]+$/, '')
+
+    return metadata.avatars.some((avatar: Avatar) => {
+      console.log(
+        `Snapshot file: ${fileNameWithoutExtension} - hash: ${avatar.avatar.snapshots[fileNameWithoutExtension]}`
+      )
+      return avatar.avatar.snapshots[fileNameWithoutExtension] === hash
+    })
   }
 }

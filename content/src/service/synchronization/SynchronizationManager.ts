@@ -29,7 +29,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly systemProperties: SystemPropertiesManager,
     private readonly deployer: EventDeployer,
     private readonly timeBetweenSyncs: number,
-    private readonly disableSynchronization: boolean
+    private readonly disableSynchronization: boolean,
+    private readonly checkSyncRange: number
   ) {}
 
   async start(): Promise<void> {
@@ -46,6 +47,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     // Read last deployments
     this.lastKnownDeployments = new Map(
       await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
+    )
+
+    // Configure fail if sync hangs
+    this.failIfSyncHangs().catch((e) =>
+      ClusterSynchronizationManager.LOGGER.error('There was an error during the check of synchronization.')
     )
 
     // Sync with other servers
@@ -72,6 +78,25 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
+  private async failIfSyncHangs(): Promise<void> {
+    await delay(ms('30m'))
+
+    while (true) {
+      await delay(ms('5m'))
+
+      const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCING
+      const lastSync: number = Date.now() - this.timeOfLastSync
+
+      // If it is a lot of time in the syncing state and it has not stored new deployments, then we should restart the service
+      if (isSyncing && lastSync > this.checkSyncRange) {
+        ClusterSynchronizationManager.LOGGER.error(
+          `Restarting server because the last sync was at least ${this.checkSyncRange} seconds ago, at: ${lastSync}`
+        )
+        process.exit(1)
+      }
+    }
+  }
+
   private async syncWithServers(): Promise<void> {
     // Update flag
     if (this.synchronizationState !== SynchronizationState.BOOTSTRAPPING) {
@@ -94,16 +119,27 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       })
 
       // Process them together
-      await this.deployer.processAllDeployments(streams)
+      await this.deployer.processAllDeployments(
+        streams,
+        undefined,
+        this.synchronizationState === SynchronizationState.BOOTSTRAPPING
+      )
+
+      ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
 
       // If everything worked, then update the last deployment timestamp
       contentServers.forEach((client) => {
         // Update the client, so it knows from when to ask next time
         const newTimestamp = client.allDeploymentsWereSuccessful()
 
+        ClusterSynchronizationManager.LOGGER.debug(
+          `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
+        )
         // Update the map, so we can store in on the database
         this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
       })
+
+      ClusterSynchronizationManager.LOGGER.debug(`Updating system properties`)
 
       // Update the database
       await this.systemProperties.setSystemProperty(
@@ -125,12 +161,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
-  private waitUntilSyncFinishes(): Promise<void> {
-    return new Promise(async (resolve) => {
-      while (this.synchronizationState === SynchronizationState.SYNCING) {
-        await delay(ms('1s'))
-      }
-      resolve()
-    })
+  private async waitUntilSyncFinishes(): Promise<void> {
+    while (this.synchronizationState === SynchronizationState.SYNCING) {
+      await delay(ms('1s'))
+    }
   }
 }

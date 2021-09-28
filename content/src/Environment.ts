@@ -60,6 +60,7 @@ export const DEFAULT_DATABASE_CONFIG = {
   schema: 'public',
   port: 5432
 }
+const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
 export class Environment {
   private static readonly LOGGER = log4js.getLogger('Environment')
@@ -136,10 +137,12 @@ export const enum Bean {
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
   SERVER_PORT,
+  // @deprecated
   METRICS,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
+  CHECK_SYNC_RANGE,
   ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
   ETH_NETWORK,
@@ -163,6 +166,7 @@ export enum EnvironmentConfig {
   SNAPSHOT_FREQUENCY,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
+  SYNC_STREAM_TIMEOUT,
   DISABLE_DENYLIST,
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
@@ -170,7 +174,8 @@ export enum EnvironmentConfig {
   REPOSITORY_QUEUE_TIMEOUT,
   CACHE_SIZES,
   BLOCKS_L1_SUBGRAPH_URL,
-  BLOCKS_L2_SUBGRAPH_URL
+  BLOCKS_L2_SUBGRAPH_URL,
+  VALIDATE_API
 }
 
 export class EnvironmentBuilder {
@@ -221,6 +226,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL,
       () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s')
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.CHECK_SYNC_RANGE,
+      () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(
@@ -354,6 +364,11 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
+      EnvironmentConfig.SYNC_STREAM_TIMEOUT,
+      () => process.env.SYNC_STREAM_TIMEOUT || DEFAULT_SYNC_STREAM_TIMEOUT
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
       EnvironmentConfig.DISABLE_DENYLIST,
       () => process.env.DISABLE_DENYLIST === 'true'
     )
@@ -391,6 +406,8 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CACHE_SIZES,
       () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before

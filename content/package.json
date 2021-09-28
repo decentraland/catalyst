@@ -13,9 +13,11 @@
     "test:integration": "yarn copy-test-resources && jasmine --config=jasmine.integration.json"
   },
   "dependencies": {
-    "@dcl/urn-resolver": "1.2.1",
     "@catalyst/commons": "0.1.0",
     "@catalyst/contracts": "0.1.0",
+    "@dcl/catalyst-api-specs": "1.0.1",
+    "@dcl/schemas": "1.8.0",
+    "@dcl/urn-resolver": "1.2.1",
     "aws-sdk": "2.854.0",
     "compression": "1.7.4",
     "cors": "2.8.5",
@@ -25,6 +27,7 @@
     "destroy": "1.0.4",
     "eth-crypto": "2.0.0",
     "express": "4.17.1",
+    "express-openapi-validator": "4.13.1",
     "form-data": "4.0.0",
     "fp-future": "^1.0.1",
     "log4js": "6.3.0",

@@ -1,8 +1,15 @@
 {
-  "parser": "@typescript-eslint/parser", // Specifies the ESLint parser
   "parserOptions": {
     "ecmaVersion": 2020, // Allows for the parsing of modern ECMAScript features
-    "sourceType": "module" // Allows for the use of imports
+    "sourceType": "module", // Allows for the use of imports
+    "project": [
+      // Specify it only for TypeScript files
+      "./contracts/tsconfig.json",
+      "./commons/tsconfig.json",
+      "./comms/lighthouse/tsconfig.json",
+      "./content/tsconfig.json",
+      "./lambdas/tsconfig.json"
+    ]
   },
   "extends": [
     "plugin:@typescript-eslint/recommended", // Uses the recommended rules from the @typescript-eslint/eslint-plugin
@@ -12,6 +19,7 @@
     // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs
     "@typescript-eslint/no-inferrable-types": 0,
     "@typescript-eslint/no-empty-function": "off",
-    "@typescript-eslint/no-explicit-any": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-floating-promises": 2
   }
 }
