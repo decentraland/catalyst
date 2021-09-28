@@ -145,6 +145,7 @@ export enum EnvironmentConfig {
   CHECK_SYNC_RANGE,
   ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
+  DEPLOYMENTS_RATE_LIMIT_TTL,
   ETH_NETWORK,
   LOG_LEVEL,
   FETCH_REQUEST_TIMEOUT,
@@ -233,6 +234,11 @@ export class EnvironmentBuilder {
       () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL,
+      () => process.env.ALLOW_LEGACY_ENTITIES ?? 1000
+    )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.ALLOW_LEGACY_ENTITIES,

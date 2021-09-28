@@ -10,6 +10,7 @@ import {
   ServerStatus
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import NodeCache from 'node-cache'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
@@ -55,7 +56,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly deploymentManager: DeploymentManager,
     private readonly validator: Validator,
     private readonly repository: Repository,
-    private readonly cache: CacheByType<Pointer, Entity>
+    private readonly cache: CacheByType<Pointer, Entity>,
+    private readonly deploymentsCache: NodeCache
   ) {}
 
   async start(): Promise<void> {
@@ -134,7 +136,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
 
         // Insert in cache the updated entities
-        // TODO
+        if (entity.type == EntityType.PROFILE) {
+          // Currently we are only checking profile deployments, in the future this may be refactored
+          entity.pointers.forEach((address) => {
+            this.deploymentsCache.set(address, storeResult.auditInfoComplete.localTimestamp)
+          })
+        }
       }
       return storeResult.auditInfoComplete.localTimestamp
     } catch (error) {
@@ -325,7 +332,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   /** Check if the entity should be rate limit   */
   private isEntityRateLimited(entity: Entity): boolean {
-    return false
+    return entity.pointers.some((p) => !!this.deploymentsCache.get(p))
   }
 
   private storeEntityContent(
