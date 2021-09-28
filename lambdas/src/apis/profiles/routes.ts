@@ -1,4 +1,5 @@
-import { Request, Response, Router } from 'express'
+import { asyncHandler } from '@catalyst/commons'
+import { Request, RequestHandler, Response, Router } from 'express'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { getIndividualProfileById, getProfilesById } from './controllers/profiles'
 import { EnsOwnership } from './EnsOwnership'
@@ -35,7 +36,7 @@ function createHandler(
     wearablesOwnership: WearablesOwnership,
     req: Request,
     res: Response
-  ) => void
-): (req: Request, res: Response) => void {
-  return (req: Request, res: Response) => originalHandler(client, ensOwnership, wearablesOwnership, req, res)
+  ) => Promise<any>
+): RequestHandler {
+  return asyncHandler(async (req, res) => await originalHandler(client, ensOwnership, wearablesOwnership, req, res))
 }
