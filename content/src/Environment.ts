@@ -2,6 +2,7 @@ import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
+import NodeCache from 'node-cache'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
@@ -127,6 +128,7 @@ export const enum Bean {
   VALIDATOR,
   CHALLENGE_SUPERVISOR,
   REPOSITORY,
+  DEPLOYMENTS_RATE_LIMIT_CACHE,
   MIGRATION_MANAGER,
   GARBAGE_COLLECTION_MANAGER,
   SYSTEM_PROPERTIES_MANAGER,
@@ -436,6 +438,11 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER, () => PointerManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER, () => AccessCheckerImplFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
+    this.registerBeanIfNotAlreadySet(
+      env,
+      Bean.DEPLOYMENTS_RATE_LIMIT_CACHE,
+      () => new NodeCache({ stdTTL: env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) })
+    )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER, () => SnapshotManagerFactory.create(env))

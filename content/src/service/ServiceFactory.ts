@@ -1,6 +1,5 @@
 import { Pointer } from 'dcl-catalyst-commons'
-import NodeCache from 'node-cache'
-import { Bean, Environment, EnvironmentConfig } from '../Environment'
+import { Bean, Environment } from '../Environment'
 import { CacheManager, ENTITIES_BY_POINTERS_CACHE_CONFIG } from './caching/CacheManager'
 import { Entity } from './Entity'
 import { ClusterDeploymentsService, MetaverseContentService } from './Service'
@@ -20,7 +19,7 @@ export class ServiceFactory {
       env.getBean(Bean.VALIDATOR),
       env.getBean(Bean.REPOSITORY),
       cache,
-      new NodeCache({ stdTTL: env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) })
+      env.getBean(Bean.DEPLOYMENTS_RATE_LIMIT_CACHE)
     )
   }
 }
