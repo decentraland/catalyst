@@ -24,6 +24,7 @@ export class Validations {
     }
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024
     let totalSize = 0
+    deployment.entity.content
     deployment.files.forEach((file) => (totalSize += file.byteLength))
     const sizePerPointer = totalSize / entity.pointers.length
     if (sizePerPointer > maxSizeInBytes) {
@@ -203,7 +204,7 @@ export class Validations {
     const fileNameWithoutExtension = fileName.replace(/.[^/.]+$/, '')
 
     return metadata.avatars.some((avatar: Avatar) => {
-      console.log(
+      console.debug(
         `Snapshot file: ${fileNameWithoutExtension} - hash: ${avatar.avatar.snapshots[fileNameWithoutExtension]}`
       )
       return avatar.avatar.snapshots[fileNameWithoutExtension] === hash
