@@ -13,7 +13,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.NO_NEWER,
     Validations.RECENT,
     Validations.NO_REDEPLOYS,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.RATE_LIMIT
   ],
   [DeploymentContext.LOCAL_LEGACY_ENTITY]: [
@@ -24,7 +24,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.RECENT,
     Validations.NO_REDEPLOYS,
     Validations.LEGACY_ENTITY,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.DECENTRALAND_ADDRESS,
     Validations.RATE_LIMIT
   ],
@@ -35,7 +35,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.RATE_LIMIT
   ],
   [DeploymentContext.SYNCED_LEGACY_ENTITY]: [
@@ -43,7 +43,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.SIGNATURE,
     Validations.ENTITY_STRUCTURE,
     Validations.LEGACY_ENTITY,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.DECENTRALAND_ADDRESS,
     Validations.RATE_LIMIT
   ],
@@ -71,7 +71,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
     Validations.MUST_HAVE_FAILED_BEFORE,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.RATE_LIMIT
   ]
 }

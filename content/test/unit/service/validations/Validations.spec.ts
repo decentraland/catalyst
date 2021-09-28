@@ -225,7 +225,7 @@ describe('Validations', function () {
       })
       const args = buildArgs({ deployment: { entity, files: new Map() } })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(result, notAvailableHashMessage('hash'))
     })
@@ -239,7 +239,7 @@ describe('Validations', function () {
         externalCalls: { isContentStoredAlready: () => Promise.resolve(new Map([['hash', true]])) }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertNoErrors(result)
     })
@@ -252,7 +252,7 @@ describe('Validations', function () {
         deployment: { entity, files: new Map([['hash', Buffer.from([])]]) }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertNoErrors(result)
     })
@@ -269,7 +269,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(result, notReferencedHashMessage('hash-2'))
     })
@@ -288,7 +288,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertNoErrors(result)
     })
@@ -307,7 +307,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(
         result,
@@ -329,7 +329,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(
         result,
