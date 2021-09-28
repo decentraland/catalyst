@@ -9,7 +9,7 @@
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "copy-test-resources": "yarn cpy test/integration/resources/* dist --parents",
     "test": "run-p 'test:*'",
-    "test:unit": "jasmine --config=jasmine.unit.json",
+    "test:unit": "yarn build && jasmine --config=jasmine.unit.json",
     "test:integration": "yarn copy-test-resources && jasmine --config=jasmine.integration.json"
   },
   "dependencies": {

@@ -448,7 +448,7 @@ describe('Validations', function () {
     })
   })
 
-  describe('IFPS hashing', () => {
+  describe('IPFS hashing', () => {
     it(`when an entity's id is not an ipfs hash, then it fails`, async () => {
       const entity = buildEntity({ id: 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' })
       const args = buildArgs({ deployment: { entity } })
@@ -560,6 +560,32 @@ describe('Validations', function () {
       const validMetadata = wearable
       const invalidMetadata = {}
       testType(EntityType.WEARABLE, validMetadata, invalidMetadata)
+    })
+  })
+
+  describe('Rate limit for deployments', () => {
+    it(`when it should not be rate limit, then the entity is deployed`, async () => {
+      const args = buildArgs({
+        deployment: { entity: buildEntity() },
+        externalCalls: { isEntityRateLimited: async () => false }
+      })
+
+      const result = Validations.RATE_LIMIT(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`when it should be rate limit, then the entity is not deployed`, async () => {
+      const entity = buildEntity()
+
+      const args = buildArgs({
+        deployment: { entity: entity },
+        externalCalls: { isEntityRateLimited: async () => true }
+      })
+
+      const result = Validations.RATE_LIMIT(args)
+
+      await assertErrorsWere(result, `The entity with id (${entity.id}) has been rate limited.`)
     })
   })
 })

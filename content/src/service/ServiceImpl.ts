@@ -135,7 +135,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // Invalidate cache for retrieving entities by id
         storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
 
-        // Insert in cache the updated entities
+        // Insert in deployments cache the updated entities
         if (entity.type == EntityType.PROFILE) {
           // Currently we are only checking profile deployments, in the future this may be refactored
           entity.pointers.forEach((address) => {

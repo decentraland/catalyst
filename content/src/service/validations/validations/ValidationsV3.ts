@@ -2,8 +2,6 @@ import { DeploymentContext } from '../../Service'
 import { Validations } from '../Validations'
 import { ValidationsForContext } from '../Validator'
 
-// TODO: Check if it's okay to add rate limit validation for all contexts
-
 export const VALIDATIONS_V3: ValidationsForContext = {
   // This is the context used when deploying an entity to the Catalyst directly
   [DeploymentContext.LOCAL]: [
