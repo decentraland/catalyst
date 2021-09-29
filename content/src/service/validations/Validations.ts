@@ -2,10 +2,11 @@ import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
+import { Entity } from '../Entity'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
 import { ServiceImpl } from '../ServiceImpl'
 import { happenedBefore } from '../time/TimeSorting'
-import { Validation } from './Validator'
+import { ExternalCalls, Validation } from './Validator'
 
 export class Validations {
   /** Validate that the signature belongs to the Ethereum address */
@@ -124,8 +125,17 @@ export class Validations {
   /** Validate that uploaded and reported hashes are corrects */
   static readonly CONTENT_V3: Validation = async ({ deployment, externalCalls }) => {
     const { entity, files } = deployment
+    const errors: string[] = await this.validate_content_v3(entity, files, externalCalls)
+    return errors.length > 0 ? errors : undefined
+  }
+
+  private static async validate_content_v3(
+    entity: Entity,
+    files: Map<string, Buffer>,
+    externalCalls: ExternalCalls
+  ): Promise<string[]> {
+    const errors: string[] = []
     if (entity.content) {
-      const errors: string[] = []
       const alreadyStoredHashes = await externalCalls.isContentStoredAlready(Array.from(files.keys()))
 
       for (const [, hash] of entity.content) {
@@ -142,24 +152,17 @@ export class Validations {
           errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
         }
       }
-
-      return errors.length > 0 ? errors : undefined
     }
+    return errors
   }
 
   /** Validate that uploaded and reported hashes are corrects and files corresponds to snapshots */
   static readonly CONTENT_V4: Validation = async ({ deployment, externalCalls }) => {
     const { entity, files } = deployment
-    const errors: string[] = []
+    const errors: string[] = await this.validate_content_v3(entity, files, externalCalls)
+
     if (entity.content) {
-      const alreadyStoredHashes = await externalCalls.isContentStoredAlready(Array.from(files.keys()))
-
       for (const [fileName, hash] of entity.content) {
-        // Validate that all hashes in entity were uploaded, or were already stored on the service
-        if (!(files.has(hash) || alreadyStoredHashes.get(hash))) {
-          errors.push(`This hash is referenced in the entity but was not uploaded or previously available: ${hash}`)
-        }
-
         // Validate all content files correspond to at least one avatar snapshot
         if (entity.type === EntityType.PROFILE) {
           if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
@@ -167,14 +170,6 @@ export class Validations {
               `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
             )
           }
-        }
-      }
-
-      // Validate that all hashes that belong to uploaded files are actually reported on the entity
-      const entityHashes = new Set(entity.content.values())
-      for (const [hash] of files) {
-        if (!entityHashes.has(hash) && hash !== entity.id) {
-          errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
         }
       }
     } else if (files) {
