@@ -32,7 +32,7 @@ export class EventDeployer {
     deployments: Readable[],
     options?: HistoryDeploymentOptions,
     shouldIgnoreTimeout = false
-  ) {
+  ): Promise<void> {
     // Process history and deploy it
     return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
@@ -57,7 +57,7 @@ export class EventDeployer {
       const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
         metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'true' })
-        // Deploy the entity as overwritten and only download entity file
+        // Deploy the entity as overwritten and only download entity file to avoid storing content files for deployments that are no pointed at
         return this.buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
             [entityFile],
@@ -68,7 +68,7 @@ export class EventDeployer {
         )
       } else {
         metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'false' })
-        // Build entity
+        // Parse as JSON the entity and create an object
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
         // Download all entity's files as we need all content
@@ -196,7 +196,7 @@ export class EventDeployer {
 
   /** Wrap the deployment, so if it fails, we can take action */
   private async wrapDeployment(deploymentPreparation: Promise<DeploymentExecution>): Promise<() => Promise<void>> {
-    const deploymentExecution = await deploymentPreparation
+    const deploymentExecution: DeploymentExecution = await deploymentPreparation
     return async () => {
       try {
         const deploymentResult: DeploymentResult = await deploymentExecution.execution()

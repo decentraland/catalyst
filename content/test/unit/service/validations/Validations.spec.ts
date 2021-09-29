@@ -225,7 +225,7 @@ describe('Validations', function () {
       })
       const args = buildArgs({ deployment: { entity, files: new Map() } })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(result, notAvailableHashMessage('hash'))
     })
@@ -239,7 +239,7 @@ describe('Validations', function () {
         externalCalls: { isContentStoredAlready: () => Promise.resolve(new Map([['hash', true]])) }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertNoErrors(result)
     })
@@ -252,7 +252,7 @@ describe('Validations', function () {
         deployment: { entity, files: new Map([['hash', Buffer.from([])]]) }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertNoErrors(result)
     })
@@ -269,7 +269,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(result, notReferencedHashMessage('hash-2'))
     })
@@ -288,7 +288,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertNoErrors(result)
     })
@@ -307,7 +307,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(
         result,
@@ -329,7 +329,7 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.CONTENT(args)
+      const result = Validations.CONTENT_V4(args)
 
       await assertErrorsWere(
         result,
@@ -448,7 +448,7 @@ describe('Validations', function () {
     })
   })
 
-  describe('IFPS hashing', () => {
+  describe('IPFS hashing', () => {
     it(`when an entity's id is not an ipfs hash, then it fails`, async () => {
       const entity = buildEntity({ id: 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' })
       const args = buildArgs({ deployment: { entity } })
@@ -562,6 +562,32 @@ describe('Validations', function () {
       testType(EntityType.WEARABLE, validMetadata, invalidMetadata)
     })
   })
+
+  describe('Rate limit for deployments', () => {
+    it(`when it should not be rate limit, then the entity is deployed`, async () => {
+      const args = buildArgs({
+        deployment: { entity: buildEntity() },
+        externalCalls: { isEntityRateLimited: async () => false }
+      })
+
+      const result = Validations.RATE_LIMIT(args)
+
+      await assertNoErrors(result)
+    })
+
+    it(`when it should be rate limit, then the entity is not deployed`, async () => {
+      const entity = buildEntity()
+
+      const args = buildArgs({
+        deployment: { entity: entity },
+        externalCalls: { isEntityRateLimited: async () => true }
+      })
+
+      const result = Validations.RATE_LIMIT(args)
+
+      await assertErrorsWere(result, `The entity with id (${entity.id}) has been rate limited.`)
+    })
+  })
 })
 
 function buildEntityV4(type = EntityType.PROFILE, metadata = {}) {
@@ -665,6 +691,7 @@ function buildArgs(args: {
       fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
       isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
       isEntityDeployedAlready: () => Promise.resolve(false),
+      isEntityRateLimited: () => Promise.resolve(false),
       ...args?.externalCalls
     }
   }

@@ -6,8 +6,11 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "comms",
     "Ethereum",
-    "comms"
+    "IPFS",
+    "Metaverse",
+    "openapi"
   ],
   "editor.rulers": [
     120

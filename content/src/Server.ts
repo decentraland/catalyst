@@ -69,7 +69,7 @@ export class Server {
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
-      this.app.use(compression({ filter: (req, res) => true }))
+      this.app.use(compression({ filter: (_req, _res) => true }))
     }
 
     this.app.use(cors(corsOptions))
