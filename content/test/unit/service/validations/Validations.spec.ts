@@ -448,6 +448,65 @@ describe('Validations', function () {
     })
   })
 
+  describe('Request size (v4)', () => {
+    it(`when an entity is too big per pointer, then it fails`, async () => {
+      const content = new Map([['C', 'C']])
+
+      const entity = buildEntity({ content })
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3, 'C') },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 2]]) }
+      })
+
+      const result = Validations.REQUEST_SIZE_V4(args)
+
+      const actualErrors = await result
+      expect(actualErrors).toBeDefined()
+      expect(actualErrors?.length).toBe(1)
+      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+    })
+
+    it(`when an entity final version is too big, then it fails`, async () => {
+      const content = new Map([
+        ['A', 'A'],
+        ['B', 'B'],
+        ['C', 'C']
+      ])
+
+      const contentSizes = new Map([
+        ['A', 1024 * 1024 * 5],
+        ['B', 1024 * 1024 * 5]
+      ])
+      const entity = buildEntity({ content })
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3, 'C') },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 10]]) },
+        externalCalls: {
+          fetchContentFileSize: (hash) => Promise.resolve(contentSizes.get(hash) ?? 0)
+        }
+      })
+
+      const result = Validations.REQUEST_SIZE_V4(args)
+
+      const actualErrors = await result
+      expect(actualErrors).toBeDefined()
+      expect(actualErrors?.length).toBe(1)
+      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+    })
+
+    it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
+      const entity = buildEntity({ pointers: ['P1', 'P2'], content: new Map([]) })
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3) },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 2]]) }
+      })
+
+      const result = Validations.REQUEST_SIZE_V4(args)
+
+      await assertNoErrors(result)
+    })
+  })
+
   describe('IPFS hashing', () => {
     it(`when an entity's id is not an ipfs hash, then it fails`, async () => {
       const entity = buildEntity({ id: 'QmTBPcZLFQf1rZpZg2T8nMDwWRoqeftRdvkaexgAECaqHp' })
@@ -620,8 +679,8 @@ function buildEntity(options?: {
   return opts
 }
 
-function getFileWithSize(sizeInMB: number) {
-  return new Map([['someHash', Buffer.alloc(sizeInMB * 1024 * 1024)]])
+function getFileWithSize(sizeInMB: number, hash = 'someHash') {
+  return new Map([[hash, Buffer.alloc(sizeInMB * 1024 * 1024)]])
 }
 
 async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
@@ -692,6 +751,7 @@ function buildArgs(args: {
       isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
       isEntityDeployedAlready: () => Promise.resolve(false),
       isEntityRateLimited: () => Promise.resolve(false),
+      fetchContentFileSize: () => Promise.resolve(0),
       ...args?.externalCalls
     }
   }

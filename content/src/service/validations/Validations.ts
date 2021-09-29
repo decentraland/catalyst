@@ -144,13 +144,13 @@ export class Validations {
           errors.push(`This hash is referenced in the entity but was not uploaded or previously available: ${hash}`)
         }
       }
+    }
 
-      // Validate that all hashes that belong to uploaded files are actually reported on the entity
-      const entityHashes = new Set(entity.content.values())
-      for (const [hash] of files) {
-        if (!entityHashes.has(hash) && hash !== entity.id) {
-          errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
-        }
+    // Validate that all hashes that belong to uploaded files are actually reported on the entity
+    const entityHashes = new Set(entity.content?.values() ?? [])
+    for (const [hash] of files) {
+      if (!entityHashes.has(hash) && hash !== entity.id) {
+        errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
       }
     }
     return errors
@@ -171,10 +171,6 @@ export class Validations {
             )
           }
         }
-      }
-    } else if (files) {
-      for (const [hash] of files) {
-        errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
       }
     }
     return errors.length > 0 ? errors : undefined
@@ -221,6 +217,31 @@ export class Validations {
   static readonly RATE_LIMIT: Validation = async ({ deployment, externalCalls }) => {
     if (await externalCalls.isEntityRateLimited(deployment.entity)) {
       return [`The entity with id (${deployment.entity.id}) has been rate limited.`]
+    }
+  }
+
+  static readonly REQUEST_SIZE_V4: Validation = async ({ deployment, env, externalCalls }) => {
+    const { entity } = deployment
+    const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(entity.type)
+    if (!maxSizeInMB) {
+      return [`Type ${entity.type} is not supported yet`]
+    }
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024
+
+    let totalSize = 0
+
+    for (const [, hash] of entity.content ?? []) {
+      const uploadedFile = deployment.files.get(hash)
+      totalSize += uploadedFile?.byteLength ?? (await externalCalls.fetchContentFileSize(hash))
+    }
+
+    const sizePerPointer = totalSize / entity.pointers.length
+    if (sizePerPointer > maxSizeInBytes) {
+      return [
+        `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB} MB for ${
+          entity.type
+        }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
+      ]
     }
   }
 

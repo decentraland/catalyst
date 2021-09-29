@@ -78,6 +78,7 @@ export type ExternalCalls = {
   isContentStoredAlready: (hashes: ContentFileHash[]) => Promise<Map<ContentFileHash, boolean>>
   isEntityDeployedAlready: (entityId: EntityId) => Promise<boolean>
   isEntityRateLimited: (entity: Entity) => Promise<boolean>
+  fetchContentFileSize: (hash: string) => Promise<number>
 }
 
 // Will return undefined if the deployment is valid

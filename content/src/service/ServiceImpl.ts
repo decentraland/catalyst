@@ -11,12 +11,12 @@ import {
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
+import { ContentItem } from 'src/storage/ContentStorage'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { ContentItem } from '../storage/ContentStorage'
 import { CacheByType } from './caching/Cache'
 import {
   Deployment,
@@ -180,7 +180,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
             isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
               Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
-            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity))
+            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
+            fetchContentFileSize: async (hash) => (await this.getContent(hash))?.getLength() ?? 0
           })
 
           if (!validationResult.ok) {
