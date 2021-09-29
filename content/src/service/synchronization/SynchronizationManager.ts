@@ -97,8 +97,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
+  // This is the method that is called recursive to sync with other catalysts
   private async syncWithServers(): Promise<void> {
-    // Update flag
+    // Update flag: if it's not bootstrapping, then that means that it was synced and needs to get new deployments
     if (this.synchronizationState !== SynchronizationState.BOOTSTRAPPING) {
       this.synchronizationState = SynchronizationState.SYNCING
     }
@@ -135,7 +136,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         ClusterSynchronizationManager.LOGGER.debug(
           `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
         )
-        // Update the map, so we can store in on the database
+        // Update the map, so we can store it on the database
         this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
       })
 
