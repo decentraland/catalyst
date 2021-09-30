@@ -51,7 +51,7 @@ COPY --from=content-builder /app/content/dist/src content/
 COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/
 
 ENV COMMIT_HASH=bc34832282cfa746cfb1f27184cf3b53f321a164
-ENV CATALYST_VERSION=2.2.0
+ENV CATALYST_VERSION=2.3.1
 
 EXPOSE 6969
 EXPOSE 7070
