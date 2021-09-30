@@ -50,7 +50,6 @@ COPY --from=comms-builder /app/comms/lighthouse/dist/src comms/lighthouse/
 COPY --from=content-builder /app/content/dist/src content/
 COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/
 
-
 # https://docs.docker.com/engine/reference/builder/#arg
 ARG CATALYST_VERSION=0.0.0
 ENV CATALYST_VERSION=${CATALYST_VERSION:-0.0.0}
