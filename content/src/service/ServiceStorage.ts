@@ -19,4 +19,8 @@ export class ServiceStorage {
   async isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
     return this.storage.exist(fileHashes)
   }
+
+  async getSize(fileHash: ContentFileHash): Promise<number | undefined> {
+    return (await this.storage.stats(fileHash))?.size
+  }
 }

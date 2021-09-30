@@ -25,7 +25,7 @@ export class Validations {
     }
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024
     let totalSize = 0
-    deployment.entity.content
+
     deployment.files.forEach((file) => (totalSize += file.byteLength))
     const sizePerPointer = totalSize / entity.pointers.length
     if (sizePerPointer > maxSizeInBytes) {

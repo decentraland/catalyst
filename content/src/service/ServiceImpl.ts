@@ -11,12 +11,12 @@ import {
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
-import { ContentItem } from 'src/storage/ContentStorage'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
+import { ContentItem } from '../storage/ContentStorage'
 import { CacheByType } from './caching/Cache'
 import {
   Deployment,
@@ -370,6 +370,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   static isIPFSHash(hash: string): boolean {
     return IPFSv2.validate(hash)
+  }
+
+  getSize(fileHash: ContentFileHash): Promise<number | undefined> {
+    return this.storage.getSize(fileHash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
