@@ -181,7 +181,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
               Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
             isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
-            fetchContentFileSize: async (hash) => (await this.getContent(hash))?.getLength() ?? 0
+            fetchContentFileSize: async (hash) => (await this.getSize(hash)) ?? 0
           })
 
           if (!validationResult.ok) {
