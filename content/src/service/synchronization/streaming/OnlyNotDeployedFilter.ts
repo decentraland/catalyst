@@ -36,27 +36,32 @@ export class OnlyNotDeployedFilter extends Transform {
   private async processBufferAndPushNonDeployed(): Promise<void> {
     // Find non deployed entities
     const ids = this.buffer.map(({ deployment }) => deployment.entityId)
-    const deployInfo = await this.checkIfAlreadyDeployed(ids)
-    const newEntities: Set<EntityId> = new Set(
-      Array.from(deployInfo.entries())
-        .filter(([, deployed]) => !deployed)
-        .map(([entityId]) => entityId)
-    )
-
-    const ignoredDeployments = this.buffer.length - newEntities.size
-    if (ignoredDeployments) {
-      OnlyNotDeployedFilter.LOGGER.debug(
-        `Ignoring ${ignoredDeployments} deployments because they were already deployed.`
+    try {
+      const deployInfo = await this.checkIfAlreadyDeployed(ids)
+      const newEntities: Set<EntityId> = new Set(
+        Array.from(deployInfo.entries())
+          .filter(([, deployed]) => !deployed)
+          .map(([entityId]) => entityId)
       )
-      metricsComponent.increment('dcl_content_ignored_deployments_total', {}, ignoredDeployments)
+
+      const ignoredDeployments = this.buffer.length - newEntities.size
+      if (ignoredDeployments) {
+        OnlyNotDeployedFilter.LOGGER.debug(
+          `Ignoring ${ignoredDeployments} deployments because they were already deployed.`
+        )
+        metricsComponent.increment('dcl_content_ignored_deployments_total', {}, ignoredDeployments)
+      }
+
+      // Filter out already deployed entities and push the new ones
+      this.buffer
+        .filter(({ deployment }) => newEntities.has(deployment.entityId))
+        .forEach((deployment) => this.push(deployment))
+
+      // Clear the buffer
+      this.buffer.length = 0
+    } catch (err) {
+      OnlyNotDeployedFilter.LOGGER.error(`Couldn't filter the non deployed deployments due to DB heavy load`)
+      throw err
     }
-
-    // Filter out already deployed entities and push the new ones
-    this.buffer
-      .filter(({ deployment }) => newEntities.has(deployment.entityId))
-      .forEach((deployment) => this.push(deployment))
-
-    // Clear the buffer
-    this.buffer.length = 0
   }
 }

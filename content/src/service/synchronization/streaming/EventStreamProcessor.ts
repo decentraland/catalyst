@@ -3,11 +3,12 @@ import log4js from 'log4js'
 import ms from 'ms'
 import parallelTransform from 'parallel-transform'
 import { Readable, Writable } from 'stream'
+import { pipeline } from 'stream/promises'
 import { metricsComponent } from '../../../metrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
 import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'
-import { awaitablePipeline, mergeStreams, streamFilter } from './StreamHelper'
+import { mergeStreams, streamFilter } from './StreamHelper'
 import { setupStreamTimeout } from './utils'
 
 /**
@@ -52,7 +53,7 @@ export class EventStreamProcessor {
 
     // Build and execute the pipeline
     try {
-      await awaitablePipeline(merged, filterOutDuplicates, filterOutAlreadyDeployed, downloadFilesTransform, deployer)
+      await pipeline(merged, filterOutDuplicates, filterOutAlreadyDeployed, downloadFilesTransform, deployer)
     } catch (error) {
       EventStreamProcessor.LOGGER.error(`Something failed when trying to deploy the history:\n${error}`)
     }
