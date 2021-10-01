@@ -42,18 +42,28 @@ describe('End 2 end - Node onboarding', function () {
     const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
     const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
 
+    console.log('Start test')
+
     // Wait for servers to sync and assert servers 1 and 2 are synced
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
+    console.log('deployed 1')
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1, deployment2))
+    console.log('deployed 2')
+
     await assertFileIsOnServer(server1, entity1ContentHash)
+    console.log('file on server')
     await assertEntityIsOverwrittenBy(server1, entity1, entity2)
+    console.log('entities overwritten 1')
     await assertEntityIsOverwrittenBy(server2, entity1, entity2)
+    console.log('entities overwritten 2')
 
     // Start server 3
     await server3.start()
+    console.log('started')
 
     // Assert server 3 has all the history
     await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment2))
+    console.log('are deployed')
 
     // Make sure that is didn't download overwritten content
     await assertFileIsNotOnServer(server3, entity1ContentHash)
