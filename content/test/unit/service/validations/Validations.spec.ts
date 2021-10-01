@@ -482,7 +482,7 @@ describe('Validations', function () {
         deployment: { entity, files: getFileWithSize(3, 'C') },
         env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 10]]) },
         externalCalls: {
-          fetchContentFileSize: (hash) => Promise.resolve(contentSizes.get(hash) ?? 0)
+          fetchContentFileSize: (hash) => Promise.resolve(contentSizes.get(hash))
         }
       })
 
@@ -492,6 +492,29 @@ describe('Validations', function () {
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
       expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+    })
+
+    it(`when cannot fetch content file in order to check size, then it fails`, async () => {
+      const content = new Map([
+        ['A', 'A'],
+        ['C', 'C']
+      ])
+
+      const entity = buildEntity({ content })
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3, 'C') },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 10]]) },
+        externalCalls: {
+          fetchContentFileSize: () => Promise.resolve(undefined)
+        }
+      })
+
+      const result = Validations.REQUEST_SIZE_V4(args)
+
+      const actualErrors = await result
+      expect(actualErrors).toBeDefined()
+      expect(actualErrors?.length).toBe(1)
+      expect(actualErrors?.[0]).toMatch(`Couldn't fetch content file with hash: A`)
     })
 
     it(`when an entity is big, but has enough pointers, then it is ok`, async () => {

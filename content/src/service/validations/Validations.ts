@@ -232,7 +232,13 @@ export class Validations {
 
     for (const [, hash] of entity.content ?? []) {
       const uploadedFile = deployment.files.get(hash)
-      totalSize += uploadedFile?.byteLength ?? (await externalCalls.fetchContentFileSize(hash))
+      if (uploadedFile) {
+        totalSize += uploadedFile.byteLength
+      } else {
+        const contentSize = await externalCalls.fetchContentFileSize(hash)
+        if (!contentSize) return [`Couldn't fetch content file with hash: ${hash}`]
+        totalSize += contentSize
+      }
     }
 
     const sizePerPointer = totalSize / entity.pointers.length
