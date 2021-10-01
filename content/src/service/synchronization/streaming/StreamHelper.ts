@@ -1,5 +1,8 @@
 import mergeStream from 'merge-stream'
-import { PassThrough, Readable, Transform } from 'stream'
+import { PassThrough, pipeline, Readable, Transform } from 'stream'
+import { promisify } from 'util'
+
+export const awaitablePipeline = promisify(pipeline)
 
 /** Generate a transform stream that filters values based on a predicate */
 export function streamFilter<T>(predicate: (value: T) => boolean) {
