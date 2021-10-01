@@ -49,13 +49,15 @@ describe('MessageQueue', () => {
       const lastReadAt = queue.getLastReadAt()
       queue.addMessage(createTestMessage())
 
-      await wait(10)
+      await wait(15)
 
       expect(queue.getLastReadAt()).toEqual(lastReadAt)
 
       queue.readMessage()
 
-      expect(queue.getLastReadAt()).toBeGreaterThanOrEqual(lastReadAt + 10)
+      // setTimeout is not as precise as one would like, so we cannot test exact milliseconds here.
+      // We assume it should be greater than at least the previous + 5
+      expect(queue.getLastReadAt()).toBeGreaterThanOrEqual(lastReadAt + 5)
     })
   })
 })
