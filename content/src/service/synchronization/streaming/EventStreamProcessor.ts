@@ -2,7 +2,7 @@ import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import parallelTransform from 'parallel-transform'
-import { Readable, Writable } from 'stream'
+import { Readable } from 'stream'
 import { metricsComponent } from '../../../metrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
@@ -10,11 +10,25 @@ import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'
 import { awaitablePipeline, mergeStreams, streamFilter } from './StreamHelper'
 import { setupStreamTimeout } from './utils'
 
+/** Build the stream writer that will execute the deployment */
+
+const write = async (entityType: string, entityId: string, performDeployment: () => Promise<unknown>) => {
+  try {
+    await performDeployment()
+    EventStreamProcessor.LOGGER.info(`Deployed entity (${entityType}, ${entityId})`)
+  } catch (error) {
+    metricsComponent.increment('dcl_content_failed_deployments_total')
+    EventStreamProcessor.LOGGER.error(
+      `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
+    )
+  }
+}
+
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
  */
 export class EventStreamProcessor {
-  private static readonly LOGGER = log4js.getLogger('EventStreamProcessor')
+  public static readonly LOGGER = log4js.getLogger('EventStreamProcessor')
   private static readonly PARALLEL_DOWNLOAD_WORKERS = 15
 
   constructor(
@@ -47,12 +61,9 @@ export class EventStreamProcessor {
     // Build a transform stream that process the deployment info and prepares the deployment
     const downloadFilesTransform = this.prepareDeploymentBuilder()
 
-    // Create writer stream that deploys the entity on this server
-    const deployer = this.prepareStreamDeployer(options)
-
     // Build and execute the pipeline
     try {
-      await awaitablePipeline(merged, filterOutDuplicates, filterOutAlreadyDeployed, downloadFilesTransform, deployer)
+      await awaitablePipeline(merged, filterOutDuplicates, filterOutAlreadyDeployed, downloadFilesTransform)
     } catch (error) {
       EventStreamProcessor.LOGGER.error(`Something failed when trying to deploy the history:\n${error}`)
     }
@@ -65,7 +76,12 @@ export class EventStreamProcessor {
    */
   private filterOutDuplicates() {
     const known: Set<EntityId> = new Set()
-    return streamFilter(({ deployment }: DeploymentWithSource) => {
+    return streamFilter((deploymentWithSource: DeploymentWithSource) => {
+      if (!deploymentWithSource) {
+        return false
+      }
+      const { deployment } = deploymentWithSource
+
       if (known.has(deployment.entityId)) {
         return false
       } else {
@@ -82,7 +98,14 @@ export class EventStreamProcessor {
     return parallelTransform(
       EventStreamProcessor.PARALLEL_DOWNLOAD_WORKERS,
       { objectMode: true, ordered: false },
-      async ({ deployment: deploymentEvent, source }: DeploymentWithSource, done) => {
+      async (arg: DeploymentWithSource, done) => {
+        if (!arg) {
+          done(null, null)
+          return
+        }
+
+        const { deployment: deploymentEvent, source } = arg
+
         try {
           EventStreamProcessor.LOGGER.trace(
             `Preparing deployment. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`
@@ -91,7 +114,9 @@ export class EventStreamProcessor {
           EventStreamProcessor.LOGGER.trace(
             `Deployment prepared. Entity (${deploymentEvent.entityType}, ${deploymentEvent.entityId})`
           )
-          done(null, [deploymentEvent.entityType, deploymentEvent.entityId, execution])
+
+          await write(deploymentEvent.entityType, deploymentEvent.entityId, execution)
+          done(null, null)
         } catch (error) {
           EventStreamProcessor.LOGGER.error(
             `Failed preparing the deployment. Entity is (${deploymentEvent.entityType}, ${deploymentEvent.entityId}). Error was:\n${error}`
@@ -100,30 +125,6 @@ export class EventStreamProcessor {
         }
       }
     )
-  }
-
-  /** Build the stream writer that will execute the deployment */
-  private prepareStreamDeployer(options?: HistoryDeploymentOptions) {
-    return new Writable({
-      objectMode: true,
-      write: async ([entityType, entityId, performDeployment], _, done) => {
-        try {
-          await performDeployment()
-          if (options?.logging) {
-            EventStreamProcessor.LOGGER.info(`Deployed entity (${entityType}, ${entityId})`)
-          } else {
-            EventStreamProcessor.LOGGER.trace(`Deployed entity (${entityType}, ${entityId})`)
-          }
-          done()
-        } catch (error) {
-          metricsComponent.increment('dcl_content_failed_deployments_total')
-          EventStreamProcessor.LOGGER.error(
-            `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
-          )
-          done()
-        }
-      }
-    })
   }
 }
 

@@ -40,6 +40,7 @@ export class RepositoryQueue {
     return this.queue.add(
       async () => {
         try {
+          // Don't remove this await since it's here so that the `finally` is executed when the promise resolves
           return await execution()
         } finally {
           endTimer()
