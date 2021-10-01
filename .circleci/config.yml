@@ -17,7 +17,7 @@ commands:
       - run:
           name: Install yarn
           command: |
-            curl -o- -L https://yarnpkg.com/install.sh | bash
+            npm install --global yarn
             echo 'export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"' >> $BASH_ENV
 
 references:
