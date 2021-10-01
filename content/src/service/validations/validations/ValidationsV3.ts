@@ -66,7 +66,6 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
     Validations.MUST_HAVE_FAILED_BEFORE,
-    Validations.CONTENT_V3,
-    Validations.RATE_LIMIT
+    Validations.CONTENT_V3
   ]
 }
