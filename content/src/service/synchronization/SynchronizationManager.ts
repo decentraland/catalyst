@@ -2,14 +2,14 @@ import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import { metricsComponent } from 'src/metrics'
 import { clearTimeout, setTimeout } from 'timers'
-import { streamMap } from '../../service/synchronization/streaming/StreamHelper'
+import { metricsComponent } from '../../metrics'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
 import { DeploymentWithSource } from './streaming/EventStreamProcessor'
+import { streamMap } from './streaming/StreamHelper'
 
 export interface SynchronizationManager {
   start(): Promise<void>
