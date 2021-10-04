@@ -180,7 +180,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
             isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
               Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
-            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity))
+            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
+            fetchContentFileSize: async (hash) => await this.getSize(hash)
           })
 
           if (!validationResult.ok) {
@@ -373,6 +374,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   static isIPFSHash(hash: string): boolean {
     return IPFSv2.validate(hash)
+  }
+
+  getSize(fileHash: ContentFileHash): Promise<number | undefined> {
+    return this.storage.getSize(fileHash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
