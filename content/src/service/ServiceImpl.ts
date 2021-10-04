@@ -180,7 +180,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
             isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
               Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
-            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity))
+            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
+            fetchContentFileSize: async (hash) => await this.getSize(hash)
           })
 
           if (!validationResult.ok) {
@@ -333,6 +334,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
    * and no more than max size of deployments were made either   */
   private isEntityRateLimited(entity: Entity): boolean {
+    // Currently only for profiles
+    if (entity.type != EntityType.PROFILE) {
+      return false
+    }
     return (
       entity.pointers.some((p) => !!this.deploymentsCache.cache.get(p)) ||
       this.deploymentsCache.cache.stats.keys > this.deploymentsCache.maxSize
@@ -369,6 +374,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   static isIPFSHash(hash: string): boolean {
     return IPFSv2.validate(hash)
+  }
+
+  getSize(fileHash: ContentFileHash): Promise<number | undefined> {
+    return this.storage.getSize(fileHash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {

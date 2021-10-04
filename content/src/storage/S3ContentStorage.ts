@@ -102,6 +102,10 @@ export class S3ContentStorage implements ContentStorage {
     //     })
     // })
   }
+
+  stats(id: string): Promise<{ size: number } | undefined> {
+    throw new Error('Not implemented')
+  }
 }
 
 class S3ContentItem implements ContentItem {

@@ -18,4 +18,8 @@ export class MockedStorage implements ContentStorage {
   exist(ids: string[]): Promise<Map<string, boolean>> {
     return Promise.resolve(new Map(ids.map((id) => [id, this.storage.has(id)])))
   }
+  stats(id: string): Promise<{ size: number } | undefined> {
+    const content = this.storage.get(id)
+    return Promise.resolve(content ? { size: content.byteLength } : undefined)
+  }
 }

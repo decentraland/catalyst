@@ -40,6 +40,15 @@ export class FileSystemContentStorage implements ContentStorage {
     return undefined
   }
 
+  async stats(id: string): Promise<{ size: number } | undefined> {
+    const filePath = this.getFilePath(id)
+    if (await existPath(filePath)) {
+      try {
+        return await fs.promises.stat(filePath)
+      } catch (e) {}
+    }
+  }
+
   async exist(ids: string[]): Promise<Map<string, boolean>> {
     const checks = await Promise.all(
       ids.map<Promise<[string, boolean]>>(async (id) => [id, await existPath(this.getFilePath(id))])
