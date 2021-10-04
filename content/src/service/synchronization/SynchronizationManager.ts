@@ -2,6 +2,7 @@ import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
+import { metricsComponent } from 'src/metrics'
 import { clearTimeout, setTimeout } from 'timers'
 import { streamMap } from '../../service/synchronization/streaming/StreamHelper'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
@@ -102,6 +103,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     // Update flag: if it's not bootstrapping, then that means that it was synced and needs to get new deployments
     if (this.synchronizationState !== SynchronizationState.BOOTSTRAPPING) {
       this.synchronizationState = SynchronizationState.SYNCING
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
+    } else {
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
     }
 
     ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
@@ -149,10 +153,12 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       )
 
       this.synchronizationState = SynchronizationState.SYNCED
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'synced' }, 1)
       this.timeOfLastSync = Date.now()
       ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
     } catch (error) {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'failed_to_sync' }, 1)
       ClusterSynchronizationManager.LOGGER.error(`Failed to sync with servers. Reason:\n${error}`)
     } finally {
       if (!this.stopping) {
