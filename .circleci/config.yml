@@ -1,25 +1,5 @@
 version: 2.1
 
-commands:
-  update_node_version:
-    description: 'A very simple command to update the node version'
-    steps:
-      - run:
-          name: Link nvm
-          command: |
-            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
-            echo ' [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
-      - run:
-          name: Update node version
-          command: |
-            nvm install v14.16.1
-            nvm alias default v14.16.1
-      - run:
-          name: Install yarn
-          command: |
-            npm install --global yarn
-            echo 'export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"' >> $BASH_ENV
-
 references:
   .workspace_root: &workspace_root /tmp/repo
 
@@ -108,15 +88,17 @@ jobs:
             CI: 'true'
 
   build-content:
-    machine:
-      docker_layer_caching: true
+    docker:
+      - <<: *image_client
+      - image: circleci/postgres:alpine
+        command: postgres -c max_connections=300
+        environment:
+          POSTGRES_DB: postgres_test
+          POSTGRES_PASSWORD: '12345678'
+          POSTGRES_USER: postgres
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
-      - update_node_version
-      - run:
-          name: Build content
-          command: yarn workspace @catalyst/content-server build
       - run:
           name: Run unit tests
           command: yarn workspace @catalyst/content-server test:unit
@@ -125,6 +107,8 @@ jobs:
       - run:
           name: Run integration tests
           command: yarn workspace @catalyst/content-server test:integration
+          environment:
+            CI: 'true'
 
   build-lambdas:
     <<: *base_env
