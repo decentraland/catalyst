@@ -1,6 +1,6 @@
 {
-  "spec_dir": "dist/test",
-  "spec_files": ["integration/**/*[sS]pec.js"],
+  "spec_dir": "test",
+  "spec_files": ["integration/**/*[sS]pec.ts"],
   "random": false,
-  "helpers": ["helpers/reporter.js"]
+  "helpers": ["helpers/reporter.ts"]
 }

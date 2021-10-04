@@ -51,10 +51,9 @@ export class TestServer extends Server {
     return `http://localhost:${this.serverPort}`
   }
 
-  start(): Promise<void> {
+  async start(): Promise<void> {
+    await super.start()
     this.started = true
-    this.metricsServer = undefined
-    return super.start()
   }
 
   async stop(

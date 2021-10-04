@@ -58,9 +58,9 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
     },
 
     error(err, e) {
-      console.log(`Failed to connect to the database. Error was ${err}`)
+      console.debug(`Failed to connect to the database. Error was ${err}`)
       if (e.query) {
-        console.log(`Query was ${e.query}`)
+        console.debug(`Query was ${e.query}`)
       }
     }
   }

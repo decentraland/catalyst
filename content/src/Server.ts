@@ -49,7 +49,9 @@ export class Server {
 
     this.app = express()
 
-    this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
+    if (env.getConfig(EnvironmentConfig.METRICS)) {
+      this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
+    }
 
     const corsOptions: cors.CorsOptions = {
       origin: true,

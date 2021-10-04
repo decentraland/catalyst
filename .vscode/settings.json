@@ -1,7 +1,10 @@
 {
   "files.exclude": {
     "data*": true,
-    "dist/**/*": true
+    "node_modules/": true,
+    "dist/": true,
+    "**/dist/": true,
+    "**/node_modules/": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
@@ -25,4 +28,7 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "files.trimFinalNewlines": true,
+  "testExplorer.useNativeTesting": true,
+  "jasmineExplorer.nodeArgv": ["-r", "ts-node/register"],
+  "jasmineExplorer.config": "jasmine.json"
 }

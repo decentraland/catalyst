@@ -47,8 +47,9 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
       .setConfig(EnvironmentConfig.PSQL_HOST, this.postgresContainer.getContainerIpAddress())
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
-      .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
+      .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
+      .setConfig(EnvironmentConfig.METRICS, false)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
 
     overrideConfigs?.forEach((value: any, key: EnvironmentConfig) => {

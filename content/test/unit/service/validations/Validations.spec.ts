@@ -2,9 +2,9 @@ import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, Wearable
 import { AuditInfo, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
-import { Entity } from 'src/service/Entity'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 import { Deployment } from '../../../../src/service/deployments/DeploymentManager'
+import { Entity } from '../../../../src/service/Entity'
 import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
 import { Validations } from '../../../../src/service/validations/Validations'
 import {

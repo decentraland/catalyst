@@ -17,7 +17,7 @@ import { TestServer } from '../TestServer'
 
 describe('End 2 end - Denylist handling', () => {
   const identity = createIdentity()
-  const SYNC_INTERVAL: number = ms('5s')
+  const SYNC_INTERVAL: number = ms('1s')
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer, onboardingServer: TestServer
 
@@ -48,7 +48,7 @@ describe('End 2 end - Denylist handling', () => {
     await onboardingServer.start()
 
     // Wait for sync
-    await delay(SYNC_INTERVAL * 2)
+    await delay(SYNC_INTERVAL)
 
     // Assert there is nothing on history
     await assertDeploymentsAreReported(onboardingServer)
@@ -78,7 +78,7 @@ describe('End 2 end - Denylist handling', () => {
     await onboardingServer.start()
 
     // Wait for sync
-    await delay(SYNC_INTERVAL * 2)
+    await delay(SYNC_INTERVAL)
 
     // Assert there is nothing on history
     await assertDeploymentsAreReported(onboardingServer)
