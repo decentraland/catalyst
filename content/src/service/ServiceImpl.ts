@@ -334,6 +334,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
    * and no more than max size of deployments were made either   */
   private isEntityRateLimited(entity: Entity): boolean {
+    // Currently only for profiles
+    if (entity.type != EntityType.PROFILE) {
+      return false
+    }
     return (
       entity.pointers.some((p) => !!this.deploymentsCache.cache.get(p)) ||
       this.deploymentsCache.cache.stats.keys > this.deploymentsCache.maxSize
