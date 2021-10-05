@@ -40,7 +40,7 @@ describe('Integration - Deployment Pagination', () => {
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {
     // Deploy E2, E3, E1 in that order
-    const [E2Timestamp, E3Timestamp] = await deploy(E2, E3, E1)
+    const [E3Timestamp] = await deploy(E2, E3, E1)
 
     const actualDeployments = await fetchDeployments({
       limit: 2,
@@ -49,12 +49,6 @@ describe('Integration - Deployment Pagination', () => {
         field: SortingField.LOCAL_TIMESTAMP
       }
     })
-
-    console.log(`E2 Timestamp: ${E2Timestamp}`)
-    console.log(`E3 Timestamp: ${E3Timestamp}`)
-
-    console.log(`deployments[0] localTimestamp ${actualDeployments.deployments[0].localTimestamp}`)
-    console.log(`deployments[1] localTimestamp ${actualDeployments.deployments[1].localTimestamp}`)
 
     expect(actualDeployments.deployments.length).toBe(2)
     expect(actualDeployments.deployments[0].entityId).toBe(E2.entity.id)
@@ -278,7 +272,7 @@ describe('Integration - Deployment Pagination', () => {
       server.getAddress() +
       `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
-    console.log('URL ', url)
+
     const pointerChanges = await fetchJson(url)
 
     expect(pointerChanges.deltas.length).toBe(1)

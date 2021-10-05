@@ -57,7 +57,7 @@ export class E2ETestEnvironment {
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
 
     overrideConfigs?.forEach((value: any, key: EnvironmentConfig) => {
-      console.log('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
+      console.debug('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
       this.sharedEnv.setConfig(key, value)
     })
 
