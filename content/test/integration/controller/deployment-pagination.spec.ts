@@ -40,7 +40,7 @@ describe('Integration - Deployment Pagination', () => {
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {
     // Deploy E2, E3, E1 in that order
-    const [E3Timestamp] = await deploy(E2, E3, E1)
+    const [, E3Timestamp] = await deploy(E2, E3, E1)
 
     const actualDeployments = await fetchDeployments({
       limit: 2,
