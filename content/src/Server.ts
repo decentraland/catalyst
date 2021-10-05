@@ -49,7 +49,7 @@ export class Server {
 
     this.app = express()
 
-    if (env.getConfig(EnvironmentConfig.METRICS)) {
+    if (this.shouldInitializeMetricsServer()) {
       this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
     }
 
@@ -111,6 +111,10 @@ export class Server {
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute('/legacy-entities', controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())
     }
+  }
+
+  shouldInitializeMetricsServer(): boolean {
+    return true
   }
 
   private registerRoute(

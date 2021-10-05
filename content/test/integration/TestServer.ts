@@ -47,6 +47,10 @@ export class TestServer extends Server {
     })
   }
 
+  override shouldInitializeMetricsServer(): boolean {
+    return false
+  }
+
   getAddress(): ServerAddress {
     return `http://localhost:${this.serverPort}`
   }
