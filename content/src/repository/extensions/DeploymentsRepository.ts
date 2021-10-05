@@ -153,7 +153,7 @@ export class DeploymentsRepository {
     const where = whereClause.length > 0 ? ' WHERE ' + whereClause.join(' AND ') : ''
 
     query += where
-    query += ` ORDER BY dep1.${timestampField} ${order}, dep1.entity_id ${order} LIMIT $(limit) OFFSET $(offset)`
+    query += ` ORDER BY dep1.${timestampField} ${order}, LOWER(dep1.entity_id) ${order} LIMIT $(limit) OFFSET $(offset)`
 
     return this.db.map(query, values, (row) => ({
       deploymentId: row.id,
