@@ -25,7 +25,7 @@ describe('End 2 end - Error handling', () => {
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv
-      .configServer('2s')
+      .configServer('500')
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)

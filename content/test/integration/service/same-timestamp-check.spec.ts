@@ -1,3 +1,4 @@
+import { delay } from '@catalyst/commons'
 import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
 import { MetaverseContentService } from '../../../src/service/Service'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
@@ -34,6 +35,7 @@ describe('Integration - Same Timestamp Check', () => {
   it(`When oldest is deployed first, they overwrites are calculated correctly correctly`, async () => {
     // Deploy the entities
     await deployEntitiesCombo(service, oldestEntity)
+    await delay(100)
     await deployEntitiesCombo(service, newestEntity)
 
     // Verify overwrites
@@ -47,6 +49,7 @@ describe('Integration - Same Timestamp Check', () => {
   it(`When newest is deployed first, they overwrites are calculated correctly correctly`, async () => {
     // Deploy the entities
     await deployEntitiesCombo(service, newestEntity)
+    await delay(100)
     await deployEntitiesCombo(service, oldestEntity)
 
     // Verify overwrites

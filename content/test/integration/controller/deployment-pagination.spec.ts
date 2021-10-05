@@ -1,4 +1,4 @@
-import { toQueryParams } from '@catalyst/commons'
+import { delay, toQueryParams } from '@catalyst/commons'
 import assert from 'assert'
 import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
@@ -40,7 +40,7 @@ describe('Integration - Deployment Pagination', () => {
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {
     // Deploy E2, E3, E1 in that order
-    const [, E3Timestamp] = await deploy(E2, E3, E1)
+    const [E2Timestamp, E3Timestamp] = await deploy(E2, E3, E1)
 
     const actualDeployments = await fetchDeployments({
       limit: 2,
@@ -49,6 +49,9 @@ describe('Integration - Deployment Pagination', () => {
         field: SortingField.LOCAL_TIMESTAMP
       }
     })
+
+    console.log(`E2 Timestamp: ${E2Timestamp}`)
+    console.log(`E3 Timestamp: ${E3Timestamp}`)
 
     expect(actualDeployments.deployments.length).toBe(2)
     expect(actualDeployments.deployments[0].entityId).toBe(E2.entity.id)
@@ -288,6 +291,7 @@ describe('Integration - Deployment Pagination', () => {
     for (const { deployData } of entities) {
       const deploymentResult = await server.deploy(deployData)
       result.push(deploymentResult)
+      await delay(100)
     }
     return result
   }
