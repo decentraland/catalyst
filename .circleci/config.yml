@@ -90,7 +90,7 @@ jobs:
   build-content:
     docker:
       - <<: *image_client
-      - image: circleci/postgres:alpine
+      - image: circleci/postgres:12
         command: postgres -c max_connections=300
         environment:
           POSTGRES_DB: postgres_test
