@@ -13,7 +13,7 @@ import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ET
 import { TestServer } from '../TestServer'
 
 describe('End 2 end synchronization tests', function () {
-  const SYNC_INTERVAL: number = ms('500')
+  const SYNC_INTERVAL: number = ms('1s')
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer, server3: TestServer
 

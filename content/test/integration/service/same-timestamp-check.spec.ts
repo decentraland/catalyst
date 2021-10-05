@@ -1,4 +1,3 @@
-import { delay } from '@catalyst/commons'
 import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
 import { MetaverseContentService } from '../../../src/service/Service'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'

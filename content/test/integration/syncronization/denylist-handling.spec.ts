@@ -17,7 +17,7 @@ import { TestServer } from '../TestServer'
 
 describe('End 2 end - Denylist handling', () => {
   const identity = createIdentity()
-  const SYNC_INTERVAL: number = ms('500')
+  const SYNC_INTERVAL: number = ms('1s')
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer, onboardingServer: TestServer
 
@@ -70,6 +70,7 @@ describe('End 2 end - Denylist handling', () => {
 
     // Deploy the entity
     await server1.deploy(deployData)
+
     // Blacklist the entity
     await server1.denylistContent(contentHash, identity)
 
