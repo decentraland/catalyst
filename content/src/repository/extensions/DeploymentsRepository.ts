@@ -138,7 +138,7 @@ export class DeploymentsRepository {
 
     if (filters?.entityIds && filters.entityIds.length > 0) {
       values.entityIds = filters.entityIds
-      whereClause.push(`dep1.entity_id IN ($(entityIds:list))`)
+      whereClause.push(`LOWER(dep1.entity_id) IN ($(entityIds:list))`)
     }
 
     if (filters?.onlyCurrentlyPointed) {
