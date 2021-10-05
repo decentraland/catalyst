@@ -25,7 +25,7 @@ describe('Integration - Order Check', () => {
     E4 = await buildDeployDataAfterEntity(E3, [P1, P3, P4])
     E5 = await buildDeployDataAfterEntity(E4, [P2, P4])
     allEntities = [E1, E2, E3, E4, E5]
-    allEntities.forEach(({ entity }, idx) => console.log(`E${idx + 1}: ${entity.id}`))
+    allEntities.forEach(({ entity }, idx) => console.debug(`E${idx + 1}: ${entity.id}`))
   })
 
   beforeEach(async () => {

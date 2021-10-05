@@ -29,7 +29,7 @@ xdescribe('S3ContentStorage', () => {
     const s3Client = new AWS.S3({ accessKeyId, secretAccessKey })
     const items = await getAllElementsInBucket(s3Client)
     items.forEach((item) => {
-      console.log(item)
+      console.debug(item)
     })
     await Promise.all(
       items.map((item) => {
