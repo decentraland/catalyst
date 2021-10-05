@@ -61,6 +61,7 @@ describe('Integration - Same Timestamp Check', () => {
   })
 
   async function assertIsActive(entityCombo: EntityCombo) {
+    console.log(`Assert that entity ${entityCombo.controllerEntity.id} is active`)
     const { deployments } = await service.getDeployments({
       filters: { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true }
     })
@@ -70,11 +71,15 @@ describe('Integration - Same Timestamp Check', () => {
   }
 
   async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {
+    console.log(
+      `Assert that the entity ${overwritten.controllerEntity.id} was overwritten by ${overwrittenBy.controllerEntity.id}`
+    )
     const auditInfo = await getAuditInfo(overwritten)
     expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
   }
 
   async function assertNotOverwritten(entity: EntityCombo) {
+    console.log(`Assert that entity ${entity.controllerEntity.id} was not overwritten.`)
     const auditInfo = await getAuditInfo(entity)
     expect(auditInfo?.overwrittenBy).toBeUndefined()
   }
