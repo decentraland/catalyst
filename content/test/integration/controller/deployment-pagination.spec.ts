@@ -53,6 +53,9 @@ describe('Integration - Deployment Pagination', () => {
     console.log(`E2 Timestamp: ${E2Timestamp}`)
     console.log(`E3 Timestamp: ${E3Timestamp}`)
 
+    console.log(`deployments[0] localTimestamp ${actualDeployments.deployments[0].localTimestamp}`)
+    console.log(`deployments[1] localTimestamp ${actualDeployments.deployments[1].localTimestamp}`)
+
     expect(actualDeployments.deployments.length).toBe(2)
     expect(actualDeployments.deployments[0].entityId).toBe(E2.entity.id)
     expect(actualDeployments.deployments[1].entityId).toBe(E3.entity.id)
