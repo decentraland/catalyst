@@ -35,8 +35,8 @@ describe('Integration - Same Timestamp Check', () => {
   it(`When oldest is deployed first, they overwrites are calculated correctly correctly`, async () => {
     // Deploy the entities
     await deployEntitiesCombo(service, oldestEntity)
-    await delay(100)
     await deployEntitiesCombo(service, newestEntity)
+    await delay(100)
 
     // Verify overwrites
     await assertOverwrittenBy(oldestEntity, newestEntity)
@@ -49,8 +49,8 @@ describe('Integration - Same Timestamp Check', () => {
   it(`When newest is deployed first, they overwrites are calculated correctly correctly`, async () => {
     // Deploy the entities
     await deployEntitiesCombo(service, newestEntity)
-    await delay(100)
     await deployEntitiesCombo(service, oldestEntity)
+    await delay(100)
 
     // Verify overwrites
     await assertOverwrittenBy(oldestEntity, newestEntity)

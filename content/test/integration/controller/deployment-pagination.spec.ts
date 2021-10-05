@@ -1,4 +1,4 @@
-import { delay, toQueryParams } from '@catalyst/commons'
+import { toQueryParams } from '@catalyst/commons'
 import assert from 'assert'
 import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
@@ -294,7 +294,6 @@ describe('Integration - Deployment Pagination', () => {
     for (const { deployData } of entities) {
       const deploymentResult = await server.deploy(deployData)
       result.push(deploymentResult)
-      await delay(100)
     }
     return result
   }
