@@ -220,7 +220,7 @@ describe('DeploymentRepository', () => {
 
         const args = capture(db.map).last()
 
-        expect(args[0]).toContain(`dep1.entity_id IN ($(entityIds:list))`)
+        expect(args[0]).toContain(`LOWER(dep1.entity_id) IN ($(entityIds:list))`)
         expect(args[1]).toEqual(jasmine.objectContaining({ entityIds }))
       })
     })
