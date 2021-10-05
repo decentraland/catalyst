@@ -36,11 +36,16 @@ describe('Integration - Deployment Pagination', () => {
       E2 = a
     }
     E3 = await buildDeployData([P3], { type, timestamp: timestamp + 1, metadata: 'metadata3' })
+
+    console.log(`E1: { id: ${E1.entity.id}, entityTimestamp: ${E1.entity.timestamp} }`)
+    console.log(`E2: { id: ${E2.entity.id}, entityTimestamp: ${E2.entity.timestamp} }`)
+    console.log(`E3: { id: ${E3.entity.id}, entityTimestamp: ${E3.entity.timestamp} }`)
   })
 
   it('given local timestamp and asc when getting two elements the next link page is correct', async () => {
     // Deploy E2, E3, E1 in that order
     const [, E3Timestamp] = await deploy(E2, E3, E1)
+    console.log(`E3 deploy timestamp: ${E3Timestamp}`)
 
     const actualDeployments = await fetchDeployments({
       limit: 2,
@@ -61,6 +66,7 @@ describe('Integration - Deployment Pagination', () => {
   it('given local timestamp and desc when getting two elements the next link page is correct', async () => {
     // Deploy E2, E3, E1 in that order
     const [, E3Timestamp] = await deploy(E2, E3, E1)
+    console.log(`E3 deploy timestamp: ${E3Timestamp}`)
 
     const actualDeployments = await fetchDeployments({
       limit: 2,
