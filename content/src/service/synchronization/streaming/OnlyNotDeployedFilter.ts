@@ -19,6 +19,7 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
   }
 
   _transform(deployment: DeploymentWithSource, _, done: TransformCallback): void {
+    // console.log('NEW DEPLOYMENT', deployment)
     if (!deployment) {
       done()
       return
@@ -50,15 +51,20 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
     // Clear the buffer
     this.buffer.length = 0
 
+    // console.log('BUFFER COPY', bufferCopy)
+
     // Find non deployed entities
     const ids = bufferCopy.map(({ deployment }) => deployment.entityId)
     try {
       const deployInfo = await this.checkIfAlreadyDeployed(ids)
+      console.log('DEPLOYINFO', deployInfo)
       const newEntities: Set<EntityId> = new Set(
         Array.from(deployInfo.entries())
           .filter(([, deployed]) => !deployed)
           .map(([entityId]) => entityId)
       )
+
+      // console.log('newEntitiesY', newEntities)
 
       const ignoredDeployments = bufferCopy.length - newEntities.size
       if (ignoredDeployments) {
@@ -70,8 +76,16 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
 
       // Filter out already deployed entities and push the new ones
       bufferCopy
-        .filter(({ deployment }) => newEntities.has(deployment.entityId))
-        .forEach((deployment) => this.push(deployment))
+        .filter(({ deployment }) => {
+          // console.log('deployment entityID', deployment.entityId)
+          // console.log('newEntities.has(deployment.entityId)', newEntities.has(deployment.entityId))
+
+          return newEntities.has(deployment.entityId)
+        })
+        .forEach((deployment) => {
+          // console.log('PUSHING', deployment)
+          this.push(deployment)
+        })
     } catch (err) {
       OnlyNotDeployedFilter.LOGGER.error(`Couldn't filter the non deployed deployments due to DB heavy load`)
 
