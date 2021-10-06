@@ -88,8 +88,8 @@ export class DeploymentManager {
       }
     }))
 
-    console.log('GEETIN deploymentsWithExtra ', deploymentsWithExtra)
-    console.log('GEETIN DEPLOYMENTS', deployments)
+    // console.log('GEETIN deploymentsWithExtra ', deploymentsWithExtra)
+    // console.log('GEETIN DEPLOYMENTS', deployments)
 
     return {
       deployments: deployments,
