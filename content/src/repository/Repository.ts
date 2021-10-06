@@ -51,14 +51,15 @@ export class Repository {
    * Convenience method to start a tx directly
    */
   tx<T>(execution: (tx: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
-    return this.run((db) => db.tx(execution), options)
+    return this.run((db) => execution(db), options)
   }
 
   /**
    * Convenience method to start a tx directly
    */
   txIf<T>(execution: (tx: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
-    return this.run((db) => db.txIf(execution), options)
+    // return this.run((db) => db.txIf(execution), options)
+    return this.run((db) => execution(db), options)
   }
 
   private runInternal<T>(execution: (db: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
