@@ -1066,6 +1066,13 @@
   resolved "https://registry.yarnpkg.com/@types/cors/-/cors-2.8.12.tgz#6b2c510a7ad7039e98e7b8d3d6598f4359e5c080"
   integrity sha512-vt+kDhq/M2ayberEtJcIN/hxXy1Pk+59g2FV/ZQceeaTyCtCucjL2Q7FXlFjtWn4n15KCr1NE2lNNFhp0lEThw==
 
+"@types/destroy@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@types/destroy/-/destroy-1.0.0.tgz#2a5a28fdfb1d5e929019f1c916a1c19370824961"
+  integrity sha512-nE3ePJLWPRu/qFHN8mj3fWnkr9K9ezwoiG4yOis2DuLeAawlnOOT/pM29JQkityrwfEvkblU5O9iS1bsiMqtDw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/express-serve-static-core@*", "@types/express-serve-static-core@^4.17.18":
   version "4.17.24"
   resolved "https://registry.yarnpkg.com/@types/express-serve-static-core/-/express-serve-static-core-4.17.24.tgz#ea41f93bf7e0d59cd5a76665068ed6aab6815c07"
@@ -1225,7 +1232,7 @@
   resolved "https://registry.yarnpkg.com/@types/normalize-package-data/-/normalize-package-data-2.4.1.tgz#d3357479a0fdfdd5907fe67e17e0a85c906e1301"
   integrity sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==
 
-"@types/on-finished@^2":
+"@types/on-finished@2.3.1":
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/@types/on-finished/-/on-finished-2.3.1.tgz#4537f9f2b47b3ba0b92c14a4bcc0f755aeda3484"
   integrity sha512-mzVYaYcFs5Jd2n/O6uYIRUsFRR1cHyZLRvkLCU0E7+G5WhY0qBDAR5fUCeZbvecYOSh9ikhlesyi2UfI8B9ckQ==
@@ -1299,14 +1306,6 @@
     "@types/prop-types" "*"
     "@types/scheduler" "*"
     csstype "^3.0.2"
-
-"@types/response-time@^2":
-  version "2.3.5"
-  resolved "https://registry.yarnpkg.com/@types/response-time/-/response-time-2.3.5.tgz#e85ff348caefd0f8d3e8902424c681a59aafc31e"
-  integrity sha512-4ANzp+I3K7sztFFAGPALWBvSl4ayaDSKzI2Bok+WNz+en2eB2Pvk6VCjR47PBXBWOkEg2r4uWpZOlXA5DNINOQ==
-  dependencies:
-    "@types/express" "*"
-    "@types/node" "*"
 
 "@types/scheduler@*":
   version "0.16.2"
@@ -2754,7 +2753,7 @@ depd@~2.0.0:
   resolved "https://registry.yarnpkg.com/depd/-/depd-2.0.0.tgz#b696163cc757560d09cf22cc8fad1571b79e76df"
   integrity sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==
 
-destroy@~1.0.4:
+destroy@1.0.4, destroy@~1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.0.4.tgz#978857442c44749e4206613e37946205826abd80"
   integrity sha1-l4hXRCxEdJ5CBmE+N5RiBYJqvYA=
@@ -5748,7 +5747,7 @@ object.pick@^1.3.0:
   dependencies:
     isobject "^3.0.1"
 
-on-finished@^2.3.0, on-finished@~2.3.0:
+on-finished@2.3.0, on-finished@^2.3.0, on-finished@~2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/on-finished/-/on-finished-2.3.0.tgz#20f1336481b083cd75337992a16971aa2d906947"
   integrity sha1-IPEzZIGwg811M3mSoWlxqi2QaUc=
