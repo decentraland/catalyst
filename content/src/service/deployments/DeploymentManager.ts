@@ -49,6 +49,20 @@ export class DeploymentManager {
       options?.lastId
     )
 
+    // console.log('process.env.PORT as any', process.env.PORT as any)
+
+    // console.log('FILTERS', options?.filters)
+    // console.log(
+    //   'ALL DEPLOYMENTS',
+    //   await deploymentsRepository.getHistoricalDeployments(
+    //     curatedOffset,
+    //     curatedLimit + 1,
+    //     {},
+    //     options?.sortBy,
+    //     options?.lastId
+    //   )
+    // )
+
     const moreData = deploymentsWithExtra.length > curatedLimit
 
     const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
@@ -73,6 +87,9 @@ export class DeploymentManager {
         migrationData: migrationData.get(result.deploymentId)
       }
     }))
+
+    console.log('GEETIN deploymentsWithExtra ', deploymentsWithExtra)
+    console.log('GEETIN DEPLOYMENTS', deployments)
 
     return {
       deployments: deployments,

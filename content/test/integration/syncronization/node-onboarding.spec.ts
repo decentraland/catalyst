@@ -59,10 +59,20 @@ describe('End 2 end - Node onboarding', function () {
 
     // Start server 3
     await server3.start()
-    console.log('started')
+    // console.log('SERVER 3 started')
 
     // Assert server 3 has all the history
-    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment2))
+    await awaitUntil(async () => {
+      // if (!consoled) {
+      // const deploymentsss = await server3.getDeployments()
+      // if (deploymentsss.length > 0) {
+      // console.log('DEPLOYMENTSS', deploymentsss)
+      //   consoled = true
+      // }
+      // }
+      // console.log('ENTERED')
+      return assertDeploymentsAreReported(server3, deployment1, deployment2)
+    })
     console.log('are deployed')
 
     // Make sure that is didn't download overwritten content
