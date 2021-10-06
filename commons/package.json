@@ -8,7 +8,7 @@
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
-    "test": "jasmine --config=jasmine.json"
+    "test": "jasmine-ts --config=jasmine.json"
   },
   "dependencies": {
     "@catalyst/contracts": "^0.1.0",

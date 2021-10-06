@@ -42,7 +42,6 @@ describe('Integration - Garbage Collection', () => {
     const env = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
-      .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
       .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
 

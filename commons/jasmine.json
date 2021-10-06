@@ -1,5 +1,5 @@
 {
-  "helpers": ["test-utils/reporter.js"],
-  "spec_dir": "dist",
-  "spec_files": ["**/*[sS]pec.js"]
+  "helpers": ["test-utils/helpers.ts"],
+  "spec_dir": "",
+  "spec_files": ["**/*[sS]pec.ts"]
 }

@@ -140,3 +140,7 @@ export type EntityCombo = {
   controllerEntity: ControllerEntity
   entity: Entity
 }
+
+export function isCI(): boolean {
+  return process.env.CI === 'true'
+}

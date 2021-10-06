@@ -49,7 +49,9 @@ export class Server {
 
     this.app = express()
 
-    this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
+    if (this.shouldInitializeMetricsServer()) {
+      this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
+    }
 
     const corsOptions: cors.CorsOptions = {
       origin: true,
@@ -109,6 +111,13 @@ export class Server {
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute('/legacy-entities', controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())
     }
+  }
+
+  /*
+   * Extending implementations should want to change the logic when to initialize metrics server (e.g. tests)
+   */
+  shouldInitializeMetricsServer(): boolean {
+    return true
   }
 
   private registerRoute(

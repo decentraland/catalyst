@@ -1,18 +1,16 @@
-import { DisplayProcessor, SpecReporter, StacktraceOption } from 'jasmine-spec-reporter'
-import SuiteInfo = jasmine.SuiteInfo
+import { SpecReporter, StacktraceOption } from 'jasmine-spec-reporter'
 
-class CustomProcessor extends DisplayProcessor {
-  public displayJasmineStarted(info: SuiteInfo, log: string): string {
-    return `@catalyst ${log}`
+export const reporter = new SpecReporter({
+  summary: {
+    displayDuration: true
+  },
+  spec: {
+    displayStacktrace: StacktraceOption.NONE,
+    displayDuration: true
   }
-}
+})
 
-jasmine.getEnv().clearReporters()
-jasmine.getEnv().addReporter(
-  new SpecReporter({
-    spec: {
-      displayStacktrace: StacktraceOption.NONE
-    },
-    customProcessors: [CustomProcessor]
-  })
-)
+export const installReporter = (): void => {
+  jasmine.getEnv().clearReporters()
+  jasmine.getEnv().addReporter(reporter)
+}

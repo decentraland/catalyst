@@ -19,14 +19,18 @@
     "start:lambdas": "yarn workspace @catalyst/lambdas-server start",
     "start:content": "yarn workspace @catalyst/content-server start",
     "start:comms": "yarn workspace @catalyst/lighthouse-server start",
-    "test": "yarn workspaces run test",
-    "lint:fix": "yarn eslint '**/*.{js,ts}' --fix",
-    "lint:check": "yarn eslint '**/*.{js,ts}'",
+    "test": "run-s 'test:*'",
+    "test:lambdas": "yarn workspace @catalyst/lambdas-server test",
+    "test:content": "yarn workspace @catalyst/content-server test",
+    "test:comms": "yarn workspace @catalyst/lighthouse-server test",
+    "test:commons": "yarn workspace @catalyst/commons test",
+    "lint:fix": "eslint '**/*.{js,ts}' --fix",
+    "lint:check": "eslint '**/*.{js,ts}'",
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": [
-      "yarn lint:fix"
+      "eslint --fix"
     ]
   },
   "prettier": {
