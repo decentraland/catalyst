@@ -1,0 +1,3 @@
+import { installReporter } from '.'
+
+installReporter()

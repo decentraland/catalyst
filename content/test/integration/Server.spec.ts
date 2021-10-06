@@ -47,7 +47,7 @@ describe('Integration - Server', function () {
       .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
       .registerBean(Bean.SNAPSHOT_MANAGER, NoOpSnapshotManager.build())
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
-      .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
+      .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .registerBean(
         Bean.DENYLIST,
         new ActiveDenylist(MockedRepository.build(), mock(ContentAuthenticator), mock(ContentCluster), 'network')

@@ -272,7 +272,7 @@ describe('Integration - Deployment Pagination', () => {
       server.getAddress() +
       `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
-    console.log('URL ', url)
+
     const pointerChanges = await fetchJson(url)
 
     expect(pointerChanges.deltas.length).toBe(1)

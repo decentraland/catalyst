@@ -15,8 +15,8 @@ export class MigrationManager {
       createSchema: true,
       createMigrationsSchema: true,
       count: Infinity,
-      ignorePattern: '.*.ts',
-      databaseUrl: databaseConfig
+      databaseUrl: databaseConfig,
+      log: () => {}
     }
   }
 
