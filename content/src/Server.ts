@@ -113,6 +113,9 @@ export class Server {
     }
   }
 
+  /*
+   * Extending implementations should want to change the logic when to initialize metrics server (e.g. tests)
+   */
   shouldInitializeMetricsServer(): boolean {
     return true
   }
