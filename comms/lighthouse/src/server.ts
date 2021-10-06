@@ -1,4 +1,4 @@
-import { DAOContractClient, DECENTRALAND_ADDRESS, initializeMetricsServer } from '@catalyst/commons'
+import { authHeaders, DAOContractClient, DECENTRALAND_ADDRESS, initializeMetricsServer } from '@catalyst/commons'
 import { DAOContract } from '@catalyst/contracts'
 import { COMMS_API } from '@dcl/catalyst-api-specs'
 import cors from 'cors'
@@ -52,7 +52,7 @@ async function main() {
   const corsOptions: cors.CorsOptions = {
     origin: true,
     methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
-    allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Peer-Token'],
+    allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Peer-Token', ...authHeaders],
     credentials: true,
     maxAge: 86400
   }
