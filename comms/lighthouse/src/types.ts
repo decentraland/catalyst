@@ -40,3 +40,14 @@ export type AppServices = {
   peersService: () => PeersService
   archipelagoService: () => ArchipelagoService
 }
+
+export interface RTCIceServer {
+  credential?: string
+  credentialType?: RTCIceCredentialType
+  urls: string | string[]
+  username?: string
+}
+
+export type PeerParameters = Partial<{
+  iceServers: RTCIceServer[]
+}>
