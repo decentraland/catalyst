@@ -221,7 +221,7 @@ describe('Integration - Deployment Pagination', () => {
         fromLocalTimestamp: E1Timestamp,
         toLocalTimestamp: E3Timestamp
       })
-    const actualDeployments = await fetchJson(url)
+    const actualDeployments = (await fetchJson(url)) as any
 
     expect(actualDeployments.deployments.length).toBe(2)
     const nextLink = actualDeployments.pagination.next
@@ -273,7 +273,7 @@ describe('Integration - Deployment Pagination', () => {
       `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
     console.log('URL ', url)
-    const pointerChanges = await fetchJson(url)
+    const pointerChanges = await (await fetch(url)).json()
 
     expect(pointerChanges.deltas.length).toBe(1)
     expect(pointerChanges.pagination.next).not.toContain('toLocalTimestamp=')
@@ -309,13 +309,11 @@ describe('Integration - Deployment Pagination', () => {
         ...newOptions,
         ...composedOptions
       })
-    const response = await fetchJson(url)
-    return response
+    return fetchJson(url) as any
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
     const url = server.getAddress() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
-    const response = await fetchJson(url)
-    return response
+    return fetchJson(url) as any
   }
 })
