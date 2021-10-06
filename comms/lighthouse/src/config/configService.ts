@@ -1,5 +1,6 @@
 import { fetchJson } from 'dcl-catalyst-commons'
 import ms from 'ms'
+import { PeerParameters } from '../types'
 import { ISimpleStorage } from './simpleStorage'
 
 export type ConfigKeyValue = {
@@ -48,6 +49,12 @@ export class LighthouseConfig<T> {
     name: 'peersCheckInterval',
     fromText: parseInt,
     defaultValue: 60000
+  })
+
+  static readonly PEER_PARAMETERS: LighthouseConfig<PeerParameters> = new LighthouseConfig<PeerParameters>({
+    name: 'peerParameters',
+    fromText: JSON.parse,
+    defaultValue: {} // By default, we don't send additional parameters to peers. They use their default configuration
   })
 
   readonly name: string

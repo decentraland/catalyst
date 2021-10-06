@@ -7,10 +7,9 @@
     "build": "tsc -b",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
-    "copy-test-resources": "yarn cpy test/integration/resources/* dist --parents",
     "test": "run-p 'test:*'",
-    "test:unit": "yarn build && jasmine --config=jasmine.unit.json",
-    "test:integration": "yarn copy-test-resources && jasmine --config=jasmine.integration.json"
+    "test:unit": "jasmine-ts --config=jasmine.unit.json",
+    "test:integration": "jasmine-ts --config=jasmine.integration.json"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",

@@ -72,7 +72,6 @@ describe('Integration - Deployment Fields', () => {
 
   async function fetchDeployment(...fields: DeploymentField[]): Promise<Partial<Deployment>> {
     const url = server.getAddress() + `/deployments?fields=` + fields.join(',')
-    console.log(url)
     const deployments: Response = await fetcher.fetch(url, {})
     return (await deployments.json())[0]
   }
