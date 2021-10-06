@@ -4,6 +4,7 @@ import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { metricsComponent } from '../../metrics'
+import { FailedDeployment } from '../errors/FailedDeploymentsManager'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
@@ -51,12 +52,17 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     )
 
     // Configure fail if sync hangs
-    this.failIfSyncHangs().catch((e) =>
+    this.failIfSyncHangs().catch(() =>
       ClusterSynchronizationManager.LOGGER.error('There was an error during the check of synchronization.')
     )
 
     // Sync with other servers
     await this.syncWithServers()
+
+    // Configure retry for failed deployments
+    this.retryFailedDeployments().catch(() =>
+      ClusterSynchronizationManager.LOGGER.error('There was an error during the retry of failed deployments.')
+    )
   }
 
   stop(): Promise<void> {
@@ -95,6 +101,21 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         )
         process.exit(1)
       }
+    }
+  }
+
+  private async retryFailedDeployments(): Promise<void> {
+    while (true) {
+      await delay(ms('1h'))
+
+      // Get Failed Deployments from local storage
+      const failedDeployments: FailedDeployment[] = await getAllFailedDeployments()
+
+      // TODO: Implement an exponential backoff for retrying
+      failedDeployments.forEach((failedDeployment) => {
+        // Build Deployment from other servers
+        // Deploy local
+      })
     }
   }
 
