@@ -37,7 +37,7 @@
     "multer": "1.4.3",
     "node-cache": "^5.1.2",
     "node-fetch": "2.6.1",
-    "node-pg-migrate": "5.10.0",
+    "node-pg-migrate": "6.0.0",
     "on-finished": "2.3.0",
     "p-queue": "6.6.2",
     "parallel-transform": "1.2.0",
