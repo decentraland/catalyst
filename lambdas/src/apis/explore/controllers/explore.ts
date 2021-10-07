@@ -247,8 +247,10 @@ async function fetchStatus(serverData: ServerMetadata) {
   // TODO: Create a CommsClient and replace this plain json call
   const fetcher = new Fetcher()
   return noReject(
-    fetcher
-      .fetchJson(`${serverData.address}/comms/status?includeLayers=true&includeUsersParcels=true`, { timeout: '10s' })
-      .then((value) => ({ ...value, url: serverData.address }))
+    (
+      fetcher.fetchJson(`${serverData.address}/comms/status?includeLayers=true&includeUsersParcels=true`, {
+        timeout: '10s'
+      }) as any
+    ).then((value) => ({ ...value, url: serverData.address }))
   )
 }

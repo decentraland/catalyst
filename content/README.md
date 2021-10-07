@@ -16,6 +16,7 @@ If you set up a local content server, it will receive all updates by those other
   `yarn install`
 
 - Build the project
+
   `yarn build`
 
 - Start the database
