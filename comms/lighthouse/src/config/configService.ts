@@ -180,7 +180,7 @@ function buildEnvWrapper(): EnvironmentWrapper {
 async function fetchGlobalConfig(ethNetwork: string): Promise<Config> {
   try {
     const tld = ethNetwork === 'mainnet' ? 'org' : 'zone'
-    return await fetchJson(`https://config.decentraland.${tld}/catalyst.json`)
+    return (await fetchJson(`https://config.decentraland.${tld}/catalyst.json`)) as Config
   } catch {
     return {}
   }

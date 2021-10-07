@@ -9,12 +9,7 @@ export async function retry<T>(
   description: string,
   waitTime: string = '1s'
 ): Promise<T> {
-  return externalRetry(
-    execution,
-    attempts,
-    waitTime,
-    (attemptsLeft) =>
-      LOGGER.info(`Failed to ${description}. Still have ${attemptsLeft} attempt/s left. Will try again in ${waitTime}`),
-    () => LOGGER.warn(`Failed to ${description} after ${attempts} attempts`)
+  return externalRetry(execution, attempts, waitTime, (attemptsLeft) =>
+    LOGGER.info(`Failed to ${description}. Still have ${attemptsLeft} attempt/s left. Will try again in ${waitTime}`)
   )
 }
