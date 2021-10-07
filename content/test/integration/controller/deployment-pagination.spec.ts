@@ -272,7 +272,8 @@ describe('Integration - Deployment Pagination', () => {
       server.getAddress() +
       `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
-    const pointerChanges = await (await fetch(url)).json()
+
+    const pointerChanges = (await fetchJson(url)) as any
 
     expect(pointerChanges.deltas.length).toBe(1)
     expect(pointerChanges.pagination.next).not.toContain('toLocalTimestamp=')
