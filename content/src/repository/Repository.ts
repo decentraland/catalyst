@@ -64,12 +64,7 @@ export class Repository {
   }
 
   private runInternal<T>(execution: (db: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
-    if (false) {
-      console.log(this.queue)
-    }
-
-    return execution(this.db)
-    // return this.queue.addDatabaseRequest(options.priority, () => execution(this.db))
+    return this.queue.addDatabaseRequest(options.priority, () => execution(this.db))
   }
 }
 

@@ -9,6 +9,16 @@ import { DeploymentWithSource } from './EventStreamProcessor'
  * We will use a buffer to accumulate a number of deployments, and when the number is reached, we
  * will check which of those deployments is new.
  */
+function logUndefinedError<T, F extends (...args) => Promise<T>>(fn: F): F {
+  return (async (...args) => {
+    const result = await fn(...args)
+    if (result === undefined) {
+      console.log('call with arguments', args, 'returned undefined')
+    }
+    return result
+  }) as F
+}
+
 export class OnlyNotDeployedFilter extends Transform implements Transform {
   private static readonly BUFFERED_DEPLOYMENTS = 300
   private static readonly LOGGER = log4js.getLogger('OnlyNotDeployedFilter')
@@ -56,8 +66,9 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
     // Find non deployed entities
     const ids = bufferCopy.map(({ deployment }) => deployment.entityId)
     try {
-      const deployInfo = await this.checkIfAlreadyDeployed(ids)
-      console.log('DEPLOYINFO', deployInfo)
+      const deployInfo = await logUndefinedError(this.checkIfAlreadyDeployed)(ids)
+
+      // console.log('DEPLOYINFO', deployInfo)
       const newEntities: Set<EntityId> = new Set(
         Array.from(deployInfo.entries())
           .filter(([, deployed]) => !deployed)
