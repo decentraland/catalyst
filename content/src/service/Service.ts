@@ -37,7 +37,7 @@ export interface MetaverseContentService {
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
   storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>
   getStatus(): ServerStatus
-  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
+  getDeployments(task?: Database, options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): Promise<FailedDeployment[]>
   getPointerChanges(
@@ -71,7 +71,7 @@ export interface ClusterDeploymentsService {
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
+  areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'migrationData'>

@@ -115,6 +115,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
   }
 
   deployEntity(
+    task: Database,
     files: Buffer[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,

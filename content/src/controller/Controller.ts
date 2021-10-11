@@ -294,7 +294,7 @@ export class Controller {
       return
     }
 
-    const { deployments } = await this.service.getDeployments({
+    const { deployments } = await this.service.getDeployments(undefined, {
       fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type] }
     })
@@ -515,7 +515,7 @@ export class Controller {
       limit: limit,
       lastId: lastId
     }
-    const { deployments, filters, pagination } = await this.service.getDeployments(deploymentOptions)
+    const { deployments, filters, pagination } = await this.service.getDeployments(undefined, deploymentOptions)
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
     )

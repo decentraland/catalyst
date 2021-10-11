@@ -14,6 +14,21 @@ export class Repository {
   /**
    * Takes a db and uses it if it's present. If it isn't, then a new database request is created, using the queue
    */
+  reuseTaskIfPresent<T>(
+    db: Database | undefined,
+    execution: (db: Database | Database) => Promise<T>,
+    options: ExecutionOptions
+  ): Promise<T> {
+    if (db) {
+      return db.task(execution)
+    } else {
+      return this.task(execution, options)
+    }
+  }
+
+  /**
+   * Takes a db and uses it if it's present. If it isn't, then a new database request is created, using the queue
+   */
   reuseIfPresent<T>(
     db: Database | undefined,
     execution: (db: Database | Database) => Promise<T>,

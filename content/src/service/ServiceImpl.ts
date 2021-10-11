@@ -110,14 +110,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     try {
       const storeResult:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
-        | InvalidResult = await this.storeDeploymentInDatabase(
+        | InvalidResult = await this.repository.reuseTaskIfPresent(
         task,
-        entityId,
-        entity,
-        auditInfo,
-        hashes,
-        context,
-        alreadyStoredContent
+        (db) => this.storeDeploymentInDatabase(db, entityId, entity, auditInfo, hashes, context, alreadyStoredContent),
+        { priority: DB_REQUEST_PRIORITY.LOW }
       )
 
       if (!('auditInfoComplete' in storeResult)) {
@@ -154,7 +150,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   private async storeDeploymentInDatabase(
-    task: Database | undefined,
+    task: Database,
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
@@ -165,91 +161,73 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     | InvalidResult
     | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
   > {
-    return await this.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.txIf(async (transaction) => {
-          const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
+    const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(task, entityId)
 
-          // Prepare validation functions that need context
-          const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
-            fetchDeployments: (filters) => this.getDeployments({ filters }, transaction),
-            areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
-            fetchDeploymentStatus: (type, id) =>
-              this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
-            isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
-            isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
-              Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
-            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
-            fetchContentFileSize: async (hash) => await this.getSize(hash)
-          })
+    // Prepare validation functions that need context
+    const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
+      fetchDeployments: (filters) => this.getDeployments(task, { filters }),
+      areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(task, entity),
+      fetchDeploymentStatus: (type, id) =>
+        this.failedDeploymentsManager.getDeploymentStatus(task.failedDeployments, type, id),
+      isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
+      isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
+        Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
+      isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
+      fetchContentFileSize: async (hash) => await this.getSize(hash)
+    })
 
-          if (!validationResult.ok) {
-            return { errors: validationResult.errors }
-          }
+    if (!validationResult.ok) {
+      return { errors: validationResult.errors }
+    }
 
-          const auditInfoComplete: AuditInfo = {
-            ...auditInfo,
-            version: entity.version,
-            localTimestamp: Date.now()
-          }
+    const auditInfoComplete: AuditInfo = {
+      ...auditInfo,
+      version: entity.version,
+      localTimestamp: Date.now()
+    }
 
-          let affectedPointers: Pointer[] | undefined
+    let affectedPointers: Pointer[] | undefined
 
-          if (!isEntityAlreadyDeployed) {
-            // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
-            // Calculate overwrites
-            const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(
-              transaction.pointerHistory,
-              entity
-            )
+    if (!isEntityAlreadyDeployed) {
+      // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
+      // Calculate overwrites
+      const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(task.pointerHistory, entity)
 
-            // Store the deployment
-            const deploymentId = await this.deploymentManager.saveDeployment(
-              transaction.deployments,
-              transaction.migrationData,
-              transaction.content,
-              entity,
-              auditInfoComplete,
-              overwrittenBy
-            )
+      // Store the deployment
+      const deploymentId = await this.deploymentManager.saveDeployment(
+        task.deployments,
+        task.migrationData,
+        task.content,
+        entity,
+        auditInfoComplete,
+        overwrittenBy
+      )
 
-            // Modify active pointers
-            const pointersFromEntity = await this.pointerManager.referenceEntityFromPointers(
-              transaction.lastDeployedPointers,
-              deploymentId,
-              entity
-            )
-            affectedPointers = Array.from(pointersFromEntity.keys())
+      // Modify active pointers
+      const pointersFromEntity = await this.pointerManager.referenceEntityFromPointers(
+        task.lastDeployedPointers,
+        deploymentId,
+        entity
+      )
+      affectedPointers = Array.from(pointersFromEntity.keys())
 
-            // Save deployment pointer changes
-            await this.deploymentManager.savePointerChanges(
-              transaction.deploymentPointerChanges,
-              deploymentId,
-              pointersFromEntity
-            )
+      // Save deployment pointer changes
+      await this.deploymentManager.savePointerChanges(task.deploymentPointerChanges, deploymentId, pointersFromEntity)
 
-            // Add to pointer history
-            await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
+      // Add to pointer history
+      await this.pointerManager.addToHistory(task.pointerHistory, deploymentId, entity)
 
-            // Set who overwrote who
-            await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
+      // Set who overwrote who
+      await this.deploymentManager.setEntitiesAsOverwritten(task.deployments, overwrote, deploymentId)
 
-            // Store the entity's content
-            await this.storeEntityContent(hashes, alreadyStoredContent)
-          }
+      // Store the entity's content
+      await this.storeEntityContent(hashes, alreadyStoredContent)
+    }
 
-          // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-          await this.failedDeploymentsManager.reportSuccessfulDeployment(
-            transaction.failedDeployments,
-            entity.type,
-            entity.id
-          )
+    // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
+    await this.failedDeploymentsManager.reportSuccessfulDeployment(task.failedDeployments, entity.type, entity.id)
 
-          return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
-        }),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+    return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
   }
 
   reportErrorDuringSync(
@@ -272,17 +250,16 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     )
   }
 
-  async getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]> {
-    const deployments = await this.getDeployments({ filters: { entityIds: ids } }, task)
+  async getEntitiesByIds(ids: EntityId[], task: Database): Promise<Entity[]> {
+    const deployments = await this.getDeployments(task, { filters: { entityIds: ids } })
     return this.mapDeploymentsToEntities(deployments)
   }
 
-  async getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]> {
+  async getEntitiesByPointers(type: EntityType, pointers: Pointer[], task: Database): Promise<Entity[]> {
     const allEntities = await this.cache.get(type, pointers, async (type, pointers) => {
-      const deployments = await this.getDeployments(
-        { filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true } },
-        task
-      )
+      const deployments = await this.getDeployments(task, {
+        filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
+      })
       const entities = this.mapDeploymentsToEntities(deployments)
       const entries: [Pointer, Entity][][] = entities.map((entity) =>
         entity.pointers.map((pointer) => [pointer, entity])
@@ -317,12 +294,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   /** Check if there are newer entities on the given entity's pointers */
-  private async areThereNewerEntitiesOnPointers(entity: Entity, transaction: Database): Promise<boolean> {
+  private async areThereNewerEntitiesOnPointers(task: Database, entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await this.getDeployments(
-      { filters: { entityTypes: [entity.type], pointers: entity.pointers } },
-      transaction
-    )
+    const { deployments: lastDeployments } = await this.getDeployments(task, {
+      filters: { entityTypes: [entity.type], pointers: entity.pointers }
+    })
     for (const lastDeployment of lastDeployments) {
       if (happenedBefore(entity, lastDeployment)) {
         return true
@@ -407,30 +383,28 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {
-    return this.repository.reuseIfPresent(
+    return this.repository.reuseTaskIfPresent(
       task,
       (db) => this.deploymentManager.areEntitiesDeployed(db.deployments, entityIds),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
-  }
-
-  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
-    return this.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.taskIf((task) =>
-          this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
-        ),
       {
         priority: DB_REQUEST_PRIORITY.HIGH
       }
     )
   }
 
-  // This endpoint is for debugging purposes
-  getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.repository.reuseIfPresent(
+  getDeployments(task?: Database, options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+    return this.repository.reuseTaskIfPresent(
       task,
+      (db) => this.deploymentManager.getDeployments(db.deployments, db.content, db.migrationData, options),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
+    )
+  }
+
+  // This endpoint is for debugging purposes
+  getActiveDeploymentsByContentHash(hash: string): Promise<EntityId[]> {
+    return this.repository.task(
       (db) => db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)),
       {
         priority: DB_REQUEST_PRIORITY.LOW
@@ -475,8 +449,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     this.listeners.push(listener)
   }
 
-  private async isEntityAlreadyDeployed(entityId: EntityId, transaction: Database): Promise<boolean> {
-    const result = await this.areEntitiesAlreadyDeployed([entityId], transaction)
+  private async isEntityAlreadyDeployed(task: Database, entityId: EntityId): Promise<boolean> {
+    const result = await this.areEntitiesAlreadyDeployed([entityId], task)
     return result.get(entityId)!
   }
 }
