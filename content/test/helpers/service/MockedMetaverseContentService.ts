@@ -89,7 +89,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     })
   }
 
-  getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+  getDeployments(_?: Database, options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return Promise.resolve({
       deployments: this.entities
         .map((entity) => this.entityToDeployment(entity))
@@ -115,11 +115,11 @@ export class MockedMetaverseContentService implements MetaverseContentService {
   }
 
   deployEntity(
-    task: Database,
-    files: Buffer[],
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext
+    _files: Buffer[],
+    _entityId: EntityId,
+    _auditInfo: LocalDeploymentAuditInfo,
+    _context: DeploymentContext,
+    _?: Database
   ): Promise<Timestamp> {
     return Promise.resolve(Date.now())
   }
