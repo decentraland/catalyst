@@ -92,10 +92,14 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext = DeploymentContext.LOCAL,
-    task: Database
+    task?: Database
   ): Promise<DeploymentResult> {
     // Validate the deployment
-    const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
+    const hashedFiles = await this.repository.reuseTaskIfPresent(
+      task,
+      (db) => this.validateDeployment(db.denylist, files, entityId, auditInfo),
+      { priority: DB_REQUEST_PRIORITY.LOW }
+    )
 
     // If all validations passed, then deploy the entity
     return this.service.deployEntity(hashedFiles, entityId, auditInfo, context, task)
@@ -105,7 +109,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.deleteContent(fileHashes)
   }
 
-  async getDeployments(task: Database, options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+  async getDeployments(task?: Database, options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     const deploymentHistory = await this.service.getDeployments(task, options)
 
     // Prepare holders
@@ -130,7 +134,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     })
 
     // Check which targets are denylisted only if there items in denylist
-    const queryResult = await this.denylist.areTargetsDenylisted(task.denylist, allTargets)
+    const queryResult = await this.denylist.areTargetsDenylisted(task!.denylist, allTargets)
 
     // Filter out deployments with denylisted pointers
     const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {

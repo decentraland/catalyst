@@ -31,7 +31,9 @@ describe('Integration - Concurrent deployments', () => {
     await Promise.all(entities.map((entityCombo) => deployEntity(entityCombo)))
 
     // Assert that only one is active
-    const { deployments } = await service.getDeployments({ filters: { pointers: [P1], onlyCurrentlyPointed: true } })
+    const { deployments } = await service.getDeployments(undefined, {
+      filters: { pointers: [P1], onlyCurrentlyPointed: true }
+    })
     expect(deployments.length).toEqual(1)
   })
 

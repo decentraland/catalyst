@@ -22,6 +22,7 @@ export class Repository {
     if (db) {
       return db.task(execution)
     } else {
+      db = this.db
       return this.task(execution, options)
     }
   }
