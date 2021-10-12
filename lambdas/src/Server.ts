@@ -75,6 +75,8 @@ export class Server {
     const theGraphClient: TheGraphClient = env.getBean(Bean.THE_GRAPH_CLIENT)
     const offChainManager: OffChainWearablesManager = env.getBean(Bean.OFF_CHAIN_MANAGER)
 
+    const profilesCacheTTL: number = env.getConfig(EnvironmentConfig.PROFILES_CACHE_TTL)
+
     // Base endpoints
     this.app.use('/', statusRouter(env))
 
@@ -85,11 +87,17 @@ export class Server {
     // Profile API implementation
     this.app.use(
       '/profile',
-      initializeIndividualProfileRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
+      initializeIndividualProfileRoutes(
+        express.Router(),
+        contentClient,
+        ensOwnership,
+        wearablesOwnership,
+        profilesCacheTTL
+      )
     )
     this.app.use(
       '/profiles',
-      initializeProfilesRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership)
+      initializeProfilesRoutes(express.Router(), contentClient, ensOwnership, wearablesOwnership, profilesCacheTTL)
     )
 
     // DCL-Crypto API implementation
