@@ -107,6 +107,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
       Array.from(entity.content?.values() ?? [])
     )
+
     try {
       const storeResult:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }

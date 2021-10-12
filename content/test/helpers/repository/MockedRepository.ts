@@ -32,6 +32,13 @@ export class MockedRepository {
     when(mockedRepository.reuseIfPresent(anything(), anything(), anything())).thenCall((db, call) =>
       call(db ?? dbInstance)
     )
+
+    when(mockedRepository.reuseTaskIfPresent(anything(), anything(), anything())).thenCall((db, call) =>
+      call(db ?? dbInstance)
+    )
+    when(mockedRepository.reuseTaskIfPresent(anything(), anything(), anything())).thenCall((db, call) =>
+      call(db ?? dbInstance)
+    )
     return instance(mockedRepository)
   }
 
