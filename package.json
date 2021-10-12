@@ -47,7 +47,7 @@
     "@types/node": "16.7.10",
     "@types/react": "^17",
     "@types/react-dom": "^17",
-    "@types/sinon": "10.0.2",
+    "@types/sinon": "10.0.4",
     "@types/uuid": "^8",
     "@typescript-eslint/eslint-plugin": "4.33.0",
     "@typescript-eslint/parser": "4.30.0",
