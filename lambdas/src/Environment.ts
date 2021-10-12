@@ -96,7 +96,8 @@ export const enum EnvironmentConfig {
   MAX_DEPLOYMENT_OBTENTION_TIME,
   METRICS,
   OFF_CHAIN_WEARABLES_REFRESH_TIME,
-  VALIDATE_API
+  VALIDATE_API,
+  PROFILES_CACHE_TTL
 }
 
 export class EnvironmentBuilder {
@@ -223,6 +224,10 @@ export class EnvironmentBuilder {
       () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '1d'
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROFILES_CACHE_TTL, () =>
+      parseInt(process.env.PROFILES_CACHE_TTL ?? '300')
+    ) // 5 minutes by default
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
