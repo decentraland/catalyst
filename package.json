@@ -49,7 +49,7 @@
     "@types/react-dom": "^17",
     "@types/sinon": "10.0.2",
     "@types/uuid": "^8",
-    "@typescript-eslint/eslint-plugin": "4.30.0",
+    "@typescript-eslint/eslint-plugin": "4.33.0",
     "@typescript-eslint/parser": "4.30.0",
     "cpy-cli": "^3.1.1",
     "eslint": "7.32.0",
