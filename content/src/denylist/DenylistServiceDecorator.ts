@@ -97,7 +97,9 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     // Validate the deployment
     const hashedFiles = await this.repository.reuseTaskIfPresent(
       task,
-      (db) => this.validateDeployment(db.denylist, files, entityId, auditInfo),
+      (db) => {
+        return this.validateDeployment(db.denylist, files, entityId, auditInfo)
+      },
       { priority: DB_REQUEST_PRIORITY.LOW }
     )
 
@@ -110,82 +112,90 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   }
 
   async getDeployments(task?: Database, options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
-    const deploymentHistory = await this.service.getDeployments(task, options)
+    return this.repository.reuseTaskIfPresent(
+      task,
+      async (db) => {
+        const deploymentHistory = await this.service.getDeployments(db, options)
 
-    // Prepare holders
-    const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
-    const contentTargetsByEntity: Map<EntityId, Map<ContentFileHash, DenylistTarget>> = new Map()
-    const pointerTargetsByEntity: Map<EntityId, Map<Pointer, DenylistTarget>> = new Map()
-    const allTargets: DenylistTarget[] = []
+        // Prepare holders
+        const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
+        const contentTargetsByEntity: Map<EntityId, Map<ContentFileHash, DenylistTarget>> = new Map()
+        const pointerTargetsByEntity: Map<EntityId, Map<Pointer, DenylistTarget>> = new Map()
+        const allTargets: DenylistTarget[] = []
 
-    // Calculate and group targets by entity
-    deploymentHistory.deployments.forEach(({ entityId, entityType, content, pointers }) => {
-      const entityTarget = buildEntityTarget(entityType, entityId)
-      const hashTargets: Map<ContentFileHash, DenylistTarget> = !content
-        ? new Map()
-        : new Map(Array.from(content.entries()).map(([, hash]) => [hash, buildContentTarget(hash)]))
-      const pointerTargets: Map<Pointer, DenylistTarget> = new Map(
-        pointers.map((pointer) => [pointer, buildPointerTarget(entityType, pointer)])
-      )
-      entityTargetsByEntity.set(entityId, entityTarget)
-      contentTargetsByEntity.set(entityId, hashTargets)
-      pointerTargetsByEntity.set(entityId, pointerTargets)
-      allTargets.push(entityTarget, ...hashTargets.values(), ...pointerTargets.values())
-    })
+        // Calculate and group targets by entity
+        deploymentHistory.deployments.forEach(({ entityId, entityType, content, pointers }) => {
+          const entityTarget = buildEntityTarget(entityType, entityId)
+          const hashTargets: Map<ContentFileHash, DenylistTarget> = !content
+            ? new Map()
+            : new Map(Array.from(content.entries()).map(([, hash]) => [hash, buildContentTarget(hash)]))
+          const pointerTargets: Map<Pointer, DenylistTarget> = new Map(
+            pointers.map((pointer) => [pointer, buildPointerTarget(entityType, pointer)])
+          )
+          entityTargetsByEntity.set(entityId, entityTarget)
+          contentTargetsByEntity.set(entityId, hashTargets)
+          pointerTargetsByEntity.set(entityId, pointerTargets)
+          allTargets.push(entityTarget, ...hashTargets.values(), ...pointerTargets.values())
+        })
 
-    // Check which targets are denylisted only if there items in denylist
-    const queryResult = await this.denylist.areTargetsDenylisted(task!.denylist, allTargets)
+        // Check which targets are denylisted only if there items in denylist
+        const queryResult = await this.denylist.areTargetsDenylisted(db.denylist, allTargets)
 
-    // Filter out deployments with denylisted pointers
-    const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
-      if (options?.filters?.pointers && options.filters.pointers.length > 0) {
-        // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
-        const intersection = options.filters.pointers.filter((pointer) => pointers.includes(pointer))
-        const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId)!
-        // Check if there is at least one pointer on the intersection that is not denylisted
-        const isAtLeastOnePointerNotDenylisted = intersection
-          .map((pointer) => pointerTargets.get(pointer)!)
-          .some((target) => !isTargetDenylisted(target, queryResult))
-        // If there is one pointer on the intersection that is not denylisted, then the entity shouldn't be filtered out
-        return isAtLeastOnePointerNotDenylisted
-      }
-      return true
-    })
+        // Filter out deployments with denylisted pointers
+        const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
+          if (options?.filters?.pointers && options.filters.pointers.length > 0) {
+            // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
+            const intersection = options.filters.pointers.filter((pointer) => pointers.includes(pointer))
+            const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId)!
+            // Check if there is at least one pointer on the intersection that is not denylisted
+            const isAtLeastOnePointerNotDenylisted = intersection
+              .map((pointer) => pointerTargets.get(pointer)!)
+              .some((target) => !isTargetDenylisted(target, queryResult))
+            // If there is one pointer on the intersection that is not denylisted, then the entity shouldn't be filtered out
+            return isAtLeastOnePointerNotDenylisted
+          }
+          return true
+        })
 
-    // Perform sanitization
-    const sanitizedDeployments = filteredDeployments.map((deployment) => {
-      const { entityId } = deployment
-      const entityTarget = entityTargetsByEntity.get(entityId)!
-      const contentTargets = contentTargetsByEntity.get(entityId)!
+        // Perform sanitization
+        const sanitizedDeployments = filteredDeployments.map((deployment) => {
+          const { entityId } = deployment
+          const entityTarget = entityTargetsByEntity.get(entityId)!
+          const contentTargets = contentTargetsByEntity.get(entityId)!
 
-      const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
-      const denylistedContent = Array.from(contentTargets.entries())
-        .map(([hash, target]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
-        .filter(({ isDenylisted }) => isDenylisted)
-        .map(({ hash }) => hash)
+          const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
+          const denylistedContent = Array.from(contentTargets.entries())
+            .map(([hash, target]) => ({ hash, isDenylisted: isTargetDenylisted(target, queryResult) }))
+            .filter(({ isDenylisted }) => isDenylisted)
+            .map(({ hash }) => hash)
 
-      const { auditInfo } = deployment
-      const result = {
-        ...deployment,
-        content: isEntityDenylisted ? undefined : deployment.content,
-        metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
-        auditInfo: {
-          ...auditInfo
+          const { auditInfo } = deployment
+          const result = {
+            ...deployment,
+            content: isEntityDenylisted ? undefined : deployment.content,
+            metadata: isEntityDenylisted ? DenylistServiceDecorator.DENYLISTED_METADATA : deployment.metadata,
+            auditInfo: {
+              ...auditInfo
+            }
+          }
+          if (denylistedContent.length > 0) {
+            result.auditInfo.denylistedContent = denylistedContent
+          }
+          if (isEntityDenylisted) {
+            result.auditInfo.isDenylisted = true
+          }
+          return result
+        })
+
+        return {
+          ...deploymentHistory,
+          deployments: sanitizedDeployments
         }
+      },
+      {
+        priority: DB_REQUEST_PRIORITY.HIGH
       }
-      if (denylistedContent.length > 0) {
-        result.auditInfo.denylistedContent = denylistedContent
-      }
-      if (isEntityDenylisted) {
-        result.auditInfo.isDenylisted = true
-      }
-      return result
-    })
-
-    return {
-      ...deploymentHistory,
-      deployments: sanitizedDeployments
-    }
+    )
   }
 
   getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, lastId?: string) {
