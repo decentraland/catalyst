@@ -1,13 +1,17 @@
 import { delay, SynchronizationState } from '@catalyst/commons'
+import { DeploymentData } from 'dcl-catalyst-client'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { metricsComponent } from '../../metrics'
+import { FailedDeployment } from '../errors/FailedDeploymentsManager'
+import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, MetaverseContentService } from '../Service'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
+import { downloadDeployment } from './failed-deployments/Requests'
 import { DeploymentWithSource } from './streaming/EventStreamProcessor'
 import { streamMap } from './streaming/StreamHelper'
 
@@ -29,6 +33,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly cluster: ContentCluster,
     private readonly systemProperties: SystemPropertiesManager,
     private readonly deployer: EventDeployer,
+    private readonly service: MetaverseContentService & ClusterDeploymentsService,
     private readonly timeBetweenSyncs: number,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number
@@ -51,12 +56,17 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     )
 
     // Configure fail if sync hangs
-    this.failIfSyncHangs().catch((e) =>
+    this.failIfSyncHangs().catch(() =>
       ClusterSynchronizationManager.LOGGER.error('There was an error during the check of synchronization.')
     )
 
     // Sync with other servers
     await this.syncWithServers()
+
+    // Configure retry for failed deployments
+    this.retryFailedDeployments().catch(() =>
+      ClusterSynchronizationManager.LOGGER.error('There was an error during the retry of failed deployments.')
+    )
   }
 
   stop(): Promise<void> {
@@ -95,6 +105,39 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         )
         process.exit(1)
       }
+    }
+  }
+
+  private async retryFailedDeployments(): Promise<void> {
+    while (true) {
+      await delay(ms('1h'))
+
+      // Get Failed Deployments from local storage
+      const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
+
+      ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
+
+      // TODO: Implement an exponential backoff for retrying
+      failedDeployments.forEach(async (failedDeployment) => {
+        // Build Deployment from other servers
+        const entityId = failedDeployment.entityId
+        ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
+        const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
+        // Deploy local
+        const result: DeploymentResult = await this.service.deployEntity(
+          data.files,
+          entityId,
+          { authChain: data.authChain },
+          DeploymentContext.FIX_ATTEMPT
+        )
+        if (typeof result === 'number') {
+          ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
+        } else {
+          ClusterSynchronizationManager.LOGGER.info(
+            `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
+          )
+        }
+      })
     }
   }
 
