@@ -133,7 +133,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         if (typeof result === 'number') {
           ClusterSynchronizationManager.LOGGER.info(`Deployment successful`)
         } else {
-          ClusterSynchronizationManager.LOGGER.info(`Deployment failed due: ${result}`)
+          ClusterSynchronizationManager.LOGGER.info(`Deployment failed due: ${result.errors.toString()}`)
         }
       })
     }
