@@ -420,7 +420,7 @@ export class EnvironmentBuilder {
         new Map(
           Object.entries(process.env)
             .filter(([name]) => name.startsWith('CACHE'))
-            .map(([key, value]) => [key, Number(value)])
+            .map(([key, value]) => [key, +value!])
         )
     )
 
