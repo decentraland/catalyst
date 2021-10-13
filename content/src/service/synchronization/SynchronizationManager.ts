@@ -6,7 +6,7 @@ import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { metricsComponent } from '../../metrics'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
-import { ClusterDeploymentsService, DeploymentContext, MetaverseContentService } from '../Service'
+import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, MetaverseContentService } from '../Service'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
@@ -117,18 +117,26 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // Get Failed Deployments from local storage
       const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
 
+      ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
+
       // TODO: Implement an exponential backoff for retrying
       failedDeployments.forEach(async (failedDeployment) => {
         // Build Deployment from other servers
         const entityId = failedDeployment.entityId
+        ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
         const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
         // Deploy local
-        await this.service.deployEntity(
+        const result: DeploymentResult = await this.service.deployEntity(
           data.files,
           entityId,
           { authChain: data.authChain },
           DeploymentContext.FIX_ATTEMPT
         )
+        if (typeof result === 'number') {
+          ClusterSynchronizationManager.LOGGER.info(`Deployment successful`)
+        } else {
+          ClusterSynchronizationManager.LOGGER.info(`Deployment failed due: ${result}`)
+        }
       })
     }
   }
