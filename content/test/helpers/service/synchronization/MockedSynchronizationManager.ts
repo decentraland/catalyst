@@ -1,4 +1,4 @@
-import { SynchronizationManager } from '@katalyst/content/service/synchronization/SynchronizationManager'
+import { SynchronizationManager } from '../../../../src/service/synchronization/SynchronizationManager'
 
 export class MockedSynchronizationManager implements SynchronizationManager {
   start(): Promise<void> {

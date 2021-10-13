@@ -3,7 +3,7 @@ describe('Assorted General Tests', () => {
     try {
       await intermediateCall()
     } catch (error) {
-      console.log('The error was catched')
+      console.debug('The error was catched')
     }
   })
 

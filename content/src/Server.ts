@@ -1,8 +1,10 @@
+import { initializeMetricsServer } from '@catalyst/commons'
+import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import compression from 'compression'
 import cors from 'cors'
-import { Metrics } from 'decentraland-katalyst-commons/metrics'
 import { once } from 'events'
 import express, { NextFunction, RequestHandler } from 'express'
+import * as OpenApiValidator from 'express-openapi-validator'
 import fs from 'fs'
 import http from 'http'
 import log4js from 'log4js'
@@ -11,6 +13,7 @@ import multer from 'multer'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
+import { metricsComponent } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { Repository } from './repository/Repository'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -22,6 +25,7 @@ export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
   private static readonly UPLOADS_DIRECTORY = 'uploads/'
 
+  protected metricsServer: ReturnType<typeof initializeMetricsServer> | undefined
   private port: number
   private app: express.Express
   private httpServer: http.Server
@@ -45,11 +49,16 @@ export class Server {
 
     this.app = express()
 
+    if (this.shouldInitializeMetricsServer()) {
+      this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
+    }
+
     const corsOptions: cors.CorsOptions = {
       origin: true,
       methods: 'GET,HEAD,POST,PUT,DELETE,CONNECT,TRACE,PATCH',
       allowedHeaders: ['Cache-Control', 'Content-Type', 'Origin', 'Accept', 'User-Agent', 'X-Upload-Origin'],
-      credentials: true
+      credentials: true,
+      maxAge: 86400
     }
 
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
@@ -62,7 +71,7 @@ export class Server {
     this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
-      this.app.use(compression({ filter: (req, res) => true }))
+      this.app.use(compression({ filter: (_req, _res) => true }))
     }
 
     this.app.use(cors(corsOptions))
@@ -70,9 +79,14 @@ export class Server {
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
     }
-
-    if (env.getConfig(EnvironmentConfig.METRICS)) {
-      Metrics.initialize()
+    if (env.getConfig(EnvironmentConfig.VALIDATE_API)) {
+      this.app.use(
+        OpenApiValidator.middleware({
+          apiSpec: CONTENT_API,
+          validateResponses: process.env.CI == 'true',
+          validateRequests: true
+        })
+      )
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
@@ -99,21 +113,23 @@ export class Server {
     }
   }
 
+  /*
+   * Extending implementations should want to change the logic when to initialize metrics server (e.g. tests)
+   */
+  shouldInitializeMetricsServer(): boolean {
+    return true
+  }
+
   private registerRoute(
     route: string,
     controller: Controller,
-    action: (req: express.Request, res: express.Response) => void,
+    action: (this: Controller, req: express.Request, res: express.Response) => void,
     method: HttpMethod = HttpMethod.GET,
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
-      ...Metrics.requestHandlers(),
-      async (req: express.Request, res: express.Response, next: NextFunction) => {
-        try {
-          await action.call(controller, req, res)
-        } catch (error) {
-          next(error)
-        }
+      (req: express.Request, res: express.Response, next: NextFunction) => {
+        action.call(controller, req, res).catch(next)
       }
     ]
     if (extraHandler) {
@@ -146,6 +162,9 @@ export class Server {
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`)
+    if (this.metricsServer) {
+      await this.metricsServer.start()
+    }
     await this.snapshotManager.start()
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
@@ -155,6 +174,9 @@ export class Server {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
     if (this.httpServer) {
       await this.closeHTTPServer()
+    }
+    if (this.metricsServer) {
+      await this.metricsServer.stop()
     }
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {

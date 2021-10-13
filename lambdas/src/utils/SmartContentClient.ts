@@ -37,6 +37,12 @@ export class SmartContentClient implements ContentAPI {
   private contentClient: IFuture<ContentAPI> | undefined
 
   constructor(private readonly externalContentServerUrl: string, private readonly proofOfWorkEnabled: boolean) {}
+  iterateThroughDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
+    deploymentOptions?: DeploymentOptions<T>,
+    options?: Partial<CompleteRequestOptions>
+  ): AsyncIterable<T> {
+    throw new Error('Method not implemented.')
+  }
 
   async fetchEntitiesByPointers(type: EntityType, pointers: Pointer[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -85,11 +91,11 @@ export class SmartContentClient implements ContentAPI {
 
   async pipeContent(
     contentHash: string,
-    responseTo: ReadableStream<Uint8Array>,
+    responseTo: any,
     options?: Partial<CompleteRequestOptions>
   ): Promise<Map<string, string>> {
     const client = await this.getClient()
-    return await client.pipeContent(contentHash, (responseTo as any) as ReadableStream<Uint8Array>, options)
+    return await client.pipeContent(contentHash, responseTo, options)
   }
 
   async isContentAvailable(cids: ContentFileHash[], options?: RequestOptions): Promise<AvailableContentResult> {

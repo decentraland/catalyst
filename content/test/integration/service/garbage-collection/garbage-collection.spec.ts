@@ -1,11 +1,11 @@
-import { Bean, EnvironmentBuilder, EnvironmentConfig } from '@katalyst/content/Environment'
-import { GarbageCollectionManager } from '@katalyst/content/service/garbage-collection/GarbageCollectionManager'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
+import { delay } from '@catalyst/commons'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-catalyst-utils/util'
 import ms from 'ms'
+import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
+import { GarbageCollectionManager } from '../../../../src/service/garbage-collection/GarbageCollectionManager'
+import { MetaverseContentService } from '../../../../src/service/Service'
+import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import {
   awaitUntil,
@@ -28,13 +28,10 @@ describe('Integration - Garbage Collection', () => {
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], {
-      contentPaths: [
-        'content/test/integration/resources/some-binary-file.png',
-        'content/test/integration/resources/some-text-file.txt'
-      ]
+      contentPaths: ['test/integration/resources/some-binary-file.png', 'test/integration/resources/some-text-file.txt']
     })
     E2 = await buildDeployDataAfterEntity(E1, [P1], {
-      contentPaths: ['content/test/integration/resources/some-binary-file.png']
+      contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
     ;[sharedContent, onlyE1Content] = Array.from(E1.entity.content!.values())
@@ -45,7 +42,6 @@ describe('Integration - Garbage Collection', () => {
     const env = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
-      .withConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
       .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
 

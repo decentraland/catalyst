@@ -18,15 +18,15 @@ export abstract class Denylist {
     return `${actionMessage}-${target.asString()}-${timestamp}`
   }
 
-  abstract async addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult>
+  abstract addTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult>
 
-  abstract async removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult>
+  abstract removeTarget(target: DenylistTarget, metadata: DenylistMetadata): Promise<DenylistOperationResult>
 
   abstract getAllDenylistedTargets(): Promise<{ target: DenylistTarget; metadata: DenylistMetadata }[]>
 
-  abstract async isTargetDenylisted(target: DenylistTarget): Promise<boolean>
+  abstract isTargetDenylisted(target: DenylistTarget): Promise<boolean>
 
-  abstract async areTargetsDenylisted(
+  abstract areTargetsDenylisted(
     denylistRepo: DenylistRepository,
     targets: DenylistTarget[]
   ): Promise<Map<DenylistTargetType, Map<DenylistTargetId, boolean>>>

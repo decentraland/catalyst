@@ -1,4 +1,4 @@
-import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
+import { NFTOwnership } from '../../../src/apis/profiles/NFTOwnership'
 
 const address = '0x079BED9C31CB772c4C156F86E1CFf15bf751ADd0'
 

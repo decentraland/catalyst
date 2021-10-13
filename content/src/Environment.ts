@@ -1,7 +1,8 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
 import log4js from 'log4js'
 import ms from 'ms'
+import NodeCache from 'node-cache'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
@@ -60,6 +61,7 @@ export const DEFAULT_DATABASE_CONFIG = {
   schema: 'public',
   port: 5432
 }
+const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 
 export class Environment {
   private static readonly LOGGER = log4js.getLogger('Environment')
@@ -126,6 +128,7 @@ export const enum Bean {
   VALIDATOR,
   CHALLENGE_SUPERVISOR,
   REPOSITORY,
+  DEPLOYMENTS_RATE_LIMIT_CACHE,
   MIGRATION_MANAGER,
   GARBAGE_COLLECTION_MANAGER,
   SYSTEM_PROPERTIES_MANAGER,
@@ -136,12 +139,16 @@ export const enum Bean {
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
   SERVER_PORT,
+  // @deprecated
   METRICS,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
+  CHECK_SYNC_RANGE,
   ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
+  DEPLOYMENTS_RATE_LIMIT_TTL,
+  DEPLOYMENTS_RATE_LIMIT_MAX,
   ETH_NETWORK,
   LOG_LEVEL,
   FETCH_REQUEST_TIMEOUT,
@@ -163,13 +170,16 @@ export enum EnvironmentConfig {
   SNAPSHOT_FREQUENCY,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
+  SYNC_STREAM_TIMEOUT,
   DISABLE_DENYLIST,
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
+  REPOSITORY_QUEUE_TIMEOUT,
   CACHE_SIZES,
   BLOCKS_L1_SUBGRAPH_URL,
-  BLOCKS_L2_SUBGRAPH_URL
+  BLOCKS_L2_SUBGRAPH_URL,
+  VALIDATE_API
 }
 
 export class EnvironmentBuilder {
@@ -221,7 +231,20 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SYNC_WITH_SERVERS_INTERVAL,
       () => process.env.SYNC_WITH_SERVERS_INTERVAL ?? ms('45s')
     )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.CHECK_SYNC_RANGE,
+      () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
+    )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL, () =>
+      Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1s') as string) / 1000)
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX,
+      () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 100
+    )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.ALLOW_LEGACY_ENTITIES,
@@ -353,6 +376,11 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
+      EnvironmentConfig.SYNC_STREAM_TIMEOUT,
+      () => process.env.SYNC_STREAM_TIMEOUT || DEFAULT_SYNC_STREAM_TIMEOUT
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
       EnvironmentConfig.DISABLE_DENYLIST,
       () => process.env.DISABLE_DENYLIST === 'true'
     )
@@ -375,6 +403,12 @@ export class EnvironmentBuilder {
       () => process.env.REPOSITORY_QUEUE_MAX_QUEUED ?? RepositoryQueue.DEFAULT_MAX_QUEUED
     )
 
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.REPOSITORY_QUEUE_TIMEOUT,
+      () => process.env.REPOSITORY_QUEUE_TIMEOUT ?? RepositoryQueue.DEFAULT_TIMEOUT
+    )
+
     /*
      * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
      * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000
@@ -389,6 +423,8 @@ export class EnvironmentBuilder {
             .map(([key, value]) => [key, Number(value)])
         )
     )
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
     // Please put special attention on the bean registration order.
     // Some beans depend on other beans, so the required beans should be registered before
@@ -411,6 +447,12 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER, () => PointerManagerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER, () => AccessCheckerImplFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
+    const ttl = env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
+    this.registerBeanIfNotAlreadySet(
+      env,
+      Bean.DEPLOYMENTS_RATE_LIMIT_CACHE,
+      () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
+    )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER, () => SnapshotManagerFactory.create(env))

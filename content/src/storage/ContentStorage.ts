@@ -5,6 +5,7 @@ export interface ContentStorage {
   delete(ids: string[]): Promise<void>
   retrieve(id: string): Promise<ContentItem | undefined>
   exist(ids: string[]): Promise<Map<string, boolean>>
+  stats(id: string): Promise<{ size: number } | undefined>
 }
 
 export interface ContentItem {

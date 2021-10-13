@@ -1,7 +1,7 @@
-import { HealthStatus, refreshContentServerStatus } from '@katalyst/lambdas/apis/status/health'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TimeRefreshedDataHolder } from '@katalyst/lambdas/utils/TimeRefreshedDataHolder'
 import log4js, { Logger } from 'log4js'
+import { HealthStatus, refreshContentServerStatus } from '../../apis/status/health'
+import { SmartContentClient } from '../../utils/SmartContentClient'
+import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
 
 const REFRESH_TIME: string = '1m'
 

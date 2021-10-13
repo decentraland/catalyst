@@ -1,5 +1,5 @@
-import { EnvironmentConfig } from '@katalyst/content/Environment'
-import { assertPromiseIsRejected } from '@katalyst/test-helpers/PromiseAssertions'
+import { EnvironmentConfig } from '../../../src/Environment'
+import { assertPromiseIsRejected } from '../../helpers/PromiseAssertions'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, createIdentity } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'

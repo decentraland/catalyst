@@ -1,8 +1,3 @@
-import { ControllerDenylistData } from '@katalyst/content/controller/Controller'
-import { buildContentTarget, buildEntityTarget, DenylistTarget } from '@katalyst/content/denylist/DenylistTarget'
-import { Bean, Environment, EnvironmentConfig } from '@katalyst/content/Environment'
-import { Server } from '@katalyst/content/Server'
-import { FailedDeployment } from '@katalyst/content/service/errors/FailedDeploymentsManager'
 import {
   ContentClient,
   DeploymentData,
@@ -24,6 +19,11 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
+import { ControllerDenylistData } from '../../src/controller/Controller'
+import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src/denylist/DenylistTarget'
+import { Bean, Environment, EnvironmentConfig } from '../../src/Environment'
+import { Server } from '../../src/Server'
+import { FailedDeployment } from '../../src/service/errors/FailedDeploymentsManager'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { deleteFolderRecursive, hashAndSignMessage, Identity } from './E2ETestUtils'
 
@@ -47,13 +47,17 @@ export class TestServer extends Server {
     })
   }
 
+  override shouldInitializeMetricsServer(): boolean {
+    return false
+  }
+
   getAddress(): ServerAddress {
     return `http://localhost:${this.serverPort}`
   }
 
-  start(): Promise<void> {
+  async start(): Promise<void> {
+    await super.start()
     this.started = true
-    return super.start()
   }
 
   async stop(

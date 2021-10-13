@@ -1,9 +1,9 @@
-import { Database } from '@katalyst/content/repository/Database'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
-import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { Database } from '../../repository/Database'
+import { Repository } from '../../repository/Repository'
+import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
+import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 

@@ -67,9 +67,7 @@ interface CatalystMethods {
   getEVMScriptRegistry(): TxCall<Address>
   removeCatalyst(_id: string): TxSend<CatalystTransactionReceipt>
   domains(a0: string): TxCall<boolean>
-  catalystById(
-    a0: string
-  ): TxCall<{
+  catalystById(a0: string): TxCall<{
     id: string
     0: string
     owner: Address

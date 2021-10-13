@@ -1,6 +1,6 @@
-import { AccessCheckerForProfiles } from '@katalyst/content/service/access/AccessCheckerForProfiles'
-import { ContentAuthenticator } from '@katalyst/content/service/auth/Authenticator'
-import { DECENTRALAND_ADDRESS } from 'decentraland-katalyst-commons/addresses'
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { AccessCheckerForProfiles } from '../../../../src/service/access/AccessCheckerForProfiles'
+import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 
 describe('AccessCheckerForProfiles', function () {
   it(`When a non-decentraland address tries to deploy an default profile, then an error is returned`, async () => {

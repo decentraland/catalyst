@@ -1,8 +1,8 @@
-import { DeactivatedDenylist } from '@katalyst/content/denylist/DeactivatedDenylist'
-import { DenylistMetadata, DenylistOperationStatus, DenylistValidationType } from '@katalyst/content/denylist/Denylist'
-import { DenylistTarget, DenylistTargetId, DenylistTargetType } from '@katalyst/content/denylist/DenylistTarget'
-import { DenylistRepository } from '@katalyst/content/repository/extensions/DenylistRepository'
 import { instance, mock, when } from 'ts-mockito'
+import { DeactivatedDenylist } from '../../../src/denylist/DeactivatedDenylist'
+import { DenylistMetadata, DenylistOperationStatus, DenylistValidationType } from '../../../src/denylist/Denylist'
+import { DenylistTarget, DenylistTargetId, DenylistTargetType } from '../../../src/denylist/DenylistTarget'
+import { DenylistRepository } from '../../../src/repository/extensions/DenylistRepository'
 
 describe('DeactivatedDenylist', () => {
   const deactivatedDenylist: DeactivatedDenylist = new DeactivatedDenylist()

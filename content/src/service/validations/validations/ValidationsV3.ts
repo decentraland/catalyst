@@ -13,7 +13,8 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.NO_NEWER,
     Validations.RECENT,
     Validations.NO_REDEPLOYS,
-    Validations.CONTENT
+    Validations.CONTENT_V3,
+    Validations.RATE_LIMIT
   ],
   [DeploymentContext.LOCAL_LEGACY_ENTITY]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
@@ -23,7 +24,7 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.RECENT,
     Validations.NO_REDEPLOYS,
     Validations.LEGACY_ENTITY,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.DECENTRALAND_ADDRESS
   ],
   // This is a context during synchronization: when the deployment is already deployed.
@@ -33,18 +34,18 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
-    Validations.CONTENT
+    Validations.CONTENT_V3
   ],
   [DeploymentContext.SYNCED_LEGACY_ENTITY]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
     Validations.ENTITY_STRUCTURE,
     Validations.LEGACY_ENTITY,
-    Validations.CONTENT,
+    Validations.CONTENT_V3,
     Validations.DECENTRALAND_ADDRESS
   ],
   // This is during synchronization when a deployment needs to  be done, but you already have a newer which overwrites it.
-  // So, at this momento the files from the entity of the overwritten deployment are not download.
+  // So, at this moment the files from the entity of the overwritten deployment are not download.
   [DeploymentContext.OVERWRITTEN]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date
     Validations.SIGNATURE,
@@ -65,6 +66,6 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
     Validations.MUST_HAVE_FAILED_BEFORE,
-    Validations.CONTENT
+    Validations.CONTENT_V3
   ]
 }

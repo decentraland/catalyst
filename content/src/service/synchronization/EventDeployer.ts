@@ -1,6 +1,7 @@
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
+import { metricsComponent } from '../../metrics'
 import { Entity } from '../Entity'
 import { EntityFactory } from '../EntityFactory'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
@@ -15,16 +16,25 @@ export class EventDeployer {
 
   private readonly eventProcessor: EventStreamProcessor
 
-  constructor(private readonly cluster: ContentCluster, private readonly service: ClusterDeploymentsService) {
+  constructor(
+    private readonly cluster: ContentCluster,
+    private readonly service: ClusterDeploymentsService,
+    syncStreamTimeout: string
+  ) {
     this.eventProcessor = new EventStreamProcessor(
       (entityIds) => this.service.areEntitiesAlreadyDeployed(entityIds),
-      (event, source) => this.wrapDeployment(this.prepareDeployment(event, source))
+      (event, source) => this.wrapDeployment(this.prepareDeployment(event, source)),
+      syncStreamTimeout
     )
   }
 
-  async processAllDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processAllDeployments(
+    deployments: Readable[],
+    options?: HistoryDeploymentOptions,
+    shouldIgnoreTimeout = false
+  ): Promise<void> {
     // Process history and deploy it
-    return this.eventProcessor.processDeployments(deployments, options)
+    return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
 
   /** Download and prepare everything necessary to deploy an entity */
@@ -35,14 +45,19 @@ export class EventDeployer {
     EventDeployer.LOGGER.trace(`Downloading files for entity (${deployment.entityType}, ${deployment.entityId})`)
 
     // Download the entity file
+    const { end: stopTimer } = metricsComponent.startTimer('dcl_content_download_time', {
+      remote_catalyst: source?.getAddress() || 'undefined'
+    })
     const entityFile: Buffer | undefined = await this.getEntityFile(deployment, source)
+    stopTimer()
 
     const { auditInfo } = deployment
 
     if (entityFile) {
       const isLegacyEntity = !!auditInfo.migrationData
       if (auditInfo.overwrittenBy) {
-        // Deploy the entity as overwritten and only download entity file
+        metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'true' })
+        // Deploy the entity as overwritten and only download entity file to avoid storing content files for deployments that are no pointed at
         return this.buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
             [entityFile],
@@ -52,7 +67,8 @@ export class EventDeployer {
           )
         )
       } else {
-        // Build entity
+        metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'false' })
+        // Parse as JSON the entity and create an object
         const entity: Entity = EntityFactory.fromBufferWithId(entityFile, deployment.entityId)
 
         // Download all entity's files as we need all content
@@ -115,7 +131,7 @@ export class EventDeployer {
           }). Hash was ${fileHash}`
         )
       } else {
-        EventDeployer.LOGGER.trace(
+        EventDeployer.LOGGER.error(
           `Failed to download file ${i + 1}/${unknownFileHashes.length} for entity (${entity.type}, ${
             entity.id
           }). Hash was ${fileHash}. Will cancel content download`
@@ -180,7 +196,7 @@ export class EventDeployer {
 
   /** Wrap the deployment, so if it fails, we can take action */
   private async wrapDeployment(deploymentPreparation: Promise<DeploymentExecution>): Promise<() => Promise<void>> {
-    const deploymentExecution = await deploymentPreparation
+    const deploymentExecution: DeploymentExecution = await deploymentPreparation
     return async () => {
       try {
         const deploymentResult: DeploymentResult = await deploymentExecution.execution()
@@ -215,6 +231,7 @@ export class EventDeployer {
     try {
       return await tryOnCluster(execution, cluster, description, options)
     } catch (error) {
+      EventDeployer.LOGGER.error(error)
       return undefined
     }
   }

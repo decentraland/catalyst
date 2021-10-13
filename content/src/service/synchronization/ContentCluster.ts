@@ -1,7 +1,5 @@
+import { DAOClient, delay, ServerMetadata } from '@catalyst/commons'
 import { Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
-import { delay } from 'decentraland-catalyst-utils/util'
-import { DAOClient } from 'decentraland-katalyst-commons/DAOClient'
-import { ServerMetadata } from 'decentraland-katalyst-commons/ServerMetadata'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
@@ -212,7 +210,9 @@ export class ContentCluster implements IdentityProvider {
   /** Return the server's challenge text, or undefined if it couldn't be reached */
   private async getChallengeInServer(address: ServerAddress): Promise<ChallengeText | undefined> {
     try {
-      const { challengeText }: { challengeText: ChallengeText } = await this.fetcher.fetchJson(`${address}/challenge`)
+      const { challengeText }: { challengeText: ChallengeText } = (await this.fetcher.fetchJson(
+        `${address}/challenge`
+      )) as { challengeText: ChallengeText }
       return challengeText
     } catch (error) {}
   }

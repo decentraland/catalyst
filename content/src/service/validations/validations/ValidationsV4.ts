@@ -5,41 +5,43 @@ import { ValidationsForContext } from '../Validator'
 export const VALIDATIONS_V4: ValidationsForContext = {
   [DeploymentContext.LOCAL]: [
     Validations.IPFS_HASHING,
-    // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
-    Validations.CONTENT,
+    Validations.CONTENT_V4,
+    Validations.REQUEST_SIZE_V4,
     Validations.NO_NEWER,
     Validations.RECENT,
     Validations.NO_REDEPLOYS
   ],
   [DeploymentContext.SYNCED]: [
     Validations.IPFS_HASHING,
-    // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
-    Validations.CONTENT
+    Validations.CONTENT_V4,
+    Validations.REQUEST_SIZE_V4
   ],
+  // This is during synchronization when a deployment needs to  be done, but you already have a newer which overwrites it.
+  // So, at this moment the files from the entity of the overwritten deployment are not download.
   [DeploymentContext.OVERWRITTEN]: [
     Validations.IPFS_HASHING,
-    // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.REQUEST_SIZE_V4,
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE
   ],
   [DeploymentContext.FIX_ATTEMPT]: [
     Validations.IPFS_HASHING,
-    // TODO: Validations.REQUEST_SIZE_V4
-    // TODO: Validations.METADATA_SCHEMA
+    Validations.METADATA_SCHEMA,
     Validations.SIGNATURE,
     Validations.ACCESS,
     Validations.ENTITY_STRUCTURE,
-    Validations.CONTENT,
+    Validations.CONTENT_V4,
+    Validations.REQUEST_SIZE_V4,
     Validations.MUST_HAVE_FAILED_BEFORE
   ],
   // Note: there is no need for legacy entities anymore, so we won't allow then in v4

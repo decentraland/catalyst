@@ -1,4 +1,4 @@
-import { ensureDirectoryExists, existPath } from 'decentraland-katalyst-commons/fsutils'
+import { ensureDirectoryExists, existPath } from '@catalyst/commons'
 import fs from 'fs'
 import path from 'path'
 import { ContentItem, ContentStorage, SimpleContentItem } from './ContentStorage'
@@ -38,6 +38,15 @@ export class FileSystemContentStorage implements ContentStorage {
       }
     } catch (error) {}
     return undefined
+  }
+
+  async stats(id: string): Promise<{ size: number } | undefined> {
+    const filePath = this.getFilePath(id)
+    if (await existPath(filePath)) {
+      try {
+        return await fs.promises.stat(filePath)
+      } catch (e) {}
+    }
   }
 
   async exist(ids: string[]): Promise<Map<string, boolean>> {

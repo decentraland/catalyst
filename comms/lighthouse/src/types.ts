@@ -1,4 +1,4 @@
-import { Position3D } from 'decentraland-catalyst-utils/Positions'
+import { Position3D } from '@catalyst/commons'
 import { ConfigService } from './config/configService'
 import { ArchipelagoService } from './peers/archipelagoService'
 import { IdService } from './peers/idService'
@@ -40,3 +40,14 @@ export type AppServices = {
   peersService: () => PeersService
   archipelagoService: () => ArchipelagoService
 }
+
+export interface RTCIceServer {
+  credential?: string
+  credentialType?: RTCIceCredentialType
+  urls: string | string[]
+  username?: string
+}
+
+export type PeerParameters = Partial<{
+  iceServers: RTCIceServer[]
+}>

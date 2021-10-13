@@ -1,0 +1,21 @@
+{
+  "name": "@catalyst/contracts",
+  "description": "Contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "cleanup": "shx rm -rf dist node_modules",
+    "build": "tsc -b",
+    "test": "echo No tests to run!"
+  },
+  "dependencies": {
+    "bn.js": "5.2.0",
+    "dcl-crypto": "2.3.0",
+    "web3x": "4.0.6"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5"
+  }
+}

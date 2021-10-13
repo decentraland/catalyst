@@ -1,5 +1,3 @@
-import { Database } from '@katalyst/content/repository/Database'
-import { Entity } from '@katalyst/content/service/Entity'
 import {
   AuditInfo,
   DeploymentFilters,
@@ -12,6 +10,8 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
+import { Database } from '../../repository/Database'
+import { Entity } from '../../service/Entity'
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
@@ -30,10 +30,7 @@ export class DeploymentsRepository {
   }
 
   async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
-    const entries: [
-      EntityType,
-      number
-    ][] = await this.db.map(
+    const entries: [EntityType, number][] = await this.db.map(
       `SELECT entity_type, COUNT(*) AS count FROM deployments GROUP BY entity_type`,
       [],
       (row) => [row.entity_type, parseInt(row.count)]
@@ -156,7 +153,7 @@ export class DeploymentsRepository {
     const where = whereClause.length > 0 ? ' WHERE ' + whereClause.join(' AND ') : ''
 
     query += where
-    query += ` ORDER BY dep1.${timestampField} ${order}, dep1.entity_id ${order} LIMIT $(limit) OFFSET $(offset)`
+    query += ` ORDER BY dep1.${timestampField} ${order}, LOWER(dep1.entity_id) ${order} LIMIT $(limit) OFFSET $(offset)`
 
     return this.db.map(query, values, (row) => ({
       deploymentId: row.id,

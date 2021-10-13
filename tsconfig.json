@@ -1,38 +1,40 @@
 {
-  "bazelOpts": {
-    "es5Mode": true,
-    "devmodeTargetOverride": "es2017"
-  },
   "compilerOptions": {
-    "module": "esnext",
+    "composite": true,
+    "module": "commonjs",
     "target": "es2017",
-    "diagnostics": false,
-    "inlineSourceMap": false,
-    "inlineSources": false,
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node",
     "stripInternal": true,
     "strictNullChecks": true,
     "pretty": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
     "emitDecoratorMetadata": true,
     "noUnusedLocals": true,
     "jsx": "react",
-    "baseUrl": ".",
-    "lib": ["es2017", "dom", "esnext.asynciterable", "esnext"],
-    "paths": {
-      "@katalyst/content/*": ["content/src/*"],
-      "@katalyst/lambdas/*": ["lambdas/src/*"],
-      "@katalyst/test-helpers/*": ["content/test/helpers/*"],
-      "decentraland-katalyst-contracts/*": ["contracts/*"],
-      "decentraland-katalyst-commons/*": ["commons/servers/*"],
-      "decentraland-catalyst-utils/*": ["commons/utils/*"]
-    }
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "lib": [
+      "es2017",
+      "dom",
+      "esnext.asynciterable",
+      "esnext"
+    ]
   },
-  "exclude": ["node_modules", "bazel-*", "**/node_modules/*", "dist"]
+  "references": [
+    { "path": "./contracts" },
+    { "path": "./commons" },
+    { "path": "./content" },
+    { "path": "./comms/lighthouse" },
+    { "path": "./lambdas" }
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*",
+    "**/dist/*"
+  ]
 }

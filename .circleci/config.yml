@@ -1,20 +1,5 @@
 version: 2.1
 
-commands:
-  update_node_version:
-    description: 'A very simple command to update the node version'
-    steps:
-      - run:
-          name: Link nvm
-          command: |
-            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
-            echo ' [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
-      - run:
-          name: Update node version
-          command: |
-            nvm install v14.16.1
-            nvm alias default v14.16.1
-
 references:
   .workspace_root: &workspace_root /tmp/repo
 
@@ -63,17 +48,19 @@ jobs:
 
       # Download and cache dependencies
       - restore_cache:
+          name: Restore Yarn Package Cache
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+            - yarn-packages-{{ checksum "yarn.lock" }}
 
-      - run: yarn install
+      - run:
+          name: Install Dependencies
+          command: yarn --frozen-lockfile --cache-folder ~/.cache/yarn
 
       - save_cache:
+          name: Save Yarn Package Cache
+          key: yarn-packages-{{ checksum "yarn.lock" }}
           paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+            - ~/.cache/yarn
 
       # persist to workspace to use in downstream jobs
       - persist_to_workspace:
@@ -93,42 +80,56 @@ jobs:
       - <<: *attach_root
       - run:
           name: Build lighthouse
-          command: npx bazel build //comms/lighthouse:server --test_output=all
+          command: yarn workspace @catalyst/lighthouse-server build
       - run:
           name: Run tests
-          command: npx bazel test //comms/lighthouse:unit_test --test_output=all
+          command: yarn workspace @catalyst/lighthouse-server test
+          environment:
+            CI: 'true'
 
   build-content:
-    machine:
-      docker_layer_caching: true
+    docker:
+      - <<: *image_client
+      - image: circleci/postgres:12
+        command: postgres -c max_connections=300
+        environment:
+          POSTGRES_DB: postgres_test
+          POSTGRES_PASSWORD: '12345678'
+          POSTGRES_USER: postgres
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
-      - update_node_version
       - run:
           name: Run unit tests
-          command: npx bazel test //content:unit_test --test_output=all
+          command: yarn workspace @catalyst/content-server test:unit
+          environment:
+            CI: 'true'
       - run:
           name: Run integration tests
-          command: npx bazel test //content:integration_test --test_output=all --test_timeout 600
+          command: yarn workspace @catalyst/content-server test:integration
+          environment:
+            CI: 'true'
 
   build-lambdas:
     <<: *base_env
     steps:
       - <<: *attach_root
       - run:
+          name: Build content
+          command: yarn workspace @catalyst/lambdas-server build
+      - run:
           name: Run tests
-          command: npx bazel test //lambdas:unit_test --test_output=all
+          command: yarn workspace @catalyst/lambdas-server test
   build-commons:
     <<: *base_env
     steps:
       - <<: *attach_root
       - run:
-          name: Run servers tests
-          command: npx bazel test //commons/servers:unit_test --test_output=all
+          name: Build commons
+          command: yarn workspace @catalyst/commons build
       - run:
-          name: Run utils tests
-          command: npx bazel test //commons/utils:unit_test --test_output=all
+          name: Run commons tests
+          command: yarn workspace @catalyst/commons test
 
   publish-docker:
     <<: *base_env
@@ -140,11 +141,13 @@ jobs:
       - <<: *attach_root
       - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
-          name: Prepare to build Docker image
-          command: ./prepare_for_docker_image.sh
-      - run:
           name: Build Docker image
-          command: docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} .
+          command: |
+            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
+            else
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
+            fi
       - run:
           name: Log into DockerHub
           command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
@@ -177,11 +180,13 @@ jobs:
       - <<: *attach_root
       - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
       - run:
-          name: Prepare to build Docker image
-          command: ./prepare_for_docker_image.sh
-      - run:
           name: Build Docker image
-          command: docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} .
+          command: |
+            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
+            else
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
+            fi
       - run:
           name: Log into DockerHub
           command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"

@@ -1,8 +1,9 @@
-import { Repository } from '@katalyst/content/repository/Repository'
-import { DB_REQUEST_PRIORITY } from '@katalyst/content/repository/RepositoryQueue'
-import { SystemPropertiesManager, SystemProperty } from '@katalyst/content/service/system-properties/SystemProperties'
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { metricsComponent } from '../../metrics'
+import { Repository } from '../../repository/Repository'
+import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
+import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { MetaverseContentService } from '../Service'
 
 export class GarbageCollectionManager {
@@ -50,7 +51,12 @@ export class GarbageCollectionManager {
     try {
       await this.repository.tx(
         async (transaction) => {
+          const { end: endTimer } = metricsComponent.startTimer('dcl_content_garbage_collection_time')
+
           const hashes = await transaction.content.findContentHashesNotBeingUsedAnymore(this.lastTimeOfCollection)
+
+          metricsComponent.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
+
           GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
           await this.service.deleteContent(hashes)
           await this.systemPropertiesManager.setSystemProperty(
@@ -59,6 +65,8 @@ export class GarbageCollectionManager {
             transaction
           )
           this.hashesDeletedInLastSweep = new Set(hashes)
+
+          endTimer()
         },
         { priority: DB_REQUEST_PRIORITY.HIGH }
       )

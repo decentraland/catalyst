@@ -1,14 +1,14 @@
-import { ControllerEntityFactory } from '@katalyst/content/controller/ControllerEntityFactory'
-import { retry } from '@katalyst/content/helpers/RetryHelper'
-import { Entity } from '@katalyst/content/service/Entity'
-import { EntityFactory } from '@katalyst/content/service/EntityFactory'
-import { DeploymentResult, MetaverseContentService } from '@katalyst/content/service/Service'
 import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { Authenticator, EthAddress } from 'dcl-crypto'
 import EthCrypto from 'eth-crypto'
 import fs from 'fs'
 import path from 'path'
+import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
+import { retry } from '../../src/helpers/RetryHelper'
+import { Entity } from '../../src/service/Entity'
+import { EntityFactory } from '../../src/service/EntityFactory'
+import { DeploymentResult, MetaverseContentService } from '../../src/service/Service'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },
@@ -139,4 +139,8 @@ export type EntityCombo = {
   deployData: DeploymentData
   controllerEntity: ControllerEntity
   entity: Entity
+}
+
+export function isCI(): boolean {
+  return process.env.CI === 'true'
 }

@@ -1,9 +1,9 @@
-import { getWearablesByOwner } from '@katalyst/lambdas/apis/collections/controllers/wearables'
-import { WearableId } from '@katalyst/lambdas/apis/collections/types'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
+import { getWearablesByOwner } from '../../../../../src/apis/collections/controllers/wearables'
+import { WearableId } from '../../../../../src/apis/collections/types'
+import { SmartContentClient } from '../../../../../src/utils/SmartContentClient'
+import { TheGraphClient } from '../../../../../src/utils/TheGraphClient'
 
 const SOME_ADDRESS = '0x079bed9c31cb772c4c156f86e1cff15bf751add0'
 const WEARABLE_ID_1 = 'someCollection-someWearable'

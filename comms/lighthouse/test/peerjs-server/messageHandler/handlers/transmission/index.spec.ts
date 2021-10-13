@@ -12,8 +12,7 @@ const createFakeSocket = (): MyWebSocket => {
     on: (): void => {}
   }
   /* eslint-enable @typescript-eslint/no-empty-function */
-
-  return (sock as unknown) as MyWebSocket
+  return sock as any
 }
 
 describe('Transmission handler', () => {
@@ -25,7 +24,7 @@ describe('Transmission handler', () => {
     const idTo = 'id2'
     realm.setClient(clientFrom, clientFrom.getId())
 
-    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: idTo })
+    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: idTo }).catch(console.error)
 
     expect(realm.getMessageQueueById(idTo)?.getMessages().length).toEqual(1)
   })
@@ -38,8 +37,10 @@ describe('Transmission handler', () => {
     const idTo = 'id2'
     realm.setClient(clientFrom, clientFrom.getId())
 
-    handleTransmission(clientFrom, { type: MessageType.LEAVE, src: clientFrom.getId(), dst: idTo })
-    handleTransmission(clientFrom, { type: MessageType.EXPIRE, src: clientFrom.getId(), dst: idTo })
+    handleTransmission(clientFrom, { type: MessageType.LEAVE, src: clientFrom.getId(), dst: idTo }).catch(console.error)
+    handleTransmission(clientFrom, { type: MessageType.EXPIRE, src: clientFrom.getId(), dst: idTo }).catch(
+      console.error
+    )
 
     expect(realm.getMessageQueueById(idTo)).toBeUndefined()
   })
@@ -59,7 +60,9 @@ describe('Transmission handler', () => {
       sent = true
     }
 
-    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
+    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() }).catch(
+      console.error
+    )
 
     expect(sent).toBe(true)
   })
@@ -88,7 +91,9 @@ describe('Transmission handler', () => {
       throw Error()
     }
 
-    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() })
+    handleTransmission(clientFrom, { type: MessageType.OFFER, src: clientFrom.getId(), dst: clientTo.getId() }).catch(
+      console.error
+    )
 
     expect(sent).toBe(true)
   })

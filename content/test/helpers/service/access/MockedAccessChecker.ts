@@ -1,4 +1,4 @@
-import { AccessChecker, AccessParams } from '@katalyst/content/service/access/AccessChecker'
+import { AccessChecker, AccessParams } from '../../../../src/service/access/AccessChecker'
 
 export class MockedAccessChecker implements AccessChecker {
   private returnErrors: boolean = false

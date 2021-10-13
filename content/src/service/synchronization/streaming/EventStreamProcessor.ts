@@ -1,15 +1,14 @@
-import {
-  awaitablePipeline,
-  mergeStreams,
-  streamFilter
-} from '@katalyst/content/service/synchronization/streaming/StreamHelper'
 import { DeploymentWithAuditInfo, EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import ms from 'ms'
 import parallelTransform from 'parallel-transform'
 import { Readable, Writable } from 'stream'
+import { metricsComponent } from '../../../metrics'
 import { ContentServerClient } from '../clients/ContentServerClient'
 import { HistoryDeploymentOptions } from '../EventDeployer'
 import { OnlyNotDeployedFilter } from './OnlyNotDeployedFilter'
+import { awaitablePipeline, mergeStreams, streamFilter } from './StreamHelper'
+import { setupStreamTimeout } from './utils'
 
 /**
  * This class processes a given history as a stream, and even makes some of the downloading in parallel.
@@ -20,15 +19,24 @@ export class EventStreamProcessor {
 
   constructor(
     private readonly checkIfAlreadyDeployed: (entityIds: EntityId[]) => Promise<Map<EntityId, boolean>>,
-    private readonly deploymentBuilder: DeploymentPreparation
+    private readonly deploymentBuilder: DeploymentPreparation,
+    private readonly syncStreamTimeout: string
   ) {}
 
   /**
    * This method takes many deployment streams and tries to deploy them locally.
    */
-  async processDeployments(deployments: Readable[], options?: HistoryDeploymentOptions) {
+  async processDeployments(
+    deployments: Readable[],
+    options?: HistoryDeploymentOptions,
+    shouldIgnoreTimeout: boolean = false
+  ) {
     // Merge the streams from the different servers
     const merged = mergeStreams(deployments)
+
+    if (!shouldIgnoreTimeout) {
+      setupStreamTimeout(merged, ms(this.syncStreamTimeout))
+    }
 
     // A transform that will filter out duplicate deployments
     const filterOutDuplicates = this.filterOutDuplicates()
@@ -50,14 +58,20 @@ export class EventStreamProcessor {
     }
   }
 
+  /**
+   * Since deployments propagate across servers, it is very probable that we are receiving
+   * duplicated entries. For each stream processing, we use a set to filter duplicated deployments
+   * by entityId.
+   */
   private filterOutDuplicates() {
     const known: Set<EntityId> = new Set()
     return streamFilter(({ deployment }: DeploymentWithSource) => {
       if (known.has(deployment.entityId)) {
         return false
+      } else {
+        known.add(deployment.entityId)
+        return true
       }
-      known.add(deployment.entityId)
-      return true
     })
   }
 
@@ -79,7 +93,7 @@ export class EventStreamProcessor {
           )
           done(null, [deploymentEvent.entityType, deploymentEvent.entityId, execution])
         } catch (error) {
-          EventStreamProcessor.LOGGER.debug(
+          EventStreamProcessor.LOGGER.error(
             `Failed preparing the deployment. Entity is (${deploymentEvent.entityType}, ${deploymentEvent.entityId}). Error was:\n${error}`
           )
           done(null, null)
@@ -102,7 +116,8 @@ export class EventStreamProcessor {
           }
           done()
         } catch (error) {
-          EventStreamProcessor.LOGGER.debug(
+          metricsComponent.increment('dcl_content_failed_deployments_total')
+          EventStreamProcessor.LOGGER.error(
             `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
           )
           done()

@@ -1,7 +1,7 @@
-import { getCollections } from '@katalyst/lambdas/apis/collections/controllers/collections'
-import { BASE_AVATARS_COLLECTION_ID } from '@katalyst/lambdas/apis/collections/off-chain/OffChainWearablesManager'
-import { TheGraphClient } from '@katalyst/lambdas/utils/TheGraphClient'
 import { instance, mock, when } from 'ts-mockito'
+import { getCollections } from '../../../../src/apis/collections/controllers/collections'
+import { BASE_AVATARS_COLLECTION_ID } from '../../../../src/apis/collections/off-chain/OffChainWearablesManager'
+import { TheGraphClient } from '../../../../src/utils/TheGraphClient'
 
 const COLLECTION_1 = {
   urn: 'some-urn',

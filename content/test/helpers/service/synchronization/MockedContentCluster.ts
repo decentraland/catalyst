@@ -1,5 +1,5 @@
-import { ContentCluster } from '@katalyst/content/service/synchronization/ContentCluster'
 import { instance, mock, when } from 'ts-mockito'
+import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 
 export class MockedContentCluster {
   static withRandomAddress(): ContentCluster {

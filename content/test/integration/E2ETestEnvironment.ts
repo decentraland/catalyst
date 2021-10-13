@@ -1,23 +1,25 @@
-import {
-  Bean,
-  DEFAULT_DATABASE_CONFIG,
-  Environment,
-  EnvironmentBuilder,
-  EnvironmentConfig
-} from '@katalyst/content/Environment'
-import { MigrationManagerFactory } from '@katalyst/content/migrations/MigrationManagerFactory'
-import { Repository } from '@katalyst/content/repository/Repository'
-import { RepositoryFactory } from '@katalyst/content/repository/RepositoryFactory'
-import { MetaverseContentService } from '@katalyst/content/service/Service'
-import { MockedAccessChecker } from '@katalyst/test-helpers/service/access/MockedAccessChecker'
-import { MockedDAOClient } from '@katalyst/test-helpers/service/synchronization/clients/MockedDAOClient'
-import { NoOpValidator } from '@katalyst/test-helpers/service/validations/NoOpValidator'
 import { ServerAddress } from 'dcl-catalyst-commons'
 import { random } from 'faker'
 import ms from 'ms'
 import { GenericContainer, StartedTestContainer } from 'testcontainers'
 import { Container } from 'testcontainers/dist/container'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
+import {
+  Bean,
+  DEFAULT_DATABASE_CONFIG,
+  Environment,
+  EnvironmentBuilder,
+  EnvironmentConfig
+} from '../../src/Environment'
+import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
+import { Repository } from '../../src/repository/Repository'
+import { RepositoryFactory } from '../../src/repository/RepositoryFactory'
+import { DB_REQUEST_PRIORITY } from '../../src/repository/RepositoryQueue'
+import { MetaverseContentService } from '../../src/service/Service'
+import { MockedAccessChecker } from '../helpers/service/access/MockedAccessChecker'
+import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
+import { NoOpValidator } from '../helpers/service/validations/NoOpValidator'
+import { isCI } from './E2ETestUtils'
 import { TestServer } from './TestServer'
 
 export class E2ETestEnvironment {
@@ -30,29 +32,32 @@ export class E2ETestEnvironment {
   private dao: MockedDAOClient
 
   async start(overrideConfigs?: Map<EnvironmentConfig, any>): Promise<void> {
-    this.postgresContainer = await new GenericContainer('postgres', '12')
-      .withName('postgres_test')
-      .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
-      .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
-      .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
-      .withWaitStrategy(new PostgresWaitStrategy())
-      .start()
+    if (!isCI()) {
+      this.postgresContainer = await new GenericContainer('postgres', '12')
+        .withName('postgres_test')
+        .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
+        .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
+        .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
+        .withWaitStrategy(new PostgresWaitStrategy())
+        .start()
+    }
 
-    const mappedPort = this.postgresContainer.getMappedPort(E2ETestEnvironment.POSTGRES_PORT)
+    const mappedPort =
+      this.postgresContainer?.getMappedPort(E2ETestEnvironment.POSTGRES_PORT) ?? E2ETestEnvironment.POSTGRES_PORT
     this.sharedEnv = new Environment()
       .setConfig(EnvironmentConfig.PSQL_PASSWORD, DEFAULT_DATABASE_CONFIG.password)
       .setConfig(EnvironmentConfig.PSQL_USER, DEFAULT_DATABASE_CONFIG.user)
       .setConfig(EnvironmentConfig.PSQL_PORT, mappedPort)
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
-      .setConfig(EnvironmentConfig.PSQL_HOST, this.postgresContainer.getContainerIpAddress())
-      .setConfig(EnvironmentConfig.METRICS, false)
+      .setConfig(EnvironmentConfig.PSQL_HOST, this.postgresContainer?.getContainerIpAddress() ?? 'localhost')
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
-      .setConfig(EnvironmentConfig.LOG_LEVEL, 'debug')
+      .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
+      .setConfig(EnvironmentConfig.METRICS, false)
       .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
 
     overrideConfigs?.forEach((value: any, key: EnvironmentConfig) => {
-      console.log('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
+      console.debug('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
       this.sharedEnv.setConfig(key, value)
     })
 
@@ -61,11 +66,13 @@ export class E2ETestEnvironment {
 
   async stop(): Promise<void> {
     await this.repository.shutdown()
-    await this.postgresContainer.stop()
+    await this.postgresContainer?.stop()
   }
 
   async clearDatabases(): Promise<void> {
-    await this.repository.run((db) => db.query(`DROP SCHEMA ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`))
+    await this.repository.run((db) => db.query(`DROP SCHEMA IF EXISTS ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
+      priority: DB_REQUEST_PRIORITY.HIGH
+    })
   }
 
   async stopServers(): Promise<void> {
@@ -124,10 +131,12 @@ export class E2ETestEnvironment {
   }
 
   private async createDatabases(amount: number) {
-    await this.repository.run((db) => db.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`))
+    await this.repository.run((db) => db.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`), {
+      priority: DB_REQUEST_PRIORITY.HIGH
+    })
     const dbNames = new Array(amount).fill(0).map((_) => 'db' + random.alphaNumeric(8))
     for (const dbName of dbNames) {
-      await this.repository.run((db) => db.none(`CREATE DATABASE ${dbName}`))
+      await this.repository.run((db) => db.none(`CREATE DATABASE ${dbName}`), { priority: DB_REQUEST_PRIORITY.HIGH })
     }
     return dbNames
   }

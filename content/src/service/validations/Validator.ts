@@ -77,9 +77,11 @@ export type ExternalCalls = {
   fetchDeploymentStatus: (entityType: EntityType, entityId: EntityId) => Promise<DeploymentStatus>
   isContentStoredAlready: (hashes: ContentFileHash[]) => Promise<Map<ContentFileHash, boolean>>
   isEntityDeployedAlready: (entityId: EntityId) => Promise<boolean>
+  isEntityRateLimited: (entity: Entity) => Promise<boolean>
+  fetchContentFileSize: (hash: string) => Promise<number | undefined>
 }
 
-// Will return undefined if there deployment is valid
+// Will return undefined if the deployment is valid
 export type Validation = (args: ValidationArgs) => undefined | Errors | Promise<undefined | Errors>
 
 export type ValidationArgs = {

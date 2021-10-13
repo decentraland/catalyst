@@ -1,16 +1,16 @@
-import { WearableId } from '@katalyst/lambdas/apis/collections/types'
+import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EthAddress } from 'dcl-crypto'
+import { anything, instance, mock, when } from 'ts-mockito'
+import { WearableId } from '../../../../src/apis/collections/types'
 import {
   fetchProfiles,
   fetchProfilesForSnapshots,
   ProfileMetadata
-} from '@katalyst/lambdas/apis/profiles/controllers/profiles'
-import { EnsOwnership } from '@katalyst/lambdas/apis/profiles/EnsOwnership'
-import { NFTOwnership } from '@katalyst/lambdas/apis/profiles/NFTOwnership'
-import { WearablesOwnership } from '@katalyst/lambdas/apis/profiles/WearablesOwnership'
-import { SmartContentClient } from '@katalyst/lambdas/utils/SmartContentClient'
-import { Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { EthAddress } from 'dcl-crypto'
-import { anything, instance, mock, when } from 'ts-mockito'
+} from '../../../../src/apis/profiles/controllers/profiles'
+import { EnsOwnership } from '../../../../src/apis/profiles/EnsOwnership'
+import { NFTOwnership } from '../../../../src/apis/profiles/NFTOwnership'
+import { WearablesOwnership } from '../../../../src/apis/profiles/WearablesOwnership'
+import { SmartContentClient } from '../../../../src/utils/SmartContentClient'
 
 const EXTERNAL_URL = 'https://content-url.com'
 
@@ -25,7 +25,7 @@ describe('profiles', () => {
     const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
     const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0]).toEqual(metadata)
@@ -37,7 +37,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].name).toEqual(SOME_NAME)
@@ -50,7 +50,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables.length).toEqual(0)
@@ -62,7 +62,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, false)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, undefined, false))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.wearables).toEqual([WEARABLE_ID_1])
@@ -73,7 +73,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(0)
   })
@@ -84,7 +84,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/aHash`)
@@ -99,7 +99,7 @@ describe('profiles', () => {
     const ensOwnership = noNFTs(EnsOwnership)
     const wearablesOwnership = noNFTs(WearablesOwnership)
 
-    const profiles = await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership)
+    const profiles = (await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership))!
 
     expect(profiles.length).toEqual(1)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
@@ -129,6 +129,16 @@ describe('profiles', () => {
     expect(profiles[0].ethAddress).toEqual(SOME_ADDRESS)
     expect(profiles[0].avatars[0].avatar.snapshots.aKey).toEqual(`${EXTERNAL_URL}/contents/fileHash`)
   })
+
+  it(`When an ifModifiedSince timestamp is provided and it is after the profile's last update, fetchProfiles returns undefined`, async () => {
+    const { entity } = profileWith(SOME_ADDRESS, { name: SOME_NAME, wearables: [WEARABLE_ID_1] })
+    const client = contentServerThatReturns(entity)
+    const ensOwnership = ownedNFTs(EnsOwnership, SOME_ADDRESS, SOME_NAME)
+    const wearablesOwnership = ownedNFTs(WearablesOwnership, SOME_ADDRESS, WEARABLE_ID_1)
+
+    expect(await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, 2000)).toBe(undefined)
+    expect(await fetchProfiles([SOME_ADDRESS], client, ensOwnership, wearablesOwnership, 3000)).toBe(undefined)
+  })
 })
 
 function profileWith(
@@ -141,6 +151,7 @@ function profileWith(
   }
 ): { entity: Entity; metadata: ProfileMetadata } {
   const metadata = {
+    timestamp: 2100,
     avatars: [
       {
         name: options.name ?? '',
@@ -164,7 +175,7 @@ function profileWith(
     version: EntityVersion.V3,
     type: EntityType.PROFILE,
     pointers: [ethAddress],
-    timestamp: 10,
+    timestamp: 2100,
     metadata,
     content: options.content ? [options.content] : []
   }

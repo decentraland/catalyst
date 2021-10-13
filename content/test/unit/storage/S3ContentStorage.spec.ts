@@ -1,6 +1,6 @@
-import { ContentStorage } from '@katalyst/content/storage/ContentStorage'
-import { S3ContentStorage } from '@katalyst/content/storage/S3ContentStorage'
 import AWS from 'aws-sdk'
+import { ContentStorage } from '../../../src/storage/ContentStorage'
+import { S3ContentStorage } from '../../../src/storage/S3ContentStorage'
 
 xdescribe('S3ContentStorage', () => {
   // TODO: Reuse ContentStorage.spec.ts but with a different configuration.
@@ -29,7 +29,7 @@ xdescribe('S3ContentStorage', () => {
     const s3Client = new AWS.S3({ accessKeyId, secretAccessKey })
     const items = await getAllElementsInBucket(s3Client)
     items.forEach((item) => {
-      console.log(item)
+      console.debug(item)
     })
     await Promise.all(
       items.map((item) => {
@@ -43,7 +43,7 @@ xdescribe('S3ContentStorage', () => {
               console.error(`Error deleting data from S3. Id: ${item}`, error)
               return reject(error)
             }
-            return resolve()
+            return resolve(undefined)
           })
         })
       })
@@ -61,7 +61,7 @@ xdescribe('S3ContentStorage', () => {
           console.error('Error listing data from S3.', error)
           return reject(error)
         }
-        return resolve(data.Contents?.map((element) => element.Key ?? ''))
+        return resolve(data.Contents?.map((element) => element.Key ?? '') ?? [])
       })
     })
   }
