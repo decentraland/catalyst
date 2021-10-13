@@ -5,6 +5,8 @@ import {
   DeploymentWithAuditInfo,
   Fetcher,
   ServerAddress,
+  SortingField,
+  SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
@@ -29,11 +31,18 @@ export class ContentServerClient {
   /**
    * After entities have been deployed (or set as failed deployments), we can finally update the last deployment timestamp.
    */
-  allDeploymentsWereSuccessful(): Timestamp {
-    return (this.lastLocalDeploymentTimestamp = Math.max(
+  deploymentSuccessful(deployment: DeploymentWithAuditInfo): Timestamp {
+    this.potentialLocalDeploymentTimestamp = Math.max(
+      this.potentialLocalDeploymentTimestamp || 0,
+      deployment.entityTimestamp
+    )
+
+    this.lastLocalDeploymentTimestamp = Math.max(
       this.lastLocalDeploymentTimestamp,
       this.potentialLocalDeploymentTimestamp ?? 0
-    ))
+    )
+
+    return this.lastLocalDeploymentTimestamp
   }
 
   /** Return all new deployments, and store the local timestamp of the newest one. */
@@ -50,6 +59,10 @@ export class ContentServerClient {
           ContentServerClient.LOGGER.error(
             `Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`
           )
+        },
+        sortBy: {
+          field: SortingField.ENTITY_TIMESTAMP,
+          order: SortingOrder.ASCENDING
         }
       },
       { timeout: '20s' }
@@ -107,6 +120,10 @@ export class ContentServerClient {
 
   getLastLocalDeploymentTimestamp() {
     return this.lastLocalDeploymentTimestamp
+  }
+
+  getPotentialLocalDeploymentTimestamp() {
+    return this.potentialLocalDeploymentTimestamp
   }
 }
 

@@ -116,6 +116,7 @@ export class EventStreamProcessor {
           )
 
           await write(deploymentEvent.entityType, deploymentEvent.entityId, execution)
+          arg.source.deploymentSuccessful(arg.deployment)
           done(null, null)
         } catch (error) {
           EventStreamProcessor.LOGGER.error(
