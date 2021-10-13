@@ -110,9 +110,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
-      // TODO: Change this. this config is for testing
-
-      await delay(ms('1m'))
+      await delay(ms('1h'))
 
       // Get Failed Deployments from local storage
       const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
