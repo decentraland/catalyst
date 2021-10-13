@@ -411,17 +411,12 @@ export class EnvironmentBuilder {
 
     /*
      * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
-     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000
+     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000'
      */
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.CACHE_SIZES,
-      () =>
-        new Map(
-          Object.entries(process.env)
-            .filter(([name]) => name.startsWith('CACHE'))
-            .map(([key, value]) => [key, +value!])
-        )
+      () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
