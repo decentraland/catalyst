@@ -1,5 +1,12 @@
 import { ContentClient, DeploymentFields } from 'dcl-catalyst-client'
-import { ContentFileHash, DeploymentWithAuditInfo, Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import {
+  ContentFileHash,
+  Deployment,
+  DeploymentWithAuditInfo,
+  Fetcher,
+  ServerAddress,
+  Timestamp
+} from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Readable } from 'stream'
 import { passThrough } from '../streaming/StreamHelper'
@@ -75,6 +82,15 @@ export class ContentServerClient {
     })
 
     return stream.pipe(passTrough)
+  }
+
+  /** Return all new deployments, and store the local timestamp of the newest one. */
+  async getDeployment(entityId: string): Promise<Deployment[]> {
+    // Fetch the deployments
+    return this.client.fetchAllDeployments({
+      filters: { entityIds: [entityId] },
+      fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO
+    })
   }
 
   getContentFile(fileHash: ContentFileHash): Promise<Buffer> {

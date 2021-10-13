@@ -1,14 +1,17 @@
 import { delay, SynchronizationState } from '@catalyst/commons'
+import { DeploymentData } from 'dcl-catalyst-client'
 import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { metricsComponent } from '../../metrics'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
+import { ClusterDeploymentsService, DeploymentContext, MetaverseContentService } from '../Service'
 import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
+import { downloadDeployment } from './failed-deployments/Requests'
 import { DeploymentWithSource } from './streaming/EventStreamProcessor'
 import { streamMap } from './streaming/StreamHelper'
 
@@ -30,6 +33,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly cluster: ContentCluster,
     private readonly systemProperties: SystemPropertiesManager,
     private readonly deployer: EventDeployer,
+    private readonly service: MetaverseContentService & ClusterDeploymentsService,
     private readonly timeBetweenSyncs: number,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number
@@ -109,12 +113,20 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       await delay(ms('1h'))
 
       // Get Failed Deployments from local storage
-      const failedDeployments: FailedDeployment[] = await getAllFailedDeployments()
+      const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
 
       // TODO: Implement an exponential backoff for retrying
-      failedDeployments.forEach((failedDeployment) => {
+      failedDeployments.forEach(async (failedDeployment) => {
         // Build Deployment from other servers
+        const entityId = failedDeployment.entityId
+        const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
         // Deploy local
+        await this.service.deployEntity(
+          data.files,
+          entityId,
+          { authChain: data.authChain },
+          DeploymentContext.FIX_ATTEMPT
+        )
       })
     }
   }
