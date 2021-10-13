@@ -46,9 +46,12 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
   }
 
   private async processBufferAndPushNonDeployed(): Promise<void> {
+    // since this function perform async operations, the buffer can still grow while it completes
+    // the first step then is to copy the buffer to a local variable and then empty the shared buffer
+    // to allow it to grow asynchronously
     const bufferCopy = this.buffer.slice()
 
-    // Clear the buffer
+    // Clear the shared buffer, to allow it to grow asynchronously
     this.buffer.length = 0
 
     // console.log('BUFFER COPY', bufferCopy)
