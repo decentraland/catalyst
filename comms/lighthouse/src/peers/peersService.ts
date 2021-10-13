@@ -3,7 +3,7 @@ import { discretizedPositionDistanceXZ, PeerConnectionHint, Position3D } from '@
 import { Island } from '@dcl/archipelago'
 import { LighthouseConfig } from '../config/configService'
 import { IRealm } from '../peerjs-server'
-import { AppServices, PeerInfo, PeerRequest } from '../types'
+import { AppServices, PeerInfo, PeerRequest, PeerTopologyInfo } from '../types'
 import { PeerOutgoingMessage, PeerOutgoingMessageType } from './protocol/messageTypes'
 
 require('isomorphic-fetch')
@@ -218,6 +218,18 @@ export class PeersService implements IPeersService {
         this.clearPeer(id)
         this.services.archipelagoService().clearPeer(id)
       }
+    }
+  }
+
+  getTopology(): { ok: true; topology: PeerTopologyInfo[] } | { ok: false; message: string } {
+    const peersCount = this.getActivePeersCount()
+
+    if (peersCount >= this.services.configService.get(LighthouseConfig.HIGH_LOAD_PEERS_COUNT))
+      return { ok: false, message: 'Cannot query topology during high load' }
+
+    return {
+      ok: true,
+      topology: Object.entries(this.peersTopology).map(([id, connectedPeers]) => ({ id, connectedPeers }))
     }
   }
 }

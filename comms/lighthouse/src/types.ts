@@ -51,3 +51,5 @@ export interface RTCIceServer {
 export type PeerParameters = Partial<{
   iceServers: RTCIceServer[]
 }>
+
+export type PeerTopologyInfo = { id: string; connectedPeers: string[] }
