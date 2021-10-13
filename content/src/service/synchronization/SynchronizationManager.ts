@@ -131,9 +131,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
           DeploymentContext.FIX_ATTEMPT
         )
         if (typeof result === 'number') {
-          ClusterSynchronizationManager.LOGGER.info(`Deployment successful`)
+          ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
         } else {
-          ClusterSynchronizationManager.LOGGER.info(`Deployment failed due: ${result.errors.toString()}`)
+          ClusterSynchronizationManager.LOGGER.info(
+            `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
+          )
         }
       })
     }
