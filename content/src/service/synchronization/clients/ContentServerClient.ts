@@ -84,7 +84,7 @@ export class ContentServerClient {
     return stream.pipe(passTrough)
   }
 
-  /** Return all new deployments, and store the local timestamp of the newest one. */
+  /** Returns the deployment with the given entity id and its files if present. */
   async getDeployment(entityId: string): Promise<Deployment[]> {
     // Fetch the deployments
     return this.client.fetchAllDeployments({
