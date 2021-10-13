@@ -19,14 +19,18 @@
     "start:lambdas": "yarn workspace @catalyst/lambdas-server start",
     "start:content": "yarn workspace @catalyst/content-server start",
     "start:comms": "yarn workspace @catalyst/lighthouse-server start",
-    "test": "yarn workspaces run test",
-    "lint:fix": "yarn eslint '**/*.{js,ts}' --fix",
-    "lint:check": "yarn eslint '**/*.{js,ts}'",
+    "test": "run-s 'test:*'",
+    "test:lambdas": "yarn workspace @catalyst/lambdas-server test",
+    "test:content": "yarn workspace @catalyst/content-server test",
+    "test:comms": "yarn workspace @catalyst/lighthouse-server test",
+    "test:commons": "yarn workspace @catalyst/commons test",
+    "lint:fix": "eslint '**/*.{js,ts}' --fix",
+    "lint:check": "eslint '**/*.{js,ts}'",
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": [
-      "yarn lint:fix"
+      "eslint --fix"
     ]
   },
   "prettier": {
@@ -41,12 +45,11 @@
     "@types/jasmine": "3.9.0",
     "@types/morgan": "^1",
     "@types/node": "16.7.10",
-    "@types/puppeteer": "5.4.4",
     "@types/react": "^17",
     "@types/react-dom": "^17",
-    "@types/sinon": "10.0.2",
+    "@types/sinon": "10.0.4",
     "@types/uuid": "^8",
-    "@typescript-eslint/eslint-plugin": "4.30.0",
+    "@typescript-eslint/eslint-plugin": "4.33.0",
     "@typescript-eslint/parser": "4.30.0",
     "cpy-cli": "^3.1.1",
     "eslint": "7.32.0",
@@ -57,13 +60,12 @@
     "jasmine-spec-reporter": "7.0.0",
     "jasmine-ts": "0.4.0",
     "karma": "6.3.4",
-    "lint-staged": "11.1.2",
+    "lint-staged": "11.2.0",
     "mock-socket": "8.0.5",
-    "node-pg-migrate": "5.9.0",
+    "node-pg-migrate": "6.0.0",
     "npm-run-all": "4.1.5",
     "pg": "8.7.1",
     "prettier": "2.3.2",
-    "puppeteer": "10.2.0",
     "shx": "0.3.3",
     "sinon": "11.1.2",
     "ts-mockito": "2.6.1",

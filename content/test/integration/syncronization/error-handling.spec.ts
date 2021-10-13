@@ -25,9 +25,9 @@ describe('End 2 end - Error handling', () => {
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv
-      .configServer('5s')
+      .configServer('2s')
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('5s'))
+      .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .withBean(Bean.ACCESS_CHECKER, accessChecker)
       .andBuildMany(2)

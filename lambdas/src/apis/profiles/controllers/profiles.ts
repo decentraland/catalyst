@@ -11,7 +11,7 @@ import { WearablesOwnership } from '../WearablesOwnership'
 
 const LOGGER = log4js.getLogger('profiles')
 
-function setCacheHeaders(res: Response, profiles: ProfileMetadata[]) {
+function setCacheHeaders(res: Response, profiles: ProfileMetadata[], cacheTTL: number) {
   if (profiles.length === 0) return
 
   let maxTimestamp = profiles[0]?.timestamp
@@ -24,7 +24,7 @@ function setCacheHeaders(res: Response, profiles: ProfileMetadata[]) {
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
     res.header('Last-Modified', new Date(maxTimestamp).toUTCString())
-    res.header('Cache-Control', 'public, max-age=0,s-maxage=0')
+    res.header('Cache-Control', `public, max-age=${cacheTTL},s-maxage=${cacheTTL}`)
   }
 }
 
@@ -41,9 +41,14 @@ function getIfModifiedSinceTimestamp(req: Request): number | undefined {
   }
 }
 
-function sendProfilesResponse(res: Response, profiles: ProfileMetadata[] | undefined, singleProfile: boolean = false) {
+function sendProfilesResponse(
+  res: Response,
+  profiles: ProfileMetadata[] | undefined,
+  cacheTTL: number,
+  singleProfile: boolean = false
+) {
   if (profiles) {
-    setCacheHeaders(res, profiles)
+    setCacheHeaders(res, profiles, cacheTTL)
     if (singleProfile) {
       const returnProfile: ProfileMetadata = profiles[0] ?? { avatars: [], timestamp: 0 }
       res.send(returnProfile)
@@ -62,6 +67,7 @@ export async function getIndividualProfileById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  profilesCacheTTL: number,
   req: Request,
   res: Response
 ): Promise<void> {
@@ -76,13 +82,14 @@ export async function getIndividualProfileById(
     getIfModifiedSinceTimestamp(req),
     false
   )
-  sendProfilesResponse(res, profiles, true)
+  sendProfilesResponse(res, profiles, profilesCacheTTL, true)
 }
 
 export async function getProfilesById(
   client: SmartContentClient,
   ensOwnership: EnsOwnership,
   wearables: WearablesOwnership,
+  profilesCacheTTL: number,
   req: Request,
   res: Response
 ) {
@@ -97,7 +104,7 @@ export async function getProfilesById(
     res.send(profiles)
   } else {
     const profiles = await fetchProfiles(profileIds, client, ensOwnership, wearables, getIfModifiedSinceTimestamp(req))
-    sendProfilesResponse(res, profiles)
+    sendProfilesResponse(res, profiles, profilesCacheTTL)
   }
 }
 

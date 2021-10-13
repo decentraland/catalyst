@@ -1,4 +1,4 @@
-import { asyncHandler, validateSignatureHandler } from '@catalyst/commons'
+import { asyncHandler, validateSignatureFromHeaderHandler, validateSignatureHandler } from '@catalyst/commons'
 import { Island, PeerData } from '@dcl/archipelago'
 import express, { Request, Response } from 'express'
 import { LighthouseConfig } from './config/configService'
@@ -100,6 +100,12 @@ export function configureRoutes(
     res.send(peersResponse)
   }
 
+  const getPeerParameters = async (_req: Request, res: Response) => {
+    const config = services.configService.get(LighthouseConfig.PEER_PARAMETERS)
+
+    res.send(config)
+  }
+
   app.get('/status', asyncHandler(getStatus))
 
   app.put('/config', [
@@ -116,4 +122,5 @@ export function configureRoutes(
   app.get('/islands', asyncHandler(getIslands))
   app.get('/islands/:islandId', asyncHandler(getIsland))
   app.get('/peers', asyncHandler(getPeers))
+  app.get('/peer-parameters', validateSignatureFromHeaderHandler(options.ethNetwork), asyncHandler(getPeerParameters))
 }
