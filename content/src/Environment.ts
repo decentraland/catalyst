@@ -94,7 +94,7 @@ export class Environment {
   logConfigValues() {
     Environment.LOGGER.info('These are the configuration values:')
     for (const [config, value] of this.configs.entries()) {
-      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${JSON.stringify(value)}`)
+      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${JSON.stringify(value)} or ${value.toString()}`)
     }
   }
 
