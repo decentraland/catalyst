@@ -48,7 +48,7 @@ fdescribe('End 2 end - Node onboarding', function () {
 
     await assertFileIsOnServer(server1, entity1ContentHash)
     await assertEntityIsOverwrittenBy(server1, entity1, entity2)
-    // await assertEntityIsOverwrittenBy(server2, entity1, entity2)
+    await assertEntityIsOverwrittenBy(server2, entity1, entity2)
 
     // Start server 3
     await server3.start()
