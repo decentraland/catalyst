@@ -54,7 +54,7 @@ describe('End 2 end - Node onboarding', function () {
     await server3.start()
 
     // Assert server 3 has all the history
-    await awaitUntil(async () => {
+    await awaitUntil(() => {
       return assertDeploymentsAreReported(server3, deployment1, deployment2)
     })
 
