@@ -10,7 +10,7 @@ import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
 import { TestServer } from '../TestServer'
 
-fdescribe('End 2 end - Node onboarding', function () {
+describe('End 2 end - Node onboarding', function () {
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer, server3: TestServer
 
@@ -43,8 +43,8 @@ fdescribe('End 2 end - Node onboarding', function () {
     const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
 
     // Wait for servers to sync and assert servers 1 and 2 are synced
-    await awaitUntil(() => assertDeploymentsAreReported(server1, undefined, deployment1, deployment2))
-    await awaitUntil(() => assertDeploymentsAreReported(server2, undefined, deployment1, deployment2))
+    await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
+    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1, deployment2))
 
     await assertFileIsOnServer(server1, entity1ContentHash)
     await assertEntityIsOverwrittenBy(server1, entity1, entity2)
@@ -56,7 +56,7 @@ fdescribe('End 2 end - Node onboarding', function () {
 
     // Assert server 3 has all the history
     await awaitUntil(async () => {
-      return assertDeploymentsAreReported(server3, { filters: {} }, deployment1, deployment2)
+      return assertDeploymentsAreReported(server3, deployment1, deployment2)
     })
 
     // Make sure that is didn't download overwritten content
@@ -79,8 +79,8 @@ fdescribe('End 2 end - Node onboarding', function () {
     const deployment = buildDeployment(deployData, entity, deploymentTimestamp)
 
     // Wait for sync and assert servers 1 and 2 are synced
-    await assertDeploymentsAreReported(server1, undefined, deployment)
-    await awaitUntil(() => assertDeploymentsAreReported(server2, undefined, deployment))
+    await assertDeploymentsAreReported(server1, deployment)
+    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
     await assertFileIsOnServer(server1, entityContentHash)
     await assertFileIsOnServer(server2, entityContentHash)
 
@@ -90,7 +90,7 @@ fdescribe('End 2 end - Node onboarding', function () {
     // Start server 3
     await server3.start()
 
-    await awaitUntil(() => assertDeploymentsAreReported(server3, undefined, deployment))
+    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment))
 
     // Make sure that even the content is properly propagated
     await assertFileIsOnServer(server1, entityContentHash)

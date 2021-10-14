@@ -62,7 +62,7 @@ describe('End 2 end deploy test', () => {
     const scenesByPointer: ControllerEntity[] = await server.getEntitiesByPointers(EntityType.SCENE, [POINTER0])
     await validateReceivedData(scenesByPointer, deployData)
 
-    await assertDeploymentsAreReported(server, undefined, deployment)
+    await assertDeploymentsAreReported(server, deployment)
   })
 
   async function validateReceivedData(receivedScenes: ControllerEntity[], deployData: DeploymentData) {

@@ -1,9 +1,8 @@
 import assert from 'assert'
-import { DeploymentData, DeploymentOptions, DeploymentWithMetadataContentAndPointers } from 'dcl-catalyst-client'
+import { DeploymentData } from 'dcl-catalyst-client'
 import {
   ContentFileHash,
   Deployment as ControllerDeployment,
-  DeploymentBase,
   Entity as ControllerEntity,
   EntityContentItemReference,
   EntityVersion,
@@ -86,12 +85,8 @@ export async function assertDeploymentsCount(server: TestServer, count: number) 
   )
 }
 
-export async function assertDeploymentsAreReported<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-  server: TestServer,
-  options?: DeploymentOptions<T>,
-  ...expectedDeployments: ControllerDeployment[]
-) {
-  const deployments = await server.getDeployments(options)
+export async function assertDeploymentsAreReported(server: TestServer, ...expectedDeployments: ControllerDeployment[]) {
+  const deployments = await server.getDeployments()
   assert.equal(
     deployments.length,
     expectedDeployments.length,
