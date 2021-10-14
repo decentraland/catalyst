@@ -2,6 +2,7 @@ import { asyncHandler, validateSignatureFromHeaderHandler, validateSignatureHand
 import { Island, PeerData } from '@dcl/archipelago'
 import express, { Request, Response } from 'express'
 import { LighthouseConfig } from './config/configService'
+import { toGraphviz } from './misc/graphvizTopology'
 import { requireAll } from './misc/handlers'
 import { AppServices, PeerInfo } from './types'
 
@@ -106,6 +107,20 @@ export function configureRoutes(
     res.send(config)
   }
 
+  const getTopology = async (req: Request, res: Response) => {
+    const topologyInfo = services.peersService().getTopology()
+    if (topologyInfo.ok) {
+      if (req.query.format === 'graphviz') {
+        res.setHeader('Content-Type', 'text/vnd.graphviz')
+        res.send(toGraphviz(topologyInfo.topology))
+      } else {
+        res.send(topologyInfo)
+      }
+    } else {
+      res.status(503).send(topologyInfo)
+    }
+  }
+
   app.get('/status', asyncHandler(getStatus))
 
   app.put('/config', [
@@ -122,5 +137,6 @@ export function configureRoutes(
   app.get('/islands', asyncHandler(getIslands))
   app.get('/islands/:islandId', asyncHandler(getIsland))
   app.get('/peers', asyncHandler(getPeers))
+  app.get('/peers/topology', asyncHandler(getTopology))
   app.get('/peer-parameters', validateSignatureFromHeaderHandler(options.ethNetwork), asyncHandler(getPeerParameters))
 }
