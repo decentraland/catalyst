@@ -52,7 +52,6 @@ describe('End 2 end - Node onboarding', function () {
 
     // Start server 3
     await server3.start()
-    // let consoled = false
 
     // Assert server 3 has all the history
     await awaitUntil(async () => {
