@@ -16,13 +16,25 @@ export class RepositoryFactory {
     }
 
     const database = await build(connection, contentCredentials)
-    return new Repository(
-      database,
-      new RepositoryQueue({
-        maxConcurrency: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY),
-        maxQueued: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED),
-        timeout: env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_TIMEOUT)
-      })
-    )
+    const options = RepositoryFactory.parseQueueOptions(env)
+
+    return new Repository(database, new RepositoryQueue(options))
+  }
+
+  private static parseQueueOptions(env: Environment) {
+    let options = {}
+    const maxConcurrency: string | undefined = env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_CONCURRENCY)
+    if (!!maxConcurrency) {
+      options = { maxConcurrency: +maxConcurrency }
+    }
+    const maxQueued: string | undefined = env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_MAX_QUEUED)
+    if (!!maxQueued) {
+      options = { ...options, maxQueued: +maxQueued }
+    }
+    const queueTimeout: string | undefined = env.getConfig(EnvironmentConfig.REPOSITORY_QUEUE_TIMEOUT)
+    if (queueTimeout) {
+      options = { ...options, queueTimeout: +queueTimeout }
+    }
+    return options
   }
 }
