@@ -17,7 +17,7 @@
     "build:comms": "yarn workspace @catalyst/lighthouse-server build",
     "start": "yarn workspaces run start",
     "start:lambdas": "yarn workspace @catalyst/lambdas-server start",
-    "start:content": "yarn workspace @catalyst/content-server start",
+    "start:content": "yarn workspace @catalyst/content-server start:db && yarn workspace @catalyst/content-server start:server",
     "start:comms": "yarn workspace @catalyst/lighthouse-server start",
     "test": "run-s 'test:*'",
     "test:lambdas": "yarn workspace @catalyst/lambdas-server test",

@@ -119,20 +119,26 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // Build Deployment from other servers
       const entityId = failedDeployment.entityId
       ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
-      const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
-      // Deploy local
-      const result: DeploymentResult = await this.service.deployEntity(
-        data.files,
-        entityId,
-        { authChain: data.authChain },
-        DeploymentContext.FIX_ATTEMPT
-      )
-      if (typeof result === 'number') {
-        ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
-      } else {
-        ClusterSynchronizationManager.LOGGER.info(
-          `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
+
+      try {
+        const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
+
+        // Deploy local
+        const result: DeploymentResult = await this.service.deployEntity(
+          data.files,
+          entityId,
+          { authChain: data.authChain },
+          DeploymentContext.FIX_ATTEMPT
         )
+        if (typeof result === 'number') {
+          ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
+        } else {
+          ClusterSynchronizationManager.LOGGER.info(
+            `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
+          )
+        }
+      } catch (err) {
+        ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' failed due: ${err}`)
       }
     })
   }
