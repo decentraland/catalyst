@@ -177,6 +177,6 @@ describe('End 2 end - Error handling', () => {
     await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
 
     // Assert history was modified
-    await assertDeploymentsAreReported(server2, deployment)
+    await assertDeploymentsAreReported(server2, undefined, deployment)
   }
 })

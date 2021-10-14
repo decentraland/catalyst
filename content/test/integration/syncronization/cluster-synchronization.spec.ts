@@ -41,11 +41,11 @@ describe('End 2 end synchronization tests', function () {
     const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Assert that the entity was deployed on server 1
-    await assertDeploymentsAreReported(server1, deployment)
+    await assertDeploymentsAreReported(server1, undefined, deployment)
 
     // Assert that the entity was synced from server 1 to server 2
     await awaitUntil(() => assertEntitiesAreActiveOnServer(server2, entityBeingDeployed))
-    await assertDeploymentsAreReported(server2, deployment)
+    await assertDeploymentsAreReported(server2, undefined, deployment)
   })
 
   it(`When a server finds a new deployment with already known content, it can still deploy it successfully`, async () => {
@@ -71,15 +71,15 @@ describe('End 2 end synchronization tests', function () {
     const deployment1 = buildDeployment(deployData1, entityBeingDeployed1, deploymentTimestamp1)
 
     // Wait for servers to sync
-    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1))
+    await awaitUntil(() => assertDeploymentsAreReported(server2, undefined, deployment1))
 
     // Deploy entity 2 on server 2
     const deploymentTimestamp2 = await server2.deploy(deployData2)
     const deployment2 = buildDeployment(deployData2, entityBeingDeployed2, deploymentTimestamp2)
 
     // Assert that the entities were deployed on the servers
-    await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
-    await assertDeploymentsAreReported(server2, deployment1, deployment2)
+    await awaitUntil(() => assertDeploymentsAreReported(server1, undefined, deployment1, deployment2))
+    await assertDeploymentsAreReported(server2, undefined, deployment1, deployment2)
   })
 
   /**
@@ -130,8 +130,8 @@ describe('End 2 end synchronization tests', function () {
     const deployment3 = buildDeployment(deployData3, entity3, deploymentTimestamp3)
 
     // Wait for servers 1 and 3 to sync
-    await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment3))
-    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment3))
+    await awaitUntil(() => assertDeploymentsAreReported(server1, undefined, deployment1, deployment3))
+    await awaitUntil(() => assertDeploymentsAreReported(server3, undefined, deployment1, deployment3))
 
     // Make sure that both server 1 and 3 have entity E1 and E3 currently active
     await assertEntitiesAreActiveOnServer(server1, entity1, entity3)
@@ -141,9 +141,9 @@ describe('End 2 end synchronization tests', function () {
     await server2.start()
 
     // Wait for servers to sync
-    await awaitUntil(() => assertDeploymentsAreReported(server1, deployment2, deployment1, deployment3))
-    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment2, deployment1, deployment3))
-    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment2, deployment1, deployment3))
+    await awaitUntil(() => assertDeploymentsAreReported(server1, undefined, deployment2, deployment1, deployment3))
+    await awaitUntil(() => assertDeploymentsAreReported(server2, undefined, deployment2, deployment1, deployment3))
+    await awaitUntil(() => assertDeploymentsAreReported(server3, undefined, deployment2, deployment1, deployment3))
 
     // Make assertions on Server 1
     await assertEntitiesAreActiveOnServer(server1, entity3)

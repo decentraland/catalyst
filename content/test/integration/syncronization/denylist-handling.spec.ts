@@ -102,7 +102,7 @@ describe('End 2 end - Denylist handling', () => {
     const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Wait for servers to sync
-    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
+    await awaitUntil(() => assertDeploymentsAreReported(server2, undefined, deployment))
 
     // Black list the entity
     await server1.denylistEntity(entityBeingDeployed, identity)
@@ -114,7 +114,7 @@ describe('End 2 end - Denylist handling', () => {
     await awaitUntil(() => assertEntityIsNotDenylisted(onboardingServer, entityBeingDeployed))
 
     // Assert on onboarding server has all history
-    await assertDeploymentsAreReported(onboardingServer, deployment)
+    await assertDeploymentsAreReported(onboardingServer, undefined, deployment)
 
     // Assert the entity is retrieved correctly
     const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
@@ -141,7 +141,7 @@ describe('End 2 end - Denylist handling', () => {
     const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Wait for servers to sync
-    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment))
+    await awaitUntil(() => assertDeploymentsAreReported(server2, undefined, deployment))
 
     // Black list the entity
     await server1.denylistContent(contentHash, identity)
@@ -153,7 +153,7 @@ describe('End 2 end - Denylist handling', () => {
     await awaitUntil(() => assertContentNotIsDenylisted(onboardingServer, entityBeingDeployed, contentHash))
 
     // Assert on onboarding server has all history
-    await assertDeploymentsAreReported(onboardingServer, deployment)
+    await assertDeploymentsAreReported(onboardingServer, undefined, deployment)
 
     // Assert the entity is retrieved correctly
     const entity = await onboardingServer.getEntityById(entityBeingDeployed.type, entityBeingDeployed.id)
