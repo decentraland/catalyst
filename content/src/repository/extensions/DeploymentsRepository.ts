@@ -23,7 +23,6 @@ export class DeploymentsRepository {
       'SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)',
       [entityIds],
       ({ entity_id }) => entity_id
-      // TODO!: Add this request priority queue
     )
 
     const deployedIds = new Set(result)

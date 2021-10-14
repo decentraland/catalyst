@@ -108,36 +108,39 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     }
   }
 
+  private async retryFailedDeploymentExecution(): Promise<void> {
+    // Get Failed Deployments from local storage
+    const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
+
+    ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
+
+    // TODO: Implement an exponential backoff for retrying
+    failedDeployments.forEach(async (failedDeployment) => {
+      // Build Deployment from other servers
+      const entityId = failedDeployment.entityId
+      ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
+      const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
+      // Deploy local
+      const result: DeploymentResult = await this.service.deployEntity(
+        data.files,
+        entityId,
+        { authChain: data.authChain },
+        DeploymentContext.FIX_ATTEMPT
+      )
+      if (typeof result === 'number') {
+        ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
+      } else {
+        ClusterSynchronizationManager.LOGGER.info(
+          `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
+        )
+      }
+    })
+  }
+
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
       await delay(ms('1h'))
-
-      // Get Failed Deployments from local storage
-      const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
-
-      ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
-
-      // TODO: Implement an exponential backoff for retrying
-      failedDeployments.forEach(async (failedDeployment) => {
-        // Build Deployment from other servers
-        const entityId = failedDeployment.entityId
-        ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
-        const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
-        // Deploy local
-        const result: DeploymentResult = await this.service.deployEntity(
-          data.files,
-          entityId,
-          { authChain: data.authChain },
-          DeploymentContext.FIX_ATTEMPT
-        )
-        if (typeof result === 'number') {
-          ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
-        } else {
-          ClusterSynchronizationManager.LOGGER.info(
-            `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
-          )
-        }
-      })
+      await this.retryFailedDeploymentExecution()
     }
   }
 
@@ -199,6 +202,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       metricsComponent.observe('dcl_sync_state_summary', { state: 'synced' }, 1)
       this.timeOfLastSync = Date.now()
       ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
+
+      await this.retryFailedDeploymentExecution()
     } catch (error) {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
       metricsComponent.observe('dcl_sync_state_summary', { state: 'failed_to_sync' }, 1)

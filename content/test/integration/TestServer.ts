@@ -88,6 +88,7 @@ export class TestServer extends Server {
     options?: DeploymentOptions<T>
   ): Promise<ControllerDeployment[]> {
     const filters = Object.assign({ from: 1 }, options?.filters)
+
     return this.client.fetchAllDeployments({
       fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO,
       ...options,
