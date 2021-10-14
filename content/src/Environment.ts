@@ -94,7 +94,20 @@ export class Environment {
   logConfigValues() {
     Environment.LOGGER.info('These are the configuration values:')
     for (const [config, value] of this.configs.entries()) {
-      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${JSON.stringify(value.toJSON())}`)
+      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+    }
+  }
+
+  private printObject(object: any) {
+    if (object instanceof Map) {
+      const mapString = '{'
+      object.forEach((value: string, key: string) => {
+        mapString.concat(`'${key}': ${value},`)
+      })
+      mapString.concat('}')
+      return mapString
+    } else {
+      return JSON.stringify(object)
     }
   }
 
