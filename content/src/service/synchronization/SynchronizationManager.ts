@@ -178,9 +178,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // If everything worked, then update the last deployment timestamp
       contentServers.forEach((client) => {
         // Update the client, so it knows from when to ask next time
-        const newTimestamp = client.getPotentialLocalDeploymentTimestamp()
-
-        if (!newTimestamp) return
+        const newTimestamp = client.allDeploymentsWereSuccessful()
 
         ClusterSynchronizationManager.LOGGER.debug(
           `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
