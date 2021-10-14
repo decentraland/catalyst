@@ -94,7 +94,20 @@ export class Environment {
   logConfigValues() {
     Environment.LOGGER.info('These are the configuration values:')
     for (const [config, value] of this.configs.entries()) {
-      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${JSON.stringify(value)}`)
+      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+    }
+  }
+
+  private printObject(object: any) {
+    if (object instanceof Map) {
+      let mapString: string = '{'
+      object.forEach((value: string, key: string) => {
+        mapString += `'${key}': ${value},`
+      })
+      mapString += '}'
+      return mapString
+    } else {
+      return JSON.stringify(object)
     }
   }
 
@@ -411,7 +424,7 @@ export class EnvironmentBuilder {
 
     /*
      * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
-     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000
+     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000'
      */
     this.registerConfigIfNotAlreadySet(
       env,
