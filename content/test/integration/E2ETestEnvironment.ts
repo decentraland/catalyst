@@ -177,7 +177,6 @@ export class ServerBuilder {
 
   async andBuildOnPorts(ports: number[]): Promise<TestServer[]> {
     const databaseNames = await this.testEnvCalls.createDatabases(ports.length)
-    console.log('databaseNames', databaseNames)
 
     const servers: TestServer[] = []
     for (let i = 0; i < ports.length; i++) {
