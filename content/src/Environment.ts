@@ -100,11 +100,11 @@ export class Environment {
 
   private printObject(object: any) {
     if (object instanceof Map) {
-      const mapString = '{'
+      let mapString: string = '{'
       object.forEach((value: string, key: string) => {
-        mapString.concat(`'${key}': ${value},`)
+        mapString += `'${key}': ${value},`
       })
-      mapString.concat('}')
+      mapString += '}'
       return mapString
     } else {
       return JSON.stringify(object)
