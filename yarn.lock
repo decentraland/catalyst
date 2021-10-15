@@ -5265,12 +5265,12 @@ mock-fs@^4.1.0:
   resolved "https://registry.yarnpkg.com/mock-fs/-/mock-fs-4.14.0.tgz#ce5124d2c601421255985e6e94da80a7357b1b18"
   integrity sha512-qYvlv/exQ4+svI3UOvPUpLDF0OMX5euvUH0Ny4N5QyRyhNdgAgUrVH3iUINSzEPLvx0kbo/Bp28GJKIqvE7URw==
 
-mock-socket@8.0.5:
-  version "8.0.5"
-  resolved "https://registry.yarnpkg.com/mock-socket/-/mock-socket-8.0.5.tgz#4ce8909601b2bcdf5f7680f35c2f7b34beb2afc4"
-  integrity sha512-dE2EbcxJKQCeYLZSsI7BAiMZCe/bHbJ2LHb5aGwUuDmfoOINEJ8QI6qYJ85NHsSNkNa90F3s6onZcmt/+MppFA==
+mock-socket@9.0.5:
+  version "9.0.5"
+  resolved "https://registry.yarnpkg.com/mock-socket/-/mock-socket-9.0.5.tgz#49446821d9afe41213f9647eb29ca834e5b3c0bc"
+  integrity sha512-H1PNSeFtxoiWOPryZzywBATsyDij5158zDOzfVIqQ7WSqEciEsrt6otrWrVCIZPPkBxns1IGFSnRgtUWFo2d+A==
   dependencies:
-    url-parse "^1.2.0"
+    url-parse "^1.4.4"
 
 module-alias@^2.2.2:
   version "2.2.2"
@@ -7620,7 +7620,7 @@ url-parse-lax@^1.0.0:
   dependencies:
     prepend-http "^1.0.1"
 
-url-parse@^1.2.0:
+url-parse@^1.4.4:
   version "1.5.3"
   resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.5.3.tgz#71c1303d38fb6639ade183c2992c8cc0686df862"
   integrity sha512-IIORyIQD9rvj0A4CLWsHkBBJuNqWpFQe224b6j9t/ABmquIS0qDU2pY6kl6AuOrL5OkCXHMCFNe1jBcuAggjvQ==
