@@ -1079,7 +1079,7 @@
     "@types/minimatch" "*"
     "@types/node" "*"
 
-"@types/http-errors@^1.8.0":
+"@types/http-errors@^1.8.1":
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/@types/http-errors/-/http-errors-1.8.1.tgz#e81ad28a60bee0328c6d2384e029aec626f1ae67"
   integrity sha512-e+2rjEwK6KDaNOm5Aa9wNGgyS9oSZU/4pfSMMPYNOfjvFI0WVXm29+ITRFr6aKDvvKo7uU1jV68MW4ScsfDi7Q==
@@ -1380,20 +1380,22 @@
     "@typescript-eslint/types" "4.33.0"
     eslint-visitor-keys "^2.0.0"
 
-"@well-known-components/http-server@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.0.0.tgz#422ed0f19f289e62f306b26507ee28ad53cea190"
-  integrity sha512-beikThphSARldwsu9rv06o818ozKZL3a0cRWDnykin/0QWTU8vt+6zvslc07RVKujmycxxPuGZceWyQvxBTl5Q==
+"@well-known-components/http-server@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/http-server/-/http-server-1.1.0.tgz#dea7fd22019efcb697935182247ac340186022dd"
+  integrity sha512-EiqbKQ6CeZ2dcSVsSt9g9245oWvUFwz/4/GSrRVOYyKMJVj3qk6Ps62Olku9OFTwEVBNLHcQsm+BAxHikLtyvw==
   dependencies:
     "@types/compression" "^1.7.0"
     "@types/cors" "^2.8.9"
-    "@types/http-errors" "^1.8.0"
+    "@types/http-errors" "^1.8.1"
     compression "^1.7.4"
     cors "^2.8.5"
+    destroy "^1.0.4"
     express "^4.17.1"
     fp-future "^1.0.1"
     http-errors "^1.8.0"
-    node-fetch "^2.6.1"
+    node-fetch "^2.6.2"
+    on-finished "^2.3.0"
     path-to-regexp "^6.2.0"
 
 "@well-known-components/interfaces@^1.1.0":
@@ -2692,7 +2694,7 @@ depd@~2.0.0:
   resolved "https://registry.yarnpkg.com/depd/-/depd-2.0.0.tgz#b696163cc757560d09cf22cc8fad1571b79e76df"
   integrity sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==
 
-destroy@1.0.4, destroy@~1.0.4:
+destroy@1.0.4, destroy@^1.0.4, destroy@~1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.0.4.tgz#978857442c44749e4206613e37946205826abd80"
   integrity sha1-l4hXRCxEdJ5CBmE+N5RiBYJqvYA=
