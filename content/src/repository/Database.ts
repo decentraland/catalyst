@@ -70,7 +70,9 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
   const dbConfig = {
     ...connection,
     ...credentials,
-    max: 20
+    max: 20,
+    idleTimeoutMillis: 3000,
+    query_timeout: 3000
   }
 
   // Build the database

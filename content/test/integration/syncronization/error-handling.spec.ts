@@ -33,10 +33,6 @@ describe('End 2 end - Error handling', () => {
       .andBuildMany(2)
   })
 
-  it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    await runTest(FailureReason.NO_ENTITY_OR_AUDIT, (entity) => server1.denylistEntity(entity, identity))
-  })
-
   it(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
     await runTest(FailureReason.FETCH_PROBLEM, (entity) => server1.denylistContent(entity.content![0].hash, identity))
   })
@@ -130,6 +126,10 @@ describe('End 2 end - Error handling', () => {
     )
   })
 
+  it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
+    await runTest(FailureReason.NO_ENTITY_OR_AUDIT, (entity) => server1.denylistEntity(entity, identity))
+  })
+
   async function runTest(
     errorType: FailureReason,
     causeOfFailure: (entity: ControllerEntity) => Promise<void>,
@@ -146,7 +146,6 @@ describe('End 2 end - Error handling', () => {
 
     // Deploy the entity
     const deploymentTimestamp: Timestamp = await server1.deploy(deployData)
-    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Cause failure
     await causeOfFailure(entityBeingDeployed)
@@ -175,6 +174,8 @@ describe('End 2 end - Error handling', () => {
 
     // Assert entity is there
     await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
+
+    const deployment = buildDeployment(deployData, entityBeingDeployed, deploymentTimestamp)
 
     // Assert history was modified
     await assertDeploymentsAreReported(server2, deployment)

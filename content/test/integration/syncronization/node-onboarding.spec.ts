@@ -2,7 +2,6 @@ import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import {
   assertDeploymentsAreReported,
   assertEntityIsOverwrittenBy,
-  assertFileIsNotOnServer,
   assertFileIsOnServer,
   buildDeployment
 } from '../E2EAssertions'
@@ -45,6 +44,7 @@ describe('End 2 end - Node onboarding', function () {
     // Wait for servers to sync and assert servers 1 and 2 are synced
     await awaitUntil(() => assertDeploymentsAreReported(server1, deployment1, deployment2))
     await awaitUntil(() => assertDeploymentsAreReported(server2, deployment1, deployment2))
+
     await assertFileIsOnServer(server1, entity1ContentHash)
     await assertEntityIsOverwrittenBy(server1, entity1, entity2)
     await assertEntityIsOverwrittenBy(server2, entity1, entity2)
@@ -53,10 +53,9 @@ describe('End 2 end - Node onboarding', function () {
     await server3.start()
 
     // Assert server 3 has all the history
-    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment1, deployment2))
-
-    // Make sure that is didn't download overwritten content
-    await assertFileIsNotOnServer(server3, entity1ContentHash)
+    await awaitUntil(async () => {
+      return assertDeploymentsAreReported(server3, deployment1, deployment2)
+    })
   })
 
   it('When a node starts, it even gets history for nodes that are no longer on the DAO', async () => {
