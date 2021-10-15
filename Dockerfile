@@ -40,9 +40,10 @@ COPY --from=dependencies /app/content/node_modules ./node_modules/
 
 COPY --from=content-builder /app/contracts/dist contracts/
 COPY --from=content-builder /app/commons/dist commons/
-COPY --from=content-builder /app/content/dist/src content/
-COPY --from=comms-builder /app/comms/lighthouse/dist/src comms/lighthouse/
-COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/
+COPY --from=content-builder /app/content/dist content/
+COPY --from=comms-builder /app/comms/lighthouse/dist comms/lighthouse/
+COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/src
+COPY --from=lambdas-builder /app/lambdas/dist/resources lambdas/resources
 
 # https://docs.docker.com/engine/reference/builder/#arg
 ARG CATALYST_VERSION=0.0.0

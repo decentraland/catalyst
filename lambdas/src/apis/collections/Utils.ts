@@ -78,7 +78,7 @@ export function createExternalContentUrl(
   return undefined
 }
 
-export function findHashForFile(entity: Entity, fileName: string | undefined) {
+export function findHashForFile(entity: Entity, fileName: string | undefined): string | undefined {
   if (fileName) {
     return entity.content?.find((item) => item.file === fileName)?.hash
   }

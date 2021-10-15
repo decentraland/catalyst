@@ -4,7 +4,8 @@
   "description": "Lambdas server",
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
-    "build": "tsc -b",
+    "build": "tsc -b && yarn copy-resources",
+    "copy-resources": "cpy resources/ dist/ --parents",
     "start": "node ./dist/src/entrypoints/run-server.js",
     "test": "jasmine-ts --config=jasmine.json"
   },

@@ -1,6 +1,8 @@
 import { ChainId } from '@dcl/schemas'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
+import sharp from 'sharp'
+import { ServiceError } from '../../../utils/errors'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
@@ -13,7 +15,12 @@ import {
 } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
-export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response) {
+type ValidSize = '128' | '256' | '512' | '1024'
+const sizes: Record<ValidSize, number> = { '128': 128, '256': 256, '512': 512, '1024': 1024 }
+
+const isValidSize = (size: string): size is ValidSize => sizes[size] !== undefined
+
+export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /standard/erc721/:chainId/:contract/:option/:emission
   const { chainId, contract, option } = req.params
@@ -21,74 +28,65 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   const protocol = getProtocol(chainId)
 
   if (!protocol) {
-    return res.status(400).send(`Invalid chainId '${chainId}'`)
+    res.status(400).send(`Invalid chainId '${chainId}'`)
+    return
   }
 
   try {
     const urn = buildUrn(protocol, contract, option)
     const entity = await fetchEntity(client, urn)
-    if (entity) {
-      const wearableMetadata: WearableMetadata = entity.metadata
-      const name = preferEnglish(wearableMetadata.i18n)
-      const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
-      const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-      const image = createExternalContentUrl(client, entity, wearableMetadata.image)
-      const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
-      const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
-        (bodyShapes: ERC721StandardTrait[], bodyShape) => {
-          bodyShapes.push({
-            trait_type: 'Body Shape',
-            value: bodyShape
-          })
 
-          return bodyShapes
-        },
-        []
-      )
-
-      const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
-        tags.push({
-          trait_type: 'Tag',
-          value: tag
+    const wearableMetadata: WearableMetadata = entity.metadata
+    const name = preferEnglish(wearableMetadata.i18n)
+    const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
+    const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
+    const image = createExternalContentUrl(client, entity, wearableMetadata.image)
+    const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
+    const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
+      (bodyShapes: ERC721StandardTrait[], bodyShape) => {
+        bodyShapes.push({
+          trait_type: 'Body Shape',
+          value: bodyShape
         })
 
-        return tags
-      }, [])
+        return bodyShapes
+      },
+      []
+    )
 
-      const standardErc721 = {
-        id: urn,
-        name,
-        description,
-        language: 'en-US',
-        image,
-        thumbnail,
-        attributes: [
-          {
-            trait_type: 'Rarity',
-            value: wearableMetadata.rarity
-          },
-          {
-            trait_type: 'Category',
-            value: wearableMetadata.data.category
-          },
-          ...tagTraits,
-          ...bodyShapeTraits
-        ]
-      }
-      res.send(standardErc721)
-    } else {
-      res.status(404).send()
+    const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
+      tags.push({
+        trait_type: 'Tag',
+        value: tag
+      })
+
+      return tags
+    }, [])
+
+    const standardErc721 = {
+      id: urn,
+      name,
+      description,
+      language: 'en-US',
+      image,
+      thumbnail,
+      attributes: [
+        {
+          trait_type: 'Rarity',
+          value: wearableMetadata.rarity
+        },
+        {
+          trait_type: 'Category',
+          value: wearableMetadata.data.category
+        },
+        ...tagTraits,
+        ...bodyShapeTraits
+      ]
     }
+    res.send(standardErc721)
   } catch (e) {
-    res.status(500).send(e.message)
+    res.status(e.statusCode ?? 500).send(e.message)
   }
-}
-
-export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
-  // Method: GET
-  // Path: /contents/:urn/image
-  const { urn } = req.params
-  await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.image)
 }
 
 export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
@@ -96,7 +94,58 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
   // Path: /contents/:urn/thumbnail
   const { urn } = req.params
 
-  await internalContents(client, res, urn, (wearableMetadata) => wearableMetadata.thumbnail)
+  // TODO resize
+
+  try {
+    const entity = await fetchEntity(client, urn)
+
+    const wearableMetadata: WearableMetadata = entity.metadata
+    const hash = getFileHash(entity, wearableMetadata.thumbnail)
+
+    const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
+    headers.forEach((value, key) => res.setHeader(key, value))
+  } catch (e) {
+    res.status(e.statusCode ?? 500).send(e.message)
+  }
+}
+
+export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
+  // Method: GET
+  // Path: /contents/:urn/image?size
+  const { urn } = req.params
+  const size = getSize(req.query.size as string | undefined)
+
+  try {
+    const entity = await fetchEntity(client, urn)
+
+    const wearableMetadata = entity.metadata as WearableMetadata
+    const hash = getFileHash(entity, wearableMetadata.thumbnail)
+
+    const resize = (image: Buffer | string) => sharp(image).resize({ width: sizes[size] })
+
+    let image = await client.downloadContent(hash)
+    image = await resize(image).toBuffer()
+
+    const imageFilePath = getRarityImagePath(wearableMetadata)
+    const finalImage = await resize(imageFilePath)
+      .composite([{ input: image }])
+      .toBuffer()
+
+    res.send(finalImage)
+
+    res.writeHead(200, {
+      'Content-Type': 'arraybuffer',
+      ETag: urn,
+      'Access-Control-Expose-Headers': '*',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    })
+  } catch (e) {
+    res.status(500).send(e.message)
+  }
+}
+
+function getRarityImagePath(wearableMetadata: WearableMetadata) {
+  return `lambdas/resources/${wearableMetadata.rarity}.png`
 }
 
 export async function getCollectionsHandler(
@@ -150,40 +199,30 @@ function buildUrn(protocol: string, contract: string, option: string): string {
   return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
 }
 
-async function internalContents(
-  client: SmartContentClient,
-  res: Response,
-  urn: string,
-  selector: (metadata: WearableMetadata) => string | undefined
-): Promise<void> {
-  try {
-    const entity = await fetchEntity(client, urn)
-    if (entity) {
-      const wearableMetadata: WearableMetadata = entity.metadata
-      const hash = findHashForFile(entity, selector(wearableMetadata))
-      if (hash) {
-        const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
-        headers.forEach((value: string, key: string) => {
-          res.setHeader(key, value)
-        })
-      } else {
-        res.status(404).send()
-      }
-    }
-  } catch (e) {
-    res.status(500).send(e.message)
-  }
+function getSize(size: string = '1024'): ValidSize {
+  if (!isValidSize(size)) throw new ServiceError('Invalid size')
+  return size
 }
 
-async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity | undefined> {
+function getFileHash(entity: Entity, fileName?: string): string {
+  const hash = findHashForFile(entity, fileName)
+  if (!hash) throw new ServiceError(`Hash not found for file ${fileName}`, 404)
+
+  return hash
+}
+
+async function fetchEntity(client: SmartContentClient, urn: string): Promise<Entity> {
   const entities: Entity[] = await client.fetchEntitiesByPointers(EntityType.WEARABLE, [urn])
-  return entities && entities.length > 0 && entities[0].metadata ? entities[0] : undefined
+  if (!(entities && entities.length > 0 && entities[0].metadata)) throw new ServiceError('Entity not found', 404)
+
+  return entities[0]
 }
 
-export function getBodyShapes(representations: WearableMetadataRepresentation[]) {
+export function getBodyShapes(representations: WearableMetadataRepresentation[]): string[] {
   const bodyShapes = new Set<WearableBodyShape>()
   for (const representation of representations) {
     for (const bodyShape of representation.bodyShapes) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       bodyShapes.add(bodyShape.split(':').pop()!)
     }
   }
