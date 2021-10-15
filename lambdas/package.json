@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
-    "build": "tsc -b",
+    "build": "tsc -b && yarn copy-resources",
+    "copy-resources": "cpy resources/ dist/ --parents",
     "start": "node ./dist/src/entrypoints/run-server.js",
     "test": "jest --runInBand --forceExit --coverage"
   },

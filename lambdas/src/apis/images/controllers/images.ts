@@ -6,20 +6,12 @@ import log4js from 'log4js'
 import fetch from 'node-fetch'
 import onFinished from 'on-finished'
 import sharp from 'sharp'
+import { ServiceError } from '../../../utils/errors'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
 const LOGGER = log4js.getLogger('ImagesController')
 
 const validSizes = ['128', '256', '512']
-
-class ServiceError extends Error {
-  statusCode: number
-
-  constructor(message: string, code: number = 400) {
-    super(message)
-    this.statusCode = code
-  }
-}
 
 function validateSize(size: string) {
   if (!validSizes.includes(size)) {
@@ -42,7 +34,7 @@ export async function getResizedImage(
   rooStorageLocation: string,
   req: Request,
   res: Response
-) {
+): Promise<void> {
   // Method: GET
   // Path: /images/:cid/:size
 

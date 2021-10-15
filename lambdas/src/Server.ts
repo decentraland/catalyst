@@ -41,7 +41,7 @@ export class Server {
     this.app = express()
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
-      this.app.use(compression({ filter: (req, res) => true }))
+      this.app.use(compression({ filter: () => true }))
     }
     if (env.getConfig(EnvironmentConfig.VALIDATE_API)) {
       this.app.use(
