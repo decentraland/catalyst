@@ -57,7 +57,6 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
     const ids = bufferCopy.map(({ deployment }) => deployment.entityId)
     try {
       const deployInfo = await this.checkIfAlreadyDeployed(ids)
-      // await (await Environment.getInstance()).logConfigValues()
       const newEntities: Set<EntityId> = new Set(
         Array.from(deployInfo.entries())
           .filter(([, deployed]) => !deployed)
