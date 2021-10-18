@@ -68,7 +68,7 @@ export type ServerEnvironment = {
   accessChecker: AccessChecker
   authenticator: ContentAuthenticator
   requestTtlBackwards: number
-  maxUploadSizePerTypeInMB: Map<EntityType, number>
+  maxUploadSizePerTypeInMB: Map<EntityType, { model?: number; max: number }>
 }
 
 export type ExternalCalls = {

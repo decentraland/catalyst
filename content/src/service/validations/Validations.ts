@@ -25,7 +25,7 @@ export class Validations {
     if (!maxSizeInMB) {
       return [`Type ${entity.type} is not supported yet`]
     }
-    const maxSizeInBytes = maxSizeInMB * 1024 * 1024
+    const maxSizeInBytes = maxSizeInMB.max * 1024 * 1024
     let totalSize = 0
 
     deployment.files.forEach((file) => (totalSize += file.byteLength))
@@ -228,7 +228,7 @@ export class Validations {
     if (!maxSizeInMB) {
       return [`Type ${entity.type} is not supported yet`]
     }
-    const maxSizeInBytes = maxSizeInMB * 1024 * 1024
+    const maxSizeInBytes = maxSizeInMB.max * 1024 * 1024
 
     let totalSize = 0
 
@@ -246,10 +246,27 @@ export class Validations {
     const sizePerPointer = totalSize / entity.pointers.length
     if (sizePerPointer > maxSizeInBytes) {
       return [
-        `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB} MB for ${
+        `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB.max} MB for ${
           entity.type
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
+    }
+
+    if (entity.type === EntityType.WEARABLE) {
+      if (!maxSizeInMB.model) return [`Model size limit not defined for wearables`]
+      const wearableMetadata = entity.metadata as Wearable
+      const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)
+      if (thumbnailHash) {
+        const thumbnailSize = deployment.files.get(thumbnailHash)?.byteLength
+        const modelSize = maxSizeInMB.max * 1024 * 1024 - (thumbnailSize ?? 0)
+        if (modelSize > maxSizeInMB.model) {
+          return [
+            `The deployment is too big. The maximum allowed size for wearable model files is ${
+              maxSizeInMB.model
+            } MB. You can upload up to ${maxSizeInMB.model * 1024 * 1024} bytes but you tried to upload ${modelSize}.`
+          ]
+        }
+      }
     }
   }
 
