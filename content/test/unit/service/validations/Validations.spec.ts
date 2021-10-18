@@ -571,7 +571,7 @@ describe('Validations', function () {
       const entity = buildEntity()
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3) },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { max: 2 }]]) }
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { total: 2 }]]) }
       })
 
       const result = Validations.REQUEST_SIZE_V3(args)
@@ -586,7 +586,7 @@ describe('Validations', function () {
       const entity = buildEntity({ pointers: ['P1', 'P2'] })
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3) },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { max: 2 }]]) }
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { total: 2 }]]) }
       })
 
       const result = Validations.REQUEST_SIZE_V3(args)
@@ -602,7 +602,7 @@ describe('Validations', function () {
       const entity = buildEntity({ content })
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3, 'C') },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { max: 2 }]]) }
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { total: 2 }]]) }
       })
 
       const result = Validations.REQUEST_SIZE_V4(args)
@@ -627,7 +627,7 @@ describe('Validations', function () {
       const entity = buildEntity({ content })
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3, 'C') },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { max: 10 }]]) },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { total: 10 }]]) },
         externalCalls: {
           fetchContentFileSize: (hash) => Promise.resolve(contentSizes.get(hash))
         }
@@ -650,7 +650,7 @@ describe('Validations', function () {
       const entity = buildEntity({ content })
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3, 'C') },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { max: 10 }]]) },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { total: 10 }]]) },
         externalCalls: {
           fetchContentFileSize: () => Promise.resolve(undefined)
         }
@@ -668,7 +668,7 @@ describe('Validations', function () {
       const entity = buildEntity({ pointers: ['P1', 'P2'], content: new Map([]) })
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3) },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { max: 2 }]]) }
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, { total: 2 }]]) }
       })
 
       const result = Validations.REQUEST_SIZE_V4(args)
@@ -691,7 +691,7 @@ describe('Validations', function () {
       const entity = { ...buildEntityV4(EntityType.WEARABLE, { thumbnail: 'thumbnail.png' }), content }
       const args = buildArgs({
         deployment: { entity, files },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, { max: 3, model: 2 }]]) }
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, { total: 3, model: 2 }]]) }
       })
 
       const result = Validations.REQUEST_SIZE_V4(args)
@@ -719,7 +719,7 @@ describe('Validations', function () {
       const entity = { ...buildEntityV4(EntityType.WEARABLE, { thumbnail: 'thumbnail.png' }), content }
       const args = buildArgs({
         deployment: { entity, files },
-        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, { max: 3, model: 2 }]]) }
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, { total: 3, model: 2 }]]) }
       })
 
       const result = Validations.REQUEST_SIZE_V4(args)
