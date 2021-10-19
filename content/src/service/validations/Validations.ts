@@ -7,7 +7,7 @@ import { Entity } from '../Entity'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
 import { ServiceImpl } from '../ServiceImpl'
 import { happenedBefore } from '../time/TimeSorting'
-import { ExternalCalls, Validation } from './Validator'
+import { DeploymentToValidate, ExternalCalls, Validation } from './Validator'
 
 export const DEFAULT_THUMBNAIL_SIZE = 1024
 export class Validations {
@@ -37,6 +37,7 @@ export class Validations {
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
     }
+    return this.validateWearableSize(deployment, entity, maxSizeInMB)
   }
 
   /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
@@ -251,23 +252,29 @@ export class Validations {
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
     }
+    return this.validateWearableSize(deployment, entity, maxSizeInMB)
+  }
 
-    if (entity.type === EntityType.WEARABLE) {
-      if (!maxSizeInMB.model) return [`Model size limit not defined for wearables`]
-      const wearableMetadata = entity.metadata as Wearable
-      const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)
-      if (thumbnailHash) {
-        const thumbnailSize = deployment.files.get(thumbnailHash)?.byteLength
-        const modelSize = maxSizeInMB.total * 1024 * 1024 - (thumbnailSize ?? 0)
-        if (modelSize > maxSizeInMB.model) {
-          return [
-            `The deployment is too big. The maximum allowed size for wearable model files is ${
-              maxSizeInMB.model
-            } MB. You can upload up to ${maxSizeInMB.model * 1024 * 1024} bytes but you tried to upload ${modelSize}.`
-          ]
-        }
-      }
-    }
+  private static readonly validateWearableSize = (
+    deployment: DeploymentToValidate,
+    entity: Entity,
+    maxSizeInMB: { total: number; model?: number }
+  ): undefined | string[] => {
+    if (entity.type !== EntityType.WEARABLE) return
+    if (!maxSizeInMB.model) return [`Model size limit not defined for wearables`]
+
+    const wearableMetadata = entity.metadata as Wearable
+    const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)
+    if (!thumbnailHash) return
+
+    const thumbnailSize = deployment.files.get(thumbnailHash)?.byteLength
+    const modelSize = maxSizeInMB.total * 1024 * 1024 - (thumbnailSize ?? 0)
+    if (modelSize > maxSizeInMB.model)
+      return [
+        `The deployment is too big. The maximum allowed size for wearable model files is ${
+          maxSizeInMB.model
+        } MB. You can upload up to ${maxSizeInMB.model * 1024 * 1024} bytes but you tried to upload ${modelSize}.`
+      ]
   }
 
   private static correspondsToASnapshot(fileName: string, hash: string, metadata: Profile) {
