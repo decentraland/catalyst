@@ -374,15 +374,11 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () => ms('6h'))
 
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.PG_IDLE_TIMEOUT,
-      () => ms(process.env.PG_IDLE_TIMEOUT) ?? ms('5s')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_IDLE_TIMEOUT, () =>
+      process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('5s')
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.PG_QUERY_TIMEOUT,
-      () => ms(process.env.PG_QUERY_TIMEOUT) ?? ms('5s')
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_QUERY_TIMEOUT, () =>
+      process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('5s')
     )
     this.registerConfigIfNotAlreadySet(
       env,

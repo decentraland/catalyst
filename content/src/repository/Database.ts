@@ -81,8 +81,8 @@ async function connectTo(
     ...connection,
     ...credentials,
     max: 20,
-    idleTimeoutMillis: idleTimeoutMillis || 5000,
-    query_timeout: query_timeout || 5000
+    idleTimeoutMillis: idleTimeoutMillis,
+    query_timeout: query_timeout
   }
 
   // Build the database
