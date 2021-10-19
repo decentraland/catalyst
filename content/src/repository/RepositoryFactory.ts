@@ -15,7 +15,12 @@ export class RepositoryFactory {
       password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD)
     }
 
-    const database = await build(connection, contentCredentials)
+    const database = await build(
+      connection,
+      contentCredentials,
+      env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+      env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+    )
     const options = RepositoryFactory.parseQueueOptions(env)
 
     return new Repository(database, new RepositoryQueue(options))
