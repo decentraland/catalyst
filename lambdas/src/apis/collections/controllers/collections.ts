@@ -94,16 +94,23 @@ export async function contentsThumbnail(client: SmartContentClient, req: Request
   // Path: /contents/:urn/thumbnail
   const { urn } = req.params
 
-  // TODO resize
-
   try {
     const entity = await fetchEntity(client, urn)
 
     const wearableMetadata: WearableMetadata = entity.metadata
     const hash = getFileHash(entity, wearableMetadata.thumbnail)
 
-    const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
-    headers.forEach((value, key) => res.setHeader(key, value))
+    if (req.query.size) {
+      // send resized image
+      const size = getSize(req.query.size as string)
+      let image = await client.downloadContent(hash)
+      image = await sharp(image).resize({ width: sizes[size] }).toBuffer()
+
+      sendImageBuffer(res, image, urn)
+    } else {
+      const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
+      headers.forEach((value, key) => res.setHeader(key, value))
+    }
   } catch (e) {
     res.status(e.statusCode ?? 500).send(e.message)
   }
@@ -126,26 +133,30 @@ export async function contentsImage(client: SmartContentClient, req: Request, re
     let image = await client.downloadContent(hash)
     image = await resize(image).toBuffer()
 
-    const imageFilePath = getRarityImagePath(wearableMetadata)
+    const imageFilePath = getRarityImagePath(wearableMetadata.rarity)
     const finalImage = await resize(imageFilePath)
       .composite([{ input: image }])
       .toBuffer()
 
-    res.send(finalImage)
-
-    res.writeHead(200, {
-      'Content-Type': 'arraybuffer',
-      ETag: urn,
-      'Access-Control-Expose-Headers': '*',
-      'Cache-Control': 'public, max-age=31536000, immutable'
-    })
+    sendImageBuffer(res, finalImage, urn)
   } catch (e) {
     res.status(500).send(e.message)
   }
 }
 
-function getRarityImagePath(wearableMetadata: WearableMetadata) {
-  return `lambdas/resources/${wearableMetadata.rarity}.png`
+function sendImageBuffer(res: Response, image: Buffer, urn: string) {
+  res.send(image)
+
+  res.writeHead(200, {
+    'Content-Type': 'arraybuffer',
+    ETag: urn,
+    'Access-Control-Expose-Headers': '*',
+    'Cache-Control': 'public, max-age=31536000, immutable'
+  })
+}
+
+function getRarityImagePath(rarity: string) {
+  return `lambdas/resources/${rarity}.png`
 }
 
 export async function getCollectionsHandler(
