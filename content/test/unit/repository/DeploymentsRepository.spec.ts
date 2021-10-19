@@ -270,7 +270,7 @@ describe('DeploymentRepository', () => {
       const entityType = EntityType.PROFILE
       await repository.getSnapshot(entityType)
 
-      const expectedQuery = `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp FROM deployments WHERE entity_type = $1 AND deleter_deployment IS NULL ORDER BY local_timestamp DESC, entity_id DESC`
+      const expectedQuery = `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp FROM deployments WHERE entity_type = $1 AND deleter_deployment IS NULL ORDER BY local_timestamp DESC, LOWER(entity_id) DESC`
 
       verify(db.map(expectedQuery, deepEqual([entityType]), anything())).once()
     })
@@ -288,7 +288,7 @@ describe('DeploymentRepository', () => {
       const entityType = EntityType.PROFILE
       await repository.getSnapshot(entityType)
 
-      const expectedQuery = `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp FROM deployments WHERE entity_type = $1 AND deleter_deployment IS NULL ORDER BY local_timestamp DESC, entity_id DESC`
+      const expectedQuery = `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp FROM deployments WHERE entity_type = $1 AND deleter_deployment IS NULL ORDER BY local_timestamp DESC, LOWER(entity_id) DESC`
 
       const args = capture(db.map).last()
       expect(args[0]).toEqual(expectedQuery)
