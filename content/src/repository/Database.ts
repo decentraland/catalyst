@@ -72,7 +72,7 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
     ...credentials,
     max: 20,
     idleTimeoutMillis: 3000,
-    query_timeout: 3000
+    query_timeout: 5000
   }
 
   // Build the database
