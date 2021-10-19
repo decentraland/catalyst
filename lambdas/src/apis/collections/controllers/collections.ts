@@ -148,7 +148,7 @@ function sendImageBuffer(res: Response, image: Buffer, urn: string) {
   res.send(image)
 
   res.writeHead(200, {
-    'Content-Type': 'arraybuffer',
+    'Content-Type': 'image/png',
     ETag: urn,
     'Access-Control-Expose-Headers': '*',
     'Cache-Control': 'public, max-age=31536000, immutable'
