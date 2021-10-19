@@ -1,7 +1,8 @@
 import { MigrationBuilder } from 'node-pg-migrate'
 
 /*
-  In this migration, we are replacing the current index 'deployments_local_timestamp_idx' with one that used both 'local_timestamp' and 'entity_id' columns
+  In this migration, we are replacing the current index 'deployments_local_timestamp_entity_id_idx' with one
+  that uses both 'local_timestamp' and 'entity_id' columns but with lower case
  */
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
