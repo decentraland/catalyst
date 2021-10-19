@@ -39,11 +39,21 @@ type DBCredentials = {
 /**
  * Builds the database client by connecting to the content database
  */
-export function build(connection: DBConnection, contentCredentials: DBCredentials): Promise<FullDatabase> {
-  return connectTo(connection, contentCredentials)
+export function build(
+  connection: DBConnection,
+  contentCredentials: DBCredentials,
+  idleTimeoutMillis: number,
+  query_timeout: number
+): Promise<FullDatabase> {
+  return connectTo(connection, contentCredentials, idleTimeoutMillis, query_timeout)
 }
 
-async function connectTo(connection: DBConnection, credentials: DBCredentials) {
+async function connectTo(
+  connection: DBConnection,
+  credentials: DBCredentials,
+  idleTimeoutMillis: number,
+  query_timeout: number
+) {
   const initOptions: IInitOptions<IExtensions> = {
     extend(obj: Database) {
       obj.deployments = new DeploymentsRepository(obj)
@@ -71,8 +81,8 @@ async function connectTo(connection: DBConnection, credentials: DBCredentials) {
     ...connection,
     ...credentials,
     max: 20,
-    idleTimeoutMillis: 3000,
-    query_timeout: 3000
+    idleTimeoutMillis: idleTimeoutMillis,
+    query_timeout: query_timeout
   }
 
   // Build the database
