@@ -15,7 +15,8 @@ import {
 } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
 
-type ValidSize = '128' | '256' | '512' | '1024'
+const DEFAULT_IMAGE_SIZE = '1024'
+type ValidSize = '128' | '256' | '512' | typeof DEFAULT_IMAGE_SIZE
 const sizes: Record<ValidSize, number> = { '128': 128, '256': 256, '512': 512, '1024': 1024 }
 
 const isValidSize = (size: string): size is ValidSize => sizes[size] !== undefined
@@ -91,68 +92,62 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
 
 export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
-  // Path: /contents/:urn/thumbnail
+  // Path: /contents/:urn/thumbnail/:size
   const { urn } = req.params
+  let { size } = req.params
+  size = size ?? '1024'
 
-  try {
-    const entity = await fetchEntity(client, urn)
+  const validSize = sizes[size]
+  const imageTransformer = async (image: Buffer): Promise<Buffer> =>
+    await sharp(image).resize({ width: validSize, height: validSize }).toBuffer()
 
-    const wearableMetadata: WearableMetadata = entity.metadata
-    const hash = getFileHash(entity, wearableMetadata.thumbnail)
-
-    if (req.query.size) {
-      // send resized image
-      const size = getSize(req.query.size as string)
-      let image = await client.downloadContent(hash)
-      image = await sharp(image).resize({ width: sizes[size] }).toBuffer()
-
-      sendImageBuffer(res, image, urn)
-    } else {
-      const headers: Map<string, string> = await client.pipeContent(hash, res as any as ReadableStream<Uint8Array>)
-      headers.forEach((value, key) => res.setHeader(key, value))
-    }
-  } catch (e) {
-    res.status(e.statusCode ?? 500).send(e.message)
-  }
+  await prepareAndSendImage(client, res, urn, imageTransformer, size)
 }
 
 export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
-  // Path: /contents/:urn/image?size
+  // Path: /contents/:urn/image/:size
   const { urn } = req.params
-  const size = getSize(req.query.size as string | undefined)
+  let { size } = req.params
+  size = size ?? DEFAULT_IMAGE_SIZE
 
-  try {
-    const entity = await fetchEntity(client, urn)
-
-    const wearableMetadata = entity.metadata as WearableMetadata
-    const hash = getFileHash(entity, wearableMetadata.thumbnail)
-
+  const imageTransformer = async (image: Buffer, rarity: string): Promise<Buffer> => {
     const resize = (image: Buffer | string) => sharp(image).resize({ width: sizes[size] })
-
-    let image = await client.downloadContent(hash)
     image = await resize(image).toBuffer()
-
-    const imageFilePath = getRarityImagePath(wearableMetadata.rarity)
-    const finalImage = await resize(imageFilePath)
+    const imageFilePath = getRarityImagePath(rarity)
+    return await resize(imageFilePath)
       .composite([{ input: image }])
       .toBuffer()
-
-    sendImageBuffer(res, finalImage, urn)
-  } catch (e) {
-    res.status(500).send(e.message)
   }
+  await prepareAndSendImage(client, res, urn, imageTransformer, size)
 }
 
-function sendImageBuffer(res: Response, image: Buffer, urn: string) {
-  res.send(image)
+async function prepareAndSendImage(
+  client: SmartContentClient,
+  res: Response,
+  urn: string,
+  processImage: (image: Buffer, rarity?: string) => Promise<Buffer>,
+  size: string = '1024'
+) {
+  try {
+    validateSize(size)
 
-  res.writeHead(200, {
-    'Content-Type': 'image/png',
-    ETag: urn,
-    'Access-Control-Expose-Headers': '*',
-    'Cache-Control': 'public, max-age=31536000, immutable'
-  })
+    const entity = await fetchEntity(client, urn)
+    const wearableMetadata = entity.metadata as WearableMetadata
+    const hash = getFileHash(entity, wearableMetadata.thumbnail)
+    let image = await client.downloadContent(hash)
+    image = await processImage(image, wearableMetadata.rarity)
+
+    res.send(image)
+    res.writeHead(200, {
+      'Content-Type': 'image/png',
+      ETag: JSON.stringify(urn + '-' + size),
+      'Access-Control-Expose-Headers': '*',
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    })
+  } catch (e) {
+    res.status(e.statusCode ?? 500).send(e.message)
+  }
 }
 
 function getRarityImagePath(rarity: string) {
@@ -210,9 +205,9 @@ function buildUrn(protocol: string, contract: string, option: string): string {
   return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
 }
 
-function getSize(size: string = '1024'): ValidSize {
+function validateSize(size: string = '1024'): size is ValidSize {
   if (!isValidSize(size)) throw new ServiceError('Invalid size')
-  return size
+  return true
 }
 
 function getFileHash(entity: Entity, fileName?: string): string {
