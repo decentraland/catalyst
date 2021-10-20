@@ -16,7 +16,9 @@ export function initializeCollectionsRoutes(
 ): Router {
   router.get('/standard/erc721/:chainId/:contract/:option/:emission?', createHandler(client, getStandardErc721))
   router.get('/contents/:urn/image', createHandler(client, contentsImage))
+  router.get('/contents/:urn/image/:size', createHandler(client, contentsImage))
   router.get('/contents/:urn/thumbnail', createHandler(client, contentsThumbnail))
+  router.get('/contents/:urn/thumbnail/:size', createHandler(client, contentsThumbnail))
   router.get('/', (req, res) => getCollectionsHandler(theGraphClient, req, res))
   router.get('/wearables-by-owner/:owner', (req, res) => getWearablesByOwnerHandler(client, theGraphClient, req, res))
   router.get('/wearables', (req, res) => getWearablesEndpoint(client, theGraphClient, offChainManager, req, res))
