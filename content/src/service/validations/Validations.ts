@@ -278,9 +278,9 @@ export class Validations {
     const thumbnailBuffer = deployment.files.get(hash)
     if (!thumbnailBuffer) return [`Couldn't find thumbnail file with hash: ${hash}`]
     try {
-      const { width, height } = await sharp(thumbnailBuffer).metadata()
+      const { width, height, format } = await sharp(thumbnailBuffer).metadata()
       if (!width || !height) return [`Couldn't validate thumbnail size for file ${metadata.thumbnail}`]
-
+      if (!format || format !== 'png') return [`Invalid or unknown image format. Only 'PNG' format is accepted.`]
       if (width !== DEFAULT_THUMBNAIL_SIZE || height !== DEFAULT_THUMBNAIL_SIZE)
         return [`Invalid thumbnail image size (width = ${width} / height = ${height})`]
     } catch (e) {

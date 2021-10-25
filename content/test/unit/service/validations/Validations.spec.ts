@@ -786,23 +786,24 @@ describe('Validations', function () {
     const fileName = 'thumbnail.png'
     const hash = 'thumbnail'
 
-    beforeAll(async () => {
-      validThumbnailBuffer = await sharp({
+    const createImage = async (size: number, format: 'png' | 'jpg' = 'png'): Promise<Buffer> => {
+      let image = sharp({
         create: {
-          width: DEFAULT_THUMBNAIL_SIZE,
-          height: DEFAULT_THUMBNAIL_SIZE,
+          width: size,
+          height: size,
           channels: 4,
           background: { r: 255, g: 0, b: 0, alpha: 0.5 }
         }
       })
-        .png()
-        .toBuffer()
+      if (format) {
+        image = format === 'png' ? image.png() : image.jpeg()
+      }
+      return await image.toBuffer()
+    }
 
-      invalidThumbnailBuffer = await sharp({
-        create: { width: 1, height: 1, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 0.5 } }
-      })
-        .png()
-        .toBuffer()
+    beforeAll(async () => {
+      validThumbnailBuffer = await createImage(DEFAULT_THUMBNAIL_SIZE)
+      invalidThumbnailBuffer = await createImage(1)
     })
 
     it('when there is no hash for given thumbnail file name, it should return an error', async () => {
@@ -814,6 +815,7 @@ describe('Validations', function () {
       const result = Validations.WEARABLE_THUMBNAIL(args)
       await assertErrorsWere(result, `Couldn't find hash for thumbnail file with name: ${fileName}`)
     })
+
     it('when there is no file for given thumbnail file hash, it should return an error', async () => {
       const content = new Map<string, string>([[fileName, hash]])
       const files = new Map([['notSame' + hash, validThumbnailBuffer]])
@@ -823,6 +825,7 @@ describe('Validations', function () {
       const result = Validations.WEARABLE_THUMBNAIL(args)
       await assertErrorsWere(result, `Couldn't find thumbnail file with hash: ${hash}`)
     })
+
     it('when thumbnail image format is not valid, it should return an error', async () => {
       const content = new Map<string, string>([[fileName, hash]])
       const files = new Map([[hash, Buffer.alloc(1)]])
@@ -832,6 +835,7 @@ describe('Validations', function () {
       const result = Validations.WEARABLE_THUMBNAIL(args)
       await assertErrorsWere(result, `Couldn't parse thumbnail, please check image format.`)
     })
+
     it('when thumbnail image size is invalid, it should return an error', async () => {
       const content = new Map<string, string>([[fileName, hash]])
       const files = new Map([[hash, invalidThumbnailBuffer]])
@@ -841,6 +845,19 @@ describe('Validations', function () {
       const result = Validations.WEARABLE_THUMBNAIL(args)
       await assertErrorsWere(result, `Invalid thumbnail image size (width = 1 / height = 1)`)
     })
+
+    it('when thumbnail image format is not png, it should return an error', async () => {
+      const jpgImage = await createImage(DEFAULT_THUMBNAIL_SIZE, 'jpg')
+      const content = new Map<string, string>([[fileName, hash]])
+      const files = new Map([[hash, jpgImage]])
+      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+      const args = buildArgs({ deployment: { entity, files } })
+
+      const result = Validations.WEARABLE_THUMBNAIL(args)
+
+      await assertErrorsWere(result, `Invalid or unknown image format. Only 'PNG' format is accepted.`)
+    })
+
     it('when thumbnail image size is valid, should not return any error', async () => {
       const content = new Map<string, string>([[fileName, hash]])
       const files = new Map([[hash, validThumbnailBuffer]])
