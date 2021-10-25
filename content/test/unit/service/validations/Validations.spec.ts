@@ -2,11 +2,12 @@ import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, Wearable
 import { AuditInfo, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
+import sharp from 'sharp'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 import { Deployment } from '../../../../src/service/deployments/DeploymentManager'
 import { Entity } from '../../../../src/service/Entity'
 import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
-import { Validations } from '../../../../src/service/validations/Validations'
+import { DEFAULT_THUMBNAIL_SIZE, Validations } from '../../../../src/service/validations/Validations'
 import {
   DeploymentToValidate,
   ExternalCalls,
@@ -14,7 +15,6 @@ import {
   ValidationArgs
 } from '../../../../src/service/validations/Validator'
 import { MockedAccessChecker } from '../../../helpers/service/access/MockedAccessChecker'
-
 const avatarInfo = {
   bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
   snapshots: {
@@ -52,6 +52,153 @@ const avatar = {
 }
 
 export const VALID_PROFILE_METADATA = { avatars: [avatar] }
+
+const representation: WearableRepresentation = {
+  bodyShapes: [WearableBodyShape.FEMALE],
+  mainFile: 'file1',
+  contents: ['file1', 'file2'],
+  overrideHides: [],
+  overrideReplaces: []
+}
+
+const wearable: Wearable = {
+  id: 'some id',
+  descriptions: [
+    {
+      code: Locale.EN,
+      text: 'some description'
+    },
+    {
+      code: Locale.ES,
+      text: 'una descripcion'
+    }
+  ],
+  collectionAddress: '0x...',
+  rarity: Rarity.LEGENDARY,
+  names: [
+    {
+      code: Locale.EN,
+      text: 'name'
+    }
+  ],
+  data: {
+    replaces: [],
+    hides: [],
+    tags: ['tag1'],
+    representations: [representation],
+    category: WearableCategory.UPPER_BODY
+  },
+  thumbnail: 'thumbnail.png',
+  image: 'image.png'
+}
+
+function buildEntityV4(type = EntityType.PROFILE, metadata = {}) {
+  return {
+    ...buildEntity(),
+    version: EntityVersion.V4,
+    metadata,
+    type
+  }
+}
+
+function buildEntity(options?: {
+  version?: EntityVersion
+  id?: string
+  timestamp?: Timestamp
+  content?: Map<string, string>
+  pointers?: Pointer[]
+}) {
+  const opts = Object.assign(
+    {
+      version: EntityVersion.V3,
+      timestamp: Date.now(),
+      content: undefined,
+      id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
+      pointers: ['P1'],
+      type: EntityType.SCENE
+    },
+    options
+  )
+  return opts
+}
+
+function getFileWithSize(sizeInMB: number, hash = 'someHash') {
+  return new Map([[hash, Buffer.alloc(sizeInMB * 1024 * 1024)]])
+}
+
+async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
+  const actualErrors = await result
+  expect(actualErrors).toBeDefined()
+  expect(actualErrors?.length).toBe(1)
+  expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
+}
+
+function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
+  const deployment: Deployment = {
+    ...entity,
+    entityVersion: EntityVersion.V3,
+    entityId: entity.id,
+    entityTimestamp: entity.timestamp,
+    entityType: entity.type,
+    deployedBy: '0x...',
+    content: undefined,
+    auditInfo: {
+      version: EntityVersion.V3,
+      authChain: [],
+      localTimestamp: 20,
+      ...auditInfo
+    }
+  }
+  return { deployments: [deployment] }
+}
+
+async function assertErrorsWere(
+  result: undefined | string[] | Promise<undefined | string[]>,
+  ...expectedErrors: string[]
+) {
+  const actualErrors = await result
+  expect(actualErrors).toBeDefined()
+  expect(actualErrors).toEqual(expectedErrors)
+}
+
+async function assertNoErrors(
+  result: undefined | string[] | Promise<undefined | string[]>,
+  ...expectedErrors: string[]
+) {
+  const actualErrors = await result
+  expect(actualErrors).toBeUndefined()
+}
+
+function buildArgs(args: {
+  deployment: Pick<DeploymentToValidate, 'entity'> & Partial<DeploymentToValidate>
+  env?: Partial<ServerEnvironment>
+  externalCalls?: Partial<ExternalCalls>
+}): ValidationArgs {
+  return {
+    deployment: {
+      files: new Map(),
+      auditInfo: { authChain: [] },
+      ...args.deployment
+    },
+    env: {
+      accessChecker: new MockedAccessChecker(),
+      authenticator: new ContentAuthenticator('ropsten'),
+      requestTtlBackwards: ms('10m'),
+      maxUploadSizePerTypeInMB: new Map(),
+      ...args?.env
+    },
+    externalCalls: {
+      fetchDeployments: () => Promise.resolve({ deployments: [] }),
+      areThereNewerEntities: () => Promise.resolve(false),
+      fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
+      isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
+      isEntityDeployedAlready: () => Promise.resolve(false),
+      isEntityRateLimited: () => Promise.resolve(false),
+      fetchContentFileSize: () => Promise.resolve(0),
+      ...args?.externalCalls
+    }
+  }
+}
 
 describe('Validations', function () {
   describe('Recent', () => {
@@ -601,44 +748,6 @@ describe('Validations', function () {
     })
 
     describe('WEARABLE: ', () => {
-      const representation: WearableRepresentation = {
-        bodyShapes: [WearableBodyShape.FEMALE],
-        mainFile: 'file1',
-        contents: ['file1', 'file2'],
-        overrideHides: [],
-        overrideReplaces: []
-      }
-
-      const wearable: Wearable = {
-        id: 'some id',
-        descriptions: [
-          {
-            code: Locale.EN,
-            text: 'some description'
-          },
-          {
-            code: Locale.ES,
-            text: 'una descripcion'
-          }
-        ],
-        collectionAddress: '0x...',
-        rarity: Rarity.LEGENDARY,
-        names: [
-          {
-            code: Locale.EN,
-            text: 'name'
-          }
-        ],
-        data: {
-          replaces: [],
-          hides: [],
-          tags: ['tag1'],
-          representations: [representation],
-          category: WearableCategory.UPPER_BODY
-        },
-        thumbnail: 'thumbnail.png',
-        image: 'image.png'
-      }
       const validMetadata = wearable
       const invalidMetadata = {}
       testType(EntityType.WEARABLE, validMetadata, invalidMetadata)
@@ -670,112 +779,77 @@ describe('Validations', function () {
       await assertErrorsWere(result, `The entity with id (${entity.id}) has been rate limited.`)
     })
   })
+
+  describe('Wearable Thumbnail:', () => {
+    let validThumbnailBuffer: Buffer
+    let invalidThumbnailBuffer: Buffer
+    const fileName = 'thumbnail.png'
+    const hash = 'thumbnail'
+
+    beforeAll(async () => {
+      validThumbnailBuffer = await sharp({
+        create: {
+          width: DEFAULT_THUMBNAIL_SIZE,
+          height: DEFAULT_THUMBNAIL_SIZE,
+          channels: 4,
+          background: { r: 255, g: 0, b: 0, alpha: 0.5 }
+        }
+      })
+        .png()
+        .toBuffer()
+
+      invalidThumbnailBuffer = await sharp({
+        create: { width: 1, height: 1, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 0.5 } }
+      })
+        .png()
+        .toBuffer()
+    })
+
+    it('when there is no hash for given thumbnail file name, it should return an error', async () => {
+      const content = new Map<string, string>([])
+      const files = new Map([[hash, validThumbnailBuffer]])
+      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+      const args = buildArgs({ deployment: { entity, files } })
+
+      const result = Validations.WEARABLE_THUMBNAIL(args)
+      await assertErrorsWere(result, `Couldn't find hash for thumbnail file with name: ${fileName}`)
+    })
+    it('when there is no file for given thumbnail file hash, it should return an error', async () => {
+      const content = new Map<string, string>([[fileName, hash]])
+      const files = new Map([['notSame' + hash, validThumbnailBuffer]])
+      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+      const args = buildArgs({ deployment: { entity, files } })
+
+      const result = Validations.WEARABLE_THUMBNAIL(args)
+      await assertErrorsWere(result, `Couldn't find thumbnail file with hash: ${hash}`)
+    })
+    it('when thumbnail image format is not valid, it should return an error', async () => {
+      const content = new Map<string, string>([[fileName, hash]])
+      const files = new Map([[hash, Buffer.alloc(1)]])
+      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+      const args = buildArgs({ deployment: { entity, files } })
+
+      const result = Validations.WEARABLE_THUMBNAIL(args)
+      await assertErrorsWere(result, `Couldn't parse thumbnail, please check image format.`)
+    })
+    it('when thumbnail image size is invalid, it should return an error', async () => {
+      const content = new Map<string, string>([[fileName, hash]])
+      const files = new Map([[hash, invalidThumbnailBuffer]])
+      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+      const args = buildArgs({ deployment: { entity, files } })
+
+      const result = Validations.WEARABLE_THUMBNAIL(args)
+      await assertErrorsWere(result, `Invalid thumbnail image size (width = 1 / height = 1)`)
+    })
+    it('when thumbnail image size is valid, should not return any error', async () => {
+      const content = new Map<string, string>([[fileName, hash]])
+      const files = new Map([[hash, validThumbnailBuffer]])
+      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+      const args = buildArgs({ deployment: { entity, files } })
+
+      const result = Validations.WEARABLE_THUMBNAIL(args)
+
+      await assertNoErrors(result)
+    })
+  })
 })
-
-function buildEntityV4(type = EntityType.PROFILE, metadata = {}) {
-  return {
-    ...buildEntity(),
-    version: EntityVersion.V4,
-    metadata,
-    type
-  }
-}
-
-function buildEntity(options?: {
-  version?: EntityVersion
-  id?: string
-  timestamp?: Timestamp
-  content?: Map<string, string>
-  pointers?: Pointer[]
-}) {
-  const opts = Object.assign(
-    {
-      version: EntityVersion.V3,
-      timestamp: Date.now(),
-      content: undefined,
-      id: 'bafybeihz4c4cf4icnlh6yjtt7fooaeih3dkv2mz6umod7dybenzmsxkzvq',
-      pointers: ['P1'],
-      type: EntityType.SCENE
-    },
-    options
-  )
-  return opts
-}
-
-function getFileWithSize(sizeInMB: number, hash = 'someHash') {
-  return new Map([[hash, Buffer.alloc(sizeInMB * 1024 * 1024)]])
-}
-
-async function assertSignatureInInvalid(result: undefined | string[] | Promise<undefined | string[]>) {
-  const actualErrors = await result
-  expect(actualErrors).toBeDefined()
-  expect(actualErrors?.length).toBe(1)
-  expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
-}
-
-function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
-  const deployment: Deployment = {
-    ...entity,
-    entityVersion: EntityVersion.V3,
-    entityId: entity.id,
-    entityTimestamp: entity.timestamp,
-    entityType: entity.type,
-    deployedBy: '0x...',
-    content: undefined,
-    auditInfo: {
-      version: EntityVersion.V3,
-      authChain: [],
-      localTimestamp: 20,
-      ...auditInfo
-    }
-  }
-  return { deployments: [deployment] }
-}
-
-async function assertErrorsWere(
-  result: undefined | string[] | Promise<undefined | string[]>,
-  ...expectedErrors: string[]
-) {
-  const actualErrors = await result
-  expect(actualErrors).toBeDefined()
-  expect(actualErrors).toEqual(expectedErrors)
-}
-
-async function assertNoErrors(
-  result: undefined | string[] | Promise<undefined | string[]>,
-  ...expectedErrors: string[]
-) {
-  const actualErrors = await result
-  expect(actualErrors).toBeUndefined()
-}
-
-function buildArgs(args: {
-  deployment: Pick<DeploymentToValidate, 'entity'> & Partial<DeploymentToValidate>
-  env?: Partial<ServerEnvironment>
-  externalCalls?: Partial<ExternalCalls>
-}): ValidationArgs {
-  return {
-    deployment: {
-      files: new Map(),
-      auditInfo: { authChain: [] },
-      ...args.deployment
-    },
-    env: {
-      accessChecker: new MockedAccessChecker(),
-      authenticator: new ContentAuthenticator('ropsten'),
-      requestTtlBackwards: ms('10m'),
-      maxUploadSizePerTypeInMB: new Map(),
-      ...args?.env
-    },
-    externalCalls: {
-      fetchDeployments: () => Promise.resolve({ deployments: [] }),
-      areThereNewerEntities: () => Promise.resolve(false),
-      fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
-      isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),
-      isEntityDeployedAlready: () => Promise.resolve(false),
-      isEntityRateLimited: () => Promise.resolve(false),
-      fetchContentFileSize: () => Promise.resolve(0),
-      ...args?.externalCalls
-    }
-  }
-}

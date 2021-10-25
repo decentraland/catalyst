@@ -2,12 +2,14 @@ import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
+import sharp from 'sharp'
 import { Entity } from '../Entity'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
 import { ServiceImpl } from '../ServiceImpl'
 import { happenedBefore } from '../time/TimeSorting'
 import { ExternalCalls, Validation } from './Validator'
 
+export const DEFAULT_THUMBNAIL_SIZE = 1024
 export class Validations {
   /** Validate that the signature belongs to the Ethereum address */
   static readonly SIGNATURE: Validation = async ({ deployment, env }) => {
@@ -260,5 +262,29 @@ export class Validations {
       )
       return avatar.avatar.snapshots[fileNameWithoutExtension] === hash
     })
+  }
+
+  static readonly WEARABLE_THUMBNAIL: Validation = async ({ deployment }) => {
+    // only validate wearables
+    if (deployment.entity.type !== EntityType.WEARABLE) return
+
+    // read thumbnail field from metadata
+    const metadata = deployment.entity.metadata as Wearable
+
+    const hash = deployment.entity.content?.get(metadata.thumbnail)
+    if (!hash) return [`Couldn't find hash for thumbnail file with name: ${metadata.thumbnail}`]
+
+    // check size
+    const thumbnailBuffer = deployment.files.get(hash)
+    if (!thumbnailBuffer) return [`Couldn't find thumbnail file with hash: ${hash}`]
+    try {
+      const { width, height } = await sharp(thumbnailBuffer).metadata()
+      if (!width || !height) return [`Couldn't validate thumbnail size for file ${metadata.thumbnail}`]
+
+      if (width !== DEFAULT_THUMBNAIL_SIZE || height !== DEFAULT_THUMBNAIL_SIZE)
+        return [`Invalid thumbnail image size (width = ${width} / height = ${height})`]
+    } catch (e) {
+      return [`Couldn't parse thumbnail, please check image format.`]
+    }
   }
 }
