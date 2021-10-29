@@ -19,13 +19,14 @@ export class Validations {
   }
 
   /** Validate that the full request size is within limits */
-  static readonly REQUEST_SIZE_V3: Validation = ({ deployment, env }) => {
+  static readonly REQUEST_SIZE_V3: Validation = (args) => {
+    const { deployment, env } = args
     const { entity } = deployment
     const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(entity.type)
     if (!maxSizeInMB) {
       return [`Type ${entity.type} is not supported yet`]
     }
-    const maxSizeInBytes = maxSizeInMB.total * 1024 * 1024
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024
     let totalSize = 0
 
     deployment.files.forEach((file) => (totalSize += file.byteLength))
@@ -37,7 +38,7 @@ export class Validations {
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
     }
-    return this.validateWearableSize(deployment, entity, maxSizeInMB)
+    return this.WEARABLE_SIZE(args)
   }
 
   /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
@@ -205,6 +206,7 @@ export class Validations {
     return ['This deployment is invalid. What are you doing?']
   }
 
+  /** Validate entities metadata against its corresponding schema */
   static readonly METADATA_SCHEMA: Validation = async ({ deployment }) => {
     const validate = {
       [EntityType.PROFILE]: Profile.validate,
@@ -223,58 +225,31 @@ export class Validations {
     }
   }
 
+  /** Validate size of deployment result including previous deployments */
   static readonly REQUEST_SIZE_V4: Validation = async ({ deployment, env, externalCalls }) => {
     const { entity } = deployment
     const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(entity.type)
     if (!maxSizeInMB) {
       return [`Type ${entity.type} is not supported yet`]
     }
-    const maxSizeInBytes = maxSizeInMB.total * 1024 * 1024
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024
 
     let totalSize = 0
 
-    for (const [, hash] of entity.content ?? []) {
-      const uploadedFile = deployment.files.get(hash)
-      if (uploadedFile) {
-        totalSize += uploadedFile.byteLength
-      } else {
-        const contentSize = await externalCalls.fetchContentFileSize(hash)
-        if (!contentSize) return [`Couldn't fetch content file with hash: ${hash}`]
-        totalSize += contentSize
-      }
+    try {
+      totalSize = await this.calculateDeploymentSize(deployment, externalCalls)
+    } catch (e) {
+      return [e.message ?? `Couldn't calculate deployment size`]
     }
 
     const sizePerPointer = totalSize / entity.pointers.length
     if (sizePerPointer > maxSizeInBytes) {
       return [
-        `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB.total} MB for ${
+        `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB} MB for ${
           entity.type
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
     }
-    return this.validateWearableSize(deployment, entity, maxSizeInMB)
-  }
-
-  private static readonly validateWearableSize = (
-    deployment: DeploymentToValidate,
-    entity: Entity,
-    maxSizeInMB: { total: number; model?: number }
-  ): undefined | string[] => {
-    if (entity.type !== EntityType.WEARABLE) return
-    if (!maxSizeInMB.model) return [`Model size limit not defined for wearables`]
-
-    const wearableMetadata = entity.metadata as Wearable
-    const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)
-    if (!thumbnailHash) return
-
-    const thumbnailSize = deployment.files.get(thumbnailHash)?.byteLength
-    const modelSize = maxSizeInMB.total * 1024 * 1024 - (thumbnailSize ?? 0)
-    if (modelSize > maxSizeInMB.model)
-      return [
-        `The deployment is too big. The maximum allowed size for wearable model files is ${
-          maxSizeInMB.model
-        } MB. You can upload up to ${maxSizeInMB.model * 1024 * 1024} bytes but you tried to upload ${modelSize}.`
-      ]
   }
 
   private static correspondsToASnapshot(fileName: string, hash: string, metadata: Profile) {
@@ -288,27 +263,83 @@ export class Validations {
     })
   }
 
-  static readonly WEARABLE_THUMBNAIL: Validation = async ({ deployment }) => {
-    // only validate wearables
-    if (deployment.entity.type !== EntityType.WEARABLE) return
+  private static async calculateDeploymentSize(
+    deployment: DeploymentToValidate,
+    externalCalls: ExternalCalls
+  ): Promise<number> {
+    let totalSize = 0
+    for (const [, hash] of deployment.entity.content ?? []) {
+      const uploadedFile = deployment.files.get(hash)
+      if (uploadedFile) {
+        totalSize += uploadedFile.byteLength
+      } else {
+        const contentSize = await externalCalls.fetchContentFileSize(hash)
+        if (!contentSize) throw new Error(`Couldn't fetch content file with hash: ${hash}`)
+        totalSize += contentSize
+      }
+    }
+    return totalSize
+  }
 
+  /** Validate that given wearable deployment includes a thumbnail with valid format and size */
+  static readonly WEARABLE_CUSTOM: Validation = async (args) => {
+    if (args.deployment.entity.type !== EntityType.WEARABLE) return
+
+    let errors: string[] = []
+    errors = [...((await this.WEARABLE_THUMBNAIL(args)) ?? []), ...((await this.WEARABLE_SIZE(args)) ?? [])]
+    return errors.length > 0 ? errors : undefined
+  }
+
+  static readonly WEARABLE_THUMBNAIL: Validation = async ({ deployment }) => {
     // read thumbnail field from metadata
     const metadata = deployment.entity.metadata as Wearable
 
     const hash = deployment.entity.content?.get(metadata.thumbnail)
     if (!hash) return [`Couldn't find hash for thumbnail file with name: ${metadata.thumbnail}`]
 
+    const errors: string[] = []
     // check size
     const thumbnailBuffer = deployment.files.get(hash)
     if (!thumbnailBuffer) return [`Couldn't find thumbnail file with hash: ${hash}`]
     try {
       const { width, height, format } = await sharp(thumbnailBuffer).metadata()
-      if (!width || !height) return [`Couldn't validate thumbnail size for file ${metadata.thumbnail}`]
-      if (!format || format !== 'png') return [`Invalid or unknown image format. Only 'PNG' format is accepted.`]
-      if (width !== DEFAULT_THUMBNAIL_SIZE || height !== DEFAULT_THUMBNAIL_SIZE)
-        return [`Invalid thumbnail image size (width = ${width} / height = ${height})`]
+      if (!format || format !== 'png') errors.push(`Invalid or unknown image format. Only 'PNG' format is accepted.`)
+      if (!width || !height) {
+        errors.push(`Couldn't validate thumbnail size for file ${metadata.thumbnail}`)
+      } else if (width !== DEFAULT_THUMBNAIL_SIZE || height !== DEFAULT_THUMBNAIL_SIZE) {
+        errors.push(`Invalid thumbnail image size (width = ${width} / height = ${height})`)
+      }
     } catch (e) {
       return [`Couldn't parse thumbnail, please check image format.`]
+    }
+    return errors.length > 0 ? errors : undefined
+  }
+
+  /** Validate wearable files size, excluding thumbnail, is less than expected */
+  static readonly WEARABLE_SIZE: Validation = async ({ deployment, env, externalCalls }) => {
+    const entity = deployment.entity
+    const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(EntityType.WEARABLE)
+    if (!maxSizeInMB) return
+
+    // hardcoded value to be used just in this validation
+    const modelSizeInMB = 2
+
+    const wearableMetadata = entity.metadata as Wearable
+    const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)
+    if (!thumbnailHash) return
+
+    try {
+      const totalDeploymentSize = await this.calculateDeploymentSize(deployment, externalCalls)
+      const thumbnailSize = deployment.files.get(thumbnailHash)?.byteLength ?? 0
+      const modelSize = totalDeploymentSize - thumbnailSize
+      if (modelSize > modelSizeInMB * 1024 * 1024)
+        return [
+          `The deployment is too big. The maximum allowed size for wearable model files is 2 MB. You can upload up to ${
+            modelSizeInMB * 1024 * 1024
+          } bytes but you tried to upload ${modelSize}.`
+        ]
+    } catch (e) {
+      return [e.message ?? `Couldn't validate wearable size`]
     }
   }
 }

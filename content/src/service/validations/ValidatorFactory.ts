@@ -9,9 +9,9 @@ export class ValidatorFactory {
       authenticator: env.getBean(Bean.AUTHENTICATOR),
       requestTtlBackwards: env.getConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS),
       maxUploadSizePerTypeInMB: new Map([
-        [EntityType.SCENE, { total: 15 }],
-        [EntityType.PROFILE, { total: 15 }],
-        [EntityType.WEARABLE, { total: 3, model: 2 }]
+        [EntityType.SCENE, 15],
+        [EntityType.PROFILE, 15],
+        [EntityType.WEARABLE, 3]
       ])
     })
   }
