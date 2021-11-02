@@ -780,7 +780,7 @@ describe('Validations', function () {
     })
   })
 
-  describe('Wearable Thumbnail:', () => {
+  describe('Wearable custom validation: ', () => {
     let validThumbnailBuffer: Buffer
     let invalidThumbnailBuffer: Buffer
     const fileName = 'thumbnail.png'
@@ -806,67 +806,147 @@ describe('Validations', function () {
       invalidThumbnailBuffer = await createImage(1)
     })
 
-    it('when there is no hash for given thumbnail file name, it should return an error', async () => {
-      const content = new Map<string, string>([])
-      const files = new Map([[hash, validThumbnailBuffer]])
-      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
-      const args = buildArgs({ deployment: { entity, files } })
+    describe('Thumbnail:', () => {
+      it('when there is no hash for given thumbnail file name, it should return an error', async () => {
+        const content = new Map<string, string>([])
+        const files = new Map([[hash, validThumbnailBuffer]])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+        const args = buildArgs({ deployment: { entity, files } })
 
-      const result = Validations.WEARABLE_THUMBNAIL(args)
-      await assertErrorsWere(result, `Couldn't find hash for thumbnail file with name: ${fileName}`)
+        const result = Validations.WEARABLE_THUMBNAIL(args)
+        await assertErrorsWere(result, `Couldn't find hash for thumbnail file with name: ${fileName}`)
+      })
+
+      it('when there is no file for given thumbnail file hash, it should return an error', async () => {
+        const content = new Map<string, string>([[fileName, hash]])
+        const files = new Map([['notSame' + hash, validThumbnailBuffer]])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+        const args = buildArgs({ deployment: { entity, files } })
+
+        const result = Validations.WEARABLE_THUMBNAIL(args)
+        await assertErrorsWere(result, `Couldn't find thumbnail file with hash: ${hash}`)
+      })
+
+      it('when thumbnail image format is not valid, it should return an error', async () => {
+        const content = new Map<string, string>([[fileName, hash]])
+        const files = new Map([[hash, Buffer.alloc(1)]])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+        const args = buildArgs({ deployment: { entity, files } })
+
+        const result = Validations.WEARABLE_THUMBNAIL(args)
+        await assertErrorsWere(result, `Couldn't parse thumbnail, please check image format.`)
+      })
+
+      it('when thumbnail image size is invalid, it should return an error', async () => {
+        const content = new Map<string, string>([[fileName, hash]])
+        const files = new Map([[hash, invalidThumbnailBuffer]])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+        const args = buildArgs({ deployment: { entity, files } })
+
+        const result = Validations.WEARABLE_THUMBNAIL(args)
+        await assertErrorsWere(result, `Invalid thumbnail image size (width = 1 / height = 1)`)
+      })
+
+      it('when thumbnail image format is not png, it should return an error', async () => {
+        const jpgImage = await createImage(DEFAULT_THUMBNAIL_SIZE, 'jpg')
+        const content = new Map<string, string>([[fileName, hash]])
+        const files = new Map([[hash, jpgImage]])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+        const args = buildArgs({ deployment: { entity, files } })
+
+        const result = Validations.WEARABLE_THUMBNAIL(args)
+
+        await assertErrorsWere(result, `Invalid or unknown image format. Only 'PNG' format is accepted.`)
+      })
+
+      it('when thumbnail image size is valid, should not return any error', async () => {
+        const content = new Map<string, string>([[fileName, hash]])
+        const files = new Map([[hash, validThumbnailBuffer]])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
+        const args = buildArgs({ deployment: { entity, files } })
+
+        const result = Validations.WEARABLE_THUMBNAIL(args)
+
+        await assertNoErrors(result)
+      })
     })
 
-    it('when there is no file for given thumbnail file hash, it should return an error', async () => {
-      const content = new Map<string, string>([[fileName, hash]])
-      const files = new Map([['notSame' + hash, validThumbnailBuffer]])
-      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
-      const args = buildArgs({ deployment: { entity, files } })
+    describe('Size:', () => {
+      it(`when a wearable is deployed and model is too big, then it fails`, async () => {
+        const withSize = (size: number) => Buffer.alloc(size * 1024 * 1024)
+        const content = new Map([
+          ['A', 'A'],
+          ['C', 'C'],
+          ['thumbnail.png', 'thumbnail']
+        ])
+        const files = new Map([
+          ['A', withSize(1)],
+          ['C', withSize(1.5)],
+          ['thumbnail', Buffer.alloc(1)]
+        ])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, { thumbnail: 'thumbnail.png' }), content }
+        const args = buildArgs({
+          deployment: { entity, files },
+          env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, 3]]) }
+        })
 
-      const result = Validations.WEARABLE_THUMBNAIL(args)
-      await assertErrorsWere(result, `Couldn't find thumbnail file with hash: ${hash}`)
-    })
+        const result = Validations.WEARABLE_SIZE(args)
 
-    it('when thumbnail image format is not valid, it should return an error', async () => {
-      const content = new Map<string, string>([[fileName, hash]])
-      const files = new Map([[hash, Buffer.alloc(1)]])
-      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
-      const args = buildArgs({ deployment: { entity, files } })
+        const actualErrors = await result
+        expect(actualErrors).toBeDefined()
+        expect(actualErrors?.length).toBe(1)
+        expect(actualErrors?.[0]).toMatch(
+          'The deployment is too big. The maximum allowed size for wearable model files *'
+        )
+      })
 
-      const result = Validations.WEARABLE_THUMBNAIL(args)
-      await assertErrorsWere(result, `Couldn't parse thumbnail, please check image format.`)
-    })
+      it(`when a wearable is deployed and thumbnail is too big, then it fails`, async () => {
+        const withSize = (size: number) => Buffer.alloc(size * 1024 * 1024)
+        const content = new Map([
+          ['A', 'A'],
+          ['C', 'C'],
+          ['thumbnail.png', 'thumbnail']
+        ])
+        const files = new Map([
+          ['A', withSize(1)],
+          ['C', withSize(1)],
+          ['thumbnail', withSize(2)]
+        ])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, { thumbnail: 'thumbnail.png' }), content }
+        const args = buildArgs({
+          deployment: { entity, files },
+          env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, 3]]) }
+        })
 
-    it('when thumbnail image size is invalid, it should return an error', async () => {
-      const content = new Map<string, string>([[fileName, hash]])
-      const files = new Map([[hash, invalidThumbnailBuffer]])
-      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
-      const args = buildArgs({ deployment: { entity, files } })
+        const result = Validations.REQUEST_SIZE_V4(args)
 
-      const result = Validations.WEARABLE_THUMBNAIL(args)
-      await assertErrorsWere(result, `Invalid thumbnail image size (width = 1 / height = 1)`)
-    })
+        const actualErrors = await result
+        expect(actualErrors).toBeDefined()
+        expect(actualErrors?.length).toBe(1)
+        expect(actualErrors?.[0]).toMatch('The deployment is too big. *')
+      })
 
-    it('when thumbnail image format is not png, it should return an error', async () => {
-      const jpgImage = await createImage(DEFAULT_THUMBNAIL_SIZE, 'jpg')
-      const content = new Map<string, string>([[fileName, hash]])
-      const files = new Map([[hash, jpgImage]])
-      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
-      const args = buildArgs({ deployment: { entity, files } })
+      it(`when a wearable is deployed and sizes are correct, then it is ok`, async () => {
+        const withSize = (sizeInMB: number) => Buffer.alloc(sizeInMB * 1024 * 1024)
+        const content = new Map([
+          ['A', 'A'],
+          ['C', 'C'],
+          ['thumbnail.png', 'thumbnail']
+        ])
+        const files = new Map([
+          ['A', withSize(1)],
+          ['C', withSize(1)],
+          ['thumbnail', withSize(0.9)]
+        ])
+        const entity = { ...buildEntityV4(EntityType.WEARABLE, { thumbnail: 'thumbnail.png' }), content }
+        const args = buildArgs({
+          deployment: { entity, files },
+          env: { maxUploadSizePerTypeInMB: new Map([[EntityType.WEARABLE, 3]]) }
+        })
 
-      const result = Validations.WEARABLE_THUMBNAIL(args)
-
-      await assertErrorsWere(result, `Invalid or unknown image format. Only 'PNG' format is accepted.`)
-    })
-
-    it('when thumbnail image size is valid, should not return any error', async () => {
-      const content = new Map<string, string>([[fileName, hash]])
-      const files = new Map([[hash, validThumbnailBuffer]])
-      const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
-      const args = buildArgs({ deployment: { entity, files } })
-
-      const result = Validations.WEARABLE_THUMBNAIL(args)
-
-      await assertNoErrors(result)
+        const result = Validations.WEARABLE_SIZE(args)
+        await assertNoErrors(result)
+      })
     })
   })
 })
