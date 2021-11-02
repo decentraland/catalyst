@@ -282,7 +282,7 @@ export class Validations {
   }
 
   /** Validate that given wearable deployment includes a thumbnail with valid format and size */
-  static readonly WEARABLE_CUSTOM: Validation = async (args) => {
+  static readonly WEARABLE_FILES: Validation = async (args) => {
     if (args.deployment.entity.type !== EntityType.WEARABLE) return
 
     let errors: string[] = []
@@ -321,8 +321,7 @@ export class Validations {
     const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(EntityType.WEARABLE)
     if (!maxSizeInMB) return
 
-    // hardcoded value to be used just in this validation
-    const modelSizeInMB = 2
+    const modelSizeInMB = env.wearableSizeLimitInMB
 
     const wearableMetadata = entity.metadata as Wearable
     const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)

@@ -185,6 +185,7 @@ function buildArgs(args: {
       authenticator: new ContentAuthenticator('ropsten'),
       requestTtlBackwards: ms('10m'),
       maxUploadSizePerTypeInMB: new Map(),
+      wearableSizeLimitInMB: 2,
       ...args?.env
     },
     externalCalls: {

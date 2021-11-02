@@ -12,7 +12,8 @@ export class ValidatorFactory {
         [EntityType.SCENE, 15],
         [EntityType.PROFILE, 15],
         [EntityType.WEARABLE, 3]
-      ])
+      ]),
+      wearableSizeLimitInMB: 2
     })
   }
 }
