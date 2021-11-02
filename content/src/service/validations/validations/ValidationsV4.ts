@@ -11,7 +11,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
     Validations.ENTITY_STRUCTURE,
     Validations.CONTENT_V4,
     Validations.REQUEST_SIZE_V4,
-    Validations.WEARABLE_CUSTOM,
+    Validations.WEARABLE_FILES,
     Validations.NO_NEWER,
     Validations.RECENT,
     Validations.NO_REDEPLOYS
@@ -24,7 +24,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
     Validations.ENTITY_STRUCTURE,
     Validations.CONTENT_V4,
     Validations.REQUEST_SIZE_V4,
-    Validations.WEARABLE_CUSTOM
+    Validations.WEARABLE_FILES
   ],
   // This is during synchronization when a deployment needs to  be done, but you already have a newer which overwrites it.
   // So, at this moment the files from the entity of the overwritten deployment are not download.
@@ -45,7 +45,7 @@ export const VALIDATIONS_V4: ValidationsForContext = {
     Validations.ENTITY_STRUCTURE,
     Validations.CONTENT_V4,
     Validations.REQUEST_SIZE_V4,
-    Validations.WEARABLE_CUSTOM
+    Validations.WEARABLE_FILES
   ],
   // Note: there is no need for legacy entities anymore, so we won't allow then in v4
   [DeploymentContext.SYNCED_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS],
