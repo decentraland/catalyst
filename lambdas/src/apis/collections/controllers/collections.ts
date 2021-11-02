@@ -21,6 +21,16 @@ const sizes: Record<ValidSize, number> = { '128': 128, '256': 256, '512': 512, '
 
 const isValidSize = (size: string): size is ValidSize => sizes[size] !== undefined
 
+const rarityBackgrounds: Record<string, Buffer> = {}
+const getRarityBackground = async (rarity: string): Promise<Buffer> => {
+  if (rarityBackgrounds[rarity]) return rarityBackgrounds[rarity]
+
+  const path = getRarityImagePath(rarity)
+  const image = await sharp(path).toBuffer()
+  rarityBackgrounds[rarity] = image
+  return image
+}
+
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
   // Path: /standard/erc721/:chainId/:contract/:option/:emission
@@ -112,10 +122,10 @@ export async function contentsImage(client: SmartContentClient, req: Request, re
   size = size ?? DEFAULT_IMAGE_SIZE
 
   const imageTransformer = async (image: Buffer, rarity: string): Promise<Buffer> => {
-    const resize = (image: Buffer | string) => sharp(image).resize({ width: sizes[size] })
+    const resize = (image: Buffer) => sharp(image).resize({ width: sizes[size] })
     image = await resize(image).toBuffer()
-    const imageFilePath = getRarityImagePath(rarity)
-    return await resize(imageFilePath)
+    const rarityBackground = await getRarityBackground(rarity)
+    return await resize(rarityBackground)
       .composite([{ input: image }])
       .toBuffer()
   }
