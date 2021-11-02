@@ -281,7 +281,7 @@ export class Validations {
     return totalSize
   }
 
-  /** Validate that given wearable deployment includes a thumbnail with valid format and size */
+  /** Validate that given wearable deployment includes the thumbnail and doesn't exceed file sizes */
   static readonly WEARABLE_FILES: Validation = async (args) => {
     if (args.deployment.entity.type !== EntityType.WEARABLE) return
 
@@ -290,6 +290,7 @@ export class Validations {
     return errors.length > 0 ? errors : undefined
   }
 
+  /** Validate that given wearable deployment includes a thumbnail with valid format and size */
   static readonly WEARABLE_THUMBNAIL: Validation = async ({ deployment }) => {
     // read thumbnail field from metadata
     const metadata = deployment.entity.metadata as Wearable
