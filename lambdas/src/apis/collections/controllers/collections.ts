@@ -1,6 +1,7 @@
 import { ChainId } from '@dcl/schemas'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
+import fs from 'fs'
 import sharp from 'sharp'
 import { ServiceError } from '../../../utils/errors'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
@@ -14,22 +15,6 @@ import {
   WearableMetadataRepresentation
 } from '../types'
 import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
-
-const DEFAULT_IMAGE_SIZE = '1024'
-type ValidSize = '128' | '256' | '512' | typeof DEFAULT_IMAGE_SIZE
-const sizes: Record<ValidSize, number> = { '128': 128, '256': 256, '512': 512, '1024': 1024 }
-
-const isValidSize = (size: string): size is ValidSize => sizes[size] !== undefined
-
-const rarityBackgrounds: Record<string, Buffer> = {}
-const getRarityBackground = async (rarity: string): Promise<Buffer> => {
-  if (rarityBackgrounds[rarity]) return rarityBackgrounds[rarity]
-
-  const path = getRarityImagePath(rarity)
-  const image = await sharp(path).toBuffer()
-  rarityBackgrounds[rarity] = image
-  return image
-}
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
@@ -100,68 +85,64 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   }
 }
 
-export async function contentsThumbnail(client: SmartContentClient, req: Request, res: Response): Promise<void> {
+export async function contentsThumbnail(
+  client: SmartContentClient,
+  req: Request,
+  res: Response,
+  storage: string
+): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/thumbnail/:size
-  const { urn } = req.params
-  let { size } = req.params
-  size = size ?? '1024'
-
-  const validSize = sizes[size]
-  const imageTransformer = async (image: Buffer): Promise<Buffer> =>
-    await sharp(image).resize({ width: validSize, height: validSize }).toBuffer()
-
-  await prepareAndSendImage(client, res, urn, imageTransformer, size)
+  await handleImageRequest(client, req, res, storage, true)
 }
 
-export async function contentsImage(client: SmartContentClient, req: Request, res: Response): Promise<void> {
+export async function contentsImage(
+  client: SmartContentClient,
+  req: Request,
+  res: Response,
+  storage: string
+): Promise<void> {
   // Method: GET
   // Path: /contents/:urn/image/:size
-  const { urn } = req.params
-  let { size } = req.params
-  size = size ?? DEFAULT_IMAGE_SIZE
-
-  const imageTransformer = async (image: Buffer, rarity: string): Promise<Buffer> => {
-    const resize = (image: Buffer) => sharp(image).resize({ width: sizes[size] })
-    image = await resize(image).toBuffer()
-    const rarityBackground = await getRarityBackground(rarity)
-    return await resize(rarityBackground)
-      .composite([{ input: image }])
-      .toBuffer()
-  }
-  await prepareAndSendImage(client, res, urn, imageTransformer, size)
+  await handleImageRequest(client, req, res, storage, false)
 }
 
-async function prepareAndSendImage(
+async function handleImageRequest(
   client: SmartContentClient,
+  req: Request,
   res: Response,
-  urn: string,
-  processImage: (image: Buffer, rarity?: string) => Promise<Buffer>,
-  size: string = '1024'
-) {
+  rootStorageLocation: string,
+  isThumbnail: boolean
+): Promise<void> {
+  const { urn } = req.params
+  const size = req.params.size ?? DEFAULT_IMAGE_SIZE
+
   try {
     validateSize(size)
 
     const entity = await fetchEntity(client, urn)
-    const wearableMetadata = entity.metadata as WearableMetadata
-    const hash = getFileHash(entity, wearableMetadata.thumbnail)
-    let image = await client.downloadContent(hash)
-    image = await processImage(image, wearableMetadata.rarity)
+    const imageRequest = {
+      urn,
+      hash: getFileHash(entity, entity.metadata.thumbnail),
+      size,
+      rarity: isThumbnail ? undefined : entity.metadata?.rarity
+    }
 
-    res.send(image)
-    res.writeHead(200, {
-      'Content-Type': 'image/png',
-      ETag: JSON.stringify(urn + '-' + size),
-      'Access-Control-Expose-Headers': '*',
-      'Cache-Control': 'public, max-age=31536000, immutable'
-    })
+    const image = await getImage(client, rootStorageLocation, imageRequest)
+    sendImage(res, image, imageRequest)
   } catch (e) {
     res.status(e.statusCode ?? 500).send(e.message)
   }
 }
 
-function getRarityImagePath(rarity: string) {
-  return `lambdas/resources/${rarity}.png`
+function sendImage(res: Response, image: Buffer, imageRequest: ImageRequest) {
+  res.send(image)
+  res.writeHead(200, {
+    'Content-Type': 'image/png',
+    ETag: JSON.stringify(getImageRequestId(imageRequest)),
+    'Access-Control-Expose-Headers': '*',
+    'Cache-Control': 'public, max-age=31536000, immutable'
+  })
 }
 
 export async function getCollectionsHandler(
@@ -191,6 +172,10 @@ export async function getCollections(theGraphClient: TheGraphClient): Promise<Co
   ]
 }
 
+function getRarityImagePath(rarity: string) {
+  return `lambdas/resources/${rarity}.png`
+}
+
 function getProtocol(chainId: string): string | undefined {
   switch (parseInt(chainId, 10)) {
     case ChainId.ETHEREUM_MAINNET:
@@ -215,7 +200,7 @@ function buildUrn(protocol: string, contract: string, option: string): string {
   return `urn:decentraland:${protocol}:collections-${version}:${contract}:${option}`
 }
 
-function validateSize(size: string = '1024'): size is ValidSize {
+function validateSize(size: string = DEFAULT_IMAGE_SIZE): size is ValidSize {
   if (!isValidSize(size)) throw new ServiceError('Invalid size')
   return true
 }
@@ -234,7 +219,7 @@ async function fetchEntity(client: SmartContentClient, urn: string): Promise<Ent
   return entities[0]
 }
 
-export function getBodyShapes(representations: WearableMetadataRepresentation[]): string[] {
+function getBodyShapes(representations: WearableMetadataRepresentation[]): string[] {
   const bodyShapes = new Set<WearableBodyShape>()
   for (const representation of representations) {
     for (const bodyShape of representation.bodyShapes) {
@@ -245,6 +230,66 @@ export function getBodyShapes(representations: WearableMetadataRepresentation[])
   return Array.from(bodyShapes)
 }
 
+function isValidSize(size: string): size is ValidSize {
+  return sizes[size] !== undefined
+}
+
+function getImagePath(root: string, imageRequest: ImageRequest): string {
+  return root + `/` + getImageRequestId(imageRequest) + '.png'
+}
+
+function getImageRequestId({ urn, hash, size, rarity }: ImageRequest): string {
+  return `${urn}-${hash}-${size}` + (rarity ? `-${rarity}` : '')
+}
+
+async function getImage(
+  client: SmartContentClient,
+  rootStorageLocation: string,
+  imageRequest: ImageRequest
+): Promise<Buffer> {
+  const path = getImagePath(rootStorageLocation, imageRequest)
+
+  // Check if the image is already in the cache, otherwise build and store it
+  fs.existsSync(path) || (await buildImage(client, rootStorageLocation, imageRequest))
+
+  return await sharp(path).toBuffer()
+}
+
+async function buildImage(client: SmartContentClient, rootStorageLocation: string, imageRequest: ImageRequest) {
+  const imagePath = getImagePath(rootStorageLocation, imageRequest)
+  fs.existsSync(imagePath) || (await saveImage(client, rootStorageLocation, imageRequest))
+}
+
+async function saveImage(client: SmartContentClient, rootStorageLocation: string, imageRequest: ImageRequest) {
+  const image = await client.downloadContent(imageRequest.hash)
+  const imagePath = getImagePath(rootStorageLocation, imageRequest)
+  let finalImage: sharp.Sharp
+  if (imageRequest.rarity) {
+    const background = await getRarityBackground(imageRequest.rarity)
+    const shouldResize = sizes[imageRequest.size] !== DEFAULT_IMAGE_SIZE
+    const resizedBackground = shouldResize
+      ? await sharp(background).resize(sizes[imageRequest.size], sizes[imageRequest.size]).toBuffer()
+      : background
+
+    const resizedImage = shouldResize
+      ? await sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size]).toBuffer()
+      : image
+    finalImage = sharp(resizedBackground).composite([{ input: resizedImage }])
+  } else {
+    finalImage = sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size])
+  }
+  await finalImage.toFile(imagePath)
+}
+
+async function getRarityBackground(rarity: string): Promise<Buffer> {
+  if (rarityBackgrounds[rarity]) return rarityBackgrounds[rarity]
+
+  const path = getRarityImagePath(rarity)
+  const image = await sharp(path).toBuffer()
+
+  return (rarityBackgrounds[rarity] = image), image
+}
+
 const RARITIES_EMISSIONS = {
   common: 100000,
   uncommon: 10000,
@@ -253,4 +298,17 @@ const RARITIES_EMISSIONS = {
   legendary: 100,
   mythic: 10,
   unique: 1
+}
+
+const DEFAULT_IMAGE_SIZE = '1024'
+type ValidSize = '128' | '256' | '512' | typeof DEFAULT_IMAGE_SIZE
+const sizes: Record<ValidSize, number> = { '128': 128, '256': 256, '512': 512, '1024': 1024 }
+
+const rarityBackgrounds: Record<string, Buffer> = {}
+
+type ImageRequest = {
+  urn: string
+  hash: string
+  size: string
+  rarity?: string
 }
