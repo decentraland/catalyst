@@ -115,7 +115,13 @@ export class Server {
     // DAO Collections access API
     this.app.use(
       '/collections',
-      initializeCollectionsRoutes(express.Router(), contentClient, theGraphClient, offChainManager)
+      initializeCollectionsRoutes(
+        express.Router(),
+        contentClient,
+        theGraphClient,
+        offChainManager,
+        env.getConfig(EnvironmentConfig.LAMBDAS_STORAGE_LOCATION)
+      )
     )
 
     // Functionality for Explore use case
