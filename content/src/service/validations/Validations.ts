@@ -19,10 +19,11 @@ export class Validations {
   }
 
   /** Validate that the full request size is within limits */
-  static readonly REQUEST_SIZE_V3: Validation = (args) => {
+  static readonly REQUEST_SIZE_V3: Validation = async (args) => {
     const { deployment, env } = args
     const { entity } = deployment
     const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(entity.type)
+    let errors: string[] = []
     if (!maxSizeInMB) {
       return [`Type ${entity.type} is not supported yet`]
     }
@@ -32,13 +33,14 @@ export class Validations {
     deployment.files.forEach((file) => (totalSize += file.byteLength))
     const sizePerPointer = totalSize / entity.pointers.length
     if (sizePerPointer > maxSizeInBytes) {
-      return [
+      errors = [
         `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB} MB for ${
           entity.type
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
     }
-    return this.WEARABLE_SIZE(args)
+    errors = [...errors, ...((await this.WEARABLE_SIZE(args)) ?? [])]
+    return errors.length > 0 ? errors : undefined
   }
 
   /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
