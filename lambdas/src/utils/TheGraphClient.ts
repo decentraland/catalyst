@@ -3,6 +3,7 @@ import { Fetcher } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import { WearableId, WearablesFilters } from '../apis/collections/types'
+import { ServiceError } from './errors'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
@@ -18,8 +19,7 @@ export class TheGraphClient {
       description: 'fetch owners by name',
       subgraph: 'ensSubgraph',
       query: QUERY_OWNER_BY_NAME,
-      mapper: (response) => response.nfts.map(({ name, owner }) => ({ name, owner: owner.address })),
-      default: []
+      mapper: (response) => response.nfts.map(({ name, owner }) => ({ name, owner: owner.address }))
     }
     return this.splitQueryVariablesIntoSlices(query, names, (slicedNames) => ({ names: slicedNames }))
   }
@@ -37,8 +37,7 @@ export class TheGraphClient {
       description: 'check for names ownership',
       subgraph: 'ensSubgraph',
       query: subgraphQuery,
-      mapper,
-      default: []
+      mapper
     }
     return this.runQuery(query, {})
   }
@@ -86,8 +85,7 @@ export class TheGraphClient {
         description: 'fetch collections',
         subgraph: subgraph,
         query: QUERY_COLLECTIONS,
-        mapper: (response) => response.collections,
-        default: []
+        mapper: (response) => response.collections
       }
       return this.runQuery(query, {})
     } catch {
@@ -138,8 +136,7 @@ export class TheGraphClient {
       description: 'check for wearables ownership',
       subgraph: subgraph,
       query: subgraphQuery,
-      mapper,
-      default: []
+      mapper
     }
     return this.runQuery(query, {})
   }
@@ -171,8 +168,7 @@ export class TheGraphClient {
       description: 'fetch wearables by owner',
       subgraph: subgraph,
       query: QUERY_WEARABLES_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn }) => urn),
-      default: []
+      mapper: (response) => response.nfts.map(({ urn }) => urn)
     }
     return this.paginatableQuery(query, { owner: owner.toLowerCase() })
   }
@@ -340,11 +336,11 @@ export class TheGraphClient {
       const response = await this.fetcher.queryGraph<QueryResult>(this.urls[query.subgraph], query.query, variables)
       return query.mapper(response)
     } catch (error) {
-      TheGraphClient.LOGGER.error(
-        `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${query.description}'.`,
-        error
-      )
-      return query.default
+      const message = `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${
+        query.description
+      }'.`
+      TheGraphClient.LOGGER.error(message, error)
+      throw new ServiceError(message, 500)
     }
   }
 }
@@ -385,7 +381,6 @@ type Query<QueryResult, ReturnType> = {
   subgraph: keyof URLs
   query: string
   mapper: (queryResult: QueryResult) => ReturnType
-  default: ReturnType
 }
 
 type URLs = {
