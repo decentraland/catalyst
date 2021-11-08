@@ -14,7 +14,7 @@ import {
   WearableMetadata,
   WearableMetadataRepresentation
 } from '../types'
-import { createExternalContentUrl, findHashForFile, preferEnglish } from '../Utils'
+import { createExternalLambdasUrl, findHashForFile, preferEnglish } from '../Utils'
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
@@ -36,8 +36,8 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     const name = preferEnglish(wearableMetadata.i18n)
     const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
     const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-    const image = createExternalContentUrl(client, entity, wearableMetadata.image)
-    const thumbnail = createExternalContentUrl(client, entity, wearableMetadata.thumbnail)
+    const image = createExternalLambdasUrl(urn) + '/image'
+    const thumbnail = createExternalLambdasUrl(urn) + '/thumbnail'
     const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
       (bodyShapes: ERC721StandardTrait[], bodyShape) => {
         bodyShapes.push({
