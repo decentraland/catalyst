@@ -113,7 +113,7 @@ export async function getWearablesEndpoint(
 
     res.send({ wearables, filters: requestFilters, pagination: { limit: sanitizedLimit, lastId, next } })
   } catch (error) {
-    res.status(error.code ?? 500).send(error.message)
+    res.status(500).send(error.message)
   }
 }
 

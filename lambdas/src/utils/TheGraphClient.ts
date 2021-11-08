@@ -3,7 +3,6 @@ import { Fetcher } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import { WearableId, WearablesFilters } from '../apis/collections/types'
-import { ServiceError } from './errors'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
@@ -336,11 +335,11 @@ export class TheGraphClient {
       const response = await this.fetcher.queryGraph<QueryResult>(this.urls[query.subgraph], query.query, variables)
       return query.mapper(response)
     } catch (error) {
-      const message = `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${
-        query.description
-      }'.`
-      TheGraphClient.LOGGER.error(message, error)
-      throw new ServiceError(message, 500)
+      TheGraphClient.LOGGER.error(
+        `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${query.description}'.`,
+        error
+      )
+      throw new Error('Internal server error')
     }
   }
 }
