@@ -78,6 +78,24 @@ export function createExternalContentUrl(
   return undefined
 }
 
+export function createExternalLambdasUrl(urn: string): string {
+  const catalystUrl = baseLambdasServerUrl(process.env.CATALYST_URL) ?? 'http://localhost'
+  return `${catalystUrl}/lambdas/collections/contents/${urn}`
+}
+
+function baseLambdasServerUrl(url?: string): string | undefined {
+  if (!url) return
+
+  let configAddress = url.toLowerCase()
+  if (!configAddress.startsWith('http')) {
+    configAddress = 'http://' + configAddress
+  }
+  while (configAddress.endsWith('/')) {
+    configAddress = configAddress.slice(0, -1)
+  }
+  return configAddress
+}
+
 export function findHashForFile(entity: Entity, fileName: string | undefined): string | undefined {
   if (fileName) {
     return entity.content?.find((item) => item.file === fileName)?.hash
