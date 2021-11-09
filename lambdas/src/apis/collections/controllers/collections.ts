@@ -121,11 +121,15 @@ async function handleImageRequest(
     validateSize(size)
 
     const entity = await fetchEntity(client, urn)
+    const hash = getFileHash(entity, entity.metadata.thumbnail)
+
+    await pruneObsoleteImages(rootStorageLocation, urn, hash)
+
     const imageRequest = {
       urn,
-      hash: getFileHash(entity, entity.metadata.thumbnail),
+      hash,
       size,
-      rarity: isThumbnail ? undefined : entity.metadata?.rarity
+      rarityBackground: isThumbnail ? undefined : entity.metadata?.rarity
     }
 
     const image = await getImage(client, rootStorageLocation, imageRequest)
@@ -235,11 +239,22 @@ function isValidSize(size: string): size is ValidSize {
 }
 
 function getImagePath(root: string, imageRequest: ImageRequest): string {
-  return root + `/` + getImageRequestId(imageRequest) + '.png'
+  return root + `/images/` + getImageRequestId(imageRequest) + '.png'
 }
 
-function getImageRequestId({ urn, hash, size, rarity }: ImageRequest): string {
-  return `${urn}-${hash}-${size}` + (rarity ? `-${rarity}` : '')
+// Using this folder structure allow us to find and remove older versions of the same urn (entity)
+function getImageRequestId({ urn, hash, size, rarityBackground }: ImageRequest): string {
+  return `${urn}/${hash}/${size}-` + (rarityBackground ?? 'thumbnail')
+}
+
+// Delete all images that are not the latest version (same hash)
+async function pruneObsoleteImages(root: string, urn: string, hash: string) {
+  const existsFolder = fs.existsSync(root + `/images/` + urn + '/' + hash)
+  if (!existsFolder) await cleanFolder(root + `/images/` + urn)
+}
+
+async function cleanFolder(folderPath: string) {
+  await fs.promises.rm(folderPath, { recursive: true, force: true })
 }
 
 async function getImage(
@@ -250,44 +265,41 @@ async function getImage(
   const path = getImagePath(rootStorageLocation, imageRequest)
 
   // Check if the image is already in the cache, otherwise build and store it
-  fs.existsSync(path) || (await buildImage(client, rootStorageLocation, imageRequest))
+  fs.existsSync(path) || (await saveImage(client, rootStorageLocation, imageRequest))
 
   return await sharp(path).toBuffer()
 }
 
-async function buildImage(client: SmartContentClient, rootStorageLocation: string, imageRequest: ImageRequest) {
-  const imagePath = getImagePath(rootStorageLocation, imageRequest)
-  fs.existsSync(imagePath) || (await saveImage(client, rootStorageLocation, imageRequest))
-}
-
+/**
+ * Fetch image from the content service and resized image is stored in the cache.
+ * When rarityBackground is present, it composes the image with the rarity background.
+ */
 async function saveImage(client: SmartContentClient, rootStorageLocation: string, imageRequest: ImageRequest) {
   const image = await client.downloadContent(imageRequest.hash)
   const imagePath = getImagePath(rootStorageLocation, imageRequest)
+  const shouldResize = sizes[imageRequest.size] !== DEFAULT_IMAGE_SIZE
   let finalImage: sharp.Sharp
-  if (imageRequest.rarity) {
-    const background = await getRarityBackground(imageRequest.rarity)
-    const shouldResize = sizes[imageRequest.size] !== DEFAULT_IMAGE_SIZE
-    const resizedBackground = shouldResize
-      ? await sharp(background).resize(sizes[imageRequest.size], sizes[imageRequest.size]).toBuffer()
-      : background
-
+  if (imageRequest.rarityBackground) {
+    const background = await getRarityBackground(imageRequest.rarityBackground, imageRequest.size)
     const resizedImage = shouldResize
       ? await sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size]).toBuffer()
       : image
-    finalImage = sharp(resizedBackground).composite([{ input: resizedImage }])
+    finalImage = sharp(background).composite([{ input: resizedImage }])
   } else {
-    finalImage = sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size])
+    finalImage = shouldResize ? sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size]) : sharp(image)
   }
   await finalImage.toFile(imagePath)
 }
 
-async function getRarityBackground(rarity: string): Promise<Buffer> {
-  if (rarityBackgrounds[rarity]) return rarityBackgrounds[rarity]
+async function getRarityBackground(rarity: string, size: string): Promise<Buffer> {
+  const sizedRarity = `${rarity}-${size}`
+  if (!rarityBackgrounds[sizedRarity]) {
+    let image = sharp(getRarityImagePath(rarity))
+    if (size !== DEFAULT_IMAGE_SIZE) image = image.resize(sizes[size], sizes[size])
+    rarityBackgrounds[sizedRarity] = await image.toBuffer()
+  }
 
-  const path = getRarityImagePath(rarity)
-  const image = await sharp(path).toBuffer()
-
-  return (rarityBackgrounds[rarity] = image), image
+  return rarityBackgrounds[sizedRarity]
 }
 
 const RARITIES_EMISSIONS = {
@@ -310,5 +322,5 @@ type ImageRequest = {
   urn: string
   hash: string
   size: string
-  rarity?: string
+  rarityBackground?: string
 }
