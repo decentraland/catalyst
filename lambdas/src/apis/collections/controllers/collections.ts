@@ -244,7 +244,7 @@ function getImagePath(root: string, imageRequest: ImageRequest): string {
 
 // Using this folder structure allow us to find and remove older versions of the same urn (entity)
 function getImageRequestId({ urn, hash, size, rarityBackground }: ImageRequest): string {
-  return `${urn}/${hash}/${size}-` + (rarityBackground ?? 'thumbnail')
+  return `${urn}/${hash}/${rarityBackground ?? 'thumbnail'}-${size}`
 }
 
 // Delete all images that are not the latest version (same hash)
@@ -276,7 +276,6 @@ async function getImage(
  */
 async function saveImage(client: SmartContentClient, rootStorageLocation: string, imageRequest: ImageRequest) {
   const image = await client.downloadContent(imageRequest.hash)
-  const imagePath = getImagePath(rootStorageLocation, imageRequest)
   const shouldResize = sizes[imageRequest.size] !== DEFAULT_IMAGE_SIZE
   let finalImage: sharp.Sharp
   if (imageRequest.rarityBackground) {
@@ -288,6 +287,20 @@ async function saveImage(client: SmartContentClient, rootStorageLocation: string
   } else {
     finalImage = shouldResize ? sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size]) : sharp(image)
   }
+  await storeImage(rootStorageLocation, imageRequest, finalImage)
+}
+
+async function storeImage(rootStoragePath: string, imageRequest: ImageRequest, finalImage: sharp.Sharp) {
+  const imagesFolder = rootStoragePath + `/images`
+  const urnFolder = imagesFolder + `/${imageRequest.urn}`
+  const hashFolder = urnFolder + `/${imageRequest.hash}`
+  const imagePath = getImagePath(rootStoragePath, imageRequest)
+
+  // ensure folder structure exists before write
+  fs.existsSync(imagesFolder) || (await fs.promises.mkdir(imagesFolder))
+  fs.existsSync(urnFolder) || (await fs.promises.mkdir(urnFolder))
+  fs.existsSync(hashFolder) || (await fs.promises.mkdir(hashFolder))
+
   await finalImage.toFile(imagePath)
 }
 
