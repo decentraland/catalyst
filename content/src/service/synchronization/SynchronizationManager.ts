@@ -95,6 +95,12 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     while (true) {
       await delay(ms('5m'))
 
+      const failedToSync: boolean = this.synchronizationState == SynchronizationState.FAILED_TO_SYNC
+      if (failedToSync) {
+        ClusterSynchronizationManager.LOGGER.error(`Restarting server because it has failed to sync.`)
+        process.exit(1)
+      }
+
       const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCING
       const lastSync: number = Date.now() - this.timeOfLastSync
 
@@ -146,7 +152,10 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
       await delay(ms('1h'))
-      await this.retryFailedDeploymentExecution()
+      const isSynced: boolean = this.synchronizationState == SynchronizationState.SYNCED
+      if (isSynced) {
+        await this.retryFailedDeploymentExecution()
+      }
     }
   }
 

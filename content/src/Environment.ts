@@ -178,6 +178,8 @@ export enum EnvironmentConfig {
   PSQL_HOST,
   PSQL_SCHEMA,
   PSQL_PORT,
+  PG_IDLE_TIMEOUT,
+  PG_QUERY_TIMEOUT,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
   SNAPSHOT_FREQUENCY,
@@ -364,12 +366,20 @@ export class EnvironmentBuilder {
       EnvironmentConfig.PSQL_PORT,
       () => process.env.POSTGRES_PORT ?? DEFAULT_DATABASE_CONFIG.port
     )
+
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.GARBAGE_COLLECTION,
       () => process.env.GARBAGE_COLLECTION === 'true'
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () => ms('6h'))
+
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_IDLE_TIMEOUT, () =>
+      process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('15s')
+    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_QUERY_TIMEOUT, () =>
+      process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('15s')
+    )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SNAPSHOT_FREQUENCY,

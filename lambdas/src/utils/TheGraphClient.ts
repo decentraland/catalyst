@@ -18,8 +18,7 @@ export class TheGraphClient {
       description: 'fetch owners by name',
       subgraph: 'ensSubgraph',
       query: QUERY_OWNER_BY_NAME,
-      mapper: (response) => response.nfts.map(({ name, owner }) => ({ name, owner: owner.address })),
-      default: []
+      mapper: (response) => response.nfts.map(({ name, owner }) => ({ name, owner: owner.address }))
     }
     return this.splitQueryVariablesIntoSlices(query, names, (slicedNames) => ({ names: slicedNames }))
   }
@@ -37,8 +36,7 @@ export class TheGraphClient {
       description: 'check for names ownership',
       subgraph: 'ensSubgraph',
       query: subgraphQuery,
-      mapper,
-      default: []
+      mapper
     }
     return this.runQuery(query, {})
   }
@@ -86,8 +84,7 @@ export class TheGraphClient {
         description: 'fetch collections',
         subgraph: subgraph,
         query: QUERY_COLLECTIONS,
-        mapper: (response) => response.collections,
-        default: []
+        mapper: (response) => response.collections
       }
       return this.runQuery(query, {})
     } catch {
@@ -138,8 +135,7 @@ export class TheGraphClient {
       description: 'check for wearables ownership',
       subgraph: subgraph,
       query: subgraphQuery,
-      mapper,
-      default: []
+      mapper
     }
     return this.runQuery(query, {})
   }
@@ -171,8 +167,7 @@ export class TheGraphClient {
       description: 'fetch wearables by owner',
       subgraph: subgraph,
       query: QUERY_WEARABLES_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn }) => urn),
-      default: []
+      mapper: (response) => response.nfts.map(({ urn }) => urn)
     }
     return this.paginatableQuery(query, { owner: owner.toLowerCase() })
   }
@@ -344,7 +339,7 @@ export class TheGraphClient {
         `Failed to execute the following query to the subgraph ${this.urls[query.subgraph]} ${query.description}'.`,
         error
       )
-      return query.default
+      throw new Error('Internal server error')
     }
   }
 }
@@ -385,7 +380,6 @@ type Query<QueryResult, ReturnType> = {
   subgraph: keyof URLs
   query: string
   mapper: (queryResult: QueryResult) => ReturnType
-  default: ReturnType
 }
 
 type URLs = {

@@ -69,6 +69,7 @@ export type ServerEnvironment = {
   authenticator: ContentAuthenticator
   requestTtlBackwards: number
   maxUploadSizePerTypeInMB: Map<EntityType, number>
+  wearableSizeLimitInMB: number
 }
 
 export type ExternalCalls = {

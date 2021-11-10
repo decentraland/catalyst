@@ -2,12 +2,14 @@ import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
+import sharp from 'sharp'
 import { Entity } from '../Entity'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
 import { ServiceImpl } from '../ServiceImpl'
 import { happenedBefore } from '../time/TimeSorting'
-import { ExternalCalls, Validation } from './Validator'
+import { DeploymentToValidate, ExternalCalls, Validation } from './Validator'
 
+export const DEFAULT_THUMBNAIL_SIZE = 1024
 export class Validations {
   /** Validate that the signature belongs to the Ethereum address */
   static readonly SIGNATURE: Validation = async ({ deployment, env }) => {
@@ -17,9 +19,11 @@ export class Validations {
   }
 
   /** Validate that the full request size is within limits */
-  static readonly REQUEST_SIZE_V3: Validation = ({ deployment, env }) => {
+  static readonly REQUEST_SIZE_V3: Validation = async (args) => {
+    const { deployment, env } = args
     const { entity } = deployment
     const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(entity.type)
+    let errors: string[] = []
     if (!maxSizeInMB) {
       return [`Type ${entity.type} is not supported yet`]
     }
@@ -29,12 +33,14 @@ export class Validations {
     deployment.files.forEach((file) => (totalSize += file.byteLength))
     const sizePerPointer = totalSize / entity.pointers.length
     if (sizePerPointer > maxSizeInBytes) {
-      return [
+      errors = [
         `The deployment is too big. The maximum allowed size per pointer is ${maxSizeInMB} MB for ${
           entity.type
         }. You can upload up to ${entity.pointers.length * maxSizeInBytes} bytes but you tried to upload ${totalSize}.`
       ]
     }
+    errors = [...errors, ...((await this.WEARABLE_SIZE(args)) ?? [])]
+    return errors.length > 0 ? errors : undefined
   }
 
   /** Validate that the pointers are valid, and that the Ethereum address has write access to them */
@@ -202,6 +208,7 @@ export class Validations {
     return ['This deployment is invalid. What are you doing?']
   }
 
+  /** Validate entities metadata against its corresponding schema */
   static readonly METADATA_SCHEMA: Validation = async ({ deployment }) => {
     const validate = {
       [EntityType.PROFILE]: Profile.validate,
@@ -220,6 +227,7 @@ export class Validations {
     }
   }
 
+  /** Validate size of deployment result including previous deployments */
   static readonly REQUEST_SIZE_V4: Validation = async ({ deployment, env, externalCalls }) => {
     const { entity } = deployment
     const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(entity.type)
@@ -230,15 +238,10 @@ export class Validations {
 
     let totalSize = 0
 
-    for (const [, hash] of entity.content ?? []) {
-      const uploadedFile = deployment.files.get(hash)
-      if (uploadedFile) {
-        totalSize += uploadedFile.byteLength
-      } else {
-        const contentSize = await externalCalls.fetchContentFileSize(hash)
-        if (!contentSize) return [`Couldn't fetch content file with hash: ${hash}`]
-        totalSize += contentSize
-      }
+    try {
+      totalSize = await this.calculateDeploymentSize(deployment, externalCalls)
+    } catch (e) {
+      return [e.message ?? `Couldn't calculate deployment size`]
     }
 
     const sizePerPointer = totalSize / entity.pointers.length
@@ -260,5 +263,85 @@ export class Validations {
       )
       return avatar.avatar.snapshots[fileNameWithoutExtension] === hash
     })
+  }
+
+  private static async calculateDeploymentSize(
+    deployment: DeploymentToValidate,
+    externalCalls: ExternalCalls
+  ): Promise<number> {
+    let totalSize = 0
+    for (const [, hash] of deployment.entity.content ?? []) {
+      const uploadedFile = deployment.files.get(hash)
+      if (uploadedFile) {
+        totalSize += uploadedFile.byteLength
+      } else {
+        const contentSize = await externalCalls.fetchContentFileSize(hash)
+        if (!contentSize) throw new Error(`Couldn't fetch content file with hash: ${hash}`)
+        totalSize += contentSize
+      }
+    }
+    return totalSize
+  }
+
+  /** Validate that given wearable deployment includes the thumbnail and doesn't exceed file sizes */
+  static readonly WEARABLE_FILES: Validation = async (args) => {
+    if (args.deployment.entity.type !== EntityType.WEARABLE) return
+
+    let errors: string[] = []
+    errors = [...((await this.WEARABLE_THUMBNAIL(args)) ?? []), ...((await this.WEARABLE_SIZE(args)) ?? [])]
+    return errors.length > 0 ? errors : undefined
+  }
+
+  /** Validate that given wearable deployment includes a thumbnail with valid format and size */
+  static readonly WEARABLE_THUMBNAIL: Validation = async ({ deployment }) => {
+    // read thumbnail field from metadata
+    const metadata = deployment.entity.metadata as Wearable
+
+    const hash = deployment.entity.content?.get(metadata.thumbnail)
+    if (!hash) return [`Couldn't find hash for thumbnail file with name: ${metadata.thumbnail}`]
+
+    const errors: string[] = []
+    // check size
+    const thumbnailBuffer = deployment.files.get(hash)
+    if (!thumbnailBuffer) return [`Couldn't find thumbnail file with hash: ${hash}`]
+    try {
+      const { width, height, format } = await sharp(thumbnailBuffer).metadata()
+      if (!format || format !== 'png') errors.push(`Invalid or unknown image format. Only 'PNG' format is accepted.`)
+      if (!width || !height) {
+        errors.push(`Couldn't validate thumbnail size for file ${metadata.thumbnail}`)
+      } else if (width !== DEFAULT_THUMBNAIL_SIZE || height !== DEFAULT_THUMBNAIL_SIZE) {
+        errors.push(`Invalid thumbnail image size (width = ${width} / height = ${height})`)
+      }
+    } catch (e) {
+      return [`Couldn't parse thumbnail, please check image format.`]
+    }
+    return errors.length > 0 ? errors : undefined
+  }
+
+  /** Validate wearable files size, excluding thumbnail, is less than expected */
+  static readonly WEARABLE_SIZE: Validation = async ({ deployment, env, externalCalls }) => {
+    const entity = deployment.entity
+    const maxSizeInMB = env.maxUploadSizePerTypeInMB.get(EntityType.WEARABLE)
+    if (!maxSizeInMB) return
+
+    const modelSizeInMB = env.wearableSizeLimitInMB
+
+    const wearableMetadata = entity.metadata as Wearable
+    const thumbnailHash = entity.content?.get(wearableMetadata.thumbnail)
+    if (!thumbnailHash) return
+
+    try {
+      const totalDeploymentSize = await this.calculateDeploymentSize(deployment, externalCalls)
+      const thumbnailSize = deployment.files.get(thumbnailHash)?.byteLength ?? 0
+      const modelSize = totalDeploymentSize - thumbnailSize
+      if (modelSize > modelSizeInMB * 1024 * 1024)
+        return [
+          `The deployment is too big. The maximum allowed size for wearable model files is 2 MB. You can upload up to ${
+            modelSizeInMB * 1024 * 1024
+          } bytes but you tried to upload ${modelSize}.`
+        ]
+    } catch (e) {
+      return [e.message ?? `Couldn't validate wearable size`]
+    }
   }
 }
