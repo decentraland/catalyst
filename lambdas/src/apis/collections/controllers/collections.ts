@@ -4,6 +4,7 @@ import { Request, Response } from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
 import sharp from 'sharp'
+import { metricsComponent } from '../../../metrics'
 import { ServiceError } from '../../../utils/errors'
 import { getFileStream } from '../../../utils/files'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
@@ -270,9 +271,22 @@ async function getImage(
   const path = getImagePath(rootStorageLocation, imageRequest)
 
   // Check if the image is already in the cache, otherwise build and store it
-  if (!fs.existsSync(path)) await saveImage(client, rootStorageLocation, imageRequest)
+  if (fs.existsSync(path)) {
+    metricsComponent.increment('cache_hit')
+  } else {
+    metricsComponent.increment('cache_miss')
+    await saveImage(client, rootStorageLocation, imageRequest)
+
+    const storageSize = await getStorageSize(rootStorageLocation)
+    metricsComponent.observe('storage_size', {}, storageSize)
+  }
 
   return await getFileStream(path)
+}
+
+async function getStorageSize(rootStorageLocation: string): Promise<number> {
+  const stat = await fs.promises.stat(rootStorageLocation + `/images`)
+  return stat.size
 }
 
 /**
@@ -280,6 +294,7 @@ async function getImage(
  * When rarityBackground is present, it composes the image with the rarity background.
  */
 async function saveImage(client: SmartContentClient, rootStorageLocation: string, imageRequest: ImageRequest) {
+  const { end: endTimer } = metricsComponent.startTimer('image_generation_time')
   const image = await client.downloadContent(imageRequest.hash)
   const shouldResize = sizes[imageRequest.size] !== DEFAULT_IMAGE_SIZE
   let finalImage: sharp.Sharp
@@ -293,6 +308,7 @@ async function saveImage(client: SmartContentClient, rootStorageLocation: string
     finalImage = shouldResize ? sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size]) : sharp(image)
   }
   await storeImage(rootStorageLocation, imageRequest, finalImage)
+  endTimer()
 }
 
 async function storeImage(rootStoragePath: string, imageRequest: ImageRequest, finalImage: sharp.Sharp) {
@@ -304,7 +320,9 @@ async function storeImage(rootStoragePath: string, imageRequest: ImageRequest, f
   // ensure folder structure exists before write
   await fs.promises.mkdir(hashFolder, { recursive: true })
 
-  await finalImage.toFile(imagePath)
+  const outputInfo = await finalImage.png().toFile(imagePath)
+
+  metricsComponent.increment('images_built_count', { image_dimensions: imageRequest.size, image_size: outputInfo.size })
 }
 
 async function getRarityBackground(rarity: string, size: string): Promise<Buffer> {
