@@ -2,8 +2,10 @@ import { ChainId } from '@dcl/schemas'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
 import fs from 'fs'
+import log4js from 'log4js'
 import sharp from 'sharp'
 import { ServiceError } from '../../../utils/errors'
+import { getFileStream } from '../../../utils/files'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
@@ -14,7 +16,9 @@ import {
   WearableMetadata,
   WearableMetadataRepresentation
 } from '../types'
-import { createExternalLambdasUrl, findHashForFile, preferEnglish } from '../Utils'
+import { findHashForFile, preferEnglish } from '../Utils'
+
+const logger = log4js.getLogger('Lambdas Collections')
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
@@ -36,28 +40,20 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     const name = preferEnglish(wearableMetadata.i18n)
     const totalEmission = RARITIES_EMISSIONS[wearableMetadata.rarity]
     const description = emission ? `DCL Wearable ${emission}/${totalEmission}` : ''
-    const image = createExternalLambdasUrl(urn) + '/image'
-    const thumbnail = createExternalLambdasUrl(urn) + '/thumbnail'
-    const bodyShapeTraits = getBodyShapes(wearableMetadata.data.representations).reduce(
-      (bodyShapes: ERC721StandardTrait[], bodyShape) => {
-        bodyShapes.push({
-          trait_type: 'Body Shape',
-          value: bodyShape
-        })
-
-        return bodyShapes
-      },
-      []
+    const lambdasUrl = `https://${req.headers.host}/lambdas/collections/contents/${urn}`
+    const image = lambdasUrl + '/image'
+    const thumbnail = lambdasUrl + '/thumbnail'
+    const bodyShapeTraits: ERC721StandardTrait[] = getBodyShapes(wearableMetadata.data.representations).map(
+      (bodyShape) => ({
+        trait_type: 'Body Shape',
+        value: bodyShape
+      })
     )
 
-    const tagTraits = wearableMetadata.data.tags.reduce((tags: ERC721StandardTrait[], tag) => {
-      tags.push({
-        trait_type: 'Tag',
-        value: tag
-      })
-
-      return tags
-    }, [])
+    const tagTraits: ERC721StandardTrait[] = wearableMetadata.data.tags.map((tag) => ({
+      trait_type: 'Tag',
+      value: tag
+    }))
 
     const standardErc721 = {
       id: urn,
@@ -81,7 +77,10 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
     }
     res.send(standardErc721)
   } catch (e) {
-    res.status(e.statusCode ?? 500).send(e.message)
+    if (e instanceof ServiceError) {
+      res.status(e.statusCode).send(e.message)
+    }
+    res.status(500)
   }
 }
 
@@ -132,21 +131,27 @@ async function handleImageRequest(
       rarityBackground: isThumbnail ? undefined : entity.metadata?.rarity
     }
 
-    const image = await getImage(client, rootStorageLocation, imageRequest)
-    sendImage(res, image, imageRequest)
+    const [stream, length]: [NodeJS.ReadableStream, number] = await getImage(client, rootStorageLocation, imageRequest)
+    sendImage(res, stream, length, imageRequest)
   } catch (e) {
-    res.status(e.statusCode ?? 500).send(e.message)
+    if (e instanceof ServiceError) {
+      res.status(e.statusCode).send(e.message)
+      return
+    }
+    res.status(500)
+    logger.error(e)
   }
 }
 
-function sendImage(res: Response, image: Buffer, imageRequest: ImageRequest) {
-  res.send(image)
+function sendImage(res: Response, stream: NodeJS.ReadableStream, length: number, imageRequest: ImageRequest) {
   res.writeHead(200, {
-    'Content-Type': 'image/png',
+    'Content-Type': 'application/octet-stream',
+    'Content-Length': length,
     ETag: JSON.stringify(getImageRequestId(imageRequest)),
     'Access-Control-Expose-Headers': '*',
-    'Cache-Control': 'public, max-age=31536000, immutable'
+    'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable'
   })
+  stream.pipe(res)
 }
 
 export async function getCollectionsHandler(
@@ -261,13 +266,13 @@ async function getImage(
   client: SmartContentClient,
   rootStorageLocation: string,
   imageRequest: ImageRequest
-): Promise<Buffer> {
+): Promise<[NodeJS.ReadableStream, number]> {
   const path = getImagePath(rootStorageLocation, imageRequest)
 
   // Check if the image is already in the cache, otherwise build and store it
-  fs.existsSync(path) || (await saveImage(client, rootStorageLocation, imageRequest))
+  if (!fs.existsSync(path)) await saveImage(client, rootStorageLocation, imageRequest)
 
-  return await sharp(path).toBuffer()
+  return await getFileStream(path)
 }
 
 /**
@@ -297,9 +302,7 @@ async function storeImage(rootStoragePath: string, imageRequest: ImageRequest, f
   const imagePath = getImagePath(rootStoragePath, imageRequest)
 
   // ensure folder structure exists before write
-  fs.existsSync(imagesFolder) || (await fs.promises.mkdir(imagesFolder))
-  fs.existsSync(urnFolder) || (await fs.promises.mkdir(urnFolder))
-  fs.existsSync(hashFolder) || (await fs.promises.mkdir(hashFolder))
+  await fs.promises.mkdir(hashFolder, { recursive: true })
 
   await finalImage.toFile(imagePath)
 }
