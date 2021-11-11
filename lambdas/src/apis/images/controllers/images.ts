@@ -1,12 +1,12 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
 import destroy from 'destroy'
 import { Request, Response } from 'express'
-import fs from 'fs'
 import log4js from 'log4js'
 import fetch from 'node-fetch'
 import onFinished from 'on-finished'
 import sharp from 'sharp'
 import { ServiceError } from '../../../utils/errors'
+import { getFileStream } from '../../../utils/files'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
 const LOGGER = log4js.getLogger('ImagesController')
@@ -63,11 +63,6 @@ export async function getResizedImage(
     } else {
       res.status(500).end()
     }
-  }
-
-  async function getFileStream(filePath: string): Promise<[NodeJS.ReadableStream, number]> {
-    const stat = await fs.promises.stat(filePath)
-    return [fs.createReadStream(filePath), stat.size]
   }
 
   async function downloadAndResize(cid: string, size: string, filePath: string) {
