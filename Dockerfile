@@ -2,9 +2,6 @@ FROM node:14-alpine as base
 WORKDIR /app
 RUN apk add --no-cache bash
 
-# get production dependencies
-FROM base as dependencies
-
 COPY package.json .
 COPY yarn.lock .
 COPY comms/lighthouse/package.json comms/lighthouse/
@@ -12,13 +9,16 @@ COPY commons/package.json commons/
 COPY contracts/package.json contracts/
 COPY content/package.json content/
 COPY lambdas/package.json lambdas/
+
+# get production dependencies
+FROM base as dependencies
 RUN yarn install --prod --frozen-lockfile
 
 # build sources
 FROM base as catalyst-builder
-COPY . .
 RUN yarn install --frozen-lockfile
 
+COPY . .
 FROM catalyst-builder as comms-builder
 RUN yarn workspace @catalyst/lighthouse-server build
 FROM catalyst-builder as content-builder
