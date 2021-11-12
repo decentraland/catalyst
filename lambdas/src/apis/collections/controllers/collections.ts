@@ -6,7 +6,7 @@ import log4js from 'log4js'
 import sharp from 'sharp'
 import { metricsComponent } from '../../../metrics'
 import { ServiceError } from '../../../utils/errors'
-import { getFileStream } from '../../../utils/files'
+import { checkFileExists, getFileStream } from '../../../utils/files'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
@@ -256,7 +256,7 @@ function getImageRequestId({ urn, hash, size, rarityBackground }: ImageRequest):
 
 // Delete all images that are not the latest version (same hash)
 async function pruneObsoleteImages(root: string, urn: string, hash: string) {
-  const existsFolder = fs.existsSync(root + `/images/` + urn + '/' + hash)
+  const existsFolder = await checkFileExists(root + `/images/` + urn + '/' + hash)
   if (!existsFolder) await cleanFolder(root + `/images/` + urn)
 }
 
@@ -272,10 +272,10 @@ async function getImage(
   const path = getImagePath(rootStorageLocation, imageRequest)
 
   // Check if the image is already in the cache, otherwise build and store it
-  if (fs.existsSync(path)) {
-    metricsComponent.increment('cache_hit')
+  if (await checkFileExists(path)) {
+    metricsComponent.increment('cache_hit', { image_size: imageRequest.size })
   } else {
-    metricsComponent.increment('cache_miss')
+    metricsComponent.increment('cache_miss', { image_size: imageRequest.size })
     await saveImage(client, rootStorageLocation, imageRequest)
 
     const storageSize = await getStorageSize(rootStorageLocation)
