@@ -80,6 +80,7 @@ export async function getStandardErc721(client: SmartContentClient, req: Request
   } catch (e) {
     if (e instanceof ServiceError) {
       res.status(e.statusCode).send(e.message)
+      return
     }
     res.status(500)
   }
