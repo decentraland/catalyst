@@ -1,9 +1,11 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
+import destroy from 'destroy'
 import { Request, Response } from 'express'
 import future, { IFuture } from 'fp-future'
 import fs from 'fs'
 import log4js from 'log4js'
 import fetch from 'node-fetch'
+import onFinished from 'on-finished'
 import sharp from 'sharp'
 import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetcher'
 
@@ -63,6 +65,8 @@ export async function getResizedImage(
     })
 
     stream.pipe(res)
+    // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
+    onFinished(res, () => destroy(stream))
   } catch (e) {
     if (e instanceof ServiceError) {
       res.status(e.statusCode).send(JSON.stringify({ status: e.statusCode, message: e.message }))
