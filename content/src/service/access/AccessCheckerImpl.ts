@@ -20,7 +20,8 @@ export class AccessCheckerImpl implements AccessChecker {
     collectionsL1SubgraphUrl,
     collectionsL2SubgraphUrl,
     blocksL1SubgraphUrl,
-    blocksL2SubgraphUrl
+    blocksL2SubgraphUrl,
+    thirdPartySubgraphUrl
   }: AccessCheckerImplParams) {
     this.accessCheckerForScenes = new AccessCheckerForScenes(
       authenticator,
@@ -35,6 +36,7 @@ export class AccessCheckerImpl implements AccessChecker {
       collectionsL2SubgraphUrl,
       blocksL1SubgraphUrl,
       blocksL2SubgraphUrl,
+      thirdPartySubgraphUrl,
       AccessCheckerImpl.LOGGER
     )
   }
@@ -61,4 +63,5 @@ export type AccessCheckerImplParams = {
   collectionsL2SubgraphUrl: string
   blocksL1SubgraphUrl: string
   blocksL2SubgraphUrl: string
+  thirdPartySubgraphUrl: string
 }

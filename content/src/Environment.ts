@@ -50,6 +50,10 @@ export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mumbai'
 export const DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
+export const DEFAULT_THIRD_PARTY_SUBGRAPH_MATIC_MUMBAI =
+  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
+export const DEFAULT_THIRD_PARTY_SUBGRAPH_MATIC_MAINNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
 
 export const CURRENT_COMMIT_HASH = process.env.COMMIT_HASH ?? 'Unknown'
 export const CURRENT_CATALYST_VERSION = process.env.CATALYST_VERSION ?? 'Unknown'
@@ -194,6 +198,7 @@ export enum EnvironmentConfig {
   CACHE_SIZES,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
+  THIRD_PARTY_SUBGRAPH_URL,
   VALIDATE_API
 }
 
@@ -334,6 +339,16 @@ export class EnvironmentBuilder {
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_BLOCKS_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_BLOCKS_SUBGRAPH_MATIC_MUMBAI)
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.THIRD_PARTY_SUBGRAPH_URL,
+      () =>
+        process.env.THIRD_PARTY_SUBGRAPH_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_THIRD_PARTY_SUBGRAPH_MATIC_MAINNET
+          : DEFAULT_THIRD_PARTY_SUBGRAPH_MATIC_MUMBAI)
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROOF_OF_WORK, () => process.env.PROOF_OF_WORK === 'true')
     this.registerConfigIfNotAlreadySet(

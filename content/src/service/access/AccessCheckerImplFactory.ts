@@ -10,7 +10,8 @@ export class AccessCheckerImplFactory {
       collectionsL1SubgraphUrl: env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL),
       collectionsL2SubgraphUrl: env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL),
       blocksL1SubgraphUrl: env.getConfig(EnvironmentConfig.BLOCKS_L1_SUBGRAPH_URL),
-      blocksL2SubgraphUrl: env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL)
+      blocksL2SubgraphUrl: env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL),
+      thirdPartySubgraphUrl: env.getConfig(EnvironmentConfig.THIRD_PARTY_SUBGRAPH_URL)
     })
   }
 }

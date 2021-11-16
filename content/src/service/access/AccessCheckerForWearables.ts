@@ -1,4 +1,4 @@
-import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
+import { BlockchainCollectionThirdParty, BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
 import { Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
@@ -15,60 +15,114 @@ export class AccessCheckerForWearables {
     private readonly collectionsL2SubgraphUrl: string,
     private readonly blocksL1SubgraphUrl: string,
     private readonly blocksL2SubgraphUrl: string,
+    private readonly thirdPartySubgraphUrl: string,
     private readonly LOGGER: log4js.Logger
   ) {}
 
   public async checkAccess({ pointers, ...accessParams }: WearablesAccessParams): Promise<string[]> {
-    const errors: string[] = []
+    if (pointers.length !== 1) return [`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`]
 
-    if (pointers.length !== 1) {
-      errors.push(`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`)
+    const pointer: Pointer = pointers[0].toLowerCase()
+    const parsed = await this.parseUrnNoFail(pointer)
+    if (!parsed)
+      return [
+        `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
+      ]
+
+    const { network, type } = parsed
+
+    const isL1Network = AccessCheckerForWearables.L1_NETWORKS.includes(network)
+    const isL2Network = AccessCheckerForWearables.L2_NETWORKS.includes(network)
+    if (!(isL1Network || isL2Network)) return [`Found an unknown network on the urn '${network}'`]
+
+    const isThirdparty = type === 'blockchain-collection-third-party'
+
+    if (isThirdparty) {
+      if (isL1Network) return [`Third-party collections are not supported on the L1 network`]
+
+      const existsItem = await this.checkItemExistence(
+        pointer,
+        this.thirdPartySubgraphUrl,
+        this.blocksL2SubgraphUrl,
+        accessParams
+      )
+      if (!existsItem) return [`The third-party item ${pointer} does not exist.`]
+      // @todo check if the third-party item is owne by the user
     } else {
-      const pointer: Pointer = pointers[0].toLowerCase()
-      const parsed = await this.parseUrnNoFail(pointer)
-      if (parsed) {
-        const { contractAddress: collection, id: itemId, network } = parsed
-        let collectionsSubgraphUrl: string
-        let blocksSubgraphUrl: string
-        if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
-          collectionsSubgraphUrl = this.collectionsL1SubgraphUrl
-          blocksSubgraphUrl = this.blocksL1SubgraphUrl
-        } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
-          collectionsSubgraphUrl = this.collectionsL2SubgraphUrl
-          blocksSubgraphUrl = this.blocksL2SubgraphUrl
-        } else {
-          errors.push(`Found an unknown network on the urn '${network}'`)
-          return errors
-        }
-
-        // Check that the address has access
-        const hasAccess = await this.checkCollectionAccess(
-          blocksSubgraphUrl,
-          collectionsSubgraphUrl,
-          collection,
-          itemId,
-          accessParams
-        )
-        if (!hasAccess) {
-          errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
-        }
-      } else {
-        errors.push(
-          `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
-        )
-      }
+      const { contractAddress: collection, id: itemId } = parsed
+      const collectionsSubgraphUrl = isL1Network ? this.collectionsL1SubgraphUrl : this.collectionsL2SubgraphUrl
+      const blocksSubgraphUrl = isL1Network ? this.blocksL1SubgraphUrl : this.blocksL2SubgraphUrl
+      // Check that the address has access
+      const hasAccess = await this.checkCollectionAccess(
+        blocksSubgraphUrl,
+        collectionsSubgraphUrl,
+        collection,
+        itemId,
+        accessParams
+      )
+      if (!hasAccess) return [`The provided Eth Address does not have access to the following wearable: (${pointer})`]
     }
-    return errors
+    return []
   }
 
-  private async parseUrnNoFail(urn: string): Promise<BlockchainCollectionV2Asset | null> {
+  private async parseUrnNoFail(
+    urn: string
+  ): Promise<BlockchainCollectionV2Asset | BlockchainCollectionThirdParty | null> {
     try {
       const parsed = await parseUrn(urn)
       if (parsed?.type === 'blockchain-collection-v2-asset') {
         return parsed as BlockchainCollectionV2Asset
+      } else if (parsed?.type === 'blockchain-collection-third-party') {
+        return parsed as BlockchainCollectionThirdParty
       }
     } catch {}
     return null
+  }
+
+  private async checkItemExistence(
+    urn: string,
+    collectionsSubgraphUrl: string,
+    blocksSubgraphUrl: string,
+    { timestamp, content, metadata }: Omit<WearablesAccessParams, 'pointers'>
+  ): Promise<boolean> {
+    try {
+      const { blockNumberAtDeployment, blockNumberFiveMinBeforeDeployment } = await this.findBlocksForTimestamp(
+        blocksSubgraphUrl,
+        timestamp
+      )
+
+      const existsOnBlock = async (blockNumber: number | undefined) =>
+        !!blockNumber && this.existsItem(collectionsSubgraphUrl, urn, blockNumber, content, metadata)
+
+      return (await existsOnBlock(blockNumberAtDeployment)) || (await existsOnBlock(blockNumberFiveMinBeforeDeployment))
+    } catch (error) {
+      this.LOGGER.error(`Error checking item existence (${urn}).`, error)
+      return false
+    }
+  }
+
+  private async existsItem(
+    subgraphUrl: string,
+    urn: string,
+    block: number,
+    content?: Map<string, string>,
+    metadata?: any
+  ): Promise<boolean> {
+    const query = `
+    query ($urn: String!, $block: Int!) {
+      items(where:{ urn: $urn}, block: { number: $block }) {
+        id,
+        contentHash
+      }
+    }
+    `
+    const hashes = await this.calculateHashes(content, metadata)
+    const result = await this.fetcher.queryGraph<{ id: string; contentHash: string } | undefined>(subgraphUrl, query, {
+      urn,
+      block
+    })
+
+    return result?.id !== undefined && hashes.includes(result?.contentHash)
   }
 
   private async checkCollectionAccess(
@@ -100,6 +154,19 @@ export class AccessCheckerForWearables {
     }
   }
 
+  private async calculateHashes(content?: Map<string, string>, metadata?: any) {
+    // Compare both by key and hash
+    const compare = (a: { key: string; hash: string }, b: { key: string; hash: string }) => {
+      if (a.hash > b.hash) return 1
+      else if (a.hash < b.hash) return -1
+      else return a.key > b.key ? 1 : -1
+    }
+    const entries = Array.from(content?.entries() ?? [])
+    const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort(compare)
+    const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
+    return Promise.all([Hashing.calculateBufferHash(buffer), Hashing.calculateIPFSHash(buffer)])
+  }
+
   private async hasPermission(
     subgraphUrl: string,
     collection: string,
@@ -118,19 +185,7 @@ export class AccessCheckerForWearables {
 
       if (!!permissions.contentHash) {
         const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
-        const calculateHashes = () => {
-          // Compare both by key and hash
-          const compare = (a: { key: string; hash: string }, b: { key: string; hash: string }) => {
-            if (a.hash > b.hash) return 1
-            else if (a.hash < b.hash) return -1
-            else return a.key > b.key ? 1 : -1
-          }
-          const entries = Array.from(content?.entries() ?? [])
-          const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort(compare)
-          const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
-          return Promise.all([Hashing.calculateBufferHash(buffer), Hashing.calculateIPFSHash(buffer)])
-        }
-        return deployedByCommittee && (await calculateHashes()).includes(permissions.contentHash)
+        return deployedByCommittee && (await this.calculateHashes(content, metadata)).includes(permissions.contentHash)
       } else {
         const addressHasAccess =
           (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
