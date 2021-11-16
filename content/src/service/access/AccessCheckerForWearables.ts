@@ -38,8 +38,6 @@ export class AccessCheckerForWearables {
     const isThirdparty = type === 'blockchain-collection-third-party'
 
     if (isThirdparty) {
-      if (isL1Network) return [`Third-party collections are not supported on the L1 network`]
-
       const existsItem = await this.checkItemExistence(
         pointer,
         this.thirdPartySubgraphUrl,

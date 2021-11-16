@@ -74,6 +74,7 @@ describe('Integration - AccessCheckerImpl', function () {
       collectionsL2SubgraphUrl: 'Unused URL',
       blocksL1SubgraphUrl: 'Unused URL',
       blocksL2SubgraphUrl: 'Unused URL',
+      thirdPartySubgraphUrl: 'Unused URL',
       ...params
     }
     return new AccessCheckerImpl(finalParams)

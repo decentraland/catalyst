@@ -107,6 +107,25 @@ describe('AccessCheckerForWearables', () => {
       verify(mockedFetcher.queryGraph(blocksL1Url, anything(), anything())).once()
       verify(mockedFetcher.queryGraph(collectionsL1Url, anything(), anything())).twice()
     })
+
+    it(`When urn network belongs to a third party wearable, then TPR subgraph is used twice`, async () => {
+      const thirdPartySubgraphUrl = 'http://thirdPartyUrl'
+      const blocksL2Url = 'http://blocksUrl'
+      const { fetcher, mockedFetcher } = fetcherWithoutAccess()
+
+      const accessChecker = buildAccessChecker({
+        fetcher,
+        blocksL2SubgraphUrl: blocksL2Url,
+        thirdPartySubgraphUrl
+      })
+
+      await checkAccess(accessChecker, {
+        pointers: ['urn:decentraland:mumbai:collections-thirdparty:thirdparty2:collection1:0']
+      })
+
+      verify(mockedFetcher.queryGraph(blocksL2Url, anything(), anything())).once()
+      verify(mockedFetcher.queryGraph(thirdPartySubgraphUrl, anything(), anything())).twice()
+    })
   })
 
   describe('Validations', () => {
@@ -171,6 +190,46 @@ describe('AccessCheckerForWearables', () => {
         expect(errors).toEqual([
           `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
         ])
+      })
+
+      describe('Given a third party urn', () => {
+        const TPW_URN = 'urn:decentraland:mumbai:collections-thirdparty:thirdparty2:collection1:0'
+        describe('When an item with given urn exists', () => {
+          const thirdPartySubgraphUrl = 'http://thirdPartyUrl'
+          const blocksL2Url = 'http://blocksUrl'
+          describe('And content hash is correct', () => {
+            it('Then validation is correct', async () => {
+              const { fetcher } = fetcherWithTPW(TPW_URN, hash)
+              const accessChecker = buildAccessChecker({
+                fetcher,
+                blocksL2SubgraphUrl: blocksL2Url,
+                thirdPartySubgraphUrl
+              })
+              const errors = await checkAccess(accessChecker, {
+                pointers: [TPW_URN],
+                metadata: METADATA,
+                content: CONTENT
+              })
+              expect(errors.length).toBe(0)
+            })
+          })
+          describe('And content hash does not match', () => {
+            const { fetcher } = fetcherWithTPW(TPW_URN, 'someOtherHash')
+            it('Then validation fails', async () => {
+              const accessChecker = buildAccessChecker({
+                fetcher,
+                blocksL2SubgraphUrl: blocksL2Url,
+                thirdPartySubgraphUrl
+              })
+              const errors = await checkAccess(accessChecker, {
+                pointers: [TPW_URN],
+                metadata: METADATA,
+                content: CONTENT
+              })
+              expect(errors).toEqual([`The third-party item ${TPW_URN} does not exist.`])
+            })
+          })
+        })
       })
     })
 
@@ -248,12 +307,20 @@ describe('AccessCheckerForWearables', () => {
   })
 
   function buildAccessChecker(params?: Partial<AccessCheckerImplParams>) {
-    const { fetcher, collectionsL1SubgraphUrl, collectionsL2SubgraphUrl, blocksL1SubgraphUrl, blocksL2SubgraphUrl } = {
+    const {
+      fetcher,
+      collectionsL1SubgraphUrl,
+      collectionsL2SubgraphUrl,
+      blocksL1SubgraphUrl,
+      blocksL2SubgraphUrl,
+      thirdPartySubgraphUrl
+    } = {
       fetcher: new Fetcher(),
       collectionsL1SubgraphUrl: 'Unused URL',
       collectionsL2SubgraphUrl: 'Unused URL',
       blocksL1SubgraphUrl: 'Unused block URL',
       blocksL2SubgraphUrl: 'Unused block URL',
+      thirdPartySubgraphUrl: 'Unused TPR URL',
       ...params
     }
     return new AccessCheckerForWearables(
@@ -262,6 +329,7 @@ describe('AccessCheckerForWearables', () => {
       collectionsL2SubgraphUrl,
       blocksL1SubgraphUrl,
       blocksL2SubgraphUrl,
+      thirdPartySubgraphUrl,
       mock(Logger)
     )
   }
@@ -288,7 +356,10 @@ describe('AccessCheckerForWearables', () => {
     return accessChecker.checkAccess(withDefaults)
   }
 
-  function mockFetcher(collection?: Partial<WearableCollection>, accounts?: string[]) {
+  function mockFetcher(
+    collection?: Partial<WearableCollection>,
+    tpw: { urn: string; contentHash: string } = { urn: '', contentHash: '' }
+  ) {
     const withDefaults = {
       collections: [
         {
@@ -312,6 +383,8 @@ describe('AccessCheckerForWearables', () => {
     when(mockedFetcher.queryGraph(anything(), anything(), anything())).thenCall((url) => {
       if (url.includes('block')) {
         return Promise.resolve({ after: [{ number: 10 }], fiveMinAfter: [{ number: 5 }] })
+      } else if (url.includes('thirdParty')) {
+        return Promise.resolve({ id: tpw.urn, contentHash: tpw.contentHash })
       } else {
         return Promise.resolve(withDefaults)
       }
@@ -323,6 +396,10 @@ describe('AccessCheckerForWearables', () => {
 
   function fetcherWithoutAccess() {
     return mockFetcher()
+  }
+
+  function fetcherWithTPW(urn: string, contentHash: string) {
+    return mockFetcher({}, { urn, contentHash })
   }
 
   function fetcherWithValidCollectionAndCreator(address: string) {
