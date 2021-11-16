@@ -74,9 +74,9 @@ export class SnapshotManager {
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
           // Format the snapshot in a buffer
-          const inArrayFormat: (string | string[])[][] = snapshot.map(({ entityId, pointers }) => [entityId, pointers])
-          const inMapFormat = new Map(inArrayFormat as any)
-          const buffer = Buffer.from(JSON.stringify(Object.fromEntries(inMapFormat)))
+          const inArrayFormat = snapshot.map(({ entityId, pointers }) => [entityId, pointers])
+          // todo: convert to uint8array
+          const buffer = Buffer.from(JSON.stringify(inArrayFormat))
 
           // Calculate the snapshot's hash
           const hash = await Hashing.calculateIPFSHash(buffer)
