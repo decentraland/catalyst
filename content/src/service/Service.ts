@@ -87,7 +87,7 @@ export type InvalidResult = { errors: string[] }
 
 export type DeploymentResult = Timestamp | InvalidResult
 
-export type DeploymentFiles = Buffer[] | Map<ContentFileHash, Buffer>
+export type DeploymentFiles = Uint8Array[] | Map<ContentFileHash, Uint8Array>
 
 export function isSuccessfulDeployment(deploymentResult: DeploymentResult): deploymentResult is Timestamp {
   return typeof deploymentResult === 'number'
