@@ -78,10 +78,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/schemas@1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-1.8.0.tgz#e97af6f881542681e3b72f4a50e44dd7269b723f"
-  integrity sha512-hWIL7lfabqBOtHq5hQ/cICegYOUnIQ/4Ds1LvfaFQ/1azDmkbdyRJmkr6JBztdp3emgzojuCyacIJTDBNXA0gw==
+"@dcl/schemas@2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-2.2.1.tgz#8e4602e3f91a2371efe0096660d46398a15e269c"
+  integrity sha512-Fiftil4oxKewr0/+IwQkBDI52GEaYaKyPgsZ8049G6qLefGiVlga/Ib+raLHw2Dxwgm5jwPFHucDSgRK1cAx0g==
   dependencies:
     ajv "^7.1.0"
 
@@ -2114,7 +2114,7 @@ cids@^0.8.0:
     multicodec "^1.0.1"
     multihashes "^1.0.1"
 
-cids@^1.0.0, cids@^1.1.5, cids@^1.1.6:
+cids@^1.0.0, cids@^1.1.5, cids@^1.1.6, cids@^1.1.9:
   version "1.1.9"
   resolved "https://registry.yarnpkg.com/cids/-/cids-1.1.9.tgz#402c26db5c07059377bcd6fb82f2a24e7f2f4a4f"
   integrity sha512-l11hWRfugIcbGuTZwAM5PwpjPPjyb6UZOGwlHSnOBV5o07XhQ4gNpBN67FbODvpjyHtd+0Xs6KNvUcGBiDRsdg==
@@ -2533,7 +2533,22 @@ dcl-catalyst-client@8.2.0:
     form-data "^4.0.0"
     log4js "^6.3.0"
 
-dcl-catalyst-commons@7.1.1, dcl-catalyst-commons@^7.1.1:
+dcl-catalyst-commons@7.1.3:
+  version "7.1.3"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.3.tgz#1c8eac2ea08173caaa9bdfebd96c26588961c601"
+  integrity sha512-mnvgTPuLw9RtFf768IsFvSJsJajgK0V3thd1IyKiEguKuhI5LYr1VzGFm4bNl34AXhqcJpMo9ykkm5Nru3r8kA==
+  dependencies:
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ipfs-only-hash "^4.0.0"
+    ms "^2.1.2"
+    multihashing-async "^2.1.4"
+    node-fetch "^3.0.0"
+
+dcl-catalyst-commons@^7.1.1:
   version "7.1.1"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.1.tgz#0f2deab62c5ce4d8c17c8971db51ed4524a0575f"
   integrity sha512-vo702lFXzZ10JsjnBVmX1TLXa8r2D/oXUWzKS27UXfijOU7WqI8VBy7/VWSwffy1SRvIWIJYYQLwIn7kl7+v+Q==
@@ -5383,7 +5398,7 @@ multihashing-async@^0.8.1:
     multihashes "^1.0.1"
     murmurhash3js-revisited "^3.0.0"
 
-multihashing-async@^2.0.0, multihashing-async@^2.1.0:
+multihashing-async@^2.0.0, multihashing-async@^2.1.0, multihashing-async@^2.1.4:
   version "2.1.4"
   resolved "https://registry.yarnpkg.com/multihashing-async/-/multihashing-async-2.1.4.tgz#26dce2ec7a40f0e7f9e732fc23ca5f564d693843"
   integrity sha512-sB1MiQXPSBTNRVSJc2zM157PXgDtud2nMFUEIvBrsq5Wv96sUclMRK/ecjoP1T/W61UJBqt4tCTwMkUpt2Gbzg==
@@ -5497,7 +5512,7 @@ node-duration@^1.0.4:
   resolved "https://registry.yarnpkg.com/node-duration/-/node-duration-1.0.4.tgz#3e94ecc0e473691c89c4560074503362071cecac"
   integrity sha512-eUXYNSY7DL53vqfTosggWkvyIW3bhAcqBDIlolgNYlZhianXTrCL50rlUJWD1eRqkIxMppXTfiFbp+9SjpPrgA==
 
-node-fetch@*:
+node-fetch@*, node-fetch@^3.0.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-3.1.0.tgz#714f4922dc270239487654eaeeab86b8206cb52e"
   integrity sha512-QU0WbIfMUjd5+MUzQOYhenAazakV7Irh1SGkWCsRzBwvm4fAhzEUaHMJ6QLP7gWT6WO9/oH2zhKMMGMuIrDyKw==
