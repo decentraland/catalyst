@@ -106,7 +106,7 @@ export class AccessCheckerForWearables {
     metadata?: any
   ): Promise<boolean> {
     const query = `
-    query ($urn: String!, $hash: String!, $block: Int!) {
+    query getItems($urn: String!, $hash: String!, $block: Int!) {
       items(where:{ urn: $urn, contentHash: $hash }, block: { number: $block }) {
         id,
         contentHash
@@ -114,13 +114,13 @@ export class AccessCheckerForWearables {
     }
     `
     const [, ipfsV2Hash] = await this.calculateHashes(content, metadata) // @todo reuse hash calculation form catalyst-commons
-    const result = await this.fetcher.queryGraph<{ id: string; contentHash: string } | undefined>(subgraphUrl, query, {
+    const result = await this.fetcher.queryGraph<ThirdPartyItems | undefined>(subgraphUrl, query, {
       urn,
       hash: ipfsV2Hash,
       block
     })
 
-    return result?.id !== undefined
+    return result?.items !== undefined && result?.items.length > 0 && result.items[0].contentHash === ipfsV2Hash
   }
 
   private async checkCollectionAccess(
@@ -341,4 +341,12 @@ export type WearableCollection = {
 type WearableCollectionItem = {
   managers: string[]
   contentHash: string
+}
+
+type ThirdPartyItem = {
+  id: string
+  contentHash: string
+}
+type ThirdPartyItems = {
+  items: ThirdPartyItem[]
 }

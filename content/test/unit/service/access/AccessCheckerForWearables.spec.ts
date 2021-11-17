@@ -384,7 +384,7 @@ describe('AccessCheckerForWearables', () => {
       if (url.includes('block')) {
         return Promise.resolve({ after: [{ number: 10 }], fiveMinAfter: [{ number: 5 }] })
       } else if (url.includes('thirdParty')) {
-        return Promise.resolve({ id: tpw.urn, contentHash: tpw.contentHash })
+        return Promise.resolve({ items: [{ id: tpw.urn, contentHash: tpw.contentHash }] })
       } else {
         return Promise.resolve(withDefaults)
       }
