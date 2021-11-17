@@ -45,7 +45,6 @@ export class AccessCheckerForWearables {
         accessParams
       )
       if (!existsItem) return [`The third-party item ${pointer} does not exist.`]
-      // @todo check if the third-party item is owne by the user
     } else {
       const { contractAddress: collection, id: itemId } = parsed
       const collectionsSubgraphUrl = isL1Network ? this.collectionsL1SubgraphUrl : this.collectionsL2SubgraphUrl
@@ -107,20 +106,21 @@ export class AccessCheckerForWearables {
     metadata?: any
   ): Promise<boolean> {
     const query = `
-    query ($urn: String!, $block: Int!) {
-      items(where:{ urn: $urn}, block: { number: $block }) {
+    query ($urn: String!, $hash: String!, $block: Int!) {
+      items(where:{ urn: $urn, contentHash: $hash }, block: { number: $block }) {
         id,
         contentHash
       }
     }
     `
-    const hashes = await this.calculateHashes(content, metadata)
+    const [, ipfsV2Hash] = await this.calculateHashes(content, metadata) // @todo reuse hash calculation form catalyst-commons
     const result = await this.fetcher.queryGraph<{ id: string; contentHash: string } | undefined>(subgraphUrl, query, {
       urn,
+      hash: ipfsV2Hash,
       block
     })
 
-    return result?.id !== undefined && hashes.includes(result?.contentHash)
+    return result?.id !== undefined
   }
 
   private async checkCollectionAccess(
