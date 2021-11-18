@@ -17,7 +17,10 @@ export async function bootstrapFromSnapshots(
     jobTimeout: 300000,
     entityTypes: [EntityType.PROFILE, EntityType.WEARABLE, EntityType.SCENE],
     components: { fetcher: createFetchComponent() },
-    deployAction: async (entity) => console.log(`Deploying ${entity}`),
+    deployAction: async (entity) => {
+      console.log(`Deploying entity ${entity.entityId} (${entity.entityType})`)
+      await deployer.deployEntityFromLocalDisk(entity.entityId, entity.auditInfo, contentStorageFolder)
+    },
     isEntityPresentLocally: async (entity) => false
   })
 }

@@ -1,5 +1,7 @@
 import { ContentFileHash, DeploymentWithAuditInfo } from 'dcl-catalyst-commons'
+import * as fs from 'fs'
 import log4js from 'log4js'
+import * as path from 'path'
 import { Readable } from 'stream'
 import { metricsComponent } from '../../metrics'
 import { Entity } from '../Entity'
@@ -10,6 +12,18 @@ import { ContentServerClient } from './clients/ContentServerClient'
 import { tryOnCluster } from './ClusterUtils'
 import { ContentCluster } from './ContentCluster'
 import { EventStreamProcessor } from './streaming/EventStreamProcessor'
+
+function buildDeploymentExecution(
+  deploymentEvent: DeploymentWithAuditInfo,
+  execution: () => Promise<DeploymentResult>
+): DeploymentExecution {
+  return {
+    metadata: {
+      deploymentEvent
+    },
+    execution
+  }
+}
 
 export class EventDeployer {
   private static readonly LOGGER = log4js.getLogger('EventDeployer')
@@ -37,6 +51,20 @@ export class EventDeployer {
     return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
 
+  async deployEntityFromLocalDisk(entityId: string, auditInfo: any, folder: string) {
+    const entityFile = await fs.promises.readFile(path.join(folder, entityId))
+
+    if (entityFile.length == 0) throw new Error('Trying to deploy empty entityFile')
+
+    return this.service.deployEntity(
+      [entityFile],
+      entityId,
+      auditInfo,
+      // TODO: revalidate LOCAL
+      DeploymentContext.LOCAL
+    )
+  }
+
   /** Download and prepare everything necessary to deploy an entity */
   private async prepareDeployment(
     deployment: DeploymentWithAuditInfo,
@@ -58,7 +86,7 @@ export class EventDeployer {
       if (auditInfo.overwrittenBy) {
         metricsComponent.increment('dcl_content_downloaded_total', { overwritten: 'true' })
         // Deploy the entity as overwritten and only download entity file to avoid storing content files for deployments that are no pointed at
-        return this.buildDeploymentExecution(deployment, () =>
+        return buildDeploymentExecution(deployment, () =>
           this.service.deployEntity(
             [entityFile],
             deployment.entityId,
@@ -79,7 +107,7 @@ export class EventDeployer {
           files.unshift(entityFile)
 
           // Since we could fetch all files, deploy the new entity normally
-          return this.buildDeploymentExecution(deployment, () =>
+          return buildDeploymentExecution(deployment, () =>
             this.service.deployEntity(
               files,
               deployment.entityId,
@@ -180,18 +208,6 @@ export class EventDeployer {
   }): Promise<null> {
     const { entityType, entityId } = options.deployment
     return this.service.reportErrorDuringSync(entityType, entityId, options.reason, options.description)
-  }
-
-  private buildDeploymentExecution(
-    deploymentEvent: DeploymentWithAuditInfo,
-    execution: () => Promise<DeploymentResult>
-  ): DeploymentExecution {
-    return {
-      metadata: {
-        deploymentEvent
-      },
-      execution
-    }
   }
 
   /** Wrap the deployment, so if it fails, we can take action */
