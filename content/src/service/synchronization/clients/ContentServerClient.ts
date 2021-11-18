@@ -18,12 +18,12 @@ export class ContentServerClient {
   private potentialLocalDeploymentTimestamp: Timestamp | undefined
 
   constructor(
-    private readonly address: ServerAddress,
+    private readonly contentUrl: ServerAddress,
     private lastLocalDeploymentTimestamp: Timestamp,
     fetcher: Fetcher,
     proofOfWorkEnabled: boolean
   ) {
-    this.client = new ContentClient({ contentUrl: address, proofOfWorkEnabled, fetcher })
+    this.client = new ContentClient({ contentUrl: contentUrl, proofOfWorkEnabled, fetcher })
   }
 
   /**
@@ -48,7 +48,7 @@ export class ContentServerClient {
         errorListener: (errorMessage) => {
           error = true
           ContentServerClient.LOGGER.error(
-            `Failed to get new entities from content server '${this.getAddress()}'\n${errorMessage}`
+            `Failed to get new entities from content server '${this.getContentUrl()}'\n${errorMessage}`
           )
         }
       },
@@ -69,7 +69,7 @@ export class ContentServerClient {
       if (!error) {
         // Update connection state
         if (this.connectionState !== ConnectionState.CONNECTED) {
-          ContentServerClient.LOGGER.info(`Could connect to '${this.address}'`)
+          ContentServerClient.LOGGER.info(`Could connect to '${this.contentUrl}'`)
         }
         this.connectionState = ConnectionState.CONNECTED
       } else {
@@ -97,8 +97,8 @@ export class ContentServerClient {
     return this.client.downloadContent(fileHash, { attempts: 3, waitTime: '0.5s' })
   }
 
-  getAddress(): ServerAddress {
-    return this.address
+  getContentUrl(): ServerAddress {
+    return this.contentUrl
   }
 
   getConnectionState(): ConnectionState {
