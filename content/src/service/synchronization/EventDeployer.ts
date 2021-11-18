@@ -46,7 +46,7 @@ export class EventDeployer {
 
     // Download the entity file
     const { end: stopTimer } = metricsComponent.startTimer('dcl_content_download_time', {
-      remote_catalyst: source?.getAddress() || 'undefined'
+      remote_catalyst: source?.getContentUrl() || 'undefined'
     })
     const entityFile: Buffer | undefined = await this.getEntityFile(deployment, source)
     stopTimer()

@@ -14,6 +14,7 @@ import { EventDeployer } from './EventDeployer'
 import { downloadDeployment } from './failed-deployments/Requests'
 import { DeploymentWithSource } from './streaming/EventStreamProcessor'
 import { streamMap } from './streaming/StreamHelper'
+import { bootstrapFromSnapshots } from './SynchronizationFromSnapshots'
 
 export interface SynchronizationManager {
   start(): Promise<void>
@@ -36,7 +37,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     private readonly service: MetaverseContentService & ClusterDeploymentsService,
     private readonly timeBetweenSyncs: number,
     private readonly disableSynchronization: boolean,
-    private readonly checkSyncRange: number
+    private readonly checkSyncRange: number,
+    private readonly contentStorageFolder: string
   ) {}
 
   async start(): Promise<void> {
@@ -44,11 +46,17 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ClusterSynchronizationManager.LOGGER.warn(`Cluster synchronization has been disabled.`)
       return
     }
+
     // Make sure the stopping flag is set to false
     this.stopping = false
 
     // Connect to the cluster
     await this.cluster.connect()
+
+    if (this.synchronizationState === SynchronizationState.BOOTSTRAPPING) {
+      await bootstrapFromSnapshots(this.cluster, this.deployer, contentStorageFolder)
+    }
+    // TODO: Check if last timestamp is correctly set (for every client)
 
     // Read last deployments
     this.lastKnownDeployments = new Map(
@@ -199,10 +207,10 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         const newTimestamp = client.allDeploymentsWereSuccessful()
 
         ClusterSynchronizationManager.LOGGER.debug(
-          `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
+          `Updating content server timestamps: ` + client.getContentUrl() + ' is ' + newTimestamp
         )
         // Update the map, so we can store it on the database
-        this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
+        this.lastKnownDeployments.set(client.getContentUrl(), newTimestamp)
       })
 
       ClusterSynchronizationManager.LOGGER.debug(`Updating system properties`)
