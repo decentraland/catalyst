@@ -54,7 +54,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     await this.cluster.connect()
 
     if (this.synchronizationState === SynchronizationState.BOOTSTRAPPING) {
-      await bootstrapFromSnapshots(this.cluster, this.deployer, contentStorageFolder)
+      await bootstrapFromSnapshots(this.cluster, this.deployer, this.contentStorageFolder)
     }
     // TODO: Check if last timestamp is correctly set (for every client)
 
