@@ -17,7 +17,7 @@ export async function buildEntityAndFile(
   timestamp: Timestamp,
   content?: Map<string, ContentFileHash>,
   metadata?: any
-): Promise<[Entity, Buffer]> {
+): Promise<[Entity, Uint8Array]> {
   const newContent = Array.from((content ?? new Map()).entries()).map(([file, hash]) => ({ file, hash }))
   const { entity, entityFile } = await buildEntityAndFileHelper({
     version: EntityVersion.V3,
