@@ -80,7 +80,7 @@ async function connectTo(
   const dbConfig = {
     ...connection,
     ...credentials,
-    max: 20,
+    max: 50,
     idleTimeoutMillis: idleTimeoutMillis,
     query_timeout: query_timeout
   }
