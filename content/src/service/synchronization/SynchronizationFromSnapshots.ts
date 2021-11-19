@@ -1,15 +1,19 @@
 import { downloadEntities } from '@dcl/snapshots-fetcher'
 import { IFetchComponent } from '@well-known-components/http-server'
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityType, Timestamp } from 'dcl-catalyst-commons'
 import * as nodeFetch from 'node-fetch'
+import { FailureReason } from '../errors/FailedDeploymentsManager'
+import { DeploymentResult } from '../Service'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
+
+type ContentUrl = string
 
 export async function bootstrapFromSnapshots(
   cluster: ContentCluster,
   deployer: EventDeployer,
   contentStorageFolder: string
-) {
+): Promise<Map<ContentUrl, Timestamp>> {
   await downloadEntities({
     catalystServers: cluster.getAllServersInCluster().map((server) => server.getContentUrl()),
     contentFolder: contentStorageFolder,
@@ -19,10 +23,26 @@ export async function bootstrapFromSnapshots(
     components: { fetcher: createFetchComponent() },
     deployAction: async (entity) => {
       console.log(`Deploying entity ${entity.entityId} (${entity.entityType})`)
-      await deployer.deployEntityFromLocalDisk(entity.entityId, entity.auditInfo, contentStorageFolder)
+      let deploymentResult: DeploymentResult = { errors: ['error'] }
+      try {
+        deploymentResult = await deployer.deployEntityFromLocalDisk(
+          entity.entityId,
+          entity.auditInfo,
+          contentStorageFolder
+        )
+      } finally {
+        if (typeof deploymentResult !== 'number') {
+          await this.reportError({
+            // TODO: add entity type
+            deployment: { entityType: 'UNKNOWN', id: entity.entityId },
+            reason: FailureReason.DEPLOYMENT_ERROR
+          })
+        }
+      }
     },
     isEntityPresentLocally: async (entity) => false
   })
+  return new Map()
 }
 
 export function createFetchComponent() {
@@ -31,6 +51,5 @@ export function createFetchComponent() {
       return nodeFetch.default(url, init)
     }
   }
-
   return fetch
 }
