@@ -53,11 +53,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     // Connect to the cluster
     await this.cluster.connect()
 
-    if (this.synchronizationState === SynchronizationState.BOOTSTRAPPING) {
-      await bootstrapFromSnapshots(this.cluster, this.deployer, this.contentStorageFolder)
-    }
-    // TODO: Check if last timestamp is correctly set (for every client)
-
     // Read last deployments
     this.lastKnownDeployments = new Map(
       await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
@@ -175,6 +170,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
     } else {
       metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
+      await bootstrapFromSnapshots(this.cluster, this.deployer, this.contentStorageFolder)
+      // TODO: Check if last timestamp is correctly set (for every client)
     }
 
     ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)

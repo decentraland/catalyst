@@ -386,10 +386,10 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/snapshots-fetcher@1.0.0-20211118192502.commit-b6319ef":
-  version "1.0.0-20211118192502.commit-b6319ef"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-1.0.0-20211118192502.commit-b6319ef.tgz#ebe65e376b288c4a3d56dded4565e9fd6e3d0f6b"
-  integrity sha512-DMVISwxaTTPveTXfEgU9owkLCij54ydS7quBHb2JwV7M4mImUH35kRCvzPtJCetG7wLF9SugbP6WyusRC8z2Xg==
+"@dcl/snapshots-fetcher@^1.0.0-20211118201547.commit-d162465":
+  version "1.0.0-20211118201547.commit-d162465"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-1.0.0-20211118201547.commit-d162465.tgz#141142b9a70f4075a47b8a7bd45d6ff474460431"
+  integrity sha512-9Dyzs+DVHVVX4yVKOQ9D6+jE2WuT/FofzOg9gwGlIYvPzezgnOpjeiqiXLcgdbhteX/ZB6GmpEZiHwCkZ/FimQ==
   dependencies:
     "@microsoft/api-extractor" "^7.18.19"
     "@well-known-components/http-server" "^1.1.1"
