@@ -29,6 +29,5 @@
   "files.trimTrailingWhitespace": true,
   "files.trimFinalNewlines": true,
   "jasmineExplorer.nodeArgv": ["-r", "ts-node/register"],
-  "jasmineExplorer.config": "jasmine.json",
-  "editor.formatOnType": true
+  "jasmineExplorer.config": "jasmine.json"
 }

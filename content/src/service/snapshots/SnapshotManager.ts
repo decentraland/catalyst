@@ -24,6 +24,10 @@ export class SnapshotManager {
     service.listenToDeployments((deployment) => this.onDeployment(deployment))
   }
 
+  getSnapshotsFrequencyInMilliseconds(): number {
+    return this.snapshotFrequencyInMilliSeconds
+  }
+
   startSnapshotsPerEntity(): Promise<void> {
     return this.repository.txIf(
       async (transaction) => {
@@ -49,7 +53,7 @@ export class SnapshotManager {
     )
   }
 
-  startFullSnapshots(): Promise<void> {
+  async startFullSnapshots(): Promise<void> {
     const currentTimestamp: number = Date.now()
     return this.repository.txIf(
       async (transaction) => {

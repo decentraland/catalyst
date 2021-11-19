@@ -1,4 +1,4 @@
-import { initializeMetricsServer } from '@catalyst/commons'
+import { delay, initializeMetricsServer } from '@catalyst/commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import compression from 'compression'
 import cors from 'cors'
@@ -166,9 +166,18 @@ export class Server {
       await this.metricsServer.start()
     }
     await this.snapshotManager.startSnapshotsPerEntity()
-    await this.snapshotManager.startFullSnapshots()
+    // TODO: Add a check for latest snapshot, metric or alarm
+    this.configureFullSnapshotsToRun()
+      .catch(() => Server.LOGGER.error('There was an error during the configuration of snapshots.'))
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
+  }
+
+  private async configureFullSnapshotsToRun(): Promise<void> {
+    while (true) {
+      delay(this.snapshotManager.getSnapshotsFrequencyInMilliseconds());
+      await this.snapshotManager.startFullSnapshots();
+    }
   }
 
   async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
@@ -185,7 +194,7 @@ export class Server {
     }
   }
 
-  private async validateHistory() {
+  private async validateHistory(): Promise<void> {
     // Validate last history entry is before Date.now()
     const lastDeployments = await this.service.getDeployments({ offset: 0, limit: 1 })
     if (lastDeployments.deployments.length > 0) {
