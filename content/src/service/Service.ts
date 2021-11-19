@@ -64,7 +64,7 @@ export interface ClusterDeploymentsService {
     errorDescription?: string
   ): Promise<null>
   deployEntity(
-    files: Buffer[],
+    files: Uint8Array[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext,

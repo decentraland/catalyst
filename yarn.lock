@@ -71,10 +71,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/schemas@1.8.0":
-  version "1.8.0"
-  resolved "https://registry.npmjs.org/@dcl/schemas/-/schemas-1.8.0.tgz"
-  integrity sha512-hWIL7lfabqBOtHq5hQ/cICegYOUnIQ/4Ds1LvfaFQ/1azDmkbdyRJmkr6JBztdp3emgzojuCyacIJTDBNXA0gw==
+"@dcl/schemas@2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-2.2.1.tgz#8e4602e3f91a2371efe0096660d46398a15e269c"
+  integrity sha512-Fiftil4oxKewr0/+IwQkBDI52GEaYaKyPgsZ8049G6qLefGiVlga/Ib+raLHw2Dxwgm5jwPFHucDSgRK1cAx0g==
   dependencies:
     ajv "^7.1.0"
 
@@ -2513,7 +2513,7 @@ date-format@^3.0.0:
   resolved "https://registry.npmjs.org/date-format/-/date-format-3.0.0.tgz"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@^9.0.3:
+dcl-catalyst-client@9.0.3:
   version "9.0.3"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-9.0.3.tgz#c41dc1de03c414de54e0c5ab0c51fe68c0044ab9"
   integrity sha512-TSRzHu7LQWMnNHizohvBYhceQEvhtDnXOiaeMMRPyIQjpKPIC0HHAhqoGugeWOI5j+XC6ay34W+lFHoQ2jS1vA==
@@ -2525,7 +2525,7 @@ dcl-catalyst-client@^9.0.3:
     form-data "^4.0.0"
     log4js "^6.3.0"
 
-dcl-catalyst-commons@^7.1.3:
+dcl-catalyst-commons@7.1.3, dcl-catalyst-commons@^7.1.3:
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.3.tgz#1c8eac2ea08173caaa9bdfebd96c26588961c601"
   integrity sha512-mnvgTPuLw9RtFf768IsFvSJsJajgK0V3thd1IyKiEguKuhI5LYr1VzGFm4bNl34AXhqcJpMo9ykkm5Nru3r8kA==
