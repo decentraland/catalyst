@@ -609,7 +609,7 @@ export class Controller {
       return
     }
 
-    const metadata = this.snapshotManager.getSnapshotMetadata(type)
+    const metadata = this.snapshotManager.getSnapshotMetadataPerEntityType(type)
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })

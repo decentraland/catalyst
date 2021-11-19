@@ -165,7 +165,8 @@ export class Server {
     if (this.metricsServer) {
       await this.metricsServer.start()
     }
-    await this.snapshotManager.start()
+    await this.snapshotManager.startSnapshotsPerEntity()
+    await this.snapshotManager.startFullSnapshots()
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
   }

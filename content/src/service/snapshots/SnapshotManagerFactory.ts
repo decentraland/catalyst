@@ -7,7 +7,8 @@ export class SnapshotManagerFactory {
       env.getBean(Bean.SYSTEM_PROPERTIES_MANAGER),
       env.getBean(Bean.REPOSITORY),
       env.getBean(Bean.SERVICE),
-      env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY)
+      env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY),
+      env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
     )
   }
 }

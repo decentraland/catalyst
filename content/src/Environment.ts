@@ -183,6 +183,7 @@ export enum EnvironmentConfig {
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
   SNAPSHOT_FREQUENCY,
+  SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
   SYNC_STREAM_TIMEOUT,
@@ -389,6 +390,11 @@ export class EnvironmentBuilder {
           [EntityType.PROFILE, 500],
           [EntityType.WEARABLE, 50]
         ])
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
+      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('15m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO, () => process.env.CUSTOM_DAO)
 

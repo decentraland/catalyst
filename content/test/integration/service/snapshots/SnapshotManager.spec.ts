@@ -38,13 +38,13 @@ describe('Integration - Snapshot Manager', () => {
     const deploymentResult = await deployEntitiesCombo(service, E1, E2)
 
     // Assert there is no snapshot
-    expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
+    expect(snapshotManager.getSnapshotMetadataPerEntityType(EntityType.SCENE)).toBeUndefined()
 
     // Start the snapshot manager
-    await snapshotManager.start()
+    await snapshotManager.startSnapshotsPerEntity()
 
     // Assert snapshot was created
-    const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
+    const snapshotMetadata = snapshotManager.getSnapshotMetadataPerEntityType(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
 
     assertResultIsSuccessfulWithTimestamp(deploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
@@ -55,13 +55,13 @@ describe('Integration - Snapshot Manager', () => {
 
   it(`When snapshot manager starts, if there were no entities deployed, then the generated snapshot is empty`, async () => {
     // Assert there is no snapshot
-    expect(snapshotManager.getSnapshotMetadata(EntityType.SCENE)).toBeUndefined()
+    expect(snapshotManager.getSnapshotMetadataPerEntityType(EntityType.SCENE)).toBeUndefined()
 
     // Start the snapshot manager
-    await snapshotManager.start()
+    await snapshotManager.startSnapshotsPerEntity()
 
     // Assert snapshot was created
-    const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
+    const snapshotMetadata = snapshotManager.getSnapshotMetadataPerEntityType(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
     expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(0)
 
@@ -71,13 +71,13 @@ describe('Integration - Snapshot Manager', () => {
 
   it(`When snapshot manager learns that the frequency of deployments is reached, then a new snapshot is generated`, async () => {
     // Start the snapshot manager
-    await snapshotManager.start()
+    await snapshotManager.startSnapshotsPerEntity()
 
     // Deploy E1, E2 and E3
     const lastDeploymentResult = await deployEntitiesCombo(service, E1, E2, E3)
 
     // Assert snapshot was created
-    const snapshotMetadata = snapshotManager.getSnapshotMetadata(EntityType.SCENE)
+    const snapshotMetadata = snapshotManager.getSnapshotMetadataPerEntityType(EntityType.SCENE)
     expect(snapshotMetadata).toBeDefined()
     assertResultIsSuccessfulWithTimestamp(lastDeploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
 

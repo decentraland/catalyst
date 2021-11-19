@@ -1,5 +1,6 @@
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
+import { FullSnapshot } from 'src/repository/extensions/DeploymentsRepository'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
@@ -11,21 +12,26 @@ export class SnapshotManager {
   private static readonly LOGGER = log4js.getLogger('SnapshotManager')
   private readonly counter: Map<EntityType, number> = new Map()
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
+  private lastSnapshotsForAllEntityTypes: SnapshotMetadata | undefined = undefined
 
   constructor(
     private readonly systemPropertiesManager: SystemPropertiesManager,
     private readonly repository: Repository,
     private readonly service: MetaverseContentService,
-    private readonly snapshotFrequency: Map<EntityType, number>
+    private readonly snapshotFrequency: Map<EntityType, number>,
+    private readonly snapshotFrequencyInMilliSeconds: number
   ) {
     service.listenToDeployments((deployment) => this.onDeployment(deployment))
   }
 
-  start(): Promise<void> {
+  startSnapshotsPerEntity(): Promise<void> {
     return this.repository.txIf(
       async (transaction) => {
         this.lastSnapshots = new Map(
-          await this.systemPropertiesManager.getSystemProperty(SystemProperty.LAST_SNAPSHOTS, transaction)
+          await this.systemPropertiesManager.getSystemProperty(
+            SystemProperty.LAST_FULL_SNAPSHOTS_PER_ENTITY,
+            transaction
+          )
         )
         for (const entityType of Object.values(EntityType)) {
           const snapshot = this.lastSnapshots.get(entityType)
@@ -35,7 +41,7 @@ export class SnapshotManager {
             (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >=
               typeFrequency
           ) {
-            await this.generateSnapshot(entityType, transaction)
+            await this.generateSnapshotPerEntityType(entityType, transaction)
           }
         }
       },
@@ -43,8 +49,33 @@ export class SnapshotManager {
     )
   }
 
-  getSnapshotMetadata(entityType: EntityType): SnapshotMetadata | undefined {
+  startFullSnapshots(): Promise<void> {
+    const currentTimestamp: number = Date.now()
+    return this.repository.txIf(
+      async (transaction) => {
+        this.lastSnapshotsForAllEntityTypes = await this.systemPropertiesManager.getSystemProperty(
+          SystemProperty.LAST_FULL_SNAPSHOTS,
+          transaction
+        )
+
+        if (
+          !this.lastSnapshotsForAllEntityTypes ||
+          currentTimestamp - this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp >
+            this.snapshotFrequencyInMilliSeconds
+        ) {
+          await this.generateSnapshot(transaction)
+        }
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
+  }
+
+  getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined {
     return this.lastSnapshots.get(entityType)
+  }
+
+  getSnapshotMetadataForAllEntityType(): SnapshotMetadata | undefined {
+    return this.lastSnapshotsForAllEntityTypes
   }
 
   private async onDeployment({ entity }: { entity: Entity }): Promise<void> {
@@ -55,12 +86,12 @@ export class SnapshotManager {
 
     // If the number of deployments reaches the frequency, then generate a snapshot
     if (updatedCounter >= this.getFrequencyForType(type)) {
-      await this.generateSnapshot(type)
+      await this.generateSnapshotPerEntityType(type)
     }
   }
 
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
-  private async generateSnapshot(entityType: EntityType, task?: Database): Promise<void> {
+  private async generateSnapshotPerEntityType(entityType: EntityType, task?: Database): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
     await this.repository.reuseIfPresent(
@@ -68,7 +99,7 @@ export class SnapshotManager {
       (db) =>
         db.txIf(async (transaction) => {
           // Get the active entities
-          const snapshot = await transaction.deployments.getSnapshot(entityType)
+          const snapshot = await transaction.deployments.getSnapshotPerEntityType(entityType)
 
           // Calculate the local deployment timestamp of the newest entity in the snapshot
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
@@ -103,6 +134,51 @@ export class SnapshotManager {
     }
   }
 
+  /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
+  private async generateSnapshot(task?: Database): Promise<void> {
+    const previousFullSnapshot = this.lastSnapshotsForAllEntityTypes
+
+    await this.repository.reuseIfPresent(
+      task,
+      (db) =>
+        db.txIf(async (transaction) => {
+          // Get all the active entities
+          const snapshot: FullSnapshot[] = await transaction.deployments.getFullSnapshot()
+
+          // Calculate the local deployment timestamp of the newest entity in the snapshot
+          const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
+
+          // Format the snapshot in a buffer
+          const buffer = Buffer.from(snapshot.join('\n'))
+
+          // Calculate the snapshot's hash
+          const hash = await Hashing.calculateIPFSHash(buffer)
+
+          // Store the new snapshot
+          await this.service.storeContent(hash, buffer)
+
+          // Store the metadata
+          this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
+          await this.systemPropertiesManager.setSystemProperty(
+            SystemProperty.LAST_FULL_SNAPSHOTS,
+            this.lastSnapshotsForAllEntityTypes,
+            db
+          )
+
+          // Log
+          SnapshotManager.LOGGER.debug(
+            `Generated snapshot for all entity types. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+          )
+        }),
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
+
+    // Delete the previous full snapshot (if it exists)
+    if (previousFullSnapshot) {
+      await this.service.deleteContent([previousFullSnapshot.hash])
+    }
+  }
+
   private deploymentsSince(entityType: EntityType, timestamp: Timestamp, db: Database): Promise<number> {
     return db.deployments.deploymentsSince(entityType, timestamp)
   }
@@ -115,7 +191,7 @@ export class SnapshotManager {
   ) {
     this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
     return this.systemPropertiesManager.setSystemProperty(
-      SystemProperty.LAST_SNAPSHOTS,
+      SystemProperty.LAST_FULL_SNAPSHOTS_PER_ENTITY,
       Array.from(this.lastSnapshots.entries()),
       db
     )

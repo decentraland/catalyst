@@ -9,9 +9,18 @@ import {
   SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { AuthChain, Authenticator } from 'dcl-crypto'
+import { Entity } from 'src/service/Entity'
 import { Database } from '../../repository/Database'
-import { Entity } from '../../service/Entity'
+
+export type FullSnapshot = {
+  entityId: EntityId
+  entityType: EntityType
+  pointers: Pointer[]
+  localTimestamp: Timestamp
+  authChain: AuthChain
+}
+
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
@@ -176,7 +185,24 @@ export class DeploymentsRepository {
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
-  getSnapshot(
+  getFullSnapshot(): Promise<FullSnapshot[]> {
+    return this.db.map(
+      `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
+        `FROM deployments ` +
+        `WHERE deleter_deployment IS NULL ` +
+        `ORDER BY local_timestamp DESC, LOWER(entity_id) DESC`,
+      [],
+      (row) => ({
+        entityId: row.entity_id,
+        entityType: row.entity_type,
+        pointers: row.entity_pointers,
+        localTimestamp: row.local_timestamp,
+        authChain: row.auth_chain
+      })
+    )
+  }
+
+  getSnapshotPerEntityType(
     entityType: EntityType
   ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
     return this.db.map(
