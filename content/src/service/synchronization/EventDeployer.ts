@@ -51,18 +51,19 @@ export class EventDeployer {
     return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
 
-  async deployEntityFromLocalDisk(entityId: string, auditInfo: any, folder: string) {
+  async deployEntityFromLocalDisk(entityId: string, auditInfo: any, folder: string): Promise<DeploymentResult> {
     const entityFile = await fs.promises.readFile(path.join(folder, entityId))
 
     if (entityFile.length == 0) throw new Error('Trying to deploy empty entityFile')
 
-    return this.service.deployEntity(
+    const deploymentResult = this.service.deployEntity(
       [entityFile],
       entityId,
       auditInfo,
       // TODO: revalidate LOCAL
       DeploymentContext.LOCAL
     )
+    return deploymentResult
   }
 
   /** Download and prepare everything necessary to deploy an entity */
@@ -201,7 +202,7 @@ export class EventDeployer {
   }
 
   private reportError(options: {
-    deployment: DeploymentWithAuditInfo
+    deployment: { entityType; entityId }
     reason: FailureReason
     description?: string
     source?: ContentServerClient
