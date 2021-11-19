@@ -1,5 +1,5 @@
 import { BlockchainCollectionThirdParty, BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
-import { Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { EntityContentItemReference, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
 import ms from 'ms'
@@ -113,14 +113,23 @@ export class AccessCheckerForWearables {
       }
     }
     `
-    const [, ipfsV2Hash] = await this.calculateHashes(content, metadata) // @todo reuse hash calculation form catalyst-commons
+    const contents = this.contentToItemReferences(content)
+    const { hash } = await Hashing.calculateMultipleHashesADR32(contents, metadata)
+
     const result = await this.fetcher.queryGraph<ThirdPartyItems | undefined>(subgraphUrl, query, {
       urn,
-      hash: ipfsV2Hash,
+      hash,
       block
     })
 
-    return result?.items !== undefined && result?.items.length > 0 && result.items[0].contentHash === ipfsV2Hash
+    return result?.items !== undefined && result?.items.length > 0 && result.items[0].contentHash === hash
+  }
+
+  private contentToItemReferences(content: Map<string, string> | undefined): EntityContentItemReference[] {
+    return Array.from(content?.entries() ?? []).map((entry) => ({
+      file: entry[0],
+      hash: entry[1]
+    }))
   }
 
   private async checkCollectionAccess(
@@ -152,19 +161,6 @@ export class AccessCheckerForWearables {
     }
   }
 
-  private async calculateHashes(content?: Map<string, string>, metadata?: any) {
-    // Compare both by key and hash
-    const compare = (a: { key: string; hash: string }, b: { key: string; hash: string }) => {
-      if (a.hash > b.hash) return 1
-      else if (a.hash < b.hash) return -1
-      else return a.key > b.key ? 1 : -1
-    }
-    const entries = Array.from(content?.entries() ?? [])
-    const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort(compare)
-    const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
-    return Promise.all([Hashing.calculateBufferHash(buffer), Hashing.calculateIPFSHash(buffer)])
-  }
-
   private async hasPermission(
     subgraphUrl: string,
     collection: string,
@@ -183,7 +179,12 @@ export class AccessCheckerForWearables {
 
       if (!!permissions.contentHash) {
         const deployedByCommittee = permissions.committee.includes(ethAddressLowercase)
-        return deployedByCommittee && (await this.calculateHashes(content, metadata)).includes(permissions.contentHash)
+        const contents = this.contentToItemReferences(content)
+        const hashes = [
+          (await Hashing.calculateMultipleHashesADR32(contents, metadata)).hash,
+          (await Hashing.calculateMultipleHashesADR32LegacyQmHash(contents, metadata)).hash
+        ]
+        return deployedByCommittee && hashes.includes(permissions.contentHash)
       } else {
         const addressHasAccess =
           (permissions.collectionCreator && permissions.collectionCreator === ethAddressLowercase) ||
