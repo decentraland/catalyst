@@ -51,7 +51,7 @@ export class EventDeployer {
     return this.eventProcessor.processDeployments(deployments, options, shouldIgnoreTimeout)
   }
 
-  async deployEntityFromLocalDisk(entityId: string, auditInfo: any, folder: string): Promise<DeploymentResult> {
+  async deployEntityFromLocalDisk(entityId: string, authChain: any[], folder: string): Promise<DeploymentResult> {
     const entityFile = await fs.promises.readFile(path.join(folder, entityId))
 
     if (entityFile.length == 0) throw new Error('Trying to deploy empty entityFile')
@@ -59,7 +59,7 @@ export class EventDeployer {
     const deploymentResult = this.service.deployEntity(
       [entityFile],
       entityId,
-      auditInfo,
+      { authChain },
       // TODO: revalidate LOCAL
       DeploymentContext.LOCAL
     )
