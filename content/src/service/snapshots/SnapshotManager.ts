@@ -153,7 +153,24 @@ export class SnapshotManager {
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
           // Format the snapshot in a buffer
-          const buffer = Buffer.from(snapshot.join('\n'))
+          const tmpFile = resolve(contentFolder, 'tmp-snapshot' + Math.random())
+          const writeStream = fs.createWriteStream(tmpFile)
+          try {
+            for (const snapshotElem of snapshot) {
+              writeStream.write(JSON.stringify(snapshotElem) + '\n')
+            }
+          } finally {
+            writeStream.close()
+          }
+          
+          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after 
+          //       https://github.com/decentraland/snapshots-fetcher/pull/4/files is merged
+          const hash = await Hashing.calculateIPFSHash(
+            await fs.promises.readFile(tmpFile)
+          )
+          
+          // set the correct name
+          await fs.promises.rename(tmpFile, resolve(content, hash))
 
           // Calculate the snapshot's hash
           const hash = await Hashing.calculateIPFSHash(buffer)
