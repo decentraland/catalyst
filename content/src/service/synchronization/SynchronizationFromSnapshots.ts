@@ -1,4 +1,4 @@
-import { downloadEntities } from '@dcl/snapshots-fetcher'
+import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { EntityType, Timestamp } from 'dcl-catalyst-commons'
 import * as nodeFetch from 'node-fetch'

@@ -1,4 +1,5 @@
 import { IPFSv2 } from '@dcl/schemas'
+import { ChainableTemporaryCredentials } from 'aws-sdk'
 import {
   AuditInfo,
   ContentFileHash,
