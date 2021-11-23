@@ -1,5 +1,7 @@
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
+import * as fs from 'fs'
 import log4js from 'log4js'
+import * as path from 'path'
 import { FullSnapshot } from 'src/repository/extensions/DeploymentsRepository'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
@@ -19,7 +21,8 @@ export class SnapshotManager {
     private readonly repository: Repository,
     private readonly service: MetaverseContentService,
     private readonly snapshotFrequency: Map<EntityType, number>,
-    private readonly snapshotFrequencyInMilliSeconds: number
+    private readonly snapshotFrequencyInMilliSeconds: number,
+    private readonly contentStorageFolder: string
   ) {
     service.listenToDeployments((deployment) => this.onDeployment(deployment))
   }
@@ -53,7 +56,8 @@ export class SnapshotManager {
     )
   }
 
-  async startFullSnapshots(): Promise<void> {
+  async calculateFullSnapshots(): Promise<void> {
+    // TODO: Add metrics regarding snapshots
     const currentTimestamp: number = Date.now()
     return this.repository.txIf(
       async (transaction) => {
@@ -79,7 +83,21 @@ export class SnapshotManager {
   }
 
   getSnapshotMetadataForAllEntityType(): SnapshotMetadata | undefined {
+    if (this.newSnapshotShouldBeGenerated()) {
+      this.calculateFullSnapshots().catch((error) =>
+        SnapshotManager.LOGGER.debug(`There was an error calculating full snapshots due to ${error}`)
+      )
+    }
     return this.lastSnapshotsForAllEntityTypes
+  }
+
+  private newSnapshotShouldBeGenerated() {
+    return (
+      !!this.lastSnapshotsForAllEntityTypes &&
+      !!this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp &&
+      this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp + this.snapshotFrequencyInMilliSeconds <
+        Date.now()
+    )
   }
 
   private async onDeployment({ entity }: { entity: Entity }): Promise<void> {
@@ -153,7 +171,7 @@ export class SnapshotManager {
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
           // Format the snapshot in a buffer
-          const tmpFile = resolve(contentFolder, 'tmp-snapshot' + Math.random())
+          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot' + Math.random())
           const writeStream = fs.createWriteStream(tmpFile)
           try {
             for (const snapshotElem of snapshot) {
@@ -162,21 +180,13 @@ export class SnapshotManager {
           } finally {
             writeStream.close()
           }
-          
-          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after 
+
+          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after
           //       https://github.com/decentraland/snapshots-fetcher/pull/4/files is merged
-          const hash = await Hashing.calculateIPFSHash(
-            await fs.promises.readFile(tmpFile)
-          )
-          
+          const hash = await Hashing.calculateIPFSHash(await fs.promises.readFile(tmpFile))
+
           // set the correct name
-          await fs.promises.rename(tmpFile, resolve(content, hash))
-
-          // Calculate the snapshot's hash
-          const hash = await Hashing.calculateIPFSHash(buffer)
-
-          // Store the new snapshot
-          await this.service.storeContent(hash, buffer)
+          await fs.promises.rename(tmpFile, path.resolve(this.contentStorageFolder, hash))
 
           // Store the metadata
           this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }

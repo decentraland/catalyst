@@ -8,7 +8,8 @@ export class SnapshotManagerFactory {
       env.getBean(Bean.REPOSITORY),
       env.getBean(Bean.SERVICE),
       env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY),
-      env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
+      env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS),
+      env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
     )
   }
 }
