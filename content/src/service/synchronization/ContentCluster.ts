@@ -26,6 +26,8 @@ export class ContentCluster implements IdentityProvider {
   // Time of last sync with the DAO
   private timeOfLastSync: Timestamp = 0
 
+  private syncFinishedEventCallbacks: Array<() => void> = []
+
   constructor(
     private readonly dao: DAOClient,
     private readonly timeBetweenSyncs: number,
@@ -46,6 +48,13 @@ export class ContentCluster implements IdentityProvider {
 
     // Perform first sync with the DAO
     await this.syncWithDAO()
+  }
+
+  /**
+   * Registers an event that is emitted every time the list of catalysts is refreshed.
+   */
+  onSyncFinished(cb: () => void) {
+    this.syncFinishedEventCallbacks.push(cb)
   }
 
   /** Stop syncing with DAO */
@@ -118,6 +127,11 @@ export class ContentCluster implements IdentityProvider {
 
       // Update sync time
       this.timeOfLastSync = Date.now()
+
+      for (const cb of this.syncFinishedEventCallbacks) {
+        cb()
+      }
+
       ContentCluster.LOGGER.debug(`Finished sync with DAO`)
     } catch (error) {
       ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)

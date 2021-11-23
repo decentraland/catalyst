@@ -16,7 +16,7 @@
     "@catalyst/contracts": "0.1.0",
     "@dcl/catalyst-api-specs": "1.0.1",
     "@dcl/schemas": "1.8.0",
-    "@dcl/snapshots-fetcher": "^1.0.0-20211118201547.commit-d162465",
+    "@dcl/snapshots-fetcher": "^1.0.0-20211123222527.commit-75296da",
     "@dcl/urn-resolver": "1.2.1",
     "aws-sdk": "2.1006.0",
     "compression": "1.7.4",
