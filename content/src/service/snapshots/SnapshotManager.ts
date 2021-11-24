@@ -1,3 +1,4 @@
+import { checkFileExists, tmpFile as createTempFile } from '@dcl/snapshots-fetcher/dist/utils'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import log4js from 'log4js'
@@ -72,13 +73,6 @@ export class SnapshotManager {
             this.snapshotFrequencyInMilliSeconds
         ) {
           await this.generateSnapshot(transaction)
-          //   .catch((error) => {
-
-          //   console.error("there was an error", error)
-          //   // SnapshotManager.LOGGER.debug(
-          //   //   `There was an error during snapshots generation: ${error}`
-          //   // )
-          // })
         }
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
@@ -90,21 +84,7 @@ export class SnapshotManager {
   }
 
   getSnapshotMetadataForAllEntityType(): SnapshotMetadata | undefined {
-    if (this.newSnapshotShouldBeGenerated()) {
-      this.calculateFullSnapshots().catch((error) =>
-        SnapshotManager.LOGGER.debug(`There was an error calculating full snapshots due to ${error}`)
-      )
-    }
     return this.lastSnapshotsForAllEntityTypes
-  }
-
-  private newSnapshotShouldBeGenerated() {
-    return (
-      !!this.lastSnapshotsForAllEntityTypes &&
-      !!this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp &&
-      this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp + this.snapshotFrequencyInMilliSeconds <
-        Date.now()
-    )
   }
 
   private async onDeployment({ entity }: { entity: Entity }): Promise<void> {
@@ -178,10 +158,15 @@ export class SnapshotManager {
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
           // Format the snapshot in a buffer
-          fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
-          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+          // fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
+          const tmpFile = await createTempFile('snapshot')
+          // path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
           console.log(`Name of file: ${tmpFile}`)
           const writeStream = fs.createWriteStream(tmpFile)
+          const fileClosedFuture = new Promise<void>((resolve, reject) => {
+            writeStream.on('finish', resolve)
+            writeStream.on('error', reject)
+          })
           console.log(`File written`)
           try {
             for (const snapshotElem of snapshot) {
@@ -189,18 +174,30 @@ export class SnapshotManager {
             }
           } finally {
             writeStream.close()
-            writeStream.end()
+            await fileClosedFuture
+            // writeStream.end()
           }
           console.log(`Stream closed`)
 
-          const contentFromFile = await fs.readFileSync(tmpFile)
+          const contentFromFile = await fs.promises.readFile(tmpFile)
           console.log(`Could read file`)
           // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after
           //       https://github.com/decentraland/snapshots-fetcher/pull/4/files is merged
           const hash = await Hashing.calculateIPFSHash(contentFromFile)
 
+          console.log(`Hash of the file: ${hash}`)
           // set the correct name
-          await fs.promises.rename(tmpFile, path.resolve(this.contentStorageFolder, hash))
+          const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
+          console.log(`Moving to: ${destinationFilename}`)
+
+          // delete target file if exists
+          if (await checkFileExists(destinationFilename)) {
+            await fs.promises.unlink(destinationFilename)
+          }
+
+          console.log(`Renaming file from: ${tmpFile} to: ${destinationFilename}`)
+          // move downloaded file to target folder
+          await fs.promises.rename(tmpFile, destinationFilename)
 
           // Store the metadata
           this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
