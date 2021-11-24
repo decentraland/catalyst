@@ -618,6 +618,20 @@ export class Controller {
     }
   }
 
+
+  getAllSnapshots(req: express.Request, res: express.Response) {
+    // Method: GET
+    // Path: /snapshot
+
+    const metadata = this.snapshotManager.getSnapshotMetadataForAllEntityType()
+
+    if (!metadata) {
+      res.status(503).send({ error: 'Snapshot not yet created' })
+    } else {
+      res.send(metadata)
+    }
+  }
+
   async addToDenylist(req: express.Request, res: express.Response): Promise<void> {
     // Method: PUT
     // Path: /denylist/{type}/{id}

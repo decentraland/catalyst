@@ -107,6 +107,7 @@ export class Server {
     this.registerRoute('/pointerChanges', controller, controller.getPointerChanges) // TODO: Deprecate
     this.registerRoute('/pointer-changes', controller, controller.getPointerChanges)
     this.registerRoute('/snapshot/:type', controller, controller.getSnapshot)
+    this.registerRoute('/snapshot', controller, controller.getAllSnapshots)
 
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute('/legacy-entities', controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())
