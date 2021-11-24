@@ -77,36 +77,38 @@ export function createDeployerComponent(
 
       deploymentsMap.set(entity.entityId, elementInMap)
 
-      parallelDeploymentJobs.scheduleJobWithRetries(async () => {
-        logs.debug(`Downloading entity ${entity.entityId} (${entity.entityType})`)
+      parallelDeploymentJobs
+        .scheduleJobWithRetries(async () => {
+          logs.debug(`Downloading entity ${entity.entityId} (${entity.entityType})`)
 
-        await downloadEntityAndContentFiles(
-          components,
-          entity.entityId,
-          elementInMap!.servers,
-          serverLru,
-          options.contentStorageFolder,
-          requestMaxRetries,
-          requestRetryWaitTime
-        )
-
-        logs.debug(`Deploying entity ${entity.entityId} (${entity.entityType})`)
-
-        try {
-          await options.eventDeployer.deployEntityFromLocalDisk(
+          await downloadEntityAndContentFiles(
+            components,
             entity.entityId,
-            entity.authChain,
-            options.contentStorageFolder
+            elementInMap!.servers,
+            serverLru,
+            options.contentStorageFolder,
+            requestMaxRetries,
+            requestRetryWaitTime
           )
-        } catch (e: any) {
-          logs.error(e)
-          await options.eventDeployer.reportError({
-            deployment: { entityType: entity.entityType as EntityType, entityId: entity.entityId },
-            reason: FailureReason.DEPLOYMENT_ERROR,
-            description: (e || 'Unknown error').toString()
-          })
-        }
-      }, 10)
+
+          logs.debug(`Deploying entity ${entity.entityId} (${entity.entityType})`)
+
+          try {
+            await options.eventDeployer.deployEntityFromLocalDisk(
+              entity.entityId,
+              entity.authChain,
+              options.contentStorageFolder
+            )
+          } catch (e: any) {
+            logs.error(e)
+            await options.eventDeployer.reportError({
+              deployment: { entityType: entity.entityType as EntityType, entityId: entity.entityId },
+              reason: FailureReason.DEPLOYMENT_ERROR,
+              description: (e || 'Unknown error').toString()
+            })
+          }
+        }, 10)
+        .catch(logs.error)
     }
   }
 
@@ -117,7 +119,7 @@ export function createDeployerComponent(
       return parallelDeploymentJobs.onIdle()
     },
     async deployEntity(entity: RemoteEntityDeployment, contentServers: string[]): Promise<void> {
-      for (let contentServer of contentServers) {
+      for (const contentServer of contentServers) {
         await handleDeploymentFromServer(entity, contentServer)
       }
     }
