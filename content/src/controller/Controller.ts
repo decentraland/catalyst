@@ -618,7 +618,6 @@ export class Controller {
     }
   }
 
-
   getAllSnapshots(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /snapshot
