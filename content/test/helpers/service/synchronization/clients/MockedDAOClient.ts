@@ -13,16 +13,16 @@ export class MockedDAOClient implements DAOClient {
     return new Set(this.serversByAddress.values())
   }
 
-  add(address: ServerAddress) {
-    this.serversByAddress.set(address, { baseUrl: address, owner: '0x...', id: 'Id' })
+  add(baseUrl: ServerAddress) {
+    this.serversByAddress.set(baseUrl, { baseUrl, owner: '0x...', id: 'Id' })
   }
 
-  remove(address: ServerAddress) {
-    this.serversByAddress.delete(address)
+  remove(baseUrl: ServerAddress) {
+    this.serversByAddress.delete(baseUrl)
   }
 
-  static withAddresses(...addresses: ServerAddress[]): MockedDAOClient {
-    return new MockedDAOClient(addresses.map((baseUrl) => ({ baseUrl, owner: '0x...' })))
+  static withAddresses(...servers: ServerAddress[]): MockedDAOClient {
+    return new MockedDAOClient(servers.map((baseUrl) => ({ baseUrl, owner: '0x...' })))
   }
 
   static with(baseUrl: ServerAddress, owner: EthAddress): MockedDAOClient {

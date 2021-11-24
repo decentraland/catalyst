@@ -83,10 +83,10 @@ describe('DAOContractClient', () => {
     const servers = await client.getAllServers()
 
     expect(servers.size).toEqual(1)
-    const { id, owner, address } = servers.values().next().value
+    const { id, owner, baseUrl } = servers.values().next().value
     expect(id).toEqual(id1)
     expect(owner).toEqual('owner')
-    expect(address).toEqual('https://domain.com')
+    expect(baseUrl).toEqual('https://domain.com')
   })
 
   function contractWith(servers: [CatalystId, CatalystData][]): [DAOContract, DAOContract] {

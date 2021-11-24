@@ -28,8 +28,8 @@ describe('ContentCluster', function () {
     await contentCluster.detectMyIdentity()
 
     // Check that identity was detected
-    const identity = contentCluster.getIdentityInDAO()!
-    expect(identity.baseUrl).toEqual(address1)
+    const identity = contentCluster.getIdentityInDAO()
+    expect(identity?.baseUrl).toEqual(address1)
   })
 
   it(`When I'm not on the DAO, then no identity is assigned`, async () => {
@@ -57,25 +57,25 @@ describe('ContentCluster', function () {
 })
 
 class ContentClusterBuilder {
-  private readonly addresses: Set<ServerAddress> = new Set()
+  private readonly servers: Set<ServerAddress> = new Set()
   private readonly fetchHelper: MockedFetcher = new MockedFetcher()
   private localChallenge: ChallengeText | undefined
 
-  addAddress(address: ServerAddress): ContentClusterBuilder {
-    this.addresses.add(address)
+  addAddress(baseUrl: ServerAddress): ContentClusterBuilder {
+    this.servers.add(baseUrl)
     return this
   }
 
   addAddressWithEndpoints(baseUrl: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'content/challenge', { challengeText })
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'content/status', {
       name: encodeURIComponent(baseUrl),
       version: 'version',
       currentTime: 10,
       lastImmutableTime: 10,
       historySize: 10
     })
-    this.addresses.add(baseUrl)
+    this.servers.add(baseUrl)
     return this
   }
 
@@ -87,7 +87,7 @@ class ContentClusterBuilder {
   build(): ContentCluster {
     const env = new Environment()
 
-    env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.addresses.values()))
+    env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.servers.values()))
     env.registerBean(Bean.FETCHER, this.fetchHelper)
     env.setConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, 1000)
     env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 10000)
