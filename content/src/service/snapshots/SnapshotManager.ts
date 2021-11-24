@@ -72,6 +72,13 @@ export class SnapshotManager {
             this.snapshotFrequencyInMilliSeconds
         ) {
           await this.generateSnapshot(transaction)
+          //   .catch((error) => {
+
+          //   console.error("there was an error", error)
+          //   // SnapshotManager.LOGGER.debug(
+          //   //   `There was an error during snapshots generation: ${error}`
+          //   // )
+          // })
         }
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
@@ -171,8 +178,11 @@ export class SnapshotManager {
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
           // Format the snapshot in a buffer
-          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot' + Math.random())
+          fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
+          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+          console.log(`Name of file: ${tmpFile}`)
           const writeStream = fs.createWriteStream(tmpFile)
+          console.log(`File written`)
           try {
             for (const snapshotElem of snapshot) {
               writeStream.write(JSON.stringify(snapshotElem) + '\n')
@@ -180,10 +190,13 @@ export class SnapshotManager {
           } finally {
             writeStream.close()
           }
+          console.log(`Stream closed`)
 
+          const contentFromFile = await fs.readFileSync(tmpFile)
+          console.log(`Could read file`)
           // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after
           //       https://github.com/decentraland/snapshots-fetcher/pull/4/files is merged
-          const hash = await Hashing.calculateIPFSHash(await fs.promises.readFile(tmpFile))
+          const hash = await Hashing.calculateIPFSHash(contentFromFile)
 
           // set the correct name
           await fs.promises.rename(tmpFile, path.resolve(this.contentStorageFolder, hash))

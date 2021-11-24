@@ -85,6 +85,20 @@
   dependencies:
     ajv "^7.1.0"
 
+<<<<<<< HEAD
+=======
+"@dcl/snapshots-fetcher@1.0.0-20211124011958.commit-d233301":
+  version "1.0.0-20211124011958.commit-d233301"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-1.0.0-20211124011958.commit-d233301.tgz#6e37ee1336475e7f69098cfa54a00439ae958e60"
+  integrity sha512-6hnxy4Wx5TPWhPEnQTNV1QGASfPkeKaFJsZsZZ/xga1WMGQsP0CrBeOOaFf6VUTriicxdJVXquLKuvttTGDTIw==
+  dependencies:
+    "@well-known-components/interfaces" "^1.1.0"
+    cids "^1.1.9"
+    ipfs-unixfs-importer "^7.0.3"
+    multihashes "^4.0.3"
+    p-queue "^6.6.2"
+
+>>>>>>> f514c9aa (wip)
 "@dcl/urn-resolver@1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.2.1.tgz#b5de639881cecb0ad59dd7791da836d18e364323"
@@ -2132,7 +2146,7 @@ cids@^0.8.0:
     multicodec "^1.0.1"
     multihashes "^1.0.1"
 
-cids@^1.0.0, cids@^1.1.5, cids@^1.1.6:
+cids@^1.0.0, cids@^1.1.5, cids@^1.1.6, cids@^1.1.9:
   version "1.1.9"
   resolved "https://registry.yarnpkg.com/cids/-/cids-1.1.9.tgz#402c26db5c07059377bcd6fb82f2a24e7f2f4a4f"
   integrity sha512-l11hWRfugIcbGuTZwAM5PwpjPPjyb6UZOGwlHSnOBV5o07XhQ4gNpBN67FbODvpjyHtd+0Xs6KNvUcGBiDRsdg==
@@ -4268,7 +4282,7 @@ ipfs-only-hash@^4.0.0:
     ipfs-unixfs-importer "^7.0.1"
     meow "^9.0.0"
 
-ipfs-unixfs-importer@^7.0.1:
+ipfs-unixfs-importer@^7.0.1, ipfs-unixfs-importer@^7.0.3:
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/ipfs-unixfs-importer/-/ipfs-unixfs-importer-7.0.3.tgz#b850e831ca9647d589ef50bc33421f65bab7bba6"
   integrity sha512-qeFOlD3AQtGzr90sr5Tq1Bi8pT5Nr2tSI8z310m7R4JDYgZc6J1PEZO3XZQ8l1kuGoqlAppBZuOYmPEqaHcVQQ==
@@ -5380,7 +5394,7 @@ multihashes@^1.0.1:
     multibase "^1.0.1"
     varint "^5.0.0"
 
-multihashes@^4.0.1, multihashes@^4.0.2:
+multihashes@^4.0.1, multihashes@^4.0.2, multihashes@^4.0.3:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/multihashes/-/multihashes-4.0.3.tgz#426610539cd2551edbf533adeac4c06b3b90fb05"
   integrity sha512-0AhMH7Iu95XjDLxIeuCOOE4t9+vQZsACyKZ9Fxw2pcsRmlX4iCn1mby0hS0bb+nQOVpdQYWPpnyusw4da5RPhA==
