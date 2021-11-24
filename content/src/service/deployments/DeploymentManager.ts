@@ -9,6 +9,7 @@ import {
   PartialDeploymentHistory,
   Pointer,
   SortingField,
+  SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../controller/Controller'
@@ -138,7 +139,8 @@ export class DeploymentManager {
       curatedOffset,
       curatedLimit + 1,
       filters,
-      { field: SortingField.LOCAL_TIMESTAMP },
+      // TODO: make this configurable
+      { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING },
       lastId
     )
     const moreData = deploymentsWithExtra.length > curatedLimit

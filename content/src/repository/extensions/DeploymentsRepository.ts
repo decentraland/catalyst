@@ -190,7 +190,7 @@ export class DeploymentsRepository {
       `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
         `FROM deployments ` +
         `WHERE deleter_deployment IS NULL ` +
-        `ORDER BY local_timestamp DESC, LOWER(entity_id) DESC`,
+        `ORDER BY local_timestamp ASC, LOWER(entity_id) ASC`,
       [],
       (row) => ({
         entityId: row.entity_id,
