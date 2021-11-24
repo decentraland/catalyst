@@ -124,7 +124,7 @@ export class Server {
   private registerRoute(
     route: string,
     controller: Controller,
-    action: (this: Controller, req: express.Request, res: express.Response) => void,
+    action: (this: Controller, req: express.Request, res: express.Response) => Promise<void>,
     method: HttpMethod = HttpMethod.GET,
     extraHandler?: RequestHandler
   ) {

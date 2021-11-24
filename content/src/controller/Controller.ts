@@ -597,7 +597,7 @@ export class Controller {
     })
   }
 
-  getSnapshot(req: express.Request, res: express.Response) {
+  async getSnapshot(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /snapshot/:type
 
@@ -618,7 +618,7 @@ export class Controller {
     }
   }
 
-  getAllSnapshots(req: express.Request, res: express.Response) {
+  async getAllSnapshots(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /snapshot
 
