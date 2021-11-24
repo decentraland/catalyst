@@ -2,8 +2,8 @@ import { ContentFileHash, EntityId, EntityType, EntityVersion, Pointer } from 'd
 import { Entity } from './Entity'
 
 export class EntityFactory {
-  static fromBufferWithId(buffer: Buffer, id: EntityId): Entity {
-    const object = EntityFactory.parseJsonIntoObject(buffer)
+  static fromBufferWithId(buffer: Uint8Array, id: EntityId): Entity {
+    const object = EntityFactory.parseJsonIntoObject(Buffer.from(buffer))
     return EntityFactory.fromObject(object, id)
   }
 

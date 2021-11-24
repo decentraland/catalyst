@@ -1,20 +1,21 @@
 import { delay, SynchronizationState } from '@catalyst/commons'
 import { DeploymentData } from 'dcl-catalyst-client'
-import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { metricsComponent } from '../../metrics'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
 import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, MetaverseContentService } from '../Service'
-import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
-import { ContentServerClient } from './clients/ContentServerClient'
+import { SystemPropertiesManager } from '../system-properties/SystemProperties'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
 import { downloadDeployment } from './failed-deployments/Requests'
-import { DeploymentWithSource } from './streaming/EventStreamProcessor'
-import { streamMap } from './streaming/StreamHelper'
-import { bootstrapFromSnapshots } from './SynchronizationFromSnapshots'
+import {
+  bootstrapFromSnapshots,
+  createSincronizationComponents,
+  SynchronizerDeployerComponents
+} from './new-synchronization'
 
 export interface SynchronizationManager {
   start(): Promise<void>
@@ -22,25 +23,30 @@ export interface SynchronizationManager {
   getStatus(): void
 }
 
-type ContentUrl = string
 export class ClusterSynchronizationManager implements SynchronizationManager {
   private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager')
-  private lastKnownDeployments: Map<ServerAddress, Timestamp>
   private syncWithNodesTimeout: NodeJS.Timeout
   private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
   private stopping: boolean = false
   private timeOfLastSync: Timestamp = 0
 
+  public components: SynchronizerDeployerComponents
+
   constructor(
     private readonly cluster: ContentCluster,
-    private readonly systemProperties: SystemPropertiesManager,
-    private readonly deployer: EventDeployer,
+    readonly _systemProperties: SystemPropertiesManager,
+    readonly deployer: EventDeployer,
     private readonly service: MetaverseContentService & ClusterDeploymentsService,
     private readonly timeBetweenSyncs: number,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number,
     private readonly contentStorageFolder: string
-  ) {}
+  ) {
+    this.components = createSincronizationComponents({
+      contentStorageFolder,
+      eventDeployer: deployer
+    })
+  }
 
   async start(): Promise<void> {
     if (this.disableSynchronization) {
@@ -53,11 +59,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
     // Connect to the cluster
     await this.cluster.connect()
-
-    // Read last deployments
-    this.lastKnownDeployments = new Map(
-      await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
-    )
 
     // Configure fail if sync hangs
     this.failIfSyncHangs().catch(() =>
@@ -94,70 +95,36 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   }
 
   // This is the method that is called recursive to sync with other catalysts
-  private async syncWithServers(): Promise<void> {
-    // Gather all servers
-    const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
+  async syncWithServers(): Promise<void> {
+    this.synchronizationState = SynchronizationState.BOOTSTRAPPING
+    // Note: If any deployment was overwritten by the snapshots, then we never reach them
+    ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
+    metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
 
-    if (this.synchronizationState === SynchronizationState.BOOTSTRAPPING) {
-      // Note: If any deployment was overwritten by the snapshots, then we never reach them
-      ClusterSynchronizationManager.LOGGER.debug(`Starting to bootstrap from snapshots`)
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
+    await bootstrapFromSnapshots(this.components, this.cluster, this.contentStorageFolder)
 
-      const result: Map<ContentUrl, Timestamp> = await bootstrapFromSnapshots(
-        this.cluster,
-        this.deployer,
-        this.contentStorageFolder
-      )
-      await this.updateLastTimestamp(contentServers, result)
-    }
+    metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
+    // await this.updateLastTimestamp(contentServers, result)
 
     // Update flag: it was synced and needs to get new deployments
     this.synchronizationState = SynchronizationState.SYNCING
     metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
-    ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
+    ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
 
     try {
-      // Fetch all new deployments
-      const streams = contentServers.map((contentServer) => {
-        const deploymentStream = contentServer.getNewDeployments()
-        const sourceData = streamMap<DeploymentWithAuditInfo, DeploymentWithSource>((deployment) => ({
-          deployment,
-          source: contentServer
-        }))
-        return deploymentStream.pipe(sourceData)
+      const setDesiredJobs = () => {
+        const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getContentUrl()))
+        // the job names are the contentServerUrl
+        return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
+      }
+
+      // start the sync jobs
+      setDesiredJobs()
+
+      // setDesiredJobs every time we synchronize the DAO servers
+      this.cluster.onSyncFinished(() => {
+        setDesiredJobs()
       })
-
-      // Process them together
-      await this.deployer.processAllDeployments(streams, undefined, false)
-
-      ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
-
-      // If everything worked, then update the last deployment timestamp
-      contentServers.forEach((client) => {
-        // Update the client, so it knows from when to ask next time
-        const newTimestamp = client.allDeploymentsWereSuccessful()
-
-        ClusterSynchronizationManager.LOGGER.debug(
-          `Updating content server timestamps: ` + client.getContentUrl() + ' is ' + newTimestamp
-        )
-        // Update the map, so we can store it on the database
-        this.lastKnownDeployments.set(client.getContentUrl(), newTimestamp)
-      })
-
-      ClusterSynchronizationManager.LOGGER.debug(`Updating system properties`)
-
-      // Update the database
-      await this.systemProperties.setSystemProperty(
-        SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS,
-        Array.from(this.lastKnownDeployments.entries())
-      )
-
-      this.synchronizationState = SynchronizationState.SYNCED
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'synced' }, 1)
-      this.timeOfLastSync = Date.now()
-      ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
-
-      await this.retryFailedDeploymentExecution()
     } catch (error) {
       this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
       metricsComponent.observe('dcl_sync_state_summary', { state: 'failed_to_sync' }, 1)
@@ -168,28 +135,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
         this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
       }
     }
-  }
-
-  private async updateLastTimestamp(contentServers: ContentServerClient[], latestTimestamp: Map<string, number>) {
-    ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
-    // If everything worked, then update the last deployment timestamp in the client, so it knows from when to ask next time
-    contentServers.forEach((client) => {
-      const newTimestamp: Timestamp | undefined = latestTimestamp.get(client.getContentUrl())
-      if (newTimestamp) {
-        ClusterSynchronizationManager.LOGGER.debug(
-          `Updating content server ${client.getContentUrl()} timestamp to ${newTimestamp}`
-        )
-        // Update the map, so we can store it on the database
-        this.lastKnownDeployments.set(client.getContentUrl(), newTimestamp)
-      }
-    })
-
-    ClusterSynchronizationManager.LOGGER.debug(`Updating system properties of LAST_KNOWN_LOCAL_DEPLOYMENTS`)
-    // Update the database
-    await this.systemProperties.setSystemProperty(
-      SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS,
-      Array.from(this.lastKnownDeployments.entries())
-    )
   }
 
   private async failIfSyncHangs(): Promise<void> {

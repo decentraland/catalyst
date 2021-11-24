@@ -4,7 +4,7 @@ import { ContentItem, ContentStorage } from '../storage/ContentStorage'
 export class ServiceStorage {
   constructor(private storage: ContentStorage) {}
 
-  storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
+  storeContent(fileHash: ContentFileHash, content: Uint8Array): Promise<void> {
     return this.storage.store(fileHash, content)
   }
 
