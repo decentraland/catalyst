@@ -2,7 +2,6 @@ import { EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Transform, TransformCallback } from 'stream'
 import { metricsComponent } from '../../../metrics'
-import { DeploymentWithSource } from './EventStreamProcessor'
 
 /**
  * Expose a stream transform that filters out already deployed entities.

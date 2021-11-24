@@ -1,5 +1,4 @@
 import { IPFSv2 } from '@dcl/schemas'
-import { ChainableTemporaryCredentials } from 'aws-sdk'
 import {
   AuditInfo,
   ContentFileHash,
@@ -78,7 +77,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
-    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files, entityId)
+    const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
@@ -145,8 +144,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         }
       }
       return storeResult.auditInfoComplete.localTimestamp
-    } catch (error) {
-      throw error
     } finally {
       // Remove the updated pointer from the list of current being deployed
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
@@ -159,7 +156,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityId: string,
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
-    hashes: Map<string, Buffer>,
+    hashes: Map<string, Uint8Array>,
     context: DeploymentContext,
     alreadyStoredContent: Map<string, boolean>
   ): Promise<
@@ -346,7 +343,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   private storeEntityContent(
-    hashes: Map<ContentFileHash, Buffer>,
+    hashes: Map<ContentFileHash, Uint8Array>,
     alreadyStoredHashes: Map<ContentFileHash, boolean>
   ): Promise<any> {
     // If entity was committed, then store all it's content (that isn't already stored)
@@ -362,11 +359,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
    * They could come hashed because the denylist decorator might have already hashed them for its own validations. In order to avoid re-hashing
    * them in the service (because there might be hundreds of files), we will send the hash result.
    */
-  static async hashFiles(files: DeploymentFiles, entityId: EntityId): Promise<Map<ContentFileHash, Buffer>> {
+  static async hashFiles(files: DeploymentFiles, entityId: EntityId): Promise<Map<ContentFileHash, Uint8Array>> {
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: Buffer }[] = this.isIPFSHash(entityId)
+      const hashEntries = this.isIPFSHash(entityId)
         ? await Hashing.calculateIPFSHashes(files)
         : await Hashing.calculateHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))

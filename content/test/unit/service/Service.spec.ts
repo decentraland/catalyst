@@ -37,7 +37,7 @@ describe('Service', function () {
   let randomFile: Buffer
   let randomFileHash: ContentFileHash
   let entity: Entity
-  let entityFile: Buffer
+  let entityFile: Uint8Array
   let storage: ContentStorage
   let service: MetaverseContentService
   let pointerManager: PointerManager

@@ -137,7 +137,7 @@ export class Validations {
 
   private static async validate_content_v3(
     entity: Entity,
-    files: Map<string, Buffer>,
+    files: Map<string, Uint8Array>,
     externalCalls: ExternalCalls
   ): Promise<string[]> {
     const errors: string[] = []
