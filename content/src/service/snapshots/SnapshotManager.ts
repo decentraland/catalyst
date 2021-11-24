@@ -189,6 +189,7 @@ export class SnapshotManager {
             }
           } finally {
             writeStream.close()
+            writeStream.end()
           }
           console.log(`Stream closed`)
 
