@@ -14,13 +14,13 @@ export class MockedContentCluster {
 
   static withAddress(ethAddress: string): ContentCluster {
     const mockedCluster: ContentCluster = mock(ContentCluster)
-    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: ethAddress, address: '', id: '' })
+    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: ethAddress, baseUrl: '', id: '' })
     return instance(mockedCluster)
   }
 
   static withName(name: string): ContentCluster {
     const mockedCluster: ContentCluster = mock(ContentCluster)
-    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: '', address: '', id: '' })
+    when(mockedCluster.getIdentityInDAO()).thenReturn({ owner: '', baseUrl: '', id: '' })
     return instance(mockedCluster)
   }
 }

@@ -5,20 +5,16 @@ import { EthAddress } from 'dcl-crypto'
 export class MockedDAOClient implements DAOClient {
   private readonly serversByAddress: Map<ServerAddress, ServerMetadata>
 
-  private constructor(servers: { address: ServerAddress; owner: EthAddress }[]) {
-    this.serversByAddress = new Map(servers.map((server) => [server.address, { ...server, id: 'Id' }]))
-  }
-
-  async getAllContentServers(): Promise<Set<ServerMetadata>> {
-    return new Set(this.serversByAddress.values())
+  private constructor(servers: { baseUrl: ServerAddress; owner: EthAddress }[]) {
+    this.serversByAddress = new Map(servers.map((server) => [server.baseUrl, { ...server, id: 'Id' }]))
   }
 
   async getAllServers(): Promise<Set<ServerMetadata>> {
-    throw new Error('Not Implemented')
+    return new Set(this.serversByAddress.values())
   }
 
   add(address: ServerAddress) {
-    this.serversByAddress.set(address, { address, owner: '0x...', id: 'Id' })
+    this.serversByAddress.set(address, { baseUrl: address, owner: '0x...', id: 'Id' })
   }
 
   remove(address: ServerAddress) {
@@ -26,9 +22,10 @@ export class MockedDAOClient implements DAOClient {
   }
 
   static withAddresses(...addresses: ServerAddress[]): MockedDAOClient {
-    return new MockedDAOClient(addresses.map((address) => ({ address, owner: '0x...' })))
+    return new MockedDAOClient(addresses.map((baseUrl) => ({ baseUrl, owner: '0x...' })))
   }
-  static with(address: ServerAddress, owner: EthAddress): MockedDAOClient {
-    return new MockedDAOClient([{ address, owner }])
+
+  static with(baseUrl: ServerAddress, owner: EthAddress): MockedDAOClient {
+    return new MockedDAOClient([{ baseUrl, owner }])
   }
 }
