@@ -66,22 +66,22 @@ class ContentClusterBuilder {
     return this
   }
 
-  addAddressWithEndpoints(address: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(address, 'challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(address, 'status', {
-      name: encodeURIComponent(address),
+  addAddressWithEndpoints(baseUrl: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
+      name: encodeURIComponent(baseUrl),
       version: 'version',
       currentTime: 10,
       lastImmutableTime: 10,
       historySize: 10
     })
-    this.addresses.add(address)
+    this.addresses.add(baseUrl)
     return this
   }
 
-  addAddressWithLocalChallenge(address: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
+  addAddressWithLocalChallenge(baseUrl: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
     this.localChallenge = challengeText
-    return this.addAddressWithEndpoints(address, challengeText)
+    return this.addAddressWithEndpoints(baseUrl, challengeText)
   }
 
   build(): ContentCluster {
