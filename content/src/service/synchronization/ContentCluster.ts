@@ -3,9 +3,8 @@ import { Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
-import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
 import { ChallengeSupervisor, ChallengeText } from './ChallengeSupervisor'
-import { ContentServerClient } from './clients/ContentServerClient'
+import { ConnectionState, ContentServerClient } from './clients/ContentServerClient'
 import { shuffleArray } from './ClusterUtils'
 
 export interface IdentityProvider {
@@ -32,16 +31,13 @@ export class ContentCluster implements IdentityProvider {
     private readonly dao: DAOClient,
     private readonly timeBetweenSyncs: number,
     private readonly challengeSupervisor: ChallengeSupervisor,
-    private readonly fetcher: Fetcher,
-    private readonly systemProperties: SystemPropertiesManager,
-    private readonly bootstrapFromScratch: boolean,
-    private readonly proofOfWorkEnabled: boolean
+    private readonly fetcher: Fetcher
   ) {}
 
   /** Connect to the DAO for the first time */
   async connect(): Promise<void> {
     // Get all servers on the DAO
-    this.allServersInDAO = await this.dao.getAllContentServers()
+    this.allServersInDAO = await this.dao.getAllServers()
 
     // Detect my own identity
     await this.detectMyIdentity(10)
@@ -65,8 +61,8 @@ export class ContentCluster implements IdentityProvider {
   getStatus() {
     const otherServers = Array.from(this.serverClients.entries()).map(([address, client]) => ({
       address,
-      connectionState: client.getConnectionState(),
-      lastDeploymentTimestamp: client.getLastLocalDeploymentTimestamp()
+      connectionState: ConnectionState.NEVER_REACHED,
+      lastDeploymentTimestamp: 0 // TODO
     }))
 
     return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
@@ -86,42 +82,31 @@ export class ContentCluster implements IdentityProvider {
       ContentCluster.LOGGER.debug(`Starting sync with DAO`)
 
       // Refresh the server list
-      this.allServersInDAO = await this.dao.getAllContentServers()
+      this.allServersInDAO = await this.dao.getAllServers()
 
       if (!this.myIdentity) {
         await this.detectMyIdentity()
       }
 
       // Get all addresses in cluster (except for me)
-      const allAddresses: ServerAddress[] = this.getAllOtherAddressesOnDAO(this.allServersInDAO)
+      const allServerBaseUrls: ServerAddress[] = this.getAllOtherAddressesOnDAO(this.allServersInDAO)
 
       // Handle the possibility that some servers where removed from the DAO. If so, remove them from the list
-      this.handleRemovalsFromDAO(allAddresses)
+      this.handleRemovalsFromDAO(allServerBaseUrls)
 
       // Detect new servers
-      const newAddresses = allAddresses.filter((address) => !this.serverClients.has(address))
-      if (newAddresses.length > 0) {
-        let lastKnownTimestamps: Map<ServerAddress, Timestamp> = new Map()
-
-        // Check if we want to start syncing from scratch or not
-        if (!this.bootstrapFromScratch) {
-          lastKnownTimestamps = new Map(
-            await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
-          )
-        }
-
-        for (const newAddress of newAddresses) {
-          const lastDeploymentTimestamp = lastKnownTimestamps.get(newAddress) ?? 0
+      const newServerNaseUrls = allServerBaseUrls.filter((address) => !this.serverClients.has(address))
+      if (newServerNaseUrls.length > 0) {
+        for (const contentServerUrl of newServerNaseUrls) {
+          console.log('creating content client', contentServerUrl)
 
           // Create and store the new client
           const newClient = new ContentServerClient(
-            newAddress,
-            lastDeploymentTimestamp,
-            this.fetcher.clone(), // We need a Fetcher per catalyst
-            this.proofOfWorkEnabled
+            contentServerUrl,
+            this.fetcher.clone() // We need a Fetcher per catalyst
           )
-          this.serverClients.set(newAddress, newClient)
-          ContentCluster.LOGGER.info(`Discovered new server '${newAddress}'`)
+          this.serverClients.set(contentServerUrl, newClient)
+          ContentCluster.LOGGER.info(`Discovered new server '${contentServerUrl}'`)
         }
       }
 
@@ -156,31 +141,34 @@ export class ContentCluster implements IdentityProvider {
   /** Detect my own identity */
   async detectMyIdentity(attempts: number = 1): Promise<void> {
     try {
-      ContentCluster.LOGGER.debug('Attempting to determine my identity')
+      ContentCluster.LOGGER.info('Attempting to determine my identity')
 
       // Fetch server list from the DAO
       if (!this.allServersInDAO) {
-        this.allServersInDAO = await this.dao.getAllContentServers()
+        ContentCluster.LOGGER.info(`Fetching DAO servers`)
+        this.allServersInDAO = await this.dao.getAllServers()
       }
 
       const serversByAddresses: Map<ServerAddress, ServerMetadata> = new Map(
-        Array.from(this.allServersInDAO).map((metadata) => [metadata.address, metadata])
+        Array.from(this.allServersInDAO).map((metadata) => [metadata.baseUrl, metadata])
       )
       const challengesByAddress: Map<ServerAddress, ChallengeText> = new Map()
 
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
+        ContentCluster.LOGGER.info(`Attempt ${attempts}`)
         // Prepare challenges for unknown servers
-        const challenges: Promise<{ address: ServerAddress; challengeText: ChallengeText | undefined }>[] = Array.from(
-          serversByAddresses.keys()
-        )
-          .filter((address) => !challengesByAddress.has(address))
-          .map(async (address) => ({ address, challengeText: await this.getChallengeInServer(address) }))
+        const challenges = Array.from(serversByAddresses.keys())
+          .filter((catalystBaseUrl) => !challengesByAddress.has(catalystBaseUrl))
+          .map(async (catalystBaseUrl) => ({
+            catalystBaseUrl,
+            challengeText: await this.getChallengeInServer(catalystBaseUrl)
+          }))
 
         // Store new challenge results
         const challengeResults = await Promise.all(challenges)
         challengeResults
           .filter(({ challengeText }) => !!challengeText)
-          .forEach(({ address, challengeText }) => challengesByAddress.set(address, challengeText!))
+          .forEach(({ catalystBaseUrl, challengeText }) => challengesByAddress.set(catalystBaseUrl, challengeText!))
 
         // Check if I was any of the servers who responded
         const serversWithMyChallengeText = Array.from(challengesByAddress.entries()).filter(([, challengeText]) =>
@@ -214,18 +202,18 @@ export class ContentCluster implements IdentityProvider {
   private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerAddress[] {
     // Filter myself out
     const addresses = Array.from(allServers)
-      .map(({ address }) => address)
-      .filter((address) => address !== this.myIdentity?.address)
+      .map(({ baseUrl: address }) => address)
+      .filter((address) => address !== this.myIdentity?.baseUrl)
 
     // We are sorting the array, so when we query the servers, we will choose a different one each time
     return shuffleArray(addresses)
   }
 
   /** Return the server's challenge text, or undefined if it couldn't be reached */
-  private async getChallengeInServer(address: ServerAddress): Promise<ChallengeText | undefined> {
+  private async getChallengeInServer(catalystBaseUrl: ServerAddress): Promise<ChallengeText | undefined> {
     try {
       const { challengeText }: { challengeText: ChallengeText } = (await this.fetcher.fetchJson(
-        `${address}/challenge`
+        `${catalystBaseUrl}/content/challenge`
       )) as { challengeText: ChallengeText }
       return challengeText
     } catch (error) {}

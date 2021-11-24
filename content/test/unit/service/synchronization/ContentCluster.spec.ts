@@ -29,7 +29,7 @@ describe('ContentCluster', function () {
 
     // Check that identity was detected
     const identity = contentCluster.getIdentityInDAO()!
-    expect(identity.address).toEqual(address1)
+    expect(identity.baseUrl).toEqual(address1)
   })
 
   it(`When I'm not on the DAO, then no identity is assigned`, async () => {

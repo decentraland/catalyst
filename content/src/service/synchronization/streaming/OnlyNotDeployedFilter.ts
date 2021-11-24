@@ -1,3 +1,4 @@
+import { RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { EntityId } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import { Transform, TransformCallback } from 'stream'
@@ -11,13 +12,13 @@ import { metricsComponent } from '../../../metrics'
 export class OnlyNotDeployedFilter extends Transform implements Transform {
   private static readonly BUFFERED_DEPLOYMENTS = 300
   private static readonly LOGGER = log4js.getLogger('OnlyNotDeployedFilter')
-  private readonly buffer: DeploymentWithSource[] = []
+  private readonly buffer: RemoteEntityDeployment[] = []
 
   constructor(private readonly checkIfAlreadyDeployed: (entityIds: EntityId[]) => Promise<Map<EntityId, boolean>>) {
     super({ objectMode: true })
   }
 
-  _transform(deployment: DeploymentWithSource, _, done: TransformCallback): void {
+  _transform(deployment: RemoteEntityDeployment, _, done: TransformCallback): void {
     if (!deployment) {
       done()
       return
@@ -53,7 +54,7 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
     this.buffer.length = 0
 
     // Find non deployed entities
-    const ids = bufferCopy.map(({ deployment }) => deployment.entityId)
+    const ids = bufferCopy.map((deployment) => deployment.entityId)
     try {
       const deployInfo = await this.checkIfAlreadyDeployed(ids)
       const newEntities: Set<EntityId> = new Set(
@@ -72,7 +73,7 @@ export class OnlyNotDeployedFilter extends Transform implements Transform {
 
       // Filter out already deployed entities and push the new ones
       bufferCopy
-        .filter(({ deployment }) => newEntities.has(deployment.entityId))
+        .filter((deployment) => newEntities.has(deployment.entityId))
         .forEach((deployment) => this.push(deployment))
     } catch (err) {
       OnlyNotDeployedFilter.LOGGER.error(`Couldn't filter the non deployed deployments due to DB heavy load`)

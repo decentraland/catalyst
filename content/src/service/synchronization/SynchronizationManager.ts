@@ -1,16 +1,14 @@
 import { delay, SynchronizationState } from '@catalyst/commons'
-import { DeploymentData } from 'dcl-catalyst-client'
+import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
 import { Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import { clearTimeout, setTimeout } from 'timers'
 import { metricsComponent } from '../../metrics'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
-import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, MetaverseContentService } from '../Service'
+import { ClusterDeploymentsService, MetaverseContentService } from '../Service'
 import { SystemPropertiesManager } from '../system-properties/SystemProperties'
 import { ContentCluster } from './ContentCluster'
 import { EventDeployer } from './EventDeployer'
-import { downloadDeployment } from './failed-deployments/Requests'
 import {
   bootstrapFromSnapshots,
   createSincronizationComponents,
@@ -25,9 +23,7 @@ export interface SynchronizationManager {
 
 export class ClusterSynchronizationManager implements SynchronizationManager {
   private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager')
-  private syncWithNodesTimeout: NodeJS.Timeout
   private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
-  private stopping: boolean = false
   private timeOfLastSync: Timestamp = 0
 
   public components: SynchronizerDeployerComponents
@@ -37,7 +33,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     readonly _systemProperties: SystemPropertiesManager,
     readonly deployer: EventDeployer,
     private readonly service: MetaverseContentService & ClusterDeploymentsService,
-    private readonly timeBetweenSyncs: number,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number,
     private readonly contentStorageFolder: string
@@ -53,9 +48,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ClusterSynchronizationManager.LOGGER.warn(`Cluster synchronization has been disabled.`)
       return
     }
-
-    // Make sure the stopping flag is set to false
-    this.stopping = false
 
     // Connect to the cluster
     await this.cluster.connect()
@@ -74,13 +66,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     )
   }
 
-  stop(): Promise<void> {
+  async stop(): Promise<void> {
     if (this.disableSynchronization) {
       // Since it was disabled, there is nothing to stop
       return Promise.resolve()
     }
-    this.stopping = true
-    if (this.syncWithNodesTimeout) clearTimeout(this.syncWithNodesTimeout)
     this.cluster.disconnect()
     return this.waitUntilSyncFinishes()
   }
@@ -109,32 +99,23 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     // Update flag: it was synced and needs to get new deployments
     this.synchronizationState = SynchronizationState.SYNCING
     metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
+
     ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
 
-    try {
-      const setDesiredJobs = () => {
-        const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getContentUrl()))
-        // the job names are the contentServerUrl
-        return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
-      }
-
-      // start the sync jobs
-      setDesiredJobs()
-
-      // setDesiredJobs every time we synchronize the DAO servers
-      this.cluster.onSyncFinished(() => {
-        setDesiredJobs()
-      })
-    } catch (error) {
-      this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'failed_to_sync' }, 1)
-      ClusterSynchronizationManager.LOGGER.error(`Failed to sync with servers. Reason:\n${error}`)
-    } finally {
-      if (!this.stopping) {
-        // Set the timeout again
-        this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
-      }
+    const setDesiredJobs = () => {
+      const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getServerUrl()))
+      // the job names are the contentServerUrl
+      return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
     }
+
+    // start the sync jobs
+    setDesiredJobs()
+
+    // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
+    // the setDesiredJobs function handles the lifecycle od those async jobs.
+    this.cluster.onSyncFinished(() => {
+      setDesiredJobs()
+    })
   }
 
   private async failIfSyncHangs(): Promise<void> {
@@ -168,24 +149,26 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // Build Deployment from other servers
       const entityId = failedDeployment.entityId
       ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
+      const servers = this.cluster.getAllServersInCluster().map(($) => $.getServerUrl())
 
       try {
-        const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
-
-        // Deploy local
-        const result: DeploymentResult = await this.service.deployEntity(
-          data.files,
+        const entity = await downloadEntityAndContentFiles(
+          this.components,
           entityId,
-          { authChain: data.authChain },
-          DeploymentContext.FIX_ATTEMPT
+          this.cluster.getAllServersInCluster().map(($) => $.getServerUrl()),
+          new Map(),
+          this.contentStorageFolder,
+          10,
+          1000
         )
-        if (typeof result === 'number') {
-          ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
-        } else {
-          ClusterSynchronizationManager.LOGGER.info(
-            `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
-          )
-        }
+        await this.components.deployer.deployEntity(
+          {
+            ...entity,
+            authChain: entity.auditInfo.authChain,
+            localTimestamp: 0
+          },
+          servers
+        )
       } catch (err) {
         ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' failed due: ${err}`)
       }
@@ -203,7 +186,13 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   }
 
   private async waitUntilSyncFinishes(): Promise<void> {
-    while (this.synchronizationState === SynchronizationState.SYNCING) {
+    await this.components.downloadQueue.onIdle()
+    await this.components.deployer.onIdle()
+
+    while (
+      this.synchronizationState === SynchronizationState.SYNCING ||
+      this.components.synchronizationJobManager.getRunningJobs().size
+    ) {
       await delay(ms('1s'))
     }
   }

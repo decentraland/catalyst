@@ -6,11 +6,11 @@ import { ServerMetadata } from '../ServerMetadata'
 describe('DAOContractClient', () => {
   const id1: CatalystId = 'id1'
   const data1: CatalystData = { id: id1, owner: 'owner1', domain: 'domain.com' }
-  const metadata1: ServerMetadata = { id: id1, owner: 'owner1', address: 'https://domain.com' }
+  const metadata1: ServerMetadata = { id: id1, owner: 'owner1', baseUrl: 'https://domain.com' }
 
   const id2: CatalystId = 'id2'
   const data2: CatalystData = { id: id2, owner: 'owner2', domain: 'domain.com' }
-  const metadata2: ServerMetadata = { id: id2, owner: 'owner2', address: 'https://domain.com' }
+  const metadata2: ServerMetadata = { id: id2, owner: 'owner2', baseUrl: 'https://domain.com' }
 
   it(`When server was added, then changes are detected and reported`, async () => {
     const [, contractInstance] = contractWith([

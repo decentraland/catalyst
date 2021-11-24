@@ -2,7 +2,6 @@ import { CatalystData, CatalystId, DAOContract } from '@catalyst/contracts'
 import { ServerMetadata } from './ServerMetadata'
 
 export interface DAOClient {
-  getAllContentServers(): Promise<Set<ServerMetadata>>
   getAllServers(): Promise<Set<ServerMetadata>>
 }
 
@@ -12,11 +11,6 @@ export class DAOContractClient {
 
   constructor(private readonly contract: DAOContract, initialServerList?: Map<CatalystId, ServerMetadata>) {
     this.servers = initialServerList ?? new Map()
-  }
-
-  async getAllContentServers(): Promise<Set<ServerMetadata>> {
-    const servers: Set<ServerMetadata> = await this.getAllServers()
-    return new Set(Array.from(servers.values()).map((server) => ({ ...server, address: server.address + '/content' })))
   }
 
   async getAllServers(): Promise<Set<ServerMetadata>> {
@@ -67,6 +61,6 @@ export class DAOContractClient {
       address = 'https://' + address
     }
 
-    return { address, owner, id }
+    return { baseUrl: address, owner, id }
   }
 }

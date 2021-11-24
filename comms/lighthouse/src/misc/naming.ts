@@ -56,7 +56,7 @@ async function getLighthousesNames(daoClient: DAOClient) {
 async function getName(server: ServerMetadata): Promise<string> {
   //Timeout is an option that is supported server side, but not browser side, so it doesn't compile if we don't cast it to any
   try {
-    const statusResponse = await fetch(`${server.address}/comms/status`, { timeout: 5000 } as any)
+    const statusResponse = await fetch(`${server.baseUrl}/comms/status`, { timeout: 5000 } as any)
     const json = await statusResponse.json()
 
     if (json.name) {
@@ -65,7 +65,7 @@ async function getName(server: ServerMetadata): Promise<string> {
 
     throw new Error(`Response did not have the expected format. Response was: ${JSON.stringify(json)}`)
   } catch (e) {
-    console.warn(`Error while getting the name of ${server.address}, id: ${server.id}`, e.message)
+    console.warn(`Error while getting the name of ${server.baseUrl}, id: ${server.id}`, e.message)
     throw e
   }
 }
