@@ -4,3 +4,6 @@ node_modules/
 **/dist
 **/node_modules
 tmpbin
+content/test
+lambdas/test
+comms/lighthouse/test
