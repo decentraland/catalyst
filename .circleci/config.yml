@@ -8,7 +8,7 @@ references:
       at: *workspace_root
 
   .image_client: &image_client
-    image: circleci/node:14-browsers
+    image: circleci/node:16-browsers
 
   .working_directory_root: &working_directory_root
     working_directory: *workspace_root
@@ -134,7 +134,7 @@ jobs:
   publish-docker:
     <<: *base_env
     docker:
-      - image: circleci/node:14-browsers
+      - image: circleci/node:16-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
@@ -173,7 +173,7 @@ jobs:
   publish-docker-without-tag:
     <<: *base_env
     docker:
-      - image: circleci/node:14-browsers
+      - image: circleci/node:16-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
