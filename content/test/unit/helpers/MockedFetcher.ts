@@ -5,13 +5,13 @@ export class MockedFetcher extends Fetcher {
   private readonly bufferResultByUrl: Map<string, Buffer> = new Map()
 
   addJsonEndpoint(address: ServerAddress, endpoint: string, result: any): MockedFetcher {
-    const url = `${address}/${endpoint}`
+    const url = `${address}/${endpoint.replace(/^\//, '')}`
     this.jsonResultByUrl.set(url, result)
     return this
   }
 
   addBufferEndpoint(address: ServerAddress, endpoint: string, result: Buffer): MockedFetcher {
-    const url = `${address}/${endpoint}`
+    const url = `${address}/${endpoint.replace(/^\//, '')}`
     this.bufferResultByUrl.set(url, result)
     return this
   }

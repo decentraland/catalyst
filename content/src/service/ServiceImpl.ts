@@ -138,8 +138,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // Insert in deployments cache the updated entities
         if (entity.type == EntityType.PROFILE) {
           // Currently we are only checking profile deployments, in the future this may be refactored
-          entity.pointers.forEach((address) => {
-            this.deploymentsCache.cache.set(address, storeResult.auditInfoComplete.localTimestamp)
+          entity.pointers.forEach((pointer) => {
+            this.deploymentsCache.cache.set(pointer, storeResult.auditInfoComplete.localTimestamp)
           })
         }
       }

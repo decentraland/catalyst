@@ -49,18 +49,18 @@ export class ContentCluster implements IdentityProvider {
   /**
    * Registers an event that is emitted every time the list of catalysts is refreshed.
    */
-  onSyncFinished(cb: () => void) {
+  onSyncFinished(cb: () => void): void {
     this.syncFinishedEventCallbacks.push(cb)
   }
 
   /** Stop syncing with DAO */
-  disconnect() {
+  disconnect(): void {
     clearTimeout(this.syncTimeout)
   }
 
   getStatus() {
-    const otherServers = Array.from(this.serverClients.entries()).map(([address, client]) => ({
-      address,
+    const otherServers = Array.from(this.serverClients.entries()).map(([baseUrl, client]) => ({
+      baseUrl,
       connectionState: ConnectionState.NEVER_REACHED,
       lastDeploymentTimestamp: 0 // TODO
     }))
@@ -95,11 +95,9 @@ export class ContentCluster implements IdentityProvider {
       this.handleRemovalsFromDAO(allServerBaseUrls)
 
       // Detect new servers
-      const newServerNaseUrls = allServerBaseUrls.filter((address) => !this.serverClients.has(address))
+      const newServerNaseUrls = allServerBaseUrls.filter((baseUrl) => !this.serverClients.has(baseUrl))
       if (newServerNaseUrls.length > 0) {
         for (const contentServerUrl of newServerNaseUrls) {
-          console.log('creating content client', contentServerUrl)
-
           // Create and store the new client
           const newClient = new ContentServerClient(
             contentServerUrl,
@@ -126,15 +124,13 @@ export class ContentCluster implements IdentityProvider {
     }
   }
 
-  private handleRemovalsFromDAO(allAddresses: string[]): void {
+  private handleRemovalsFromDAO(allServers: string[]): void {
     // Calculate if any known servers where removed from the DAO
-    const serversRemovedFromDAO = Array.from(this.serverClients.keys()).filter(
-      (address) => !allAddresses.includes(address)
-    )
+    const serversRemovedFromDAO = Array.from(this.serverClients.keys()).filter((server) => !allServers.includes(server))
 
     // Remove servers from list
-    serversRemovedFromDAO.forEach((address) => {
-      this.serverClients.delete(address)
+    serversRemovedFromDAO.forEach((server) => {
+      this.serverClients.delete(server)
     })
   }
 
@@ -149,36 +145,36 @@ export class ContentCluster implements IdentityProvider {
         this.allServersInDAO = await this.dao.getAllServers()
       }
 
-      const serversByAddresses: Map<ServerAddress, ServerMetadata> = new Map(
-        Array.from(this.allServersInDAO).map((metadata) => [metadata.baseUrl, metadata])
-      )
       const challengesByAddress: Map<ServerAddress, ChallengeText> = new Map()
 
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
         ContentCluster.LOGGER.info(`Attempt ${attempts}`)
         // Prepare challenges for unknown servers
-        const challenges = Array.from(serversByAddresses.keys())
-          .filter((catalystBaseUrl) => !challengesByAddress.has(catalystBaseUrl))
-          .map(async (catalystBaseUrl) => ({
-            catalystBaseUrl,
-            challengeText: await this.getChallengeInServer(catalystBaseUrl)
-          }))
-
-        // Store new challenge results
-        const challengeResults = await Promise.all(challenges)
-        challengeResults
-          .filter(({ challengeText }) => !!challengeText)
-          .forEach(({ catalystBaseUrl, challengeText }) => challengesByAddress.set(catalystBaseUrl, challengeText!))
-
-        // Check if I was any of the servers who responded
-        const serversWithMyChallengeText = Array.from(challengesByAddress.entries()).filter(([, challengeText]) =>
-          this.challengeSupervisor.isChallengeOk(challengeText)
+        const challengeResults = await Promise.allSettled(
+          Array.from(this.allServersInDAO)
+            .filter((server) => !challengesByAddress.has(server.baseUrl))
+            .map(async (server) => ({
+              server,
+              challengeText: await this.getChallengeInServer(server.baseUrl)
+            }))
         )
 
+        const serversWithMyChallengeText: ServerMetadata[] = []
+
+        // Store new challenge results
+        for (const r of challengeResults) {
+          if (r.status == 'fulfilled' && r.value.challengeText) {
+            challengesByAddress.set(r.value.server.baseUrl, r.value.challengeText)
+            // Check if I was any of the servers who responded
+            if (this.challengeSupervisor.isChallengeOk(r.value.challengeText)) {
+              serversWithMyChallengeText.push(r.value.server)
+            }
+          }
+        }
+
         if (serversWithMyChallengeText.length === 1) {
-          const [address] = serversWithMyChallengeText[0]
-          this.myIdentity = serversByAddresses.get(address)!
-          ContentCluster.LOGGER.info(`Calculated my identity. My address is ${address}`)
+          this.myIdentity = serversWithMyChallengeText[0]
+          ContentCluster.LOGGER.info(`Calculated my identity. My baseUrl is ${this.myIdentity.baseUrl}`)
           break
         } else if (serversWithMyChallengeText.length > 1) {
           ContentCluster.LOGGER.warn(
@@ -201,12 +197,12 @@ export class ContentCluster implements IdentityProvider {
   /** Returns all the addresses on the DAO, except for the current server's */
   private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerAddress[] {
     // Filter myself out
-    const addresses = Array.from(allServers)
-      .map(({ baseUrl: address }) => address)
-      .filter((address) => address !== this.myIdentity?.baseUrl)
+    const serverUrls = Array.from(allServers)
+      .map(({ baseUrl }) => baseUrl)
+      .filter((baseUrl) => baseUrl !== this.myIdentity?.baseUrl)
 
     // We are sorting the array, so when we query the servers, we will choose a different one each time
-    return shuffleArray(addresses)
+    return shuffleArray(serverUrls)
   }
 
   /** Return the server's challenge text, or undefined if it couldn't be reached */

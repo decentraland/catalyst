@@ -50,17 +50,17 @@ export class DAOContractClient {
   private toMetadata(data: CatalystData): ServerMetadata | undefined {
     const { id, owner, domain } = data
 
-    let address = domain.trim()
+    let baseUrl = domain.trim()
 
-    if (address.startsWith('http://')) {
-      console.warn(`Catalyst node domain using http protocol, skipping ${address}`)
+    if (baseUrl.startsWith('http://')) {
+      console.warn(`Catalyst node domain using http protocol, skipping ${baseUrl}`)
       return undefined
     }
 
-    if (!address.startsWith('https://')) {
-      address = 'https://' + address
+    if (!baseUrl.startsWith('https://')) {
+      baseUrl = 'https://' + baseUrl
     }
 
-    return { baseUrl: address, owner, id }
+    return { baseUrl, owner, id }
   }
 }
