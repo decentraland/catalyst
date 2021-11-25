@@ -8,6 +8,7 @@ import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
 import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
+import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 
 export class SnapshotManager {
@@ -77,7 +78,8 @@ export class SnapshotManager {
     return this.lastSnapshots.get(entityType)
   }
 
-  getSnapshotMetadataForAllEntityType(): SnapshotMetadata | undefined {
+  getFullSnapshotMetadata(entityTypes?: EntityType[]): SnapshotMetadata | undefined {
+    // TODO: Implement entityType filter
     return this.lastSnapshotsForAllEntityTypes
   }
 
