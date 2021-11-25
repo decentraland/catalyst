@@ -650,14 +650,9 @@ export class Controller {
 
   async getAllSnapshots(req: express.Request, res: express.Response) {
     // Method: GET
-    // Path: /snapshot?entityType={EntityType}
+    // Path: /snapshot
 
-    const stringEntityTypes = this.asArray<string>(req.query.entityType)
-    const entityTypes: EntityType[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => this.parseEntityType(type)).filter((type) => !!type)
-      : undefined
-
-    const metadata = this.snapshotManager.getFullSnapshotMetadata(entityTypes)
+    const metadata = this.snapshotManager.getFullSnapshotMetadata()
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })

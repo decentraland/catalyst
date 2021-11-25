@@ -167,9 +167,7 @@ export class Server {
       await this.metricsServer.start()
     }
     await this.snapshotManager.startSnapshotsPerEntity()
-    setInterval(async () => {
-      await this.snapshotManager.calculateFullSnapshots()
-    }, this.snapshotManager.getSnapshotsFrequencyInMilliseconds())
+    await this.snapshotManager.startCalculateFullSnapshots()
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
   }

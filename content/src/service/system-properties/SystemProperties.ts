@@ -14,10 +14,6 @@ export class SystemProperty<PropertyType> {
     'last_full_snapshot_per_entity',
     new JSONPropertyMapper()
   )
-  static readonly LAST_FULL_SNAPSHOTS: SystemProperty<SnapshotMetadata> = new SystemProperty(
-    'last_full_snapshot',
-    new JSONPropertyMapper()
-  )
   static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<Timestamp> = new SystemProperty(
     'last_garbage_collection_time',
     new IntPropertyMapper()

@@ -15,10 +15,10 @@ import { setupStreamTimeout } from './utils'
 const write = async (entityType: string, entityId: string, performDeployment: () => Promise<unknown>) => {
   try {
     await performDeployment()
-    EventStreamProcessor.LOGGER.info(`Deployed entity (${entityType}, ${entityId})`)
+    EventStreamProcessor.LOGGER.debug(`Deployed entity (${entityType}, ${entityId})`)
   } catch (error) {
     metricsComponent.increment('dcl_content_failed_deployments_total')
-    EventStreamProcessor.LOGGER.error(
+    EventStreamProcessor.LOGGER.debug(
       `Failed when trying to deploy entity is (${entityType}, ${entityId}). Error was:\n${error}`
     )
   }

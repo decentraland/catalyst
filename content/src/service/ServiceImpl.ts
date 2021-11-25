@@ -258,7 +258,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null> {
-    ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
+    ServiceImpl.LOGGER.debug(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
     return this.repository.run(
       (db) =>
         this.failedDeploymentsManager.reportFailure(

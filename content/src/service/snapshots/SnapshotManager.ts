@@ -28,10 +28,6 @@ export class SnapshotManager {
     service.listenToDeployments((deployment) => this.onDeployment(deployment))
   }
 
-  getSnapshotsFrequencyInMilliseconds(): number {
-    return this.snapshotFrequencyInMilliSeconds
-  }
-
   /**
    * @deprecated
    */
@@ -60,15 +56,16 @@ export class SnapshotManager {
     )
   }
 
-  async calculateFullSnapshots(): Promise<void> {
+  async startCalculateFullSnapshots(): Promise<void> {
+    await this.calculateFullSnapshots()
+    setInterval(async () => await this.calculateFullSnapshots(), this.snapshotFrequencyInMilliSeconds)
+  }
+
+  private async calculateFullSnapshots(): Promise<void> {
     // TODO: Add metrics regarding snapshots
     return this.repository.txIf(
       async (transaction) => {
-        try {
-          await this.generateSnapshot(transaction)
-        } catch {
-          SnapshotManager.LOGGER.warn('There was an error when generating full snapshots')
-        }
+        await this.generateSnapshot(transaction)
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
@@ -78,8 +75,7 @@ export class SnapshotManager {
     return this.lastSnapshots.get(entityType)
   }
 
-  getFullSnapshotMetadata(entityTypes?: EntityType[]): SnapshotMetadata | undefined {
-    // TODO: Implement entityType filter
+  getFullSnapshotMetadata(): SnapshotMetadata | undefined {
     return this.lastSnapshotsForAllEntityTypes
   }
 
@@ -141,83 +137,82 @@ export class SnapshotManager {
 
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
   private async generateSnapshot(task?: Database): Promise<void> {
-    const previousFullSnapshot = this.lastSnapshotsForAllEntityTypes
+    try {
+      const previousFullSnapshot = this.lastSnapshotsForAllEntityTypes
 
-    await this.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.txIf(async (transaction) => {
-          // Get all the active entities
-          const snapshot: FullSnapshot[] = await transaction.deployments.getFullSnapshot()
+      await this.repository.reuseIfPresent(
+        task,
+        (db) =>
+          db.txIf(async (transaction) => {
+            // Get all the active entities
+            const snapshot: FullSnapshot[] = await transaction.deployments.getFullSnapshot()
 
-          // Calculate the local deployment timestamp of the newest entity in the snapshot
-          const snapshotTimestamp = snapshot[snapshot.length - 1]?.localTimestamp ?? 0
+            // Calculate the local deployment timestamp of the newest entity in the snapshot
+            const snapshotTimestamp = snapshot[snapshot.length - 1]?.localTimestamp ?? 0
 
-          // Format the snapshot in a tmp file
-          // const tmpFile = await createTempFile('snapshot')
-          fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
-          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+            // Format the snapshot in a tmp file
+            // const tmpFile = await createTempFile('snapshot')
+            fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
+            const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
 
-          console.log(`Name of file: ${tmpFile}`)
+            console.log(`Name of file: ${tmpFile}`)
 
-          const writeStream = fs.createWriteStream(tmpFile)
-          const fileClosedFuture = new Promise<void>((resolve, reject) => {
-            writeStream.on('finish', resolve)
-            writeStream.on('error', reject)
-          })
+            const writeStream = fs.createWriteStream(tmpFile)
+            const fileClosedFuture = new Promise<void>((resolve, reject) => {
+              writeStream.on('finish', resolve)
+              writeStream.on('error', reject)
+            })
 
-          console.log(`File written`)
+            console.log(`File written`)
 
-          try {
-            for (const snapshotElem of snapshot) {
-              writeStream.write(JSON.stringify(snapshotElem) + '\n')
+            try {
+              for (const snapshotElem of snapshot) {
+                writeStream.write(JSON.stringify(snapshotElem) + '\n')
+              }
+            } finally {
+              writeStream.close()
+              await fileClosedFuture
             }
-          } finally {
-            writeStream.close()
-            await fileClosedFuture
-          }
 
-          console.log(`Stream closed`)
-          const contentFromFile = await fs.promises.readFile(tmpFile)
-          console.log(`Could read file`)
+            console.log(`Stream closed`)
+            const contentFromFile = await fs.promises.readFile(tmpFile)
+            console.log(`Could read file`)
 
-          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 and UintArray instead of Buffer
-          const hash = await Hashing.calculateIPFSHash(contentFromFile)
+            // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 and UintArray instead of Buffer
+            const hash = await Hashing.calculateIPFSHash(contentFromFile)
 
-          console.log(`Hash of the file: ${hash}`)
+            console.log(`Hash of the file: ${hash}`)
 
-          // if success move the file to the contents folder
-          const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
-          console.log(`Moving to: ${destinationFilename}`)
+            // if success move the file to the contents folder
+            const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
+            console.log(`Moving to: ${destinationFilename}`)
 
-          // delete target file if exists
-          if (await checkFileExists(destinationFilename)) {
-            await fs.promises.unlink(destinationFilename)
-          }
+            // delete target file if exists
+            if (await checkFileExists(destinationFilename)) {
+              await fs.promises.unlink(destinationFilename)
+            }
 
-          console.log(`Renaming file from: ${tmpFile} to: ${destinationFilename}`)
-          // move downloaded file to target folder
-          await fs.promises.rename(tmpFile, destinationFilename)
+            console.log(`Renaming file from: ${tmpFile} to: ${destinationFilename}`)
+            // move downloaded file to target folder
+            await fs.promises.rename(tmpFile, destinationFilename)
 
-          // Store the metadata
-          this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
-          await this.systemPropertiesManager.setSystemProperty(
-            SystemProperty.LAST_FULL_SNAPSHOTS,
-            this.lastSnapshotsForAllEntityTypes,
-            db
-          )
+            // Store the metadata
+            this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
 
-          // Log
-          SnapshotManager.LOGGER.debug(
-            `Generated snapshot for all entity types. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
-          )
-        }),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+            // Log
+            SnapshotManager.LOGGER.debug(
+              `Generated snapshot for all entity types. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+            )
+          }),
+        { priority: DB_REQUEST_PRIORITY.HIGH }
+      )
 
-    // Delete the previous full snapshot (if it exists)
-    if (previousFullSnapshot) {
-      await this.service.deleteContent([previousFullSnapshot.hash])
+      // Delete the previous full snapshot (if it exists)
+      if (previousFullSnapshot) {
+        await this.service.deleteContent([previousFullSnapshot.hash])
+      }
+    } catch {
+      SnapshotManager.LOGGER.debug('There was an error generating snapshot')
     }
   }
 

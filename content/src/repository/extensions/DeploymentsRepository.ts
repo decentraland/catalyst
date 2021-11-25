@@ -185,7 +185,7 @@ export class DeploymentsRepository {
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
-  getFullSnapshot(): Promise<FullSnapshot[]> {
+  async getFullSnapshot(): Promise<FullSnapshot[]> {
     return this.db.map(
       `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
         `FROM deployments ` +
@@ -202,7 +202,7 @@ export class DeploymentsRepository {
     )
   }
 
-  getSnapshotPerEntityType(
+  async getSnapshotPerEntityType(
     entityType: EntityType
   ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
     return this.db.map(
