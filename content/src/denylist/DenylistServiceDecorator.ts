@@ -6,11 +6,12 @@ import {
   Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
+import { Database } from '../repository/Database'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Deployment, DeploymentOptions, PointerChangesFilters } from '../service/deployments/DeploymentManager'
+import { Deployment, DeploymentOptions, SnapshotOptions } from '../service/deployments/DeploymentManager'
 import { Entity } from '../service/Entity'
 import { EntityFactory } from '../service/EntityFactory'
 import {
@@ -194,8 +195,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     )
   }
 
-  getPointerChanges(filters?: PointerChangesFilters, offset?: number, limit?: number, lastId?: string) {
-    return this.service.getPointerChanges(filters, offset, limit, lastId)
+  getPointerChanges(task?: Database, options?: SnapshotOptions) {
+    return this.service.getPointerChanges(task, options)
   }
 
   getAllFailedDeployments() {

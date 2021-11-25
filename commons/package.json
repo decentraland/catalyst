@@ -1,10 +1,12 @@
 {
   "name": "@catalyst/commons",
   "description": "Commons",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "author": "Decentraland Contributors",
+  "license": "Apache-2.0",
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",

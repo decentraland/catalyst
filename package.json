@@ -1,7 +1,9 @@
 {
   "name": "catalyst",
-  "version": "0.1.0",
   "private": true,
+  "version": "2.0.0",
+  "author": "Decentraland Contributors",
+  "license": "Apache-2.0",
   "workspaces": [
     "commons",
     "comms/lighthouse",
