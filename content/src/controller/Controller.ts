@@ -333,6 +333,14 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(
+      SortingField,
+      req.query.sortingField as string
+    )
+    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
+      SortingOrder,
+      req.query.sortingOrder as string
+    )
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -345,6 +353,25 @@ export class Controller {
         .status(400)
         .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
       return
+    }
+
+    // Validate sorting fields and create sortBy
+    const sortBy: { field?: SortingField; order?: SortingOrder } = {}
+    if (sortingField) {
+      if (sortingField == 'unknown') {
+        res.status(400).send({ error: `Found an unrecognized sort field param` })
+        return
+      } else {
+        sortBy.field = sortingField
+      }
+    }
+    if (sortingOrder) {
+      if (sortingOrder == 'unknown') {
+        res.status(400).send({ error: `Found an unrecognized sort order param` })
+        return
+      } else {
+        sortBy.order = sortingOrder
+      }
     }
 
     // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
@@ -360,7 +387,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.service.getPointerChanges(requestFilters, offset, limit, lastId)
+    } = await this.service.getPointerChanges(undefined, { filters: requestFilters, offset, limit, lastId, sortBy })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))

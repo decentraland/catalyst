@@ -18,7 +18,7 @@ import {
   Deployment,
   DeploymentOptions,
   DeploymentPointerChanges,
-  PointerChangesFilters
+  SnapshotOptions
 } from '../../../src/service/deployments/DeploymentManager'
 import { Entity } from '../../../src/service/Entity'
 import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
@@ -71,13 +71,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     throw new Error('Method not implemented.')
   }
 
-  getPointerChanges(
-    filters?: PointerChangesFilters,
-    offset?: number,
-    limit?: number,
-    lastId?: string,
-    task?: Database
-  ) {
+  getPointerChanges(task?: Database, options?: SnapshotOptions) {
     return Promise.resolve({
       pointerChanges: this.pointerChanges,
       filters: {},

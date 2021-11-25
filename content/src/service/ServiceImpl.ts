@@ -23,7 +23,7 @@ import {
   DeploymentManager,
   DeploymentOptions,
   PartialDeploymentPointerChanges,
-  PointerChangesFilters
+  SnapshotOptions
 } from './deployments/DeploymentManager'
 import { Entity } from './Entity'
 import { EntityFactory } from './EntityFactory'
@@ -438,26 +438,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     )
   }
 
-  // This endpoint is not currently used for the sync
-  getPointerChanges(
-    filters?: PointerChangesFilters,
-    offset?: number,
-    limit?: number,
-    lastId?: string,
-    task?: Database
-  ): Promise<PartialDeploymentPointerChanges> {
+  getPointerChanges(task?: Database, options?: SnapshotOptions): Promise<PartialDeploymentPointerChanges> {
     return this.repository.reuseIfPresent(
       task,
       (db) =>
         db.taskIf((task) =>
-          this.deploymentManager.getPointerChanges(
-            task.deploymentPointerChanges,
-            task.deployments,
-            filters,
-            offset,
-            limit,
-            lastId
-          )
+          this.deploymentManager.getPointerChanges(task.deploymentPointerChanges, task.deployments, options)
         ),
       {
         priority: DB_REQUEST_PRIORITY.LOW
