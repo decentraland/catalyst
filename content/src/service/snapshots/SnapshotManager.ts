@@ -138,7 +138,7 @@ export class SnapshotManager {
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
   private async generateSnapshot(task?: Database): Promise<void> {
     try {
-      const previousFullSnapshot = this.lastSnapshotsForAllEntityTypes
+      const previousHash = this.lastSnapshotsForAllEntityTypes?.hash
 
       await this.repository.reuseIfPresent(
         task,
@@ -208,12 +208,16 @@ export class SnapshotManager {
       )
 
       // Delete the previous full snapshot (if it exists)
-      if (previousFullSnapshot) {
-        await this.service.deleteContent([previousFullSnapshot.hash])
+      if (!!previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
+        await this.service.deleteContent([previousHash])
       }
     } catch {
       SnapshotManager.LOGGER.debug('There was an error generating snapshot')
     }
+  }
+
+  private shouldPrunePreviousSnapshot(previousHash: string): boolean {
+    return this.lastSnapshotsForAllEntityTypes?.hash !== previousHash
   }
 
   private deploymentsSince(entityType: EntityType, timestamp: Timestamp, db: Database): Promise<number> {
