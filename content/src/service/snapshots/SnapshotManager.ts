@@ -1,4 +1,4 @@
-import { checkFileExists, tmpFile as createTempFile } from '@dcl/snapshots-fetcher/dist/utils'
+import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import log4js from 'log4js'
@@ -8,7 +8,6 @@ import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
 import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
-import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 
 export class SnapshotManager {
@@ -32,6 +31,9 @@ export class SnapshotManager {
     return this.snapshotFrequencyInMilliSeconds
   }
 
+  /**
+   * @deprecated
+   */
   startSnapshotsPerEntity(): Promise<void> {
     return this.repository.txIf(
       async (transaction) => {
@@ -59,20 +61,12 @@ export class SnapshotManager {
 
   async calculateFullSnapshots(): Promise<void> {
     // TODO: Add metrics regarding snapshots
-    const currentTimestamp: number = Date.now()
     return this.repository.txIf(
       async (transaction) => {
-        this.lastSnapshotsForAllEntityTypes = await this.systemPropertiesManager.getSystemProperty(
-          SystemProperty.LAST_FULL_SNAPSHOTS,
-          transaction
-        )
-
-        if (
-          !this.lastSnapshotsForAllEntityTypes ||
-          currentTimestamp - this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp >
-            this.snapshotFrequencyInMilliSeconds
-        ) {
+        try {
           await this.generateSnapshot(transaction)
+        } catch {
+          SnapshotManager.LOGGER.warn('There was an error when generating full snapshots')
         }
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
@@ -155,19 +149,23 @@ export class SnapshotManager {
           const snapshot: FullSnapshot[] = await transaction.deployments.getFullSnapshot()
 
           // Calculate the local deployment timestamp of the newest entity in the snapshot
-          const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
+          const snapshotTimestamp = snapshot[snapshot.length - 1]?.localTimestamp ?? 0
 
-          // Format the snapshot in a buffer
-          // fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
-          const tmpFile = await createTempFile('snapshot')
-          // path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+          // Format the snapshot in a tmp file
+          // const tmpFile = await createTempFile('snapshot')
+          fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
+          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+
           console.log(`Name of file: ${tmpFile}`)
+
           const writeStream = fs.createWriteStream(tmpFile)
           const fileClosedFuture = new Promise<void>((resolve, reject) => {
             writeStream.on('finish', resolve)
             writeStream.on('error', reject)
           })
+
           console.log(`File written`)
+
           try {
             for (const snapshotElem of snapshot) {
               writeStream.write(JSON.stringify(snapshotElem) + '\n')
@@ -175,18 +173,18 @@ export class SnapshotManager {
           } finally {
             writeStream.close()
             await fileClosedFuture
-            // writeStream.end()
           }
-          console.log(`Stream closed`)
 
+          console.log(`Stream closed`)
           const contentFromFile = await fs.promises.readFile(tmpFile)
           console.log(`Could read file`)
-          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after
-          //       https://github.com/decentraland/snapshots-fetcher/pull/4/files is merged
+
+          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 and UintArray instead of Buffer
           const hash = await Hashing.calculateIPFSHash(contentFromFile)
 
           console.log(`Hash of the file: ${hash}`)
-          // set the correct name
+
+          // if success move the file to the contents folder
           const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
           console.log(`Moving to: ${destinationFilename}`)
 

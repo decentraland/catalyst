@@ -624,6 +624,9 @@ export class Controller {
     })
   }
 
+  /**
+   * @deprecated
+   */
   async getSnapshot(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /snapshot/:type
