@@ -167,7 +167,7 @@ export class Server {
       await this.metricsServer.start()
     }
     await this.snapshotManager.startSnapshotsPerEntity()
-    // await this.snapshotManager.startCalculateFullSnapshots()
+    await this.snapshotManager.startCalculateFullSnapshots()
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
   }
