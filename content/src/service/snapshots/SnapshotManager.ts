@@ -1,4 +1,4 @@
-import { checkFileExists, tmpFile as createTempFile } from '@dcl/snapshots-fetcher/dist/utils'
+import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import log4js from 'log4js'
@@ -158,9 +158,7 @@ export class SnapshotManager {
           const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
 
           // Format the snapshot in a buffer
-          // fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
-          const tmpFile = await createTempFile('snapshot')
-          // path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-file-' + Math.random().toFixed(36))
           console.log(`Name of file: ${tmpFile}`)
           const writeStream = fs.createWriteStream(tmpFile)
           const fileClosedFuture = new Promise<void>((resolve, reject) => {
