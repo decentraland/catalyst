@@ -1,5 +1,4 @@
 import { delay, SynchronizationState } from '@catalyst/commons'
-import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
 import { Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
@@ -7,13 +6,10 @@ import { metricsComponent } from '../../metrics'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
 import { ClusterDeploymentsService, MetaverseContentService } from '../Service'
 import { SystemPropertiesManager } from '../system-properties/SystemProperties'
+import { bootstrapFromSnapshots } from './bootstrapFromSnapshots'
 import { ContentCluster } from './ContentCluster'
-import { EventDeployer } from './EventDeployer'
-import {
-  bootstrapFromSnapshots,
-  createSincronizationComponents,
-  SynchronizerDeployerComponents
-} from './new-synchronization'
+import { deployEntityFromRemoteServer } from './deployRemoteEntity'
+import { createSincronizationComponents, SynchronizerDeployerComponents } from './newSynchronization'
 
 export interface SynchronizationManager {
   start(): Promise<void>
@@ -31,15 +27,14 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   constructor(
     private readonly cluster: ContentCluster,
     readonly _systemProperties: SystemPropertiesManager,
-    readonly deployer: EventDeployer,
-    private readonly service: MetaverseContentService & ClusterDeploymentsService,
+    private readonly deploymentsService: MetaverseContentService & ClusterDeploymentsService,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number,
-    private readonly contentStorageFolder: string
+    readonly contentStorageFolder: string
   ) {
     this.components = createSincronizationComponents({
       contentStorageFolder,
-      eventDeployer: deployer
+      deploymentsService
     })
   }
 
@@ -71,6 +66,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // Since it was disabled, there is nothing to stop
       return Promise.resolve()
     }
+    this.components.synchronizationJobManager.setDesiredJobs(new Set())
     this.cluster.disconnect()
     return this.waitUntilSyncFinishes()
   }
@@ -86,36 +82,38 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   // This is the method that is called recursive to sync with other catalysts
   async syncWithServers(): Promise<void> {
-    this.synchronizationState = SynchronizationState.BOOTSTRAPPING
-    // Note: If any deployment was overwritten by the snapshots, then we never reach them
-    ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
-    metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
-
-    await bootstrapFromSnapshots(this.components, this.cluster, this.contentStorageFolder)
-
-    metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
-    // await this.updateLastTimestamp(contentServers, result)
-
-    // Update flag: it was synced and needs to get new deployments
-    this.synchronizationState = SynchronizationState.SYNCING
-    metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
-
-    ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
-
-    const setDesiredJobs = () => {
-      const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getServerUrl()))
-      // the job names are the contentServerUrl
-      return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
+    bootstrap: {
+      this.synchronizationState = SynchronizationState.BOOTSTRAPPING
+      // Note: If any deployment was overwritten by the snapshots, then we never reach them
+      ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
+      await bootstrapFromSnapshots(this.components, this.cluster)
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
+      // await this.updateLastTimestamp(contentServers, result)
     }
 
-    // start the sync jobs
-    setDesiredJobs()
+    sync: {
+      // Update flag: it was synced and needs to get new deployments
+      this.synchronizationState = SynchronizationState.SYNCING
+      metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
 
-    // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
-    // the setDesiredJobs function handles the lifecycle od those async jobs.
-    this.cluster.onSyncFinished(() => {
+      ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
+
+      const setDesiredJobs = () => {
+        const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getServerUrl()))
+        // the job names are the contentServerUrl
+        return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
+      }
+
+      // start the sync jobs
       setDesiredJobs()
-    })
+
+      // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
+      // the setDesiredJobs function handles the lifecycle od those async jobs.
+      this.cluster.onSyncFinished(() => {
+        setDesiredJobs()
+      })
+    }
   }
 
   private async failIfSyncHangs(): Promise<void> {
@@ -140,45 +138,27 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   private async retryFailedDeploymentExecution(): Promise<void> {
     // Get Failed Deployments from local storage
-    const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
+    const failedDeployments: FailedDeployment[] = await this.deploymentsService.getAllFailedDeployments()
 
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 
-    // TODO: Implement an exponential backoff for retrying
-    failedDeployments.forEach(async (failedDeployment) => {
-      // Build Deployment from other servers
-      const entityId = failedDeployment.entityId
-      ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
-      const servers = this.cluster.getAllServersInCluster().map(($) => $.getServerUrl())
+    const servers = this.cluster.getAllServersInCluster().map(($) => $.getServerUrl())
 
+    // TODO: Implement an exponential backoff for retrying
+    for (const failedDeployment of failedDeployments) {
+      // Build Deployment from other servers
+      const { entityId, entityType } = failedDeployment
+      ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
       try {
-        const entity = await downloadEntityAndContentFiles(
-          this.components,
-          entityId,
-          this.cluster.getAllServersInCluster().map(($) => $.getServerUrl()),
-          new Map(),
-          this.contentStorageFolder,
-          10,
-          1000
-        )
-        await this.components.deployer.deployEntity(
-          {
-            ...entity,
-            authChain: entity.auditInfo.authChain,
-            localTimestamp: 0
-          },
-          servers
-        )
-      } catch (err) {
-        ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' failed due: ${err}`)
-      }
-    })
+        await deployEntityFromRemoteServer(this.components, entityId, entityType, servers)
+      } catch {}
+    }
   }
 
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
       await delay(ms('1h'))
-      const isSynced: boolean = this.synchronizationState == SynchronizationState.SYNCED
+      const isSynced: boolean = this.synchronizationState != SynchronizationState.BOOTSTRAPPING
       if (isSynced) {
         await this.retryFailedDeploymentExecution()
       }
@@ -187,7 +167,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   private async waitUntilSyncFinishes(): Promise<void> {
     await this.components.downloadQueue.onIdle()
-    await this.components.deployer.onIdle()
+    await this.components.batchDeployer.onIdle()
 
     while (
       this.synchronizationState === SynchronizationState.SYNCING ||

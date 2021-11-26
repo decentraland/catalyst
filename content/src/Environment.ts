@@ -22,7 +22,6 @@ import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervis
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ClusterSynchronizationManagerFactory } from './service/synchronization/ClusterSynchronizationManagerFactory'
 import { ContentClusterFactory } from './service/synchronization/ContentClusterFactory'
-import { EventDeployerFactory } from './service/synchronization/EventDeployerFactory'
 import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
 import { ValidatorFactory } from './service/validations/ValidatorFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
@@ -133,7 +132,6 @@ export const enum Bean {
   ACCESS_CHECKER,
   DEPLOYMENT_MANAGER,
   CONTENT_CLUSTER,
-  EVENT_DEPLOYER,
   DENYLIST,
   AUTHENTICATOR,
   FAILED_DEPLOYMENTS_MANAGER,
@@ -483,7 +481,6 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
       GarbageCollectionManagerFactory.create(env)
     )
-    this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER, () => EventDeployerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () =>
       ClusterSynchronizationManagerFactory.create(env)
     )

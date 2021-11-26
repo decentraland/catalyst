@@ -151,6 +151,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
+  async deployEntityFromRemoteServer(entityId: string, remoteContentServers: string[]) {}
+
   private async storeDeploymentInDatabase(
     task: Database | undefined,
     entityId: string,
@@ -256,7 +258,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     reason: FailureReason,
     errorDescription?: string
   ): Promise<null> {
-    ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
+    ServiceImpl.LOGGER.warn(
+      `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
+    )
     return this.repository.run(
       (db) =>
         this.failedDeploymentsManager.reportFailure(

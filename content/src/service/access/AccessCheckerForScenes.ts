@@ -298,7 +298,7 @@ export class AccessCheckerForScenes {
     const variables = {
       owner,
       operator,
-      timestamp: Math.floor(timestamp / 1000) // UNIX
+      timestamp: Math.floor(timestamp / 1000) // js(ms) -> UNIX(s)
     }
 
     try {

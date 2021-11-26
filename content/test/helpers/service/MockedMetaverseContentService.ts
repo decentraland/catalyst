@@ -63,6 +63,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     this.pointerChanges = builder.pointerChanges
   }
 
+  async deployEntityFromRemoteServer() {
+    // noop
+  }
+
   start(): Promise<void> {
     return Promise.resolve()
   }

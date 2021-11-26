@@ -47,18 +47,6 @@ export const metrics = validateMetricsDeclaration({
     labelNames: []
   },
 
-  dcl_content_download_time: {
-    help: 'Histogram of time spent downloading files from other catalysts',
-    type: 'histogram',
-    labelNames: ['remote_catalyst']
-  },
-
-  dcl_content_downloaded_total: {
-    help: 'Total downloaded files',
-    type: 'counter',
-    labelNames: ['overwritten']
-  },
-
   dcl_content_ignored_deployments_total: {
     help: 'Total ignored deployments because are already synced',
     type: 'counter',
@@ -69,6 +57,23 @@ export const metrics = validateMetricsDeclaration({
     help: 'Total failed deployments',
     type: 'counter',
     labelNames: []
+  },
+
+  dcl_deployment_time: {
+    help: 'Time spent deploying an entity',
+    type: 'histogram',
+    labelNames: ['entity_type', 'failed']
+  },
+
+  dcl_pending_deployment_gauge: {
+    help: 'Pending deployments',
+    type: 'gauge',
+    labelNames: ['entity_type']
+  },
+  dcl_pending_download_gauge: {
+    help: 'Pending downloading jobs',
+    type: 'gauge',
+    labelNames: ['entity_type']
   }
 })
 
