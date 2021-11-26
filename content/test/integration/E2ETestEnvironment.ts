@@ -255,8 +255,8 @@ export function loadTestEnvironment(overrideConfigs?: Map<EnvironmentConfig, any
   })
 
   afterEach(async () => {
-    await testEnv.stopServers()
     await testEnv.clearDatabases()
+    await testEnv.stopServers()
   })
 
   return testEnv

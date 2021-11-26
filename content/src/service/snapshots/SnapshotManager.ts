@@ -16,6 +16,7 @@ export class SnapshotManager {
   private readonly counter: Map<EntityType, number> = new Map()
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsForAllEntityTypes: SnapshotMetadata | undefined = undefined
+  private timeout: NodeJS.Timer | undefined = undefined
 
   constructor(
     private readonly systemPropertiesManager: SystemPropertiesManager,
@@ -59,10 +60,16 @@ export class SnapshotManager {
   async startCalculateFullSnapshots(): Promise<void> {
     // TODO: Add metrics regarding snapshots
     await this.generateSnapshot()
-    setInterval(
+    this.timeout = setInterval(
       () => this.startCalculateFullSnapshots().catch(SnapshotManager.LOGGER.error),
       this.snapshotFrequencyInMilliSeconds
     )
+  }
+
+  stopCalculateFullSnapshots(): void {
+    if (!!this.timeout) {
+      clearInterval(this.timeout)
+    }
   }
 
   getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined {

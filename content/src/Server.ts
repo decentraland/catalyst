@@ -180,6 +180,9 @@ export class Server {
     if (this.metricsServer) {
       await this.metricsServer.stop()
     }
+
+    this.snapshotManager.stopCalculateFullSnapshots()
+
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()
