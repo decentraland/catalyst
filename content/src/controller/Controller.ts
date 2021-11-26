@@ -334,6 +334,14 @@ export class Controller {
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
 
+    const sortingFieldParam: string | undefined = req.query.sortingField as string
+    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
+    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
+      SortingOrder,
+      req.query.sortingOrder as string
+    )
+
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
       res.status(400).send({ error: `Found an unrecognized entity type` })
@@ -345,6 +353,25 @@ export class Controller {
         .status(400)
         .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
       return
+    }
+
+    // Validate sorting fields and create sortBy
+    const sortBy: { field?: SortingField; order?: SortingOrder } = {}
+    if (sortingField) {
+      if (sortingField == 'unknown') {
+        res.status(400).send({ error: `Found an unrecognized sort field param` })
+        return
+      } else {
+        sortBy.field = sortingField
+      }
+    }
+    if (sortingOrder) {
+      if (sortingOrder == 'unknown') {
+        res.status(400).send({ error: `Found an unrecognized sort order param` })
+        return
+      } else {
+        sortBy.order = sortingOrder
+      }
     }
 
     // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
@@ -360,7 +387,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.service.getPointerChanges(requestFilters, offset, limit, lastId)
+    } = await this.service.getPointerChanges(undefined, { filters: requestFilters, offset, limit, lastId, sortBy })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
@@ -425,10 +452,9 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const fields: string | undefined = req.query.fields as string | undefined
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(
-      SortingField,
-      req.query.sortingField as string
-    )
+    const sortingFieldParam: string | undefined = req.query.sortingField as string
+    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
       SortingOrder,
       req.query.sortingOrder as string
@@ -561,6 +587,14 @@ export class Controller {
     return '?' + nextQueryParams
   }
 
+  private fromCamelCaseToSnakeCase(phrase: string): string {
+    const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+    if (withoutUpperCase[0] === '_') {
+      return withoutUpperCase.substring(1)
+    }
+    return withoutUpperCase
+  }
+
   private asEnumValue<T extends { [key: number]: string }>(
     enumType: T,
     stringToMap?: string
@@ -597,6 +631,9 @@ export class Controller {
     })
   }
 
+  /**
+   * @deprecated
+   */
   async getSnapshot(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /snapshot/:type
@@ -622,7 +659,7 @@ export class Controller {
     // Method: GET
     // Path: /snapshot
 
-    const metadata = this.snapshotManager.getSnapshotMetadataForAllEntityType()
+    const metadata = this.snapshotManager.getFullSnapshotMetadata()
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })

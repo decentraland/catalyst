@@ -2,6 +2,8 @@
   "name": "@catalyst/content-server",
   "description": "Content server",
   "version": "0.1.0",
+  "author": "Decentraland Contributors",
+  "license": "Apache-2.0",
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
@@ -50,7 +52,7 @@
     "@types/compression": "^1",
     "@types/cors": "^2",
     "@types/destroy": "1.0.0",
-    "@types/express": "4.17.3",
+    "@types/express": "4.17.13",
     "@types/faker": "^5",
     "@types/jasmine": "3.9.1",
     "@types/morgan": "^1",

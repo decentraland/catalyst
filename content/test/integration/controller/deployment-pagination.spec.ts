@@ -251,8 +251,7 @@ describe('Integration - Deployment Pagination', () => {
     } catch (err) {}
   })
 
-  // TODO: Fix this
-  xit('When getting pointer changes then the pagination is correctly done', async () => {
+  it('When getting pointer changes then the pagination is correctly done', async () => {
     // Deploy E1, E2 in that order
     const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
 
@@ -264,9 +263,8 @@ describe('Integration - Deployment Pagination', () => {
     expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
   })
 
-  // TODO: Fix this until ...
   // TODO: Remove this test when toLocalTimestamp and fromLocalTimestamp are deleted
-  xit('When getting pointer changes with deprecated filter then the pagination is correctly done', async () => {
+  it('When getting pointer changes with deprecated filter then the pagination is correctly done', async () => {
     // Deploy E1, E2 in that order
     const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
 

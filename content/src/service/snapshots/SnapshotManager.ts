@@ -1,4 +1,4 @@
-import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
+import { checkFileExists, hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import log4js from 'log4js'
@@ -16,6 +16,7 @@ export class SnapshotManager {
   private readonly counter: Map<EntityType, number> = new Map()
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsForAllEntityTypes: SnapshotMetadata | undefined = undefined
+  private timeout: NodeJS.Timer | undefined = undefined
 
   constructor(
     private readonly systemPropertiesManager: SystemPropertiesManager,
@@ -28,10 +29,9 @@ export class SnapshotManager {
     service.listenToDeployments((deployment) => this.onDeployment(deployment))
   }
 
-  getSnapshotsFrequencyInMilliseconds(): number {
-    return this.snapshotFrequencyInMilliSeconds
-  }
-
+  /**
+   * @deprecated
+   */
   startSnapshotsPerEntity(): Promise<void> {
     return this.repository.txIf(
       async (transaction) => {
@@ -57,33 +57,26 @@ export class SnapshotManager {
     )
   }
 
-  async calculateFullSnapshots(): Promise<void> {
+  async startCalculateFullSnapshots(): Promise<void> {
     // TODO: Add metrics regarding snapshots
-    const currentTimestamp: number = Date.now()
-    return this.repository.txIf(
-      async (transaction) => {
-        this.lastSnapshotsForAllEntityTypes = await this.systemPropertiesManager.getSystemProperty(
-          SystemProperty.LAST_FULL_SNAPSHOTS,
-          transaction
-        )
-
-        if (
-          !this.lastSnapshotsForAllEntityTypes ||
-          currentTimestamp - this.lastSnapshotsForAllEntityTypes.lastIncludedDeploymentTimestamp >
-            this.snapshotFrequencyInMilliSeconds
-        ) {
-          await this.generateSnapshot(transaction)
-        }
-      },
-      { priority: DB_REQUEST_PRIORITY.HIGH }
+    await this.generateSnapshot()
+    this.timeout = setInterval(
+      () => this.startCalculateFullSnapshots().catch(SnapshotManager.LOGGER.error),
+      this.snapshotFrequencyInMilliSeconds
     )
+  }
+
+  stopCalculateFullSnapshots(): void {
+    if (!!this.timeout) {
+      clearInterval(this.timeout)
+    }
   }
 
   getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined {
     return this.lastSnapshots.get(entityType)
   }
 
-  getSnapshotMetadataForAllEntityType(): SnapshotMetadata | undefined {
+  getFullSnapshotMetadata(): SnapshotMetadata | undefined {
     return this.lastSnapshotsForAllEntityTypes
   }
 
@@ -99,7 +92,10 @@ export class SnapshotManager {
     }
   }
 
-  /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
+  /**
+   * This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata
+   * @deprecated
+   */
   private async generateSnapshotPerEntityType(entityType: EntityType, task?: Database): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
@@ -145,27 +141,33 @@ export class SnapshotManager {
 
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
   private async generateSnapshot(task?: Database): Promise<void> {
-    const previousFullSnapshot = this.lastSnapshotsForAllEntityTypes
+    try {
+      const previousHash = this.lastSnapshotsForAllEntityTypes?.hash
 
-    await this.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.txIf(async (transaction) => {
+      await this.repository.reuseIfPresent(
+        task,
+        async (db) => {
           // Get all the active entities
-          const snapshot: FullSnapshot[] = await transaction.deployments.getFullSnapshot()
+          const snapshot: FullSnapshot[] = await db.deployments.getFullSnapshot()
 
           // Calculate the local deployment timestamp of the newest entity in the snapshot
-          const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
+          const snapshotTimestamp = snapshot[snapshot.length - 1]?.localTimestamp ?? 0
 
-          // Format the snapshot in a buffer
-          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-file-' + Math.random().toFixed(36))
+          // Format the snapshot in a tmp file
+          // const tmpFile = await createTempFile('snapshot')
+          fs.mkdirSync(path.resolve(this.contentStorageFolder, 'tmp-snapshot'), { recursive: true })
+          const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot/' + Math.random())
+
           console.log(`Name of file: ${tmpFile}`)
+
           const writeStream = fs.createWriteStream(tmpFile)
           const fileClosedFuture = new Promise<void>((resolve, reject) => {
             writeStream.on('finish', resolve)
             writeStream.on('error', reject)
           })
+
           console.log(`File written`)
+
           try {
             for (const snapshotElem of snapshot) {
               writeStream.write(JSON.stringify(snapshotElem) + '\n')
@@ -173,18 +175,11 @@ export class SnapshotManager {
           } finally {
             writeStream.close()
             await fileClosedFuture
-            // writeStream.end()
           }
-          console.log(`Stream closed`)
-
-          const contentFromFile = await fs.promises.readFile(tmpFile)
-          console.log(`Could read file`)
-          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 after
-          //       https://github.com/decentraland/snapshots-fetcher/pull/4/files is merged
-          const hash = await Hashing.calculateIPFSHash(contentFromFile)
-
+          const hash = await hashStreamV1(fs.createReadStream(tmpFile) as any)
           console.log(`Hash of the file: ${hash}`)
-          // set the correct name
+
+          // if success move the file to the contents folder
           const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
           console.log(`Moving to: ${destinationFilename}`)
 
@@ -199,24 +194,27 @@ export class SnapshotManager {
 
           // Store the metadata
           this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
-          await this.systemPropertiesManager.setSystemProperty(
-            SystemProperty.LAST_FULL_SNAPSHOTS,
-            this.lastSnapshotsForAllEntityTypes,
-            db
-          )
 
           // Log
           SnapshotManager.LOGGER.debug(
             `Generated snapshot for all entity types. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
           )
-        }),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+        },
+        { priority: DB_REQUEST_PRIORITY.HIGH }
+      )
 
-    // Delete the previous full snapshot (if it exists)
-    if (previousFullSnapshot) {
-      await this.service.deleteContent([previousFullSnapshot.hash])
+      // Delete the previous full snapshot (if it exists)
+      if (!!previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
+        await this.service.deleteContent([previousHash])
+      }
+    } catch (err: any) {
+      SnapshotManager.LOGGER.debug('There was an error generating snapshot')
+      SnapshotManager.LOGGER.error(err)
     }
+  }
+
+  private shouldPrunePreviousSnapshot(previousHash: string): boolean {
+    return this.lastSnapshotsForAllEntityTypes?.hash !== previousHash
   }
 
   private deploymentsSince(entityType: EntityType, timestamp: Timestamp, db: Database): Promise<number> {

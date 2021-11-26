@@ -14,7 +14,7 @@ import {
   Deployment,
   DeploymentOptions,
   PartialDeploymentPointerChanges,
-  PointerChangesFilters
+  SnapshotOptions
 } from './deployments/DeploymentManager'
 import { Entity } from './Entity'
 import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
@@ -40,13 +40,7 @@ export interface MetaverseContentService {
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): Promise<FailedDeployment[]>
-  getPointerChanges(
-    filters?: PointerChangesFilters,
-    offset?: number,
-    limit?: number,
-    lastId?: string,
-    task?: Database
-  ): Promise<PartialDeploymentPointerChanges>
+  getPointerChanges(task?: Database, options?: SnapshotOptions): Promise<PartialDeploymentPointerChanges>
   getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void

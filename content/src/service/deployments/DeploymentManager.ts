@@ -8,8 +8,6 @@ import {
   EntityType,
   PartialDeploymentHistory,
   Pointer,
-  SortingField,
-  SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../controller/Controller'
@@ -127,21 +125,19 @@ export class DeploymentManager {
   async getPointerChanges(
     deploymentPointerChangesRepo: DeploymentPointerChangesRepository,
     deploymentsRepo: DeploymentsRepository,
-    filters?: PointerChangesFilters,
-    offset?: number,
-    limit?: number,
-    lastId?: string
+    options?: SnapshotOptions
   ): Promise<PartialDeploymentPointerChanges> {
-    const curatedOffset = offset && offset >= 0 ? offset : 0
+    const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
     const curatedLimit =
-      limit && limit > 0 && limit <= DeploymentManager.MAX_HISTORY_LIMIT ? limit : DeploymentManager.MAX_HISTORY_LIMIT
+      options?.limit && options?.limit > 0 && options?.limit <= DeploymentManager.MAX_HISTORY_LIMIT
+        ? options?.limit
+        : DeploymentManager.MAX_HISTORY_LIMIT
     const deploymentsWithExtra = await deploymentsRepo.getHistoricalDeployments(
       curatedOffset,
       curatedLimit + 1,
-      filters,
-      // TODO: make this configurable
-      { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING },
-      lastId
+      options?.filters,
+      options?.sortBy,
+      options?.lastId
     )
     const moreData = deploymentsWithExtra.length > curatedLimit
 
@@ -159,7 +155,7 @@ export class DeploymentManager {
     return {
       pointerChanges,
       filters: {
-        ...filters
+        ...options?.filters
       },
       pagination: {
         offset: curatedOffset,
@@ -210,6 +206,14 @@ export type PartialDeploymentPointerChanges = {
     lastId?: string
     next?: string
   }
+}
+
+export type SnapshotOptions = {
+  filters?: DeploymentFilters
+  sortBy?: DeploymentSorting
+  offset?: number
+  limit?: number
+  lastId?: string
 }
 
 export type DeploymentOptions = {

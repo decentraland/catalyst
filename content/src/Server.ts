@@ -167,9 +167,7 @@ export class Server {
       await this.metricsServer.start()
     }
     await this.snapshotManager.startSnapshotsPerEntity()
-    setInterval(async () => {
-      await this.snapshotManager.calculateFullSnapshots()
-    }, this.snapshotManager.getSnapshotsFrequencyInMilliseconds())
+    await this.snapshotManager.startCalculateFullSnapshots()
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
   }
@@ -182,6 +180,9 @@ export class Server {
     if (this.metricsServer) {
       await this.metricsServer.stop()
     }
+
+    this.snapshotManager.stopCalculateFullSnapshots()
+
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()

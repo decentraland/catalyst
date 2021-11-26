@@ -5,6 +5,8 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "author": "Decentraland Contributors",
+  "license": "Apache-2.0",
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
@@ -23,7 +25,7 @@
     "web3x": "4.0.6"
   },
   "devDependencies": {
-    "@types/express": "4.17.3",
+    "@types/express": "4.17.13",
     "@types/jasmine": "3.9.1",
     "@types/node": "16.7.10",
     "@types/qs": "^6",

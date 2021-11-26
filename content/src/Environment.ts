@@ -392,7 +392,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
-      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('15m')
+      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('1m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO, () => process.env.CUSTOM_DAO)
 
