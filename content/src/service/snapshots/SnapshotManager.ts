@@ -85,7 +85,10 @@ export class SnapshotManager {
     }
   }
 
-  /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
+  /**
+   * This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata
+   * @deprecated
+   */
   private async generateSnapshotPerEntityType(entityType: EntityType, task?: Database): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
