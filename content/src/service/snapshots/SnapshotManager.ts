@@ -200,8 +200,9 @@ export class SnapshotManager {
       if (!!previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
         await this.service.deleteContent([previousHash])
       }
-    } catch {
+    } catch (err: any) {
       SnapshotManager.LOGGER.debug('There was an error generating snapshot')
+      SnapshotManager.LOGGER.error(err)
     }
   }
 
