@@ -78,12 +78,13 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/snapshots-fetcher@^1.0.0-20211124191324.commit-0ce02d3":
-  version "1.0.0-20211124191324.commit-0ce02d3"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-1.0.0-20211124191324.commit-0ce02d3.tgz#d287fb41ea9512370ca48212c612e18f048e11ed"
-  integrity sha512-QgjG1IZ0Cr9zfxp8p/xiC6+A8jQeqG9O6CYGVdEkpw+FMg4R+HX2h+Px+i5oYnMoZvEbHeSIEIg0Iex4Kbr38A==
+"@dcl/snapshots-fetcher@^1.0.0-20211126145751.commit-9c01d85":
+  version "1.0.0-20211126145751.commit-9c01d85"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-1.0.0-20211126145751.commit-9c01d85.tgz#846cc86bf5135823e0a5027576b24576f0908605"
+  integrity sha512-36T4ixk7Z7mXa29xbRwBnNF7YCFae7+Df0rvKRofZmUmjnElIAXSGhnj9LHndc7GE00QvhIm0SK2TKg9gRfI1g==
   dependencies:
     "@well-known-components/interfaces" "^1.1.0"
+    "@well-known-components/metrics" "^1.1.2"
     cids "^1.1.9"
     ipfs-unixfs-importer "^7.0.3"
     multihashes "^4.0.3"

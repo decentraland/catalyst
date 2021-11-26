@@ -18,6 +18,7 @@ import { IFetchComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
 import { EntityType } from 'dcl-catalyst-commons'
 import * as nodeFetch from 'node-fetch'
+import { metricsComponent } from 'src/metrics'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
@@ -35,7 +36,7 @@ export type CannonicalEntityDeployment = { entity: RemoteEntityDeployment; serve
  * The JobQueue concurrency can be configured.
  * The IDeployerComponent has a map of deployments that may be cleared up every now and then.
  * It does NOT checks for duplicates, every operation is assumed idempotent.
- * The deployments with different servers will count as one while they appear in the internal data structure.
+ * The deployments with different servers will count as one while they appear in the internal data structure (the map).
  * For every entityId, the servers are added to a mutable array that can and should be used to load balance the downloads.
  */
 export function createDeployerComponent(
@@ -142,7 +143,8 @@ export function createSincronizationComponents(options: {
   const snapshotComponents: SnapshotsFetcherComponents = {
     logger,
     downloadQueue,
-    fetcher
+    fetcher,
+    metrics: metricsComponent
   }
 
   const deployer = createDeployerComponent(snapshotComponents, options)
@@ -155,11 +157,18 @@ export function createSincronizationComponents(options: {
           { ...snapshotComponents, deployer },
           {
             contentFolder: options.contentStorageFolder,
-            contentServer: contentServer,
-            pointerChangesWaitTime: 1000,
+            contentServer,
+
+            // time between every poll to /pointer-changes
+            pointerChangesWaitTime: 5000,
+
+            // reconnection time for the whole catalyst
             reconnectTime: 1000,
-            requestMaxRetries: 100,
-            requestRetryWaitTime: 1000
+            reconnectRetryTimeExponent: 1.1,
+
+            // download entities retry
+            requestMaxRetries: 10,
+            requestRetryWaitTime: 5000
           }
         )
       }
@@ -193,7 +202,7 @@ export async function bootstrapFromSnapshots(
   await Promise.allSettled(
     catalystServers.map(async (server) => {
       try {
-        const contentServer = server.getContentUrl()
+        const contentServer = server.getServerUrl()
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: contentStorageFolder,
           contentServer,

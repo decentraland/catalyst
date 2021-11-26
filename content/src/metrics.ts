@@ -1,8 +1,10 @@
+import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/snapshots-fetcher'
 import { createTestMetricsComponent, validateMetricsDeclaration } from '@well-known-components/metrics'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
 
 export const metrics = validateMetricsDeclaration({
   ...getDefaultHttpMetrics(),
+  ...snapshotFetcherMetricsDefinitions,
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',
