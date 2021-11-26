@@ -1,4 +1,4 @@
-import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
+import { checkFileExists, hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import log4js from 'log4js'
@@ -163,14 +163,7 @@ export class SnapshotManager {
             writeStream.close()
             await fileClosedFuture
           }
-
-          console.log(`Stream closed`)
-          const contentFromFile = await fs.promises.readFile(tmpFile)
-          console.log(`Could read file`)
-
-          // TODO: use require('@dcl/snapshots-fetcher/dist/utils').hashStreamV1 and UintArray instead of Buffer
-          const hash = await Hashing.calculateIPFSHash(contentFromFile)
-
+          const hash = await hashStreamV1(fs.createReadStream(tmpFile) as any)
           console.log(`Hash of the file: ${hash}`)
 
           // if success move the file to the contents folder
