@@ -59,7 +59,10 @@ export class SnapshotManager {
   async startCalculateFullSnapshots(): Promise<void> {
     // TODO: Add metrics regarding snapshots
     await this.generateSnapshot()
-    setTimeout(async () => await this.startCalculateFullSnapshots(), this.snapshotFrequencyInMilliSeconds)
+    setInterval(
+      () => this.startCalculateFullSnapshots().catch(SnapshotManager.LOGGER.error),
+      this.snapshotFrequencyInMilliSeconds
+    )
   }
 
   getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined {
