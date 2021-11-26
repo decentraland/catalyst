@@ -333,10 +333,10 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(
-      SortingField,
-      req.query.sortingField as string
-    )
+
+    const sortingFieldParam: string | undefined = req.query.sortingField as string
+    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
       SortingOrder,
       req.query.sortingOrder as string
@@ -452,10 +452,9 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const fields: string | undefined = req.query.fields as string | undefined
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(
-      SortingField,
-      req.query.sortingField as string
-    )
+    const sortingFieldParam: string | undefined = req.query.sortingField as string
+    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
       SortingOrder,
       req.query.sortingOrder as string
@@ -586,6 +585,14 @@ export class Controller {
       limit: options?.limit
     })
     return '?' + nextQueryParams
+  }
+
+  private fromCamelCaseToSnakeCase(phrase: string): string {
+    const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+    if (withoutUpperCase[0] === '_') {
+      return withoutUpperCase.substring(1)
+    }
+    return withoutUpperCase
   }
 
   private asEnumValue<T extends { [key: number]: string }>(
