@@ -5,7 +5,6 @@
  */
 
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
-import { EntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { AuthChain } from 'dcl-crypto'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -37,7 +36,7 @@ async function downloadFullEntity(
   entityId: string,
   entityType: string,
   servers: string[]
-): Promise<EntityDeployment> {
+): Promise<unknown> {
   const { metrics } = components
   metrics.increment('dcl_pending_download_gauge', { entity_type: entityType })
   try {
