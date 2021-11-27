@@ -6,6 +6,7 @@
 
 import { downloadEntityAndContentFiles } from '@dcl/snapshots-fetcher'
 import { EntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
+import { AuthChain } from 'dcl-crypto'
 import * as fs from 'fs'
 import * as path from 'path'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'
@@ -24,10 +25,11 @@ export async function deployEntityFromRemoteServer(
   components: SynchronizationComponents,
   entityId: string,
   entityType: string,
+  authChain: AuthChain,
   servers: string[]
 ): Promise<void> {
-  const entity = await downloadFullEntity(components, entityId, entityType, servers)
-  await deployDownloadedEntity(components, entityId, entityType, entity.auditInfo)
+  await downloadFullEntity(components, entityId, entityType, servers)
+  await deployDownloadedEntity(components, entityId, entityType, { authChain })
 }
 
 async function downloadFullEntity(

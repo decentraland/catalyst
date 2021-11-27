@@ -2,7 +2,7 @@ import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-import { SynchronizationComponents, CannonicalEntityDeployment } from './newSynchronization'
+import { CannonicalEntityDeployment, SynchronizationComponents } from './newSynchronization'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -47,13 +47,20 @@ export function createBatchDeployerComponent(
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
           try {
-            await deployEntityFromRemoteServer(components, entity.entityId, entity.entityType, elementInMap!.servers)
+            await deployEntityFromRemoteServer(
+              components,
+              entity.entityId,
+              entity.entityType,
+              entity.authChain,
+              elementInMap!.servers
+            )
             // failed deployments are automaticcally rescheduled
           } catch (err: any) {
             await components.deployer.reportErrorDuringSync(
               entity.entityType as any,
               entity.entityId,
               FailureReason.DEPLOYMENT_ERROR,
+              entity.authChain,
               err.toString()
             )
           } finally {

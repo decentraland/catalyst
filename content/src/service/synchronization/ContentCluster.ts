@@ -147,6 +147,8 @@ export class ContentCluster implements IdentityProvider {
 
       const challengesByAddress: Map<ServerAddress, ChallengeText> = new Map()
 
+      const daoServerWithoutAnswers = new Set<string>(Array.from(this.allServersInDAO).map(($) => $.baseUrl))
+
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
         ContentCluster.LOGGER.info(`Attempt ${attempts}`)
         // Prepare challenges for unknown servers
@@ -165,6 +167,7 @@ export class ContentCluster implements IdentityProvider {
         for (const r of challengeResults) {
           if (r.status == 'fulfilled' && r.value.challengeText) {
             challengesByAddress.set(r.value.server.baseUrl, r.value.challengeText)
+            daoServerWithoutAnswers.delete(r.value.server.baseUrl)
             // Check if I was any of the servers who responded
             if (this.challengeSupervisor.isChallengeOk(r.value.challengeText)) {
               serversWithMyChallengeText.push(r.value.server)
@@ -182,6 +185,9 @@ export class ContentCluster implements IdentityProvider {
               serversWithMyChallengeText.length
             }`
           )
+          break
+        } else if (daoServerWithoutAnswers.size == 0) {
+          ContentCluster.LOGGER.warn(`This server doesn't belong to the DAO`)
           break
         }
         attempts--

@@ -147,11 +147,17 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     // TODO: Implement an exponential backoff for retrying
     for (const failedDeployment of failedDeployments) {
       // Build Deployment from other servers
-      const { entityId, entityType } = failedDeployment
-      ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
-      try {
-        await deployEntityFromRemoteServer(this.components, entityId, entityType, servers)
-      } catch {}
+      const { entityId, entityType, authChain } = failedDeployment
+      if (authChain) {
+        ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
+        try {
+          await deployEntityFromRemoteServer(this.components, entityId, entityType, authChain, servers)
+        } catch {}
+      } else {
+        ClusterSynchronizationManager.LOGGER.info(
+          `Can't retry failed deployment: '${entityId}' because it lacks of authChain`
+        )
+      }
     }
   }
 

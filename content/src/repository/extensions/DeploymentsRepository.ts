@@ -187,10 +187,10 @@ export class DeploymentsRepository {
 
   async getFullSnapshot(): Promise<FullSnapshot[]> {
     return this.db.map(
-      `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
-        `FROM deployments ` +
-        `WHERE deleter_deployment IS NULL ` +
-        `ORDER BY local_timestamp ASC, LOWER(entity_id) ASC`,
+      ` SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp
+        FROM deployments
+        WHERE deleter_deployment IS NULL
+        ORDER BY local_timestamp ASC`,
       [],
       (row) => ({
         entityId: row.entity_id,

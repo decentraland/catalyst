@@ -10,7 +10,8 @@ export class NoOpFailedDeploymentsManager {
         entityType: EntityType.PROFILE,
         entityId: 'id',
         failureTimestamp: 20,
-        reason: FailureReason.DEPLOYMENT_ERROR
+        reason: FailureReason.DEPLOYMENT_ERROR,
+        authChain: []
       })
     )
     return instance(mockedManager)

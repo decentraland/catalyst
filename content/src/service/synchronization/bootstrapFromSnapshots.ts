@@ -18,7 +18,7 @@ export async function bootstrapFromSnapshots(
   }
 
   const logs = components.logger.getLogger('BootstrapFromSnapshots')
-  const requestMaxRetries = 10
+  const requestMaxRetries = 2
   const requestRetryWaitTime = 1000
 
   // wait to get all the bootstrap data from all servers

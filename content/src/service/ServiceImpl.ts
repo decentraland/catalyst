@@ -9,6 +9,7 @@ import {
   Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
@@ -256,6 +257,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityType: EntityType,
     entityId: EntityId,
     reason: FailureReason,
+    authChain: AuthChain,
     errorDescription?: string
   ): Promise<null> {
     ServiceImpl.LOGGER.warn(
@@ -268,6 +270,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           entityType,
           entityId,
           reason,
+          authChain,
           errorDescription
         ),
       { priority: DB_REQUEST_PRIORITY.HIGH }
