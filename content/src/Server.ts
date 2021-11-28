@@ -91,7 +91,8 @@ export class Server {
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any())
-    this.registerRoute('/contents/:hashId', controller, controller.getContent)
+    this.registerRoute('/contents/:hashId', controller, controller.getContent, HttpMethod.GET)
+    this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD)
     this.registerRoute('/available-content', controller, controller.getAvailableContent)
     this.registerRoute('/audit/:type/:entityId', controller, controller.getAudit)
     this.registerRoute('/deployments', controller, controller.getDeployments)
@@ -129,8 +130,12 @@ export class Server {
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
-      (req: express.Request, res: express.Response, next: NextFunction) => {
-        action.call(controller, req, res).catch(next)
+      async (req: express.Request, res: express.Response, next: NextFunction) => {
+        try {
+          await action.call(controller, req, res)
+        } catch (err: any) {
+          next(err)
+        }
       }
     ]
     if (extraHandler) {
@@ -160,14 +165,18 @@ export class Server {
     await this.migrationManager.run()
     await this.validateHistory()
     await this.service.start()
+
+    // generate snapshots before starting the server
+    await this.snapshotManager.startSnapshotsPerEntity()
+    await this.snapshotManager.startCalculateFullSnapshots()
+
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`)
     if (this.metricsServer) {
       await this.metricsServer.start()
     }
-    await this.snapshotManager.startSnapshotsPerEntity()
-    await this.snapshotManager.startCalculateFullSnapshots()
+
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
   }

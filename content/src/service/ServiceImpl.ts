@@ -11,6 +11,7 @@ import {
 } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
+import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
@@ -402,7 +403,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     return this.storage.deleteContent(fileHashes)
   }
 
-  storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void> {
+  storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void> {
     return this.storage.storeContent(fileHash, content)
   }
 

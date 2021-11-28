@@ -6,6 +6,7 @@ import {
   Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
+import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
@@ -207,7 +208,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getStatus()
   }
 
-  storeContent(fileHash: string, content: Buffer): Promise<void> {
+  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
     return this.service.storeContent(fileHash, content)
   }
 

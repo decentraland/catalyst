@@ -237,23 +237,31 @@ export class Controller {
     )
   }
 
+  async headContent(req: express.Request, res: express.Response) {
+    // Method: HEAD
+    // Path: /contents/:hashId
+    const hashId = req.params.hashId
+
+    const contentItem: ContentItem | undefined = await this.service.getContent(hashId)
+
+    if (contentItem) {
+      await setContentFileHeaders(contentItem, hashId, res)
+    } else {
+      res.status(404).send()
+    }
+  }
+
   async getContent(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const data: ContentItem | undefined = await this.service.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.service.getContent(hashId)
 
-    if (data) {
-      res.contentType('application/octet-stream')
-      res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
-      res.setHeader('Access-Control-Expose-Headers', 'ETag')
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    if (contentItem) {
+      await setContentFileHeaders(contentItem, hashId, res)
 
-      if (data.getLength()) {
-        res.setHeader('Content-Length', data.getLength()!.toString())
-      }
-      const stream = data.asStream()
+      const stream = await contentItem.asStream()
       stream.pipe(res)
 
       // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
@@ -769,6 +777,23 @@ export class Controller {
 
     const challengeText = this.challengeSupervisor.getChallengeText()
     res.send({ challengeText })
+  }
+}
+
+async function setContentFileHeaders(content: ContentItem, hashId: string, res: express.Response) {
+  const encoding = await content.contentEncoding()
+  res.contentType('application/octet-stream')
+  res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
+  res.setHeader('Access-Control-Expose-Headers', 'ETag')
+  res.setHeader('Cache-Control', 'public,max-age=31536000,s-maxage=31536000,immutable')
+
+  if (encoding) {
+    // gz, br
+    res.setHeader('Content-Encoding', encoding)
+  }
+
+  if (content.getLength()) {
+    res.setHeader('Content-Length', content.getLength()!.toString())
   }
 }
 

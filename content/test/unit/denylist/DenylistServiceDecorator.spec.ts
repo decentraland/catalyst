@@ -1,6 +1,7 @@
 import { Pointer } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { random } from 'faker'
+import { streamToBuffer } from 'src/storage/ContentStorage'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Denylist } from '../../../src/denylist/Denylist'
 import { DenylistServiceDecorator } from '../../../src/denylist/DenylistServiceDecorator'
@@ -227,8 +228,10 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(content1Target)
     const decorator = getDecorator(denylist)
 
-    const buffer = await (await decorator.getContent(content2.hash))?.asBuffer()
-    expect(buffer).toBe(content2.buffer)
+    const content = await decorator.getContent(content2.hash)
+    expect(content).not.toBe(undefined)
+    const buffer = await streamToBuffer(await content!.asStream())
+    expect(buffer).toEqual(content2.buffer)
   })
 
   it(`When an entity is denylisted, then it can't be returned as content`, async () => {
@@ -243,8 +246,9 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(entity2Target)
     const decorator = getDecorator(denylist)
 
-    const buffer = await (await decorator.getContent(entity1.id))?.asBuffer()
-
+    const content = await decorator.getContent(entity1.id)
+    expect(content).not.toBeUndefined()
+    const buffer = await streamToBuffer(await content!.asStream())
     expect(buffer).toEqual(Buffer.from(entity1.id))
   })
 

@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk'
 import { Readable } from 'stream'
-import { ContentItem, ContentStorage, streamToBuffer } from './ContentStorage'
+import { ContentItem, ContentStorage } from './ContentStorage'
 
 export class S3ContentStorage implements ContentStorage {
   private s3Client: AWS.S3
@@ -16,7 +16,11 @@ export class S3ContentStorage implements ContentStorage {
     return new S3ContentStorage(accessKeyId, secretAccessKey, bucket)
   }
 
-  async store(id: string, content: Buffer): Promise<void> {
+  async storeStream(id: string, content: Readable): Promise<void> {
+    return this.store(id, content)
+  }
+
+  async store(id: string, content: Buffer | Readable): Promise<void> {
     const request: AWS.S3.Types.PutObjectRequest = {
       Bucket: this.bucket,
       Key: id,
@@ -111,15 +115,15 @@ export class S3ContentStorage implements ContentStorage {
 class S3ContentItem implements ContentItem {
   constructor(private readable: Readable, private length?: number) {}
 
-  asBuffer(): Promise<Buffer> {
-    return streamToBuffer(this.readable)
-  }
-
-  asStream(): Readable {
+  async asStream(): Promise<Readable> {
     return this.readable
   }
 
   getLength(): number | undefined {
     return this.length
+  }
+
+  async contentEncoding() {
+    return null
   }
 }
