@@ -1,7 +1,6 @@
 import { Pointer } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { random } from 'faker'
-import { streamToBuffer } from 'src/storage/ContentStorage'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Denylist } from '../../../src/denylist/Denylist'
 import { DenylistServiceDecorator } from '../../../src/denylist/DenylistServiceDecorator'
@@ -17,6 +16,7 @@ import {
 import { Deployment } from '../../../src/service/deployments/DeploymentManager'
 import { Entity } from '../../../src/service/Entity'
 import { LocalDeploymentAuditInfo } from '../../../src/service/Service'
+import { streamToBuffer } from '../../../src/storage/ContentStorage'
 import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import {

@@ -1,5 +1,5 @@
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
-import { streamToBuffer } from 'src/storage/ContentStorage'
+import { streamToBuffer } from '../../../../src/storage/ContentStorage'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
