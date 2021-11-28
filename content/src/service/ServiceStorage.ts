@@ -6,7 +6,7 @@ export class ServiceStorage {
   constructor(private storage: ContentStorage) {}
 
   storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
-    if (Buffer.isBuffer(content)) {
+    if (content instanceof Uint8Array || Buffer.isBuffer(content)) {
       return this.storage.store(fileHash, content)
     } else {
       return this.storage.storeStream(fileHash, content)
