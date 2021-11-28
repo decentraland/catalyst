@@ -1,4 +1,5 @@
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { streamToBuffer } from '../../../../src/storage/ContentStorage'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
@@ -91,7 +92,7 @@ describe('Integration - Snapshot Manager', () => {
   ) {
     const { hash } = snapshotMetadata!
     const content = (await service.getContent(hash))!
-    const buffer = await content.asBuffer()
+    const buffer = await streamToBuffer(await content.asStream())
     const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
     expect(snapshot.size).toBe(entitiesCombo.length)
     for (const { entity } of entitiesCombo) {

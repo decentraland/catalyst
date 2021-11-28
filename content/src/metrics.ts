@@ -41,6 +41,12 @@ export const metrics = validateMetricsDeclaration({
     labelNames: []
   },
 
+  dcl_content_snapshot_generation_time: {
+    help: 'Histogram of time spent generating full snapshots',
+    type: 'histogram',
+    labelNames: ['failed']
+  },
+
   dcl_content_garbage_collection_time: {
     help: 'Histogram of time spent in garbage collection',
     type: 'histogram',

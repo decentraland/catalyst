@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk'
-import { ContentStorage } from '../../../src/storage/ContentStorage'
+import { bufferToStream, ContentStorage, streamToBuffer } from '../../../src/storage/ContentStorage'
 import { S3ContentStorage } from '../../../src/storage/S3ContentStorage'
 
 xdescribe('S3ContentStorage', () => {
@@ -67,10 +67,10 @@ xdescribe('S3ContentStorage', () => {
   }
 
   it(`When content is stored, then it can be retrieved`, async () => {
-    await storage.store(id, content)
+    await storage.storeStream(id, bufferToStream(content))
 
     const retrievedContent = await storage.retrieve(id)
-    expect(await retrievedContent?.asBuffer()).toEqual(content)
+    expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(content)
   })
 
   it(`When content is stored, then we can check if it exists`, async function () {
@@ -88,7 +88,7 @@ xdescribe('S3ContentStorage', () => {
     await storage.store(id, newContent)
 
     const retrievedContent = await storage.retrieve(id)
-    expect(await retrievedContent?.asBuffer()).toEqual(newContent)
+    expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(newContent)
   })
 
   it(`When content is deleted, then it is no longer available`, async function () {

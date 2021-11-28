@@ -12,6 +12,7 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
+import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
 import {
@@ -150,7 +151,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     throw new Error('Method not implemented.')
   }
 
-  storeContent(fileHash: string, content: Buffer): Promise<void> {
+  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
     throw new Error('Method not implemented.')
   }
   listenToDeployments(listener: DeploymentListener): void {
