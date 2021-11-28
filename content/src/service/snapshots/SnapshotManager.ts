@@ -61,20 +61,29 @@ export class SnapshotManager {
   }
 
   async startCalculateFullSnapshots(): Promise<void> {
-    // TODO: Add metrics regarding snapshots
-    await this.generateSnapshot()
+    // start async job
     this.snapshotGenerationJob().catch(console.error)
+
+    // wait up to 10 seconds for job to finish
+    let counter = 10
+    while (!this.lastSnapshotsForAllEntityTypes && this.running) {
+      await delay(1000)
+      counter--
+      if (counter == 0) {
+        SnapshotManager.LOGGER.error('Could not generate a full snapshot in less than 10 seconds')
+      }
+    }
   }
 
   async snapshotGenerationJob() {
     while (this.running) {
-      await delay(this.snapshotFrequencyInMilliSeconds)
-
       try {
         await this.generateSnapshot()
       } catch (e: any) {
         SnapshotManager.LOGGER.error(e)
       }
+
+      await delay(this.snapshotFrequencyInMilliSeconds)
     }
   }
 
