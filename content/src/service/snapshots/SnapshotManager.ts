@@ -213,7 +213,9 @@ export class SnapshotManager {
       SnapshotManager.LOGGER.error(err)
     } finally {
       // always delete the staging file
-      await fs.promises.unlink(tmpFile)
+      if (await checkFileExists(tmpFile)) {
+        await fs.promises.unlink(tmpFile)
+      }
     }
   }
 
