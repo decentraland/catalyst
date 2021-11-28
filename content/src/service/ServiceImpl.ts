@@ -152,8 +152,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
   }
 
-  async deployEntityFromRemoteServer(entityId: string, remoteContentServers: string[]) {}
-
   private async storeDeploymentInDatabase(
     task: Database | undefined,
     entityId: string,
