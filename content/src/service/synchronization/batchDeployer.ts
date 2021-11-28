@@ -1,8 +1,8 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
+import { CannonicalEntityDeployment, AppComponents } from '../../types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-import { CannonicalEntityDeployment, SynchronizationComponents } from './newSynchronization'
 
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -13,10 +13,10 @@ import { CannonicalEntityDeployment, SynchronizationComponents } from './newSync
  * For every entityId, the servers are added to a mutable array that can and should be used to load balance the downloads.
  */
 export function createBatchDeployerComponent(
-  components: SynchronizationComponents,
+  components: Pick<AppComponents, 'logs' | 'metrics' | 'fetcher' | 'deployer' | 'downloadQueue' | 'staticConfigs'>,
   queueOptions: createJobQueue.Options
 ): IDeployerComponent {
-  const logs = components.logger.getLogger('DeployerComponent')
+  const logs = components.logs.getLogger('DeployerComponent')
 
   const parallelDeploymentJobs = createJobQueue(queueOptions)
 

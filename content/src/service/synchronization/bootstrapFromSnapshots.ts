@@ -1,6 +1,7 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
+import { SynchronizerDeployerComponents } from '../../types'
 import { ContentCluster } from './ContentCluster'
-import { ensureListOfCatalysts, SynchronizerDeployerComponents } from './newSynchronization'
+import { ensureListOfCatalysts } from './newSynchronization'
 
 /**
  * This function fetches all the full snapshots from remote catalysts and
@@ -17,7 +18,7 @@ export async function bootstrapFromSnapshots(
     return
   }
 
-  const logs = components.logger.getLogger('BootstrapFromSnapshots')
+  const logs = components.logs.getLogger('BootstrapFromSnapshots')
   const requestMaxRetries = 2
   const requestRetryWaitTime = 1000
 
@@ -27,7 +28,7 @@ export async function bootstrapFromSnapshots(
       try {
         const contentServer = server.getServerUrl()
         const stream = getDeployedEntitiesStream(components, {
-          contentFolder: components.config.contentStorageFolder,
+          contentFolder: components.staticConfigs.contentStorageFolder,
           contentServer,
           pointerChangesWaitTime: 0, // zero to not restart the timer
           requestMaxRetries,

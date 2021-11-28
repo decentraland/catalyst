@@ -1,44 +1,22 @@
 import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
-import {
-  createJobLifecycleManagerComponent,
-  JobLifecycleManagerComponent
-} from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
+import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import {
-  IDeployerComponent,
-  RemoteEntityDeployment,
-  SnapshotsFetcherComponents
-} from '@dcl/snapshots-fetcher/dist/types'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { IFetchComponent } from '@well-known-components/http-server'
 import { createLogComponent } from '@well-known-components/logger'
-import * as nodeFetch from 'node-fetch'
 import { metricsComponent } from '../../metrics'
-import { ClusterDeploymentsService } from '../Service'
+import { createFetchComponent } from '../../ports/fetcher'
+import { IDatabaseComponent } from '../../ports/postgres'
+import { AppComponents, DeployerComponent, SynchronizerDeployerComponents } from '../../types'
 import { createBatchDeployerComponent } from './batchDeployer'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 
-export type SynchronizationComponents = SnapshotsFetcherComponents & {
-  metrics: typeof metricsComponent
-  deployer: ClusterDeploymentsService
-  config: {
-    contentStorageFolder: string
-  }
-}
-
-export type SynchronizerDeployerComponents = SynchronizationComponents & {
-  batchDeployer: IDeployerComponent
-  synchronizationJobManager: JobLifecycleManagerComponent
-}
-
-export type CannonicalEntityDeployment = { entity: RemoteEntityDeployment; servers: string[] }
-
 export function createSincronizationComponents(options: {
-  deploymentsService: ClusterDeploymentsService
+  deploymentsService: DeployerComponent
+  database: IDatabaseComponent
   contentStorageFolder: string
 }): SynchronizerDeployerComponents {
-  const logger = createLogComponent()
+  const logs = createLogComponent()
   const fetcher = createFetchComponent()
 
   const downloadQueue = createJobQueue({
@@ -47,13 +25,14 @@ export function createSincronizationComponents(options: {
     timeout: 60000
   })
 
-  const snapshotComponents: SynchronizationComponents = {
-    logger,
+  const snapshotComponents: AppComponents = {
+    logs,
     downloadQueue,
     fetcher,
+    database: options.database,
     metrics: metricsComponent,
     deployer: options.deploymentsService,
-    config: {
+    staticConfigs: {
       contentStorageFolder: options.contentStorageFolder
     }
   }
@@ -65,7 +44,7 @@ export function createSincronizationComponents(options: {
   })
 
   const synchronizationJobManager = createJobLifecycleManagerComponent(
-    { logger },
+    { logs },
     {
       jobManagerName: 'SynchronizationJobManager',
       createJob(contentServer) {
@@ -120,13 +99,4 @@ export async function ensureListOfCatalysts(
   }
 
   return []
-}
-
-export function createFetchComponent() {
-  const fetch: IFetchComponent = {
-    async fetch(url: nodeFetch.RequestInfo, init?: nodeFetch.RequestInit): Promise<nodeFetch.Response> {
-      return nodeFetch.default(url, init)
-    }
-  }
-  return fetch
 }

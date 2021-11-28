@@ -2,14 +2,11 @@ import { delay, SynchronizationState } from '@catalyst/commons'
 import { Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import { metricsComponent } from '../../metrics'
+import { SynchronizerDeployerComponents } from '../../types'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
-import { ClusterDeploymentsService, MetaverseContentService } from '../Service'
-import { SystemPropertiesManager } from '../system-properties/SystemProperties'
 import { bootstrapFromSnapshots } from './bootstrapFromSnapshots'
 import { ContentCluster } from './ContentCluster'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-import { createSincronizationComponents, SynchronizerDeployerComponents } from './newSynchronization'
 
 export interface SynchronizationManager {
   start(): Promise<void>
@@ -22,21 +19,13 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
   private timeOfLastSync: Timestamp = 0
 
-  public components: SynchronizerDeployerComponents
-
   constructor(
+    public components: SynchronizerDeployerComponents,
     private readonly cluster: ContentCluster,
-    readonly _systemProperties: SystemPropertiesManager,
-    private readonly deploymentsService: MetaverseContentService & ClusterDeploymentsService,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number,
     readonly contentStorageFolder: string
-  ) {
-    this.components = createSincronizationComponents({
-      contentStorageFolder,
-      deploymentsService
-    })
-  }
+  ) {}
 
   async start(): Promise<void> {
     if (this.disableSynchronization) {
@@ -86,16 +75,16 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       this.synchronizationState = SynchronizationState.BOOTSTRAPPING
       // Note: If any deployment was overwritten by the snapshots, then we never reach them
       ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
+      this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
       await bootstrapFromSnapshots(this.components, this.cluster)
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
+      this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
       // await this.updateLastTimestamp(contentServers, result)
     }
 
     sync: {
       // Update flag: it was synced and needs to get new deployments
       this.synchronizationState = SynchronizationState.SYNCING
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
+      this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
 
       ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
 
@@ -138,7 +127,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   private async retryFailedDeploymentExecution(): Promise<void> {
     // Get Failed Deployments from local storage
-    const failedDeployments: FailedDeployment[] = await this.deploymentsService.getAllFailedDeployments()
+    const failedDeployments: FailedDeployment[] = await this.components.deployer.getAllFailedDeployments()
 
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 

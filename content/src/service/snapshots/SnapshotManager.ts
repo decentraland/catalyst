@@ -4,13 +4,14 @@ import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-co
 import * as fs from 'fs'
 import log4js from 'log4js'
 import * as path from 'path'
+import { streamCurrentDeployments } from '../../logic/snapshots-queries'
 import { metricsComponent } from '../../metrics'
 import { Database } from '../../repository/Database'
-import { FullSnapshot } from '../../repository/extensions/DeploymentsRepository'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
 import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { compressContentFile } from '../../storage/compression'
+import { AppComponents } from '../../types'
 import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 
@@ -22,12 +23,12 @@ export class SnapshotManager {
   private running = true
 
   constructor(
+    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs'>,
     private readonly systemPropertiesManager: SystemPropertiesManager,
     private readonly repository: Repository,
     private readonly service: MetaverseContentService,
     private readonly snapshotFrequency: Map<EntityType, number>,
-    private readonly snapshotFrequencyInMilliSeconds: number,
-    private readonly contentStorageFolder: string
+    private readonly snapshotFrequencyInMilliSeconds: number
   ) {
     service.listenToDeployments((deployment) => this.onDeployment(deployment))
   }
@@ -65,12 +66,12 @@ export class SnapshotManager {
     this.snapshotGenerationJob().catch(console.error)
 
     // wait up to 10 seconds for job to finish
-    let counter = 10
+    let counter = 60
     while (!this.lastSnapshotsForAllEntityTypes && this.running) {
       await delay(1000)
       counter--
       if (counter == 0) {
-        SnapshotManager.LOGGER.error('Could not generate a full snapshot in less than 10 seconds')
+        throw new Error('Could not generate a full snapshot in less than 60 seconds')
       }
     }
   }
@@ -161,7 +162,7 @@ export class SnapshotManager {
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
   private async generateSnapshot(): Promise<void> {
     // Format the snapshot in a tmp file
-    const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot-file')
+    const tmpFile = path.resolve(this.components.staticConfigs.contentStorageFolder, 'tmp-snapshot-file')
 
     const { end: stopTimer } = metricsComponent.startTimer('dcl_content_snapshot_generation_time')
 
@@ -172,16 +173,8 @@ export class SnapshotManager {
 
       const previousHash = this.lastSnapshotsForAllEntityTypes?.hash
 
-      const snapshot: FullSnapshot[] = await this.repository.run(
-        async (db) => {
-          // Get all the active entities
-          return db.deployments.getFullSnapshot()
-        },
-        { priority: DB_REQUEST_PRIORITY.HIGH }
-      )
-
       // Calculate the local deployment timestamp of the newest entity in the snapshot
-      const snapshotTimestamp = snapshot[snapshot.length - 1]?.localTimestamp ?? 0
+      let snapshotTimestamp = 0
 
       const writeStream = fs.createWriteStream(tmpFile)
 
@@ -194,8 +187,13 @@ export class SnapshotManager {
         // this header is necessary to later differentiate between binary formats and non-binary formats
         writeStream.write('### Decentraland json snapshot\n')
 
-        for (const snapshotElem of snapshot) {
+        let i = 0
+        for await (const snapshotElem of streamCurrentDeployments(this.components)) {
+          i++
           writeStream.write(JSON.stringify(snapshotElem) + '\n')
+          if (snapshotElem.localTimestamp > snapshotTimestamp) {
+            snapshotTimestamp = snapshotElem.localTimestamp
+          }
         }
       } finally {
         writeStream.close()
@@ -205,7 +203,7 @@ export class SnapshotManager {
       const hash = await hashStreamV1(fs.createReadStream(tmpFile) as any)
 
       // if success move the file to the contents folder
-      const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
+      const destinationFilename = path.resolve(this.components.staticConfigs.contentStorageFolder, hash)
 
       const hasContent = await this.service.getContent(hash)
 

@@ -10,8 +10,8 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
-import { Entity } from 'src/service/Entity'
 import { Database } from '../../repository/Database'
+import { Entity } from '../../service/Entity'
 
 export type FullSnapshot = {
   entityId: EntityId

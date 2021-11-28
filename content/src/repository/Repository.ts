@@ -1,8 +1,13 @@
+import { IDatabaseComponent } from '../ports/postgres'
 import { Database, FullDatabase } from './Database'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from './RepositoryQueue'
 
 export class Repository {
-  constructor(private readonly db: FullDatabase, private readonly queue: RepositoryQueue) {}
+  constructor(
+    private readonly db: FullDatabase,
+    private readonly queue: RepositoryQueue,
+    public databaseComponent: IDatabaseComponent
+  ) {}
 
   /**
    * Run some query against the database
