@@ -166,6 +166,8 @@ export class SnapshotManager {
     const { end: stopTimer } = metricsComponent.startTimer('dcl_content_snapshot_generation_time')
 
     try {
+      // if the process failed while creating the snapshot last time the file may still exists
+      // deleting the staging tmpFile just in case
       if (await checkFileExists(tmpFile)) {
         await fs.promises.unlink(tmpFile)
       }
