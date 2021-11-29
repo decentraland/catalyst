@@ -8,7 +8,7 @@ import { deployEntityFromRemoteServer } from './deployRemoteEntity'
  * An IDeployerComponent parallelizes deployments with a JobQueue.
  * The JobQueue concurrency can be configured.
  * The IDeployerComponent has a map of deployments that may be cleared up every now and then.
- * It does NOT checks for duplicates, every operation is assumed idempotent.
+ * It assumes deployments can be received more than twice, every operation is assumed idempotent.
  * The deployments with different servers will count as one while they appear in the internal data structure (the map).
  * For every entityId, the servers are added to a mutable array that can and should be used to load balance the downloads.
  */
@@ -123,8 +123,9 @@ export function createBatchDeployerComponent(
 export function priorityBasedOnEntityType(entityType: string) {
   switch (entityType) {
     case 'scene':
-    case 'wearable':
       return 1000
+    case 'wearable':
+      return 500
   }
   return 0
 }
