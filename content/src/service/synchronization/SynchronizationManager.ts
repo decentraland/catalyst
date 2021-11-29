@@ -2,7 +2,7 @@ import { delay, SynchronizationState } from '@catalyst/commons'
 import { Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import { SynchronizerDeployerComponents } from '../../types'
+import { AppComponents } from '../../types'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
 import { bootstrapFromSnapshots } from './bootstrapFromSnapshots'
 import { ContentCluster } from './ContentCluster'
@@ -20,7 +20,17 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   private timeOfLastSync: Timestamp = 0
 
   constructor(
-    public components: SynchronizerDeployerComponents,
+    public components: Pick<
+      AppComponents,
+      | 'staticConfigs'
+      | 'logs'
+      | 'downloadQueue'
+      | 'metrics'
+      | 'fetcher'
+      | 'synchronizationJobManager'
+      | 'deployer'
+      | 'batchDeployer'
+    >,
     private readonly cluster: ContentCluster,
     private readonly disableSynchronization: boolean,
     private readonly checkSyncRange: number,

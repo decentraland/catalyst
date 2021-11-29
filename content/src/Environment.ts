@@ -481,9 +481,8 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
       GarbageCollectionManagerFactory.create(env)
     )
-    this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () =>
-      ClusterSynchronizationManagerFactory.create(env)
-    )
+    const synchronizationManager = await ClusterSynchronizationManagerFactory.create(env)
+    this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 

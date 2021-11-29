@@ -4,18 +4,26 @@ import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createLogComponent } from '@well-known-components/logger'
 import { metricsComponent } from '../../metrics'
+import { createBloomFilterComponent } from '../../ports/bloomFilter'
 import { createFetchComponent } from '../../ports/fetcher'
 import { IDatabaseComponent } from '../../ports/postgres'
-import { AppComponents, DeployerComponent, SynchronizerDeployerComponents } from '../../types'
+import { AppComponents, DeployerComponent } from '../../types'
 import { createBatchDeployerComponent } from './batchDeployer'
 import { ContentServerClient } from './clients/ContentServerClient'
 import { ContentCluster } from './ContentCluster'
 
-export function createSincronizationComponents(options: {
+export async function createSincronizationComponents(options: {
   deploymentsService: DeployerComponent
   database: IDatabaseComponent
   contentStorageFolder: string
-}): SynchronizerDeployerComponents {
+}): Promise<AppComponents> {
+  const deployer = options.deploymentsService
+  const metrics = metricsComponent
+  const database = options.database
+  const staticConfigs: AppComponents['staticConfigs'] = {
+    contentStorageFolder: options.contentStorageFolder
+  }
+
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
 
@@ -25,23 +33,27 @@ export function createSincronizationComponents(options: {
     timeout: 60000
   })
 
-  const snapshotComponents: AppComponents = {
-    logs,
-    downloadQueue,
-    fetcher,
-    database: options.database,
-    metrics: metricsComponent,
-    deployer: options.deploymentsService,
-    staticConfigs: {
-      contentStorageFolder: options.contentStorageFolder
-    }
-  }
-
-  const batchDeployer = createBatchDeployerComponent(snapshotComponents, {
-    autoStart: true,
-    concurrency: 10,
-    timeout: 100000
+  const deployedEntitiesFilter = createBloomFilterComponent({
+    sizeInBytes: 512
   })
+
+  const batchDeployer = createBatchDeployerComponent(
+    {
+      logs,
+      downloadQueue,
+      fetcher,
+      database,
+      metrics,
+      deployer,
+      deployedEntitiesFilter,
+      staticConfigs
+    },
+    {
+      autoStart: true,
+      concurrency: 10,
+      timeout: 100000
+    }
+  )
 
   const synchronizationJobManager = createJobLifecycleManagerComponent(
     { logs },
@@ -49,7 +61,7 @@ export function createSincronizationComponents(options: {
       jobManagerName: 'SynchronizationJobManager',
       createJob(contentServer) {
         return createCatalystDeploymentStream(
-          { ...snapshotComponents, deployer: batchDeployer },
+          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer },
           {
             contentFolder: options.contentStorageFolder,
             contentServer,
@@ -70,8 +82,19 @@ export function createSincronizationComponents(options: {
     }
   )
 
+  // TODO: this is usually done at the end when all components are
+  // created and wired together
+  await batchDeployer.start()
+
   return {
-    ...snapshotComponents,
+    logs,
+    downloadQueue,
+    fetcher,
+    database,
+    metrics,
+    deployer,
+    deployedEntitiesFilter,
+    staticConfigs,
     synchronizationJobManager,
     batchDeployer
   }

@@ -5,7 +5,7 @@ import { SQLStatement } from 'sql-template-strings'
 
 export interface IDatabaseComponent extends IDatabase {
   queryWithValues<T>(sql: SQLStatement): Promise<IDatabase.IQueryResult<T>>
-  streamQuery<T = any>(sql: SQLStatement): AsyncGenerator<T>
+  streamQuery<T = any>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T>
 }
 
 export async function createDatabaseComponent(
@@ -48,8 +48,8 @@ export async function createDatabaseComponent(
     }
   }
 
-  async function* streamQuery<T>(sql: SQLStatement): AsyncGenerator<T> {
-    const stream: any = new QueryStream(sql.text, sql.values)
+  async function* streamQuery<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
+    const stream: any = new QueryStream(sql.text, sql.values, config)
 
     let wasCalled = false
 

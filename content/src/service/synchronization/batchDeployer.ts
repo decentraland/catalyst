@@ -1,10 +1,9 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
-import { deploymentExists } from '../../logic/deployments-queries'
+import { deploymentExists, streamAllEntityIds } from '../../logic/deployments-queries'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
-
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
  * The JobQueue concurrency can be configured.
@@ -16,10 +15,17 @@ import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 export function createBatchDeployerComponent(
   components: Pick<
     AppComponents,
-    'logs' | 'metrics' | 'fetcher' | 'deployer' | 'downloadQueue' | 'staticConfigs' | 'database'
+    | 'logs'
+    | 'metrics'
+    | 'fetcher'
+    | 'deployer'
+    | 'downloadQueue'
+    | 'staticConfigs'
+    | 'database'
+    | 'deployedEntitiesFilter'
   >,
   queueOptions: createJobQueue.Options
-): IDeployerComponent {
+): IDeployerComponent & { start(): Promise<void> } {
   const logs = components.logs.getLogger('DeployerComponent')
 
   const parallelDeploymentJobs = createJobQueue(queueOptions)
@@ -51,7 +57,9 @@ export function createBatchDeployerComponent(
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
           try {
-            const alreadyDeployed = await deploymentExists(components, entity.entityId)
+            const alreadyDeployed =
+              components.deployedEntitiesFilter.check(entity.entityId) &&
+              (await deploymentExists(components, entity.entityId))
 
             if (!alreadyDeployed) return
 
@@ -62,8 +70,10 @@ export function createBatchDeployerComponent(
               entity.authChain,
               elementInMap!.servers
             )
-            // failed deployments are automaticcally rescheduled
+
+            components.deployedEntitiesFilter.add(entity.entityId)
           } catch (err: any) {
+            // failed deployments are automaticcally rescheduled
             await components.deployer.reportErrorDuringSync(
               entity.entityType as any,
               entity.entityId,
@@ -80,9 +90,25 @@ export function createBatchDeployerComponent(
     }
   }
 
+  async function createBloomFilterDeployments() {
+    const start = Date.now()
+
+    const filter = components.deployedEntitiesFilter
+    filter.reset()
+    let elements = 0
+    for await (const row of streamAllEntityIds(components)) {
+      elements++
+      filter.add(row.entityId)
+    }
+    logs.info(`Bloom filter recreated.`, { timeMs: Date.now() - start, elements })
+  }
+
   // TODO: every now and then cleanup the deploymentsMap of old deployments
 
   return {
+    async start() {
+      await createBloomFilterDeployments()
+    },
     onIdle() {
       return parallelDeploymentJobs.onIdle()
     },

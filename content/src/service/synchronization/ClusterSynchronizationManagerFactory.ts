@@ -5,10 +5,10 @@ import { createSincronizationComponents } from './newSynchronization'
 import { ClusterSynchronizationManager } from './SynchronizationManager'
 
 export class ClusterSynchronizationManagerFactory {
-  static create(env: Environment): ClusterSynchronizationManager {
+  static async create(env: Environment): Promise<ClusterSynchronizationManager> {
     const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
 
-    const components = createSincronizationComponents({
+    const components = await createSincronizationComponents({
       database: env.getBean<Repository>(Bean.REPOSITORY).databaseComponent,
       contentStorageFolder: contentFolder,
       deploymentsService: env.getBean(Bean.SERVICE)
