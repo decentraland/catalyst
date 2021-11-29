@@ -187,9 +187,7 @@ export class SnapshotManager {
         // this header is necessary to later differentiate between binary formats and non-binary formats
         writeStream.write('### Decentraland json snapshot\n')
 
-        let i = 0
         for await (const snapshotElem of streamCurrentDeployments(this.components)) {
-          i++
           writeStream.write(JSON.stringify(snapshotElem) + '\n')
           if (snapshotElem.localTimestamp > snapshotTimestamp) {
             snapshotTimestamp = snapshotElem.localTimestamp

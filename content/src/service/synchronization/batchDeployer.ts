@@ -1,6 +1,7 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
-import { CannonicalEntityDeployment, AppComponents } from '../../types'
+import { deploymentExists } from '../../logic/deployments-queries'
+import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 
@@ -13,7 +14,10 @@ import { deployEntityFromRemoteServer } from './deployRemoteEntity'
  * For every entityId, the servers are added to a mutable array that can and should be used to load balance the downloads.
  */
 export function createBatchDeployerComponent(
-  components: Pick<AppComponents, 'logs' | 'metrics' | 'fetcher' | 'deployer' | 'downloadQueue' | 'staticConfigs'>,
+  components: Pick<
+    AppComponents,
+    'logs' | 'metrics' | 'fetcher' | 'deployer' | 'downloadQueue' | 'staticConfigs' | 'database'
+  >,
   queueOptions: createJobQueue.Options
 ): IDeployerComponent {
   const logs = components.logs.getLogger('DeployerComponent')
@@ -47,6 +51,10 @@ export function createBatchDeployerComponent(
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
           try {
+            const alreadyDeployed = await deploymentExists(components, entity.entityId)
+
+            if (!alreadyDeployed) return
+
             await deployEntityFromRemoteServer(
               components,
               entity.entityId,
