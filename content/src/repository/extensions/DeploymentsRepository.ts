@@ -202,6 +202,10 @@ export class DeploymentsRepository {
     )
   }
 
+  /**
+   *
+   * @deprecated use getSnapshotPerEntityTypeV2 instead
+   */
   async getSnapshotPerEntityType(
     entityType: EntityType
   ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
@@ -215,6 +219,23 @@ export class DeploymentsRepository {
         entityId: row.entity_id,
         pointers: row.entity_pointers,
         localTimestamp: row.local_timestamp
+      })
+    )
+  }
+
+  async getSnapshotPerEntityTypeV2(entityType: EntityType): Promise<FullSnapshot[]> {
+    return this.db.map(
+      `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
+        `FROM deployments ` +
+        `WHERE entity_type = $1 AND deleter_deployment IS NULL ` +
+        `ORDER BY local_timestamp ASC, LOWER(entity_id) ASC`,
+      [entityType],
+      (row) => ({
+        entityId: row.entity_id,
+        entityType: row.entity_type,
+        pointers: row.entity_pointers,
+        localTimestamp: row.local_timestamp,
+        authChain: row.auth_chain
       })
     )
   }

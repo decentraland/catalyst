@@ -15,10 +15,14 @@ import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 
 export class SnapshotManager {
-  static readonly LOGGER = log4js.getLogger('SnapshotManager')
+  /** @deprecated */
   private readonly counter: Map<EntityType, number> = new Map()
+  /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
+
+  static readonly LOGGER = log4js.getLogger('SnapshotManager')
   private lastSnapshotsForAllEntityTypes: SnapshotMetadata | undefined = undefined
+  private lastSnapshotsPerEntityType: Map<EntityType, SnapshotMetadata> = new Map()
   private running = true
 
   constructor(
@@ -70,7 +74,7 @@ export class SnapshotManager {
       await delay(1000)
       counter--
       if (counter == 0) {
-        SnapshotManager.LOGGER.error('Could not generate a full snapshot in less than 10 seconds')
+        SnapshotManager.LOGGER.error('Could not generate an snapshot in less than 10 seconds')
       }
     }
   }
@@ -79,6 +83,11 @@ export class SnapshotManager {
     while (this.running) {
       try {
         await this.generateSnapshot()
+        SnapshotManager.LOGGER.info('Generated full snapshot')
+        for (const entityType in EntityType) {
+          await this.generateSnapshot(EntityType[entityType])
+          SnapshotManager.LOGGER.info(`Generated snapshot for ${entityType} entity.`)
+        }
       } catch (e: any) {
         SnapshotManager.LOGGER.error(e)
       }
@@ -95,8 +104,12 @@ export class SnapshotManager {
     return this.lastSnapshots.get(entityType)
   }
 
-  getFullSnapshotMetadata(): SnapshotMetadata | undefined {
-    return this.lastSnapshotsForAllEntityTypes
+  getFullSnapshotMetadata(): FullSnapshotMetadata | undefined {
+    if (!!this.lastSnapshotsForAllEntityTypes) {
+      return { ...this.lastSnapshotsForAllEntityTypes, entities: Object.fromEntries(this.lastSnapshotsPerEntityType) }
+    } else {
+      return undefined
+    }
   }
 
   private async onDeployment({ entity }: { entity: Entity }): Promise<void> {
@@ -112,8 +125,8 @@ export class SnapshotManager {
   }
 
   /**
-   * This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata
    * @deprecated
+   * This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata
    */
   private async generateSnapshotPerEntityType(entityType: EntityType, task?: Database): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
@@ -159,93 +172,132 @@ export class SnapshotManager {
   }
 
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
-  private async generateSnapshot(): Promise<void> {
+  private async generateSnapshot(entityType?: EntityType): Promise<void> {
     // Format the snapshot in a tmp file
     const tmpFile = path.resolve(this.contentStorageFolder, 'tmp-snapshot-file')
-
     const { end: stopTimer } = metricsComponent.startTimer('dcl_content_snapshot_generation_time')
 
     try {
-      // if the process failed while creating the snapshot last time the file may still exists
-      // deleting the staging tmpFile just in case
-      if (await checkFileExists(tmpFile)) {
-        await fs.promises.unlink(tmpFile)
+      let previousHash: string | undefined
+      let snapshot: FullSnapshot[]
+      if (!!entityType) {
+        previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
+        snapshot = await this.getFullSnapshotFromDbForEntityType(entityType)
+      } else {
+        previousHash = this.lastSnapshotsForAllEntityTypes?.hash
+        snapshot = await this.getFullSnapshotFromDb()
       }
-
-      const previousHash = this.lastSnapshotsForAllEntityTypes?.hash
-
-      const snapshot: FullSnapshot[] = await this.repository.run(
-        async (db) => {
-          // Get all the active entities
-          return db.deployments.getFullSnapshot()
-        },
-        { priority: DB_REQUEST_PRIORITY.HIGH }
-      )
-
       // Calculate the local deployment timestamp of the newest entity in the snapshot
       const snapshotTimestamp = snapshot[snapshot.length - 1]?.localTimestamp ?? 0
 
-      const writeStream = fs.createWriteStream(tmpFile)
+      // Write to tmpFile the snapshot obtained
+      const readStream = await this.writeToFile(tmpFile, snapshot)
 
-      const fileClosedFuture = new Promise<void>((resolve, reject) => {
-        writeStream.on('finish', resolve)
-        writeStream.on('error', reject)
-      })
-
-      try {
-        // this header is necessary to later differentiate between binary formats and non-binary formats
-        writeStream.write('### Decentraland json snapshot\n')
-        for (const snapshotElem of snapshot) {
-          writeStream.write(JSON.stringify(snapshotElem) + '\n')
-        }
-      } finally {
-        writeStream.close()
-        await fileClosedFuture
-      }
-
-      const hash = await hashStreamV1(fs.createReadStream(tmpFile) as any)
+      // Hash the snapshot
+      const hash = await hashStreamV1(readStream)
 
       // if success move the file to the contents folder
-      const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
+      await this.moveSnapshotFileToContentFolder(hash, tmpFile, snapshotTimestamp)
 
-      const hasContent = await this.service.getContent(hash)
-
-      if (!hasContent) {
-        // move and compress the file into the destinationFilename
-        await this.service.storeContent(hash, fs.createReadStream(tmpFile))
-        SnapshotManager.LOGGER.info(
-          `Generated snapshot. hash=${hash} lastIncludedDeploymentTimestamp=${snapshotTimestamp}`
-        )
-        await compressContentFile(destinationFilename)
+      // Save the snapshot hash and metadata
+      const newSnapshot = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
+      if (!!entityType) {
+        this.lastSnapshotsPerEntityType.set(entityType, newSnapshot)
       } else {
-        SnapshotManager.LOGGER.debug(`Snapshot didn't change`)
+        this.lastSnapshotsForAllEntityTypes = newSnapshot
       }
 
-      // Store the metadata
-      this.lastSnapshotsForAllEntityTypes = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
-
       // Delete the previous full snapshot (if it exists)
-      // the deletion of the files is deferred two minutes because there may be peers
-      // still using the content files
-      setTimeout(() => {
-        if (previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
-          this.service.deleteContent([previousHash]).catch(SnapshotManager.LOGGER.error)
-        }
-      }, 2 * 60_000)
+      this.removePreviousSnapshotFile(previousHash)
     } catch (err: any) {
       stopTimer({ failed: 'true' })
       SnapshotManager.LOGGER.error(err)
     } finally {
       stopTimer({ failed: 'false' })
-      // always delete the staging file
-      if (await checkFileExists(tmpFile)) {
-        try {
-          await fs.promises.unlink(tmpFile)
-        } catch (err) {
-          SnapshotManager.LOGGER.error(err)
-        }
+      await this.deleteStagingFile(tmpFile)
+    }
+  }
+
+  private async deleteStagingFile(tmpFile: string) {
+    if (await checkFileExists(tmpFile)) {
+      try {
+        await fs.promises.unlink(tmpFile)
+      } catch (err) {
+        SnapshotManager.LOGGER.error(err)
       }
     }
+  }
+
+  private removePreviousSnapshotFile(previousHash: string | undefined) {
+    // the deletion of the files is deferred two minutes because there may be peers
+    // still using the content files
+    setTimeout(() => {
+      if (previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
+        this.service.deleteContent([previousHash]).catch(SnapshotManager.LOGGER.error)
+      }
+    }, 2 * 60000)
+  }
+
+  private async moveSnapshotFileToContentFolder(hash: string, tmpFile: string, snapshotTimestamp: number) {
+    const destinationFilename = path.resolve(this.contentStorageFolder, 'contents/', hash)
+
+    const hasContent = await this.service.getContent(hash)
+
+    if (!hasContent) {
+      // move and compress the file into the destinationFilename
+      await this.service.storeContent(hash, fs.createReadStream(tmpFile))
+      SnapshotManager.LOGGER.info(
+        `Generated snapshot. hash=${hash} lastIncludedDeploymentTimestamp=${snapshotTimestamp}`
+      )
+      await compressContentFile(destinationFilename)
+    } else {
+      SnapshotManager.LOGGER.debug(`Snapshot didn't change`)
+    }
+  }
+
+  private async writeToFile(tmpFile: string, snapshot: FullSnapshot[]) {
+    // if the process failed while creating the snapshot last time the file may still exists
+    // deleting the staging tmpFile just in case
+    if (await checkFileExists(tmpFile)) {
+      await fs.promises.unlink(tmpFile)
+    }
+    const writeStream = fs.createWriteStream(tmpFile)
+    const fileClosedFuture = new Promise<void>((resolve, reject) => {
+      writeStream.on('finish', resolve)
+      writeStream.on('error', reject)
+    })
+    try {
+      // this header is necessary to later differentiate between binary formats and non-binary formats
+      writeStream.write('### Decentraland json snapshot\n')
+      for (const snapshotElem of snapshot) {
+        writeStream.write(JSON.stringify(snapshotElem) + '\n')
+      }
+    } finally {
+      writeStream.close()
+      await fileClosedFuture
+    }
+    const readStream = fs.createReadStream(tmpFile) as any
+    return readStream
+  }
+
+  private async getFullSnapshotFromDb(): Promise<FullSnapshot[]> {
+    return await this.repository.run(
+      async (db) => {
+        // Get all the active entities
+        return db.deployments.getFullSnapshot()
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
+  }
+
+  private async getFullSnapshotFromDbForEntityType(entityType: EntityType): Promise<FullSnapshot[]> {
+    return await this.repository.run(
+      async (db) => {
+        // Get all the active entities
+        return db.deployments.getSnapshotPerEntityTypeV2(entityType)
+      },
+      { priority: DB_REQUEST_PRIORITY.HIGH }
+    )
   }
 
   private shouldPrunePreviousSnapshot(previousHash: string): boolean {
@@ -276,3 +328,4 @@ export class SnapshotManager {
 }
 
 export type SnapshotMetadata = { hash: ContentFileHash; lastIncludedDeploymentTimestamp: Timestamp }
+export type FullSnapshotMetadata = SnapshotMetadata & { entities?: any }
