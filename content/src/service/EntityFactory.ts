@@ -2,7 +2,7 @@ import { ContentFileHash, EntityId, EntityType, EntityVersion, Pointer } from 'd
 import { Entity } from './Entity'
 
 export class EntityFactory {
-  static fromBufferWithId(buffer: Buffer, id: EntityId): Entity {
+  static fromBufferWithId(buffer: Uint8Array, id: EntityId): Entity {
     const object = EntityFactory.parseJsonIntoObject(buffer)
     return EntityFactory.fromObject(object, id)
   }
@@ -14,9 +14,9 @@ export class EntityFactory {
     return EntityFactory.fromObject(object, object.id)
   }
 
-  private static parseJsonIntoObject(buffer: Buffer): any {
+  private static parseJsonIntoObject(buffer: Uint8Array): any {
     try {
-      return JSON.parse(buffer.toString())
+      return JSON.parse(new TextDecoder().decode(buffer))
     } catch (e) {
       throw new Error(`Failed to parse the entity file. Please make sure that it is a valid json.`)
     }

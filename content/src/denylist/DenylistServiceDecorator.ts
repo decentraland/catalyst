@@ -260,7 +260,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
 
     // Find the entity file
-    const hashes: Map<ContentFileHash, Buffer> = await ServiceImpl.hashFiles(files, entityId)
+    const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
     const entityFile = hashes.get(entityId)
     if (!entityFile) {
       throw new Error(`Failed to find the entity file.`)

@@ -39,7 +39,7 @@ describe('DenylistServiceDecorator', () => {
 
   let entity1: Entity
   let entity2: Entity
-  let entityFile1: Buffer
+  let entityFile1: Uint8Array
 
   let P1Target: DenylistTarget
   let content1Target: DenylistTarget

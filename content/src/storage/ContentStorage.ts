@@ -5,7 +5,7 @@ export type ContentEncoding = 'gzip'
 export interface ContentStorage {
   storeStream(id: string, content: Readable): Promise<void>
   /** @deprecated use storeStream instead */
-  store(id: string, content: Buffer): Promise<void>
+  store(id: string, content: Uint8Array): Promise<void>
   delete(ids: string[]): Promise<void>
   retrieve(id: string): Promise<ContentItem | undefined>
   exist(ids: string[]): Promise<Map<string, boolean>>

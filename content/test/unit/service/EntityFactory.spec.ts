@@ -5,7 +5,7 @@ import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTe
 
 describe('Service', () => {
   let entity: Entity
-  let entityFile: Buffer
+  let entityFile: Uint8Array
 
   beforeAll(async () => {
     ;[entity, entityFile] = await buildEntityAndFile(

@@ -211,7 +211,7 @@ export class MockedMetaverseContentServiceBuilder {
 export function buildEntity(
   pointers: Pointer[],
   ...content: { hash: ContentFileHash; buffer: Buffer }[]
-): Promise<[Entity, Buffer]> {
+): Promise<[Entity, Uint8Array]> {
   const entityContent: Map<string, ContentFileHash> = new Map(
     content.map((aContent) => [random.alphaNumeric(10), aContent.hash])
   )

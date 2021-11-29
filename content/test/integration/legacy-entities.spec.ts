@@ -66,14 +66,21 @@ describe('End 2 end - Legacy Entities', () => {
 async function deployLegacy(server: TestServer, deployData: DeploymentData) {
   const form = new FormData()
   form.append('entityId', deployData.entityId)
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
   addModelToFormData(deployData.authChain, form, 'authChain')
   form.append('version', 'v2')
   form.append('migration_data', JSON.stringify({ data: 'data' }))
 
-  deployData.files.forEach((f: Buffer, hash: ContentFileHash) => form.append(hash, f, { filename: hash }))
+  deployData.files.forEach((f: Buffer | Uint8Array, hash: ContentFileHash) =>
+    form.append(hash, Buffer.isBuffer(f) ? f : Buffer.from(arrayBufferFrom(f)), { filename: hash })
+  )
 
   const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
   await assertResponseIsOkOrThrow(deployResponse)
+}
+
+function arrayBufferFrom(value: Buffer | Uint8Array) {
+  if (value.buffer) {
+    return value.buffer
+  }
+  return value
 }
