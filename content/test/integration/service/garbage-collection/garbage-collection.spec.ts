@@ -39,7 +39,7 @@ describe('Integration - Garbage Collection', () => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    const env = await new EnvironmentBuilder(baseEnv)
+    const { env } = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
       .withBean(Bean.VALIDATOR, new NoOpValidator())

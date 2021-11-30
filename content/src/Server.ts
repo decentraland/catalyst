@@ -1,5 +1,6 @@
 import { initializeMetricsServer } from '@catalyst/commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
+import { IBaseComponent } from '@well-known-components/interfaces'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'
@@ -20,6 +21,7 @@ import { GarbageCollectionManager } from './service/garbage-collection/GarbageCo
 import { MetaverseContentService } from './service/Service'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
+import { AppComponents } from './types'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -36,7 +38,7 @@ export class Server {
   private readonly service: MetaverseContentService
   private readonly repository: Repository
 
-  constructor(env: Environment) {
+  constructor(env: Environment, private components: Partial<AppComponents>) {
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -195,6 +197,14 @@ export class Server {
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()
+
+      // TODO: this will be handled by well-known-components Lifecycle
+      for (let cn in this.components) {
+        if ('stop' in this.components[cn] && typeof this.components[cn] === 'function') {
+          const c: IBaseComponent = this.components[cn]
+          await c.stop!()
+        }
+      }
     }
   }
 
