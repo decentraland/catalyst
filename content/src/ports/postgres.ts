@@ -45,7 +45,6 @@ export async function createDatabaseComponent(
     logger.log('Starting database')
     try {
       db = new Pool(options)
-      await db.connect()
     } catch (error) {
       logger.error('An error occurred trying to open the database. Did you run the migrations?')
       throw error
