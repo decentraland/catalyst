@@ -73,41 +73,27 @@ export async function createDatabaseComponent(
     try {
       const stream: any = new QueryStream(sql.text, sql.values, config)
 
-      let wasCalled = false
+      stream.callback = function () {
+        // noop
+      }
 
-      const queryPromise = client.query(stream, newCallback)
-      const originalCallback = stream.callback
+      try {
+        const queryPromise = client.query(stream)
 
-      // this is a hack to prevent query timeout in stream
-      function newCallback(...args) {
-        if (args[0]) {
-          console.error(args)
+        for await (const row of stream) {
+          yield row
         }
-        wasCalled = true
-        if (originalCallback) {
-          return originalCallback.apply(null, ...args)
-        }
+
+        stream.destroy()
+
+        await queryPromise
+        // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+        stream.callback(undefined, undefined)
+      } catch (err) {
+        // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+        stream.callback(err, undefined)
+        throw err
       }
-
-      hack: {
-        // this is a hack to prevent query timeout in stream
-        if (!originalCallback) {
-          stream.callback = newCallback
-        }
-      }
-
-      for await (const row of stream) {
-        yield row
-      }
-
-      stream.destroy()
-
-      // this is a hack to prevent query timeout in stream
-      if (stream.callback !== originalCallback && !wasCalled) {
-        stream.callback()
-      }
-
-      await queryPromise
     } finally {
       client.release()
     }
