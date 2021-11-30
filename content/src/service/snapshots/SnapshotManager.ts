@@ -76,7 +76,7 @@ export class SnapshotManager {
     // start async job
     this.snapshotGenerationJob().catch(console.error)
 
-    // wait up to 10 seconds for job to finish
+    // wait up to 60 seconds for job to finish
     let counter = 60
     while (!this.lastSnapshotsPerEntityType.has(ALL_ENTITIES) && this.running) {
       await delay(1000)
@@ -108,6 +108,9 @@ export class SnapshotManager {
     this.running = false
   }
 
+  /**
+   * @deprecated
+   */
   getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined {
     return this.lastSnapshots.get(entityType)
   }
