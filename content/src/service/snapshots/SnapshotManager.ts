@@ -189,7 +189,9 @@ export class SnapshotManager {
   private async generateSnapshot(entityType: EntityType | ALL_ENTITIES): Promise<void> {
     // Format the snapshot in a tmp file
     const tmpFile = path.resolve(this.components.staticConfigs.contentStorageFolder, 'tmp-snapshot-file')
-    const { end: stopTimer } = this.components.metrics.startTimer('dcl_content_snapshot_generation_time')
+    const { end: stopTimer } = this.components.metrics.startTimer('dcl_content_snapshot_generation_time', {
+      entity_type: entityType.toString()
+    })
 
     try {
       const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
