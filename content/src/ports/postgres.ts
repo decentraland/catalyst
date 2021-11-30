@@ -6,9 +6,12 @@ import { SQLStatement } from 'sql-template-strings'
 export interface IDatabaseComponent extends IDatabase {
   queryWithValues<T>(sql: SQLStatement): Promise<IDatabase.IQueryResult<T>>
   streamQuery<T = any>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T>
+
+  start(): Promise<void>
+  stop(): Promise<void>
 }
 
-export function createTestDatabaseComponent(): IDatabaseComponent & IBaseComponent {
+export function createTestDatabaseComponent(): IDatabaseComponent {
   return {
     async query() {
       throw new Error('Not implemented')
@@ -107,12 +110,7 @@ export async function createDatabaseComponent(
   async function stop() {
     logger.log('Stopping database')
     await db.end()
-  }
-
-  const RUNNING_USING_WKC = false
-
-  if (!RUNNING_USING_WKC) {
-    await start()
+    logger.log('Stopping database OK')
   }
 
   return {

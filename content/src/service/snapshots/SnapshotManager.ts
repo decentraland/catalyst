@@ -4,11 +4,7 @@ import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-co
 import * as fs from 'fs'
 import log4js from 'log4js'
 import * as path from 'path'
-import {
-  DeploymentWithAuthChain,
-  streamActiveDeployments,
-  streamActiveDeploymentsEntityType
-} from '../../logic/snapshots-queries'
+import { streamActiveDeployments, streamActiveDeploymentsEntityType } from '../../logic/snapshots-queries'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
@@ -199,13 +195,8 @@ export class SnapshotManager {
     try {
       const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
 
-      const deploymentsIterable =
-        entityType === ALL_ENTITIES
-          ? streamActiveDeployments(this.components)
-          : streamActiveDeploymentsEntityType(this.components, entityType)
-
       // Write to tmpFile the snapshot obtained
-      const { snapshotTimestamp, elements, timeElapsed } = await this.writeToFile(tmpFile, deploymentsIterable)
+      const { snapshotTimestamp, elements, timeElapsed } = await this.writeToFile(tmpFile, entityType)
 
       // Hash the snapshot
       const hash = await hashStreamV1(fs.createReadStream(tmpFile) as any)
@@ -275,7 +266,7 @@ export class SnapshotManager {
     }
   }
 
-  private async writeToFile(tmpFile: string, iterable: AsyncIterable<DeploymentWithAuthChain>) {
+  private async writeToFile(tmpFile: string, entityType: EntityType | ALL_ENTITIES) {
     // if the process failed while creating the snapshot last time the file may still exists
     // deleting the staging tmpFile just in case
     if (await checkFileExists(tmpFile)) {
@@ -292,7 +283,13 @@ export class SnapshotManager {
     try {
       // this header is necessary to later differentiate between binary formats and non-binary formats
       writeStream.write('### Decentraland json snapshot\n')
-      for await (const snapshotElem of iterable) {
+
+      const deploymentsIterable =
+        entityType === ALL_ENTITIES
+          ? streamActiveDeployments(this.components)
+          : streamActiveDeploymentsEntityType(this.components, entityType)
+
+      for await (const snapshotElem of deploymentsIterable) {
         elements++
         writeStream.write(JSON.stringify(snapshotElem) + '\n')
         if (snapshotElem.localTimestamp > snapshotTimestamp) {

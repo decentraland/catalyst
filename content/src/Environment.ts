@@ -469,6 +469,9 @@ export class EnvironmentBuilder {
         query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
       }
     )
+
+    await database.start()
+
     this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY, () => repository)
     this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER, () =>
       SystemPropertiesManagerFactory.create(env)
