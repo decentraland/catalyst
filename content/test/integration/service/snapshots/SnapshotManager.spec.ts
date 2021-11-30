@@ -1,10 +1,10 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
-import { gunzipSync } from 'zlib'
+import { pipeline } from 'stream'
+import { createUnzip } from 'zlib'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
-import { bufferToStream, streamToBuffer } from '../../../../src/storage/ContentStorage'
 import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
@@ -103,16 +103,21 @@ describe('Integration - Snapshot Manager', () => {
   ) {
     const { hash } = snapshotMetadata!
     const content = (await service.getContent(hash))!
-    let buffer = await streamToBuffer(await content.asStream())
+
+    let readStream = await content.asStream()
+
     if ((await content.contentEncoding()) == 'gzip') {
-      buffer = gunzipSync(buffer)
+      readStream = pipeline(readStream, createUnzip())
     }
 
     const snapshot: Map<EntityId, Pointer[]> = new Map()
-    for await (const deployment of processDeploymentsInStream(bufferToStream(buffer))) {
+
+    for await (const deployment of processDeploymentsInStream(readStream)) {
       snapshot.set(deployment.entityId, (deployment as any).pointers)
     }
+
     expect(snapshot.size).toBe(entitiesCombo.length)
+
     for (const { entity } of entitiesCombo) {
       expect(snapshot.get(entity.id)).toEqual(entity.pointers)
     }
@@ -173,7 +178,7 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toEqual(0)
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toContain({ lastIncludedDeploymentTimestamp: 0 })
 
     // Assert snapshot content is empty
     await assertSnapshotContains(snapshotMetadata)
