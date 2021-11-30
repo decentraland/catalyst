@@ -1,6 +1,6 @@
 import destroy from 'destroy'
-import * as path from 'path'
 import * as fs from 'fs'
+import * as path from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
 import { createGzip } from 'zlib'

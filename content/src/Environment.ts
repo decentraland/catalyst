@@ -1,12 +1,16 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { createLogComponent } from '@well-known-components/logger'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import NodeCache from 'node-cache'
+import path from 'path'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
+import { metricsComponent } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createDatabaseComponent } from './ports/postgres'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
@@ -17,7 +21,7 @@ import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsMana
 import { GarbageCollectionManagerFactory } from './service/garbage-collection/GarbageCollectionManagerFactory'
 import { PointerManagerFactory } from './service/pointers/PointerManagerFactory'
 import { ServiceFactory } from './service/ServiceFactory'
-import { SnapshotManagerFactory } from './service/snapshots/SnapshotManagerFactory'
+import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ClusterSynchronizationManagerFactory } from './service/synchronization/ClusterSynchronizationManagerFactory'
@@ -26,6 +30,7 @@ import { EventDeployerFactory } from './service/synchronization/EventDeployerFac
 import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
 import { ValidatorFactory } from './service/validations/ValidatorFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
+import { AppComponents } from './types'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
@@ -454,6 +459,23 @@ export class EnvironmentBuilder {
     // Some beans depend on other beans, so the required beans should be registered before
 
     const repository = await RepositoryFactory.create(env)
+    const logs = createLogComponent()
+    const metrics = metricsComponent
+    const staticConfigs: AppComponents['staticConfigs'] = {
+      contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    }
+    const database = await createDatabaseComponent(
+      { logs },
+      {
+        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
+        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
+        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+      }
+    )
     this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY, () => repository)
     this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER, () =>
       SystemPropertiesManagerFactory.create(env)
@@ -479,7 +501,19 @@ export class EnvironmentBuilder {
     )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER, () => SnapshotManagerFactory.create(env))
+    this.registerBeanIfNotAlreadySet(
+      env,
+      Bean.SNAPSHOT_MANAGER,
+      () =>
+        new SnapshotManager(
+          { database, metrics, staticConfigs },
+          env.getBean(Bean.SYSTEM_PROPERTIES_MANAGER),
+          env.getBean(Bean.REPOSITORY),
+          env.getBean(Bean.SERVICE),
+          env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY),
+          env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
+        )
+    )
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
       GarbageCollectionManagerFactory.create(env)
     )

@@ -1405,6 +1405,11 @@
     fp-future "^1.0.1"
     typed-url-params "^1.0.1"
 
+"@well-known-components/logger@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-1.1.0.tgz#d752aaf66e5afad59f0e73b20422131d1673da47"
+  integrity sha512-2yU5elo5V/0jSTdFKGXco+EIkx00XKKIxnw1MzYyrd/j4YQX/74StnDJR5l4h1DwTPERp4nR7d+7pLRZ6QDJVw==
+
 "@well-known-components/metrics@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@well-known-components/metrics/-/metrics-1.1.2.tgz#49f82d1865e5cc772b634e862927851cbe68c76e"
@@ -2118,17 +2123,6 @@ chownr@^1.0.1, chownr@^1.1.1, chownr@^1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/chownr/-/chownr-1.1.4.tgz#6fc9d7b42d32a583596337666e7d08084da2cc6b"
   integrity sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==
-
-cids@^0.8.0:
-  version "0.8.3"
-  resolved "https://registry.yarnpkg.com/cids/-/cids-0.8.3.tgz#aaf48ac8ed857c3d37dad94d8db1d8c9407b92db"
-  integrity sha512-yoXTbV3llpm+EBGWKeL9xKtksPE/s6DPoDSY4fn8I8TEW1zehWXPSB0pwAXVDlLaOlrw+sNynj995uD9abmPhA==
-  dependencies:
-    buffer "^5.6.0"
-    class-is "^1.1.0"
-    multibase "^1.0.0"
-    multicodec "^1.0.1"
-    multihashes "^1.0.1"
 
 cids@^1.0.0, cids@^1.1.5, cids@^1.1.6, cids@^1.1.9:
   version "1.1.9"
@@ -5342,15 +5336,6 @@ multiformats@^9.4.2:
   version "9.4.7"
   resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-9.4.7.tgz#df2caa6ccd975218bbbacd69e45bb76cc2a53654"
   integrity sha512-fZbcdf7LnvokPAZYkv4TLXe7PAg9sQ5qLXcwrAmZOloEb2+5FtFiAY+l3/9wsu4oTJXTV3JSggFQQ2dJLS01vA==
-
-multihashes@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/multihashes/-/multihashes-1.0.1.tgz#a89415d68283cf6287c6e219e304e75ce7fb73fe"
-  integrity sha512-S27Tepg4i8atNiFaU5ZOm3+gl3KQlUanLs/jWcBxQHFttgq+5x1OgbQmf2d8axJ/48zYGBd/wT9d723USMFduw==
-  dependencies:
-    buffer "^5.6.0"
-    multibase "^1.0.1"
-    varint "^5.0.0"
 
 multihashes@^4.0.1, multihashes@^4.0.2, multihashes@^4.0.3:
   version "4.0.3"

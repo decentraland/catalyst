@@ -20,7 +20,7 @@ export class S3ContentStorage implements ContentStorage {
     return this.store(id, content)
   }
 
-  async store(id: string, content: Buffer | Readable): Promise<void> {
+  async store(id: string, content: Uint8Array | Readable): Promise<void> {
     const request: AWS.S3.Types.PutObjectRequest = {
       Bucket: this.bucket,
       Key: id,

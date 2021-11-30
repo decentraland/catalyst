@@ -10,8 +10,8 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
-import { Entity } from 'src/service/Entity'
 import { Database } from '../../repository/Database'
+import { Entity } from '../../service/Entity'
 
 export type FullSnapshot = {
   entityId: EntityId
@@ -185,23 +185,6 @@ export class DeploymentsRepository {
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
-  async getFullSnapshot(): Promise<FullSnapshot[]> {
-    return this.db.map(
-      `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
-        `FROM deployments ` +
-        `WHERE deleter_deployment IS NULL ` +
-        `ORDER BY local_timestamp ASC, LOWER(entity_id) ASC`,
-      [],
-      (row) => ({
-        entityId: row.entity_id,
-        entityType: row.entity_type,
-        pointers: row.entity_pointers,
-        localTimestamp: row.local_timestamp,
-        authChain: row.auth_chain
-      })
-    )
-  }
-
   /**
    *
    * @deprecated use getSnapshotPerEntityTypeV2 instead
@@ -219,23 +202,6 @@ export class DeploymentsRepository {
         entityId: row.entity_id,
         pointers: row.entity_pointers,
         localTimestamp: row.local_timestamp
-      })
-    )
-  }
-
-  async getSnapshotPerEntityTypeV2(entityType: EntityType): Promise<FullSnapshot[]> {
-    return this.db.map(
-      `SELECT entity_id, entity_type, entity_pointers, auth_chain, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
-        `FROM deployments ` +
-        `WHERE entity_type = $1 AND deleter_deployment IS NULL ` +
-        `ORDER BY local_timestamp ASC, LOWER(entity_id) ASC`,
-      [entityType],
-      (row) => ({
-        entityId: row.entity_id,
-        entityType: row.entity_type,
-        pointers: row.entity_pointers,
-        localTimestamp: row.local_timestamp,
-        authChain: row.auth_chain
       })
     )
   }
