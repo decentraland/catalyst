@@ -199,7 +199,7 @@ export class Server {
       await this.repository.shutdown()
 
       // TODO: this will be handled by well-known-components Lifecycle
-      for (let cn in this.components) {
+      for (const cn in this.components) {
         if ('stop' in this.components[cn] && typeof this.components[cn] === 'function') {
           const c: IBaseComponent = this.components[cn]
           await c.stop!()
