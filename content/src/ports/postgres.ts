@@ -42,7 +42,6 @@ export async function createDatabaseComponent(
 
   // Methods
   async function start() {
-    logger.log('Starting database')
     try {
       const db = await pool.connect()
       db.release()
@@ -100,22 +99,22 @@ export async function createDatabaseComponent(
   }
 
   async function stop() {
-    logger.log('Stopping database')
     const promise = pool.end()
     let finished = false
 
     promise.then(() => (finished = true)).catch(() => (finished = true))
 
-    while (!finished) {
-      logger.log('Waiting to end', {
-        totalCount: pool.totalCount,
-        idleCount: pool.idleCount,
-        waitingCount: pool.waitingCount
-      })
-      await sleep(1000)
+    while (!finished && pool.totalCount | pool.idleCount | pool.waitingCount) {
+      if (pool.totalCount) {
+        logger.log('Draining connections', {
+          totalCount: pool.totalCount,
+          idleCount: pool.idleCount,
+          waitingCount: pool.waitingCount
+        })
+        await sleep(1000)
+      }
     }
 
-    logger.log('Stopping database OK')
     await promise
   }
 
