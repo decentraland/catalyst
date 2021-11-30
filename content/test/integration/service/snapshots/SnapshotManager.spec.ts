@@ -1,9 +1,10 @@
+import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { gunzipSync } from 'zlib'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
-import { streamToBuffer } from '../../../../src/storage/ContentStorage'
+import { bufferToStream, streamToBuffer } from '../../../../src/storage/ContentStorage'
 import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
@@ -106,7 +107,11 @@ describe('Integration - Snapshot Manager', () => {
     if ((await content.contentEncoding()) == 'gzip') {
       buffer = gunzipSync(buffer)
     }
+
     const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
+    for await (const deployment of processDeploymentsInStream(bufferToStream(buffer))) {
+      snapshot.set(deployment.entityId, (deployment as any).pointers)
+    }
     expect(snapshot.size).toBe(entitiesCombo.length)
     for (const { entity } of entitiesCombo) {
       expect(snapshot.get(entity.id)).toEqual(entity.pointers)
