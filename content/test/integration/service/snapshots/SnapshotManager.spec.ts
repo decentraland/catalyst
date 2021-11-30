@@ -108,7 +108,7 @@ describe('Integration - Snapshot Manager', () => {
       buffer = gunzipSync(buffer)
     }
 
-    const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
+    const snapshot: Map<EntityId, Pointer[]> = new Map()
     for await (const deployment of processDeploymentsInStream(bufferToStream(buffer))) {
       snapshot.set(deployment.entityId, (deployment as any).pointers)
     }
