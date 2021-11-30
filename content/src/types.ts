@@ -1,5 +1,5 @@
 import { IFetchComponent } from '@well-known-components/http-server'
-import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
+import { IBaseComponent, ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { metrics } from './metrics'
 import { IDatabaseComponent } from './ports/postgres'
 import { ClusterDeploymentsService, MetaverseContentService } from './service/Service'
@@ -10,7 +10,7 @@ export type AppComponents = {
   fetcher: IFetchComponent
   logs: ILoggerComponent
   deployer: MetaverseContentService & ClusterDeploymentsService
-  database: IDatabaseComponent
+  database: IDatabaseComponent & IBaseComponent
   staticConfigs: {
     contentStorageFolder: string
   }

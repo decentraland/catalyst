@@ -8,6 +8,22 @@ export interface IDatabaseComponent extends IDatabase {
   streamQuery<T = any>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T>
 }
 
+export function createTestDatabaseComponent(): IDatabaseComponent & IBaseComponent {
+  return {
+    async query() {
+      throw new Error('Not implemented')
+    },
+    async queryWithValues() {
+      throw new Error('Not implemented')
+    },
+    async *streamQuery() {
+      throw new Error('Not implemented')
+    },
+    async start() {},
+    async stop() {}
+  }
+}
+
 export async function createDatabaseComponent(
   components: {
     logs: ILoggerComponent

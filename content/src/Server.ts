@@ -1,6 +1,5 @@
 import { initializeMetricsServer } from '@catalyst/commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
-import { IBaseComponent } from '@well-known-components/interfaces'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'
@@ -38,7 +37,7 @@ export class Server {
   private readonly service: MetaverseContentService
   private readonly repository: Repository
 
-  constructor(env: Environment, private components: Partial<AppComponents>) {
+  constructor(env: Environment, private components: Pick<AppComponents, 'database'>) {
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -199,12 +198,7 @@ export class Server {
       await this.repository.shutdown()
 
       // TODO: this will be handled by well-known-components Lifecycle
-      for (const cn in this.components) {
-        if ('stop' in this.components[cn] && typeof this.components[cn] === 'function') {
-          const c: IBaseComponent = this.components[cn]
-          await c.stop!()
-        }
-      }
+      await this.components.database.stop!()
     }
   }
 
