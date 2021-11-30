@@ -192,7 +192,7 @@ export class SnapshotManager {
     const { end: stopTimer } = this.components.metrics.startTimer('dcl_content_snapshot_generation_time')
 
     try {
-      let previousHash: string | undefined = this.lastSnapshotsPerEntityType.get(entityType)?.hash
+      const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
 
       const deploymentsIterable =
         entityType === ALL_ENTITIES
