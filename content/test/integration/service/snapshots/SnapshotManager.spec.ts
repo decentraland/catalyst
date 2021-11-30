@@ -102,9 +102,10 @@ describe('Integration - Snapshot Manager', () => {
   ) {
     const { hash } = snapshotMetadata!
     const content = (await service.getContent(hash))!
-    expect(await content.contentEncoding()).toEqual('gzip')
-    const gzipBuffer = await streamToBuffer(await content.asStream())
-    const buffer = gunzipSync(gzipBuffer)
+    let buffer = await streamToBuffer(await content.asStream())
+    if ((await content.contentEncoding()) == 'gzip') {
+      buffer = gunzipSync(buffer)
+    }
     const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
     expect(snapshot.size).toBe(entitiesCombo.length)
     for (const { entity } of entitiesCombo) {
