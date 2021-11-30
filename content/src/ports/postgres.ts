@@ -1,3 +1,4 @@
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { IBaseComponent, IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
@@ -109,8 +110,22 @@ export async function createDatabaseComponent(
 
   async function stop() {
     logger.log('Stopping database')
-    await db.end()
+    const promise = db.end()
+    let finished = false
+
+    promise.then(() => (finished = true)).catch(() => (finished = true))
+
+    while (!finished) {
+      logger.log('Waiting to end', {
+        totalCount: db.totalCount,
+        idleCount: db.idleCount,
+        waitingCount: db.waitingCount
+      })
+      await sleep(1000)
+    }
+
     logger.log('Stopping database OK')
+    await promise
   }
 
   return {
