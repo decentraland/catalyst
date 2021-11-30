@@ -10,6 +10,7 @@ import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsComponent } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { RepositoryQueue } from './repository/RepositoryQueue'
@@ -115,15 +116,6 @@ export class Environment {
       return JSON.stringify(object)
     }
   }
-
-  private static instance: Environment
-  static async getInstance(): Promise<Environment> {
-    if (!Environment.instance) {
-      // Create default instance
-      Environment.instance = await new EnvironmentBuilder().build()
-    }
-    return Environment.instance
-  }
 }
 
 export const enum Bean {
@@ -227,7 +219,7 @@ export class EnvironmentBuilder {
     return this
   }
 
-  async build(): Promise<Environment> {
+  async build(): Promise<{ env: Environment; components: AppComponents }> {
     const env = new Environment()
 
     this.registerConfigIfNotAlreadySet(
@@ -460,6 +452,7 @@ export class EnvironmentBuilder {
 
     const repository = await RepositoryFactory.create(env)
     const logs = createLogComponent()
+    const fetcher = createFetchComponent()
     const metrics = metricsComponent
     const staticConfigs: AppComponents['staticConfigs'] = {
       contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
@@ -500,7 +493,8 @@ export class EnvironmentBuilder {
       () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
     )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
+    const deployer = ServiceFactory.create(env)
+    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
     this.registerBeanIfNotAlreadySet(
       env,
       Bean.SNAPSHOT_MANAGER,
@@ -524,7 +518,17 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 
-    return env
+    return {
+      env,
+      components: {
+        database,
+        deployer,
+        metrics,
+        fetcher,
+        logs,
+        staticConfigs
+      }
+    }
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {

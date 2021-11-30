@@ -25,7 +25,7 @@ describe('Integration - Snapshot Manager', () => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    const env = await new EnvironmentBuilder(baseEnv)
+    const { env } = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
       .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()

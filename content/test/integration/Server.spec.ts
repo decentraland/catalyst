@@ -55,7 +55,7 @@ describe('Integration - Server', function () {
 
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
-    server = new Server(env)
+    server = new Server(env, {})
     await server.start()
   })
 
