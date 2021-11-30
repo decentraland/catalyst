@@ -34,7 +34,7 @@ export interface MetaverseContentService {
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
+  getContent(fileHash: ContentFileHash, compressed?: boolean): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
   storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
   getStatus(): ServerStatus
