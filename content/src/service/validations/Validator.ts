@@ -60,7 +60,7 @@ export type ValidationsForContext = { [Context in DeploymentContext]: Validation
 
 export type DeploymentToValidate = {
   entity: Entity
-  files: Map<ContentFileHash, Buffer>
+  files: Map<ContentFileHash, Uint8Array>
   auditInfo: LocalDeploymentAuditInfo
 }
 
