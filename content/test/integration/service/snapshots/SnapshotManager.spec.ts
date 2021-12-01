@@ -1,10 +1,12 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { ContentItem } from 'src/storage/ContentStorage'
 import { pipeline } from 'stream'
 import { createUnzip } from 'zlib'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
+import { streamToBuffer } from '../../../../src/storage/ContentStorage'
 import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
@@ -97,31 +99,25 @@ describe('Integration - Snapshot Manager', () => {
     await assertSnapshotContains(snapshotMetadata, E2, E3)
   })
 
+  /**
+   * @deprecated
+   */
   async function assertSnapshotContains(
     snapshotMetadata: SnapshotMetadata | undefined,
     ...entitiesCombo: EntityCombo[]
   ) {
     const { hash } = snapshotMetadata!
     const content = (await service.getContent(hash))!
-
-    let readStream = await content.asStream()
-
-    if ((await content.contentEncoding()) == 'gzip') {
-      readStream = pipeline(readStream, createUnzip())
-    }
-
-    const snapshot: Map<EntityId, Pointer[]> = new Map()
-
-    for await (const deployment of processDeploymentsInStream(readStream)) {
-      snapshot.set(deployment.entityId, (deployment as any).pointers)
-    }
-
+    const buffer = await streamToBuffer(await content.asStream())
+    const snapshot: Map<EntityId, Pointer[]> = new Map(JSON.parse(buffer.toString()))
     expect(snapshot.size).toBe(entitiesCombo.length)
-
     for (const { entity } of entitiesCombo) {
       expect(snapshot.get(entity.id)).toEqual(entity.pointers)
     }
   }
+  /**
+   * New snapshots
+   */
 
   it(`When snapshot manager starts the full snapshots, then full snapshots are generated`, async () => {
     // Deploy E1 and E2
@@ -135,7 +131,7 @@ describe('Integration - Snapshot Manager', () => {
     expect(snapshotMetadata).toBeDefined()
     assertResultIsSuccessfulWithTimestamp(deploymentResult, snapshotMetadata!.lastIncludedDeploymentTimestamp)
     // Assert snapshot content is correct
-    await assertSnapshotContains(snapshotMetadata, E1, E2)
+    await assertGZipSnapshotContains(snapshotMetadata, E1, E2)
   })
 
   it(`When snapshot manager starts the full snapshots, then entity type snapshots are generated`, async () => {
@@ -153,10 +149,10 @@ describe('Integration - Snapshot Manager', () => {
       snapshotMetadata!.entities.scene.lastIncludedDeploymentTimestamp
     )
     // Assert snapshot content is correct
-    await assertSnapshotContains(snapshotMetadata!.entities.scene, E1, E2)
+    await assertGZipSnapshotContains(snapshotMetadata!.entities.scene, E1, E2)
   })
 
-  it(`Given no deployments for entity type, When snapshot manager starts the full snapshots, then entity type snapshots is empty`, async () => {
+  it(`Given no deployments for entity type, When snapshot manager starts the full snapshots, then entity type snapshots is created with no timestamp`, async () => {
     // Deploy E1 and E2 scenes
     await deployEntitiesCombo(service, E1, E2)
     // Start the snapshot manager
@@ -165,7 +161,7 @@ describe('Integration - Snapshot Manager', () => {
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
     // Assert snapshot was created
-    expect(snapshotMetadata!.entities.wearable).toBeUndefined()
+    expect(snapshotMetadata!.entities.wearable.lastIncludedDeploymentTimestamp).toBe(0)
   })
 
   it(`When snapshot manager starts, if there were no entities deployed, then the generated snapshot is empty`, async () => {
@@ -178,9 +174,35 @@ describe('Integration - Snapshot Manager', () => {
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
     expect(snapshotMetadata).toBeDefined()
-    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toContain({ lastIncludedDeploymentTimestamp: 0 })
+    expect(snapshotMetadata!.lastIncludedDeploymentTimestamp).toBe(0)
 
     // Assert snapshot content is empty
-    await assertSnapshotContains(snapshotMetadata)
+    await assertGZipSnapshotContains(snapshotMetadata)
   })
+
+  async function assertGZipSnapshotContains(
+    snapshotMetadata: SnapshotMetadata | undefined,
+    ...entitiesCombo: EntityCombo[]
+  ) {
+    const { hash } = snapshotMetadata!
+    const content: ContentItem = (await service.getContent(hash))!
+
+    let readStream = await content.asStream()
+
+    if ((await content.contentEncoding()) === 'gzip') {
+      readStream = pipeline(readStream, createUnzip())
+    }
+
+    const snapshot: Map<EntityId, Pointer[]> = new Map()
+
+    for await (const deployment of processDeploymentsInStream(readStream)) {
+      snapshot.set(deployment.entityId, (deployment as any).pointers)
+    }
+
+    expect(snapshot.size).toBe(entitiesCombo.length)
+
+    for (const { entity } of entitiesCombo) {
+      expect(snapshot.get(entity.id)).toEqual(entity.pointers)
+    }
+  }
 })

@@ -317,6 +317,9 @@ export class SnapshotManager {
     return db.deployments.deploymentsSince(entityType, timestamp)
   }
 
+  /**
+   * @deprecated
+   */
   private storeSnapshotMetadata(
     entityType: EntityType,
     hash: ContentFileHash,
