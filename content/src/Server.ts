@@ -20,6 +20,7 @@ import { GarbageCollectionManager } from './service/garbage-collection/GarbageCo
 import { MetaverseContentService } from './service/Service'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
+import { AppComponents } from './types'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -36,7 +37,7 @@ export class Server {
   private readonly service: MetaverseContentService
   private readonly repository: Repository
 
-  constructor(env: Environment) {
+  constructor(env: Environment, private components: Pick<AppComponents, 'database'>) {
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -195,6 +196,9 @@ export class Server {
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()
+
+      // TODO: this will be handled by well-known-components Lifecycle
+      await this.components.database.stop!()
     }
   }
 

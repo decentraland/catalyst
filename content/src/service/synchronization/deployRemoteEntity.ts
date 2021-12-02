@@ -25,10 +25,11 @@ export async function deployEntityFromRemoteServer(
   entityId: string,
   entityType: string,
   authChain: AuthChain,
-  servers: string[]
+  servers: string[],
+  kind: DeploymentContext
 ): Promise<void> {
   await downloadFullEntity(components, entityId, entityType, servers)
-  await deployDownloadedEntity(components, entityId, entityType, { authChain })
+  await deployDownloadedEntity(components, entityId, entityType, { authChain }, kind)
 }
 
 async function downloadFullEntity(
@@ -58,7 +59,8 @@ export async function deployDownloadedEntity(
   components: Pick<AppComponents, 'metrics' | 'staticConfigs' | 'deployer'>,
   entityId: string,
   entityType: string,
-  auditInfo: LocalDeploymentAuditInfo
+  auditInfo: LocalDeploymentAuditInfo,
+  kind: DeploymentContext
 ): Promise<void> {
   const { metrics } = components
   const deploymentTimeTimer = metrics.startTimer('dcl_deployment_time', { entity_type: entityType })
@@ -70,12 +72,7 @@ export async function deployDownloadedEntity(
       throw new Error('Trying to deploy empty entityFile')
     }
 
-    const deploymentResult = await components.deployer.deployEntity(
-      [entityFile],
-      entityId,
-      auditInfo,
-      DeploymentContext.SYNCED
-    )
+    const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, kind)
 
     if (typeof deploymentResult === 'object' && 'errors' in deploymentResult && deploymentResult.errors.length) {
       throw new Error(

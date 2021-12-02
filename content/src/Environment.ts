@@ -1,12 +1,17 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { createLogComponent } from '@well-known-components/logger'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import NodeCache from 'node-cache'
+import path from 'path'
 import { ControllerFactory } from './controller/ControllerFactory'
 import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
+import { metricsComponent } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createFetchComponent } from './ports/fetcher'
+import { createDatabaseComponent } from './ports/postgres'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
@@ -17,7 +22,7 @@ import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsMana
 import { GarbageCollectionManagerFactory } from './service/garbage-collection/GarbageCollectionManagerFactory'
 import { PointerManagerFactory } from './service/pointers/PointerManagerFactory'
 import { ServiceFactory } from './service/ServiceFactory'
-import { SnapshotManagerFactory } from './service/snapshots/SnapshotManagerFactory'
+import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ClusterSynchronizationManagerFactory } from './service/synchronization/ClusterSynchronizationManagerFactory'
@@ -25,6 +30,7 @@ import { ContentClusterFactory } from './service/synchronization/ContentClusterF
 import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
 import { ValidatorFactory } from './service/validations/ValidatorFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
+import { AppComponents } from './types'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
@@ -108,15 +114,6 @@ export class Environment {
     } else {
       return JSON.stringify(object)
     }
-  }
-
-  private static instance: Environment
-  static async getInstance(): Promise<Environment> {
-    if (!Environment.instance) {
-      // Create default instance
-      Environment.instance = await new EnvironmentBuilder().build()
-    }
-    return Environment.instance
   }
 }
 
@@ -220,7 +217,7 @@ export class EnvironmentBuilder {
     return this
   }
 
-  async build(): Promise<Environment> {
+  async build(): Promise<{ env: Environment; components: AppComponents }> {
     const env = new Environment()
 
     this.registerConfigIfNotAlreadySet(
@@ -252,7 +249,7 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL, () =>
-      Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1s') as string) / 1000)
+      Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -374,10 +371,10 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, () => ms('6h'))
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_IDLE_TIMEOUT, () =>
-      process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('15s')
+      process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('30s')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_QUERY_TIMEOUT, () =>
-      process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('15s')
+      process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('60s')
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -392,7 +389,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
-      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('1m')
+      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('15m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO, () => process.env.CUSTOM_DAO)
 
@@ -452,6 +449,27 @@ export class EnvironmentBuilder {
     // Some beans depend on other beans, so the required beans should be registered before
 
     const repository = await RepositoryFactory.create(env)
+    const logs = createLogComponent()
+    const fetcher = createFetchComponent()
+    const metrics = metricsComponent
+    const staticConfigs: AppComponents['staticConfigs'] = {
+      contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    }
+    const database = await createDatabaseComponent(
+      { logs },
+      {
+        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
+        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
+        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+      }
+    )
+
+    await database.start()
+
     this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY, () => repository)
     this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER, () =>
       SystemPropertiesManagerFactory.create(env)
@@ -476,8 +494,21 @@ export class EnvironmentBuilder {
       () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
     )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => ServiceFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SNAPSHOT_MANAGER, () => SnapshotManagerFactory.create(env))
+    const deployer = ServiceFactory.create(env)
+    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
+    this.registerBeanIfNotAlreadySet(
+      env,
+      Bean.SNAPSHOT_MANAGER,
+      () =>
+        new SnapshotManager(
+          { database, metrics, staticConfigs },
+          env.getBean(Bean.SYSTEM_PROPERTIES_MANAGER),
+          env.getBean(Bean.REPOSITORY),
+          env.getBean(Bean.SERVICE),
+          env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY),
+          env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
+        )
+    )
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
       GarbageCollectionManagerFactory.create(env)
     )
@@ -486,7 +517,17 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 
-    return env
+    return {
+      env,
+      components: {
+        database,
+        deployer,
+        metrics,
+        fetcher,
+        logs,
+        staticConfigs
+      }
+    }
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {

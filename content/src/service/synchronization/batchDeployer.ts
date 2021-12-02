@@ -3,6 +3,7 @@ import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetch
 import { deploymentExists, streamAllEntityIds } from '../../logic/deployments-queries'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
+import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
@@ -68,7 +69,8 @@ export function createBatchDeployerComponent(
               entity.entityId,
               entity.entityType,
               entity.authChain,
-              elementInMap!.servers
+              elementInMap!.servers,
+              DeploymentContext.SYNCED
             )
 
             components.deployedEntitiesFilter.add(entity.entityId)

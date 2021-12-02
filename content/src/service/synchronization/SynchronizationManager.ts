@@ -4,6 +4,7 @@ import log4js from 'log4js'
 import ms from 'ms'
 import { AppComponents } from '../../types'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
+import { DeploymentContext } from '../Service'
 import { bootstrapFromSnapshots } from './bootstrapFromSnapshots'
 import { ContentCluster } from './ContentCluster'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
@@ -150,7 +151,14 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       if (authChain) {
         ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
         try {
-          await deployEntityFromRemoteServer(this.components, entityId, entityType, authChain, servers)
+          await deployEntityFromRemoteServer(
+            this.components,
+            entityId,
+            entityType,
+            authChain,
+            servers,
+            DeploymentContext.FIX_ATTEMPT
+          )
         } catch {}
       } else {
         ClusterSynchronizationManager.LOGGER.info(

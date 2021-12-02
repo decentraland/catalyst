@@ -125,7 +125,7 @@ export class DeploymentManager {
   async getPointerChanges(
     deploymentPointerChangesRepo: DeploymentPointerChangesRepository,
     deploymentsRepo: DeploymentsRepository,
-    options?: SnapshotOptions
+    options?: PointerChangesOptions
   ): Promise<PartialDeploymentPointerChanges> {
     const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
     const curatedLimit =
@@ -208,7 +208,7 @@ export type PartialDeploymentPointerChanges = {
   }
 }
 
-export type SnapshotOptions = {
+export type PointerChangesOptions = {
   filters?: DeploymentFilters
   sortBy?: DeploymentSorting
   offset?: number

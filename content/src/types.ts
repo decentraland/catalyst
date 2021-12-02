@@ -8,19 +8,15 @@ import { IBloomFilterComponent } from './ports/bloomFilter'
 import { IDatabaseComponent } from './ports/postgres'
 import { ClusterDeploymentsService, MetaverseContentService } from './service/Service'
 // Minimum amount of needed stuff to make the sync work
-export type DeployerComponent = Pick<
-  MetaverseContentService & ClusterDeploymentsService,
-  'getAllFailedDeployments' | 'deployEntity' | 'reportErrorDuringSync' | 'listenToDeployments'
->
 
 export type AppComponents = {
   metrics: IMetricsComponent<keyof typeof metrics>
   fetcher: IFetchComponent
   downloadQueue: IJobQueue
   logs: ILoggerComponent
-  deployer: DeployerComponent
   database: IDatabaseComponent
   deployedEntitiesFilter: IBloomFilterComponent
+  deployer: MetaverseContentService & ClusterDeploymentsService
   staticConfigs: {
     contentStorageFolder: string
   }

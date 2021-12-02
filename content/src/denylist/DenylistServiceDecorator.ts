@@ -12,7 +12,7 @@ import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Deployment, DeploymentOptions, SnapshotOptions } from '../service/deployments/DeploymentManager'
+import { Deployment, DeploymentOptions, PointerChangesOptions } from '../service/deployments/DeploymentManager'
 import { Entity } from '../service/Entity'
 import { EntityFactory } from '../service/EntityFactory'
 import {
@@ -196,7 +196,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     )
   }
 
-  getPointerChanges(task?: Database, options?: SnapshotOptions) {
+  getPointerChanges(task?: Database, options?: PointerChangesOptions) {
     return this.service.getPointerChanges(task, options)
   }
 

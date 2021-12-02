@@ -1,4 +1,4 @@
-import { Duplex, Readable } from 'stream'
+import { Readable } from 'stream'
 
 export type ContentEncoding = 'gzip'
 
@@ -43,10 +43,7 @@ export class SimpleContentItem implements ContentItem {
 }
 
 export function bufferToStream(buffer: Uint8Array): Readable {
-  const streamDuplex = new Duplex()
-  streamDuplex.push(buffer)
-  streamDuplex.push(null)
-  return streamDuplex
+  return Readable.from(buffer)
 }
 
 export function streamToBuffer(stream: Readable): Promise<Buffer> {

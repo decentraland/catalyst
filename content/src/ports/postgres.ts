@@ -1,3 +1,4 @@
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { IBaseComponent, IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
@@ -6,6 +7,25 @@ import { SQLStatement } from 'sql-template-strings'
 export interface IDatabaseComponent extends IDatabase {
   queryWithValues<T>(sql: SQLStatement): Promise<IDatabase.IQueryResult<T>>
   streamQuery<T = any>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T>
+
+  start(): Promise<void>
+  stop(): Promise<void>
+}
+
+export function createTestDatabaseComponent(): IDatabaseComponent {
+  return {
+    async query() {
+      throw new Error('Not implemented')
+    },
+    async queryWithValues() {
+      throw new Error('Not implemented')
+    },
+    async *streamQuery() {
+      throw new Error('Not implemented')
+    },
+    async start() {},
+    async stop() {}
+  }
 }
 
 export async function createDatabaseComponent(
@@ -18,14 +38,13 @@ export async function createDatabaseComponent(
   const logger = logs.getLogger('database-component')
 
   // Config
-  let db: Pool
+  const pool: Pool = new Pool(options)
 
   // Methods
   async function start() {
-    logger.log('Starting database')
     try {
-      db = new Pool(options)
-      await db.connect()
+      const db = await pool.connect()
+      db.release()
     } catch (error) {
       logger.error('An error occurred trying to open the database. Did you run the migrations?')
       throw error
@@ -33,7 +52,7 @@ export async function createDatabaseComponent(
   }
 
   async function query<T>(sql: string) {
-    const rows = await db.query<T[]>(sql)
+    const rows = await pool.query<T[]>(sql)
     return {
       rows: rows.rows as any[],
       rowCount: rows.rowCount
@@ -41,7 +60,7 @@ export async function createDatabaseComponent(
   }
 
   async function queryWithValues<T>(sql: SQLStatement) {
-    const rows = await db.query<T[]>(sql)
+    const rows = await pool.query<T[]>(sql)
     return {
       rows: rows.rows as any[],
       rowCount: rows.rowCount
@@ -49,54 +68,54 @@ export async function createDatabaseComponent(
   }
 
   async function* streamQuery<T>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T> {
-    const stream: any = new QueryStream(sql.text, sql.values, config)
+    const client = await pool.connect()
+    try {
+      const stream: any = new QueryStream(sql.text, sql.values, config)
 
-    let wasCalled = false
-
-    const queryPromise = db.query(stream, newCallback)
-    const originalCallback = stream.callback
-
-    // this is a hack to prevent query timeout in stream
-    function newCallback(...args) {
-      if (args[0]) {
-        console.error(args)
+      stream.callback = function () {
+        // noop
       }
-      wasCalled = true
-      if (originalCallback) {
-        return originalCallback.apply(null, ...args)
+
+      try {
+        const queryPromise = client.query(stream)
+
+        for await (const row of stream) {
+          yield row
+        }
+
+        stream.destroy()
+
+        await queryPromise
+        // finish - OK, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+        stream.callback(undefined, undefined)
+      } catch (err) {
+        // finish - with error, this call is necessary to finish the query when we configure query_timeout due to a bug in pg
+        stream.callback(err, undefined)
+        throw err
       }
+    } finally {
+      client.release()
     }
-
-    hack: {
-      // this is a hack to prevent query timeout in stream
-      if (!originalCallback) {
-        stream.callback = newCallback
-      }
-    }
-
-    for await (const row of stream) {
-      yield row
-    }
-
-    stream.destroy()
-
-    // this is a hack to prevent query timeout in stream
-    if (stream.callback !== originalCallback && !wasCalled) {
-      stream.callback()
-    }
-
-    await queryPromise
   }
 
   async function stop() {
-    logger.log('Stopping database')
-    await db.end()
-  }
+    const promise = pool.end()
+    let finished = false
 
-  const RUNNING_USING_WKC = false
+    promise.then(() => (finished = true)).catch(() => (finished = true))
 
-  if (!RUNNING_USING_WKC) {
-    await start()
+    while (!finished && pool.totalCount | pool.idleCount | pool.waitingCount) {
+      if (pool.totalCount) {
+        logger.log('Draining connections', {
+          totalCount: pool.totalCount,
+          idleCount: pool.idleCount,
+          waitingCount: pool.waitingCount
+        })
+        await sleep(1000)
+      }
+    }
+
+    await promise
   }
 
   return {
