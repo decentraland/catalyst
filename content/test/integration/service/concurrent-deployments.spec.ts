@@ -1,5 +1,4 @@
 import { EntityType } from 'dcl-catalyst-commons'
-import { MetaverseContentService } from '../../../src/service/Service'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
@@ -13,7 +12,6 @@ describe('Integration - Concurrent deployments', () => {
   const testEnv = loadStandaloneTestEnvironment()
 
   let entities: EntityCombo[]
-  let service: MetaverseContentService
 
   beforeAll(async () => {
     entities = []
@@ -22,11 +20,8 @@ describe('Integration - Concurrent deployments', () => {
     }
   })
 
-  beforeEach(async () => {
-    service = await testEnv.buildService()
-  })
-
   it(`When deployments are executed concurrently, then only one remains active`, async () => {
+    const service = await testEnv.buildService()
     // Perform all the deployments concurrently
     await Promise.all(entities.map((entityCombo) => deployEntity(entityCombo)))
 
@@ -36,6 +31,8 @@ describe('Integration - Concurrent deployments', () => {
   })
 
   async function deployEntity(entity: EntityCombo) {
+    const service = await testEnv.buildService()
+
     try {
       await deployEntitiesCombo(service, entity)
     } catch (error) {

@@ -1,6 +1,8 @@
+import { Deployment, EntityType, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
+import { assertDeploymentsCount } from '../../E2EAssertions'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
-import { buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
+import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
 import { TestServer } from '../../TestServer'
 
 /**
@@ -11,7 +13,7 @@ describe('Integration - Deployment Sorting', () => {
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer
 
-  it('deploy data', async () => {
+  beforeEach(async () => {
     ;[server1, server2] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(2)
     // Start server 1, 2 and 3
     await Promise.all([server1.start(), server2.start()])
@@ -32,63 +34,60 @@ describe('Integration - Deployment Sorting', () => {
     await server1.deploy(deployData1)
     await server2.deploy(deployData2)
     await server1.deploy(deployData3)
+    await awaitUntil(() => assertDeploymentsCount(server1, 3))
   })
 
-  // it('replicate deployments across servers', async () => {
-  //   await awaitUntil(() => assertDeploymentsCount(server1, 3))
-  // })
+  it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
+    const deploymentsFromServer1 = await server1.getDeployments()
 
-  // it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
-  //   const deploymentsFromServer1 = await server1.getDeployments()
+    assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.DESCENDING)
+  })
 
-  //   assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.DESCENDING)
-  // })
+  it(`When getting all deployments with sortby by local and asc then the order is correct`, async () => {
+    const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
+      sortBy: { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING }
+    })
 
-  // it(`When getting all deployments with sortby by local and asc then the order is correct`, async () => {
-  //   const deploymentsFromServer1 = await server1.getDeployments({
-  //     filters: { entityTypes: [EntityType.SCENE] },
-  //     sortBy: { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.ASCENDING }
-  //   })
+    assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.ASCENDING)
+  })
 
-  //   assertSortedBy(deploymentsFromServer1, SortingField.LOCAL_TIMESTAMP, SortingOrder.ASCENDING)
-  // })
+  it(`When getting all deployments with sortby by entity and asc then the order is correct`, async () => {
+    const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
+      sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.ASCENDING }
+    })
 
-  // it(`When getting all deployments with sortby by entity and asc then the order is correct`, async () => {
-  //   const deploymentsFromServer1 = await server1.getDeployments({
-  //     filters: { entityTypes: [EntityType.SCENE] },
-  //     sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.ASCENDING }
-  //   })
+    assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.ASCENDING)
+  })
 
-  //   assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.ASCENDING)
-  // })
+  it(`When getting all deployments with sortby by entity and desc then the order is correct`, async () => {
+    const deploymentsFromServer1 = await server1.getDeployments({
+      filters: { entityTypes: [EntityType.SCENE] },
+      sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.DESCENDING }
+    })
 
-  // it(`When getting all deployments with sortby by entity and desc then the order is correct`, async () => {
-  //   const deploymentsFromServer1 = await server1.getDeployments({
-  //     filters: { entityTypes: [EntityType.SCENE] },
-  //     sortBy: { field: SortingField.ENTITY_TIMESTAMP, order: SortingOrder.DESCENDING }
-  //   })
-
-  //   assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.DESCENDING)
-  // })
+    assertSortedBy(deploymentsFromServer1, SortingField.ENTITY_TIMESTAMP, SortingOrder.DESCENDING)
+  })
 })
 
-// const timestampExtractorMap: Map<SortingField, (deployment: Deployment) => Timestamp> = new Map([
-//   [SortingField.LOCAL_TIMESTAMP, (deployment) => deployment.auditInfo.localTimestamp],
-//   [SortingField.ENTITY_TIMESTAMP, (deployment) => deployment.entityTimestamp]
-// ])
+const timestampExtractorMap: Map<SortingField, (deployment: Deployment) => Timestamp> = new Map([
+  [SortingField.LOCAL_TIMESTAMP, (deployment) => deployment.auditInfo.localTimestamp],
+  [SortingField.ENTITY_TIMESTAMP, (deployment) => deployment.entityTimestamp]
+])
 
-// const compareTimestampMap: Map<SortingOrder, (timestamp1: Timestamp, timestamp2: Timestamp) => void> = new Map([
-//   [SortingOrder.ASCENDING, (timestamp1, timestamp2) => expect(timestamp1).toBeLessThanOrEqual(timestamp2)],
-//   [SortingOrder.DESCENDING, (timestamp1, timestamp2) => expect(timestamp1).toBeGreaterThanOrEqual(timestamp2)]
-// ])
+const compareTimestampMap: Map<SortingOrder, (timestamp1: Timestamp, timestamp2: Timestamp) => void> = new Map([
+  [SortingOrder.ASCENDING, (timestamp1, timestamp2) => expect(timestamp1).toBeLessThanOrEqual(timestamp2)],
+  [SortingOrder.DESCENDING, (timestamp1, timestamp2) => expect(timestamp1).toBeGreaterThanOrEqual(timestamp2)]
+])
 
-// function assertSortedBy(deployments: Deployment[], field: SortingField, order: SortingOrder) {
-//   const timestampExtractor: (deployment: Deployment) => Timestamp = timestampExtractorMap.get(field)!
-//   const compareAssertion: (timestamp1: Timestamp, timestamp2: Timestamp) => void = compareTimestampMap.get(order)!
+function assertSortedBy(deployments: Deployment[], field: SortingField, order: SortingOrder) {
+  const timestampExtractor: (deployment: Deployment) => Timestamp = timestampExtractorMap.get(field)!
+  const compareAssertion: (timestamp1: Timestamp, timestamp2: Timestamp) => void = compareTimestampMap.get(order)!
 
-//   for (let i = 1; i < deployments.length; i++) {
-//     const timestamp1 = timestampExtractor(deployments[i - 1])
-//     const timestamp2 = timestampExtractor(deployments[i])
-//     compareAssertion(timestamp1, timestamp2)
-//   }
-// }
+  for (let i = 1; i < deployments.length; i++) {
+    const timestamp1 = timestampExtractor(deployments[i - 1])
+    const timestamp2 = timestampExtractor(deployments[i])
+    compareAssertion(timestamp1, timestamp2)
+  }
+}
