@@ -20,7 +20,7 @@ export type AppComponents = {
   staticConfigs: {
     contentStorageFolder: string
   }
-  batchDeployer: IDeployerComponent
+  batchDeployer: IDeployerComponent & { start(): Promise<void> }
   synchronizationJobManager: JobLifecycleManagerComponent
 }
 

@@ -37,7 +37,7 @@ export class TestServer extends Server {
 
   private readonly client: ContentClient
 
-  constructor(env: Environment, components: Pick<AppComponents, 'database'>) {
+  constructor(env: Environment, components: Pick<AppComponents, 'database' | 'batchDeployer'>) {
     super(env, components)
     this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
     this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)

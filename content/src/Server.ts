@@ -37,7 +37,7 @@ export class Server {
   private readonly service: MetaverseContentService
   private readonly repository: Repository
 
-  constructor(env: Environment, private components: Pick<AppComponents, 'database'>) {
+  constructor(env: Environment, private components: Pick<AppComponents, 'database' | 'batchDeployer'>) {
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -166,6 +166,7 @@ export class Server {
     await this.migrationManager.run()
     await this.validateHistory()
     await this.service.start()
+    await this.components.batchDeployer.start()
 
     // generate snapshots before starting the server
     await this.snapshotManager.startSnapshotsPerEntity()

@@ -1,3 +1,4 @@
+import { IDeployerComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { mock } from 'ts-mockito'
@@ -56,7 +57,14 @@ describe('Integration - Server', function () {
 
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
-    server = new Server(env, { database: createTestDatabaseComponent() })
+
+    const batchDeployer: IDeployerComponent & { start(): Promise<void> } = {
+      async deployEntity() {},
+      async onIdle() {},
+      async start() {}
+    }
+
+    server = new Server(env, { database: createTestDatabaseComponent(), batchDeployer })
     await server.start()
   })
 

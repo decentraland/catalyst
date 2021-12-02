@@ -34,8 +34,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     >,
     private readonly cluster: ContentCluster,
     private readonly disableSynchronization: boolean,
-    private readonly checkSyncRange: number,
-    readonly contentStorageFolder: string
+    private readonly checkSyncRange: number
   ) {}
 
   async start(): Promise<void> {
