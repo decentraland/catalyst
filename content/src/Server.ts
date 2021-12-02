@@ -194,6 +194,9 @@ export class Server {
 
     this.snapshotManager.stopCalculateFullSnapshots()
 
+    // await for jobs to end
+    await this.components.batchDeployer.onIdle()
+
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()
