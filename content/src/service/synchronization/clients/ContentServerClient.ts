@@ -1,11 +1,7 @@
-import { Fetcher, ServerAddress } from 'dcl-catalyst-commons'
+import { ServerAddress } from 'dcl-catalyst-commons'
 
 export class ContentServerClient {
-  constructor(private readonly serverUrl: ServerAddress, fetcher: Fetcher) {}
-
-  getContentUrl(): ServerAddress {
-    return this.serverUrl + '/content'
-  }
+  constructor(private readonly serverUrl: ServerAddress) {}
 
   getServerUrl(): ServerAddress {
     return this.serverUrl

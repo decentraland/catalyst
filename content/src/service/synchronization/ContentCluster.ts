@@ -99,10 +99,7 @@ export class ContentCluster implements IdentityProvider {
       if (newServerNaseUrls.length > 0) {
         for (const contentServerUrl of newServerNaseUrls) {
           // Create and store the new client
-          const newClient = new ContentServerClient(
-            contentServerUrl,
-            this.fetcher.clone() // We need a Fetcher per catalyst
-          )
+          const newClient = new ContentServerClient(contentServerUrl + '/content')
           this.serverClients.set(contentServerUrl, newClient)
           ContentCluster.LOGGER.info(`Discovered new server '${contentServerUrl}'`)
         }
