@@ -114,7 +114,7 @@ export class E2ETestEnvironment {
   /** Returns a service that connects to the database, with the migrations run */
   async buildService(): Promise<MetaverseContentService> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const env = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATOR, new NoOpValidator()).build()
+    const { env } = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATOR, new NoOpValidator()).build()
     return env.getBean(Bean.SERVICE)
   }
 
@@ -183,12 +183,12 @@ export class ServerBuilder {
       const port = ports[i]
       const address = `http://localhost:${port}`
       this.testEnvCalls.addToDAO(address)
-      const env = await this.builder
+      const { env, components } = await this.builder
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
         .build()
-      servers[i] = new TestServer(env)
+      servers[i] = new TestServer(env, components)
     }
 
     this.testEnvCalls.registerServers(servers)
@@ -255,8 +255,8 @@ export function loadTestEnvironment(overrideConfigs?: Map<EnvironmentConfig, any
   })
 
   afterEach(async () => {
-    await testEnv.stopServers()
     await testEnv.clearDatabases()
+    await testEnv.stopServers()
   })
 
   return testEnv

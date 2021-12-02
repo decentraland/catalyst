@@ -1,6 +1,10 @@
-import { Duplex, Readable } from 'stream'
+import { Readable } from 'stream'
+
+export type ContentEncoding = 'gzip'
 
 export interface ContentStorage {
+  storeStream(id: string, content: Readable): Promise<void>
+  /** @deprecated use storeStream instead */
   store(id: string, content: Uint8Array): Promise<void>
   delete(ids: string[]): Promise<void>
   retrieve(id: string): Promise<ContentItem | undefined>
@@ -9,49 +13,40 @@ export interface ContentStorage {
 }
 
 export interface ContentItem {
+  contentEncoding(): Promise<ContentEncoding | null>
   getLength(): number | undefined
-  asBuffer(): Promise<Buffer>
-  asStream(): Readable
+  asStream(): Promise<Readable>
 }
 
 export class SimpleContentItem implements ContentItem {
-  private constructor(private buffer?: Buffer, private stream?: Readable, private length?: number) {}
+  constructor(
+    private streamCreator: () => Promise<Readable>,
+    private length?: number,
+    private encoding?: ContentEncoding | null
+  ) {}
 
   static fromBuffer(buffer: Buffer): SimpleContentItem {
-    return new SimpleContentItem(buffer, undefined, buffer.length)
+    return new SimpleContentItem(async () => bufferToStream(buffer), buffer.length, null)
   }
 
-  static fromStream(stream: Readable, length?: number): SimpleContentItem {
-    return new SimpleContentItem(undefined, stream, length)
-  }
-
-  async asBuffer(): Promise<Buffer> {
-    if (this.buffer) {
-      return this.buffer
-    }
-    return streamToBuffer(this.stream)
-  }
-
-  asStream(): Readable {
-    if (this.stream) {
-      return this.stream
-    }
-    return bufferToStream(this.buffer)
+  asStream(): Promise<Readable> {
+    return this.streamCreator()
   }
 
   getLength(): number | undefined {
     return this.length
   }
+
+  async contentEncoding() {
+    return this.encoding ?? null
+  }
 }
 
-export function bufferToStream(buffer): Readable {
-  const streamDuplex = new Duplex()
-  streamDuplex.push(buffer)
-  streamDuplex.push(null)
-  return streamDuplex
+export function bufferToStream(buffer: Uint8Array): Readable {
+  return Readable.from(buffer)
 }
 
-export function streamToBuffer(stream): Promise<Buffer> {
+export function streamToBuffer(stream: Readable): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const buffers: any[] = []
     stream.on('error', reject)

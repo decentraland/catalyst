@@ -4,7 +4,7 @@ import { SnapshotManager } from '../../../../src/service/snapshots/SnapshotManag
 export class NoOpSnapshotManager {
   static build(): SnapshotManager {
     const mockedManager: SnapshotManager = mock(SnapshotManager)
-    when(mockedManager.start()).thenReturn(Promise.resolve())
+    when(mockedManager.startSnapshotsPerEntity()).thenReturn(Promise.resolve())
     return instance(mockedManager)
   }
 }

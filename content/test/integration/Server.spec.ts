@@ -5,6 +5,7 @@ import { ControllerPointerChanges } from '../../src/controller/Controller'
 import { ControllerFactory } from '../../src/controller/ControllerFactory'
 import { ActiveDenylist } from '../../src/denylist/ActiveDenylist'
 import { Bean, Environment, EnvironmentConfig } from '../../src/Environment'
+import { createTestDatabaseComponent } from '../../src/ports/postgres'
 import { Server } from '../../src/Server'
 import { ContentAuthenticator } from '../../src/service/auth/Authenticator'
 import { DeploymentPointerChanges } from '../../src/service/deployments/DeploymentManager'
@@ -55,7 +56,7 @@ describe('Integration - Server', function () {
 
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
-    server = new Server(env)
+    server = new Server(env, { database: createTestDatabaseComponent() })
     await server.start()
   })
 

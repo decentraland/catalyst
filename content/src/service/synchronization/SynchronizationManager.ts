@@ -124,7 +124,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     failedDeployments.forEach(async (failedDeployment) => {
       // Build Deployment from other servers
       const entityId = failedDeployment.entityId
-      ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
+      ClusterSynchronizationManager.LOGGER.debug(`Will retry to deploy entity with id: '${entityId}'`)
 
       try {
         const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
@@ -137,14 +137,14 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
           DeploymentContext.FIX_ATTEMPT
         )
         if (typeof result === 'number') {
-          ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' was successful`)
+          ClusterSynchronizationManager.LOGGER.debug(`Deployment of entity with id '${entityId}' was successful`)
         } else {
-          ClusterSynchronizationManager.LOGGER.info(
+          ClusterSynchronizationManager.LOGGER.debug(
             `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
           )
         }
       } catch (err) {
-        ClusterSynchronizationManager.LOGGER.info(`Deployment of entity with id '${entityId}' failed due: ${err}`)
+        ClusterSynchronizationManager.LOGGER.debug(`Deployment of entity with id '${entityId}' failed due: ${err}`)
       }
     })
   }

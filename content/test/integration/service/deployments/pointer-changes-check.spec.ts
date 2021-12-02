@@ -78,7 +78,9 @@ describe('Integration - Pointer Changes Check', () => {
   }
 
   async function getChangesInPointersFor(entityCombo: EntityCombo): Promise<PointerChanges> {
-    const { pointerChanges: deltas } = await service.getPointerChanges({ entityTypes: [entityCombo.entity.type] })
+    const { pointerChanges: deltas } = await service.getPointerChanges(undefined, {
+      filters: { entityTypes: [entityCombo.entity.type] }
+    })
     const { changes } = deltas.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
     return changes
   }

@@ -237,23 +237,31 @@ export class Controller {
     )
   }
 
+  async headContent(req: express.Request, res: express.Response) {
+    // Method: HEAD
+    // Path: /contents/:hashId
+    const hashId = req.params.hashId
+
+    const contentItem: ContentItem | undefined = await this.service.getContent(hashId)
+
+    if (contentItem) {
+      await setContentFileHeaders(contentItem, hashId, res)
+    } else {
+      res.status(404).send()
+    }
+  }
+
   async getContent(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const data: ContentItem | undefined = await this.service.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.service.getContent(hashId)
 
-    if (data) {
-      res.contentType('application/octet-stream')
-      res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
-      res.setHeader('Access-Control-Expose-Headers', 'ETag')
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    if (contentItem) {
+      await setContentFileHeaders(contentItem, hashId, res)
 
-      if (data.getLength()) {
-        res.setHeader('Content-Length', data.getLength()!.toString())
-      }
-      const stream = data.asStream()
+      const stream = await contentItem.asStream()
       stream.pipe(res)
 
       // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
@@ -334,6 +342,14 @@ export class Controller {
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
 
+    const sortingFieldParam: string | undefined = req.query.sortingField as string
+    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
+    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
+      SortingOrder,
+      req.query.sortingOrder as string
+    )
+
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
       res.status(400).send({ error: `Found an unrecognized entity type` })
@@ -345,6 +361,25 @@ export class Controller {
         .status(400)
         .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
       return
+    }
+
+    // Validate sorting fields and create sortBy
+    const sortBy: { field?: SortingField; order?: SortingOrder } = {}
+    if (sortingField) {
+      if (sortingField == 'unknown') {
+        res.status(400).send({ error: `Found an unrecognized sort field param` })
+        return
+      } else {
+        sortBy.field = sortingField
+      }
+    }
+    if (sortingOrder) {
+      if (sortingOrder == 'unknown') {
+        res.status(400).send({ error: `Found an unrecognized sort order param` })
+        return
+      } else {
+        sortBy.order = sortingOrder
+      }
     }
 
     // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
@@ -360,7 +395,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.service.getPointerChanges(requestFilters, offset, limit, lastId)
+    } = await this.service.getPointerChanges(undefined, { filters: requestFilters, offset, limit, lastId, sortBy })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
@@ -425,10 +460,9 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const fields: string | undefined = req.query.fields as string | undefined
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(
-      SortingField,
-      req.query.sortingField as string
-    )
+    const sortingFieldParam: string | undefined = req.query.sortingField as string
+    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
+    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
       SortingOrder,
       req.query.sortingOrder as string
@@ -561,6 +595,14 @@ export class Controller {
     return '?' + nextQueryParams
   }
 
+  private fromCamelCaseToSnakeCase(phrase: string): string {
+    const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+    if (withoutUpperCase[0] === '_') {
+      return withoutUpperCase.substring(1)
+    }
+    return withoutUpperCase
+  }
+
   private asEnumValue<T extends { [key: number]: string }>(
     enumType: T,
     stringToMap?: string
@@ -597,7 +639,10 @@ export class Controller {
     })
   }
 
-  getSnapshot(req: express.Request, res: express.Response) {
+  /**
+   * @deprecated
+   */
+  async getSnapshot(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /snapshot/:type
 
@@ -609,7 +654,20 @@ export class Controller {
       return
     }
 
-    const metadata = this.snapshotManager.getSnapshotMetadata(type)
+    const metadata = this.snapshotManager.getSnapshotMetadataPerEntityType(type)
+
+    if (!metadata) {
+      res.status(503).send({ error: 'Snapshot not yet created' })
+    } else {
+      res.send(metadata)
+    }
+  }
+
+  async getAllSnapshots(req: express.Request, res: express.Response) {
+    // Method: GET
+    // Path: /snapshot
+
+    const metadata = this.snapshotManager.getFullSnapshotMetadata()
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })
@@ -719,6 +777,23 @@ export class Controller {
 
     const challengeText = this.challengeSupervisor.getChallengeText()
     res.send({ challengeText })
+  }
+}
+
+async function setContentFileHeaders(content: ContentItem, hashId: string, res: express.Response) {
+  const encoding = await content.contentEncoding()
+  res.contentType('application/octet-stream')
+  res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
+  res.setHeader('Access-Control-Expose-Headers', 'ETag')
+  res.setHeader('Cache-Control', 'public,max-age=31536000,s-maxage=31536000,immutable')
+
+  if (encoding) {
+    // gz, br
+    res.setHeader('Content-Encoding', encoding)
+  }
+
+  if (content.getLength()) {
+    res.setHeader('Content-Length', content.getLength()!.toString())
   }
 }
 
