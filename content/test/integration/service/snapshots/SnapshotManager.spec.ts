@@ -1,8 +1,7 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
-import { ContentItem } from 'src/storage/ContentStorage'
-import { pipeline } from 'stream'
-import { createUnzip } from 'zlib'
+import { bufferToStream, ContentItem } from 'src/storage/ContentStorage'
+import { unzipSync } from 'zlib'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
@@ -187,13 +186,17 @@ describe('Integration - Snapshot Manager', () => {
     const { hash } = snapshotMetadata!
     const content: ContentItem = (await service.getContent(hash))!
 
-    let readStream = await content.asStream()
+    let uncompressedFile: Buffer
 
     if ((await content.contentEncoding()) === 'gzip') {
-      readStream = pipeline(readStream, createUnzip())
+      uncompressedFile = unzipSync(await streamToBuffer(await content.asStream()))
+    } else {
+      uncompressedFile = await streamToBuffer(await content.asStream())
     }
 
     const snapshot: Map<EntityId, Pointer[]> = new Map()
+
+    const readStream = bufferToStream(uncompressedFile)
 
     for await (const deployment of processDeploymentsInStream(readStream)) {
       snapshot.set(deployment.entityId, (deployment as any).pointers)
