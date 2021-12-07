@@ -576,8 +576,7 @@ export class EnvironmentBuilder {
     const synchronizationManager = new ClusterSynchronizationManager(
       { synchronizationJobManager, downloadQueue, deployer, fetcher, metrics, staticConfigs, batchDeployer, logs },
       env.getBean(Bean.CONTENT_CLUSTER),
-      env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION),
-      env.getConfig(EnvironmentConfig.CHECK_SYNC_RANGE)
+      env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
     )
 
     this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
