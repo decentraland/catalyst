@@ -9,9 +9,18 @@ import {
   SortingOrder,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { AuthChain, Authenticator } from 'dcl-crypto'
 import { Database } from '../../repository/Database'
 import { Entity } from '../../service/Entity'
+
+export type FullSnapshot = {
+  entityId: EntityId
+  entityType: EntityType
+  pointers: Pointer[]
+  localTimestamp: Timestamp
+  authChain: AuthChain
+}
+
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
@@ -176,7 +185,11 @@ export class DeploymentsRepository {
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
-  getSnapshot(
+  /**
+   *
+   * @deprecated use getSnapshotPerEntityTypeV2 instead
+   */
+  async getSnapshotPerEntityType(
     entityType: EntityType
   ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
     return this.db.map(

@@ -12,13 +12,14 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
+import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
 import {
   Deployment,
   DeploymentOptions,
   DeploymentPointerChanges,
-  PointerChangesFilters
+  PointerChangesOptions
 } from '../../../src/service/deployments/DeploymentManager'
 import { Entity } from '../../../src/service/Entity'
 import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
@@ -71,13 +72,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     throw new Error('Method not implemented.')
   }
 
-  getPointerChanges(
-    filters?: PointerChangesFilters,
-    offset?: number,
-    limit?: number,
-    lastId?: string,
-    task?: Database
-  ) {
+  getPointerChanges(task?: Database, options?: PointerChangesOptions) {
     return Promise.resolve({
       pointerChanges: this.pointerChanges,
       filters: {},
@@ -152,7 +147,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     throw new Error('Method not implemented.')
   }
 
-  storeContent(fileHash: string, content: Buffer): Promise<void> {
+  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
     throw new Error('Method not implemented.')
   }
   listenToDeployments(listener: DeploymentListener): void {

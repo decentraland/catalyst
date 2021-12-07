@@ -1,25 +1,27 @@
-import { ContentItem, ContentStorage, SimpleContentItem } from '../../../src/storage/ContentStorage'
+import { Readable } from 'stream'
+import { ContentItem, ContentStorage, SimpleContentItem, streamToBuffer } from '../../../src/storage/ContentStorage'
 
 export class MockedStorage implements ContentStorage {
   private storage: Map<string, Buffer> = new Map()
 
-  store(id: string, content: Buffer): Promise<void> {
+  async storeStream(id: string, content: Readable): Promise<void> {
+    this.storage.set(id, await streamToBuffer(content))
+  }
+  async store(id: string, content: Buffer): Promise<void> {
     this.storage.set(id, content)
-    return Promise.resolve()
   }
-  delete(ids: string[]): Promise<void> {
+  async delete(ids: string[]): Promise<void> {
     ids.forEach((id) => this.storage.delete(id))
-    return Promise.resolve()
   }
-  retrieve(id: string): Promise<ContentItem | undefined> {
+  async retrieve(id: string): Promise<ContentItem | undefined> {
     const content = this.storage.get(id)
-    return Promise.resolve(content ? SimpleContentItem.fromBuffer(content) : undefined)
+    return content ? SimpleContentItem.fromBuffer(content) : undefined
   }
-  exist(ids: string[]): Promise<Map<string, boolean>> {
-    return Promise.resolve(new Map(ids.map((id) => [id, this.storage.has(id)])))
+  async exist(ids: string[]): Promise<Map<string, boolean>> {
+    return new Map(ids.map((id) => [id, this.storage.has(id)]))
   }
-  stats(id: string): Promise<{ size: number } | undefined> {
+  async stats(id: string): Promise<{ size: number } | undefined> {
     const content = this.storage.get(id)
-    return Promise.resolve(content ? { size: content.byteLength } : undefined)
+    return content ? { size: content.byteLength } : undefined
   }
 }

@@ -85,6 +85,18 @@
   dependencies:
     ajv "^7.1.0"
 
+"@dcl/snapshots-fetcher@^1.0.0-20211130221753.commit-70d14c6":
+  version "1.0.0-20211130221753.commit-70d14c6"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-1.0.0-20211130221753.commit-70d14c6.tgz#e240d3ad4b411ec9a564c0e05d70c3d09234b84f"
+  integrity sha512-InBS388rAq2KckIXdSXRRc/ycydMN4dCkfoUoyeoYvO122xN/QWwyuRdg2GMlYnghw82eSEl4ZGpf3lW/wn2ag==
+  dependencies:
+    "@well-known-components/interfaces" "^1.1.0"
+    "@well-known-components/metrics" "^1.1.2"
+    cids "^1.1.9"
+    ipfs-unixfs-importer "^7.0.3"
+    multihashes "^4.0.3"
+    p-queue "^6.6.2"
+
 "@dcl/urn-resolver@1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@dcl/urn-resolver/-/urn-resolver-1.2.1.tgz#b5de639881cecb0ad59dd7791da836d18e364323"
@@ -1393,6 +1405,11 @@
     "@types/node-fetch" "^2.5.10"
     fp-future "^1.0.1"
     typed-url-params "^1.0.1"
+
+"@well-known-components/logger@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@well-known-components/logger/-/logger-1.1.0.tgz#d752aaf66e5afad59f0e73b20422131d1673da47"
+  integrity sha512-2yU5elo5V/0jSTdFKGXco+EIkx00XKKIxnw1MzYyrd/j4YQX/74StnDJR5l4h1DwTPERp4nR7d+7pLRZ6QDJVw==
 
 "@well-known-components/metrics@^1.1.2":
   version "1.1.2"
@@ -4234,7 +4251,7 @@ ipfs-only-hash@^4.0.0:
     ipfs-unixfs-importer "^7.0.1"
     meow "^9.0.0"
 
-ipfs-unixfs-importer@^7.0.1:
+ipfs-unixfs-importer@^7.0.1, ipfs-unixfs-importer@^7.0.3:
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/ipfs-unixfs-importer/-/ipfs-unixfs-importer-7.0.3.tgz#b850e831ca9647d589ef50bc33421f65bab7bba6"
   integrity sha512-qeFOlD3AQtGzr90sr5Tq1Bi8pT5Nr2tSI8z310m7R4JDYgZc6J1PEZO3XZQ8l1kuGoqlAppBZuOYmPEqaHcVQQ==
@@ -5321,7 +5338,7 @@ multiformats@^9.4.2:
   resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-9.4.7.tgz#df2caa6ccd975218bbbacd69e45bb76cc2a53654"
   integrity sha512-fZbcdf7LnvokPAZYkv4TLXe7PAg9sQ5qLXcwrAmZOloEb2+5FtFiAY+l3/9wsu4oTJXTV3JSggFQQ2dJLS01vA==
 
-multihashes@^4.0.1, multihashes@^4.0.2:
+multihashes@^4.0.1, multihashes@^4.0.2, multihashes@^4.0.3:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/multihashes/-/multihashes-4.0.3.tgz#426610539cd2551edbf533adeac4c06b3b90fb05"
   integrity sha512-0AhMH7Iu95XjDLxIeuCOOE4t9+vQZsACyKZ9Fxw2pcsRmlX4iCn1mby0hS0bb+nQOVpdQYWPpnyusw4da5RPhA==
@@ -5717,7 +5734,7 @@ p-map@^4.0.0:
   dependencies:
     aggregate-error "^3.0.0"
 
-p-queue@6.6.2:
+p-queue@6.6.2, p-queue@^6.6.2:
   version "6.6.2"
   resolved "https://registry.yarnpkg.com/p-queue/-/p-queue-6.6.2.tgz#2068a9dcf8e67dd0ec3e7a2bcb76810faa85e426"
   integrity sha512-RwFpb72c/BhQLEXIZ5K2e+AhgNVmIejGlTgiB9MzZ0e93GRvqZ7uSi0dvRF7/XIXDeNkra2fNHBxTyPDGySpjQ==

@@ -8,13 +8,14 @@ import {
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
+import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
 import {
   Deployment,
   DeploymentOptions,
   PartialDeploymentPointerChanges,
-  PointerChangesFilters
+  PointerChangesOptions
 } from './deployments/DeploymentManager'
 import { Entity } from './Entity'
 import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
@@ -35,18 +36,12 @@ export interface MetaverseContentService {
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
-  storeContent(fileHash: ContentFileHash, content: Buffer): Promise<void>
+  storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
   getStatus(): ServerStatus
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): Promise<FailedDeployment[]>
-  getPointerChanges(
-    filters?: PointerChangesFilters,
-    offset?: number,
-    limit?: number,
-    lastId?: string,
-    task?: Database
-  ): Promise<PartialDeploymentPointerChanges>
+  getPointerChanges(task?: Database, options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges>
   getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void

@@ -10,8 +10,8 @@ export class SystemProperty<PropertyType> {
     'last_known_local_deployments',
     new JSONPropertyMapper()
   )
-  static readonly LAST_SNAPSHOTS: SystemProperty<[EntityType, SnapshotMetadata][]> = new SystemProperty(
-    'last_snapshot',
+  static readonly LAST_FULL_SNAPSHOTS_PER_ENTITY: SystemProperty<[EntityType, SnapshotMetadata][]> = new SystemProperty(
+    'last_full_snapshot_per_entity',
     new JSONPropertyMapper()
   )
   static readonly LAST_GARBAGE_COLLECTION_TIME: SystemProperty<Timestamp> = new SystemProperty(

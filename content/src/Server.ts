@@ -20,6 +20,7 @@ import { GarbageCollectionManager } from './service/garbage-collection/GarbageCo
 import { MetaverseContentService } from './service/Service'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
+import { AppComponents } from './types'
 
 export class Server {
   private static readonly LOGGER = log4js.getLogger('Server')
@@ -36,7 +37,7 @@ export class Server {
   private readonly service: MetaverseContentService
   private readonly repository: Repository
 
-  constructor(env: Environment) {
+  constructor(env: Environment, private components: Pick<AppComponents, 'database'>) {
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -91,7 +92,8 @@ export class Server {
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any())
-    this.registerRoute('/contents/:hashId', controller, controller.getContent)
+    this.registerRoute('/contents/:hashId', controller, controller.getContent, HttpMethod.GET)
+    this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD)
     this.registerRoute('/available-content', controller, controller.getAvailableContent)
     this.registerRoute('/audit/:type/:entityId', controller, controller.getAudit)
     this.registerRoute('/deployments', controller, controller.getDeployments)
@@ -107,6 +109,7 @@ export class Server {
     this.registerRoute('/pointerChanges', controller, controller.getPointerChanges) // TODO: Deprecate
     this.registerRoute('/pointer-changes', controller, controller.getPointerChanges)
     this.registerRoute('/snapshot/:type', controller, controller.getSnapshot)
+    this.registerRoute('/snapshot', controller, controller.getAllSnapshots)
 
     if (env.getConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES)) {
       this.registerRoute('/legacy-entities', controller, controller.createLegacyEntity, HttpMethod.POST, upload.any())
@@ -123,13 +126,17 @@ export class Server {
   private registerRoute(
     route: string,
     controller: Controller,
-    action: (this: Controller, req: express.Request, res: express.Response) => void,
+    action: (this: Controller, req: express.Request, res: express.Response) => Promise<void>,
     method: HttpMethod = HttpMethod.GET,
     extraHandler?: RequestHandler
   ) {
     const handlers: RequestHandler[] = [
-      (req: express.Request, res: express.Response, next: NextFunction) => {
-        action.call(controller, req, res).catch(next)
+      async (req: express.Request, res: express.Response, next: NextFunction) => {
+        try {
+          await action.call(controller, req, res)
+        } catch (err: any) {
+          next(err)
+        }
       }
     ]
     if (extraHandler) {
@@ -159,13 +166,18 @@ export class Server {
     await this.migrationManager.run()
     await this.validateHistory()
     await this.service.start()
+
+    // generate snapshots before starting the server
+    await this.snapshotManager.startSnapshotsPerEntity()
+    await this.snapshotManager.startCalculateFullSnapshots()
+
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')
     Server.LOGGER.info(`Content Server listening on port ${this.port}.`)
     if (this.metricsServer) {
       await this.metricsServer.start()
     }
-    await this.snapshotManager.start()
+
     await this.synchronizationManager.start()
     await this.garbageCollectionManager.start()
   }
@@ -178,13 +190,19 @@ export class Server {
     if (this.metricsServer) {
       await this.metricsServer.stop()
     }
+
+    this.snapshotManager.stopCalculateFullSnapshots()
+
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) {
       await this.repository.shutdown()
+
+      // TODO: this will be handled by well-known-components Lifecycle
+      await this.components.database.stop!()
     }
   }
 
-  private async validateHistory() {
+  private async validateHistory(): Promise<void> {
     // Validate last history entry is before Date.now()
     const lastDeployments = await this.service.getDeployments({ offset: 0, limit: 1 })
     if (lastDeployments.deployments.length > 0) {
