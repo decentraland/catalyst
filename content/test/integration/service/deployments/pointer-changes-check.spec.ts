@@ -14,7 +14,7 @@ describe('Integration - Pointer Changes Check', () => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo, E4: EntityCombo
 
   const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService
+  let service: MetaverseContentService & { stop: () => Promise<void> }
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1])
@@ -25,6 +25,10 @@ describe('Integration - Pointer Changes Check', () => {
 
   beforeEach(async () => {
     service = await testEnv.buildService()
+  })
+
+  afterEach(async () => {
+    await service.stop()
   })
 
   it('When an entity is deployed and set as active but it has no one to overwrite, then it is reported correctly', async () => {
