@@ -14,7 +14,7 @@ import {
   EntityType,
   LegacyAuditInfo,
   Pointer,
-  ServerAddress,
+  ServerBaseUrl,
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -52,7 +52,7 @@ export class TestServer extends Server {
     return false
   }
 
-  getAddress(): ServerAddress {
+  getAddress(): ServerBaseUrl {
     return `http://localhost:${this.serverPort}`
   }
 

@@ -26,7 +26,7 @@ export async function bootstrapFromSnapshots(
   await Promise.all(
     catalystServers.map(async (server) => {
       try {
-        const contentServer = server.getServerUrl()
+        const contentServer = server.getContentUrl()
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,
           contentServer,

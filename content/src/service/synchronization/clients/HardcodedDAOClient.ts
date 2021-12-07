@@ -1,8 +1,8 @@
 import { DAOClient, ServerMetadata } from '@catalyst/commons'
-import { ServerAddress } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from 'dcl-catalyst-commons'
 
 export class DAOHardcodedClient implements DAOClient {
-  constructor(private readonly servers: ServerAddress[]) {}
+  constructor(private readonly servers: ServerBaseUrl[]) {}
 
   getAllServers(): Promise<Set<ServerMetadata>> {
     return Promise.resolve(

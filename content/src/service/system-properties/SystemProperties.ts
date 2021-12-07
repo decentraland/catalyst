@@ -1,4 +1,4 @@
-import { EntityType, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType, ServerBaseUrl, Timestamp } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
@@ -6,7 +6,7 @@ import { SnapshotMetadata } from '../snapshots/SnapshotManager'
 import { IntPropertyMapper, JSONPropertyMapper, SystemPropertyMapper } from './SystemPropertyMappers'
 
 export class SystemProperty<PropertyType> {
-  static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerAddress, Timestamp][]> = new SystemProperty(
+  static readonly LAST_KNOWN_LOCAL_DEPLOYMENTS: SystemProperty<[ServerBaseUrl, Timestamp][]> = new SystemProperty(
     'last_known_local_deployments',
     new JSONPropertyMapper()
   )
