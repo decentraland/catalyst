@@ -213,9 +213,10 @@ export class ContentCluster implements IdentityProvider {
   /** Return the server's challenge text, or undefined if it couldn't be reached */
   private async getChallengeInServer(catalystBaseUrl: ServerBaseUrl): Promise<ChallengeText | undefined> {
     try {
-      const { challengeText }: { challengeText: ChallengeText } = (await (
-        await this.fetcher.fetch(`${catalystBaseUrl}/content/challenge`, {})
-      ).json()) as { challengeText: ChallengeText }
+      const { challengeText }: { challengeText: ChallengeText } = (await this.fetcher.fetchJson(
+        `${catalystBaseUrl}/content/challenge`
+      )) as { challengeText: ChallengeText }
+
       return challengeText
     } catch (error) {}
   }
