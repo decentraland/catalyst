@@ -112,10 +112,15 @@ export class E2ETestEnvironment {
   }
 
   /** Returns a service that connects to the database, with the migrations run */
-  async buildService(): Promise<MetaverseContentService> {
+  async buildService(): Promise<MetaverseContentService & { stop: () => Promise<void> }> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const { env } = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATOR, new NoOpValidator()).build()
-    return env.getBean(Bean.SERVICE)
+    const { env, components } = await new EnvironmentBuilder(baseEnv)
+      .withBean(Bean.VALIDATOR, new NoOpValidator())
+      .build()
+    const service = env.getBean<MetaverseContentService>(Bean.SERVICE)
+    const stoppableService = Object.assign(service, { stop: () => components.database.stop() })
+
+    return stoppableService
   }
 
   removeFromDAO(address: ServerAddress) {
