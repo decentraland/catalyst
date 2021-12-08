@@ -1,4 +1,5 @@
-import { EntityType, ServerBaseUrl, Timestamp } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from '@catalyst/commons'
+import { EntityType, Timestamp } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'

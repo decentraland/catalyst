@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from '@catalyst/commons'
 import { random } from 'faker'
 import ms from 'ms'
 import { GenericContainer, StartedTestContainer } from 'testcontainers'

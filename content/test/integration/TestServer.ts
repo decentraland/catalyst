@@ -1,3 +1,4 @@
+import { ServerBaseUrl } from '@catalyst/commons'
 import {
   ContentClient,
   DeploymentData,
@@ -14,7 +15,6 @@ import {
   EntityType,
   LegacyAuditInfo,
   Pointer,
-  ServerBaseUrl,
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'

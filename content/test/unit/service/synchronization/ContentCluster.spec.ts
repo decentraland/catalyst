@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from '@catalyst/commons'
 import { Bean, Environment, EnvironmentConfig } from '../../../../src/Environment'
 import { ChallengeText } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'

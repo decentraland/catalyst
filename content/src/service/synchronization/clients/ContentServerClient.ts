@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from '@catalyst/commons'
 
 export class ContentServerClient {
   constructor(private readonly serverBaseUrl: ServerBaseUrl) {}

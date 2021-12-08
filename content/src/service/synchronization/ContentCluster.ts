@@ -1,12 +1,11 @@
-import { DAOClient, delay, ServerMetadata } from '@catalyst/commons'
-import { Fetcher, ServerBaseUrl, Timestamp } from 'dcl-catalyst-commons'
+import { DAOClient, delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { Fetcher, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { ChallengeSupervisor, ChallengeText } from './ChallengeSupervisor'
 import { ConnectionState, ContentServerClient } from './clients/ContentServerClient'
 import { shuffleArray } from './ClusterUtils'
-
 export interface IdentityProvider {
   getIdentityInDAO(): ServerIdentity | undefined
 }

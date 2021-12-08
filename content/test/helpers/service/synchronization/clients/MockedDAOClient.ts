@@ -1,5 +1,4 @@
-import { DAOClient, ServerMetadata } from '@catalyst/commons'
-import { ServerBaseUrl } from 'dcl-catalyst-commons'
+import { DAOClient, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
 import { EthAddress } from 'dcl-crypto'
 
 export class MockedDAOClient implements DAOClient {
