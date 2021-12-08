@@ -98,7 +98,7 @@ export class ContentCluster implements IdentityProvider {
       if (newServerBaseUrls.length > 0) {
         for (const serverBaseUrl of newServerBaseUrls) {
           // Create and store the new client
-          const newClient = new ContentServerClient(serverBaseUrl)
+          const newClient = new ContentServerClient(serverBaseUrl + '/content')
           this.serverClients.set(serverBaseUrl, newClient)
           ContentCluster.LOGGER.info(`Discovered new server '${serverBaseUrl}'`)
         }
