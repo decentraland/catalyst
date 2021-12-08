@@ -73,6 +73,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   // This is the method that is called to sync with other catalysts
   async syncWithServers(): Promise<void> {
     bootstrap: {
+      console.log('BOOSTRAP')
       // Note: If any deployment was overwritten by the snapshots, then we never reach them
       ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)

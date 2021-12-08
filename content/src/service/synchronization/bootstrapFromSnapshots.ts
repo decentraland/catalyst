@@ -14,7 +14,7 @@ export async function bootstrapFromSnapshots(
   const catalystServers = await ensureListOfCatalysts(cluster, 10 /* retries */, 1000 /* wait time */)
 
   if (catalystServers.length == 0) {
-    console.log('There are no servers. Cancelling bootstrapping')
+    console.error('There are no servers. Cancelling bootstrapping')
     return
   }
 

@@ -80,7 +80,7 @@ describe('End 2 end - Node onboarding', function () {
     await assertFileIsOnServer(server2, entityContentHash)
 
     // Remove server 1 from the DAO
-    testEnv.removeFromDAO(server1.getAddress())
+    testEnv.removeFromDAO(server1.getUrl())
 
     // Start server 3
     await server3.start()

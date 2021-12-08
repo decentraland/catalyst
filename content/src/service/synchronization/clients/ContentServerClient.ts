@@ -4,7 +4,7 @@ export class ContentServerClient {
   constructor(private readonly serverBaseUrl: ServerBaseUrl) {}
 
   getContentUrl(): ServerBaseUrl {
-    return this.serverBaseUrl + '/content'
+    return this.serverBaseUrl
   }
 }
 
