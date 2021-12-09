@@ -1,4 +1,5 @@
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import { Database } from '../../repository/Database'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../../service/pointers/PointerManager'
 import { DeploymentId } from './DeploymentsRepository'
@@ -21,26 +22,29 @@ export class DeploymentPointerChangesRepository {
   }
 
   async getPointerChangesForDeployments(
-    deploymentIds: DeploymentId[]
+    deploymentIds: DeploymentId[],
+    includeAuthChain: boolean = false
   ): Promise<Map<DeploymentId, Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT }>>> {
     const result: Map<
       DeploymentId,
-      Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT }>
+      Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>
     > = new Map()
     if (deploymentIds.length > 0) {
       const deltas = await this.db.any(
         `
-              SELECT deployment, pointer, after, deployments.entity_id AS before
+              SELECT deployment, pointer, after, deployments.entity_id AS before, deployments.auth_chain AS "authChain"
               FROM deployment_deltas
               LEFT JOIN deployments on deployments.id = deployment_deltas.before
               WHERE deployment IN ($1:list)`,
         [deploymentIds]
       )
-      deltas.forEach(({ deployment, pointer, before, after }) => {
+      deltas.forEach(({ deployment, pointer, before, after, authChain }) => {
         if (!result.has(deployment)) {
           result.set(deployment, new Map())
         }
-        result.get(deployment)!.set(pointer, { before: before ?? undefined, after })
+        result
+          .get(deployment)!
+          .set(pointer, { before: before ?? undefined, after, authChain: includeAuthChain ? authChain : undefined })
       })
     }
     return result

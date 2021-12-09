@@ -53,6 +53,7 @@ export type FailedDeployment = {
   failureTimestamp: Timestamp
   authChain: AuthChain | null
   reason: FailureReason
+  authChain: AuthChain
   errorDescription?: string
 }
 
