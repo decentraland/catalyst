@@ -148,7 +148,7 @@ export class DeploymentManager {
       options?.includeAuthChain
     )
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
-      ({ deploymentId, entityId, entityType, localTimestamp }) => {
+      ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()
         const changes = this.transformPointerChanges(entityId, delta)
         return { entityType, entityId, localTimestamp, changes }
