@@ -36,7 +36,7 @@ export class ContentCluster implements IdentityProvider {
   /** Connect to the DAO for the first time */
   async connect(): Promise<void> {
     // Get all servers on the DAO
-    this.allServersInDAO = await this.dao.getAllServers()
+    this.allServersInDAO = await this.dao.getAllContentServers()
 
     // Detect my own identity
     await this.detectMyIdentity(10)
@@ -81,7 +81,7 @@ export class ContentCluster implements IdentityProvider {
       ContentCluster.LOGGER.debug(`Starting sync with DAO`)
 
       // Refresh the server list
-      this.allServersInDAO = await this.dao.getAllServers()
+      this.allServersInDAO = await this.dao.getAllContentServers()
 
       if (!this.myIdentity) {
         await this.detectMyIdentity()
@@ -140,7 +140,7 @@ export class ContentCluster implements IdentityProvider {
       // Fetch server list from the DAO
       if (!this.allServersInDAO) {
         ContentCluster.LOGGER.info(`Fetching DAO servers`)
-        this.allServersInDAO = await this.dao.getAllServers()
+        this.allServersInDAO = await this.dao.getAllContentServers()
       }
 
       const challengesByAddress: Map<ServerBaseUrl, ChallengeText> = new Map()

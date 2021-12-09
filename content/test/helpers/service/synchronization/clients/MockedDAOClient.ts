@@ -8,8 +8,12 @@ export class MockedDAOClient implements DAOClient {
     this.serversByAddress = new Map(servers.map((server) => [server.baseUrl, { ...server, id: 'Id' }]))
   }
 
-  async getAllServers(): Promise<Set<ServerMetadata>> {
+  async getAllContentServers(): Promise<Set<ServerMetadata>> {
     return new Set(this.serversByAddress.values())
+  }
+
+  async getAllServers(): Promise<Set<ServerMetadata>> {
+    throw new Error('Not Implemented')
   }
 
   add(baseUrl: ServerBaseUrl) {
