@@ -3,14 +3,16 @@ import { AppComponents } from '../../types'
 import { ContentCluster } from './ContentCluster'
 import { ensureListOfCatalysts } from './newSynchronization'
 
+type BootstrapComponents = Pick<
+  AppComponents,
+  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue'
+>
+
 /**
  * This function fetches all the full snapshots from remote catalysts and
  * then iterates over all of the deployments to call the batch deployer for each deployed entity.
  */
-export async function bootstrapFromSnapshots(
-  components: Pick<AppComponents, 'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue'>,
-  cluster: ContentCluster
-): Promise<void> {
+export async function bootstrapFromSnapshots(components: BootstrapComponents, cluster: ContentCluster): Promise<void> {
   const catalystServers = await ensureListOfCatalysts(cluster, 10 /* retries */, 1000 /* wait time */)
 
   if (catalystServers.length == 0) {
