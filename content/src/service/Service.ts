@@ -8,6 +8,7 @@ import {
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
@@ -56,6 +57,7 @@ export interface ClusterDeploymentsService {
     entityType: EntityType,
     entityId: EntityId,
     reason: FailureReason,
+    authChain: AuthChain,
     errorDescription?: string
   ): Promise<null>
   deployEntity(
