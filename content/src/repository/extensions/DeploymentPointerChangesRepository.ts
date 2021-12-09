@@ -1,5 +1,6 @@
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
+import { PointerChangesFields } from 'src/controller/Controller'
 import { Database } from '../../repository/Database'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../../service/pointers/PointerManager'
 import { DeploymentId } from './DeploymentsRepository'
@@ -23,8 +24,10 @@ export class DeploymentPointerChangesRepository {
 
   async getPointerChangesForDeployments(
     deploymentIds: DeploymentId[],
-    includeAuthChain: boolean = false
-  ): Promise<Map<DeploymentId, Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT }>>> {
+    fields: PointerChangesFields[] = []
+  ): Promise<
+    Map<DeploymentId, Map<Pointer, { before?: EntityId; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>>
+  > {
     const result: Map<
       DeploymentId,
       Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>
@@ -42,9 +45,12 @@ export class DeploymentPointerChangesRepository {
         if (!result.has(deployment)) {
           result.set(deployment, new Map())
         }
-        result
-          .get(deployment)!
-          .set(pointer, { before: before ?? undefined, after, authChain: includeAuthChain ? authChain : undefined })
+
+        result.get(deployment)!.set(pointer, {
+          before: before ?? undefined,
+          after,
+          authChain: fields.includes(PointerChangesFields.AUTH_CHAIN) ? authChain : undefined
+        })
       })
     }
     return result

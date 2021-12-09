@@ -10,7 +10,8 @@ import {
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { DeploymentField } from '../../controller/Controller'
+import { AuthChain } from 'dcl-crypto'
+import { DeploymentField, PointerChangeField } from '../../controller/Controller'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
@@ -145,13 +146,13 @@ export class DeploymentManager {
     const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
     const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(
       deploymentIds,
-      options?.includeAuthChain
+      options?.fields
     )
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
       ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()
         const changes = this.transformPointerChanges(entityId, delta)
-        return { entityType, entityId, localTimestamp, changes }
+        return { entityType, entityId, localTimestamp, changes, authChain }
       }
     )
 
@@ -197,6 +198,7 @@ export type DeploymentPointerChanges = {
   entityId: EntityId
   localTimestamp: Timestamp
   changes: PointerChanges
+  authChain: AuthChain
 }
 
 export type PartialDeploymentPointerChanges = {
@@ -217,7 +219,7 @@ export type PointerChangesOptions = {
   offset?: number
   limit?: number
   lastId?: string
-  includeAuthChain?: boolean
+  fields?: PointerChangeField[]
 }
 
 export type DeploymentOptions = {

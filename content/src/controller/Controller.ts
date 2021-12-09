@@ -327,7 +327,7 @@ export class Controller {
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /pointer-changes
-    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
+    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&fields
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
@@ -341,7 +341,6 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    const includeAuthChain = this.asBoolean(req.query.includeAuthChain) ?? false
 
     const sortingFieldParam: string | undefined = req.query.sortingField as string
     const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
@@ -349,6 +348,9 @@ export class Controller {
     const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
       SortingOrder,
       req.query.sortingOrder as string
+    )
+    const fields = this.asArray<string>(req.query.fields)?.filter((field) =>
+      (Object.values(PointerChangesFields) as string[]).includes(field)
     )
 
     // Validate type is valid
@@ -390,8 +392,7 @@ export class Controller {
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
       from: fromFilter,
-      to: toFilter,
-      includeAuthChain
+      to: toFilter
     }
 
     const {
@@ -404,7 +405,7 @@ export class Controller {
       limit,
       lastId,
       sortBy,
-      includeAuthChain
+      fields
     })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
@@ -818,6 +819,10 @@ export enum DeploymentField {
   POINTERS = 'pointers',
   METADATA = 'metadata',
   AUDIT_INFO = 'auditInfo'
+}
+
+export enum PointerChangesFields {
+  AUTH_CHAIN = 'authChain'
 }
 
 export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
