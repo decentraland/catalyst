@@ -73,7 +73,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   // This is the method that is called to sync with other catalysts
   async syncWithServers(): Promise<void> {
     bootstrap: {
-      console.log('BOOSTRAP')
       // Note: If any deployment was overwritten by the snapshots, then we never reach them
       ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
@@ -86,7 +85,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
 
       const setDesiredJobs = () => {
-        const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getContentUrl()))
+        const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getBaseUrl()))
         // the job names are the contentServerUrl
         return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
       }
@@ -107,7 +106,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     const failedDeployments: FailedDeployment[] = await this.components.deployer.getAllFailedDeployments()
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 
-    const contentServersUrls = this.cluster.getAllServersInCluster().map(($) => $.getContentUrl())
+    const contentServersUrls = this.cluster.getAllServersInCluster().map(($) => $.getBaseUrl())
 
     // TODO: Implement an exponential backoff for retrying
     for (const failedDeployment of failedDeployments) {

@@ -3,7 +3,7 @@ import { ServerBaseUrl } from '@catalyst/commons'
 export class ContentServerClient {
   constructor(private readonly serverBaseUrl: ServerBaseUrl) {}
 
-  getContentUrl(): ServerBaseUrl {
+  getBaseUrl(): ServerBaseUrl {
     return this.serverBaseUrl
   }
 }

@@ -16,7 +16,7 @@ export class DAOContractClient {
 
   async getAllContentServers(): Promise<Set<ServerMetadata>> {
     const servers: Set<ServerMetadata> = await this.getAllServers()
-    return new Set(Array.from(servers.values()).map((server) => ({ ...server, address: server.baseUrl + '/content' })))
+    return new Set(Array.from(servers.values()).map((server) => ({ ...server, baseUrl: server.baseUrl + '/content' })))
   }
 
   async getAllServers(): Promise<Set<ServerMetadata>> {

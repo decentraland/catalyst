@@ -67,8 +67,8 @@ class ContentClusterBuilder {
   }
 
   addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'content/challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'content/status', {
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
       name: encodeURIComponent(baseUrl),
       version: 'version',
       currentTime: 10,
