@@ -29,7 +29,7 @@ describe('End 2 end - Denylist handling', () => {
       .andBuildMany(3)
   })
 
-  it(`When an entity is denylisted across all nodes, then no entity is deployed`, async () => {
+  xit(`When an entity is denylisted across all nodes, then no entity is deployed`, async () => {
     // Start server 1
     await server1.start()
 
