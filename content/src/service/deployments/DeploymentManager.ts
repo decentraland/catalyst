@@ -11,7 +11,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { DeploymentField, PointerChangeField } from '../../controller/Controller'
+import { DeploymentField, PointerChangesFields } from '../../controller/Controller'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
@@ -219,7 +219,7 @@ export type PointerChangesOptions = {
   offset?: number
   limit?: number
   lastId?: string
-  fields?: PointerChangeField[]
+  fields?: PointerChangesFields[]
 }
 
 export type DeploymentOptions = {

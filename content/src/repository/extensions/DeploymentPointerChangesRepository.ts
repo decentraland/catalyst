@@ -1,6 +1,6 @@
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { PointerChangesFields } from 'src/controller/Controller'
+import { PointerChangesFields } from '../../controller/Controller'
 import { Database } from '../../repository/Database'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../../service/pointers/PointerManager'
 import { DeploymentId } from './DeploymentsRepository'

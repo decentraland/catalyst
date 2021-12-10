@@ -19,12 +19,12 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
-import { AppComponents } from 'src/types'
 import { ControllerDenylistData } from '../../src/controller/Controller'
 import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src/denylist/DenylistTarget'
 import { Bean, Environment, EnvironmentConfig } from '../../src/Environment'
 import { Server } from '../../src/Server'
 import { FailedDeployment } from '../../src/service/errors/FailedDeploymentsManager'
+import { AppComponents } from '../../src/types'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { deleteFolderRecursive, hashAndSignMessage, Identity } from './E2ETestUtils'
 
