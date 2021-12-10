@@ -1,4 +1,4 @@
-import { ServerAddress } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from '@catalyst/commons'
 import { Bean, Environment, EnvironmentConfig } from '../../../../src/Environment'
 import { ChallengeText } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
@@ -7,8 +7,8 @@ import { MockedDAOClient } from '../../../helpers/service/synchronization/client
 import { MockedFetcher } from '../../helpers/MockedFetcher'
 
 describe('ContentCluster', function () {
-  const address1: ServerAddress = 'http://address1'
-  const address2: ServerAddress = 'http://address2'
+  const address1: ServerBaseUrl = 'http://address1'
+  const address2: ServerBaseUrl = 'http://address2'
   const challengeText: ChallengeText = 'Some challenge text'
 
   it(`When there are no servers on the DAO, then no identity is assigned`, async () => {
@@ -57,18 +57,18 @@ describe('ContentCluster', function () {
 })
 
 class ContentClusterBuilder {
-  private readonly servers: Set<ServerAddress> = new Set()
+  private readonly servers: Set<ServerBaseUrl> = new Set()
   private readonly fetchHelper: MockedFetcher = new MockedFetcher()
   private localChallenge: ChallengeText | undefined
 
-  addAddress(baseUrl: ServerAddress): ContentClusterBuilder {
+  addAddress(baseUrl: ServerBaseUrl): ContentClusterBuilder {
     this.servers.add(baseUrl)
     return this
   }
 
-  addAddressWithEndpoints(baseUrl: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'content/challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'content/status', {
+  addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
       name: encodeURIComponent(baseUrl),
       version: 'version',
       currentTime: 10,
@@ -79,7 +79,7 @@ class ContentClusterBuilder {
     return this
   }
 
-  addAddressWithLocalChallenge(baseUrl: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
+  addAddressWithLocalChallenge(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
     this.localChallenge = challengeText
     return this.addAddressWithEndpoints(baseUrl, challengeText)
   }

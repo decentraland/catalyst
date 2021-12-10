@@ -327,7 +327,7 @@ export class Controller {
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /pointer-changes
-    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
+    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
@@ -341,6 +341,7 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
+    const includeAuthChain = this.asBoolean(req.query.includeAuthChain) ?? false
 
     const sortingFieldParam: string | undefined = req.query.sortingField as string
     const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
@@ -389,13 +390,22 @@ export class Controller {
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
       from: fromFilter,
-      to: toFilter
+      to: toFilter,
+      includeAuthChain
     }
+
     const {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.service.getPointerChanges(undefined, { filters: requestFilters, offset, limit, lastId, sortBy })
+    } = await this.service.getPointerChanges(undefined, {
+      filters: requestFilters,
+      offset,
+      limit,
+      lastId,
+      sortBy,
+      includeAuthChain
+    })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))

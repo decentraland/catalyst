@@ -51,8 +51,8 @@ export type FailedDeployment = {
   entityType: EntityType
   entityId: EntityId
   failureTimestamp: Timestamp
-  authChain: AuthChain | null
   reason: FailureReason
+  authChain: AuthChain
   errorDescription?: string
 }
 

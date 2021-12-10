@@ -27,7 +27,7 @@ export async function tryOnCluster<T>(
         try {
           return await execution(server)
         } catch (error) {
-          LOGGER.debug(`Tried to ${description} on '${server.getServerUrl()}' but it failed because of: ${error}`)
+          LOGGER.debug(`Tried to ${description} on '${server.getBaseUrl()}' but it failed because of: ${error}`)
         }
       }
       throw new Error(`Tried to ${description} on all servers on the cluster, but they all failed`)
@@ -43,7 +43,7 @@ function reorderAccordingToPreference(
   preferred: ContentServerClient | undefined
 ): ContentServerClient[] {
   if (preferred) {
-    const newOrder = activeServers.filter((server) => server.getServerUrl() != preferred.getServerUrl())
+    const newOrder = activeServers.filter((server) => server.getBaseUrl() != preferred.getBaseUrl())
     newOrder.unshift(preferred)
     return newOrder
   } else {

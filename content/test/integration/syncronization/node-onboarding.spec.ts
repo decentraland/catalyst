@@ -17,7 +17,7 @@ describe('End 2 end - Node onboarding', function () {
     ;[server1, server2, server3] = await testEnv.configServer('1s').andBuildMany(3)
   })
 
-  it('When a node starts, it gets all the previous history', async () => {
+  it('When a node starts, it does not get all the previous history', async () => {
     // Start server 1 and 2
     await Promise.all([server1.start(), server2.start()])
 
@@ -52,9 +52,9 @@ describe('End 2 end - Node onboarding', function () {
     // Start server 3
     await server3.start()
 
-    // Assert server 3 has all the history
+    // Assert server 3 has the latest deployment
     await awaitUntil(async () => {
-      return assertDeploymentsAreReported(server3, deployment1, deployment2)
+      return assertDeploymentsAreReported(server3, deployment2)
     })
   })
 
@@ -80,7 +80,7 @@ describe('End 2 end - Node onboarding', function () {
     await assertFileIsOnServer(server2, entityContentHash)
 
     // Remove server 1 from the DAO
-    testEnv.removeFromDAO(server1.getAddress())
+    testEnv.removeFromDAO(server1.getUrl())
 
     // Start server 3
     await server3.start()

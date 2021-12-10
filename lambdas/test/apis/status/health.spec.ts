@@ -31,29 +31,6 @@ describe("Lambda's Controller Utils", () => {
       })
     })
 
-    describe('when the service is bootstrapping', () => {
-      const mockedBootstrappingStatus = {
-        currentTime: 100,
-        synchronizationStatus: 'Bootstrapping'
-      }
-
-      beforeAll(() => {
-        contentClientMock = mock(SmartContentClient)
-        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedBootstrappingStatus as any))
-        when(contentClientMock.fetchAllDeployments(anything())).thenReturn(
-          Promise.resolve(mockedBootstrappingStatus as any)
-        )
-      })
-
-      it('should return an unhealthy status', async () => {
-        const logger = mock(Logger)
-
-        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
-          HealthStatus.UNHEALTHY
-        )
-      })
-    })
-
     describe('when the service has old information', () => {
       const mockedHealthyStatus = {
         currentTime: 1000000,

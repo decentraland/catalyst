@@ -3,18 +3,20 @@ import { AppComponents } from '../../types'
 import { ContentCluster } from './ContentCluster'
 import { ensureListOfCatalysts } from './newSynchronization'
 
+type BootstrapComponents = Pick<
+  AppComponents,
+  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue'
+>
+
 /**
  * This function fetches all the full snapshots from remote catalysts and
  * then iterates over all of the deployments to call the batch deployer for each deployed entity.
  */
-export async function bootstrapFromSnapshots(
-  components: Pick<AppComponents, 'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue'>,
-  cluster: ContentCluster
-): Promise<void> {
+export async function bootstrapFromSnapshots(components: BootstrapComponents, cluster: ContentCluster): Promise<void> {
   const catalystServers = await ensureListOfCatalysts(cluster, 10 /* retries */, 1000 /* wait time */)
 
   if (catalystServers.length == 0) {
-    console.log('There are no servers. Cancelling bootstrapping')
+    console.error('There are no servers. Cancelling bootstrapping')
     return
   }
 
@@ -26,7 +28,7 @@ export async function bootstrapFromSnapshots(
   await Promise.all(
     catalystServers.map(async (server) => {
       try {
-        const contentServer = server.getServerUrl()
+        const contentServer = server.getBaseUrl()
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,
           contentServer,

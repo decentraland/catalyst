@@ -74,7 +74,7 @@ async function deployLegacy(server: TestServer, deployData: DeploymentData) {
     form.append(hash, Buffer.isBuffer(f) ? f : Buffer.from(arrayBufferFrom(f)), { filename: hash })
   )
 
-  const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
+  const deployResponse = await fetch(`${server.getUrl()}/legacy-entities`, { method: 'POST', body: form })
   await assertResponseIsOkOrThrow(deployResponse)
 }
 

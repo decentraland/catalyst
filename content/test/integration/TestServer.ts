@@ -1,3 +1,4 @@
+import { ServerBaseUrl } from '@catalyst/commons'
 import {
   ContentClient,
   DeploymentData,
@@ -14,7 +15,6 @@ import {
   EntityType,
   LegacyAuditInfo,
   Pointer,
-  ServerAddress,
   ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
@@ -42,7 +42,7 @@ export class TestServer extends Server {
     this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
     this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
     this.client = new ContentClient({
-      contentUrl: this.getAddress(),
+      contentUrl: this.getUrl(),
       proofOfWorkEnabled: false,
       fetcher: env.getBean(Bean.FETCHER)
     })
@@ -52,7 +52,7 @@ export class TestServer extends Server {
     return false
   }
 
-  getAddress(): ServerAddress {
+  getUrl(): ServerBaseUrl {
     return `http://localhost:${this.serverPort}`
   }
 
@@ -78,7 +78,7 @@ export class TestServer extends Server {
   }
 
   getFailedDeployments(): Promise<FailedDeployment[]> {
-    return this.makeRequest(`${this.getAddress()}/failed-deployments`)
+    return this.makeRequest(`${this.getUrl()}/failed-deployments`)
   }
 
   getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<ControllerEntity[]> {
@@ -120,7 +120,7 @@ export class TestServer extends Server {
   }
 
   getDenylistTargets(): Promise<ControllerDenylistData[]> {
-    return this.makeRequest(`${this.getAddress()}/denylist`)
+    return this.makeRequest(`${this.getUrl()}/denylist`)
   }
 
   denylistEntity(
@@ -161,7 +161,7 @@ export class TestServer extends Server {
       signature: signature
     }
 
-    const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}`, {
+    const deployResponse = await fetch(`${this.getUrl()}/denylist/${target.getType()}/${target.getId()}`, {
       method: 'PUT',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' }
@@ -179,7 +179,7 @@ export class TestServer extends Server {
     const signature = signatureOverwrite ?? calculatedSignature
 
     const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
-    const deployResponse = await fetch(`${this.getAddress()}/denylist/${target.getType()}/${target.getId()}?${query}`, {
+    const deployResponse = await fetch(`${this.getUrl()}/denylist/${target.getType()}/${target.getId()}?${query}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     })

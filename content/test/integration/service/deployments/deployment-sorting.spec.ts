@@ -15,7 +15,7 @@ describe('Integration - Deployment Sorting', () => {
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(2)
-    // Start server 1, 2 and 3
+    // Start server 1 and 2
     await Promise.all([server1.start(), server2.start()])
 
     // Prepare data to be deployed
@@ -36,6 +36,7 @@ describe('Integration - Deployment Sorting', () => {
     await server1.deploy(deployData3)
     await awaitUntil(() => assertDeploymentsCount(server1, 3))
   })
+
 
   it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments()

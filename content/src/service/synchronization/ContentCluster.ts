@@ -1,12 +1,11 @@
-import { DAOClient, delay, ServerMetadata } from '@catalyst/commons'
-import { Fetcher, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { DAOClient, delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { Fetcher, Timestamp } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { ChallengeSupervisor, ChallengeText } from './ChallengeSupervisor'
 import { ConnectionState, ContentServerClient } from './clients/ContentServerClient'
 import { shuffleArray } from './ClusterUtils'
-
 export interface IdentityProvider {
   getIdentityInDAO(): ServerIdentity | undefined
 }
@@ -19,7 +18,7 @@ export class ContentCluster implements IdentityProvider {
   // Timeout set to sync with DAO
   private syncTimeout: NodeJS.Timeout
   // Servers that were reached at least once
-  private serverClients: Map<ServerAddress, ContentServerClient> = new Map()
+  private serverClients: Map<ServerBaseUrl, ContentServerClient> = new Map()
   // All the servers on the DAO. Renewed with each sync
   private allServersInDAO: Set<ServerMetadata>
   // Time of last sync with the DAO
@@ -37,7 +36,7 @@ export class ContentCluster implements IdentityProvider {
   /** Connect to the DAO for the first time */
   async connect(): Promise<void> {
     // Get all servers on the DAO
-    this.allServersInDAO = await this.dao.getAllServers()
+    this.allServersInDAO = await this.dao.getAllContentServers()
 
     // Detect my own identity
     await this.detectMyIdentity(10)
@@ -61,7 +60,7 @@ export class ContentCluster implements IdentityProvider {
   getStatus() {
     const otherServers = Array.from(this.serverClients.entries()).map(([baseUrl, client]) => ({
       baseUrl,
-      connectionState: ConnectionState.NEVER_REACHED,
+      connectionState: ConnectionState.NEVER_REACHED, // TODO
       lastDeploymentTimestamp: 0 // TODO
     }))
 
@@ -82,26 +81,26 @@ export class ContentCluster implements IdentityProvider {
       ContentCluster.LOGGER.debug(`Starting sync with DAO`)
 
       // Refresh the server list
-      this.allServersInDAO = await this.dao.getAllServers()
+      this.allServersInDAO = await this.dao.getAllContentServers()
 
       if (!this.myIdentity) {
         await this.detectMyIdentity()
       }
 
       // Get all addresses in cluster (except for me)
-      const allServerBaseUrls: ServerAddress[] = this.getAllOtherAddressesOnDAO(this.allServersInDAO)
+      const allServerBaseUrls: ServerBaseUrl[] = this.getAllOtherAddressesOnDAO(this.allServersInDAO)
 
       // Handle the possibility that some servers where removed from the DAO. If so, remove them from the list
       this.handleRemovalsFromDAO(allServerBaseUrls)
 
       // Detect new servers
-      const newServerNaseUrls = allServerBaseUrls.filter((baseUrl) => !this.serverClients.has(baseUrl))
-      if (newServerNaseUrls.length > 0) {
-        for (const contentServerUrl of newServerNaseUrls) {
+      const newServerBaseUrls = allServerBaseUrls.filter((baseUrl) => !this.serverClients.has(baseUrl))
+      if (newServerBaseUrls.length > 0) {
+        for (const serverBaseUrl of newServerBaseUrls) {
           // Create and store the new client
-          const newClient = new ContentServerClient(contentServerUrl + '/content')
-          this.serverClients.set(contentServerUrl, newClient)
-          ContentCluster.LOGGER.info(`Discovered new server '${contentServerUrl}'`)
+          const newClient = new ContentServerClient(serverBaseUrl)
+          this.serverClients.set(serverBaseUrl, newClient)
+          ContentCluster.LOGGER.info(`Discovered new server '${serverBaseUrl}'`)
         }
       }
 
@@ -121,13 +120,15 @@ export class ContentCluster implements IdentityProvider {
     }
   }
 
-  private handleRemovalsFromDAO(allServers: string[]): void {
+  private handleRemovalsFromDAO(allServersBaseUrls: string[]): void {
     // Calculate if any known servers where removed from the DAO
-    const serversRemovedFromDAO = Array.from(this.serverClients.keys()).filter((server) => !allServers.includes(server))
+    const serversRemovedFromDAO = Array.from(this.serverClients.keys()).filter(
+      (serverBaseUrl) => !allServersBaseUrls.includes(serverBaseUrl)
+    )
 
     // Remove servers from list
-    serversRemovedFromDAO.forEach((server) => {
-      this.serverClients.delete(server)
+    serversRemovedFromDAO.forEach((serverBaseUrl) => {
+      this.serverClients.delete(serverBaseUrl)
     })
   }
 
@@ -139,10 +140,10 @@ export class ContentCluster implements IdentityProvider {
       // Fetch server list from the DAO
       if (!this.allServersInDAO) {
         ContentCluster.LOGGER.info(`Fetching DAO servers`)
-        this.allServersInDAO = await this.dao.getAllServers()
+        this.allServersInDAO = await this.dao.getAllContentServers()
       }
 
-      const challengesByAddress: Map<ServerAddress, ChallengeText> = new Map()
+      const challengesByAddress: Map<ServerBaseUrl, ChallengeText> = new Map()
 
       const daoServerWithoutAnswers = new Set<string>(Array.from(this.allServersInDAO).map(($) => $.baseUrl))
 
@@ -198,7 +199,7 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Returns all the addresses on the DAO, except for the current server's */
-  private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerAddress[] {
+  private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerBaseUrl[] {
     // Filter myself out
     const serverUrls = Array.from(allServers)
       .map(({ baseUrl }) => baseUrl)
@@ -209,11 +210,12 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Return the server's challenge text, or undefined if it couldn't be reached */
-  private async getChallengeInServer(catalystBaseUrl: ServerAddress): Promise<ChallengeText | undefined> {
+  private async getChallengeInServer(catalystBaseUrl: ServerBaseUrl): Promise<ChallengeText | undefined> {
     try {
       const { challengeText }: { challengeText: ChallengeText } = (await this.fetcher.fetchJson(
-        `${catalystBaseUrl}/content/challenge`
+        `${catalystBaseUrl}/challenge`
       )) as { challengeText: ChallengeText }
+
       return challengeText
     } catch (error) {}
   }

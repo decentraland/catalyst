@@ -5,3 +5,5 @@ export type ServerMetadata = {
   owner: EthAddress
   id: string
 }
+
+export declare type ServerBaseUrl = string

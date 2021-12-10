@@ -143,12 +143,15 @@ export class DeploymentManager {
 
     const deployments = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
-    const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(deploymentIds)
+    const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(
+      deploymentIds,
+      options?.includeAuthChain
+    )
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
-      ({ deploymentId, entityId, entityType, localTimestamp }) => {
+      ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()
         const changes = this.transformPointerChanges(entityId, delta)
-        return { entityType, entityId, localTimestamp, changes }
+        return { entityType, entityId, localTimestamp, changes, authChain }
       }
     )
 
@@ -214,6 +217,7 @@ export type PointerChangesOptions = {
   offset?: number
   limit?: number
   lastId?: string
+  includeAuthChain?: boolean
 }
 
 export type DeploymentOptions = {
