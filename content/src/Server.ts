@@ -194,12 +194,14 @@ export class Server {
     this.snapshotManager.stopCalculateFullSnapshots()
 
     Server.LOGGER.info(`Content Server stopped.`)
-    if (options.endDbConnection) {
-      await this.repository.shutdown()
+    if (options.endDbConnection) await this.stopDB()
+  }
 
-      // TODO: this will be handled by well-known-components Lifecycle
-      await this.components.database.stop!()
-    }
+  async stopDB(): Promise<void> {
+    // TODO: this will be handled by well-known-components Lifecycle
+    await this.components.database.stop!()
+
+    await this.repository.shutdown()
   }
 
   private async validateHistory(): Promise<void> {

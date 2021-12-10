@@ -22,6 +22,10 @@ describe('Integration - Failed Deployments Manager', function () {
     repository = await RepositoryFactory.create(env)
   })
 
+  afterEach(async () => {
+    await repository.shutdown()
+  })
+
   it(`When failures are reported, then the last status is returned`, async () => {
     const deployment = buildRandomDeployment()
 

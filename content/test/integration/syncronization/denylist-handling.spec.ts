@@ -17,7 +17,7 @@ import { TestServer } from '../TestServer'
 
 describe('End 2 end - Denylist handling', () => {
   const identity = createIdentity()
-  const SYNC_INTERVAL: number = ms('1s')
+  const SYNC_INTERVAL: number = ms('5s')
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer, onboardingServer: TestServer
 
@@ -64,7 +64,7 @@ describe('End 2 end - Denylist handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
     const contentHash: ContentFileHash = entityBeingDeployed.content![0].hash
 
@@ -94,7 +94,7 @@ describe('End 2 end - Denylist handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
 
     // Deploy the entity
@@ -132,7 +132,7 @@ describe('End 2 end - Denylist handling', () => {
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
       metadata: 'metadata',
-      contentPaths: ['test/integration/resources/some-binary-file.png']
+      contentPaths: ['content/test/integration/resources/some-binary-file.png']
     })
     const contentHash: ContentFileHash = entityBeingDeployed.content![0].hash
 

@@ -30,7 +30,22 @@ export class Repository {
    * Shutdown the database client
    */
   async shutdown(): Promise<void> {
-    await this.db.$pool.end()
+    const promise = this.db.$pool.end()
+    let finished = false
+
+    promise.then(() => (finished = true)).catch(() => (finished = true))
+
+    while (!finished && this.db.$pool.totalCount | this.db.$pool.idleCount | this.db.$pool.waitingCount) {
+      if (this.db.$pool.totalCount) {
+        console.log('Draining connections', {
+          totalCount: this.db.$pool.totalCount,
+          idleCount: this.db.$pool.idleCount,
+          waitingCount: this.db.$pool.waitingCount
+        })
+      }
+    }
+
+    await promise
   }
 
   /**

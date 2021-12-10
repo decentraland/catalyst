@@ -77,7 +77,9 @@ export class E2ETestEnvironment {
 
   async stopServers(): Promise<void> {
     if (this.runningServers) {
-      await Promise.all(this.runningServers.map((server) => server.stop()))
+      await Promise.all(
+        this.runningServers.map((server) => server.stop({ deleteStorage: true, endDbConnection: true }, true))
+      )
     }
   }
 
@@ -118,7 +120,13 @@ export class E2ETestEnvironment {
       .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
     const service = env.getBean<MetaverseContentService>(Bean.SERVICE)
-    const stoppableService = Object.assign(service, { stop: () => components.database.stop() })
+    const repository = env.getBean<Repository>(Bean.REPOSITORY)
+    const stoppableService = Object.assign(service, {
+      stop: async () => {
+        await repository.shutdown()
+        await components.database.stop()
+      }
+    })
 
     return stoppableService
   }
