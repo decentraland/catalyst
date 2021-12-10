@@ -78,26 +78,22 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     context: DeploymentContext = DeploymentContext.LOCAL,
     task?: Database
   ): Promise<DeploymentResult> {
-    console.log('ENTRO AL SERVICE')
     // Hash all files
     const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
     if (!entityFile) {
-      console.log('FAILED TO FIND ENTITY')
       return { errors: [`Failed to find the entity file.`] }
     }
 
     // Parse entity file into an Entity
     const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
-    console.log('TENGO ENTITY')
 
     // Validate that the entity's pointers are not currently being modified
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
     const overlappingPointers = entity.pointers.filter((pointer) => pointersCurrentlyBeingDeployed.has(pointer))
     if (overlappingPointers.length > 0) {
-      console.log('OVERLAPED')
       return {
         errors: [
           `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
@@ -109,7 +105,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
-    console.log('llego hsata aca?')
     // Check for if content is already stored
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
       Array.from(entity.content?.values() ?? [])
@@ -134,7 +129,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         await Promise.all(
           this.listeners.map((listener) => listener({ entity, auditInfo: storeResult.auditInfoComplete }))
         )
-        console.log('MUY OPTIMISTA: HOLIS')
 
         // Since we are still reporting the history size, add one to it
         this.historySize++
