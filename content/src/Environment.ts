@@ -13,7 +13,7 @@ import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsComponent } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-import { createBloomFilterComponent } from './ports/bloomFilter'
+// import { createBloomFilterComponent } from './ports/bloomFilter'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
 import { RepositoryFactory } from './repository/RepositoryFactory'
@@ -524,9 +524,9 @@ export class EnvironmentBuilder {
       timeout: 60000
     })
 
-    const deployedEntitiesFilter = createBloomFilterComponent({
-      sizeInBytes: 512
-    })
+    // const deployedEntitiesFilter = createBloomFilterComponent({
+    //   sizeInBytes: 512
+    // })
 
     const batchDeployer = createBatchDeployerComponent(
       {
@@ -536,7 +536,7 @@ export class EnvironmentBuilder {
         database,
         metrics,
         deployer,
-        deployedEntitiesFilter,
+
         staticConfigs
       },
       {
@@ -593,7 +593,6 @@ export class EnvironmentBuilder {
         logs,
         staticConfigs,
         batchDeployer,
-        deployedEntitiesFilter,
         downloadQueue,
         synchronizationJobManager
       }

@@ -37,6 +37,7 @@ describe('Integration - Deployment Sorting', () => {
     await awaitUntil(() => assertDeploymentsCount(server1, 3))
   })
 
+
   it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments()
 
