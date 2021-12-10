@@ -151,7 +151,7 @@ export class DeploymentManager {
       ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()
         const changes = this.transformPointerChanges(entityId, delta)
-        return { entityType, entityId, localTimestamp, changes }
+        return { entityType, entityId, localTimestamp, changes, authChain }
       }
     )
 
