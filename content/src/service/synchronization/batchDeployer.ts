@@ -72,10 +72,9 @@ export function createBatchDeployerComponent(
               elementInMap!.servers,
               DeploymentContext.SYNCED
             )
-
             components.deployedEntitiesFilter.add(entity.entityId)
           } catch (err: any) {
-            // failed deployments are automaticcally rescheduled
+            // failed deployments are automatically rescheduled
             await components.deployer.reportErrorDuringSync(
               entity.entityType as any,
               entity.entityId,

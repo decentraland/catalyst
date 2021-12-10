@@ -83,7 +83,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     sync: {
       ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
-
       const setDesiredJobs = () => {
         const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getBaseUrl()))
         // the job names are the contentServerUrl
