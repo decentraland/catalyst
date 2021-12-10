@@ -124,6 +124,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
           )
         } catch {}
       } else {
+        // TODO: get the authChain from the catalysts
         ClusterSynchronizationManager.LOGGER.info(
           `Can't retry failed deployment: '${entityId}' because it lacks of authChain`
         )

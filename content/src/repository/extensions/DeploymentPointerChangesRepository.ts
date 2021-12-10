@@ -23,7 +23,7 @@ export class DeploymentPointerChangesRepository {
 
   async getPointerChangesForDeployments(
     deploymentIds: DeploymentId[],
-    includeAuthChain: boolean = false
+    includeAuthChain: boolean = true
   ): Promise<Map<DeploymentId, Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT }>>> {
     const result: Map<
       DeploymentId,
