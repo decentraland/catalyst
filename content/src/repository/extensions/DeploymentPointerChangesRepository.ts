@@ -1,6 +1,6 @@
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { PointerChangesFields } from '../../controller/Controller'
+import { PointerChangesField, pointerChangesFields } from '../../controller/Controller'
 import { Database } from '../../repository/Database'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../../service/pointers/PointerManager'
 import { DeploymentId } from './DeploymentsRepository'
@@ -24,7 +24,7 @@ export class DeploymentPointerChangesRepository {
 
   async getPointerChangesForDeployments(
     deploymentIds: DeploymentId[],
-    fields: PointerChangesFields[] = []
+    fields: PointerChangesField[] = []
   ): Promise<
     Map<DeploymentId, Map<Pointer, { before?: EntityId; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>>
   > {
@@ -49,7 +49,7 @@ export class DeploymentPointerChangesRepository {
         result.get(deployment)!.set(pointer, {
           before: before ?? undefined,
           after,
-          authChain: fields.includes(PointerChangesFields.AUTH_CHAIN) ? authChain : undefined
+          authChain: fields.includes(pointerChangesFields.AUTH_CHAIN) ? authChain : undefined
         })
       })
     }

@@ -349,9 +349,10 @@ export class Controller {
       SortingOrder,
       req.query.sortingOrder as string
     )
-    const fields = this.asArray<string>(req.query.fields)?.filter((field) =>
-      (Object.values(PointerChangesFields) as string[]).includes(field)
-    )
+    const queryFields = this.asArray<string>(req.query.fields)
+    const fields: PointerChangesField[] = Object.entries(pointerChangesFields)
+      .filter((key) => queryFields?.includes(key[1] as string))
+      .map((key) => key[1])
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -821,8 +822,10 @@ export enum DeploymentField {
   AUDIT_INFO = 'auditInfo'
 }
 
-export enum PointerChangesFields {
-  AUTH_CHAIN = 'authChain'
+export type PointerChangesField = 'authChain'
+
+export const pointerChangesFields: Record<string, PointerChangesField> = {
+  AUTH_CHAIN: 'authChain'
 }
 
 export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
