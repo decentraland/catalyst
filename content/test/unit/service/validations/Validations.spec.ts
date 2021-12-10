@@ -676,6 +676,27 @@ describe('Validations', function () {
 
       await assertNoErrors(result)
     })
+
+    it(`when there are repeated hashes in content, then it doesnt count multiple times and is ok`, async () => {
+      const content = new Map([
+        ['A', 'A'],
+        ['B', 'A'],
+        ['C', 'C']
+      ])
+
+      const contentSizes = new Map([['A', 1024 * 1024 * 5]])
+      const entity = buildEntity({ content })
+      const args = buildArgs({
+        deployment: { entity, files: getFileWithSize(3, 'C') },
+        env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 10]]) },
+        externalCalls: {
+          fetchContentFileSize: (hash) => Promise.resolve(contentSizes.get(hash))
+        }
+      })
+
+      const result = Validations.REQUEST_SIZE_V4(args)
+      await assertNoErrors(result)
+    })
   })
 
   describe('IPFS hashing', () => {
