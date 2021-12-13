@@ -28,7 +28,7 @@ export class DeploymentPointerChangesRepository {
   > {
     const result: Map<
       DeploymentId,
-      Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>
+      Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT; authChain: AuthChain | null }>
     > = new Map()
     if (deploymentIds.length > 0) {
       const deltas = await this.db.any(
