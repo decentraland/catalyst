@@ -11,7 +11,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { DeploymentField, PointerChangesField } from '../../controller/Controller'
+import { DeploymentField } from '../../controller/Controller'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
@@ -144,10 +144,7 @@ export class DeploymentManager {
 
     const deployments = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
-    const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(
-      deploymentIds,
-      options?.fields
-    )
+    const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(deploymentIds)
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
       ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()
@@ -219,7 +216,6 @@ export type PointerChangesOptions = {
   offset?: number
   limit?: number
   lastId?: string
-  fields?: PointerChangesField[]
 }
 
 export type DeploymentOptions = {

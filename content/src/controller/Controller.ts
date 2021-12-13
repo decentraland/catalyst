@@ -327,7 +327,7 @@ export class Controller {
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /pointer-changes
-    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&fields
+    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
@@ -349,10 +349,6 @@ export class Controller {
       SortingOrder,
       req.query.sortingOrder as string
     )
-    const queryFields = this.asArray<string>(req.query.fields)
-    const fields: PointerChangesField[] = Object.entries(pointerChangesFields)
-      .filter((key) => queryFields?.includes(key[1] as string))
-      .map((key) => key[1])
 
     // Validate type is valid
     if (entityTypes && entityTypes.some((type) => !type)) {
@@ -405,8 +401,7 @@ export class Controller {
       offset,
       limit,
       lastId,
-      sortBy,
-      fields
+      sortBy
     })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
@@ -820,12 +815,6 @@ export enum DeploymentField {
   POINTERS = 'pointers',
   METADATA = 'metadata',
   AUDIT_INFO = 'auditInfo'
-}
-
-export type PointerChangesField = 'authChain'
-
-export const pointerChangesFields: Record<string, PointerChangesField> = {
-  AUTH_CHAIN: 'authChain'
 }
 
 export type ControllerPointerChanges = Omit<DeploymentPointerChanges, 'changes'> & {
