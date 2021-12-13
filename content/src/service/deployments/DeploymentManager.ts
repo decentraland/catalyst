@@ -144,10 +144,7 @@ export class DeploymentManager {
 
     const deployments = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
-    const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(
-      deploymentIds,
-      options?.includeAuthChain
-    )
+    const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(deploymentIds)
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
       ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()
