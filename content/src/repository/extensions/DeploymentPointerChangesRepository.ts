@@ -24,7 +24,7 @@ export class DeploymentPointerChangesRepository {
   async getPointerChangesForDeployments(
     deploymentIds: DeploymentId[]
   ): Promise<
-    Map<DeploymentId, Map<Pointer, { before?: EntityId; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>>
+    Map<DeploymentId, Map<Pointer, { before?: EntityId; after: DELTA_POINTER_RESULT; authChain: AuthChain | null }>>
   > {
     const result: Map<
       DeploymentId,
