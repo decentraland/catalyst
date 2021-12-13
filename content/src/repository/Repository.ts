@@ -1,3 +1,4 @@
+import { delay } from '@catalyst/commons'
 import { Database, FullDatabase } from './Database'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from './RepositoryQueue'
 
@@ -43,6 +44,8 @@ export class Repository {
           waitingCount: this.db.$pool.waitingCount
         })
       }
+
+      await delay(100)
     }
 
     await promise
