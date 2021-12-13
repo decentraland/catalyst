@@ -391,11 +391,18 @@ export class Controller {
       from: fromFilter,
       to: toFilter
     }
+
     const {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.service.getPointerChanges(undefined, { filters: requestFilters, offset, limit, lastId, sortBy })
+    } = await this.service.getPointerChanges(undefined, {
+      filters: requestFilters,
+      offset,
+      limit,
+      lastId,
+      sortBy
+    })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
