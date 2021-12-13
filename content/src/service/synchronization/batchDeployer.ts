@@ -54,7 +54,6 @@ export function createBatchDeployerComponent(
             const alreadyDeployed = await deploymentExists(components, entity.entityId)
 
             if (alreadyDeployed) {
-              console.log('Ya esta deployado')
               return
             }
 
