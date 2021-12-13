@@ -29,7 +29,8 @@ describe('Integration - Server', function () {
     entityId: entity1.id,
     entityType: entity1.type,
     localTimestamp: 10,
-    changes: new Map([[entity1.pointers[0], { before: undefined, after: entity1.id }]])
+    changes: new Map([[entity1.pointers[0], { before: undefined, after: entity1.id }]]),
+    authChain: []
   }
   const port = 8080
   const address: string = `http://localhost:${port}`

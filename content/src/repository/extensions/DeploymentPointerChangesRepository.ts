@@ -22,29 +22,33 @@ export class DeploymentPointerChangesRepository {
   }
 
   async getPointerChangesForDeployments(
-    deploymentIds: DeploymentId[],
-    includeAuthChain: boolean = true
-  ): Promise<Map<DeploymentId, Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT }>>> {
+    deploymentIds: DeploymentId[]
+  ): Promise<
+    Map<DeploymentId, Map<Pointer, { before?: EntityId; after: DELTA_POINTER_RESULT; authChain: AuthChain | null }>>
+  > {
     const result: Map<
       DeploymentId,
-      Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT; authChain?: AuthChain }>
+      Map<Pointer, { before: EntityId | undefined; after: DELTA_POINTER_RESULT; authChain: AuthChain | null }>
     > = new Map()
     if (deploymentIds.length > 0) {
       const deltas = await this.db.any(
         `
-              SELECT deployment, pointer, after, deployments.entity_id AS before, deployments.auth_chain AS "authChain"
+              SELECT deployment, pointer, after, deployments.entity_id AS before, deployments.auth_chain AS auth_chain
               FROM deployment_deltas
               LEFT JOIN deployments on deployments.id = deployment_deltas.before
               WHERE deployment IN ($1:list)`,
         [deploymentIds]
       )
-      deltas.forEach(({ deployment, pointer, before, after, authChain }) => {
+      deltas.forEach(({ deployment, pointer, before, after, auth_chain }) => {
         if (!result.has(deployment)) {
           result.set(deployment, new Map())
         }
-        result
-          .get(deployment)!
-          .set(pointer, { before: before ?? undefined, after, authChain: includeAuthChain ? authChain : undefined })
+
+        result.get(deployment)!.set(pointer, {
+          before: before ?? undefined,
+          after,
+          authChain: auth_chain
+        })
       })
     }
     return result

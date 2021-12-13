@@ -10,6 +10,7 @@ import {
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import { DeploymentField } from '../../controller/Controller'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
@@ -197,6 +198,7 @@ export type DeploymentPointerChanges = {
   entityId: EntityId
   localTimestamp: Timestamp
   changes: PointerChanges
+  authChain: AuthChain
 }
 
 export type PartialDeploymentPointerChanges = {

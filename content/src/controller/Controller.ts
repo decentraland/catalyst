@@ -403,8 +403,7 @@ export class Controller {
       offset,
       limit,
       lastId,
-      sortBy,
-      includeAuthChain
+      sortBy
     })
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
