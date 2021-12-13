@@ -1,6 +1,7 @@
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import {
   assertDeploymentsAreReported,
+  assertEntitiesAreActiveOnServer,
   assertEntityIsOverwrittenBy,
   assertFileIsOnServer,
   buildDeployment
@@ -54,7 +55,7 @@ describe('End 2 end - Node onboarding', function () {
 
     // Assert server 3 has the latest deployment
     await awaitUntil(async () => {
-      return assertDeploymentsAreReported(server3, deployment2)
+      return assertEntitiesAreActiveOnServer(server3, entity2)
     })
   })
 
