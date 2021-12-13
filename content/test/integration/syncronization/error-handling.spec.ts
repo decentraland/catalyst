@@ -40,11 +40,13 @@ describe('End 2 end - Error handling', () => {
   // TODO: FIX
   xit(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
     // TODO: Check this error
-    await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) => server1.denylistContent(entity.content![0].hash, identity))
+    await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) =>
+      server1.denylistContent(entity.content![0].hash, identity)
+    )
   })
 
   // TODO: Fix
-  fit(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
+  xit(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
     await runTest(
       FailureReason.DEPLOYMENT_ERROR,
       (_) => {
@@ -162,7 +164,6 @@ describe('End 2 end - Error handling', () => {
     // Start server2
 
     await server2.start()
-
 
     console.log('[HOLA] about to deploy')
     // Assert deployment is marked as failed
