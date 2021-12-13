@@ -270,7 +270,7 @@ export class Validations {
     externalCalls: ExternalCalls
   ): Promise<number> {
     let totalSize = 0
-    for (const [, hash] of deployment.entity.content ?? []) {
+    for (const hash of new Set(deployment.entity.content?.values() ?? [])) {
       const uploadedFile = deployment.files.get(hash)
       if (uploadedFile) {
         totalSize += uploadedFile.byteLength
