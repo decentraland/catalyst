@@ -78,10 +78,10 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/snapshots-fetcher@^2.0.0-20211202223148.commit-a6716be":
-  version "2.0.0-20211202223148.commit-a6716be"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-2.0.0-20211202223148.commit-a6716be.tgz#58a4bffd9e72c403551d920c34dd8b362ed5e74f"
-  integrity sha512-iGVPLHKAEqX7UlrH5jbw2HbYH9XXtbv75WqFuHI+fSVp02gwk7dHhTKfwhyE9kEAcz4o7uasbvm5tDs/exfl1Q==
+"@dcl/snapshots-fetcher@^2.0.0-20211213165112.commit-92153fa":
+  version "2.0.0-20211213165112.commit-92153fa"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-2.0.0-20211213165112.commit-92153fa.tgz#eacca06d606f5627f07ac62faf5db2fc42776940"
+  integrity sha512-hNniCd17IR3Omb9F3UT1E/RQmJAUy0GDIpSmOBkK7UI2Ok93fDzNCEicR9UwUrH2Qz0s0ZE2ep4VUTWWrXTJ5w==
   dependencies:
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^1.1.2"
