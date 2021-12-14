@@ -5,21 +5,14 @@ import * as fs from 'fs'
 import log4js from 'log4js'
 import * as path from 'path'
 import { streamActiveDeployments, streamActiveDeploymentsEntityType } from '../../logic/snapshots-queries'
-import { Database } from '../../repository/Database'
-import { Repository } from '../../repository/Repository'
-import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
-import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
 import { compressContentFile } from '../../storage/compression'
 import { AppComponents } from '../../types'
-import { Entity } from '../Entity'
 import { MetaverseContentService } from '../Service'
 
 const ALL_ENTITIES = Symbol('allEntities')
 type ALL_ENTITIES = typeof ALL_ENTITIES
 
 export class SnapshotManager {
-  /** @deprecated */
-  private readonly counter: Map<EntityType, number> = new Map()
   /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private running = true
@@ -30,42 +23,9 @@ export class SnapshotManager {
 
   constructor(
     private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs'>,
-    private readonly systemPropertiesManager: SystemPropertiesManager,
-    private readonly repository: Repository,
     private readonly service: MetaverseContentService,
-    private readonly snapshotFrequency: Map<EntityType, number>,
     private readonly snapshotFrequencyInMilliSeconds: number
-  ) {
-    service.listenToDeployments((deployment) => this.onDeployment(deployment))
-  }
-
-  /**
-   * @deprecated
-   */
-  startSnapshotsPerEntity(): Promise<void> {
-    return this.repository.txIf(
-      async (transaction) => {
-        this.lastSnapshots = new Map(
-          await this.systemPropertiesManager.getSystemProperty(
-            SystemProperty.LAST_FULL_SNAPSHOTS_PER_ENTITY,
-            transaction
-          )
-        )
-        for (const entityType of Object.values(EntityType)) {
-          const snapshot = this.lastSnapshots.get(entityType)
-          const typeFrequency = this.getFrequencyForType(entityType)
-          if (
-            !snapshot ||
-            (await this.deploymentsSince(entityType, snapshot.lastIncludedDeploymentTimestamp, transaction)) >=
-              typeFrequency
-          ) {
-            await this.generateSnapshotPerEntityType(entityType, transaction)
-          }
-        }
-      },
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
-  }
+  ) {}
 
   async startCalculateFullSnapshots(): Promise<void> {
     // start async job
@@ -124,57 +84,33 @@ export class SnapshotManager {
     }
   }
 
-  private async onDeployment({ entity }: { entity: Entity }): Promise<void> {
-    const { type } = entity
-    // Update the counter
-    const updatedCounter = (this.counter.get(type) ?? 0) + 1
-    this.counter.set(type, updatedCounter)
-
-    // If the number of deployments reaches the frequency, then generate a snapshot
-    if (updatedCounter >= this.getFrequencyForType(type)) {
-      await this.generateSnapshotPerEntityType(type)
-    }
-  }
-
   /**
    * @deprecated
    * This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata
    */
-  private async generateSnapshotPerEntityType(entityType: EntityType, task?: Database): Promise<void> {
+  private async generateLegacySnapshotPerEntityType(
+    entityType: EntityType,
+    inArrayFormat: Array<[string, string[]]>
+  ): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
-    await this.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.txIf(async (transaction) => {
-          // Get the active entities
-          const snapshot = await transaction.deployments.getSnapshotPerEntityType(entityType)
+    // Get the active entities
+    let snapshotTimestamp = 0
 
-          // Calculate the local deployment timestamp of the newest entity in the snapshot
-          const snapshotTimestamp = snapshot[0]?.localTimestamp ?? 0
+    // Format the snapshot in a buffer
+    const buffer = Buffer.from(JSON.stringify(inArrayFormat))
 
-          // Format the snapshot in a buffer
-          const inArrayFormat = snapshot.map(({ entityId, pointers }) => [entityId, pointers])
-          const buffer = Buffer.from(JSON.stringify(inArrayFormat))
+    // Calculate the snapshot's hash
+    const hash = await Hashing.calculateIPFSHash(buffer)
 
-          // Calculate the snapshot's hash
-          const hash = await Hashing.calculateIPFSHash(buffer)
+    // Store the new snapshot
+    await this.service.storeContent(hash, buffer)
 
-          // Store the new snapshot
-          await this.service.storeContent(hash, buffer)
-
-          // Store the metadata
-          await this.storeSnapshotMetadata(entityType, hash, snapshotTimestamp, db)
-
-          // Reset the counter
-          this.counter.set(entityType, 0)
-
-          // Log
-          SnapshotManager.LOGGER.debug(
-            `Generated snapshot for type: '${entityType}'. It includes ${snapshot.length} active deployments. Last timestamp is ${snapshotTimestamp}`
-          )
-        }),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
+    // Store the metadata
+    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp })
+    // Log
+    SnapshotManager.LOGGER.debug(
+      `Generated snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
     )
 
     // Delete the previous snapshot (if it exists)
@@ -279,6 +215,9 @@ export class SnapshotManager {
     })
     let snapshotTimestamp = 0
     let elements = 0
+
+    const inArrayFormat: Array<[string, string[]]> = []
+
     try {
       // this header is necessary to later differentiate between binary formats and non-binary formats
       writeStream.write('### Decentraland json snapshot\n')
@@ -288,16 +227,42 @@ export class SnapshotManager {
           ? streamActiveDeployments(this.components)
           : streamActiveDeploymentsEntityType(this.components, entityType)
 
+      const elems: string[] = []
+      const BATCH_ELEMS_SIZE = 1000
+
+      // this flush function reduces the IO to the disk and makes the SQL stream faster
+      // using an in-memory array as buffer
+      function flush() {
+        if (elems.length > 0) {
+          writeStream.write(elems.join(''))
+          elems.length = 0
+        }
+      }
+
       for await (const snapshotElem of deploymentsIterable) {
         elements++
-        writeStream.write(JSON.stringify(snapshotElem) + '\n')
+        elems.push(JSON.stringify(snapshotElem), '\n')
         if (snapshotElem.localTimestamp > snapshotTimestamp) {
           snapshotTimestamp = snapshotElem.localTimestamp
         }
+        if (elems.length >= BATCH_ELEMS_SIZE) flush()
+
+        // legacy format
+        inArrayFormat.unshift([snapshotElem.entityId, snapshotElem.pointers])
       }
+
+      flush()
     } finally {
       writeStream.close()
       await fileClosedFuture
+    }
+
+    try {
+      if (entityType !== ALL_ENTITIES) {
+        await this.generateLegacySnapshotPerEntityType(entityType, inArrayFormat)
+      }
+    } catch (e: any) {
+      SnapshotManager.LOGGER.error(e)
     }
 
     return {
@@ -310,31 +275,6 @@ export class SnapshotManager {
   private shouldPrunePreviousSnapshot(previousHash: string): boolean {
     const oldMetadata = this.lastSnapshotsPerEntityType.get(ALL_ENTITIES)
     return !!oldMetadata && oldMetadata.hash !== previousHash
-  }
-
-  private deploymentsSince(entityType: EntityType, timestamp: Timestamp, db: Database): Promise<number> {
-    return db.deployments.deploymentsSince(entityType, timestamp)
-  }
-
-  /**
-   * @deprecated
-   */
-  private storeSnapshotMetadata(
-    entityType: EntityType,
-    hash: ContentFileHash,
-    lastIncludedDeploymentTimestamp: Timestamp,
-    db: Database
-  ) {
-    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
-    return this.systemPropertiesManager.setSystemProperty(
-      SystemProperty.LAST_FULL_SNAPSHOTS_PER_ENTITY,
-      Array.from(this.lastSnapshots.entries()),
-      db
-    )
-  }
-
-  private getFrequencyForType(entityType: EntityType): number {
-    return this.snapshotFrequency.get(entityType) ?? 100
   }
 }
 

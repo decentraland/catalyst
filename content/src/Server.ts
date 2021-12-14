@@ -169,7 +169,6 @@ export class Server {
     await this.components.batchDeployer.start()
 
     // generate snapshots before starting the server
-    await this.snapshotManager.startSnapshotsPerEntity()
     await this.snapshotManager.startCalculateFullSnapshots()
 
     this.httpServer = this.app.listen(this.port)
