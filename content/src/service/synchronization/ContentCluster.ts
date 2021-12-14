@@ -149,7 +149,9 @@ export class ContentCluster implements IdentityProvider {
       const daoServerWithoutAnswers = new Set<string>(Array.from(this.allServersInDAO).map(($) => $.baseUrl))
 
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
-        ContentCluster.LOGGER.info(`Attempt ${attempts} - Pending answers from ${daoServerWithoutAnswers}`)
+        ContentCluster.LOGGER.info(
+          `Attempt ${attempts} - Pending answers from ${Array.from(daoServerWithoutAnswers).join(',')}`
+        )
         // Prepare challenges for unknown servers
         const challengeResults = await Promise.allSettled(
           Array.from(this.allServersInDAO)
