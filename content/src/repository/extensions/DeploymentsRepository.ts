@@ -193,10 +193,10 @@ export class DeploymentsRepository {
     entityType: EntityType
   ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
     return this.db.map(
-      `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
-        `FROM deployments d` +
-        `WHERE d.deleter_deployment IS NULL AND d.entity_type = $1` +
-        `ORDER BY d.local_timestamp DESC`,
+      `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp
+       FROM deployments d
+       WHERE d.deleter_deployment IS NULL AND d.entity_type = $1
+       ORDER BY d.local_timestamp DESC`,
       [entityType],
       (row) => ({
         entityId: row.entity_id,

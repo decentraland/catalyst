@@ -15,7 +15,7 @@ describe('ContentCluster', function () {
     const contentCluster = new ContentClusterBuilder().build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(contentCluster.getIdentityInDAO()).toBeUndefined()
@@ -25,7 +25,7 @@ describe('ContentCluster', function () {
     const contentCluster = new ContentClusterBuilder().addAddressWithLocalChallenge(address1, challengeText).build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that identity was detected
     const identity = contentCluster.getIdentityInDAO()
@@ -36,7 +36,7 @@ describe('ContentCluster', function () {
     const contentCluster = new ContentClusterBuilder().addAddressWithEndpoints(address1, challengeText).build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(contentCluster.getIdentityInDAO()).toBeUndefined()
@@ -49,7 +49,7 @@ describe('ContentCluster', function () {
       .build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(contentCluster.getIdentityInDAO()).toBeUndefined()
