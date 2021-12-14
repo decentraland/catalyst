@@ -39,6 +39,7 @@ export class ContentCluster implements IdentityProvider {
     this.allServersInDAO = await this.dao.getAllContentServers()
 
     // Detect my own identity
+    // TODO: Make this configurable, and default 10
     await this.detectMyIdentity(3)
 
     // Perform first sync with the DAO

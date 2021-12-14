@@ -134,7 +134,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
-      await delay(ms('1h'))
+      // TODO: Make this configurable
+      await delay(ms('15m'))
       await this.retryFailedDeploymentExecution()
     }
   }
