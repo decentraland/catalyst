@@ -39,7 +39,7 @@ export class ContentCluster implements IdentityProvider {
     this.allServersInDAO = await this.dao.getAllContentServers()
 
     // Detect my own identity
-    await this.detectMyIdentity(10)
+    await this.detectMyIdentity(3)
 
     // Perform first sync with the DAO
     await this.syncWithDAO()
@@ -84,7 +84,7 @@ export class ContentCluster implements IdentityProvider {
       this.allServersInDAO = await this.dao.getAllContentServers()
 
       if (!this.myIdentity) {
-        await this.detectMyIdentity()
+        await this.detectMyIdentity(1)
       }
 
       // Get all addresses in cluster (except for me)
@@ -133,7 +133,7 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Detect my own identity */
-  async detectMyIdentity(attempts: number = 1): Promise<void> {
+  async detectMyIdentity(attempts: number): Promise<void> {
     try {
       ContentCluster.LOGGER.info('Attempting to determine my identity')
 
@@ -148,7 +148,7 @@ export class ContentCluster implements IdentityProvider {
       const daoServerWithoutAnswers = new Set<string>(Array.from(this.allServersInDAO).map(($) => $.baseUrl))
 
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
-        ContentCluster.LOGGER.info(`Attempt ${attempts}`)
+        ContentCluster.LOGGER.info(`Attempt ${attempts} - Pending answers from ${daoServerWithoutAnswers}`)
         // Prepare challenges for unknown servers
         const challengeResults = await Promise.allSettled(
           Array.from(this.allServersInDAO)
