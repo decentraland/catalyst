@@ -1,7 +1,7 @@
 import { MigrationBuilder } from 'node-pg-migrate'
 
 /*
- * Add an auth_chain field to failed deployments to prevent hitting other catalysts during synchronization.
+ * Fix the index of deployments used when getting snapshots
  */
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
