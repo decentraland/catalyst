@@ -214,8 +214,11 @@ export class AccessCheckerForScenes {
     }
 
     try {
-      return (await this.fetcher.queryGraph<{ parcels: Parcel[] }>(this.landManagerSubgraphUrl, query, variables))
-        .parcels[0]
+      const r = await this.fetcher.queryGraph<{ parcels: Parcel[] }>(this.landManagerSubgraphUrl, query, variables)
+
+      if (r.parcels && r.parcels.length) return r.parcels[0]
+
+      this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, r)
     } catch (error) {
       this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
       throw error
