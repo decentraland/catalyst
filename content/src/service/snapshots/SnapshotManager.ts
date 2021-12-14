@@ -95,7 +95,7 @@ export class SnapshotManager {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
     // Get the active entities
-    let snapshotTimestamp = 0
+    const snapshotTimestamp = 0
 
     // Format the snapshot in a buffer
     const buffer = Buffer.from(JSON.stringify(inArrayFormat))

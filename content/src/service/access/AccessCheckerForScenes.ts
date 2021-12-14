@@ -39,13 +39,21 @@ export class AccessCheckerForScenes {
             if (pointerParts.length === 2) {
               const x: number = parseInt(pointerParts[0], 10)
               const y: number = parseInt(pointerParts[1], 10)
-
-              // Check that the address has access (we check both the present and the 5 min into the past to avoid synchronization issues in the blockchain)
-              const hasAccess =
-                (await this.checkParcelAccess(x, y, timestamp, ethAddress)) ||
-                (await this.checkParcelAccess(x, y, timestamp - AccessCheckerForScenes.SCENE_LOOKBACK_TIME, ethAddress))
-              if (!hasAccess) {
-                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+              try {
+                // Check that the address has access (we check both the present and the 5 min into the past to avoid synchronization issues in the blockchain)
+                const hasAccess =
+                  (await this.checkParcelAccess(x, y, timestamp, ethAddress)) ||
+                  (await this.checkParcelAccess(
+                    x,
+                    y,
+                    timestamp - AccessCheckerForScenes.SCENE_LOOKBACK_TIME,
+                    ethAddress
+                  ))
+                if (!hasAccess) {
+                  errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+                }
+              } catch (e) {
+                errors.push(e)
               }
             } else {
               errors.push(
@@ -218,7 +226,8 @@ export class AccessCheckerForScenes {
 
       if (r.parcels && r.parcels.length) return r.parcels[0]
 
-      this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, r)
+      this.LOGGER.error(`Error fetching parcel (${x}, ${y}): ${JSON.stringify(r)}`)
+      throw new Error(`Error fetching parcel (${x}, ${y})`)
     } catch (error) {
       this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
       throw error
