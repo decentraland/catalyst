@@ -9,6 +9,7 @@ import {
   Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
@@ -257,6 +258,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     entityType: EntityType,
     entityId: EntityId,
     reason: FailureReason,
+    authChain: AuthChain,
     errorDescription?: string
   ): Promise<null> {
     ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
@@ -267,6 +269,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           entityType,
           entityId,
           reason,
+          authChain,
           errorDescription
         ),
       { priority: DB_REQUEST_PRIORITY.HIGH }

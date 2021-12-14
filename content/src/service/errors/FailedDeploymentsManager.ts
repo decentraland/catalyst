@@ -1,4 +1,5 @@
 import { EntityId, EntityType, Timestamp } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import { FailedDeploymentsRepository } from '../../repository/extensions/FailedDeploymentsRepository'
 
 /**
@@ -10,9 +11,10 @@ export class FailedDeploymentsManager {
     entityType: EntityType,
     entityId: EntityId,
     reason: FailureReason,
+    authChain: AuthChain,
     errorDescription?: string
   ): Promise<null> {
-    return failedDeploymentsRepo.reportFailure(entityType, entityId, Date.now(), reason, errorDescription)
+    return failedDeploymentsRepo.reportFailure(entityType, entityId, Date.now(), reason, authChain, errorDescription)
   }
 
   getAllFailedDeployments(failedDeploymentsRepo: FailedDeploymentsRepository): Promise<FailedDeployment[]> {
@@ -50,6 +52,7 @@ export type FailedDeployment = {
   entityId: EntityId
   failureTimestamp: Timestamp
   reason: FailureReason
+  authChain: AuthChain
   errorDescription?: string
 }
 

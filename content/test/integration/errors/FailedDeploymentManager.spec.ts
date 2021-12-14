@@ -94,7 +94,7 @@ describe('Integration - Failed Deployments Manager', function () {
   }): Promise<null> {
     const { entityType, entityId } = deployment
     return repository.run(
-      (db) => manager.reportFailure(db.failedDeployments, entityType, entityId, reason, description),
+      (db) => manager.reportFailure(db.failedDeployments, entityType, entityId, reason, [], description),
       { priority: DB_REQUEST_PRIORITY.LOW }
     )
   }

@@ -178,8 +178,14 @@ export class EventDeployer {
     description?: string
     source?: ContentServerClient
   }): Promise<null> {
-    const { entityType, entityId } = options.deployment
-    return this.service.reportErrorDuringSync(entityType, entityId, options.reason, options.description)
+    const { entityType, entityId, auditInfo } = options.deployment
+    return this.service.reportErrorDuringSync(
+      entityType,
+      entityId,
+      options.reason,
+      auditInfo.authChain,
+      options.description
+    )
   }
 
   private buildDeploymentExecution(
