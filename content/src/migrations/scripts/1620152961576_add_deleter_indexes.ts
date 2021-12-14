@@ -1,6 +1,7 @@
 import { MigrationBuilder } from 'node-pg-migrate'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
+  // deprecated by 1639480263808_snapshot_index.ts
   pgm.addIndex('deployments', 'deleter_deployment')
 }
 

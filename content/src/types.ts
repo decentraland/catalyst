@@ -4,6 +4,7 @@ import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetch
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { metrics } from './metrics'
+import { IBloomFilterComponent } from './ports/bloomFilter'
 import { IDatabaseComponent } from './ports/postgres'
 import { ClusterDeploymentsService, MetaverseContentService } from './service/Service'
 // Minimum amount of needed stuff to make the sync work
@@ -20,6 +21,7 @@ export type AppComponents = {
   }
   batchDeployer: IDeployerComponent & { start(): Promise<void> }
   synchronizationJobManager: JobLifecycleManagerComponent
+  deployedEntitiesFilter: IBloomFilterComponent
 }
 
 export type CannonicalEntityDeployment = { entity: RemoteEntityDeployment; servers: string[] }

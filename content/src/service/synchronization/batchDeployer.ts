@@ -1,6 +1,6 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
-import { deploymentExists } from '../../logic/deployments-queries'
+import { deploymentExists, streamAllEntityIds } from '../../logic/deployments-queries'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
 import { DeploymentContext } from '../Service'
@@ -16,7 +16,14 @@ import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 export function createBatchDeployerComponent(
   components: Pick<
     AppComponents,
-    'logs' | 'metrics' | 'fetcher' | 'deployer' | 'downloadQueue' | 'staticConfigs' | 'database'
+    | 'logs'
+    | 'metrics'
+    | 'fetcher'
+    | 'deployer'
+    | 'downloadQueue'
+    | 'staticConfigs'
+    | 'database'
+    | 'deployedEntitiesFilter'
   >,
   queueOptions: createJobQueue.Options
 ): IDeployerComponent & { start(): Promise<void> } {
@@ -65,7 +72,7 @@ export function createBatchDeployerComponent(
               elementInMap!.servers,
               DeploymentContext.SYNCED
             )
-            // components.deployedEntitiesFilter.add(entity.entityId)
+            components.deployedEntitiesFilter.add(entity.entityId)
           } catch (err: any) {
             // failed deployments are automatically rescheduled
             await components.deployer.reportErrorDuringSync(
@@ -84,24 +91,24 @@ export function createBatchDeployerComponent(
     }
   }
 
-  // async function createBloomFilterDeployments() {
-  //   const start = Date.now()
+  async function createBloomFilterDeployments() {
+    const start = Date.now()
 
-  //   const filter = components.deployedEntitiesFilter
-  //   filter.reset()
-  //   let elements = 0
-  //   for await (const row of streamAllEntityIds(components)) {
-  //     elements++
-  //     filter.add(row.entityId)
-  //   }
-  //   logs.info(`Bloom filter recreated.`, { timeMs: Date.now() - start, elements })
-  // }
+    const filter = components.deployedEntitiesFilter
+    filter.reset()
+    let elements = 0
+    for await (const row of streamAllEntityIds(components)) {
+      elements++
+      filter.add(row.entityId)
+    }
+    logs.info(`Bloom filter recreated.`, { timeMs: Date.now() - start, elements })
+  }
 
   // TODO: every now and then cleanup the deploymentsMap of old deployments
 
   return {
     async start() {
-      // await createBloomFilterDeployments()
+      await createBloomFilterDeployments()
     },
     onIdle() {
       return parallelDeploymentJobs.onIdle()
