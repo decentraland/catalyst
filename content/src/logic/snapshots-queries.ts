@@ -27,7 +27,6 @@ export async function* streamActiveDeployments(
         date_part('epoch', local_timestamp) * 1000 AS local_timestamp
       FROM deployments d
       WHERE d.deleter_deployment IS NULL
-      ORDER BY d.local_timestamp ASC
     `,
     options
   )) {
@@ -59,7 +58,6 @@ export async function* streamActiveDeploymentsEntityType(
         date_part('epoch', local_timestamp) * 1000 AS local_timestamp
       FROM deployments d
       WHERE d.deleter_deployment IS NULL AND d.entity_type = ${entityType}
-      ORDER BY d.local_timestamp ASC
     `,
     options
   )) {
