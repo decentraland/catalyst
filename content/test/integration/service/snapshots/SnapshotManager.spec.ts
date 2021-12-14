@@ -13,7 +13,7 @@ import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, Entit
 describe('Integration - Snapshot Manager', () => {
   const P1 = 'X1,Y1',
     P2 = 'X2,Y2'
-  let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
+  let E1: EntityCombo, E2: EntityCombo
 
   const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
@@ -22,7 +22,6 @@ describe('Integration - Snapshot Manager', () => {
   beforeAll(async () => {
     E1 = await buildDeployData([P1], { type: EntityType.SCENE })
     E2 = await buildDeployDataAfterEntity(E1, [P2], { type: EntityType.SCENE })
-    ;(E3 = await buildDeployDataAfterEntity(E2, [P1])), { type: EntityType.SCENE }
   })
 
   beforeEach(async () => {
