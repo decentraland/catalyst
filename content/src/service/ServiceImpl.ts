@@ -1,3 +1,4 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { IPFSv2 } from '@dcl/schemas'
 import {
   AuditInfo,
@@ -9,7 +10,7 @@ import {
   Pointer,
   ServerStatus
 } from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { AuthChain, Authenticator } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
@@ -51,6 +52,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
   private historySize: number = 0
 
+  private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(2020, 1, 20) // DCL Launch Day
+
   constructor(
     private readonly storage: ServiceStorage,
     private readonly pointerManager: PointerManager,
@@ -75,7 +78,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext = DeploymentContext.LOCAL,
+    context?: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
@@ -109,6 +112,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
       Array.from(entity.content?.values() ?? [])
     )
+
+    const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
+
     try {
       const storeResult:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
@@ -118,7 +124,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         entity,
         auditInfo,
         hashes,
-        context,
+        contextToDeploy,
         alreadyStoredContent
       )
 
@@ -151,6 +157,27 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
       entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
     }
+  }
+
+  private calculateIfLegacy(entity: Entity, authChain: AuthChain, context?: DeploymentContext): DeploymentContext {
+    if (!!context && this.isLegacyEntityV2(entity, authChain, context)) {
+      return DeploymentContext.SYNCED_LEGACY_ENTITY
+    }
+    return context ?? DeploymentContext.LOCAL
+  }
+
+  // Legacy v2 content entities are only supported when syncing or fix attempt
+  private isLegacyEntityV2(entity: Entity, authChain: AuthChain, context: DeploymentContext): boolean {
+    return (
+      (context === DeploymentContext.FIX_ATTEMPT || context === DeploymentContext.SYNCED) &&
+      new Date(entity.timestamp) < this.LEGACY_CONTENT_MIGRATION_TIMESTAMP &&
+      this.isADecentralandAddress(authChain)
+    )
+  }
+
+  private isADecentralandAddress(authChain: AuthChain): boolean {
+    const address = Authenticator.ownerAddress(authChain)
+    return address.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
   }
 
   private async storeDeploymentInDatabase(
