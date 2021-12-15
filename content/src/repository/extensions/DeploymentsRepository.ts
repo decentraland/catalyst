@@ -185,27 +185,6 @@ export class DeploymentsRepository {
     return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
-  /**
-   *
-   * @deprecated use getSnapshotPerEntityTypeV2 instead
-   */
-  async getSnapshotPerEntityType(
-    entityType: EntityType
-  ): Promise<{ entityId: EntityId; pointers: Pointer[]; localTimestamp: Timestamp }[]> {
-    return this.db.map(
-      `SELECT entity_id, entity_pointers, date_part('epoch', local_timestamp) * 1000 AS local_timestamp ` +
-        `FROM deployments ` +
-        `WHERE entity_type = $1 AND deleter_deployment IS NULL ` +
-        `ORDER BY local_timestamp DESC, LOWER(entity_id) DESC`,
-      [entityType],
-      (row) => ({
-        entityId: row.entity_id,
-        pointers: row.entity_pointers,
-        localTimestamp: row.local_timestamp
-      })
-    )
-  }
-
   deploymentsSince(entityType: EntityType, timestamp: Timestamp): Promise<number> {
     return this.db.one(
       `SELECT COUNT(*) AS count ` +
