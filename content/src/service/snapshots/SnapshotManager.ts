@@ -128,6 +128,12 @@ export class SnapshotManager {
 
     const fileWriterComponent = createFileWriterComponent()
 
+    // Phase 0) pre-open all the files
+    await fileWriterComponent.openFile(ALL_ENTITIES)
+    for (const entityType of Object.keys(EntityType)) {
+      await fileWriterComponent.openFile(EntityType[entityType])
+    }
+
     // Phase 1) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
@@ -248,8 +254,8 @@ function createFileWriterComponent() {
   const allFiles: Map<
     EntityType | ALL_ENTITIES,
     {
-      file: fs.WriteStream
       close: () => Promise<void>
+      write: (buffer: string) => Promise<void>
       fileName: string
       inMemoryArray: Array<[string, string[]]>
     }
@@ -287,33 +293,41 @@ function createFileWriterComponent() {
     })
 
     const ret = {
-      file,
       async close() {
         file.close()
         await fileClosedFuture
       },
       fileName,
-      inMemoryArray: []
+      inMemoryArray: [],
+      write(buffer: string) {
+        return new Promise<void>((resolve, reject) => {
+          file.write(buffer, (err) => {
+            if (err) reject(err)
+            else resolve()
+          })
+        })
+      }
     }
 
     allFiles.set(type, ret)
 
     // this header is necessary to later differentiate between binary formats and non-binary formats
-    file.write('### Decentraland json snapshot\n')
+    await ret.write('### Decentraland json snapshot\n')
 
     return ret
   }
 
   async function writeToFile(type: EntityType | ALL_ENTITIES, buffer: string) {
-    const { file, inMemoryArray } = await getFile(type)
-    await new Promise<void>((resolve, reject) => {
-      file.write(buffer, (err) => {
-        if (err) reject(err)
-        else resolve()
-      })
-    })
+    const { inMemoryArray, write } = await getFile(type)
+
+    await write(buffer)
+
     return { inMemoryArray }
   }
 
-  return { allFiles, writeToFile, closeAllOpenFiles }
+  async function openFile(type: EntityType | ALL_ENTITIES) {
+    await getFile(type)
+  }
+
+  return { allFiles, writeToFile, closeAllOpenFiles, openFile }
 }
