@@ -17,11 +17,8 @@ export class SnapshotManager {
   /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
-
   private LOGGER: ILoggerComponent.ILogger
-
   private running = false
-  private generatedSnapshots = 0
 
   constructor(
     private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
@@ -32,34 +29,22 @@ export class SnapshotManager {
   }
 
   async startCalculateFullSnapshots(): Promise<void> {
-    // start async job
-    this.snapshotGenerationJob().catch(console.error)
+    // generate a first snapshot
+    await this.generateSnapshots()
 
-    // wait up to 60 seconds for job to finish
-    let counter = 60
-    while (this.generatedSnapshots == 0 && this.running) {
-      await delay(1000)
-      counter--
-      if (counter == 0) {
-        throw new Error('Could not generate a full snapshot in less than 60 seconds')
-      }
-    }
-  }
-
-  async snapshotGenerationJob() {
+    // async job to generate snapshots
     if (this.running) return
     this.running = true
     while (this.running) {
+      await delay(this.snapshotFrequencyInMilliSeconds)
+
       try {
         await this.generateSnapshots()
         this.LOGGER.info('Generated full snapshot')
       } catch (e: any) {
         this.LOGGER.error(e)
       }
-
-      if (this.running) await delay(this.snapshotFrequencyInMilliSeconds)
     }
-    this.running = false
   }
 
   stopCalculateFullSnapshots(): void {
@@ -153,6 +138,8 @@ export class SnapshotManager {
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
+        // TODO: filter out denylisted entities
+
         const str = JSON.stringify(snapshotElem) + '\n'
 
         // update ALL_ENTITIES timestamp
