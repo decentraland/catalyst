@@ -1,6 +1,4 @@
-import { createLogComponent } from '@well-known-components/logger'
 import { Environment, EnvironmentConfig } from '../Environment'
-import { createDatabaseComponent } from '../ports/postgres'
 import { build } from './Database'
 import { Repository } from './Repository'
 import { RepositoryQueue } from './RepositoryQueue'
@@ -25,20 +23,7 @@ export class RepositoryFactory {
     )
     const options = RepositoryFactory.parseQueueOptions(env)
 
-    const databaseComponent = await createDatabaseComponent(
-      { logs: createLogComponent() },
-      {
-        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
-        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
-        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
-        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
-        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
-        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
-      }
-    )
-
-    return new Repository(database, new RepositoryQueue(options), databaseComponent)
+    return new Repository(database, new RepositoryQueue(options))
   }
 
   private static parseQueueOptions(env: Environment) {

@@ -2,6 +2,7 @@ import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-pro
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { unzipSync } from 'zlib'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
+import { Repository } from '../../../../src/repository/Repository'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
 import { bufferToStream, ContentItem, streamToBuffer } from '../../../../src/storage/ContentStorage'
@@ -18,6 +19,8 @@ describe('Integration - Snapshot Manager', () => {
   const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
   let snapshotManager: SnapshotManager
+  let db: any
+  let repository: Repository
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], { type: EntityType.SCENE })
@@ -26,13 +29,19 @@ describe('Integration - Snapshot Manager', () => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    const { env } = await new EnvironmentBuilder(baseEnv)
+    const { env, components } = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
       .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
-
+    db = components.database
     service = env.getBean(Bean.SERVICE)
     snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
+    repository = env.getBean(Bean.REPOSITORY)
+  })
+
+  afterEach(async () => {
+    await db?.stop()
+    await repository.shutdown()
   })
 
   /**

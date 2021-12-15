@@ -3,6 +3,7 @@ import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
+import { Repository } from '../../../../src/repository/Repository'
 import { GarbageCollectionManager } from '../../../../src/service/garbage-collection/GarbageCollectionManager'
 import { MetaverseContentService } from '../../../../src/service/Service'
 import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
@@ -25,6 +26,8 @@ describe('Integration - Garbage Collection', () => {
   const testEnv = loadStandaloneTestEnvironment()
   let service: MetaverseContentService
   let garbageCollector: GarbageCollectionManager
+  let db: any
+  let repository: Repository
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], {
@@ -39,18 +42,21 @@ describe('Integration - Garbage Collection', () => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    const { env } = await new EnvironmentBuilder(baseEnv)
+    const { env, components } = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
       .withBean(Bean.VALIDATOR, new NoOpValidator())
       .build()
-
+    db = components.database
+    repository = env.getBean<Repository>(Bean.REPOSITORY)
     service = env.getBean(Bean.SERVICE)
     garbageCollector = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
   })
 
   afterEach(async () => {
     await garbageCollector?.stop()
+    await db?.stop()
+    await repository?.shutdown()
   })
 
   it(`When garbage collection is on, then unused content is deleted`, async () => {
