@@ -127,7 +127,7 @@ export class AccessCheckerForScenes {
         (await this.hasAccessThroughAuthorizations(estate.owners[0].address, ethAddress, timestamp))
       )
     }
-    return false
+    throw new Error(`Couldn\'t find the state ${estateId}`)
   }
 
   private async hasAccessThroughFirstLevelAuthorities(
@@ -226,10 +226,10 @@ export class AccessCheckerForScenes {
 
       if (r.parcels && r.parcels.length) return r.parcels[0]
 
-      this.LOGGER.error(`Error fetching parcel (${x}, ${y}): ${JSON.stringify(r)}`)
-      throw new Error(`Error fetching parcel (${x}, ${y})`)
+      this.LOGGER.error(`Error fetching parcel (${x}, ${y}, ${timestamp}): ${JSON.stringify(r)}`)
+      throw new Error(`Error fetching parcel (${x}, ${y}), ${timestamp}`)
     } catch (error) {
-      this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
+      this.LOGGER.error(`Error fetching parcel (${x}, ${y}, ${timestamp})`, error)
       throw error
     }
   }
