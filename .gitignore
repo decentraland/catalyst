@@ -10,3 +10,4 @@ local/nginx/conf.d/00-katalyst.conf
 tmpbin
 linked-peer-package
 **/tsconfig.tsbuildinfo
+storage_*/**
