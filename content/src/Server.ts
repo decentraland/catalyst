@@ -32,7 +32,7 @@ export class Server {
   private httpServer: http.Server
   private readonly synchronizationManager: SynchronizationManager
   private readonly garbageCollectionManager: GarbageCollectionManager
-  private readonly snapshotManager: SnapshotManager
+  private readonly snapshotManager?: SnapshotManager
   private readonly migrationManager: MigrationManager
   private readonly service: MetaverseContentService
   private readonly repository: Repository
@@ -171,8 +171,10 @@ export class Server {
     await this.components.batchDeployer.start()
 
     // generate snapshots before starting the server
-    const { stop } = await this.snapshotManager.startCalculateFullSnapshots()
-    this.stopSnapshots = stop
+    if (this.snapshotManager) {
+      const { stop } = await this.snapshotManager.startCalculateFullSnapshots()
+      this.stopSnapshots = stop
+    }
 
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')

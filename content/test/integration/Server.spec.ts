@@ -34,7 +34,7 @@ describe('Integration - Server', function () {
   const port = 8080
   const address: string = `http://localhost:${port}`
 
-  beforeAll(async () => {
+  it('starts the server', async () => {
     const service = new MockedMetaverseContentServiceBuilder()
       .withEntity(entity1)
       .withEntity(entity2)
