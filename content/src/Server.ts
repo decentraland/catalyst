@@ -32,10 +32,12 @@ export class Server {
   private httpServer: http.Server
   private readonly synchronizationManager: SynchronizationManager
   private readonly garbageCollectionManager: GarbageCollectionManager
-  private readonly snapshotManager: SnapshotManager
+  private readonly snapshotManager?: SnapshotManager
   private readonly migrationManager: MigrationManager
   private readonly service: MetaverseContentService
   private readonly repository: Repository
+
+  private stopSnapshots?: () => Promise<any>
 
   constructor(env: Environment, private components: Pick<AppComponents, 'database'>) {
     // Set logger
@@ -168,8 +170,10 @@ export class Server {
     await this.service.start()
 
     // generate snapshots before starting the server
-    await this.snapshotManager.startSnapshotsPerEntity()
-    await this.snapshotManager.startCalculateFullSnapshots()
+    if (this.snapshotManager) {
+      const { stop } = await this.snapshotManager.startCalculateFullSnapshots()
+      this.stopSnapshots = stop
+    }
 
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')
@@ -184,6 +188,7 @@ export class Server {
 
   async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
+
     if (this.httpServer) {
       await this.closeHTTPServer()
     }
@@ -191,7 +196,10 @@ export class Server {
       await this.metricsServer.stop()
     }
 
-    this.snapshotManager.stopCalculateFullSnapshots()
+    if (this.stopSnapshots) {
+      await this.stopSnapshots()
+      delete this.stopSnapshots
+    }
 
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) await this.stopDB()
