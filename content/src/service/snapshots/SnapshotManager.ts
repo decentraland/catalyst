@@ -20,7 +20,7 @@ export class SnapshotManager {
 
   private LOGGER: ILoggerComponent.ILogger
 
-  private running = true
+  private running = false
   private generatedSnapshots = 0
 
   constructor(
@@ -47,6 +47,8 @@ export class SnapshotManager {
   }
 
   async snapshotGenerationJob() {
+    if (this.running) return
+    this.running = true
     while (this.running) {
       try {
         await this.generateSnapshots()
@@ -57,6 +59,7 @@ export class SnapshotManager {
 
       await delay(this.snapshotFrequencyInMilliSeconds)
     }
+    this.running = false
   }
 
   stopCalculateFullSnapshots(): void {
