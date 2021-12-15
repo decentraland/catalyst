@@ -1,8 +1,8 @@
 import { delay } from '@catalyst/commons'
 import { checkFileExists, hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
-import log4js from 'log4js'
 import * as path from 'path'
 import { streamActiveDeployments } from '../../logic/snapshots-queries'
 import { compressContentFile } from '../../storage/compression'
@@ -17,15 +17,17 @@ export class SnapshotManager {
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private running = true
 
-  static readonly LOGGER = log4js.getLogger('SnapshotManager')
-
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
 
+  private LOGGER: ILoggerComponent.ILogger
+
   constructor(
-    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs'>,
+    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
     private readonly service: MetaverseContentService,
     private readonly snapshotFrequencyInMilliSeconds: number
-  ) {}
+  ) {
+    this.LOGGER = components.logs.getLogger('SnapshotManager')
+  }
 
   async startCalculateFullSnapshots(): Promise<void> {
     // start async job
@@ -46,9 +48,9 @@ export class SnapshotManager {
     while (this.running) {
       try {
         await this.generateSnapshots()
-        SnapshotManager.LOGGER.info('Generated full snapshot')
+        this.LOGGER.info('Generated full snapshot')
       } catch (e: any) {
-        SnapshotManager.LOGGER.error(e)
+        this.LOGGER.error(e)
       }
 
       await delay(this.snapshotFrequencyInMilliSeconds)
@@ -105,7 +107,7 @@ export class SnapshotManager {
     // Store the metadata
     this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp })
     // Log
-    SnapshotManager.LOGGER.debug(
+    this.LOGGER.debug(
       `Generated snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
     )
 
@@ -142,17 +144,20 @@ export class SnapshotManager {
       await fileWriterComponent.closeAllOpenFiles()
     }
 
+    this.LOGGER.debug('Phase 1 complete')
+
     // Phase 2) hash generated files and move them to content folder
     try {
       // compress and commit
       for (const [entityType, { fileName, inMemoryArray }] of fileWriterComponent.allFiles) {
+        this.LOGGER.debug('Phase 2) starting ' + entityType.toString())
         // legacy format
         try {
           if (entityType !== ALL_ENTITIES) {
             await this.generateLegacySnapshotPerEntityType(entityType, inMemoryArray)
           }
         } catch (e: any) {
-          SnapshotManager.LOGGER.error(e)
+          this.LOGGER.error(e)
         }
 
         const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
@@ -172,7 +177,7 @@ export class SnapshotManager {
       }
     } catch (err: any) {
       stopTimer({ failed: 'true' })
-      SnapshotManager.LOGGER.error(err)
+      this.LOGGER.error(err)
     } finally {
       stopTimer({ failed: 'false' })
       for (const [_, { fileName }] of fileWriterComponent.allFiles) {
@@ -186,7 +191,7 @@ export class SnapshotManager {
       try {
         await fs.promises.unlink(tmpFile)
       } catch (err) {
-        SnapshotManager.LOGGER.error(err)
+        this.LOGGER.error(err)
       }
     }
   }
@@ -196,7 +201,7 @@ export class SnapshotManager {
     // still using the content files
     setTimeout(() => {
       if (previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
-        this.service.deleteContent([previousHash]).catch(SnapshotManager.LOGGER.error)
+        this.service.deleteContent([previousHash]).catch(this.LOGGER.error)
       }
     }, 2 * 60000)
   }
@@ -215,12 +220,12 @@ export class SnapshotManager {
     if (!hasContent) {
       // move and compress the file into the destinationFilename
       await this.service.storeContent(options.hash, fs.createReadStream(tmpFile))
-      SnapshotManager.LOGGER.info(
+      this.LOGGER.info(
         `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
       )
       await compressContentFile(destinationFilename)
     } else {
-      SnapshotManager.LOGGER.debug(
+      this.LOGGER.debug(
         `Snapshot didn't change. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
       )
     }
@@ -241,7 +246,7 @@ function createFileWriterComponent() {
     EntityType | ALL_ENTITIES,
     {
       file: fs.WriteStream
-      fileClosedFuture: Promise<void>
+      close: () => Promise<void>
       fileName: string
       inMemoryArray: Array<[string, string[]]>
     }
@@ -255,9 +260,8 @@ function createFileWriterComponent() {
   }
 
   async function closeAllOpenFiles() {
-    for (const [_, { file, fileClosedFuture }] of allFiles) {
-      file.close()
-      await fileClosedFuture
+    for (const [_, { close }] of allFiles) {
+      await close()
     }
   }
 
@@ -281,7 +285,10 @@ function createFileWriterComponent() {
 
     const ret = {
       file,
-      fileClosedFuture,
+      async close() {
+        file.close()
+        await fileClosedFuture
+      },
       fileName,
       inMemoryArray: []
     }
