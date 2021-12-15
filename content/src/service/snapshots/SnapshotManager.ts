@@ -124,8 +124,8 @@ export class SnapshotManager {
 
     const fileWriterComponent = createFileWriterComponent()
 
+    // Phase 1) iterate all active deployments and write to files
     try {
-      // iterate all active deployments and write to files
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
         const str = JSON.stringify(snapshotElem) + '\n'
 
@@ -142,6 +142,7 @@ export class SnapshotManager {
       await fileWriterComponent.closeAllOpenFiles()
     }
 
+    // Phase 2) hash generated files and move them to content folder
     try {
       // compress and commit
       for (const [entityType, { fileName, inMemoryArray }] of fileWriterComponent.allFiles) {
