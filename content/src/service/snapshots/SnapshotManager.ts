@@ -40,7 +40,6 @@ export class SnapshotManager {
 
         try {
           await this.generateSnapshots()
-          this.LOGGER.info('Generated full snapshot')
         } catch (e: any) {
           this.LOGGER.error(e)
         }
