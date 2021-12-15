@@ -57,6 +57,7 @@ describe('Integration - Server', function () {
     const controller = ControllerFactory.create(env)
     env.registerBean(Bean.CONTROLLER, controller)
 
+
     const batchDeployer: IDeployerComponent & { start(): Promise<void> } = {
       async deployEntity() {},
       async onIdle() {},
@@ -64,6 +65,7 @@ describe('Integration - Server', function () {
     }
 
     server = new Server(env, { database: createTestDatabaseComponent(), batchDeployer })
+
     await server.start()
   })
 
