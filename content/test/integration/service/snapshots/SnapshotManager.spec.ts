@@ -51,8 +51,9 @@ describe('Integration - Snapshot Manager', () => {
   it(`When snapshot manager starts the full snapshots, then full snapshots are generated`, async () => {
     // Deploy E1 and E2
     const deploymentResult = await deployEntitiesCombo(service, E1, E2)
-    // Start the snapshot manager
-    await snapshotManager.startCalculateFullSnapshots()
+
+    // force snapshot generation
+    await snapshotManager.snapshotGenerationJob()
 
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
@@ -66,8 +67,9 @@ describe('Integration - Snapshot Manager', () => {
   it(`When snapshot manager starts the full snapshots, then entity type snapshots are generated`, async () => {
     // Deploy E1 and E2 scenes
     const deploymentResult = await deployEntitiesCombo(service, E1, E2)
-    // Start the snapshot manager
-    await snapshotManager.startCalculateFullSnapshots()
+
+    // force snapshot generation
+    await snapshotManager.snapshotGenerationJob()
 
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
@@ -84,8 +86,9 @@ describe('Integration - Snapshot Manager', () => {
   it(`Given no deployments for entity type, When snapshot manager starts the full snapshots, then entity type snapshots is created with no timestamp`, async () => {
     // Deploy E1 and E2 scenes
     await deployEntitiesCombo(service, E1, E2)
-    // Start the snapshot manager
-    await snapshotManager.startCalculateFullSnapshots()
+
+    // force snapshot generation
+    await snapshotManager.snapshotGenerationJob()
 
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
@@ -97,8 +100,8 @@ describe('Integration - Snapshot Manager', () => {
     // Assert there is no snapshot
     expect(snapshotManager.getFullSnapshotMetadata()).toBeUndefined()
 
-    // Start the snapshot manager
-    await snapshotManager.startCalculateFullSnapshots()
+    // force snapshot generation
+    await snapshotManager.snapshotGenerationJob()
 
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
