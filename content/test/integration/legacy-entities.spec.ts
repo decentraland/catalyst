@@ -45,22 +45,6 @@ describe('End 2 end - Legacy Entities', () => {
     await deployLegacy(server, deployData)
   })
 
-  it(`When a user tries to deploy a legacy entity over an entity with a higher version, then an error is thrown`, async () => {
-    // Prepare entity to deploy
-    const { deployData: deployData1 } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity })
-
-    // Deploy entity with current version
-    await server.deploy(deployData1)
-
-    // Prepare new entity to deploy
-    const { deployData: deployData2 } = await buildDeployData(['0,1'], { metadata: 'metadata', identity })
-
-    // Deploy the entity
-    await assertPromiseRejectionIs(
-      () => deployLegacy(server, deployData2),
-      'Found an overlapping entity with a higher version already deployed.'
-    )
-  })
 })
 
 async function deployLegacy(server: TestServer, deployData: DeploymentData) {
