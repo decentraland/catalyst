@@ -53,7 +53,7 @@ describe('Integration - Snapshot Manager', () => {
     const deploymentResult = await deployEntitiesCombo(service, E1, E2)
 
     // force snapshot generation
-    await snapshotManager.snapshotGenerationJob()
+    await snapshotManager.generateSnapshots()
 
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
@@ -69,7 +69,7 @@ describe('Integration - Snapshot Manager', () => {
     const deploymentResult = await deployEntitiesCombo(service, E1, E2)
 
     // force snapshot generation
-    await snapshotManager.snapshotGenerationJob()
+    await snapshotManager.generateSnapshots()
 
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
@@ -88,7 +88,7 @@ describe('Integration - Snapshot Manager', () => {
     await deployEntitiesCombo(service, E1, E2)
 
     // force snapshot generation
-    await snapshotManager.snapshotGenerationJob()
+    await snapshotManager.generateSnapshots()
 
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()
 
@@ -101,7 +101,7 @@ describe('Integration - Snapshot Manager', () => {
     expect(snapshotManager.getFullSnapshotMetadata()).toBeUndefined()
 
     // force snapshot generation
-    await snapshotManager.snapshotGenerationJob()
+    await snapshotManager.generateSnapshots()
 
     // Assert snapshot was created
     const snapshotMetadata = snapshotManager.getFullSnapshotMetadata()

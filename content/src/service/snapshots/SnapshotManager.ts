@@ -122,7 +122,7 @@ export class SnapshotManager {
     }
   }
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
-  private async generateSnapshots(): Promise<void> {
+  async generateSnapshots(): Promise<void> {
     const { end: stopTimer } = this.components.metrics.startTimer('dcl_content_snapshot_generation_time', {
       entity_type: ALL_ENTITIES.toString()
     })
