@@ -52,7 +52,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
   private historySize: number = 0
 
-  private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(2020, 1, 20) // DCL Launch Day
+  private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
   constructor(
     private readonly storage: ServiceStorage,
