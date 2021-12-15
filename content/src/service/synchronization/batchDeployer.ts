@@ -104,7 +104,7 @@ export function createBatchDeployerComponent(
     logs.info(`Bloom filter recreated.`, { timeMs: Date.now() - start, elements })
   }
 
-  // TODO: every now and then cleanup the deploymentsMap of old deployments
+  // TODO: [new-sync] every now and then cleanup the deploymentsMap of old deployments
 
   return {
     async start() {

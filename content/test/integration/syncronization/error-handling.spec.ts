@@ -37,15 +37,15 @@ describe('End 2 end - Error handling', () => {
     accessChecker.stopReturningErrors()
   })
 
-  // TODO: FIX
+  // TODO: [new-sync] FIX
   xit(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    // TODO: Check this error
+    // TODO: [new-sync] Check this error
     await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) =>
       server1.denylistContent(entity.content![0].hash, identity)
     )
   })
 
-  // TODO: Fix
+  // TODO: [new-sync] Fix
   xit(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
     await runTest(
       FailureReason.DEPLOYMENT_ERROR,
@@ -60,7 +60,7 @@ describe('End 2 end - Error handling', () => {
     )
   })
 
-  //TODO: Check if this test makes sense or not
+  //TODO: [new-sync] Check if this test makes sense or not
   xit(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
     // Start servers
     await Promise.all([server1.start(), server2.start()])
@@ -137,7 +137,7 @@ describe('End 2 end - Error handling', () => {
   })
 
   it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    // TODO: Check this error
+    // TODO: [new-sync] Check this error
     await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) => server1.denylistEntity(entity, identity))
   })
 

@@ -148,7 +148,7 @@ export class SnapshotManager {
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
-        // TODO: filter out denylisted entities
+        // TODO: [new-sync] filter out denylisted entities
 
         const str = JSON.stringify(snapshotElem) + '\n'
 

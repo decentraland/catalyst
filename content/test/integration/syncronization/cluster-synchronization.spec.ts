@@ -93,6 +93,7 @@ describe('End 2 end synchronization tests', function () {
    * only E3 should be present on all servers.
    *
    */
+  // TODO: [new-sync]
   xit("When a lost update is detected, previous entities are deleted but new ones aren't", async () => {
     // Start server 2
     await Promise.all([server2.start()])

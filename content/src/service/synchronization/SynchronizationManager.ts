@@ -32,7 +32,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   constructor(
     public components: ContentSyncComponents,
     private readonly cluster: ContentCluster,
-    private readonly disableSynchronization: boolean // TODO: put this in components
+    private readonly disableSynchronization: boolean // TODO: [new-sync] put this in components
   ) {}
 
   async start(): Promise<void> {
@@ -124,7 +124,6 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
           )
         } catch {}
       } else {
-        // TODO: get the authChain from the catalysts
         ClusterSynchronizationManager.LOGGER.info(
           `Can't retry failed deployment: '${entityId}' because it lacks of authChain`
         )
@@ -134,7 +133,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
 
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
-      // TODO: Make this configurable
+      // TODO: [new-sync] Make this configurable
       await delay(ms('15m'))
       await this.retryFailedDeploymentExecution()
     }

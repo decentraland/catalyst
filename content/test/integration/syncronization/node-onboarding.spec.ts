@@ -18,6 +18,7 @@ describe('End 2 end - Node onboarding', function () {
     ;[server1, server2, server3] = await testEnv.configServer('1s').andBuildMany(3)
   })
 
+  // TODO: [new-sync]
   xit('When a node starts, it does not get all the previous history', async () => {
     // Start server 1 and 2
     await Promise.all([server1.start(), server2.start()])

@@ -47,7 +47,7 @@ export class ContentCluster implements IdentityProvider {
     this.allServersInDAO = await this.dao.getAllContentServers()
 
     // Detect my own identity
-    // TODO: Make this configurable, and default 10
+    // TODO: [new-sync] Make this configurable, and default 10
     await this.detectMyIdentity(3)
 
     // Perform first sync with the DAO
@@ -69,8 +69,8 @@ export class ContentCluster implements IdentityProvider {
   getStatus() {
     const otherServers = Array.from(this.serverClients.entries()).map(([baseUrl, client]) => ({
       baseUrl,
-      connectionState: ConnectionState.NEVER_REACHED, // TODO
-      lastDeploymentTimestamp: 0 // TODO
+      connectionState: ConnectionState.NEVER_REACHED, // TODO: [new-sync]
+      lastDeploymentTimestamp: 0 // TODO: [new-sync]
     }))
 
     return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
