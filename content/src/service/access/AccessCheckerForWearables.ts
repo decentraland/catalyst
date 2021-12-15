@@ -1,6 +1,12 @@
-import { BlockchainCollectionV2Asset, parseUrn } from '@dcl/urn-resolver'
+import {
+  BlockchainCollectionV1Asset,
+  BlockchainCollectionV2Asset,
+  DecentralandAssetIdentifier,
+  parseUrn
+} from '@dcl/urn-resolver'
 import { Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
+import isEqual from 'lodash.isequal'
 import log4js from 'log4js'
 import ms from 'ms'
 import { AccessParams } from './AccessChecker'
@@ -21,36 +27,59 @@ export class AccessCheckerForWearables {
   public async checkAccess({ pointers, ...accessParams }: WearablesAccessParams): Promise<string[]> {
     const errors: string[] = []
 
-    if (pointers.length !== 1) {
+    const resolvedPointers: DecentralandAssetIdentifier[] = []
+
+    // deduplicate pointer resolution
+    for (const pointer of pointers) {
+      const parsed = await this.parseUrnNoFail(pointer)
+      if (parsed) {
+        if (!resolvedPointers.some(($) => isEqual($, parsed))) {
+          resolvedPointers.push(parsed)
+        }
+      } else {
+        errors.push(
+          `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
+        )
+      }
+    }
+
+    if (resolvedPointers.length && resolvedPointers.length !== 1) {
       errors.push(`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`)
-    } else {
+    }
+
+    if (errors.length == 0 && resolvedPointers.length) {
       const pointer: Pointer = pointers[0].toLowerCase()
       const parsed = await this.parseUrnNoFail(pointer)
       if (parsed) {
         const { contractAddress: collection, id: itemId, network } = parsed
         let collectionsSubgraphUrl: string
         let blocksSubgraphUrl: string
-        if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
-          collectionsSubgraphUrl = this.collectionsL1SubgraphUrl
-          blocksSubgraphUrl = this.blocksL1SubgraphUrl
-        } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
-          collectionsSubgraphUrl = this.collectionsL2SubgraphUrl
-          blocksSubgraphUrl = this.blocksL2SubgraphUrl
-        } else {
-          errors.push(`Found an unknown network on the urn '${network}'`)
-          return errors
-        }
 
-        // Check that the address has access
-        const hasAccess = await this.checkCollectionAccess(
-          blocksSubgraphUrl,
-          collectionsSubgraphUrl,
-          collection,
-          itemId,
-          accessParams
-        )
-        if (!hasAccess) {
-          errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
+        if (collection) {
+          if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
+            collectionsSubgraphUrl = this.collectionsL1SubgraphUrl
+            blocksSubgraphUrl = this.blocksL1SubgraphUrl
+          } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
+            collectionsSubgraphUrl = this.collectionsL2SubgraphUrl
+            blocksSubgraphUrl = this.blocksL2SubgraphUrl
+          } else {
+            errors.push(`Found an unknown network on the urn '${network}'`)
+            return errors
+          }
+
+          // Check that the address has access
+          const hasAccess = await this.checkCollectionAccess(
+            blocksSubgraphUrl,
+            collectionsSubgraphUrl,
+            collection,
+            itemId,
+            accessParams
+          )
+          if (!hasAccess) {
+            errors.push(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
+          }
+        } else {
+          errors.push(`Could not resolve the contractAddress of the urn ${pointer}`)
         }
       } else {
         errors.push(
@@ -61,11 +90,14 @@ export class AccessCheckerForWearables {
     return errors
   }
 
-  private async parseUrnNoFail(urn: string): Promise<BlockchainCollectionV2Asset | null> {
+  private async parseUrnNoFail(urn: string): Promise<BlockchainCollectionV1Asset | BlockchainCollectionV2Asset | null> {
     try {
       const parsed = await parseUrn(urn)
+      if (parsed?.type === 'blockchain-collection-v1-asset') {
+        return parsed
+      }
       if (parsed?.type === 'blockchain-collection-v2-asset') {
-        return parsed as BlockchainCollectionV2Asset
+        return parsed
       }
     } catch {}
     return null

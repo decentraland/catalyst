@@ -1,7 +1,6 @@
-import { ContentFileHash, DeploymentFilters, EntityId, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityId, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { AccessChecker } from '../access/AccessChecker'
 import { ContentAuthenticator } from '../auth/Authenticator'
-import { Deployment } from '../deployments/DeploymentManager'
 import { Entity } from '../Entity'
 import { DeploymentStatus } from '../errors/FailedDeploymentsManager'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'
@@ -73,7 +72,6 @@ export type ServerEnvironment = {
 }
 
 export type ExternalCalls = {
-  fetchDeployments: (filters: DeploymentFilters) => Promise<{ deployments: Deployment[] }>
   areThereNewerEntities: (entity: Entity) => Promise<boolean>
   fetchDeploymentStatus: (entityType: EntityType, entityId: EntityId) => Promise<DeploymentStatus>
   isContentStoredAlready: (hashes: ContentFileHash[]) => Promise<Map<ContentFileHash, boolean>>

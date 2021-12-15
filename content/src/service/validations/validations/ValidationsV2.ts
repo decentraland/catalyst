@@ -7,7 +7,5 @@ export const VALIDATIONS_V2: ValidationsForContext = {
   [DeploymentContext.LOCAL_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS],
   [DeploymentContext.SYNCED]: [Validations.FAIL_ALWAYS],
   [DeploymentContext.SYNCED_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS],
-  [DeploymentContext.OVERWRITTEN]: [Validations.FAIL_ALWAYS],
-  [DeploymentContext.OVERWRITTEN_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS],
   [DeploymentContext.FIX_ATTEMPT]: [Validations.FAIL_ALWAYS]
 }

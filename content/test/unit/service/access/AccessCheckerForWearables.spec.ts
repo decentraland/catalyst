@@ -19,7 +19,22 @@ describe('AccessCheckerForWearables', () => {
   })
 
   it(`When there is more than one pointer set, then validation fails`, async () => {
-    const pointers = ['pointer1', 'pointer2']
+    const pointers = [
+      'urn:decentraland:ethereum:collections-v1:atari_launch:a',
+      'urn:decentraland:ethereum:collections-v1:atari_launch:b'
+    ]
+    const accessChecker = buildAccessChecker()
+
+    const errors = await checkAccess(accessChecker, { pointers })
+
+    expect(errors).toEqual([`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`])
+  })
+
+  it(`When several pointers resolve to the same URN then accept both`, async () => {
+    const pointers = [
+      'urn:decentraland:ethereum:collections-v1:atari_launch:atari_red_upper_body',
+      'urn:decentraland:ethereum:collections-v1:0x4c290f486bae507719c562b6b524bdb71a2570c9:atari_red_upper_body'
+    ]
     const accessChecker = buildAccessChecker()
 
     const errors = await checkAccess(accessChecker, { pointers })

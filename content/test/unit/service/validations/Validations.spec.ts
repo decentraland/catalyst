@@ -131,7 +131,6 @@ async function assertSignatureInInvalid(result: undefined | string[] | Promise<u
   expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
 }
 
-
 async function assertErrorsWere(
   result: undefined | string[] | Promise<undefined | string[]>,
   ...expectedErrors: string[]
@@ -169,7 +168,6 @@ function buildArgs(args: {
       ...args?.env
     },
     externalCalls: {
-      fetchDeployments: () => Promise.resolve({ deployments: [] }),
       areThereNewerEntities: () => Promise.resolve(false),
       fetchDeploymentStatus: () => Promise.resolve(NoFailure.NOT_MARKED_AS_FAILED),
       isContentStoredAlready: (hashes) => Promise.resolve(new Map(hashes.map((hash) => [hash, false]))),

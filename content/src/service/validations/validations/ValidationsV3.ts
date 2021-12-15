@@ -42,20 +42,6 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.CONTENT_V3,
     Validations.DECENTRALAND_ADDRESS
   ],
-  // This is during synchronization when a deployment needs to  be done, but you already have a newer which overwrites it.
-  // So, at this moment the files from the entity of the overwritten deployment are not download.
-  [DeploymentContext.OVERWRITTEN]: [
-    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
-    Validations.SIGNATURE,
-    Validations.ACCESS,
-    Validations.ENTITY_STRUCTURE
-  ],
-  [DeploymentContext.OVERWRITTEN_LEGACY_ENTITY]: [
-    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
-    Validations.SIGNATURE,
-    Validations.ENTITY_STRUCTURE,
-    Validations.DECENTRALAND_ADDRESS
-  ],
   // This context is used only when running the fix deployments script
   [DeploymentContext.FIX_ATTEMPT]: [
     // TODO: Add limit so that v3 entities can only be deployed up to a certain date

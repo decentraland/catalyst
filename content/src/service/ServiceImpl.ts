@@ -200,7 +200,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
           // Prepare validation functions that need context
           const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
-            fetchDeployments: (filters) => this.getDeployments({ filters }, transaction),
             areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
             fetchDeploymentStatus: (type, id) =>
               this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
