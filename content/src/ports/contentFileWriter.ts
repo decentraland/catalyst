@@ -7,7 +7,7 @@ import { AppComponents } from 'src/types'
 // it also has a buffering algorithm to write to disk less often and reduce IO latency
 
 export type IContentFileWriterComponent<T> = {
-  allFiles: Map<T, IContentFileWriterComponent.FileInterface>
+  allFiles: Map<T, FileInterface>
   /**
    * Append is debounced. Often the contents of the files are only written after `await close()`
    */
@@ -17,12 +17,10 @@ export type IContentFileWriterComponent<T> = {
   deleteAllFiles: () => Promise<void>
 }
 
-export namespace IContentFileWriterComponent {
-  export type FileInterface = {
-    close: () => Promise<void>
-    appendDebounced: (buffer: string) => Promise<void>
-    fileName: string
-  }
+export type FileInterface = {
+  close: () => Promise<void>
+  appendDebounced: (buffer: string) => Promise<void>
+  fileName: string
 }
 
 export function createContentFileWriterComponent<T extends symbol | string>(
@@ -30,7 +28,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
 ): IContentFileWriterComponent<T> {
   const logger = components.logs.getLogger('ContentFileWriter')
 
-  const allFiles: Map<T, IContentFileWriterComponent.FileInterface> = new Map()
+  const allFiles: Map<T, FileInterface> = new Map()
 
   function fileNameFromType(type: T): string {
     return path.resolve(

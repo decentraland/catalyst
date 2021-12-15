@@ -82,7 +82,7 @@ export class AccessCheckerForScenes {
       )
     } catch (error) {
       this.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress}).`, error)
-      return false
+      throw error
     }
   }
 
@@ -112,7 +112,7 @@ export class AccessCheckerForScenes {
         (belongsToEstate && (await this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress)))
       )
     }
-    return false
+    throw new Error(`Parcel(${x},${y},${timestamp}) not found`)
   }
 
   private async isEstateUpdateAuthorized(
