@@ -5,9 +5,17 @@ import ms from 'ms'
 import { clearTimeout, setTimeout } from 'timers'
 import { ChallengeSupervisor, ChallengeText } from './ChallengeSupervisor'
 import { ConnectionState, ContentServerClient } from './clients/ContentServerClient'
-import { shuffleArray } from './ClusterUtils'
+
 export interface IdentityProvider {
   getIdentityInDAO(): ServerIdentity | undefined
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
 }
 
 export class ContentCluster implements IdentityProvider {

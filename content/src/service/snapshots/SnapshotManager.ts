@@ -1,10 +1,11 @@
 import { delay } from '@catalyst/commons'
-import { checkFileExists, hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
+import { hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import * as path from 'path'
 import { streamActiveDeployments } from '../../logic/snapshots-queries'
+import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { compressContentFile } from '../../storage/compression'
 import { AppComponents } from '../../types'
 import { MetaverseContentService } from '../Service'
@@ -15,12 +16,11 @@ type ALL_ENTITIES = typeof ALL_ENTITIES
 export class SnapshotManager {
   /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
-  private running = true
-
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
 
   private LOGGER: ILoggerComponent.ILogger
 
+  private running = true
   private generatedSnapshots = 0
 
   constructor(
@@ -124,55 +124,57 @@ export class SnapshotManager {
       entity_type: ALL_ENTITIES.toString()
     })
 
-    const fileWriterComponent = createFileWriterComponent(this.components.staticConfigs.contentStorageFolder)
+    const fileWriterComponent = createContentFileWriterComponent<EntityType | ALL_ENTITIES>(this.components)
 
-    const timestamps: Record<string | symbol, number> = {}
+    // this header is necessary to later differentiate between binary formats and non-binary formats
+    const FILE_HEADER = '### Decentraland json snapshot\n'
 
-    // Phase 0) pre-open all the files
-    await fileWriterComponent.openFile(ALL_ENTITIES)
+    // Phase 1) pre-open all the files and write the headers
+    await fileWriterComponent.appendToFile(ALL_ENTITIES, FILE_HEADER)
     for (const entityType of Object.keys(EntityType)) {
-      await fileWriterComponent.openFile(EntityType[entityType])
+      await fileWriterComponent.appendToFile(EntityType[entityType], FILE_HEADER)
     }
 
+    const timestamps: Record<string | symbol, number> = {}
     function increaseTimestamp(type: symbol | string, timestamp: number) {
       timestamps[type] = timestamps[type] || 0
       if (timestamps[type] < timestamp) timestamps[type] = timestamp
     }
 
-    // Phase 1) iterate all active deployments and write to files
+    const inMemoryArrays: Partial<Record<EntityType, Array<[string, string[]]>>> = {}
+    function appendToInMemoryArray(type: EntityType, tuple: [string, string[]]) {
+      const array = (inMemoryArrays[type] = inMemoryArrays[type] || [])
+      array.push(tuple)
+    }
+
+    // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
         const str = JSON.stringify(snapshotElem) + '\n'
 
-        // global snapshot
+        // update ALL_ENTITIES timestamp
         increaseTimestamp(ALL_ENTITIES, snapshotElem.localTimestamp)
-        await fileWriterComponent.writeToFile(ALL_ENTITIES, str)
 
-        // entity-type snapshot
+        // write deployment to ALL_ENTITIES file
+        await fileWriterComponent.appendToFile(ALL_ENTITIES, str)
+
+        // update entityType timestamp
         increaseTimestamp(snapshotElem.entityType, snapshotElem.localTimestamp)
-        const { inMemoryArray } = await fileWriterComponent.writeToFile(snapshotElem.entityType as EntityType, str)
-        // legacy format
-        inMemoryArray.unshift([snapshotElem.entityId, snapshotElem.pointers])
+
+        // write deployment to entityType file
+        await fileWriterComponent.appendToFile(snapshotElem.entityType as EntityType, str)
+
+        // add the entoty to the inMemoryArray to be used by the legacy formatter
+        appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
       }
     } finally {
-      await fileWriterComponent.closeAllOpenFiles()
+      await fileWriterComponent.flushToDiskAndCloseFiles()
     }
 
-    this.LOGGER.debug('Phase 1 complete')
-
-    // Phase 2) hash generated files and move them to content folder
+    // Phase 3) hash generated files and move them to content folder
     try {
       // compress and commit
-      for (const [entityType, { fileName, inMemoryArray }] of fileWriterComponent.allFiles) {
-        // legacy format
-        try {
-          if (entityType !== ALL_ENTITIES) {
-            await this.generateLegacySnapshotPerEntityType(entityType, inMemoryArray)
-          }
-        } catch (e: any) {
-          this.LOGGER.error(e)
-        }
-
+      for (const [entityType, { fileName }] of fileWriterComponent.allFiles) {
         const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
 
         // Hash the snapshot
@@ -185,39 +187,37 @@ export class SnapshotManager {
         const newSnapshot = { hash, lastIncludedDeploymentTimestamp: timestamps[entityType] || 0 }
         this.lastSnapshotsPerEntityType.set(entityType, newSnapshot)
 
-        // Delete the previous full snapshot (if it exists)
-        this.removePreviousSnapshotFile(previousHash)
+        // Delete the previous full snapshot (if it exists and is different than the brand new file)
+        if (previousHash && previousHash != hash) {
+          this.removePreviousSnapshotFile(previousHash)
+        }
+
+        // dump legacy format
+        if (entityType !== ALL_ENTITIES && inMemoryArrays[entityType]) {
+          try {
+            await this.generateLegacySnapshotPerEntityType(entityType, inMemoryArrays[entityType]!)
+          } catch (e: any) {
+            this.LOGGER.error(e)
+          }
+        }
       }
     } catch (err: any) {
       stopTimer({ failed: 'true' })
       this.LOGGER.error(err)
     } finally {
       stopTimer({ failed: 'false' })
-      for (const [_, { fileName }] of fileWriterComponent.allFiles) {
-        await this.deleteStagingFile(fileName)
-      }
     }
+
+    await fileWriterComponent.deleteAllFiles()
 
     this.generatedSnapshots++
   }
 
-  private async deleteStagingFile(tmpFile: string) {
-    if (await checkFileExists(tmpFile)) {
-      try {
-        await fs.promises.unlink(tmpFile)
-      } catch (err) {
-        this.LOGGER.error(err)
-      }
-    }
-  }
-
-  private removePreviousSnapshotFile(previousHash: string | undefined) {
+  private removePreviousSnapshotFile(previousHash: string) {
     // the deletion of the files is deferred two minutes because there may be peers
     // still using the content files
     setTimeout(() => {
-      if (previousHash && this.shouldPrunePreviousSnapshot(previousHash)) {
-        this.service.deleteContent([previousHash]).catch(this.LOGGER.error)
-      }
+      this.service.deleteContent([previousHash]).catch(this.LOGGER.error)
     }, 2 * 60000)
   }
 
@@ -245,92 +245,7 @@ export class SnapshotManager {
       )
     }
   }
-
-  private shouldPrunePreviousSnapshot(previousHash: string): boolean {
-    const oldMetadata = this.lastSnapshotsPerEntityType.get(ALL_ENTITIES)
-    return !!oldMetadata && oldMetadata.hash !== previousHash
-  }
 }
 
 export type SnapshotMetadata = { hash: ContentFileHash; lastIncludedDeploymentTimestamp: Timestamp }
 export type FullSnapshotMetadata = SnapshotMetadata & { entities: Record<string, SnapshotMetadata> }
-
-// this component opens file descriptors and enables us to write to them and close all the FD at once
-function createFileWriterComponent(rootFolder: string) {
-  const allFiles: Map<
-    EntityType | ALL_ENTITIES,
-    {
-      close: () => Promise<void>
-      write: (buffer: string) => Promise<void>
-      fileName: string
-      inMemoryArray: Array<[string, string[]]>
-    }
-  > = new Map()
-
-  function fileNameFromType(type: EntityType | ALL_ENTITIES): string {
-    return path.resolve(rootFolder, `tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : type}`)
-  }
-
-  async function closeAllOpenFiles() {
-    for (const [_, { close }] of allFiles) {
-      await close()
-    }
-  }
-
-  async function getFile(type: EntityType | ALL_ENTITIES) {
-    if (allFiles.has(type)) return allFiles.get(type)!
-
-    const fileName = fileNameFromType(type)
-
-    // if the process failed while creating the snapshot last time the file may still exists
-    // deleting the staging tmpFile just in case
-    if (await checkFileExists(fileName)) {
-      await fs.promises.unlink(fileName)
-    }
-
-    const file = fs.createWriteStream(fileName)
-
-    const fileClosedFuture = new Promise<void>((resolve, reject) => {
-      file.on('finish', resolve)
-      file.on('error', reject)
-    })
-
-    const ret = {
-      async close() {
-        file.close()
-        await fileClosedFuture
-      },
-      fileName,
-      inMemoryArray: [],
-      write(buffer: string) {
-        return new Promise<void>((resolve, reject) => {
-          file.write(buffer, (err) => {
-            if (err) reject(err)
-            else resolve()
-          })
-        })
-      }
-    }
-
-    allFiles.set(type, ret)
-
-    // this header is necessary to later differentiate between binary formats and non-binary formats
-    await ret.write('### Decentraland json snapshot\n')
-
-    return ret
-  }
-
-  async function writeToFile(type: EntityType | ALL_ENTITIES, buffer: string) {
-    const { inMemoryArray, write } = await getFile(type)
-
-    await write(buffer)
-
-    return { inMemoryArray }
-  }
-
-  async function openFile(type: EntityType | ALL_ENTITIES) {
-    await getFile(type)
-  }
-
-  return { allFiles, writeToFile, closeAllOpenFiles, openFile }
-}

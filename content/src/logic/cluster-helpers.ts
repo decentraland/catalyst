@@ -1,6 +1,6 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { ContentServerClient } from './clients/ContentServerClient'
-import { ContentCluster } from './ContentCluster'
+import { ContentServerClient } from '../service/synchronization/clients/ContentServerClient'
+import { ContentCluster } from '../service/synchronization/ContentCluster'
 
 /**
  * Waits until the cluster has a list of peers to connect to

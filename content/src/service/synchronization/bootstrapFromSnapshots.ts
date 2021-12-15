@@ -1,7 +1,7 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
 import { AppComponents } from '../../types'
 import { ContentCluster } from './ContentCluster'
-import { ensureListOfCatalysts } from './newSynchronization'
+import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 
 type BootstrapComponents = Pick<
   AppComponents,
