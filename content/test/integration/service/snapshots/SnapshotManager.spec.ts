@@ -1,5 +1,6 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { inspect } from 'util'
 import { unzipSync } from 'zlib'
 import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { Repository } from '../../../../src/repository/Repository'
@@ -134,11 +135,15 @@ describe('Integration - Snapshot Manager', () => {
     for await (const deployment of processDeploymentsInStream(readStream)) {
       snapshot.set(deployment.entityId, (deployment as any).pointers)
     }
+    try {
+      expect(snapshot.size).toBe(entitiesCombo.length)
 
-    expect(snapshot.size).toBe(entitiesCombo.length)
-
-    for (const { entity } of entitiesCombo) {
-      expect(snapshot.get(entity.id)).toEqual(entity.pointers)
+      for (const { entity } of entitiesCombo) {
+        expect(snapshot.get(entity.id)).toEqual(entity.pointers)
+      }
+    } catch (e) {
+      process.stderr.write(inspect({ hash, content, snapshot, uncompressedFile: uncompressedFile.toString() }) + '\n')
+      throw e
     }
   }
 })

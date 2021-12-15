@@ -52,6 +52,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
 
     const fileClosedFuture = new Promise<void>((resolve, reject) => {
       file.on('finish', resolve)
+      file.on('end', resolve)
       file.on('error', reject)
     })
 
@@ -61,7 +62,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
     const writeBuffer: Array<string> = []
     async function flush() {
       if (writeBuffer.length) {
-        const buffer = writeBuffer.join()
+        const buffer = writeBuffer.join('')
         writeBuffer.length = 0
         await new Promise<void>((resolve, reject) => {
           file.write(buffer, (err) => {
@@ -111,6 +112,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
       for (const [_, { fileName }] of allFiles) {
         if (await checkFileExists(fileName)) {
           try {
+            logger.debug('Deleting file', { fileName })
             await fs.promises.unlink(fileName)
           } catch (err) {
             logger.error(err)

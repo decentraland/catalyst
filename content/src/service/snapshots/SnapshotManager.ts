@@ -57,7 +57,7 @@ export class SnapshotManager {
         this.LOGGER.error(e)
       }
 
-      await delay(this.snapshotFrequencyInMilliSeconds)
+      if (this.running) await delay(this.snapshotFrequencyInMilliSeconds)
     }
     this.running = false
   }
