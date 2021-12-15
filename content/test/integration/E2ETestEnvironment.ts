@@ -77,7 +77,9 @@ export class E2ETestEnvironment {
 
   async stopServers(): Promise<void> {
     if (this.runningServers) {
-      await Promise.all(this.runningServers.map((server) => server.stop()))
+      await Promise.all(
+        this.runningServers.map((server) => server.stop({ deleteStorage: true, endDbConnection: true }, true))
+      )
     }
   }
 
@@ -112,10 +114,21 @@ export class E2ETestEnvironment {
   }
 
   /** Returns a service that connects to the database, with the migrations run */
-  async buildService(): Promise<MetaverseContentService> {
+  async buildService(): Promise<MetaverseContentService & { stop: () => Promise<void> }> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const { env } = await new EnvironmentBuilder(baseEnv).withBean(Bean.VALIDATOR, new NoOpValidator()).build()
-    return env.getBean(Bean.SERVICE)
+    const { env, components } = await new EnvironmentBuilder(baseEnv)
+      .withBean(Bean.VALIDATOR, new NoOpValidator())
+      .build()
+    const service = env.getBean<MetaverseContentService>(Bean.SERVICE)
+    const repository = env.getBean<Repository>(Bean.REPOSITORY)
+    const stoppableService = Object.assign(service, {
+      stop: async () => {
+        await repository.shutdown()
+        await components.database.stop()
+      }
+    })
+
+    return stoppableService
   }
 
   removeFromDAO(address: ServerAddress) {

@@ -54,6 +54,8 @@ async function connectTo(
   idleTimeoutMillis: number,
   query_timeout: number
 ) {
+  type State = 'disconnected' | 'connecting' | 'connected' | 'retrying'
+  let state = 'disconnected' as State
   const initOptions: IInitOptions<IExtensions> = {
     extend(obj: Database) {
       obj.deployments = new DeploymentsRepository(obj)
@@ -68,7 +70,7 @@ async function connectTo(
     },
 
     error(err, e) {
-      console.log(`🔥 Error in database connection:`)
+      console.log(`🔥 Error in database connection with state ${state}:`)
       console.error(err)
       if (e.query) {
         console.debug(`Query was ${e.query}`)
@@ -92,7 +94,9 @@ async function connectTo(
   // Make sure we can connect to it
   await retry(
     async () => {
+      state = state === 'disconnected' ? 'connecting' : 'retrying'
       const connection = await db.connect()
+      state = 'connected'
       return connection.done(true)
     },
     6,

@@ -12,7 +12,7 @@ describe('Integration - Same Timestamp Check', () => {
   let oldestEntity: EntityCombo, newestEntity: EntityCombo
 
   const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService
+  let service: MetaverseContentService & { stop: () => Promise<void> }
 
   beforeAll(async () => {
     const timestamp = Date.now()
@@ -29,6 +29,10 @@ describe('Integration - Same Timestamp Check', () => {
 
   beforeEach(async () => {
     service = await testEnv.buildService()
+  })
+
+  afterEach(async () => {
+    await service.stop()
   })
 
   it(`When oldest is deployed first, they overwrites are calculated correctly correctly`, async () => {

@@ -17,7 +17,7 @@ import { TestServer } from '../TestServer'
 
 describe('End 2 end - Denylist handling', () => {
   const identity = createIdentity()
-  const SYNC_INTERVAL: number = ms('1s')
+  const SYNC_INTERVAL: number = ms('5s')
   const testEnv = loadTestEnvironment()
   let server1: TestServer, server2: TestServer, onboardingServer: TestServer
 

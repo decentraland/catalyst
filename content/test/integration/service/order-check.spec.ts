@@ -16,7 +16,7 @@ describe('Integration - Order Check', () => {
   let allEntities: EntityCombo[]
 
   const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService
+  let service: MetaverseContentService & { stop: () => Promise<void> }
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1])
@@ -30,6 +30,10 @@ describe('Integration - Order Check', () => {
 
   beforeEach(async () => {
     service = await testEnv.buildService()
+  })
+
+  afterEach(async () => {
+    await service.stop()
   })
 
   permutator([0, 1, 2, 3, 4]).forEach(function (indices) {
