@@ -144,7 +144,7 @@ export class SnapshotManager {
 
     try {
       // compress and commit
-      for (let [entityType, { fileName, inMemoryArray }] of fileWriterComponent.allFiles) {
+      for (const [entityType, { fileName, inMemoryArray }] of fileWriterComponent.allFiles) {
         // legacy format
         try {
           if (entityType !== ALL_ENTITIES) {
@@ -174,7 +174,7 @@ export class SnapshotManager {
       SnapshotManager.LOGGER.error(err)
     } finally {
       stopTimer({ failed: 'false' })
-      for (let [_, { fileName }] of fileWriterComponent.allFiles) {
+      for (const [_, { fileName }] of fileWriterComponent.allFiles) {
         await this.deleteStagingFile(fileName)
       }
     }
@@ -254,7 +254,7 @@ function createFileWriterComponent() {
   }
 
   async function closeAllOpenFiles() {
-    for (let [_, { file, fileClosedFuture }] of allFiles) {
+    for (const [_, { file, fileClosedFuture }] of allFiles) {
       file.close()
       await fileClosedFuture
     }
