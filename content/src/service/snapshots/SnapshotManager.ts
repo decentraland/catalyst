@@ -18,7 +18,6 @@ export class SnapshotManager {
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
   private LOGGER: ILoggerComponent.ILogger
-  private running = false
 
   constructor(
     private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
@@ -28,27 +27,34 @@ export class SnapshotManager {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
   }
 
-  async startCalculateFullSnapshots(): Promise<void> {
+  async startCalculateFullSnapshots(): Promise<{ stop: () => Promise<boolean> }> {
     // generate a first snapshot
     await this.generateSnapshots()
 
     // async job to generate snapshots
-    if (this.running) return
-    this.running = true
-    while (this.running) {
-      await delay(this.snapshotFrequencyInMilliSeconds)
+    let running = true
 
-      try {
-        await this.generateSnapshots()
-        this.LOGGER.info('Generated full snapshot')
-      } catch (e: any) {
-        this.LOGGER.error(e)
+    const stopped = new Promise<boolean>(async (resolve) => {
+      while (running) {
+        await delay(this.snapshotFrequencyInMilliSeconds)
+
+        try {
+          await this.generateSnapshots()
+          this.LOGGER.info('Generated full snapshot')
+        } catch (e: any) {
+          this.LOGGER.error(e)
+        }
+      }
+      resolve(true)
+    })
+
+    return {
+      stop() {
+        this.LOGGER.info('Stopping snapshot generation job')
+        running = false
+        return stopped
       }
     }
-  }
-
-  stopCalculateFullSnapshots(): void {
-    this.running = false
   }
 
   /**

@@ -37,6 +37,8 @@ export class Server {
   private readonly service: MetaverseContentService
   private readonly repository: Repository
 
+  private stopSnapshots?: () => Promise<any>
+
   constructor(env: Environment, private components: Pick<AppComponents, 'database' | 'batchDeployer'>) {
     // Set logger
     log4js.configure({
@@ -169,7 +171,8 @@ export class Server {
     await this.components.batchDeployer.start()
 
     // generate snapshots before starting the server
-    await this.snapshotManager.startCalculateFullSnapshots()
+    const { stop } = await this.snapshotManager.startCalculateFullSnapshots()
+    this.stopSnapshots = stop
 
     this.httpServer = this.app.listen(this.port)
     await once(this.httpServer, 'listening')
@@ -184,6 +187,7 @@ export class Server {
 
   async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
     await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
+
     if (this.httpServer) {
       await this.closeHTTPServer()
     }
@@ -191,7 +195,10 @@ export class Server {
       await this.metricsServer.stop()
     }
 
-    this.snapshotManager.stopCalculateFullSnapshots()
+    if (this.stopSnapshots) {
+      this.stopSnapshots()
+      delete this.stopSnapshots
+    }
 
     // await for jobs to end
     await this.components.batchDeployer.onIdle()
