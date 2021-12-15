@@ -199,8 +199,6 @@ export class SnapshotManager {
     }
 
     await fileWriterComponent.deleteAllFiles()
-
-    this.generatedSnapshots++
   }
 
   private removePreviousSnapshotFile(previousHash: string) {

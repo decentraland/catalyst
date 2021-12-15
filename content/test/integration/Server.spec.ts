@@ -17,7 +17,6 @@ import { MockedRepository } from '../helpers/repository/MockedRepository'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { NoOpGarbageCollectionManager } from '../helpers/service/garbage-collection/NoOpGarbageCollectionManager'
 import { buildContent, MockedMetaverseContentServiceBuilder } from '../helpers/service/MockedMetaverseContentService'
-import { NoOpSnapshotManager } from '../helpers/service/snapshots/NoOpGarbageCollectionManager'
 import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 
 describe('Integration - Server', function () {
@@ -48,7 +47,6 @@ describe('Integration - Server', function () {
       .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
       .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())
       .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
-      .registerBean(Bean.SNAPSHOT_MANAGER, NoOpSnapshotManager.build())
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .registerBean(
