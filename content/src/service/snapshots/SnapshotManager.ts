@@ -110,7 +110,7 @@ export class SnapshotManager {
     this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp })
     // Log
     this.LOGGER.debug(
-      `Generated snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
     )
 
     // Delete the previous snapshot (if it exists)
@@ -124,9 +124,9 @@ export class SnapshotManager {
       entity_type: ALL_ENTITIES.toString()
     })
 
-    let snapshotTimestamp = 0
-
     const fileWriterComponent = createFileWriterComponent(this.components.staticConfigs.contentStorageFolder)
+
+    const timestamps: Record<string | symbol, number> = {}
 
     // Phase 0) pre-open all the files
     await fileWriterComponent.openFile(ALL_ENTITIES)
@@ -134,19 +134,25 @@ export class SnapshotManager {
       await fileWriterComponent.openFile(EntityType[entityType])
     }
 
+    function increaseTimestamp(type: symbol | string, timestamp: number) {
+      timestamps[type] = timestamps[type] || 0
+      if (timestamps[type] < timestamp) timestamps[type] = timestamp
+    }
+
     // Phase 1) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
         const str = JSON.stringify(snapshotElem) + '\n'
 
+        // global snapshot
+        increaseTimestamp(ALL_ENTITIES, snapshotElem.localTimestamp)
         await fileWriterComponent.writeToFile(ALL_ENTITIES, str)
+
+        // entity-type snapshot
+        increaseTimestamp(snapshotElem.entityType, snapshotElem.localTimestamp)
         const { inMemoryArray } = await fileWriterComponent.writeToFile(snapshotElem.entityType as EntityType, str)
         // legacy format
         inMemoryArray.unshift([snapshotElem.entityId, snapshotElem.pointers])
-
-        if (snapshotElem.localTimestamp > snapshotTimestamp) {
-          snapshotTimestamp = snapshotElem.localTimestamp
-        }
       }
     } finally {
       await fileWriterComponent.closeAllOpenFiles()
@@ -173,10 +179,10 @@ export class SnapshotManager {
         const hash = await hashStreamV1(fs.createReadStream(fileName) as any)
 
         // if success move the file to the contents folder
-        await this.moveSnapshotFileToContentFolder(fileName, { hash, snapshotTimestamp })
+        await this.moveSnapshotFileToContentFolder(fileName, { hash, snapshotTimestamp: timestamps[entityType] || 0 })
 
         // Save the snapshot hash and metadata
-        const newSnapshot = { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp }
+        const newSnapshot = { hash, lastIncludedDeploymentTimestamp: timestamps[entityType] || 0 }
         this.lastSnapshotsPerEntityType.set(entityType, newSnapshot)
 
         // Delete the previous full snapshot (if it exists)
