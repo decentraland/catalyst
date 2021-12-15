@@ -1,11 +1,9 @@
 import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, WearableRepresentation } from '@dcl/schemas'
-import { AuditInfo, EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
-import { Deployment } from '../../../../src/service/deployments/DeploymentManager'
-import { Entity } from '../../../../src/service/Entity'
 import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
 import { DEFAULT_THUMBNAIL_SIZE, Validations } from '../../../../src/service/validations/Validations'
 import {
@@ -133,24 +131,6 @@ async function assertSignatureInInvalid(result: undefined | string[] | Promise<u
   expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
 }
 
-function deploymentWith(entity: Entity, auditInfo: Partial<AuditInfo>) {
-  const deployment: Deployment = {
-    ...entity,
-    entityVersion: EntityVersion.V3,
-    entityId: entity.id,
-    entityTimestamp: entity.timestamp,
-    entityType: entity.type,
-    deployedBy: '0x...',
-    content: undefined,
-    auditInfo: {
-      version: EntityVersion.V3,
-      authChain: [],
-      localTimestamp: 20,
-      ...auditInfo
-    }
-  }
-  return { deployments: [deployment] }
-}
 
 async function assertErrorsWere(
   result: undefined | string[] | Promise<undefined | string[]>,
@@ -229,138 +209,6 @@ describe('Validations', function () {
       const args = buildArgs({ deployment: { entity } })
 
       const result = Validations.RECENT(args)
-
-      await assertNoErrors(result)
-    })
-  })
-
-  describe('Legacy entity', () => {
-    const LEGACY_AUDIT_INFO = {
-      version: EntityVersion.V3,
-      deployedTimestamp: 10,
-      authChain: [],
-      migrationData: {
-        // This is used for migrations
-        originalVersion: EntityVersion.V2,
-        data: 'data'
-      }
-    }
-
-    const LEGACY_ENTITY = buildEntity({ timestamp: 1000 })
-
-    it(`When a legacy entity is deployed and there is no entity, then no error is returned`, async () => {
-      const args = buildArgs({ deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO } })
-
-      const result = Validations.LEGACY_ENTITY(args)
-
-      await assertNoErrors(result)
-    })
-
-    it(`When a legacy entity is deployed and there is an entity with a higher timestamp, then no error is returned`, async () => {
-      const entity = buildEntity({ timestamp: 1001 })
-      const auditInfo = {
-        version: EntityVersion.V3,
-        deployedTimestamp: 10,
-        authChain: []
-      }
-      const args = buildArgs({
-        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
-        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
-      })
-
-      const result = Validations.LEGACY_ENTITY(args)
-
-      await assertNoErrors(result)
-    })
-
-    it(`When a legacy entity is deployed and there is a previous entity with a higher version, then an error is returned`, async () => {
-      const entity = buildEntity({ timestamp: 999 })
-      const legacyAuditInfo = { ...LEGACY_AUDIT_INFO, version: EntityVersion.V2 }
-      const auditInfo = {
-        version: EntityVersion.V3,
-        authChain: []
-      }
-      const args = buildArgs({
-        deployment: { entity: LEGACY_ENTITY, auditInfo: legacyAuditInfo },
-        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
-      })
-
-      const result = Validations.LEGACY_ENTITY(args)
-
-      await assertErrorsWere(result, `Found an overlapping entity with a higher version already deployed.`)
-    })
-
-    it(`When a legacy entity is deployed and there is a previous entity with a lower version, then no error is returned`, async () => {
-      const entity = buildEntity({ timestamp: 999 })
-      const auditInfo = {
-        version: EntityVersion.V2,
-        deployedTimestamp: 10,
-        authChain: []
-      }
-      const args = buildArgs({
-        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
-        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
-      })
-
-      const result = Validations.LEGACY_ENTITY(args)
-
-      await assertNoErrors(result)
-    })
-
-    it(`When a legacy entity is deployed and there is a previous entity without original metadata, then an error is returned`, async () => {
-      const entity = buildEntity({ timestamp: 999 })
-      const auditInfo = {
-        version: EntityVersion.V3,
-        authChain: []
-      }
-      const args = buildArgs({
-        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
-        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
-      })
-
-      const result = Validations.LEGACY_ENTITY(args)
-
-      await assertErrorsWere(result, `Found an overlapping entity with a higher version already deployed.`)
-    })
-
-    it(`When a legacy entity is deployed and there is a previous entity with a higher original version, then an error is returned`, async () => {
-      const entity = buildEntity({ timestamp: 999 })
-      const auditInfo = {
-        version: EntityVersion.V3,
-        deployedTimestamp: 10,
-        authChain: [],
-        originalMetadata: {
-          originalVersion: EntityVersion.V3,
-          data: 'data'
-        }
-      }
-      const args = buildArgs({
-        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
-        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
-      })
-
-      const result = Validations.LEGACY_ENTITY(args)
-
-      await assertErrorsWere(result, `Found an overlapping entity with a higher version already deployed.`)
-    })
-
-    it(`When a legacy entity is deployed and there is a previous entity with the same original version, then no error is returned`, async () => {
-      const entity = buildEntity({ timestamp: 999 })
-      const auditInfo = {
-        version: EntityVersion.V3,
-        deployedTimestamp: 10,
-        authChain: [],
-        migrationData: {
-          originalVersion: EntityVersion.V2,
-          data: 'data'
-        }
-      }
-      const args = buildArgs({
-        deployment: { entity: LEGACY_ENTITY, auditInfo: LEGACY_AUDIT_INFO },
-        externalCalls: { fetchDeployments: () => Promise.resolve(deploymentWith(entity, auditInfo)) }
-      })
-
-      const result = Validations.LEGACY_ENTITY(args)
 
       await assertNoErrors(result)
     })
