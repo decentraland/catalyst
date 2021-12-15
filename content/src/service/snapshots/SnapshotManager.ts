@@ -2,6 +2,7 @@ import { delay } from '@catalyst/commons'
 import { hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
+import future from 'fp-future'
 import * as fs from 'fs'
 import * as path from 'path'
 import { streamActiveDeployments } from '../../logic/snapshots-queries'
@@ -32,25 +33,29 @@ export class SnapshotManager {
     await this.generateSnapshots()
 
     // async job to generate snapshots
-    let running = true
+    const stopPromise = future<void>()
 
     const stopped = new Promise<boolean>(async (resolve) => {
-      while (running) {
-        await delay(this.snapshotFrequencyInMilliSeconds)
+      while (stopPromise.isPending) {
+        // use race to not wait for the delay to stop when stopping the job
+        await Promise.race([delay(this.snapshotFrequencyInMilliSeconds), stopPromise])
 
+        // actually do the generation
         try {
           await this.generateSnapshots()
         } catch (e: any) {
           this.LOGGER.error(e)
         }
       }
+
+      // signal that stop finished correctly
       resolve(true)
     })
 
     return {
       stop: () => {
         this.LOGGER.info('Stopping snapshot generation job')
-        running = false
+        stopPromise.resolve()
         return stopped
       }
     }
