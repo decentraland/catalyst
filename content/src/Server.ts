@@ -196,7 +196,7 @@ export class Server {
     }
 
     if (this.stopSnapshots) {
-      this.stopSnapshots()
+      await this.stopSnapshots()
       delete this.stopSnapshots
     }
 
