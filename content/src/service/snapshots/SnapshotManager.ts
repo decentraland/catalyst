@@ -144,7 +144,7 @@ export class SnapshotManager {
       await fileWriterComponent.closeAllOpenFiles()
     }
 
-    this.LOGGER.debug('Phase 1 complete')
+    this.LOGGER.debug('Phase 1 complete for: ' + Array.from(fileWriterComponent.allFiles.keys()).join(','))
 
     // Phase 2) hash generated files and move them to content folder
     try {
