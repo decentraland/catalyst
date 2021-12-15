@@ -48,7 +48,7 @@ export class SnapshotManager {
     })
 
     return {
-      stop() {
+      stop: () => {
         this.LOGGER.info('Stopping snapshot generation job')
         running = false
         return stopped
