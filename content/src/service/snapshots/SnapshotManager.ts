@@ -126,7 +126,7 @@ export class SnapshotManager {
 
     let snapshotTimestamp = 0
 
-    const fileWriterComponent = createFileWriterComponent()
+    const fileWriterComponent = createFileWriterComponent(this.components.staticConfigs.contentStorageFolder)
 
     // Phase 0) pre-open all the files
     await fileWriterComponent.openFile(ALL_ENTITIES)
@@ -250,7 +250,7 @@ export type SnapshotMetadata = { hash: ContentFileHash; lastIncludedDeploymentTi
 export type FullSnapshotMetadata = SnapshotMetadata & { entities: Record<string, SnapshotMetadata> }
 
 // this component opens file descriptors and enables us to write to them and close all the FD at once
-function createFileWriterComponent() {
+function createFileWriterComponent(rootFolder: string) {
   const allFiles: Map<
     EntityType | ALL_ENTITIES,
     {
@@ -262,10 +262,7 @@ function createFileWriterComponent() {
   > = new Map()
 
   function fileNameFromType(type: EntityType | ALL_ENTITIES): string {
-    return path.resolve(
-      this.components.staticConfigs.contentStorageFolder,
-      `tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : type}`
-    )
+    return path.resolve(rootFolder, `tmp-snapshot-file-${typeof type == 'symbol' ? 'all' : type}`)
   }
 
   async function closeAllOpenFiles() {
