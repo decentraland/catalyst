@@ -21,6 +21,8 @@ export class SnapshotManager {
 
   private LOGGER: ILoggerComponent.ILogger
 
+  private generatedSnapshots = 0
+
   constructor(
     private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
     private readonly service: MetaverseContentService,
@@ -35,7 +37,7 @@ export class SnapshotManager {
 
     // wait up to 60 seconds for job to finish
     let counter = 60
-    while (!this.lastSnapshotsPerEntityType.has(ALL_ENTITIES) && this.running) {
+    while (this.generatedSnapshots == 0 && this.running) {
       await delay(1000)
       counter--
       if (counter == 0) {
@@ -144,13 +146,12 @@ export class SnapshotManager {
       await fileWriterComponent.closeAllOpenFiles()
     }
 
-    this.LOGGER.debug('Phase 1 complete for: ' + Array.from(fileWriterComponent.allFiles.keys()).join(','))
+    this.LOGGER.debug('Phase 1 complete')
 
     // Phase 2) hash generated files and move them to content folder
     try {
       // compress and commit
       for (const [entityType, { fileName, inMemoryArray }] of fileWriterComponent.allFiles) {
-        this.LOGGER.debug('Phase 2) starting ' + entityType.toString())
         // legacy format
         try {
           if (entityType !== ALL_ENTITIES) {
@@ -184,6 +185,8 @@ export class SnapshotManager {
         await this.deleteStagingFile(fileName)
       }
     }
+
+    this.generatedSnapshots++
   }
 
   private async deleteStagingFile(tmpFile: string) {
