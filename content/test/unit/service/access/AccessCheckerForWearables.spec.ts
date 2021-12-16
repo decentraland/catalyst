@@ -39,7 +39,23 @@ describe('AccessCheckerForWearables', () => {
 
     const errors = await checkAccess(accessChecker, { pointers })
 
-    expect(errors).toEqual([`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`])
+    expect(errors).toEqual([
+      'The provided Eth Address does not have access to the following wearable: (urn:decentraland:ethereum:collections-v1:atari_launch:atari_red_upper_body)'
+    ])
+  })
+
+  it(`When several pointers resolve to the same URN then accept both 2`, async () => {
+    const pointers = [
+      'urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body',
+      'urn:decentraland:ethereum:collections-v1:0x574f64ac2e7215cba9752b85fc73030f35166bc0:dgtble_hoodi_linetang_upper_body'
+    ]
+    const accessChecker = buildAccessChecker()
+
+    const errors = await checkAccess(accessChecker, { pointers })
+
+    expect(errors).toEqual([
+      'The provided Eth Address does not have access to the following wearable: (urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body)'
+    ])
   })
 
   describe('Correct subgraph use', () => {

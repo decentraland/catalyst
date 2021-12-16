@@ -6,7 +6,6 @@ import {
 } from '@dcl/urn-resolver'
 import { Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
-import isEqual from 'lodash.isequal'
 import log4js from 'log4js'
 import ms from 'ms'
 import { AccessParams } from './AccessChecker'
@@ -33,7 +32,8 @@ export class AccessCheckerForWearables {
     for (const pointer of pointers) {
       const parsed = await this.parseUrnNoFail(pointer)
       if (parsed) {
-        if (!resolvedPointers.some(($) => isEqual($, parsed))) {
+        parsed.uri = new URL('urn:same')
+        if (!resolvedPointers.some(($) => JSON.stringify($) == JSON.stringify(parsed))) {
           resolvedPointers.push(parsed)
         }
       } else {
