@@ -22,7 +22,6 @@ export class AccessCheckerForWearables {
   ) {}
 
   public async checkAccess({ pointers, ...accessParams }: WearablesAccessParams): Promise<string[]> {
-    const errors: string[] = []
     const resolvedPointers: SupportedAssets[] = []
 
     // deduplicate pointer resolution
@@ -33,74 +32,68 @@ export class AccessCheckerForWearables {
           resolvedPointers.push(parsed)
         }
       } else {
-        errors.push(
+        return [
           `Wearable pointers should be a urn, for example (urn:decentraland:{protocol}:collections-v2:{contract(0x[a-fA-F0-9]+)}:{name}). Invalid pointer: (${pointer})`
-        )
+        ]
       }
     }
 
     if (resolvedPointers.length > 1) {
-      errors.push(`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`)
+      return [`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`]
     }
 
-    if (errors.length == 0) {
-      const parsed = resolvedPointers[0]
+    const parsed = resolvedPointers[0]
 
-      if (parsed.type === 'off-chain') {
-        // Validate Off Chain Asset
-        if (accessParams.ethAddress.toLowerCase() !== DECENTRALAND_ADDRESS.toLowerCase()) {
-          errors.push(
-            `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
-          )
+    if (parsed.type === 'off-chain') {
+      // Validate Off Chain Asset
+      if (accessParams.ethAddress.toLowerCase() !== DECENTRALAND_ADDRESS.toLowerCase()) {
+        return [
+          `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
+        ]
+      }
+    } else if (parsed?.type === 'blockchain-collection-v1-asset' || parsed?.type === 'blockchain-collection-v2-asset') {
+      // L1 or L2 so contractAddress is present
+      const collection = parsed.contractAddress!
+      const network = parsed.network
+      if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
+        const hasAccess = await this.checkCollectionAccess(
+          this.blocksL1SubgraphUrl,
+          this.collectionsL1SubgraphUrl,
+          collection,
+          parsed.id,
+          accessParams
+        )
+        if (!hasAccess) {
+          // Some L1 collections are deployed by Decentraland Address
+          const isDecentralandAddress = accessParams.ethAddress.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
+          // Maybe this is not necessary as we already know that it's a 'blockchain-collection-v1-asset'
+          const isAllowlistedCollection = parsed.uri.toString().startsWith('urn:decentraland:ethereum:collections-v1')
+          if (!isDecentralandAddress || !isAllowlistedCollection) {
+            return [
+              `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
+            ]
+          }
         }
-      } else if (
-        parsed?.type === 'blockchain-collection-v1-asset' ||
-        parsed?.type === 'blockchain-collection-v2-asset'
-      ) {
-        // L1 or L2 so contractAddress is present
-        const collection = parsed.contractAddress!
-        const network = parsed.network
-        if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
-          const hasAccess = await this.checkCollectionAccess(
-            this.blocksL1SubgraphUrl,
-            this.collectionsL1SubgraphUrl,
-            collection,
-            parsed.id,
-            accessParams
-          )
-          if (!hasAccess) {
-            // Some L1 collections are deployed by Decentraland Address
-            const isDecentralandAddress = accessParams.ethAddress.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
-            // Maybe this is not necessary as we already know that it's a 'blockchain-collection-v1-asset'
-            const isAllowlistedCollection = parsed.uri.toString().startsWith('urn:decentraland:ethereum:collections-v1')
-            if (!isDecentralandAddress || !isAllowlistedCollection) {
-              errors.push(
-                `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
-              )
-            }
-          }
-        } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
-          const hasAccess = await this.checkCollectionAccess(
-            this.blocksL2SubgraphUrl,
-            this.collectionsL2SubgraphUrl,
-            collection,
-            parsed.id,
-            accessParams
-          )
-          if (!hasAccess) {
-            errors.push(
-              `The provided Eth Address does not have access to the following wearable: (${parsed.contractAddress}, ${parsed.id})`
-            )
-          }
-        } else {
-          errors.push(`Found an unknown network on the urn '${network}'`)
+      } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
+        const hasAccess = await this.checkCollectionAccess(
+          this.blocksL2SubgraphUrl,
+          this.collectionsL2SubgraphUrl,
+          collection,
+          parsed.id,
+          accessParams
+        )
+        if (!hasAccess) {
+          return [
+            `The provided Eth Address does not have access to the following wearable: (${parsed.contractAddress}, ${parsed.id})`
+          ]
         }
       } else {
-        errors.push(`Could not resolve the contractAddress of the urn ${parsed}`)
+        return [`Found an unknown network on the urn '${network}'`]
       }
+    } else {
+      return [`Could not resolve the contractAddress of the urn ${parsed}`]
     }
-
-    return errors
+    return []
   }
 
   private alreadySeen(resolvedPointers: SupportedAssets[], parsed: SupportedAssets) {
