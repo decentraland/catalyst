@@ -225,7 +225,7 @@ workflows:
       - build-commons:
           <<: *all_branches_and_tags
           requires:
-            - linter
+            - checkout
 
       # publish docker image in "master" and semver tags
       # master publishes to @next
