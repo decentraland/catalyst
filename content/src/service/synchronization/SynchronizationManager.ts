@@ -26,8 +26,16 @@ type ContentSyncComponents = Pick<
   | 'batchDeployer'
 >
 
+export enum SynchronizationState {
+  BOOTSTRAPPING = 'Bootstrapping',
+  SYNCED = 'Synced',
+  SYNCING = 'Syncing'
+}
+
 export class ClusterSynchronizationManager implements SynchronizationManager {
   private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager')
+
+  private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
 
   constructor(
     public components: ContentSyncComponents,
@@ -66,7 +74,8 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
   getStatus() {
     const clusterStatus = this.cluster.getStatus()
     return {
-      ...clusterStatus
+      ...clusterStatus,
+      synchronizationState: this.synchronizationState
     }
   }
 
@@ -78,12 +87,14 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
       await bootstrapFromSnapshots(this.components, this.cluster)
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
+      this.synchronizationState = SynchronizationState.SYNCED
     }
 
     sync: {
       ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
       const setDesiredJobs = () => {
+        this.synchronizationState = SynchronizationState.SYNCING
         const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getBaseUrl()))
         // the job names are the contentServerUrl
         return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
@@ -95,6 +106,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
       // the setDesiredJobs function handles the lifecycle od those async jobs.
       this.cluster.onSyncFinished(() => {
+        this.synchronizationState = SynchronizationState.SYNCED
         setDesiredJobs()
       })
     }
