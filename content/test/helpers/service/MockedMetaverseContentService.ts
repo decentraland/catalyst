@@ -7,11 +7,11 @@ import {
   LegacyAuditInfo,
   PartialDeploymentHistory,
   Pointer,
-  ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
+import { ServerStatus } from 'src/types'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
@@ -38,7 +38,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     version: EntityVersion.V3,
     currentTime: Date.now(),
     lastImmutableTime: 0,
-    historySize: 0
+    snapshot: {
+      entities: {},
+      lastUpdated: Date.now()
+    }
   }
 
   static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {

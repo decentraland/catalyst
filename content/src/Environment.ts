@@ -502,8 +502,6 @@ export class EnvironmentBuilder {
       () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
     )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
-    const deployer = ServiceFactory.create(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
     this.registerBeanIfNotAlreadySet(
       env,
       Bean.SNAPSHOT_MANAGER,
@@ -567,6 +565,9 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env, components))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
+
+    const deployer = ServiceFactory.create(env, components)
+    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
 
     return {
       env,

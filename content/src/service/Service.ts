@@ -5,10 +5,10 @@ import {
   EntityType,
   PartialDeploymentHistory,
   Pointer,
-  ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
+import { ServerStatus } from 'src/types'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'

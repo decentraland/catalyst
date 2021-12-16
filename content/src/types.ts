@@ -26,4 +26,23 @@ export type AppComponents = {
   status: IStatusComponent
 }
 
+export type Timestamp = number
+
+export enum EntityVersion {
+  V2 = 'v2',
+  V3 = 'v3',
+  V4 = 'v4'
+}
+
+export interface ServerStatus {
+  name: string
+  version: EntityVersion
+  currentTime: Timestamp
+  lastImmutableTime: Timestamp
+  snapshot: {
+    lastUpdated: number
+    entities: Partial<Record<EntityType, number>>
+  }
+}
+
 export type CannonicalEntityDeployment = { entity: RemoteEntityDeployment; servers: string[] }

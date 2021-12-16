@@ -1,31 +1,36 @@
 import { EntityType } from 'dcl-catalyst-commons'
 
+type EntitiesStatus = Partial<Record<EntityType, number>>
+
+interface Status {
+  snapshot: {
+    lastTimestamp: number
+    entities: EntitiesStatus
+  }
+}
+
 export interface IStatusComponent {
-  setSnapshotActiveEntities(map: Record<EntityType, number>): void
-  getSnapshotActiveEntity(entityType: EntityType): number
+  setSnapshotActiveEntities(map: EntitiesStatus): void
+  getSnapshotActiveEntities(): EntitiesStatus
 
   updateTimestamp(timestamp: number): void
   getLatestUpdateTime(): number
 }
 
 export function createStatusComponent(): IStatusComponent {
-  const status = {
+  const status: Status = {
     snapshot: {
-      [EntityType.PROFILE]: 0,
-      [EntityType.SCENE]: 0,
-      [EntityType.WEARABLE]: 0,
+      entities: {},
       lastTimestamp: Date.now()
     }
   }
 
-  const setSnapshotActiveEntities = (map: Record<EntityType, number>) => {
-    status.snapshot[EntityType.PROFILE] = map.profile
-    status.snapshot[EntityType.SCENE] = map.scene
-    status.snapshot[EntityType.WEARABLE] = map.wearable
+  const setSnapshotActiveEntities = (map: EntitiesStatus) => {
+    status.snapshot.entities = map
   }
 
-  const getSnapshotActiveEntity = (entityType: EntityType) => {
-    return status[entityType]
+  const getSnapshotActiveEntities = (): EntitiesStatus => {
+    return status.snapshot.entities
   }
 
   const updateTimestamp = (timestamp: number) => {
@@ -37,7 +42,7 @@ export function createStatusComponent(): IStatusComponent {
 
   return {
     setSnapshotActiveEntities,
-    getSnapshotActiveEntity,
+    getSnapshotActiveEntities,
     updateTimestamp,
     getLatestUpdateTime
   }

@@ -7,12 +7,12 @@ import {
   EntityType,
   Hashing,
   PartialDeploymentHistory,
-  Pointer,
-  ServerStatus
+  Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
+import { AppComponents, ServerStatus } from 'src/types'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
@@ -62,7 +62,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly validator: Validator,
     private readonly repository: Repository,
     private readonly cache: CacheByType<Pointer, Entity>,
-    private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
+    private readonly deploymentsCache: { cache: NodeCache; maxSize: number },
+    private readonly components: AppComponents
   ) {}
 
   async start(): Promise<void> {
@@ -424,7 +425,10 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       version: CURRENT_CONTENT_VERSION,
       currentTime: Date.now(),
       lastImmutableTime: 0,
-      historySize: this.historySize
+      snapshot: {
+        lastUpdated: this.components.status.getLatestUpdateTime(),
+        entities: this.components.status.getSnapshotActiveEntities()
+      }
     }
   }
 
