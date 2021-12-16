@@ -1,3 +1,4 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { ContentFileHash, EntityVersion, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Logger } from 'log4js'
@@ -30,7 +31,7 @@ describe('AccessCheckerForWearables', () => {
     expect(errors).toEqual([`Only one pointer is allowed when you create a Wearable. Received: ${pointers}`])
   })
 
-  it(`When several pointers resolve to the same URN then accept both`, async () => {
+  it(`When several pointers resolve to the same URN then accept both but fail with the access`, async () => {
     const pointers = [
       'urn:decentraland:ethereum:collections-v1:atari_launch:atari_red_upper_body',
       'urn:decentraland:ethereum:collections-v1:0x4c290f486bae507719c562b6b524bdb71a2570c9:atari_red_upper_body'
@@ -40,7 +41,7 @@ describe('AccessCheckerForWearables', () => {
     const errors = await checkAccess(accessChecker, { pointers })
 
     expect(errors).toEqual([
-      'The provided Eth Address does not have access to the following wearable: (urn:decentraland:ethereum:collections-v1:atari_launch:atari_red_upper_body)'
+      `The provided Eth Address 'some address' does not have access to the following wearable: 'urn:decentraland:ethereum:collections-v1:atari_launch:atari_red_upper_body'`
     ])
   })
 
@@ -54,8 +55,27 @@ describe('AccessCheckerForWearables', () => {
     const errors = await checkAccess(accessChecker, { pointers })
 
     expect(errors).toEqual([
-      'The provided Eth Address does not have access to the following wearable: (urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body)'
+      `The provided Eth Address 'some address' does not have access to the following wearable: 'urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body'`
     ])
+  })
+
+  it(`when pointer resolves to base-avatar then it resolves okay but fails with invalid eth address`, async () => {
+    const pointers = ['urn:decentraland:off-chain:base-avatars:BaseFemale']
+    const accessChecker = buildAccessChecker()
+
+    const errors = await checkAccess(accessChecker, { pointers })
+
+    expect(errors).toEqual([
+      "The provided Eth Address 'some address' does not have access to the following wearable: 'urn:decentraland:off-chain:base-avatars:BaseFemale'"])
+  })
+
+  it(`when pointer resolves to base-avatar then it resolves okay only with decentraland address`, async () => {
+    const pointers = ['urn:decentraland:off-chain:base-avatars:BaseFemale']
+    const accessChecker = buildAccessChecker()
+
+    const errors = await checkAccess(accessChecker, { pointers, ethAddress: DECENTRALAND_ADDRESS })
+
+    expect(errors).toEqual([])
   })
 
   describe('Correct subgraph use', () => {
@@ -183,7 +203,7 @@ describe('AccessCheckerForWearables', () => {
         })
 
         expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
+          `The provided Eth Address '${ethAddress}' does not have access to the following wearable: '${URN_POINTER}'`
         ])
       })
 
@@ -200,7 +220,7 @@ describe('AccessCheckerForWearables', () => {
         })
 
         expect(errors).toEqual([
-          `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
+          `The provided Eth Address '${COMMITTEE_MEMBER}' does not have access to the following wearable: '${URN_POINTER}'`
         ])
       })
     })
@@ -247,7 +267,7 @@ describe('AccessCheckerForWearables', () => {
           const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors).toEqual([
-            `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
+            `The provided Eth Address '${ethAddress}' does not have access to the following wearable: '${URN_POINTER}'`
           ])
         })
 
@@ -259,7 +279,7 @@ describe('AccessCheckerForWearables', () => {
           const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors).toEqual([
-            `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
+            `The provided Eth Address '${ethAddress}' does not have access to the following wearable: '${URN_POINTER}'`
           ])
         })
 
@@ -271,7 +291,7 @@ describe('AccessCheckerForWearables', () => {
           const errors = await checkAccess(accessChecker, { pointers: [URN_POINTER], ethAddress })
 
           expect(errors).toEqual([
-            `The provided Eth Address does not have access to the following wearable: (${URN_POINTER})`
+            `The provided Eth Address '${ethAddress}' does not have access to the following wearable: '${URN_POINTER}'`
           ])
         })
       })
