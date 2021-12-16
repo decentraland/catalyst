@@ -71,6 +71,7 @@ export class AccessCheckerForWearables {
           if (!hasAccess) {
             // Some L1 collections are deployed by Decentraland Address
             const isDecentralandAddress = accessParams.ethAddress.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
+            // Maybe this is not necessary as we already know that it's a 'blockchain-collection-v1-asset'
             const isAllowlistedCollection = parsed.uri.toString().startsWith('urn:decentraland:ethereum:collections-v1')
             if (!isDecentralandAddress || !isAllowlistedCollection) {
               errors.push(

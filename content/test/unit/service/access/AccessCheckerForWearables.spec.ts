@@ -83,7 +83,6 @@ describe('AccessCheckerForWearables', () => {
     expect(errors).toEqual([])
   })
 
-
   it(`when pointer resolves to base-avatar then it resolves okay but fails with invalid eth address`, async () => {
     const pointers = ['urn:decentraland:off-chain:base-avatars:BaseFemale']
     const accessChecker = buildAccessChecker()
