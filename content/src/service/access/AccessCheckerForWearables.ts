@@ -188,7 +188,7 @@ export class AccessCheckerForWearables {
     block: number
   ): Promise<WearableItemPermissionsData> {
     const query = `
-         query getCollectionRoles($collection: String!, $itemId: Int!, $block: Int!) {
+         query getCollectionRoles($collection: String!, $itemId: String!, $block: Int!) {
             collections(where:{ id: $collection }, block: { number: $block }) {
               creator
               managers
@@ -207,7 +207,7 @@ export class AccessCheckerForWearables {
 
     const result = await this.fetcher.queryGraph<WearableCollections>(subgraphUrl, query, {
       collection,
-      itemId: parseInt(itemId, 10),
+      itemId,
       block
     })
     const collectionResult = result.collections[0]
