@@ -165,11 +165,9 @@ describe('End 2 end - Error handling', () => {
 
     await server2.start()
 
-    console.log('[HOLA] about to deploy')
     // Assert deployment is marked as failed
     await awaitUntil(() => assertDeploymentFailed(server2, errorType, entityBeingDeployed))
 
-    console.log('[HOLA] ya fallo el deploy')
     // Assert entity wasn't deployed
     await assertEntityWasNotDeployed(server2, entityBeingDeployed)
 

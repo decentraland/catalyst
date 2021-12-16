@@ -61,7 +61,6 @@ export class AccessCheckerForWearables {
         const collection = parsed.contractAddress!
         const network = parsed.network
         if (AccessCheckerForWearables.L1_NETWORKS.includes(network)) {
-          // do we need to do something more here?
           const hasAccess = await this.checkCollectionAccess(
             this.blocksL1SubgraphUrl,
             this.collectionsL1SubgraphUrl,
@@ -70,9 +69,14 @@ export class AccessCheckerForWearables {
             accessParams
           )
           if (!hasAccess) {
-            errors.push(
-              `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
-            )
+            // Some L1 collections are deployed by Decentraland Address
+            const isDecentralandAddress = accessParams.ethAddress.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
+            const isAllowlistedCollection = parsed.uri.toString().startsWith('urn:decentraland:ethereum:collections-v1')
+            if (!isDecentralandAddress || !isAllowlistedCollection) {
+              errors.push(
+                `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
+              )
+            }
           }
         } else if (AccessCheckerForWearables.L2_NETWORKS.includes(network)) {
           const hasAccess = await this.checkCollectionAccess(
