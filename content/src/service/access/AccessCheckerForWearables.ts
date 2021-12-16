@@ -194,7 +194,7 @@ export class AccessCheckerForWearables {
               managers
               isApproved
               isCompleted
-              items(where:{ blockchainId: $itemId }) {
+              items(where:{ id: $itemId }) {
                 managers
                 contentHash
               }
@@ -207,7 +207,7 @@ export class AccessCheckerForWearables {
 
     const result = await this.fetcher.queryGraph<WearableCollections>(subgraphUrl, query, {
       collection,
-      itemId,
+      itemId: `${collection}-${itemId}`,
       block
     })
     const collectionResult = result.collections[0]
