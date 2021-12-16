@@ -21,7 +21,7 @@ export class SnapshotManager {
   private LOGGER: ILoggerComponent.ILogger
 
   constructor(
-    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
+    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs' | 'status'>,
     private readonly service: MetaverseContentService,
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {
@@ -145,6 +145,12 @@ export class SnapshotManager {
       array.push(tuple)
     }
 
+    const newActiveEntitiesCount = {
+      [EntityType.WEARABLE]: 0,
+      [EntityType.SCENE]: 0,
+      [EntityType.PROFILE]: 0
+    }
+
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
@@ -166,10 +172,15 @@ export class SnapshotManager {
 
         // add the entoty to the inMemoryArray to be used by the legacy formatter
         appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
+
+        newActiveEntitiesCount[snapshotElem.entityType]++
       }
     } finally {
       await fileWriterComponent.flushToDiskAndCloseFiles()
     }
+
+    this.components.status.setSnapshotActiveEntities(newActiveEntitiesCount)
+    this.components.status.updateTimestamp(Date.now())
 
     // Phase 3) hash generated files and move them to content folder
     try {
