@@ -127,7 +127,10 @@ export class AccessCheckerForWearables {
         (await hasPermissionOnBlock(blockNumberFiveMinBeforeDeployment))
       )
     } catch (error) {
-      this.LOGGER.error(`Error checking wearable access (${collection}, ${itemId}, ${accessParams.ethAddress}).`, error)
+      this.LOGGER.error(
+        `Error checking wearable access (${collection}, ${itemId}, ${accessParams.ethAddress}, ${timestamp}, ${blocksSubgraphUrl}).`,
+        error
+      )
       return false
     }
   }
