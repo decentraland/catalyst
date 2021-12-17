@@ -145,11 +145,7 @@ export class SnapshotManager {
       array.push(tuple)
     }
 
-    const newActiveEntitiesCount = {
-      [EntityType.WEARABLE]: 0,
-      [EntityType.SCENE]: 0,
-      [EntityType.PROFILE]: 0
-    }
+    const newActiveEntitiesCount = {}
 
     // Phase 2) iterate all active deployments and write to files
     try {
@@ -173,7 +169,11 @@ export class SnapshotManager {
         // add the entoty to the inMemoryArray to be used by the legacy formatter
         appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
 
-        newActiveEntitiesCount[snapshotElem.entityType]++
+        if (newActiveEntitiesCount[snapshotElem.entityType] != null) {
+          newActiveEntitiesCount[snapshotElem.entityType]++
+        } else {
+          newActiveEntitiesCount[snapshotElem.entityType] = 1
+        }
       }
     } finally {
       await fileWriterComponent.flushToDiskAndCloseFiles()

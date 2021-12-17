@@ -512,7 +512,7 @@ export class EnvironmentBuilder {
       Bean.SNAPSHOT_MANAGER,
       () =>
         new SnapshotManager(
-          { logs, status, database, metrics, staticConfigs },
+          { database, metrics, staticConfigs, logs, status },
           env.getBean(Bean.SERVICE),
           env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
         )
@@ -555,7 +555,7 @@ export class EnvironmentBuilder {
         jobManagerName: 'SynchronizationJobManager',
         createJob(contentServer) {
           return createCatalystDeploymentStream(
-            { metrics, fetcher, downloadQueue, logs, deployer: batchDeployer },
+            { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer },
             {
               contentFolder: staticConfigs.contentStorageFolder,
               contentServer,
@@ -577,7 +577,7 @@ export class EnvironmentBuilder {
     )
 
     const synchronizationManager = new ClusterSynchronizationManager(
-      { staticConfigs, logs, downloadQueue, metrics, fetcher, synchronizationJobManager, deployer, batchDeployer },
+      { synchronizationJobManager, downloadQueue, deployer, fetcher, metrics, staticConfigs, batchDeployer, logs },
       env.getBean(Bean.CONTENT_CLUSTER),
       env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
     )
@@ -589,17 +589,17 @@ export class EnvironmentBuilder {
     return {
       env,
       components: {
-        batchDeployer,
         database,
-        deployedEntitiesFilter,
         deployer,
-        downloadQueue,
-        fetcher,
-        staticConfigs,
-        logs,
         metrics,
-        status,
-        synchronizationJobManager
+        fetcher,
+        logs,
+        staticConfigs,
+        batchDeployer,
+        downloadQueue,
+        synchronizationJobManager,
+        deployedEntitiesFilter,
+        status
       }
     }
   }
