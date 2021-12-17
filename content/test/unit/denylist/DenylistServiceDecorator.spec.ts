@@ -272,15 +272,6 @@ describe('DenylistServiceDecorator', () => {
     expect(available.get(entity2.id)).toBeFalsy()
   })
 
-  // it(`When status is requested, then it is not modified`, async () => {
-  //   const denylist = denylistWith(entity2Target)
-  //   const decorator = getDecorator(denylist)
-
-  //   const status = decorator.getStatus()
-
-  //   expect(status).toEqual(MockedMetaverseContentService.STATUS)
-  // })
-
   it(`When no denylist matches, then entities can be deployed`, async () => {
     const denylist = denylistWith()
     const decorator = getDecorator(denylist)
