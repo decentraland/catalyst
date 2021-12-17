@@ -29,7 +29,7 @@ describe('End 2 end - Denylist handling', () => {
       .andBuildMany(3)
   })
 
-  // TODO: [new-sync]
+  //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When an entity is denylisted across all nodes, then no entity is deployed`, async () => {
     // Start server 1
     await server1.start()
@@ -58,7 +58,7 @@ describe('End 2 end - Denylist handling', () => {
     await assertEntityWasNotDeployed(onboardingServer, entityBeingDeployed)
   })
 
-  // TODO: [new-sync] FIX
+  //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When content is denylisted across all nodes, then no entity is deployed`, async () => {
     // Start server 1
     await server1.start()

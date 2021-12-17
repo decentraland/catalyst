@@ -18,7 +18,7 @@ import {
   PointerChangesOptions
 } from './deployments/DeploymentManager'
 import { Entity } from './Entity'
-import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
+import { FailedDeployment } from './errors/FailedDeploymentsManager'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -54,7 +54,7 @@ export interface ClusterDeploymentsService {
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
-    reason: FailureReason,
+    reason: string,
     authChain: AuthChain,
     errorDescription?: string
   ): Promise<null>

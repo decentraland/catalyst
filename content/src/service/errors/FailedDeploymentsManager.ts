@@ -57,8 +57,6 @@ export type FailedDeployment = {
 }
 
 export enum FailureReason {
-  NO_ENTITY_OR_AUDIT = 'No entity or audit', // During sync, we couldn't fetch the entity or the audit info
-  FETCH_PROBLEM = 'Fetch problem', // During sync, we could learn the entity and the audit, but we couldn't fetch some of its files
   DEPLOYMENT_ERROR = 'Deployment error' // During sync, there was an error during deployment. Could be due to a validation
 }
 

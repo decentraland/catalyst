@@ -37,15 +37,14 @@ describe('End 2 end - Error handling', () => {
     accessChecker.stopReturningErrors()
   })
 
-  // TODO: [new-sync] FIX
+  //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    // TODO: [new-sync] Check this error
     await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) =>
       server1.denylistContent(entity.content![0].hash, identity)
     )
   })
 
-  // TODO: [new-sync] Fix
+  //TODO: [new-sync] Check that this is being tested somewhere else
   xit(`When an error happens during deployment, then the error is recorded and no entity is created`, async () => {
     await runTest(
       FailureReason.DEPLOYMENT_ERROR,
@@ -60,7 +59,7 @@ describe('End 2 end - Error handling', () => {
     )
   })
 
-  //TODO: [new-sync] Check if this test makes sense or not
+  //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
     // Start servers
     await Promise.all([server1.start(), server2.start()])
@@ -137,7 +136,6 @@ describe('End 2 end - Error handling', () => {
   })
 
   it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    // TODO: [new-sync] Check this error
     await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) => server1.denylistEntity(entity, identity))
   })
 
