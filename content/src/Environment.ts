@@ -580,7 +580,7 @@ export class EnvironmentBuilder {
       env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
     )
 
-    const status = createStatusComponent(env.getBean(Bean.SNAPSHOT_MANAGER))
+    const status = createStatusComponent([env.getBean(Bean.SNAPSHOT_MANAGER)])
 
     this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
     this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env, { status }))

@@ -23,11 +23,11 @@ export interface IStatusComponent {
   getStatus(): Promise<Status>
 }
 
-export function createStatusComponent(components: StatusCapableComponent[]): IStatusComponent {
+export function createStatusComponent(statusCapableComponents: StatusCapableComponent[]): IStatusComponent {
   const getStatus = async (): Promise<Status> => {
     const response: Status = {}
 
-    for (const component of components) {
+    for (const component of statusCapableComponents) {
       response[component.getStatusName()] = await component.getComponentStatus()
     }
 
