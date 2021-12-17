@@ -17,6 +17,7 @@ import { createBloomFilterComponent } from './ports/bloomFilter'
 // import { createBloomFilterComponent } from './ports/bloomFilter'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
+import { createStatusComponent } from './ports/status'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
@@ -458,9 +459,10 @@ export class EnvironmentBuilder {
     const logs = createLogComponent()
     const fetcher = createFetchComponent()
     const metrics = metricsComponent
-    const staticConfigs: AppComponents['staticConfigs'] = {
+    const staticConfigs = {
       contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     }
+
     const database = await createDatabaseComponent(
       { logs },
       {
@@ -502,6 +504,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     const deployer = ServiceFactory.create(env)
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
+
     this.registerBeanIfNotAlreadySet(
       env,
       Bean.SNAPSHOT_MANAGER,
@@ -577,8 +580,10 @@ export class EnvironmentBuilder {
       env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
     )
 
+    const status = createStatusComponent([env.getBean(Bean.SNAPSHOT_MANAGER)])
+
     this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env, { status }))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 
     return {
@@ -593,7 +598,8 @@ export class EnvironmentBuilder {
         batchDeployer,
         downloadQueue,
         synchronizationJobManager,
-        deployedEntitiesFilter
+        deployedEntitiesFilter,
+        status
       }
     }
   }

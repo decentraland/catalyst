@@ -17,6 +17,7 @@ import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
 import onFinished from 'on-finished'
+import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
@@ -51,7 +52,8 @@ export class Controller {
     private readonly synchronizationManager: SynchronizationManager,
     private readonly challengeSupervisor: ChallengeSupervisor,
     private readonly snapshotManager: SnapshotManager,
-    private readonly ethNetwork: string
+    private readonly ethNetwork: string,
+    private readonly components: Pick<AppComponents, 'status'>
   ) {}
 
   async getEntities(req: express.Request, res: express.Response) {
@@ -635,7 +637,7 @@ export class Controller {
     // Method: GET
     // Path: /status
 
-    const serverStatus = this.service.getStatus()
+    const serverStatus = await this.components.status.getStatus()
 
     const synchronizationStatus = this.synchronizationManager.getStatus()
 

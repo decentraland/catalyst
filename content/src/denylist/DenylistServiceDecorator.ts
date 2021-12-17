@@ -1,11 +1,4 @@
-import {
-  ContentFileHash,
-  EntityId,
-  EntityType,
-  PartialDeploymentHistory,
-  Pointer,
-  ServerStatus
-} from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityId, EntityType, PartialDeploymentHistory, Pointer } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
@@ -202,10 +195,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   getAllFailedDeployments() {
     return this.service.getAllFailedDeployments()
-  }
-
-  getStatus(): ServerStatus {
-    return this.service.getStatus()
   }
 
   storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {

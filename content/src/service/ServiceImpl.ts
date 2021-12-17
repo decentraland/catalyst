@@ -7,14 +7,12 @@ import {
   EntityType,
   Hashing,
   PartialDeploymentHistory,
-  Pointer,
-  ServerStatus
+  Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
-import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
@@ -50,7 +48,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   private static readonly LOGGER = log4js.getLogger('ServiceImpl')
   private readonly listeners: DeploymentListener[] = []
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
-  private historySize: number = 0
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
@@ -65,14 +62,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {}
 
-  async start(): Promise<void> {
-    const amountOfDeployments = await this.repository.task((task) => task.deployments.getAmountOfDeployments(), {
-      priority: DB_REQUEST_PRIORITY.HIGH
-    })
-    for (const [, amount] of amountOfDeployments) {
-      this.historySize += amount
-    }
-  }
+  async start(): Promise<void> {}
 
   async deployEntity(
     files: DeploymentFiles,
@@ -136,8 +126,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           this.listeners.map((listener) => listener({ entity, auditInfo: storeResult.auditInfoComplete }))
         )
 
-        // Since we are still reporting the history size, add one to it
-        this.historySize++
         metricsComponent.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
@@ -416,16 +404,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
     return this.storage.isContentAvailable(fileHashes)
-  }
-
-  getStatus(): ServerStatus {
-    return {
-      name: '', // TODO: Remove and communicate breaking change accordingly
-      version: CURRENT_CONTENT_VERSION,
-      currentTime: Date.now(),
-      lastImmutableTime: 0,
-      historySize: this.historySize
-    }
   }
 
   deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
