@@ -8,7 +8,10 @@ import { ServiceImpl } from './ServiceImpl'
 import { ServiceStorage } from './ServiceStorage'
 
 export class ServiceFactory {
-  static create(env: Environment, components: AppComponents): MetaverseContentService & ClusterDeploymentsService {
+  static create(
+    env: Environment,
+    components: Pick<AppComponents, 'logs' | 'metrics' | 'status' | 'database'>
+  ): MetaverseContentService & ClusterDeploymentsService {
     const serviceStorage = new ServiceStorage(env.getBean(Bean.STORAGE))
     const cacheManager: CacheManager = env.getBean(Bean.CACHE_MANAGER)
     const cache = cacheManager.buildEntityTypedCache<Pointer, Entity>(ENTITIES_BY_POINTERS_CACHE_CONFIG)

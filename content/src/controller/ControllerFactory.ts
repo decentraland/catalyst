@@ -1,4 +1,3 @@
-import { AppComponents } from 'src/types'
 import { Denylist } from '../denylist/Denylist'
 import { DenylistServiceDecorator } from '../denylist/DenylistServiceDecorator'
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
@@ -10,7 +9,7 @@ import { SynchronizationManager } from '../service/synchronization/Synchronizati
 import { Controller } from './Controller'
 
 export class ControllerFactory {
-  static create(env: Environment, components: AppComponents): Controller {
+  static create(env: Environment): Controller {
     const repository: Repository = env.getBean(Bean.REPOSITORY)
     const service: MetaverseContentService = env.getBean(Bean.SERVICE)
     const denylist: Denylist = env.getBean(Bean.DENYLIST)
@@ -25,8 +24,7 @@ export class ControllerFactory {
       synchronizationManager,
       challengeSupervisor,
       snapshotManager,
-      ethNetwork,
-      components
+      ethNetwork
     )
   }
 }

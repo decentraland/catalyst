@@ -1,6 +1,9 @@
+import { createLogComponent } from '@well-known-components/logger'
 import assert from 'assert'
 import { ContentFileHash, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
+import { createStatusComponent } from 'src/ports/status'
+import { AppComponents } from 'src/types'
 import { mock } from 'ts-mockito'
 import { Bean, Environment } from '../../../src/Environment'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -108,7 +111,7 @@ describe('Service', function () {
 
     const status = service.getStatus()
 
-    expect(status.historySize).toBe(initialAmountOfDeployments)
+    expect(status.snapshot.entities.profile).toBe(initialAmountOfDeployments)
   })
 
   it(`When a new deployment is made, then the amount of deployments is increased`, async () => {
@@ -117,7 +120,7 @@ describe('Service', function () {
 
     const status = service.getStatus()
 
-    expect(status.historySize).toBe(initialAmountOfDeployments + 1)
+    expect(status.snapshot.entities.profile).toBe(initialAmountOfDeployments + 1)
   })
 
   it(`When a new deployment is made and fails, then the amount of deployments is not modified`, async () => {
@@ -128,7 +131,7 @@ describe('Service', function () {
 
     const status = service.getStatus()
 
-    expect(status.historySize).toBe(initialAmountOfDeployments)
+    expect(status.snapshot.entities.profile).toBe(initialAmountOfDeployments)
   })
 
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
@@ -249,7 +252,13 @@ describe('Service', function () {
       .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
       .registerBean(Bean.REPOSITORY, MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]])))
       .registerBean(Bean.CACHE_MANAGER, new CacheManager())
-    return ServiceFactory.create(env)
+
+    const components: AppComponents = {
+      status: createStatusComponent(),
+      logs: createLogComponent()
+    } as any
+
+    return ServiceFactory.create(env, components)
   }
 
   function expectSpyToBeCalled(serviceSpy: jasmine.Spy, pointers: string[]) {
