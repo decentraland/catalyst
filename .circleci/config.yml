@@ -186,7 +186,8 @@ jobs:
             if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
               DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
             else
-              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
+              CATALYST_VERSION="$(curl https://api.github.com/repos/decentraland/catalyst/releases/latest -s | jq .name -r)-next"
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg "CATALYST_VERSION=${CATALYST_VERSION}" .
             fi
       - run:
           name: Log into DockerHub
