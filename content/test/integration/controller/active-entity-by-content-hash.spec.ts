@@ -11,6 +11,7 @@ describe('Integration - Get Active Entities By Content Hash', () => {
 
   beforeEach(async () => {
     server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
     await server.start()
   })
 

@@ -25,7 +25,7 @@ export class SnapshotManager implements StatusCapableComponent {
   private readonly STATUS_NAME = 'snapshot'
 
   constructor(
-    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs' | 'status'>,
+    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
     private readonly service: MetaverseContentService,
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {

@@ -510,7 +510,7 @@ export class EnvironmentBuilder {
       Bean.SNAPSHOT_MANAGER,
       () =>
         new SnapshotManager(
-          { database, metrics, staticConfigs, logs, status },
+          { database, metrics, staticConfigs, logs },
           env.getBean(Bean.SERVICE),
           env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
         )
