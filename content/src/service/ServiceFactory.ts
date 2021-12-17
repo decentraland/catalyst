@@ -1,5 +1,4 @@
 import { Pointer } from 'dcl-catalyst-commons'
-import { AppComponents } from 'src/types'
 import { Bean, Environment, EnvironmentConfig } from '../Environment'
 import { CacheManager, ENTITIES_BY_POINTERS_CACHE_CONFIG } from './caching/CacheManager'
 import { Entity } from './Entity'
@@ -8,10 +7,7 @@ import { ServiceImpl } from './ServiceImpl'
 import { ServiceStorage } from './ServiceStorage'
 
 export class ServiceFactory {
-  static create(
-    env: Environment,
-    components: Pick<AppComponents, 'logs' | 'metrics' | 'status' | 'database'>
-  ): MetaverseContentService & ClusterDeploymentsService {
+  static create(env: Environment): MetaverseContentService & ClusterDeploymentsService {
     const serviceStorage = new ServiceStorage(env.getBean(Bean.STORAGE))
     const cacheManager: CacheManager = env.getBean(Bean.CACHE_MANAGER)
     const cache = cacheManager.buildEntityTypedCache<Pointer, Entity>(ENTITIES_BY_POINTERS_CACHE_CONFIG)
@@ -26,8 +22,7 @@ export class ServiceFactory {
       {
         cache: env.getBean(Bean.DEPLOYMENTS_RATE_LIMIT_CACHE),
         maxSize: env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX)
-      },
-      components
+      }
     )
   }
 }

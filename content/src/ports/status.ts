@@ -1,49 +1,40 @@
-import { EntityType } from 'dcl-catalyst-commons'
+import { EntityVersion, Timestamp } from 'src/types'
 
-type EntitiesStatus = Partial<Record<EntityType, number>>
+type ComponentStatus = Record<string, any>
+interface ComponentsStatuses {
+  [x: string]: ComponentStatus
+}
 
-interface Status {
-  snapshot: {
-    lastTimestamp: number
-    entities: EntitiesStatus
-  }
+interface ContentServerStatus {
+  name: string
+  version: EntityVersion
+  currentTime: Timestamp
+  lastImmutableTime: Timestamp
+}
+
+export type Status = ContentServerStatus | ComponentsStatuses
+
+export interface StatusCapableComponent {
+  getComponentStatus(): Promise<Record<string, any>>
+  getStatusName(): string
 }
 
 export interface IStatusComponent {
-  setSnapshotActiveEntities(map: EntitiesStatus): void
-  getSnapshotActiveEntities(): EntitiesStatus
-
-  updateTimestamp(timestamp: number): void
-  getLatestUpdateTime(): number
+  getStatus(): Promise<Status>
 }
 
-export function createStatusComponent(): IStatusComponent {
-  const status: Status = {
-    snapshot: {
-      entities: {},
-      lastTimestamp: Date.now()
+export function createStatusComponent(components: StatusCapableComponent[]): IStatusComponent {
+  const getStatus = async (): Promise<Status> => {
+    const response: Status = {}
+
+    for (const component of components) {
+      response[component.getStatusName()] = await component.getComponentStatus()
     }
-  }
 
-  const setSnapshotActiveEntities = (map: EntitiesStatus) => {
-    status.snapshot.entities = map
-  }
-
-  const getSnapshotActiveEntities = (): EntitiesStatus => {
-    return status.snapshot.entities
-  }
-
-  const updateTimestamp = (timestamp: number) => {
-    status.snapshot.lastTimestamp = timestamp
-  }
-  const getLatestUpdateTime = () => {
-    return status.snapshot.lastTimestamp
+    return response
   }
 
   return {
-    setSnapshotActiveEntities,
-    getSnapshotActiveEntities,
-    updateTimestamp,
-    getLatestUpdateTime
+    getStatus
   }
 }

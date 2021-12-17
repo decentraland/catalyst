@@ -1,6 +1,7 @@
 import { IDeployerComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
+import { createStatusComponent } from 'src/ports/status'
 import { mock } from 'ts-mockito'
 import { ControllerPointerChanges } from '../../src/controller/Controller'
 import { ControllerFactory } from '../../src/controller/ControllerFactory'
@@ -54,9 +55,10 @@ describe('Integration - Server', function () {
         new ActiveDenylist(MockedRepository.build(), mock(ContentAuthenticator), mock(ContentCluster), 'network')
       )
 
-    const controller = ControllerFactory.create(env)
-    env.registerBean(Bean.CONTROLLER, controller)
+    const status = createStatusComponent([])
 
+    const controller = ControllerFactory.create(env, { status })
+    env.registerBean(Bean.CONTROLLER, controller)
 
     const batchDeployer: IDeployerComponent & { start(): Promise<void> } = {
       async deployEntity() {},

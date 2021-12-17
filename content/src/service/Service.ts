@@ -8,7 +8,6 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { ServerStatus } from 'src/types'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
@@ -38,7 +37,6 @@ export interface MetaverseContentService {
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
   storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
-  getStatus(): ServerStatus
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): Promise<FailedDeployment[]>

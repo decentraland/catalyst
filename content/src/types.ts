@@ -3,7 +3,6 @@ import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
-import { EntityType } from 'dcl-catalyst-commons'
 import { metrics } from './metrics'
 import { IBloomFilterComponent } from './ports/bloomFilter'
 import { IDatabaseComponent } from './ports/postgres'
@@ -33,17 +32,6 @@ export enum EntityVersion {
   V2 = 'v2',
   V3 = 'v3',
   V4 = 'v4'
-}
-
-export interface ServerStatus {
-  name: string
-  version: EntityVersion
-  currentTime: Timestamp
-  lastImmutableTime: Timestamp
-  snapshot: {
-    lastUpdated: number
-    entities: Partial<Record<EntityType, number>>
-  }
 }
 
 export type CannonicalEntityDeployment = { entity: RemoteEntityDeployment; servers: string[] }

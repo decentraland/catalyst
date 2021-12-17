@@ -478,8 +478,6 @@ export class EnvironmentBuilder {
 
     await database.start()
 
-    const status = createStatusComponent()
-
     this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY, () => repository)
     this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER, () =>
       SystemPropertiesManagerFactory.create(env)
@@ -504,7 +502,7 @@ export class EnvironmentBuilder {
       () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
     )
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
-    const deployer = ServiceFactory.create(env, { logs, database, metrics, status })
+    const deployer = ServiceFactory.create(env)
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
 
     this.registerBeanIfNotAlreadySet(
@@ -582,8 +580,10 @@ export class EnvironmentBuilder {
       env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
     )
 
+    const status = createStatusComponent(env.getBean(Bean.SNAPSHOT_MANAGER))
+
     this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
+    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env, { status }))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 
     return {

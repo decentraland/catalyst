@@ -11,7 +11,7 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
-import { ServerStatus } from 'src/types'
+import { Status } from 'src/ports/status'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
@@ -33,7 +33,7 @@ import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStor
 import { buildEntityAndFile } from './EntityTestFactory'
 
 export class MockedMetaverseContentService implements MetaverseContentService {
-  static readonly STATUS: ServerStatus = {
+  static readonly STATUS: Status = {
     name: 'name',
     version: EntityVersion.V3,
     currentTime: Date.now(),
@@ -146,7 +146,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     }
   }
 
-  getStatus(): ServerStatus {
+  getStatus(): Status {
     return MockedMetaverseContentService.STATUS
   }
 

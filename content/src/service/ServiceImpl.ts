@@ -12,9 +12,7 @@ import {
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
-import { AppComponents, ServerStatus } from 'src/types'
 import { Readable } from 'stream'
-import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
@@ -61,8 +59,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly validator: Validator,
     private readonly repository: Repository,
     private readonly cache: CacheByType<Pointer, Entity>,
-    private readonly deploymentsCache: { cache: NodeCache; maxSize: number },
-    private readonly components: Pick<AppComponents, 'logs' | 'metrics' | 'status' | 'database'>
+    private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {}
 
   async start(): Promise<void> {}
@@ -407,19 +404,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
     return this.storage.isContentAvailable(fileHashes)
-  }
-
-  getStatus(): ServerStatus {
-    return {
-      name: '', // TODO: Remove and communicate breaking change accordingly
-      version: CURRENT_CONTENT_VERSION,
-      currentTime: Date.now(),
-      lastImmutableTime: 0,
-      snapshot: {
-        lastUpdated: this.components.status.getLatestUpdateTime(),
-        entities: this.components.status.getSnapshotActiveEntities()
-      }
-    }
   }
 
   deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
