@@ -1,11 +1,11 @@
+import { Lifecycle } from '@well-known-components/interfaces'
 import { EnvironmentBuilder } from '../Environment'
-import { Server } from '../Server'
-async function main() {
-  const { env, components } = await new EnvironmentBuilder().build()
-  await new Server(env, components).start()
+import { main } from '../service'
+import { AppComponents } from '../types'
+
+async function initComponents(): Promise<AppComponents> {
+  return await new EnvironmentBuilder().buildConfigAndComponents()
 }
 
-main().catch((error) => {
-  console.log('Can not start server. ' + error)
-  process.exit(1)
-})
+// This file is the program entry point, it only calls the Lifecycle function
+Lifecycle.run({ main, initComponents })

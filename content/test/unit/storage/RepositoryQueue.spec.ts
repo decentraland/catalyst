@@ -1,11 +1,15 @@
 import { delay } from '@catalyst/commons'
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import future from 'fp-future'
+import { metricsDeclaration } from '../../../src/metrics'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from '../../../src/repository/RepositoryQueue'
 import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
 
 describe('RepositoryQueue', () => {
+  const metrics = createTestMetricsComponent(metricsDeclaration)
+
   it(`When a requests is added to the queue, it starts automatically if concurrency limit allows it`, async () => {
-    const queue = new RepositoryQueue()
+    const queue = new RepositoryQueue({ metrics })
 
     // Add our custom request
     const request = new DBRequest()
@@ -22,7 +26,7 @@ describe('RepositoryQueue', () => {
   })
 
   it(`When there are too many concurrent requests, then a new request that is added to the queue isn't started`, async () => {
-    const queue = new RepositoryQueue({ maxConcurrency: 1 })
+    const queue = new RepositoryQueue({ metrics }, { maxConcurrency: 1 })
 
     // Add a request that never finishes
     const stuckRequest = new DBRequest()
@@ -43,7 +47,7 @@ describe('RepositoryQueue', () => {
   })
 
   it(`When there are too many queued requests, then a high priority request is queued anyway`, async () => {
-    const queue = new RepositoryQueue({ maxConcurrency: 1, maxQueued: 1 })
+    const queue = new RepositoryQueue({ metrics }, { maxConcurrency: 1, maxQueued: 1 })
 
     // Add a request that never finishes
     const stuckRequest = new DBRequest()
@@ -73,7 +77,7 @@ describe('RepositoryQueue', () => {
   })
 
   it(`When there are too many queued requests, then a low priority request is rejected without being executed`, async () => {
-    const queue = new RepositoryQueue({ maxConcurrency: 1, maxQueued: 1 })
+    const queue = new RepositoryQueue({ metrics }, { maxConcurrency: 1, maxQueued: 1 })
 
     // Add a request that never finishes
     const stuckRequest = new DBRequest()
@@ -102,7 +106,7 @@ describe('RepositoryQueue', () => {
   })
 
   it(`When a request fails, then the returned promise also fails`, async () => {
-    const queue = new RepositoryQueue({ maxConcurrency: 1, maxQueued: 1 })
+    const queue = new RepositoryQueue({ metrics }, { maxConcurrency: 1, maxQueued: 1 })
 
     // Add our custom request
     const request = new DBRequest()

@@ -1,7 +1,7 @@
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
 import fs from 'fs'
 import path from 'path'
-import { AppComponents } from 'src/types'
+import { AppComponents } from '../types'
 
 // this component opens file descriptors and enables us to write to them and close all the FD at once
 // it also has a buffering algorithm to write to disk less often and reduce IO latency
@@ -112,7 +112,6 @@ export function createContentFileWriterComponent<T extends symbol | string>(
       for (const [_, { fileName }] of allFiles) {
         if (await checkFileExists(fileName)) {
           try {
-            logger.debug('Deleting file', { fileName })
             await fs.promises.unlink(fileName)
           } catch (err) {
             logger.error(err)

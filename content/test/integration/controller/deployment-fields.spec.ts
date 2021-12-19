@@ -1,22 +1,20 @@
 import { Deployment, Fetcher } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
-import { Bean } from '../../../src/Environment'
-import { MockedSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('Integration - Deployment Fields', () => {
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+loadStandaloneTestEnvironment()('Integration - Deployment Fields', (testEnv) => {
+  let server: TestProgram
   const fetcher = new Fetcher()
 
   beforeEach(async () => {
-    server = await testEnv
-      .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .andBuild()
-    await server.start()
+    server = await testEnv.configServer().andBuild()
+    makeNoopSynchronizationManager(server.components.synchronizationManager)
+    makeNoopValidator(server.components)
+    await server.startProgram()
   })
 
   it('When deployments fields filter is used, then the result is the expected', async () => {

@@ -1,4 +1,5 @@
 import { ContentFileHash, EntityId, EntityType, PartialDeploymentHistory, Pointer } from 'dcl-catalyst-commons'
+import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
@@ -40,6 +41,20 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     private readonly denylist: Denylist,
     private readonly repository: Repository
   ) {}
+
+  reportErrorDuringSync(
+    entityType: EntityType,
+    entityId: string,
+    reason: string,
+    authChain: AuthChain,
+    errorDescription?: string
+  ): Promise<null> {
+    return this.service.reportErrorDuringSync(entityType, entityId, reason, authChain, errorDescription)
+  }
+
+  areEntitiesAlreadyDeployed(entityIds: string[]): Promise<Map<string, boolean>> {
+    return this.service.areEntitiesAlreadyDeployed(entityIds)
+  }
 
   start(): Promise<void> {
     return this.service.start()

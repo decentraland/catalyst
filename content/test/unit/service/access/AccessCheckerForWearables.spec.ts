@@ -7,7 +7,7 @@ import { AccessCheckerForWearables, WearableCollection } from '../../../../src/s
 import { AccessCheckerImplParams } from '../../../../src/service/access/AccessCheckerImpl'
 
 describe('AccessCheckerForWearables', () => {
-  const COMMITTEE_MEMBER = '0x...'
+  const COMMITTEE_MEMBER = '0xCOMMITEE_MEMBER'
 
   it(`When non-urns are used as pointers, then validation fails`, async () => {
     const accessChecker = buildAccessChecker()
@@ -60,9 +60,7 @@ describe('AccessCheckerForWearables', () => {
   })
 
   it(`When pointer resolves to L1 fails with invalid address`, async () => {
-    const pointers = [
-      'urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body'
-    ]
+    const pointers = ['urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body']
     const accessChecker = buildAccessChecker()
 
     const errors = await checkAccess(accessChecker, { pointers })
@@ -73,12 +71,10 @@ describe('AccessCheckerForWearables', () => {
   })
 
   it(`When pointer resolves to L1 succeeds with valid address`, async () => {
-    const pointers = [
-      'urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body'
-    ]
+    const pointers = ['urn:decentraland:ethereum:collections-v1:dgtble_headspace:dgtble_hoodi_linetang_upper_body']
     const accessChecker = buildAccessChecker()
 
-    const errors = await checkAccess(accessChecker, { pointers, ethAddress: DECENTRALAND_ADDRESS})
+    const errors = await checkAccess(accessChecker, { pointers, ethAddress: DECENTRALAND_ADDRESS })
 
     expect(errors).toEqual([])
   })
@@ -90,7 +86,8 @@ describe('AccessCheckerForWearables', () => {
     const errors = await checkAccess(accessChecker, { pointers })
 
     expect(errors).toEqual([
-      "The provided Eth Address 'some address' does not have access to the following wearable: 'urn:decentraland:off-chain:base-avatars:BaseFemale'"])
+      "The provided Eth Address 'some address' does not have access to the following wearable: 'urn:decentraland:off-chain:base-avatars:BaseFemale'"
+    ])
   })
 
   it(`when pointer resolves to base-avatar then it resolves okay only with decentraland address`, async () => {

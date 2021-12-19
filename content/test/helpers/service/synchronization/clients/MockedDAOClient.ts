@@ -17,7 +17,7 @@ export class MockedDAOClient implements DAOClient {
   }
 
   add(baseUrl: ServerBaseUrl) {
-    this.serversByAddress.set(baseUrl, { baseUrl, owner: '0x...', id: 'Id' })
+    this.serversByAddress.set(baseUrl, { baseUrl, owner: '0xCatalyst_owner_address_1', id: 'Id' })
   }
 
   remove(baseUrl: ServerBaseUrl) {
@@ -25,7 +25,7 @@ export class MockedDAOClient implements DAOClient {
   }
 
   static withAddresses(...servers: ServerBaseUrl[]): MockedDAOClient {
-    return new MockedDAOClient(servers.map((baseUrl) => ({ baseUrl, owner: '0x...' })))
+    return new MockedDAOClient(servers.map((baseUrl) => ({ baseUrl, owner: '0xCatalyst_owner_address_0' })))
   }
 
   static with(baseUrl: ServerBaseUrl, owner: EthAddress): MockedDAOClient {

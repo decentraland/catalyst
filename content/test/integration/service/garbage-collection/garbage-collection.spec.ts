@@ -2,11 +2,10 @@ import { delay } from '@catalyst/commons'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import ms from 'ms'
-import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
-import { Repository } from '../../../../src/repository/Repository'
-import { GarbageCollectionManager } from '../../../../src/service/garbage-collection/GarbageCollectionManager'
-import { MetaverseContentService } from '../../../../src/service/Service'
-import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
+import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import {
   awaitUntil,
@@ -16,18 +15,17 @@ import {
   EntityCombo
 } from '../../E2ETestUtils'
 
-describe('Integration - Garbage Collection', () => {
+loadStandaloneTestEnvironment({
+  [EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL]: ms('2s'),
+  [EnvironmentConfig.GARBAGE_COLLECTION]: 'true'
+})('Integration - Garbage Collection', (testEnv) => {
   const P1 = 'X1,Y1',
     P2 = 'X2,Y2'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
   let onlyE1Content: ContentFileHash
   let sharedContent: ContentFileHash
 
-  const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService
-  let garbageCollector: GarbageCollectionManager
-  let db: any
-  let repository: Repository
+  let components: AppComponents
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], {
@@ -42,35 +40,29 @@ describe('Integration - Garbage Collection', () => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    const { env, components } = await new EnvironmentBuilder(baseEnv)
+    components = await new EnvironmentBuilder(baseEnv)
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL, ms('2s'))
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
-      .withBean(Bean.VALIDATOR, new NoOpValidator())
-      .build()
-    db = components.database
-    repository = env.getBean<Repository>(Bean.REPOSITORY)
-    service = env.getBean(Bean.SERVICE)
-    garbageCollector = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
+      .buildConfigAndComponents()
+    makeNoopValidator(components)
   })
 
   afterEach(async () => {
-    await garbageCollector?.stop()
-    await db?.stop()
-    await repository?.shutdown()
+    await stopAllComponents(components)
   })
 
   it(`When garbage collection is on, then unused content is deleted`, async () => {
     // Start garbage collection
-    await garbageCollector.start()
+    await components.garbageCollectionManager.start()
 
     // Deploy E1
-    await deployEntitiesCombo(service, E1)
+    await deployEntitiesCombo(components.deployer, E1)
 
     // Assert all content is available
     await assertContentIsAvailable(sharedContent, onlyE1Content)
 
     // Deploy E2
-    await deployEntitiesCombo(service, E2)
+    await deployEntitiesCombo(components.deployer, E2)
 
     // Assert only the shared content is still available
     await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
@@ -79,13 +71,13 @@ describe('Integration - Garbage Collection', () => {
 
   it(`When garbage collection is off, then unused content isn't deleted`, async () => {
     // Deploy E1
-    await deployEntitiesCombo(service, E1)
+    await deployEntitiesCombo(components.deployer, E1)
 
     // Assert all content is available
     await assertContentIsAvailable(sharedContent, onlyE1Content)
 
     // Deploy E2
-    await deployEntitiesCombo(service, E2)
+    await deployEntitiesCombo(components.deployer, E2)
 
     // Wait a little
     await delay(ms('4s'))
@@ -97,10 +89,10 @@ describe('Integration - Garbage Collection', () => {
 
   it(`When garbage collection is started after deployments, then unused content is still deleted`, async () => {
     // Deploy E1 and E2
-    await deployEntitiesCombo(service, E1, E2)
+    await deployEntitiesCombo(components.deployer, E1, E2)
 
     // Start garbage collection
-    await garbageCollector.start()
+    await components.garbageCollectionManager.start()
 
     // Assert only the shared content is still available
     await awaitUntil(() => assertReportedAsDeletedAre(onlyE1Content))
@@ -109,10 +101,10 @@ describe('Integration - Garbage Collection', () => {
 
   it(`When entity is not overwritten, then it is not garbage collected`, async () => {
     // Deploy E1 and E3
-    await deployEntitiesCombo(service, E1, E3)
+    await deployEntitiesCombo(components.deployer, E1, E3)
 
     // Start garbage collection
-    await garbageCollector.start()
+    await components.garbageCollectionManager.start()
 
     // Wait a little
     await delay(ms('4s'))
@@ -123,12 +115,12 @@ describe('Integration - Garbage Collection', () => {
   })
 
   function assertReportedAsDeletedAre(...fileHashes: ContentFileHash[]) {
-    assert.deepEqual(garbageCollector.deletedInLastSweep(), new Set(fileHashes))
+    assert.deepEqual(components.garbageCollectionManager.deletedInLastSweep(), new Set(fileHashes))
     return Promise.resolve()
   }
 
   async function assertContentIsAvailable(...hashes: ContentFileHash[]) {
-    const result = await service.isContentAvailable(hashes)
+    const result = await components.deployer.isContentAvailable(hashes)
     const allAvailable = Array.from(result.values()).every((available) => available)
     assert.ok(allAvailable)
   }

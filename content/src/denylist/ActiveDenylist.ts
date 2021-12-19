@@ -151,7 +151,9 @@ export class ActiveDenylist extends Denylist {
           resolve({
             status: DenylistOperationStatus.ERROR,
             type: DenylistValidationType.SIGNATURE_VALIDATION,
-            message: `Failed to authenticate the blocker. Error was: ${errorMessage}`
+            message: `Failed to authenticate the blocker. nodeOwner=${nodeOwner} network=${
+              this.network
+            } authChain=${JSON.stringify(metadata)} Error was: ${errorMessage}`
           }),
         (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
         this.network

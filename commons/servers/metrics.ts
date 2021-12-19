@@ -19,7 +19,7 @@ export function initializeMetricsServer<T extends string>(
   // due to the hardcoded nature of our "global instance of metricsComponent"
   // running tests and registering default metrics twice breaks the execution
   // that way we disable the default metrics for CI environments
-  if (process.env.CI !== 'true') {
+  if (process.env.CI !== 'true' && process.env.RUNNING_TESTS !== 'true') {
     collectDefaultMetrics({ register })
   }
 

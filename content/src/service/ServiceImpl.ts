@@ -1,5 +1,6 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { IPFSv2 } from '@dcl/schemas'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   AuditInfo,
   ContentFileHash,
@@ -10,28 +11,23 @@ import {
   Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
-import log4js from 'log4js'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
-import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
-import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
+import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
 import {
   Deployment,
-  DeploymentManager,
   DeploymentOptions,
   PartialDeploymentPointerChanges,
   PointerChangesOptions
 } from './deployments/DeploymentManager'
 import { Entity } from './Entity'
 import { EntityFactory } from './EntityFactory'
-import { FailedDeployment, FailedDeploymentsManager, FailureReason } from './errors/FailedDeploymentsManager'
-import { PointerManager } from './pointers/PointerManager'
+import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
 import {
-  ClusterDeploymentsService,
   DeploymentContext,
   DeploymentFiles,
   DeploymentListener,
@@ -42,25 +38,34 @@ import {
 } from './Service'
 import { ServiceStorage } from './ServiceStorage'
 import { happenedBefore } from './time/TimeSorting'
-import { Validator } from './validations/Validator'
 
-export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsService {
-  private static readonly LOGGER = log4js.getLogger('ServiceImpl')
+export class ServiceImpl implements MetaverseContentService {
+  private static LOGGER: ILoggerComponent.ILogger
   private readonly listeners: DeploymentListener[] = []
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
+  // TODO (menduz): I'd remove this serviceStorage class
+  private serviceStorage: ServiceStorage
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
   constructor(
-    private readonly storage: ServiceStorage,
-    private readonly pointerManager: PointerManager,
-    private readonly failedDeploymentsManager: FailedDeploymentsManager,
-    private readonly deploymentManager: DeploymentManager,
-    private readonly validator: Validator,
-    private readonly repository: Repository,
+    public components: Pick<
+      AppComponents,
+      | 'metrics'
+      | 'storage'
+      | 'pointerManager'
+      | 'failedDeploymentsManager'
+      | 'deploymentManager'
+      | 'validator'
+      | 'repository'
+      | 'logs'
+    >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
-  ) {}
+  ) {
+    this.serviceStorage = new ServiceStorage(components.storage)
+    ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
+  }
 
   async start(): Promise<void> {}
 
@@ -95,6 +100,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
 
     // Update the current list of pointers being deployed
+    if (!entity.pointers) throw new Error('The entity does not have any pointer')
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
@@ -126,7 +132,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           this.listeners.map((listener) => listener({ entity, auditInfo: storeResult.auditInfoComplete }))
         )
 
-        metricsComponent.increment('total_deployments_count', { entity_type: entity.type }, 1)
+        this.components.metrics.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
         storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
@@ -180,23 +186,27 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     | InvalidResult
     | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
   > {
-    return await this.repository.reuseIfPresent(
+    return await this.components.repository.reuseIfPresent(
       task,
       (db) =>
         db.txIf(async (transaction) => {
           const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
 
           // Prepare validation functions that need context
-          const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
-            areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
-            fetchDeploymentStatus: (type, id) =>
-              this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
-            isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
-            isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
-              Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
-            isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
-            fetchContentFileSize: async (hash) => await this.getSize(hash)
-          })
+          const validationResult = await this.components.validator.validate(
+            { entity, auditInfo, files: hashes },
+            context,
+            {
+              areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
+              fetchDeploymentStatus: (type, id) =>
+                this.components.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
+              isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
+              isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
+                Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
+              isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
+              fetchContentFileSize: async (hash) => await this.getSize(hash)
+            }
+          )
 
           if (!validationResult.ok) {
             return { errors: validationResult.errors }
@@ -213,13 +223,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           if (!isEntityAlreadyDeployed) {
             // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
             // Calculate overwrites
-            const { overwrote, overwrittenBy } = await this.pointerManager.calculateOverwrites(
+            const { overwrote, overwrittenBy } = await this.components.pointerManager.calculateOverwrites(
               transaction.pointerHistory,
               entity
             )
 
             // Store the deployment
-            const deploymentId = await this.deploymentManager.saveDeployment(
+            const deploymentId = await this.components.deploymentManager.saveDeployment(
               transaction.deployments,
               transaction.migrationData,
               transaction.content,
@@ -229,7 +239,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             )
 
             // Modify active pointers
-            const pointersFromEntity = await this.pointerManager.referenceEntityFromPointers(
+            const pointersFromEntity = await this.components.pointerManager.referenceEntityFromPointers(
               transaction.lastDeployedPointers,
               deploymentId,
               entity
@@ -237,24 +247,28 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
             affectedPointers = Array.from(pointersFromEntity.keys())
 
             // Save deployment pointer changes
-            await this.deploymentManager.savePointerChanges(
+            await this.components.deploymentManager.savePointerChanges(
               transaction.deploymentPointerChanges,
               deploymentId,
               pointersFromEntity
             )
 
             // Add to pointer history
-            await this.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
+            await this.components.pointerManager.addToHistory(transaction.pointerHistory, deploymentId, entity)
 
             // Set who overwrote who
-            await this.deploymentManager.setEntitiesAsOverwritten(transaction.deployments, overwrote, deploymentId)
+            await this.components.deploymentManager.setEntitiesAsOverwritten(
+              transaction.deployments,
+              overwrote,
+              deploymentId
+            )
 
             // Store the entity's content
             await this.storeEntityContent(hashes, alreadyStoredContent)
           }
 
           // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-          await this.failedDeploymentsManager.reportSuccessfulDeployment(
+          await this.components.failedDeploymentsManager.reportSuccessfulDeployment(
             transaction.failedDeployments,
             entity.type,
             entity.id
@@ -276,9 +290,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     ServiceImpl.LOGGER.warn(
       `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
     )
-    return this.repository.run(
+    return this.components.repository.run(
       (db) =>
-        this.failedDeploymentsManager.reportFailure(
+        this.components.failedDeploymentsManager.reportFailure(
           db.failedDeployments,
           entityType,
           entityId,
@@ -369,7 +383,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     // If entity was committed, then store all it's content (that isn't already stored)
     const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
       .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-      .map(([fileHash, file]) => this.storage.storeContent(fileHash, file))
+      .map(([fileHash, file]) => this.serviceStorage.storeContent(fileHash, file))
 
     return Promise.all(contentStorageActions)
   }
@@ -395,39 +409,39 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   getSize(fileHash: ContentFileHash): Promise<number | undefined> {
-    return this.storage.getSize(fileHash)
+    return this.serviceStorage.getSize(fileHash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
-    return this.storage.getContent(fileHash)
+    return this.serviceStorage.getContent(fileHash)
   }
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
-    return this.storage.isContentAvailable(fileHashes)
+    return this.serviceStorage.isContentAvailable(fileHashes)
   }
 
   deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
-    return this.storage.deleteContent(fileHashes)
+    return this.serviceStorage.deleteContent(fileHashes)
   }
 
   storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void> {
-    return this.storage.storeContent(fileHash, content)
+    return this.serviceStorage.storeContent(fileHash, content)
   }
 
   areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {
-    return this.repository.reuseIfPresent(
+    return this.components.repository.reuseIfPresent(
       task,
-      (db) => this.deploymentManager.areEntitiesDeployed(db.deployments, entityIds),
+      (db) => this.components.deploymentManager.areEntitiesDeployed(db.deployments, entityIds),
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
   }
 
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
-    return this.repository.reuseIfPresent(
+    return this.components.repository.reuseIfPresent(
       task,
       (db) =>
         db.taskIf((task) =>
-          this.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
+          this.components.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
         ),
       {
         priority: DB_REQUEST_PRIORITY.HIGH
@@ -437,9 +451,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   // This endpoint is for debugging purposes
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.repository.reuseIfPresent(
+    return this.components.repository.reuseIfPresent(
       task,
-      (db) => db.taskIf((task) => this.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)),
+      (db) =>
+        db.taskIf((task) =>
+          this.components.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)
+        ),
       {
         priority: DB_REQUEST_PRIORITY.LOW
       }
@@ -447,11 +464,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   getPointerChanges(task?: Database, options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges> {
-    return this.repository.reuseIfPresent(
+    return this.components.repository.reuseIfPresent(
       task,
       (db) =>
         db.taskIf((task) =>
-          this.deploymentManager.getPointerChanges(task.deploymentPointerChanges, task.deployments, options)
+          this.components.deploymentManager.getPointerChanges(task.deploymentPointerChanges, task.deployments, options)
         ),
       {
         priority: DB_REQUEST_PRIORITY.LOW
@@ -460,9 +477,12 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   }
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {
-    return this.repository.run((db) => this.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments), {
-      priority: DB_REQUEST_PRIORITY.LOW
-    })
+    return this.components.repository.run(
+      (db) => this.components.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
+    )
   }
 
   listenToDeployments(listener: DeploymentListener): void {

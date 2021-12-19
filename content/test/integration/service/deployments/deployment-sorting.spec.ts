@@ -1,22 +1,26 @@
 import { Deployment, EntityType, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
+import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertDeploymentsCount } from '../../E2EAssertions'
 import { loadTestEnvironment } from '../../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../../E2ETestUtils'
-import { TestServer } from '../../TestServer'
+import { TestProgram } from '../../TestProgram'
 
 /**
  * This test verifies that all deployment sorting params are working correctly
  */
-describe('Integration - Deployment Sorting', () => {
+loadTestEnvironment()('Integration - Deployment Sorting', (testEnv) => {
   const SYNC_INTERVAL: number = ms('0.5s')
-  const testEnv = loadTestEnvironment()
-  let server1: TestServer, server2: TestServer
+  let server1: TestProgram, server2: TestProgram
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv.configServer(SYNC_INTERVAL).andBuildMany(2)
+
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
+
     // Start server 1 and 2
-    await Promise.all([server1.start(), server2.start()])
+    await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
@@ -36,7 +40,6 @@ describe('Integration - Deployment Sorting', () => {
     await server1.deploy(deployData3)
     await awaitUntil(() => assertDeploymentsCount(server1, 3))
   })
-
 
   it(`When getting all deployments without sortby then the order is by local and desc`, async () => {
     const deploymentsFromServer1 = await server1.getDeployments()

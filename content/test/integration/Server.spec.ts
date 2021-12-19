@@ -1,22 +1,21 @@
-import { IDeployerComponent } from '@dcl/snapshots-fetcher/dist/types'
+import { createLogComponent } from '@well-known-components/logger'
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { mock } from 'ts-mockito'
-import { ControllerPointerChanges } from '../../src/controller/Controller'
-import { ControllerFactory } from '../../src/controller/ControllerFactory'
+import { Controller, ControllerPointerChanges } from '../../src/controller/Controller'
 import { ActiveDenylist } from '../../src/denylist/ActiveDenylist'
-import { Bean, Environment, EnvironmentConfig } from '../../src/Environment'
-import { createTestDatabaseComponent } from '../../src/ports/postgres'
-import { createStatusComponent } from '../../src/ports/status'
-import { Server } from '../../src/Server'
+import { Environment, EnvironmentConfig } from '../../src/Environment'
+import { metricsDeclaration } from '../../src/metrics'
 import { ContentAuthenticator } from '../../src/service/auth/Authenticator'
 import { DeploymentPointerChanges } from '../../src/service/deployments/DeploymentManager'
 import { Entity } from '../../src/service/Entity'
+import { Server } from '../../src/service/Server'
+import { ISnapshotManager } from '../../src/service/snapshots/SnapshotManager'
+import { ChallengeSupervisor } from '../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../src/service/synchronization/ContentCluster'
-import { NoOpMigrationManager } from '../helpers/NoOpMigrationManager'
 import { MockedRepository } from '../helpers/repository/MockedRepository'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
-import { NoOpGarbageCollectionManager } from '../helpers/service/garbage-collection/NoOpGarbageCollectionManager'
 import { buildContent, MockedMetaverseContentServiceBuilder } from '../helpers/service/MockedMetaverseContentService'
 import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 
@@ -36,42 +35,46 @@ describe('Integration - Server', function () {
   const address: string = `http://localhost:${port}`
 
   it('starts the server', async () => {
-    const service = new MockedMetaverseContentServiceBuilder()
+    const deployer = new MockedMetaverseContentServiceBuilder()
       .withEntity(entity1)
       .withEntity(entity2)
       .withPointerChanges(pointerChanges)
       .withContent(content)
       .build()
+
+    const logs = createLogComponent()
+    const repository = MockedRepository.build()
+    const synchronizationManager = new MockedSynchronizationManager()
+
+    const ethNetwork = 'network'
+    const denylist = new ActiveDenylist(repository, mock(ContentAuthenticator), mock(ContentCluster), ethNetwork)
+
     const env = new Environment()
-      .registerBean(Bean.REPOSITORY, MockedRepository.build())
-      .registerBean(Bean.SERVICE, service)
-      .registerBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .registerBean(Bean.MIGRATION_MANAGER, new NoOpMigrationManager())
-      .registerBean(Bean.GARBAGE_COLLECTION_MANAGER, NoOpGarbageCollectionManager.build())
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
-      .registerBean(
-        Bean.DENYLIST,
-        new ActiveDenylist(MockedRepository.build(), mock(ContentAuthenticator), mock(ContentCluster), 'network')
-      )
 
-    const status = createStatusComponent([])
-
-    const controller = ControllerFactory.create(env, { status })
-    env.registerBean(Bean.CONTROLLER, controller)
-
-    const batchDeployer: IDeployerComponent & { start(): Promise<void> } = {
-      async deployEntity() {},
-      async onIdle() {},
-      async start() {}
+    const challengeSupervisor = new ChallengeSupervisor()
+    const snapshotManager: ISnapshotManager = {
+      getFullSnapshotMetadata() {
+        throw new Error('not implemented')
+      },
+      getSnapshotMetadataPerEntityType() {
+        throw new Error('not implemented')
+      },
+      async generateSnapshots() {}
     }
 
-    server = new Server(env, { database: createTestDatabaseComponent(), batchDeployer })
+    const metrics = createTestMetricsComponent(metricsDeclaration)
+
+    const controller = new Controller(
+      { deployer, denylist, challengeSupervisor, snapshotManager, synchronizationManager, logs },
+      ethNetwork
+    )
+
+    server = new Server({ env, controller, metrics })
 
     await server.start()
   })
-
-  afterAll(async () => await server.stop())
 
   it(`Get all scenes by id`, async () => {
     const response = await fetch(`${address}/entities/scenes?id=${entity1.id}&id=${entity2.id}`)
@@ -149,4 +152,6 @@ describe('Integration - Server', function () {
       error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.`
     })
   })
+
+  it('stops the server', async () => await server.stop())
 })

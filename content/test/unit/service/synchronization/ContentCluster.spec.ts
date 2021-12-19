@@ -1,8 +1,13 @@
 import { ServerBaseUrl } from '@catalyst/commons'
-import { Bean, Environment, EnvironmentConfig } from '../../../../src/Environment'
-import { ChallengeText } from '../../../../src/service/synchronization/ChallengeSupervisor'
+import { createLogComponent } from '@well-known-components/logger'
+import { Environment, EnvironmentConfig } from '../../../../src/Environment'
+import { FetcherFactory } from '../../../../src/helpers/FetcherFactory'
+import {
+  ChallengeSupervisor,
+  ChallengeText,
+  IChallengeSupervisor
+} from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
-import { ContentClusterFactory } from '../../../../src/service/synchronization/ContentClusterFactory'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
 import { MockedFetcher } from '../../helpers/MockedFetcher'
 
@@ -87,19 +92,23 @@ class ContentClusterBuilder {
   build(): ContentCluster {
     const env = new Environment()
 
-    env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.servers.values()))
-    env.registerBean(Bean.FETCHER, this.fetchHelper)
+    const daoClient = MockedDAOClient.withAddresses(...this.servers.values())
     env.setConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, 1000)
     env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 10000)
 
-    if (this.localChallenge) {
-      const challengeSupervisor = {
-        getChallengeText: () => this.localChallenge,
-        isChallengeOk: (text: ChallengeText) => this.localChallenge === text
-      }
-      env.registerBean(Bean.CHALLENGE_SUPERVISOR, challengeSupervisor)
-    }
+    const challengeSupervisor: IChallengeSupervisor = this.localChallenge
+      ? {
+          getChallengeText: () => this.localChallenge!,
+          isChallengeOk: (text: ChallengeText) => this.localChallenge === text
+        }
+      : new ChallengeSupervisor()
 
-    return ContentClusterFactory.create(env)
+    const logs = createLogComponent()
+    const catalystFetcher = FetcherFactory.create({ env })
+
+    return new ContentCluster(
+      { daoClient, logs, challengeSupervisor, catalystFetcher },
+      env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
+    )
   }
 }

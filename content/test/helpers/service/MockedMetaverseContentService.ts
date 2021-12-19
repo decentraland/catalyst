@@ -9,9 +9,8 @@ import {
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { AuthLinkType } from 'dcl-crypto'
+import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
-import { Status } from 'src/ports/status'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
@@ -30,10 +29,11 @@ import {
   MetaverseContentService
 } from '../../../src/service/Service'
 import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStorage'
+import { IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
 import { buildEntityAndFile } from './EntityTestFactory'
 
-export class MockedMetaverseContentService implements MetaverseContentService {
-  static readonly STATUS: Status = {
+export class MockedMetaverseContentService implements MetaverseContentService, IStatusCapableComponent {
+  static readonly STATUS = {
     name: 'name',
     version: EntityVersion.V3,
     currentTime: Date.now(),
@@ -65,6 +65,24 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     this.entities = builder.entities
     this.content = builder.content
     this.pointerChanges = builder.pointerChanges
+  }
+  async getComponentStatus(): Promise<StatusProbeResult> {
+    return {
+      name: 'mockedContentService',
+      data: MockedMetaverseContentService.STATUS
+    }
+  }
+  reportErrorDuringSync(
+    entityType: EntityType,
+    entityId: string,
+    reason: string,
+    authChain: AuthChain,
+    errorDescription?: string
+  ): Promise<null> {
+    throw new Error('Method not implemented.')
+  }
+  areEntitiesAlreadyDeployed(entityIds: string[]): Promise<Map<string, boolean>> {
+    throw new Error('Method not implemented.')
   }
 
   async deployEntityFromRemoteServer() {
@@ -144,10 +162,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     } else {
       return Promise.resolve(SimpleContentItem.fromBuffer(buffer))
     }
-  }
-
-  getStatus(): Status {
-    return MockedMetaverseContentService.STATUS
   }
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {

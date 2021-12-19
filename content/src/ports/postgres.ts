@@ -98,7 +98,25 @@ export async function createDatabaseComponent(
     }
   }
 
+  let didStop = false
+
   async function stop() {
+    if (didStop) {
+      logger.error('Stop called twice')
+      return
+    }
+    didStop = true
+
+    let gracePeriods = 10
+
+    while (gracePeriods-- > 0 && pool.waitingCount) {
+      logger.debug('Draining connections', {
+        waitingCount: pool.waitingCount,
+        gracePeriods
+      })
+      await sleep(200)
+    }
+
     const promise = pool.end()
     let finished = false
 

@@ -1,8 +1,11 @@
-import { Environment, EnvironmentConfig } from '../Environment'
+import { EnvironmentConfig } from '../Environment'
+import { AppComponents } from '../types'
 import { MigrationManager } from './MigrationManager'
 
 export class MigrationManagerFactory {
-  static create(env: Environment): MigrationManager {
+  static create(components: Pick<AppComponents, 'logs' | 'env'>): MigrationManager {
+    const { env } = components
+
     const databaseConfig = {
       user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
       password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
@@ -13,6 +16,6 @@ export class MigrationManagerFactory {
       query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
     }
 
-    return new MigrationManager(databaseConfig)
+    return new MigrationManager(components, databaseConfig)
   }
 }

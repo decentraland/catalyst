@@ -1,42 +1,9 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
-import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
-import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
-import { createLogComponent } from '@well-known-components/logger'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import NodeCache from 'node-cache'
-import path from 'path'
-import { ControllerFactory } from './controller/ControllerFactory'
-import { DenylistFactory } from './denylist/DenylistFactory'
-import { FetcherFactory } from './helpers/FetcherFactory'
-import { metricsComponent } from './metrics'
-import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-import { createBloomFilterComponent } from './ports/bloomFilter'
-// import { createBloomFilterComponent } from './ports/bloomFilter'
-import { createFetchComponent } from './ports/fetcher'
-import { createDatabaseComponent } from './ports/postgres'
-import { createStatusComponent } from './ports/status'
-import { RepositoryFactory } from './repository/RepositoryFactory'
+import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'
-import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
-import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
-import { CacheManagerFactory } from './service/caching/CacheManagerFactory'
-import { DeploymentManagerFactory } from './service/deployments/DeploymentManagerFactory'
-import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsManager'
-import { GarbageCollectionManagerFactory } from './service/garbage-collection/GarbageCollectionManagerFactory'
-import { PointerManagerFactory } from './service/pointers/PointerManagerFactory'
-import { ServiceFactory } from './service/ServiceFactory'
-import { SnapshotManager } from './service/snapshots/SnapshotManager'
-import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
-import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
-import { ContentClusterFactory } from './service/synchronization/ContentClusterFactory'
-import { ClusterSynchronizationManager } from './service/synchronization/SynchronizationManager'
-import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
-import { ValidatorFactory } from './service/validations/ValidatorFactory'
-import { ContentStorageFactory } from './storage/ContentStorageFactory'
 import { AppComponents } from './types'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
@@ -78,11 +45,9 @@ const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 export class Environment {
   private static readonly LOGGER = log4js.getLogger('Environment')
   private configs: Map<EnvironmentConfig, any>
-  private beans: Map<Bean, any>
 
   constructor(otherEnv?: Environment) {
     this.configs = otherEnv ? new Map(otherEnv.configs) : new Map()
-    this.beans = otherEnv ? new Map(otherEnv.beans) : new Map()
   }
 
   getConfig<T>(key: EnvironmentConfig): T {
@@ -91,15 +56,6 @@ export class Environment {
 
   setConfig<T>(key: EnvironmentConfig, value: T): Environment {
     this.configs.set(key, value)
-    return this
-  }
-
-  getBean<T>(type: Bean): T {
-    return this.beans.get(type)
-  }
-
-  registerBean<T>(type: Bean, bean: T): Environment {
-    this.beans.set(type, bean)
     return this
   }
 
@@ -122,33 +78,6 @@ export class Environment {
       return JSON.stringify(object)
     }
   }
-}
-
-export const enum Bean {
-  STORAGE,
-  SERVICE,
-  CONTROLLER,
-  POINTER_MANAGER,
-  SEGMENT_IO_ANALYTICS,
-  SQS_DEPLOYMENT_REPORTER,
-  SYNCHRONIZATION_MANAGER,
-  DAO_CLIENT,
-  ACCESS_CHECKER,
-  DEPLOYMENT_MANAGER,
-  CONTENT_CLUSTER,
-  DENYLIST,
-  AUTHENTICATOR,
-  FAILED_DEPLOYMENTS_MANAGER,
-  FETCHER,
-  VALIDATOR,
-  CHALLENGE_SUPERVISOR,
-  REPOSITORY,
-  DEPLOYMENTS_RATE_LIMIT_CACHE,
-  MIGRATION_MANAGER,
-  GARBAGE_COLLECTION_MANAGER,
-  SYSTEM_PROPERTIES_MANAGER,
-  SNAPSHOT_MANAGER,
-  CACHE_MANAGER
 }
 
 export enum EnvironmentConfig {
@@ -214,17 +143,12 @@ export class EnvironmentBuilder {
     }
   }
 
-  withBean(bean: Bean, value: any): EnvironmentBuilder {
-    this.baseEnv.registerBean(bean, value)
-    return this
-  }
-
   withConfig(config: EnvironmentConfig, value: any): EnvironmentBuilder {
     this.baseEnv.setConfig(config, value)
     return this
   }
 
-  async build(): Promise<{ env: Environment; components: AppComponents }> {
+  async buildConfigAndComponents(): Promise<AppComponents> {
     const env = new Environment()
 
     this.registerConfigIfNotAlreadySet(
@@ -452,163 +376,10 @@ export class EnvironmentBuilder {
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
-    // Please put special attention on the bean registration order.
-    // Some beans depend on other beans, so the required beans should be registered before
-
-    const repository = await RepositoryFactory.create(env)
-    const logs = createLogComponent()
-    const fetcher = createFetchComponent()
-    const metrics = metricsComponent
-    const staticConfigs = {
-      contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    }
-
-    const database = await createDatabaseComponent(
-      { logs },
-      {
-        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
-        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
-        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
-        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
-        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
-        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
-      }
-    )
-
-    await database.start()
-
-    this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY, () => repository)
-    this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER, () =>
-      SystemPropertiesManagerFactory.create(env)
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR, () => new ChallengeSupervisor())
-    this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER, () => CacheManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.FETCHER, () => FetcherFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT, () => DAOClientFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR, () => AuthenticatorFactory.create(env))
-    const localStorage = await ContentStorageFactory.local(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.STORAGE, () => localStorage)
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER, () => ContentClusterFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER, () => DeploymentManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DENYLIST, () => DenylistFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER, () => PointerManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER, () => AccessCheckerImplFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
-    const ttl = env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
-    this.registerBeanIfNotAlreadySet(
-      env,
-      Bean.DEPLOYMENTS_RATE_LIMIT_CACHE,
-      () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
-    const deployer = ServiceFactory.create(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
-
-    this.registerBeanIfNotAlreadySet(
-      env,
-      Bean.SNAPSHOT_MANAGER,
-      () =>
-        new SnapshotManager(
-          { database, metrics, staticConfigs, logs },
-          env.getBean(Bean.SERVICE),
-          env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
-        )
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
-      GarbageCollectionManagerFactory.create(env)
-    )
-
-    const downloadQueue = createJobQueue({
-      autoStart: true,
-      concurrency: 10,
-      timeout: 60000
-    })
-
-    const deployedEntitiesFilter = createBloomFilterComponent({
-      sizeInBytes: 512
-    })
-
-    const batchDeployer = createBatchDeployerComponent(
-      {
-        logs,
-        downloadQueue,
-        fetcher,
-        database,
-        metrics,
-        deployer,
-        staticConfigs,
-        deployedEntitiesFilter
-      },
-      {
-        autoStart: true,
-        concurrency: 10,
-        timeout: 100000
-      }
-    )
-
-    const synchronizationJobManager = createJobLifecycleManagerComponent(
-      { logs },
-      {
-        jobManagerName: 'SynchronizationJobManager',
-        createJob(contentServer) {
-          return createCatalystDeploymentStream(
-            { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer },
-            {
-              contentFolder: staticConfigs.contentStorageFolder,
-              contentServer,
-
-              // time between every poll to /pointer-changes
-              pointerChangesWaitTime: 5000,
-
-              // reconnection time for the whole catalyst
-              reconnectTime: 1000,
-              reconnectRetryTimeExponent: 1.2,
-
-              // download entities retry
-              requestMaxRetries: 10,
-              requestRetryWaitTime: 5000
-            }
-          )
-        }
-      }
-    )
-
-    const synchronizationManager = new ClusterSynchronizationManager(
-      { synchronizationJobManager, downloadQueue, deployer, fetcher, metrics, staticConfigs, batchDeployer, logs },
-      env.getBean(Bean.CONTENT_CLUSTER),
-      env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
-    )
-
-    const status = createStatusComponent([env.getBean(Bean.SNAPSHOT_MANAGER)])
-
-    this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env, { status }))
-    this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
-
-    return {
-      env,
-      components: {
-        database,
-        deployer,
-        metrics,
-        fetcher,
-        logs,
-        staticConfigs,
-        batchDeployer,
-        downloadQueue,
-        synchronizationJobManager,
-        deployedEntitiesFilter,
-        status
-      }
-    }
+    return await initComponentsWithEnv(env)
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {
     env.setConfig(key, this.baseEnv.getConfig(key) ?? valueProvider())
-  }
-
-  private registerBeanIfNotAlreadySet(env: Environment, key: Bean, valueProvider: () => any): void {
-    env.registerBean(key, this.baseEnv.getBean(key) ?? valueProvider())
   }
 }

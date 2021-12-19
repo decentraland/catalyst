@@ -44,13 +44,6 @@ export interface MetaverseContentService {
   getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
-}
-
-/**
- * This version of the service is aware of the fact that the content service lives inside a cluster,
- * and that deployments can also happen on other servers.
- */
-export interface ClusterDeploymentsService {
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,

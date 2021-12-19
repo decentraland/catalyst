@@ -46,7 +46,7 @@ describe('DenylistServiceDecorator', () => {
   let entity2Target: DenylistTarget
   let ethAddressTarget: DenylistTarget
 
-  let service: MockedMetaverseContentService
+  let deployer: MockedMetaverseContentService
 
   beforeAll(async () => {
     ;[entity1, entityFile1] = await buildEntity([P1, P3], content1)
@@ -57,7 +57,7 @@ describe('DenylistServiceDecorator', () => {
     entity2Target = buildEntityTarget(entity2.type, entity2.id)
     ethAddressTarget = buildAddressTarget(ethAddress)
 
-    service = new MockedMetaverseContentServiceBuilder()
+    deployer = new MockedMetaverseContentServiceBuilder()
       .withContent(content1)
       .withContent(content2)
       .withEntity(entity1)
@@ -380,6 +380,6 @@ describe('DenylistServiceDecorator', () => {
   }
 
   function getDecorator(denylist: Denylist) {
-    return new DenylistServiceDecorator(service, denylist, MockedRepository.build())
+    return new DenylistServiceDecorator(deployer, denylist, MockedRepository.build())
   }
 })

@@ -1,38 +1,45 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { MetaverseContentService } from '../../../src/service/Service'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that if concurrent deployments are made, then only one remains as active
  */
-describe('Integration - Concurrent deployments', () => {
+loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv) => {
   const P1 = 'x1,y1'
   const AMOUNT_OF_DEPLOYMENTS = 500
   const type = EntityType.PROFILE
-  const testEnv = loadStandaloneTestEnvironment()
 
   let entities: EntityCombo[]
 
-  beforeAll(async () => {
+  it('creates initial entities', async () => {
     entities = []
     for (let i = 0; i < AMOUNT_OF_DEPLOYMENTS; i++) {
       entities[i] = await buildDeployData([P1], { type })
     }
   })
 
-  it(`When deployments are executed concurrently, then only one remains active`, async () => {
-    const service = await testEnv.buildService()
-    // Perform all the deployments concurrently
-    await Promise.all(entities.map((entityCombo) => deployEntity(service, entityCombo)))
+  testCaseWithComponents(
+    testEnv,
+    `When deployments are executed concurrently, then only one remains active`,
+    async (components) => {
+      const { deployer } = components
 
-    // Assert that only one is active
-    const { deployments } = await service.getDeployments({ filters: { pointers: [P1], onlyCurrentlyPointed: true } })
-    expect(deployments.length).toEqual(1)
-    await service.stop()
-  })
+      // make noop validator
+      makeNoopValidator(components)
 
-  async function deployEntity(service: MetaverseContentService & { stop: () => Promise<void> }, entity: EntityCombo) {
+      // Perform all the deployments concurrently
+      await Promise.all(entities.map((entityCombo) => deployEntity(deployer, entityCombo)))
+
+      // Assert that only one is active
+      const { deployments } = await deployer.getDeployments({ filters: { pointers: [P1], onlyCurrentlyPointed: true } })
+      expect(deployments.length).toEqual(1)
+    }
+  )
+
+  async function deployEntity(service: MetaverseContentService, entity: EntityCombo) {
     try {
       await deployEntitiesCombo(service, entity)
     } catch (error) {

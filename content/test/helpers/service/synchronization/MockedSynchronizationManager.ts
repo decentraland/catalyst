@@ -1,3 +1,4 @@
+import { stub } from 'sinon'
 import { SynchronizationManager } from '../../../../src/service/synchronization/SynchronizationManager'
 
 export class MockedSynchronizationManager implements SynchronizationManager {
@@ -12,4 +13,9 @@ export class MockedSynchronizationManager implements SynchronizationManager {
   getStatus(): any {
     return {}
   }
+}
+
+export function makeNoopSynchronizationManager(component: SynchronizationManager) {
+  stub(component, 'start').resolves()
+  stub(component, 'stop').resolves()
 }

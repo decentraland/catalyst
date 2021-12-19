@@ -1,4 +1,5 @@
 import { ServerBaseUrl } from '@catalyst/commons'
+import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import {
   ContentClient,
   DeploymentData,
@@ -21,63 +22,69 @@ import {
 import fetch from 'node-fetch'
 import { ControllerDenylistData } from '../../src/controller/Controller'
 import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src/denylist/DenylistTarget'
-import { Bean, Environment, EnvironmentConfig } from '../../src/Environment'
-import { Server } from '../../src/Server'
+import { EnvironmentConfig } from '../../src/Environment'
+import { main } from '../../src/service'
 import { FailedDeployment } from '../../src/service/errors/FailedDeploymentsManager'
 import { AppComponents } from '../../src/types'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { deleteFolderRecursive, hashAndSignMessage, Identity } from './E2ETestUtils'
 
+process.env.RUNNING_TESTS = 'true'
+
 /** A wrapper around a server that helps make tests more easily */
-export class TestServer extends Server {
+export class TestProgram {
   public readonly namePrefix: string
-  private readonly serverPort: number
-  private readonly storageFolder: string
-  private started: boolean = false
+  public shouldDeleteStorageAtStop = true
 
+  public program?: Lifecycle.ComponentBasedProgram<AppComponents>
   private readonly client: ContentClient
+  logger: ILoggerComponent.ILogger
 
-  constructor(env: Environment, components: Pick<AppComponents, 'database' | 'batchDeployer'>) {
-    super(env, components)
-    this.serverPort = env.getConfig(EnvironmentConfig.SERVER_PORT)
-    this.storageFolder = env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER)
+  constructor(public components: AppComponents) {
     this.client = new ContentClient({
       contentUrl: this.getUrl(),
       proofOfWorkEnabled: false,
-      fetcher: env.getBean(Bean.FETCHER)
+      fetcher: components.catalystFetcher
+    })
+    this.logger = components.logs.getLogger('TestProgram')
+  }
+
+  async startProgram() {
+    const initComponents = async () => {
+      return this.components
+    }
+
+    if (this.program) {
+      throw new Error('TestProgram is already running')
+    }
+
+    this.program = await Lifecycle.run<AppComponents>({
+      main,
+      initComponents
     })
   }
 
-  override shouldInitializeMetricsServer(): boolean {
-    return false
-  }
-
   getUrl(): ServerBaseUrl {
-    return `http://localhost:${this.serverPort}`
+    const port = this.components.env.getConfig(EnvironmentConfig.SERVER_PORT)
+    return `http://localhost:${port}`
   }
 
-  async start(): Promise<void> {
-    await super.start()
-    this.started = true
-  }
-
-  async stop(
-    options: { deleteStorage: boolean; endDbConnection: boolean } = { deleteStorage: true, endDbConnection: true },
-    force: boolean = false
-  ): Promise<void> {
-    if (this.started) {
-      this.started = false
-      await super.stop({ endDbConnection: options.endDbConnection })
-    } else if (options.endDbConnection && force) {
-      await super.stopDB()
+  async stopProgram(): Promise<void> {
+    if (this.program) {
+      await this.program.stop()
+      this.program = undefined
     }
-    if (options.deleteStorage) {
-      deleteFolderRecursive(this.storageFolder)
+
+    if (this.shouldDeleteStorageAtStop) {
+      deleteFolderRecursive(this.components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER))
     }
   }
 
   async deploy(deployData: DeploymentData, fix: boolean = false): Promise<Timestamp> {
-    return this.client.deployEntity(deployData, fix)
+    this.logger.info('Deploying entity ' + deployData.entityId)
+    const returnValue = await this.client.deployEntity(deployData, fix)
+    this.logger.info('Deployinged entity ' + deployData.entityId, { returnValue })
+    return returnValue
   }
 
   getFailedDeployments(): Promise<FailedDeployment[]> {
