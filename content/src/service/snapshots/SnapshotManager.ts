@@ -5,6 +5,7 @@ import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-co
 import future from 'fp-future'
 import * as fs from 'fs'
 import * as path from 'path'
+import { StatusCapableComponent } from 'src/ports/status'
 import { streamActiveDeployments } from '../../logic/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { compressContentFile } from '../../storage/compression'
@@ -14,11 +15,14 @@ import { MetaverseContentService } from '../Service'
 const ALL_ENTITIES = Symbol('allEntities')
 type ALL_ENTITIES = typeof ALL_ENTITIES
 
-export class SnapshotManager {
+export class SnapshotManager implements StatusCapableComponent {
   /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
   private LOGGER: ILoggerComponent.ILogger
+  private activeEntities: Partial<Record<EntityType, number>>
+  private lastUpdatedTime: number
+  private readonly STATUS_NAME = 'snapshot'
 
   constructor(
     private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
@@ -26,6 +30,17 @@ export class SnapshotManager {
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
+  }
+
+  getStatusName() {
+    return this.STATUS_NAME
+  }
+
+  async getComponentStatus() {
+    return {
+      entities: this.activeEntities,
+      lastUpdatedTime: this.lastUpdatedTime
+    }
   }
 
   async startCalculateFullSnapshots(): Promise<{ stop: () => Promise<boolean> }> {
@@ -145,6 +160,8 @@ export class SnapshotManager {
       array.push(tuple)
     }
 
+    const newActiveEntitiesCount = {}
+
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
@@ -166,10 +183,19 @@ export class SnapshotManager {
 
         // add the entoty to the inMemoryArray to be used by the legacy formatter
         appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
+
+        if (newActiveEntitiesCount[snapshotElem.entityType] != null) {
+          newActiveEntitiesCount[snapshotElem.entityType]++
+        } else {
+          newActiveEntitiesCount[snapshotElem.entityType] = 1
+        }
       }
     } finally {
       await fileWriterComponent.flushToDiskAndCloseFiles()
     }
+
+    this.activeEntities = newActiveEntitiesCount
+    this.lastUpdatedTime = Date.now()
 
     // Phase 3) hash generated files and move them to content folder
     try {

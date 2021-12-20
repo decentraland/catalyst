@@ -27,7 +27,7 @@ export async function assertEntitiesAreDeployedButNotActive(server: TestServer, 
       0,
       `Expected not to find entity with id ${entity.id} when checking for pointer ${
         entity.pointers
-      } on server '${server.getAddress()}.'`
+      } on server '${server.getUrl()}.'`
     )
     await assertEntityIsOnServer(server, entity)
   }
@@ -81,7 +81,7 @@ export async function assertDeploymentsCount(server: TestServer, count: number) 
   assert.equal(
     deployments.length,
     count,
-    `Expected to find ${count} deployments on server ${server.getAddress()}. Instead, found ${deployments.length}.`
+    `Expected to find ${count} deployments on server ${server.getUrl()}. Instead, found ${deployments.length}.`
   )
 }
 
@@ -90,7 +90,7 @@ export async function assertDeploymentsAreReported(server: TestServer, ...expect
   assert.equal(
     deployments.length,
     expectedDeployments.length,
-    `Expected to find ${expectedDeployments.length} deployments on server ${server.getAddress()}. Instead, found ${
+    `Expected to find ${expectedDeployments.length} deployments on server ${server.getUrl()}. Instead, found ${
       deployments.length
     }.`
   )

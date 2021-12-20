@@ -1,19 +1,12 @@
-import { delay, SynchronizationState } from '@catalyst/commons'
-import { DeploymentData } from 'dcl-catalyst-client'
-import { DeploymentWithAuditInfo, ServerAddress, Timestamp } from 'dcl-catalyst-commons'
+import { delay, ServerBaseUrl } from '@catalyst/commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import { clearTimeout, setTimeout } from 'timers'
-import { metricsComponent } from '../../metrics'
+import { AppComponents } from '../../types'
 import { FailedDeployment } from '../errors/FailedDeploymentsManager'
-import { ClusterDeploymentsService, DeploymentContext, DeploymentResult, MetaverseContentService } from '../Service'
-import { SystemPropertiesManager, SystemProperty } from '../system-properties/SystemProperties'
-import { ContentServerClient } from './clients/ContentServerClient'
+import { DeploymentContext } from '../Service'
+import { bootstrapFromSnapshots } from './bootstrapFromSnapshots'
 import { ContentCluster } from './ContentCluster'
-import { EventDeployer } from './EventDeployer'
-import { downloadDeployment } from './failed-deployments/Requests'
-import { DeploymentWithSource } from './streaming/EventStreamProcessor'
-import { streamMap } from './streaming/StreamHelper'
+import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 
 export interface SynchronizationManager {
   start(): Promise<void>
@@ -21,22 +14,33 @@ export interface SynchronizationManager {
   getStatus(): void
 }
 
+type ContentSyncComponents = Pick<
+  AppComponents,
+  | 'staticConfigs'
+  | 'logs'
+  | 'downloadQueue'
+  | 'metrics'
+  | 'fetcher'
+  | 'synchronizationJobManager'
+  | 'deployer'
+  | 'batchDeployer'
+>
+
+export enum SynchronizationState {
+  BOOTSTRAPPING = 'Bootstrapping',
+  SYNCED = 'Synced',
+  SYNCING = 'Syncing'
+}
+
 export class ClusterSynchronizationManager implements SynchronizationManager {
   private static readonly LOGGER = log4js.getLogger('ClusterSynchronizationManager')
-  private lastKnownDeployments: Map<ServerAddress, Timestamp>
-  private syncWithNodesTimeout: NodeJS.Timeout
+
   private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
-  private stopping: boolean = false
-  private timeOfLastSync: Timestamp = 0
 
   constructor(
+    public components: ContentSyncComponents,
     private readonly cluster: ContentCluster,
-    private readonly systemProperties: SystemPropertiesManager,
-    private readonly deployer: EventDeployer,
-    private readonly service: MetaverseContentService & ClusterDeploymentsService,
-    private readonly timeBetweenSyncs: number,
-    private readonly disableSynchronization: boolean,
-    private readonly checkSyncRange: number
+    private readonly disableSynchronization: boolean // TODO: [new-sync] put this in components
   ) {}
 
   async start(): Promise<void> {
@@ -44,21 +48,9 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       ClusterSynchronizationManager.LOGGER.warn(`Cluster synchronization has been disabled.`)
       return
     }
-    // Make sure the stopping flag is set to false
-    this.stopping = false
 
-    // Connect to the cluster
+    // Connect to the cluster and obtain all Content Clients
     await this.cluster.connect()
-
-    // Read last deployments
-    this.lastKnownDeployments = new Map(
-      await this.systemProperties.getSystemProperty(SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS)
-    )
-
-    // Configure fail if sync hangs
-    this.failIfSyncHangs().catch(() =>
-      ClusterSynchronizationManager.LOGGER.error('There was an error during the check of synchronization.')
-    )
 
     // Sync with other servers
     await this.syncWithServers()
@@ -69,170 +61,102 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     )
   }
 
-  stop(): Promise<void> {
+  async stop(): Promise<void> {
     if (this.disableSynchronization) {
       // Since it was disabled, there is nothing to stop
       return Promise.resolve()
     }
-    this.stopping = true
-    if (this.syncWithNodesTimeout) clearTimeout(this.syncWithNodesTimeout)
+    this.components.synchronizationJobManager.setDesiredJobs(new Set())
     this.cluster.disconnect()
     return this.waitUntilSyncFinishes()
   }
 
+  // TODO: [new-sync] Add info about other catalysts conectivity
   getStatus() {
     const clusterStatus = this.cluster.getStatus()
     return {
       ...clusterStatus,
-      synchronizationState: this.synchronizationState,
-      lastSyncWithOtherServers: this.timeOfLastSync
+      synchronizationState: this.synchronizationState
     }
   }
 
-  private async failIfSyncHangs(): Promise<void> {
-    await delay(ms('30m'))
+  // This is the method that is called to sync with other catalysts
+  async syncWithServers(): Promise<void> {
+    bootstrap: {
+      // Note: If any deployment was overwritten by the snapshots, then we never reach them
+      ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
+      this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
+      await bootstrapFromSnapshots(this.components, this.cluster)
+      this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
+      this.synchronizationState = SynchronizationState.SYNCED
+    }
 
-    while (true) {
-      await delay(ms('5m'))
-
-      const failedToSync: boolean = this.synchronizationState == SynchronizationState.FAILED_TO_SYNC
-      if (failedToSync) {
-        ClusterSynchronizationManager.LOGGER.error(`Restarting server because it has failed to sync.`)
-        process.exit(1)
+    sync: {
+      ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
+      this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
+      const setDesiredJobs = () => {
+        this.synchronizationState = SynchronizationState.SYNCING
+        const desiredJobNames = new Set(this.cluster.getAllServersInCluster())
+        // the job names are the contentServerUrl
+        return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
       }
 
-      const isSyncing: boolean = this.synchronizationState == SynchronizationState.SYNCING
-      const lastSync: number = Date.now() - this.timeOfLastSync
+      // start the sync jobs
+      setDesiredJobs()
 
-      // If it is a lot of time in the syncing state and it has not stored new deployments, then we should restart the service
-      if (isSyncing && lastSync > this.checkSyncRange) {
-        ClusterSynchronizationManager.LOGGER.error(
-          `Restarting server because the last sync was at least ${this.checkSyncRange} seconds ago, at: ${lastSync}`
-        )
-        process.exit(1)
-      }
+      // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
+      // the setDesiredJobs function handles the lifecycle od those async jobs.
+      this.cluster.onSyncFinished(() => {
+        this.synchronizationState = SynchronizationState.SYNCED
+        setDesiredJobs()
+      })
     }
   }
 
   private async retryFailedDeploymentExecution(): Promise<void> {
     // Get Failed Deployments from local storage
-    const failedDeployments: FailedDeployment[] = await this.service.getAllFailedDeployments()
-
+    const failedDeployments: FailedDeployment[] = await this.components.deployer.getAllFailedDeployments()
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 
+    const contentServersUrls: ServerBaseUrl[] = this.cluster.getAllServersInCluster()
+
     // TODO: Implement an exponential backoff for retrying
-    failedDeployments.forEach(async (failedDeployment) => {
+    for (const failedDeployment of failedDeployments) {
       // Build Deployment from other servers
-      const entityId = failedDeployment.entityId
-      ClusterSynchronizationManager.LOGGER.debug(`Will retry to deploy entity with id: '${entityId}'`)
-
-      try {
-        const data: DeploymentData = await downloadDeployment(this.cluster.getAllServersInCluster(), entityId)
-
-        // Deploy local
-        const result: DeploymentResult = await this.service.deployEntity(
-          data.files,
-          entityId,
-          { authChain: data.authChain },
-          DeploymentContext.FIX_ATTEMPT
-        )
-        if (typeof result === 'number') {
-          ClusterSynchronizationManager.LOGGER.debug(`Deployment of entity with id '${entityId}' was successful`)
-        } else {
-          ClusterSynchronizationManager.LOGGER.debug(
-            `Deployment of entity with id '${entityId}' failed due: ${result.errors.toString()}`
+      const { entityId, entityType, authChain } = failedDeployment
+      if (authChain) {
+        ClusterSynchronizationManager.LOGGER.info(`Will retry to deploy entity with id: '${entityId}'`)
+        try {
+          await deployEntityFromRemoteServer(
+            this.components,
+            entityId,
+            entityType,
+            authChain,
+            contentServersUrls,
+            DeploymentContext.FIX_ATTEMPT
           )
-        }
-      } catch (err) {
-        ClusterSynchronizationManager.LOGGER.debug(`Deployment of entity with id '${entityId}' failed due: ${err}`)
+        } catch {}
+      } else {
+        ClusterSynchronizationManager.LOGGER.info(
+          `Can't retry failed deployment: '${entityId}' because it lacks of authChain`
+        )
       }
-    })
+    }
   }
 
   private async retryFailedDeployments(): Promise<void> {
     while (true) {
-      await delay(ms('1h'))
-      const isSynced: boolean = this.synchronizationState == SynchronizationState.SYNCED
-      if (isSynced) {
-        await this.retryFailedDeploymentExecution()
-      }
-    }
-  }
-
-  // This is the method that is called recursive to sync with other catalysts
-  private async syncWithServers(): Promise<void> {
-    // Update flag: if it's not bootstrapping, then that means that it was synced and needs to get new deployments
-    if (this.synchronizationState !== SynchronizationState.BOOTSTRAPPING) {
-      this.synchronizationState = SynchronizationState.SYNCING
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
-    } else {
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
-    }
-
-    ClusterSynchronizationManager.LOGGER.debug(`Starting to sync with servers`)
-    try {
-      // Gather all servers
-      const contentServers: ContentServerClient[] = this.cluster.getAllServersInCluster()
-
-      // Fetch all new deployments
-      const streams = contentServers.map((contentServer) => {
-        const deploymentStream = contentServer.getNewDeployments()
-        const sourceData = streamMap<DeploymentWithAuditInfo, DeploymentWithSource>((deployment) => ({
-          deployment,
-          source: contentServer
-        }))
-        return deploymentStream.pipe(sourceData)
-      })
-
-      // Process them together
-      await this.deployer.processAllDeployments(
-        streams,
-        undefined,
-        this.synchronizationState === SynchronizationState.BOOTSTRAPPING
-      )
-
-      ClusterSynchronizationManager.LOGGER.debug(`Updating content server timestamps`)
-
-      // If everything worked, then update the last deployment timestamp
-      contentServers.forEach((client) => {
-        // Update the client, so it knows from when to ask next time
-        const newTimestamp = client.allDeploymentsWereSuccessful()
-
-        ClusterSynchronizationManager.LOGGER.debug(
-          `Updating content server timestamps: ` + client.getAddress() + ' is ' + newTimestamp
-        )
-        // Update the map, so we can store it on the database
-        this.lastKnownDeployments.set(client.getAddress(), newTimestamp)
-      })
-
-      ClusterSynchronizationManager.LOGGER.debug(`Updating system properties`)
-
-      // Update the database
-      await this.systemProperties.setSystemProperty(
-        SystemProperty.LAST_KNOWN_LOCAL_DEPLOYMENTS,
-        Array.from(this.lastKnownDeployments.entries())
-      )
-
-      this.synchronizationState = SynchronizationState.SYNCED
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'synced' }, 1)
-      this.timeOfLastSync = Date.now()
-      ClusterSynchronizationManager.LOGGER.debug(`Finished syncing with servers`)
-
+      // TODO: [new-sync] Make this configurable
+      await delay(ms('15m'))
       await this.retryFailedDeploymentExecution()
-    } catch (error) {
-      this.synchronizationState = SynchronizationState.FAILED_TO_SYNC
-      metricsComponent.observe('dcl_sync_state_summary', { state: 'failed_to_sync' }, 1)
-      ClusterSynchronizationManager.LOGGER.error(`Failed to sync with servers. Reason:\n${error}`)
-    } finally {
-      if (!this.stopping) {
-        // Set the timeout again
-        this.syncWithNodesTimeout = setTimeout(() => this.syncWithServers(), this.timeBetweenSyncs)
-      }
     }
   }
 
   private async waitUntilSyncFinishes(): Promise<void> {
-    while (this.synchronizationState === SynchronizationState.SYNCING) {
+    await this.components.downloadQueue.onIdle()
+    await this.components.batchDeployer.onIdle()
+
+    while (this.components.synchronizationJobManager.getRunningJobs().size) {
       await delay(ms('1s'))
     }
   }

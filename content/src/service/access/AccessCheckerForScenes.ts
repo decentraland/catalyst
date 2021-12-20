@@ -39,13 +39,21 @@ export class AccessCheckerForScenes {
             if (pointerParts.length === 2) {
               const x: number = parseInt(pointerParts[0], 10)
               const y: number = parseInt(pointerParts[1], 10)
-
-              // Check that the address has access (we check both the present and the 5 min into the past to avoid synchronization issues in the blockchain)
-              const hasAccess =
-                (await this.checkParcelAccess(x, y, timestamp, ethAddress)) ||
-                (await this.checkParcelAccess(x, y, timestamp - AccessCheckerForScenes.SCENE_LOOKBACK_TIME, ethAddress))
-              if (!hasAccess) {
-                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+              try {
+                // Check that the address has access (we check both the present and the 5 min into the past to avoid synchronization issues in the blockchain)
+                const hasAccess =
+                  (await this.checkParcelAccess(x, y, timestamp, ethAddress)) ||
+                  (await this.checkParcelAccess(
+                    x,
+                    y,
+                    timestamp - AccessCheckerForScenes.SCENE_LOOKBACK_TIME,
+                    ethAddress
+                  ))
+                if (!hasAccess) {
+                  errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
+                }
+              } catch (e) {
+                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y}). ${e}`)
               }
             } else {
               errors.push(
@@ -74,7 +82,7 @@ export class AccessCheckerForScenes {
       )
     } catch (error) {
       this.LOGGER.error(`Error checking parcel access (${x}, ${y}, ${timestamp}, ${ethAddress}).`, error)
-      return false
+      throw error
     }
   }
 
@@ -104,7 +112,7 @@ export class AccessCheckerForScenes {
         (belongsToEstate && (await this.isEstateUpdateAuthorized(parcel.estates[0].estateId, timestamp, ethAddress)))
       )
     }
-    return false
+    throw new Error(`Parcel(${x},${y},${timestamp}) not found`)
   }
 
   private async isEstateUpdateAuthorized(
@@ -119,7 +127,7 @@ export class AccessCheckerForScenes {
         (await this.hasAccessThroughAuthorizations(estate.owners[0].address, ethAddress, timestamp))
       )
     }
-    return false
+    throw new Error(`Couldn\'t find the state ${estateId}`)
   }
 
   private async hasAccessThroughFirstLevelAuthorities(
@@ -214,10 +222,14 @@ export class AccessCheckerForScenes {
     }
 
     try {
-      return (await this.fetcher.queryGraph<{ parcels: Parcel[] }>(this.landManagerSubgraphUrl, query, variables))
-        .parcels[0]
+      const r = await this.fetcher.queryGraph<{ parcels: Parcel[] }>(this.landManagerSubgraphUrl, query, variables)
+
+      if (r.parcels && r.parcels.length) return r.parcels[0]
+
+      this.LOGGER.error(`Error fetching parcel (${x}, ${y}, ${timestamp}): ${JSON.stringify(r)}`)
+      throw new Error(`Error fetching parcel (${x}, ${y}), ${timestamp}`)
     } catch (error) {
-      this.LOGGER.error(`Error fetching parcel (${x}, ${y})`, error)
+      this.LOGGER.error(`Error fetching parcel (${x}, ${y}, ${timestamp})`, error)
       throw error
     }
   }
@@ -298,7 +310,7 @@ export class AccessCheckerForScenes {
     const variables = {
       owner,
       operator,
-      timestamp: Math.floor(timestamp / 1000) // UNIX
+      timestamp: Math.floor(timestamp / 1000) // js(ms) -> UNIX(s)
     }
 
     try {

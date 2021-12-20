@@ -103,34 +103,6 @@ describe('Service', function () {
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
   })
 
-  it(`When the service is started, then the amount of deployments is obtained from the repository`, async () => {
-    await service.start()
-
-    const status = service.getStatus()
-
-    expect(status.historySize).toBe(initialAmountOfDeployments)
-  })
-
-  it(`When a new deployment is made, then the amount of deployments is increased`, async () => {
-    await service.start()
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
-
-    const status = service.getStatus()
-
-    expect(status.historySize).toBe(initialAmountOfDeployments + 1)
-  })
-
-  it(`When a new deployment is made and fails, then the amount of deployments is not modified`, async () => {
-    await service.start()
-    try {
-      await service.deployEntity([randomFile], randomFileHash, auditInfo)
-    } catch {}
-
-    const status = service.getStatus()
-
-    expect(status.historySize).toBe(initialAmountOfDeployments)
-  })
-
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
     const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
       Promise.resolve({
@@ -249,6 +221,7 @@ describe('Service', function () {
       .registerBean(Bean.DEPLOYMENT_MANAGER, NoOpDeploymentManager.build())
       .registerBean(Bean.REPOSITORY, MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]])))
       .registerBean(Bean.CACHE_MANAGER, new CacheManager())
+
     return ServiceFactory.create(env)
   }
 

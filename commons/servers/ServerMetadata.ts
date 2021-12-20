@@ -1,6 +1,9 @@
 import { EthAddress } from 'dcl-crypto'
+
 export type ServerMetadata = {
-  address: string
+  baseUrl: string
   owner: EthAddress
   id: string
 }
+
+export declare type ServerBaseUrl = string

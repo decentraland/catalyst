@@ -29,14 +29,9 @@ describe('Integration - Failed Deployments Manager', function () {
   it(`When failures are reported, then the last status is returned`, async () => {
     const deployment = buildRandomDeployment()
 
-    await reportDeployment({ deployment, reason: FailureReason.NO_ENTITY_OR_AUDIT })
-
-    let status = await getDeploymentStatus(deployment)
-    expect(status).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
-
     await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    status = await getDeploymentStatus(deployment)
+    let status = await getDeploymentStatus(deployment)
     expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
   })
 
@@ -46,7 +41,7 @@ describe('Integration - Failed Deployments Manager', function () {
 
     await reportDeployment({
       deployment: deployment1,
-      reason: FailureReason.NO_ENTITY_OR_AUDIT,
+      reason: FailureReason.DEPLOYMENT_ERROR,
       description: 'description'
     })
     await reportDeployment({ deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
@@ -60,7 +55,7 @@ describe('Integration - Failed Deployments Manager', function () {
     expect(failed1.reason).toBe(FailureReason.DEPLOYMENT_ERROR)
     expect(failed1.errorDescription).toBeUndefined()
     assertFailureWasDueToDeployment(failed2, deployment1)
-    expect(failed2.reason).toBe(FailureReason.NO_ENTITY_OR_AUDIT)
+    expect(failed2.reason).toBe(FailureReason.DEPLOYMENT_ERROR)
     expect(failed2.errorDescription).toEqual('description')
   })
 

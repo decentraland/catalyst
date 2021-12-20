@@ -1,11 +1,4 @@
-import {
-  ContentFileHash,
-  EntityId,
-  EntityType,
-  PartialDeploymentHistory,
-  Pointer,
-  ServerStatus
-} from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityId, EntityType, PartialDeploymentHistory, Pointer } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
@@ -204,10 +197,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getAllFailedDeployments()
   }
 
-  getStatus(): ServerStatus {
-    return this.service.getStatus()
-  }
-
   storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
     return this.service.storeContent(fileHash, content)
   }
@@ -260,7 +249,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
 
     // Find the entity file
-    const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
+    const hashes = await ServiceImpl.hashFiles(files, entityId)
     const entityFile = hashes.get(entityId)
     if (!entityFile) {
       throw new Error(`Failed to find the entity file.`)

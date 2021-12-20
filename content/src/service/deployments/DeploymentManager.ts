@@ -216,6 +216,7 @@ export type PointerChangesOptions = {
   offset?: number
   limit?: number
   lastId?: string
+  includeAuthChain?: boolean
 }
 
 export type DeploymentOptions = {

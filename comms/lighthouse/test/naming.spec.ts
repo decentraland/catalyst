@@ -11,7 +11,7 @@ const oldFetch = global.fetch
 
 const daoClient: DAOClient = {
   async getAllServers(): Promise<Set<ServerMetadata>> {
-    return new Set([{ id: 'id', address: '0x...', owner: '0x...' }])
+    return new Set([{ id: 'id', baseUrl: '0x...', owner: '0x...' }])
   }
 } as DAOClient
 

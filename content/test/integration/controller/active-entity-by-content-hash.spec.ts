@@ -11,11 +11,12 @@ describe('Integration - Get Active Entities By Content Hash', () => {
 
   beforeEach(async () => {
     server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
     await server.start()
   })
 
   it("When the deployment doesn't exist returns 404", async () => {
-    const response = await fetch(server.getAddress() + `/contents/fail/active-entities`)
+    const response = await fetch(server.getUrl() + `/contents/fail/active-entities`)
 
     expect(response.status).toEqual(404)
     expect(response.ok).toBe(false)
@@ -45,7 +46,7 @@ describe('Integration - Get Active Entities By Content Hash', () => {
   })
 
   async function fetchActiveEntity(contentHash: string): Promise<EntityId[]> {
-    const url = server.getAddress() + `/contents/${contentHash}/active-entities`
+    const url = server.getUrl() + `/contents/${contentHash}/active-entities`
 
     return (await fetch(url)).json()
   }

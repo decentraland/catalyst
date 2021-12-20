@@ -7,11 +7,11 @@ import {
   LegacyAuditInfo,
   PartialDeploymentHistory,
   Pointer,
-  ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
+import { Status } from 'src/ports/status'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
@@ -33,12 +33,15 @@ import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStor
 import { buildEntityAndFile } from './EntityTestFactory'
 
 export class MockedMetaverseContentService implements MetaverseContentService {
-  static readonly STATUS: ServerStatus = {
+  static readonly STATUS: Status = {
     name: 'name',
     version: EntityVersion.V3,
     currentTime: Date.now(),
     lastImmutableTime: 0,
-    historySize: 0
+    snapshot: {
+      entities: {},
+      lastUpdated: Date.now()
+    }
   }
 
   static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {
@@ -62,6 +65,10 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     this.entities = builder.entities
     this.content = builder.content
     this.pointerChanges = builder.pointerChanges
+  }
+
+  async deployEntityFromRemoteServer() {
+    // noop
   }
 
   start(): Promise<void> {
@@ -139,7 +146,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     }
   }
 
-  getStatus(): ServerStatus {
+  getStatus(): Status {
     return MockedMetaverseContentService.STATUS
   }
 

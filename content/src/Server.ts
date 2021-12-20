@@ -39,7 +39,7 @@ export class Server {
 
   private stopSnapshots?: () => Promise<any>
 
-  constructor(env: Environment, private components: Pick<AppComponents, 'database'>) {
+  constructor(env: Environment, private components: Pick<AppComponents, 'database' | 'batchDeployer'>) {
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -168,6 +168,7 @@ export class Server {
     await this.migrationManager.run()
     await this.validateHistory()
     await this.service.start()
+    await this.components.batchDeployer.start()
 
     // generate snapshots before starting the server
     if (this.snapshotManager) {
@@ -200,6 +201,9 @@ export class Server {
       await this.stopSnapshots()
       delete this.stopSnapshots
     }
+
+    // await for jobs to end
+    await this.components.batchDeployer.onIdle()
 
     Server.LOGGER.info(`Content Server stopped.`)
     if (options.endDbConnection) await this.stopDB()

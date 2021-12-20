@@ -1,12 +1,11 @@
 import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
-import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
 import { Entity } from '../Entity'
 import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
 import { ServiceImpl } from '../ServiceImpl'
-import { happenedBefore } from '../time/TimeSorting'
 import { DeploymentToValidate, ExternalCalls, Validation } from './Validator'
 
 export const DEFAULT_THUMBNAIL_SIZE = 1024
@@ -95,47 +94,34 @@ export class Validations {
     }
   }
 
-  /** Validate that there is no entity with a higher version already deployed that the legacy entity is trying to overwrite */
-  static readonly LEGACY_ENTITY: Validation = async ({ deployment, externalCalls }) => {
-    const { entity: entityToBeDeployed, auditInfo: auditInfoBeingDeployed } = deployment
-    if (
-      auditInfoBeingDeployed.migrationData &&
-      auditInfoBeingDeployed.migrationData.originalVersion === EntityVersion.V2
-    ) {
-      const { deployments } = await externalCalls.fetchDeployments({
-        entityTypes: [entityToBeDeployed.type],
-        pointers: entityToBeDeployed.pointers,
-        onlyCurrentlyPointed: true
-      })
-      for (const currentDeployment of deployments) {
-        const currentAuditInfo = currentDeployment.auditInfo
-        if (happenedBefore(currentDeployment, entityToBeDeployed)) {
-          if (currentAuditInfo.version > entityToBeDeployed.version) {
-            return [`Found an overlapping entity with a higher version already deployed.`]
-          } else if (currentAuditInfo.version == entityToBeDeployed.version && auditInfoBeingDeployed.migrationData) {
-            if (!currentAuditInfo.migrationData) {
-              return [`Found an overlapping entity with a higher version already deployed.`]
-            } else if (
-              currentAuditInfo.migrationData.originalVersion > auditInfoBeingDeployed.migrationData.originalVersion
-            ) {
-              return [`Found an overlapping entity with a higher version already deployed.`]
-            }
-          }
-        }
-      }
-    } else {
-      return [`Found a legacy entity without original metadata or the original version might not be considered legacy.`]
-    }
-  }
-
   /** Validate that uploaded and reported hashes are corrects */
   static readonly CONTENT_V3: Validation = async ({ deployment, externalCalls }) => {
     const { entity, files } = deployment
-    const errors: string[] = await this.validate_content_v3(entity, files, externalCalls)
+    const errors: string[] = await this.validateContentV3(entity, files, externalCalls)
     return errors.length > 0 ? errors : undefined
   }
 
-  private static async validate_content_v3(
+  /** Validate that uploaded and reported hashes are corrects and files corresponds to snapshots */
+  static readonly CONTENT_V4: Validation = async ({ deployment, externalCalls }) => {
+    const { entity, files } = deployment
+    const errors: string[] = await this.validateContentV3(entity, files, externalCalls)
+
+    if (entity.content) {
+      for (const [fileName, hash] of entity.content) {
+        // Validate all content files correspond to at least one avatar snapshot
+        if (entity.type === EntityType.PROFILE) {
+          if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
+            errors.push(
+              `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
+            )
+          }
+        }
+      }
+    }
+    return errors.length > 0 ? errors : undefined
+  }
+
+  private static async validateContentV3(
     entity: Entity,
     files: Map<string, Uint8Array>,
     externalCalls: ExternalCalls
@@ -160,26 +146,6 @@ export class Validations {
       }
     }
     return errors
-  }
-
-  /** Validate that uploaded and reported hashes are corrects and files corresponds to snapshots */
-  static readonly CONTENT_V4: Validation = async ({ deployment, externalCalls }) => {
-    const { entity, files } = deployment
-    const errors: string[] = await this.validate_content_v3(entity, files, externalCalls)
-
-    if (entity.content) {
-      for (const [fileName, hash] of entity.content) {
-        // Validate all content files correspond to at least one avatar snapshot
-        if (entity.type === EntityType.PROFILE) {
-          if (!Validations.correspondsToASnapshot(fileName, hash, entity.metadata)) {
-            errors.push(
-              `This file is not expected: '${fileName}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
-            )
-          }
-        }
-      }
-    }
-    return errors.length > 0 ? errors : undefined
   }
 
   /** Validate that the address used was owned by Decentraland */

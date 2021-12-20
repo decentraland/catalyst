@@ -1,4 +1,7 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { createCatalystDeploymentStream } from '@dcl/snapshots-fetcher'
+import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
+import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
@@ -10,8 +13,11 @@ import { DenylistFactory } from './denylist/DenylistFactory'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsComponent } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createBloomFilterComponent } from './ports/bloomFilter'
+// import { createBloomFilterComponent } from './ports/bloomFilter'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
+import { createStatusComponent } from './ports/status'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { RepositoryQueue } from './repository/RepositoryQueue'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
@@ -23,11 +29,11 @@ import { GarbageCollectionManagerFactory } from './service/garbage-collection/Ga
 import { PointerManagerFactory } from './service/pointers/PointerManagerFactory'
 import { ServiceFactory } from './service/ServiceFactory'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
+import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
-import { ClusterSynchronizationManagerFactory } from './service/synchronization/ClusterSynchronizationManagerFactory'
 import { ContentClusterFactory } from './service/synchronization/ContentClusterFactory'
-import { EventDeployerFactory } from './service/synchronization/EventDeployerFactory'
+import { ClusterSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
 import { ValidatorFactory } from './service/validations/ValidatorFactory'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
@@ -130,7 +136,6 @@ export const enum Bean {
   ACCESS_CHECKER,
   DEPLOYMENT_MANAGER,
   CONTENT_CLUSTER,
-  EVENT_DEPLOYER,
   DENYLIST,
   AUTHENTICATOR,
   FAILED_DEPLOYMENTS_MANAGER,
@@ -454,9 +459,10 @@ export class EnvironmentBuilder {
     const logs = createLogComponent()
     const fetcher = createFetchComponent()
     const metrics = metricsComponent
-    const staticConfigs: AppComponents['staticConfigs'] = {
+    const staticConfigs = {
       contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     }
+
     const database = await createDatabaseComponent(
       { logs },
       {
@@ -498,6 +504,7 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
     const deployer = ServiceFactory.create(env)
     this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
+
     this.registerBeanIfNotAlreadySet(
       env,
       Bean.SNAPSHOT_MANAGER,
@@ -511,11 +518,72 @@ export class EnvironmentBuilder {
     this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
       GarbageCollectionManagerFactory.create(env)
     )
-    this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER, () => EventDeployerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () =>
-      ClusterSynchronizationManagerFactory.create(env)
+
+    const downloadQueue = createJobQueue({
+      autoStart: true,
+      concurrency: 10,
+      timeout: 60000
+    })
+
+    const deployedEntitiesFilter = createBloomFilterComponent({
+      sizeInBytes: 512
+    })
+
+    const batchDeployer = createBatchDeployerComponent(
+      {
+        logs,
+        downloadQueue,
+        fetcher,
+        database,
+        metrics,
+        deployer,
+        staticConfigs,
+        deployedEntitiesFilter
+      },
+      {
+        autoStart: true,
+        concurrency: 10,
+        timeout: 100000
+      }
     )
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
+
+    const synchronizationJobManager = createJobLifecycleManagerComponent(
+      { logs },
+      {
+        jobManagerName: 'SynchronizationJobManager',
+        createJob(contentServer) {
+          return createCatalystDeploymentStream(
+            { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer },
+            {
+              contentFolder: staticConfigs.contentStorageFolder,
+              contentServer,
+
+              // time between every poll to /pointer-changes
+              pointerChangesWaitTime: 5000,
+
+              // reconnection time for the whole catalyst
+              reconnectTime: 1000,
+              reconnectRetryTimeExponent: 1.2,
+
+              // download entities retry
+              requestMaxRetries: 10,
+              requestRetryWaitTime: 5000
+            }
+          )
+        }
+      }
+    )
+
+    const synchronizationManager = new ClusterSynchronizationManager(
+      { synchronizationJobManager, downloadQueue, deployer, fetcher, metrics, staticConfigs, batchDeployer, logs },
+      env.getBean(Bean.CONTENT_CLUSTER),
+      env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
+    )
+
+    const status = createStatusComponent([env.getBean(Bean.SNAPSHOT_MANAGER)])
+
+    this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () => synchronizationManager)
+    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env, { status }))
     this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 
     return {
@@ -526,7 +594,12 @@ export class EnvironmentBuilder {
         metrics,
         fetcher,
         logs,
-        staticConfigs
+        staticConfigs,
+        batchDeployer,
+        downloadQueue,
+        synchronizationJobManager,
+        deployedEntitiesFilter,
+        status
       }
     }
   }

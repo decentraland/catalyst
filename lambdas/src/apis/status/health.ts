@@ -1,4 +1,3 @@
-import { SynchronizationState } from '@catalyst/commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { Logger } from 'log4js'
 import ms from 'ms'
@@ -29,9 +28,8 @@ export async function refreshContentServerStatus(
     const hasOldInformation = synchronizationDiff > ms(maxSynchronizationTime)
 
     const obtainDeploymentTimeIsTooLong = obtainDeploymentTime > ms(maxDeploymentObtentionTime)
-    const isBootstrapping = (serverStatus as any).synchronizationStatus === SynchronizationState.BOOTSTRAPPING
 
-    if (hasOldInformation || isBootstrapping || obtainDeploymentTimeIsTooLong) {
+    if (hasOldInformation || obtainDeploymentTimeIsTooLong) {
       healthStatus = HealthStatus.UNHEALTHY
     } else {
       healthStatus = HealthStatus.HEALTHY

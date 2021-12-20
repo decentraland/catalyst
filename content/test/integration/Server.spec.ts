@@ -1,3 +1,4 @@
+import { IDeployerComponent } from '@dcl/snapshots-fetcher/dist/types'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { mock } from 'ts-mockito'
@@ -6,6 +7,7 @@ import { ControllerFactory } from '../../src/controller/ControllerFactory'
 import { ActiveDenylist } from '../../src/denylist/ActiveDenylist'
 import { Bean, Environment, EnvironmentConfig } from '../../src/Environment'
 import { createTestDatabaseComponent } from '../../src/ports/postgres'
+import { createStatusComponent } from '../../src/ports/status'
 import { Server } from '../../src/Server'
 import { ContentAuthenticator } from '../../src/service/auth/Authenticator'
 import { DeploymentPointerChanges } from '../../src/service/deployments/DeploymentManager'
@@ -53,10 +55,19 @@ describe('Integration - Server', function () {
         new ActiveDenylist(MockedRepository.build(), mock(ContentAuthenticator), mock(ContentCluster), 'network')
       )
 
-    const controller = ControllerFactory.create(env)
+    const status = createStatusComponent([])
+
+    const controller = ControllerFactory.create(env, { status })
     env.registerBean(Bean.CONTROLLER, controller)
 
-    server = new Server(env, { database: createTestDatabaseComponent() })
+    const batchDeployer: IDeployerComponent & { start(): Promise<void> } = {
+      async deployEntity() {},
+      async onIdle() {},
+      async start() {}
+    }
+
+    server = new Server(env, { database: createTestDatabaseComponent(), batchDeployer })
+
     await server.start()
   })
 

@@ -1,5 +1,6 @@
 import { Pointer } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
+import { ethers } from 'ethers'
 import { ContentAuthenticator } from '../auth/Authenticator'
 
 export class AccessCheckerForProfiles {
@@ -25,8 +26,12 @@ export class AccessCheckerForProfiles {
       if (!this.authenticator.isAddressOwnedByDecentraland(ethAddress)) {
         errors.push(`Only Decentraland can add or modify default profiles`)
       }
+    } else if (!ethers.utils.isAddress(pointer)) {
+      errors.push(`The given pointer is not a valid ethereum address.`)
     } else if (pointer !== ethAddress.toLowerCase()) {
-      errors.push(`You can only alter your own profile. The pointer address and the signer address are different.`)
+      errors.push(
+        `You can only alter your own profile. The pointer address and the signer address are different (pointer:${pointer} signer: ${ethAddress.toLowerCase()}).`
+      )
     }
 
     return errors

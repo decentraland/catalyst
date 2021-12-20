@@ -213,7 +213,7 @@ describe('Integration - Deployment Pagination', () => {
     const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(E1, E2, E3)
 
     const url =
-      server.getAddress() +
+      server.getUrl() +
       `/deployments?` +
       toQueryParams({
         limit: 2,
@@ -237,7 +237,7 @@ describe('Integration - Deployment Pagination', () => {
 
     try {
       const url =
-        server.getAddress() +
+        server.getUrl() +
         `/deployments?` +
         toQueryParams({
           limit: 2,
@@ -269,7 +269,7 @@ describe('Integration - Deployment Pagination', () => {
     const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
 
     const url =
-      server.getAddress() +
+      server.getUrl() +
       `/pointer-changes?` +
       toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
 
@@ -303,7 +303,7 @@ describe('Integration - Deployment Pagination', () => {
     newOptions.sortBy = undefined
     newOptions.filters = undefined
     const url =
-      server.getAddress() +
+      server.getUrl() +
       `/deployments?` +
       toQueryParams({
         ...newOptions,
@@ -313,7 +313,7 @@ describe('Integration - Deployment Pagination', () => {
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url = server.getAddress() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
+    const url = server.getUrl() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
     return fetchJson(url) as any
   }
 })

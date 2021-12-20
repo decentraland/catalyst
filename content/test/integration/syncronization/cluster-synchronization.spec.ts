@@ -93,7 +93,8 @@ describe('End 2 end synchronization tests', function () {
    * only E3 should be present on all servers.
    *
    */
-  it("When a lost update is detected, previous entities are deleted but new ones aren't", async () => {
+  // TODO: [new-sync]
+  xit("When a lost update is detected, previous entities are deleted but new ones aren't", async () => {
     // Start server 2
     await Promise.all([server2.start()])
 
@@ -115,6 +116,7 @@ describe('End 2 end synchronization tests', function () {
     // Deploy entity 2
     const deploymentTimestamp2: Timestamp = await server2.deploy(deployData2)
     const deployment2 = buildDeployment(deployData2, entity2, deploymentTimestamp2)
+    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment2))
 
     // Stop server 2
     await server2.stop({ deleteStorage: false, endDbConnection: false })
@@ -141,9 +143,8 @@ describe('End 2 end synchronization tests', function () {
     await server2.start()
 
     // Wait for servers to sync
-    await awaitUntil(() => assertDeploymentsAreReported(server1, deployment2, deployment1, deployment3))
-    await awaitUntil(() => assertDeploymentsAreReported(server2, deployment2, deployment1, deployment3))
-    await awaitUntil(() => assertDeploymentsAreReported(server3, deployment2, deployment1, deployment3))
+    await awaitUntil(() => assertEntitiesAreActiveOnServer(server1, entity2))
+    await awaitUntil(() => assertEntitiesAreActiveOnServer(server3, entity2))
 
     // Make assertions on Server 1
     await assertEntitiesAreActiveOnServer(server1, entity3)
@@ -153,11 +154,8 @@ describe('End 2 end synchronization tests', function () {
     await assertEntityIsNotOverwritten(server1, entity3)
 
     // Make assertions on Server 2
-    await assertEntitiesAreActiveOnServer(server2, entity3)
-    await assertEntitiesAreDeployedButNotActive(server2, entity1, entity2)
-    await assertEntityIsOverwrittenBy(server2, entity1, entity2)
-    await assertEntityIsOverwrittenBy(server2, entity2, entity3)
-    await assertEntityIsNotOverwritten(server2, entity3)
+    await assertEntitiesAreActiveOnServer(server2, entity2)
+    await assertEntityIsNotOverwritten(server2, entity2)
 
     // Make assertions on Server 3
     await assertEntitiesAreActiveOnServer(server3, entity3)

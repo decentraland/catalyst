@@ -1,4 +1,4 @@
-import { ServerAddress } from 'dcl-catalyst-commons'
+import { ServerBaseUrl } from '@catalyst/commons'
 import { Bean, Environment, EnvironmentConfig } from '../../../../src/Environment'
 import { ChallengeText } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
@@ -7,15 +7,15 @@ import { MockedDAOClient } from '../../../helpers/service/synchronization/client
 import { MockedFetcher } from '../../helpers/MockedFetcher'
 
 describe('ContentCluster', function () {
-  const address1: ServerAddress = 'http://address1'
-  const address2: ServerAddress = 'http://address2'
+  const address1: ServerBaseUrl = 'http://address1'
+  const address2: ServerBaseUrl = 'http://address2'
   const challengeText: ChallengeText = 'Some challenge text'
 
   it(`When there are no servers on the DAO, then no identity is assigned`, async () => {
     const contentCluster = new ContentClusterBuilder().build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(contentCluster.getIdentityInDAO()).toBeUndefined()
@@ -25,18 +25,18 @@ describe('ContentCluster', function () {
     const contentCluster = new ContentClusterBuilder().addAddressWithLocalChallenge(address1, challengeText).build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that identity was detected
-    const identity = contentCluster.getIdentityInDAO()!
-    expect(identity.address).toEqual(address1)
+    const identity = contentCluster.getIdentityInDAO()
+    expect(identity?.baseUrl).toEqual(address1)
   })
 
   it(`When I'm not on the DAO, then no identity is assigned`, async () => {
     const contentCluster = new ContentClusterBuilder().addAddressWithEndpoints(address1, challengeText).build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(contentCluster.getIdentityInDAO()).toBeUndefined()
@@ -49,7 +49,7 @@ describe('ContentCluster', function () {
       .build()
 
     // Try to detect the identity
-    await contentCluster.detectMyIdentity()
+    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(contentCluster.getIdentityInDAO()).toBeUndefined()
@@ -57,37 +57,37 @@ describe('ContentCluster', function () {
 })
 
 class ContentClusterBuilder {
-  private readonly addresses: Set<ServerAddress> = new Set()
+  private readonly servers: Set<ServerBaseUrl> = new Set()
   private readonly fetchHelper: MockedFetcher = new MockedFetcher()
   private localChallenge: ChallengeText | undefined
 
-  addAddress(address: ServerAddress): ContentClusterBuilder {
-    this.addresses.add(address)
+  addAddress(baseUrl: ServerBaseUrl): ContentClusterBuilder {
+    this.servers.add(baseUrl)
     return this
   }
 
-  addAddressWithEndpoints(address: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(address, 'challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(address, 'status', {
-      name: encodeURIComponent(address),
+  addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
+    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
+      name: encodeURIComponent(baseUrl),
       version: 'version',
       currentTime: 10,
       lastImmutableTime: 10,
       historySize: 10
     })
-    this.addresses.add(address)
+    this.servers.add(baseUrl)
     return this
   }
 
-  addAddressWithLocalChallenge(address: ServerAddress, challengeText: ChallengeText): ContentClusterBuilder {
+  addAddressWithLocalChallenge(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
     this.localChallenge = challengeText
-    return this.addAddressWithEndpoints(address, challengeText)
+    return this.addAddressWithEndpoints(baseUrl, challengeText)
   }
 
   build(): ContentCluster {
     const env = new Environment()
 
-    env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.addresses.values()))
+    env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.servers.values()))
     env.registerBean(Bean.FETCHER, this.fetchHelper)
     env.setConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, 1000)
     env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 10000)

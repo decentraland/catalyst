@@ -1,3 +1,4 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { IPFSv2 } from '@dcl/schemas'
 import {
   AuditInfo,
@@ -6,14 +7,12 @@ import {
   EntityType,
   Hashing,
   PartialDeploymentHistory,
-  Pointer,
-  ServerStatus
+  Pointer
 } from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { AuthChain, Authenticator } from 'dcl-crypto'
 import log4js from 'log4js'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
-import { CURRENT_CONTENT_VERSION } from '../Environment'
 import { metricsComponent } from '../metrics'
 import { Database } from '../repository/Database'
 import { Repository } from '../repository/Repository'
@@ -49,7 +48,8 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
   private static readonly LOGGER = log4js.getLogger('ServiceImpl')
   private readonly listeners: DeploymentListener[] = []
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
-  private historySize: number = 0
+
+  private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
   constructor(
     private readonly storage: ServiceStorage,
@@ -62,20 +62,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {}
 
-  async start(): Promise<void> {
-    const amountOfDeployments = await this.repository.task((task) => task.deployments.getAmountOfDeployments(), {
-      priority: DB_REQUEST_PRIORITY.HIGH
-    })
-    for (const [, amount] of amountOfDeployments) {
-      this.historySize += amount
-    }
-  }
+  async start(): Promise<void> {}
 
   async deployEntity(
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext = DeploymentContext.LOCAL,
+    context?: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
@@ -109,6 +102,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
       Array.from(entity.content?.values() ?? [])
     )
+
+    const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
+
     try {
       const storeResult:
         | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
@@ -118,7 +114,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         entity,
         auditInfo,
         hashes,
-        context,
+        contextToDeploy,
         alreadyStoredContent
       )
 
@@ -130,8 +126,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
           this.listeners.map((listener) => listener({ entity, auditInfo: storeResult.auditInfoComplete }))
         )
 
-        // Since we are still reporting the history size, add one to it
-        this.historySize++
         metricsComponent.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
@@ -140,19 +134,38 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         // Insert in deployments cache the updated entities
         if (entity.type == EntityType.PROFILE) {
           // Currently we are only checking profile deployments, in the future this may be refactored
-          entity.pointers.forEach((address) => {
-            this.deploymentsCache.cache.set(address, storeResult.auditInfoComplete.localTimestamp)
+          entity.pointers.forEach((pointer) => {
+            this.deploymentsCache.cache.set(pointer, storeResult.auditInfoComplete.localTimestamp)
           })
         }
       }
       return storeResult.auditInfoComplete.localTimestamp
-    } catch (error) {
-      throw error
     } finally {
       // Remove the updated pointer from the list of current being deployed
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
       entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
     }
+  }
+
+  private calculateIfLegacy(entity: Entity, authChain: AuthChain, context?: DeploymentContext): DeploymentContext {
+    if (!!context && this.isLegacyEntityV2(entity, authChain, context)) {
+      return DeploymentContext.SYNCED_LEGACY_ENTITY
+    }
+    return context ?? DeploymentContext.LOCAL
+  }
+
+  // Legacy v2 content entities are only supported when syncing or fix attempt
+  private isLegacyEntityV2(entity: Entity, authChain: AuthChain, context: DeploymentContext): boolean {
+    return (
+      (context === DeploymentContext.FIX_ATTEMPT || context === DeploymentContext.SYNCED) &&
+      new Date(entity.timestamp) < this.LEGACY_CONTENT_MIGRATION_TIMESTAMP &&
+      this.isADecentralandAddress(authChain)
+    )
+  }
+
+  private isADecentralandAddress(authChain: AuthChain): boolean {
+    const address = Authenticator.ownerAddress(authChain)
+    return address.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
   }
 
   private async storeDeploymentInDatabase(
@@ -175,7 +188,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
           // Prepare validation functions that need context
           const validationResult = await this.validator.validate({ entity, auditInfo, files: hashes }, context, {
-            fetchDeployments: (filters) => this.getDeployments({ filters }, transaction),
             areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
             fetchDeploymentStatus: (type, id) =>
               this.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
@@ -261,7 +273,9 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     authChain: AuthChain,
     errorDescription?: string
   ): Promise<null> {
-    ServiceImpl.LOGGER.warn(`Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${reason}'`)
+    ServiceImpl.LOGGER.warn(
+      `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
+    )
     return this.repository.run(
       (db) =>
         this.failedDeploymentsManager.reportFailure(
@@ -369,7 +383,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     if (files instanceof Map) {
       return files
     } else {
-      const hashEntries: { hash: ContentFileHash; file: Uint8Array }[] = this.isIPFSHash(entityId)
+      const hashEntries = this.isIPFSHash(entityId)
         ? await Hashing.calculateIPFSHashes(files)
         : await Hashing.calculateHashes(files)
       return new Map(hashEntries.map(({ hash, file }) => [hash, file]))
@@ -390,16 +404,6 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
     return this.storage.isContentAvailable(fileHashes)
-  }
-
-  getStatus(): ServerStatus {
-    return {
-      name: '', // TODO: Remove and communicate breaking change accordingly
-      version: CURRENT_CONTENT_VERSION,
-      currentTime: Date.now(),
-      lastImmutableTime: 0,
-      historySize: this.historySize
-    }
   }
 
   deleteContent(fileHashes: ContentFileHash[]): Promise<void> {

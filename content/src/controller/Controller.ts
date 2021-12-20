@@ -17,6 +17,7 @@ import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
 import onFinished from 'on-finished'
+import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
@@ -51,7 +52,8 @@ export class Controller {
     private readonly synchronizationManager: SynchronizationManager,
     private readonly challengeSupervisor: ChallengeSupervisor,
     private readonly snapshotManager: SnapshotManager,
-    private readonly ethNetwork: string
+    private readonly ethNetwork: string,
+    private readonly components: Pick<AppComponents, 'status'>
   ) {}
 
   async getEntities(req: express.Request, res: express.Response) {
@@ -327,7 +329,7 @@ export class Controller {
   async getPointerChanges(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /pointer-changes
-    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}
+    // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
@@ -341,6 +343,7 @@ export class Controller {
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
+    const includeAuthChain = this.asBoolean(req.query.includeAuthChain) ?? false
 
     const sortingFieldParam: string | undefined = req.query.sortingField as string
     const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
@@ -389,7 +392,8 @@ export class Controller {
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
       from: fromFilter,
-      to: toFilter
+      to: toFilter,
+      includeAuthChain
     }
 
     const {
@@ -633,7 +637,7 @@ export class Controller {
     // Method: GET
     // Path: /status
 
-    const serverStatus = this.service.getStatus()
+    const serverStatus = await this.components.status.getStatus()
 
     const synchronizationStatus = this.synchronizationManager.getStatus()
 

@@ -1,3 +1,4 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { mock } from 'ts-mockito'
 import {
@@ -9,7 +10,7 @@ import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator
 
 describe('Integration - AccessCheckerImpl', function () {
   it(`When access URL is wrong while checking scene access it reports an error`, async () => {
-    const accessChecker = buildAccessCheckerImpl({ landManagerSubgraphUrl: 'Wrong URL' })
+    const accessChecker = buildAccessCheckerImpl({ landManagerSubgraphUrl: 'http://0.0.0.0' })
 
     const errors = await accessChecker.hasAccess({
       type: EntityType.SCENE,
@@ -19,7 +20,7 @@ describe('Integration - AccessCheckerImpl', function () {
     })
 
     expect(errors.length).toBe(1)
-    expect(errors[0]).toEqual('The provided Eth Address does not have access to the following parcel: (102,4)')
+    expect(errors[0]).toContain('The provided Eth Address does not have access to the following parcel: (102,4)')
   })
 
   it(`When an address without permissions tries to deploy a scene it fails`, async () => {
@@ -29,7 +30,7 @@ describe('Integration - AccessCheckerImpl', function () {
       type: EntityType.SCENE,
       pointers: ['102,4'],
       timestamp: Date.now(),
-      ethAddress: 'Some-address-without-permissions'
+      ethAddress: DECENTRALAND_ADDRESS // Some address without permissions
     })
 
     expect(errors.length).toBe(1)
@@ -47,7 +48,7 @@ describe('Integration - AccessCheckerImpl', function () {
     })
 
     expect(errors.length).toBe(1)
-    expect(errors[0]).toEqual(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
+    expect(errors[0]).toEqual(`The provided Eth Address 'Some-address-without-permissions' does not have access to the following wearable: '${pointer}'`)
   })
 
   it(`When an address without permissions tries to deploy a wearable it fails`, async () => {
@@ -62,7 +63,7 @@ describe('Integration - AccessCheckerImpl', function () {
     })
 
     expect(errors.length).toBe(1)
-    expect(errors[0]).toEqual(`The provided Eth Address does not have access to the following wearable: (${pointer})`)
+    expect(errors[0]).toEqual(`The provided Eth Address 'Some-address-without-permissions' does not have access to the following wearable: '${pointer}'`)
   })
 
   function buildAccessCheckerImpl(params: Partial<AccessCheckerImplParams>) {
