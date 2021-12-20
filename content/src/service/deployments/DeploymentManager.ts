@@ -51,6 +51,8 @@ export class DeploymentManager {
     const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
     const content = await contentFilesRepository.getContentFiles(deploymentIds)
+
+    // TODO [new-sync]: migrationData nolonger required
     const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
 
     const deployments: Deployment[] = deploymentsResult.map((result) => ({

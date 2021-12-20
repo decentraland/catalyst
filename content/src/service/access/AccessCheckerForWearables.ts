@@ -301,7 +301,7 @@ export class AccessCheckerForWearables {
           : undefined
       }
     } catch (error) {
-      this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
+      this.LOGGER.error(`Error fetching the block number for timestamp`, { timestamp, error: error.message })
       throw error
     }
   }

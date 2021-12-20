@@ -134,8 +134,8 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
       // make noop validator
       makeNoopValidator(components)
 
-      await deploy(components, E1, E2, E3)
-
+      const deployments = await deploy(components, E1, E2, E3)
+      console.dir({ deployments })
       const upperP1 = 'X1,Y1'
       const upperP2 = 'X2,Y2'
       const upperP3 = 'X3,Y3'
@@ -155,7 +155,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     const actualDeployments = await components.deployer.getDeployments({ filters: filter })
     const expectedEntityIds = expectedEntities.map((entityCombo) => entityCombo.entity.id).sort()
     const actualEntityIds = actualDeployments.deployments.map(({ entityId }) => entityId).sort()
-    expect(actualEntityIds).toEqual(expectedEntityIds)
+    expect({ filter, deployedEntityIds: actualEntityIds }).toEqual({ filter, deployedEntityIds: expectedEntityIds })
   }
 
   async function deploy(components: Pick<AppComponents, 'deployer'>, ...entities: EntityCombo[]): Promise<Timestamp[]> {
