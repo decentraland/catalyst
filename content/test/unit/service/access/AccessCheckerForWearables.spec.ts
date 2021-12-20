@@ -189,6 +189,7 @@ describe('AccessCheckerForWearables', () => {
       const CONTENT = new Map([['key', 'hash']])
       let hash: ContentFileHash
 
+      // TODO [entities-v4] use commons/snapshot-fetcher hashing functions
       beforeEach(async () => {
         const entries = Array.from(CONTENT.entries())
         const contentAsJson =
@@ -208,7 +209,7 @@ describe('AccessCheckerForWearables', () => {
           metadata: METADATA
         })
 
-        expect(errors.length).toBe(0)
+        expect(errors).toEqual([])
       })
 
       it(`and deployment hash matches but deployer is not owner, then deployment is invalid`, async () => {

@@ -1,7 +1,7 @@
 import { DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
-import { makeNoopValidator } from 'test/helpers/service/validations/NoOpValidator'
 import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
 import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'

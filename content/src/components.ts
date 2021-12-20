@@ -71,7 +71,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     {
       daoClient,
       challengeSupervisor,
-      catalystFetcher,
+      fetcher,
       logs
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)

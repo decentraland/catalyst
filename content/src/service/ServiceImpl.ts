@@ -101,6 +101,7 @@ export class ServiceImpl implements MetaverseContentService {
 
     // Update the current list of pointers being deployed
     if (!entity.pointers) throw new Error('The entity does not have any pointer')
+
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 

@@ -243,7 +243,7 @@ export class AccessCheckerForWearables {
       isCompleted: collectionResult?.isCompleted,
       itemManagers: itemResult?.managers,
       contentHash: itemResult?.contentHash,
-      committee: result.accounts.map(({ id }) => id)
+      committee: result.accounts.map(({ id }) => id.toLowerCase())
     }
   }
 

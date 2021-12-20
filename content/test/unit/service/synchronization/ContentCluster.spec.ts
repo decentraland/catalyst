@@ -1,7 +1,9 @@
 import { ServerBaseUrl } from '@catalyst/commons'
 import { createLogComponent } from '@well-known-components/logger'
+import { Response } from 'node-fetch'
+import { stub } from 'sinon'
 import { Environment, EnvironmentConfig } from '../../../../src/Environment'
-import { FetcherFactory } from '../../../../src/helpers/FetcherFactory'
+import { createFetchComponent } from '../../../../src/ports/fetcher'
 import {
   ChallengeSupervisor,
   ChallengeText,
@@ -9,7 +11,6 @@ import {
 } from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
-import { MockedFetcher } from '../../helpers/MockedFetcher'
 
 describe('ContentCluster', function () {
   const address1: ServerBaseUrl = 'http://address1'
@@ -63,7 +64,7 @@ describe('ContentCluster', function () {
 
 class ContentClusterBuilder {
   private readonly servers: Set<ServerBaseUrl> = new Set()
-  private readonly fetchHelper: MockedFetcher = new MockedFetcher()
+  private readonly fetcher = stub(createFetchComponent())
   private localChallenge: ChallengeText | undefined
 
   addAddress(baseUrl: ServerBaseUrl): ContentClusterBuilder {
@@ -72,14 +73,7 @@ class ContentClusterBuilder {
   }
 
   addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
-      name: encodeURIComponent(baseUrl),
-      version: 'version',
-      currentTime: 10,
-      lastImmutableTime: 10,
-      historySize: 10
-    })
+    this.fetcher.fetch.withArgs(`${baseUrl}/challenge`).resolves(new Response(JSON.stringify({ challengeText })))
     this.servers.add(baseUrl)
     return this
   }
@@ -104,10 +98,9 @@ class ContentClusterBuilder {
       : new ChallengeSupervisor()
 
     const logs = createLogComponent()
-    const catalystFetcher = FetcherFactory.create({ env })
 
     return new ContentCluster(
-      { daoClient, logs, challengeSupervisor, catalystFetcher },
+      { daoClient, logs, challengeSupervisor, fetcher: this.fetcher },
       env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
     )
   }

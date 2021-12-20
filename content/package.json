@@ -10,8 +10,8 @@
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "test": "run-p 'test:*'",
-    "test:unit": "jasmine-ts --config=jasmine.unit.json",
-    "test:integration": "jasmine-ts --config=jasmine.integration.json"
+    "test:unit": "jasmine-ts --config=jasmine.unit.json --captureExceptions",
+    "test:integration": "jasmine-ts --config=jasmine.integration.json --captureExceptions"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",

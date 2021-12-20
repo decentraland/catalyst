@@ -38,7 +38,7 @@ export class ContentCluster implements IdentityProvider {
   private stoppedFuture = future<void>()
 
   constructor(
-    private readonly components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'catalystFetcher'>,
+    private readonly components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'fetcher'>,
     private readonly timeBetweenSyncs: number
   ) {
     ContentCluster.LOGGER = components.logs.getLogger('ContentCluster')
@@ -165,9 +165,6 @@ export class ContentCluster implements IdentityProvider {
       const daoServerWithoutAnswers = new Set<string>(Array.from(this.allServersInDAO).map(($) => $.baseUrl))
 
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
-        ContentCluster.LOGGER.info(
-          `Attempt ${attempts} - Pending answers from ${Array.from(daoServerWithoutAnswers).join(',')}`
-        )
         // Prepare challenges for unknown servers
         const challengeResults = await Promise.allSettled(
           Array.from(this.allServersInDAO)
@@ -176,6 +173,10 @@ export class ContentCluster implements IdentityProvider {
               server,
               challengeText: await this.getChallengeInServer(server.baseUrl)
             }))
+        )
+
+        ContentCluster.LOGGER.info(
+          `Attempt ${attempts} - Pending answers from [${Array.from(daoServerWithoutAnswers).join(',')}]`
         )
 
         const serversWithMyChallengeText: ServerMetadata[] = []
@@ -230,13 +231,10 @@ export class ContentCluster implements IdentityProvider {
 
   /** Return the server's challenge text, or undefined if it couldn't be reached */
   private async getChallengeInServer(catalystBaseUrl: ServerBaseUrl): Promise<ChallengeText | undefined> {
-    try {
-      const { challengeText }: { challengeText: ChallengeText } = (await this.components.catalystFetcher.fetchJson(
-        `${catalystBaseUrl}/challenge`
-      )) as { challengeText: ChallengeText }
-
-      return challengeText
-    } catch (error) {}
+    const response = await this.components.fetcher.fetch(`${catalystBaseUrl}/challenge`)
+    if (!response.ok) return
+    const json: { challengeText: ChallengeText } = await response.json()
+    return json.challengeText
   }
 }
 
