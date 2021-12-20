@@ -13,49 +13,6 @@ describe('DeploymentRepository', () => {
     repository = new DeploymentsRepository(instance(db) as any)
   })
 
-  describe('areEntitiesDeployed', () => {
-    beforeEach(() => {
-      db = mock(MockedDataBase)
-      repository = new DeploymentsRepository(instance(db) as any)
-    })
-
-    describe('when the entities list is not empty', () => {
-      const dbResult = ['1', '2']
-      const entities = ['1', '3']
-      let result
-
-      beforeEach(async () => {
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
-        result = await repository.areEntitiesDeployed(entities)
-      })
-
-      it('should return a map of entity id to the deployment status', async () => {
-        expect(result).toEqual(
-          new Map([
-            ['1', true],
-            ['3', false]
-          ])
-        )
-      })
-
-      it('should call the db with the expected parameters', () => {
-        verify(
-          db.map('SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)', deepEqual([entities]), anything())
-        ).once()
-      })
-    })
-
-    describe('when the entities list is empty', () => {
-      it('should return an empty map', async () => {
-        const result = await repository.areEntitiesDeployed([])
-
-        expect(result).toEqual(new Map())
-
-        verify(db.map(anything(), anything(), anything())).never()
-      })
-    })
-  })
-
   describe('getAmountOfDeployments', () => {
     let result
     const expectedResult = [

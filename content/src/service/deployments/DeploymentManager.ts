@@ -22,6 +22,10 @@ import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManag
 export class DeploymentManager {
   private static MAX_HISTORY_LIMIT = 500
 
+  async getEntityById(deploymentsRepository: DeploymentsRepository, entityId: string) {
+    return deploymentsRepository.getEntityById(entityId)
+  }
+
   async getDeployments(
     deploymentsRepository: DeploymentsRepository,
     contentFilesRepository: ContentFilesRepository,

@@ -214,6 +214,10 @@ export class ServiceImpl implements MetaverseContentService {
           )
 
           if (!validationResult.ok) {
+            ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
+              entityId,
+              errors: validationResult.errors.join(',')
+            })
             return { errors: validationResult.errors }
           }
 
@@ -271,6 +275,7 @@ export class ServiceImpl implements MetaverseContentService {
             // Store the entity's content
             await this.storeEntityContent(hashes, alreadyStoredContent)
           } else {
+            ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
             auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
           }
 
@@ -436,9 +441,13 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {
-    return this.components.repository.reuseIfPresent(task, (db) => db.deployments.getEntityById(entityId), {
-      priority: DB_REQUEST_PRIORITY.HIGH
-    })
+    return this.components.repository.reuseIfPresent(
+      task,
+      (db) => this.components.deploymentManager.getEntityById(db.deployments, entityId),
+      {
+        priority: DB_REQUEST_PRIORITY.HIGH
+      }
+    )
   }
 
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
