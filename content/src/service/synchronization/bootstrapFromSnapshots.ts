@@ -1,7 +1,7 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
+import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 import { AppComponents } from '../../types'
 import { ContentCluster } from './ContentCluster'
-import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 
 type BootstrapComponents = Pick<
   AppComponents,
@@ -28,10 +28,9 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents, cl
   await Promise.all(
     catalystServers.map(async (server) => {
       try {
-        const contentServer = server.getBaseUrl()
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,
-          contentServer,
+          contentServer: server,
           pointerChangesWaitTime: 0, // zero to not restart the timer
           requestMaxRetries,
           requestRetryWaitTime,
@@ -39,7 +38,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents, cl
         })
         for await (const entity of stream) {
           // schedule the deployment in the deployer. the await DOES NOT mean that the entity was deployed entirely.
-          await components.batchDeployer.deployEntity(entity, [contentServer])
+          await components.batchDeployer.deployEntity(entity, [server])
         }
       } catch (error: any) {
         logs.warn(error)

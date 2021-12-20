@@ -1,4 +1,4 @@
-import { delay } from '@catalyst/commons'
+import { delay, ServerBaseUrl } from '@catalyst/commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { AppComponents } from '../../types'
@@ -71,6 +71,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     return this.waitUntilSyncFinishes()
   }
 
+  // TODO: [new-sync] Add info about other catalysts conectivity
   getStatus() {
     const clusterStatus = this.cluster.getStatus()
     return {
@@ -95,7 +96,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
       const setDesiredJobs = () => {
         this.synchronizationState = SynchronizationState.SYNCING
-        const desiredJobNames = new Set(this.cluster.getAllServersInCluster().map(($) => $.getBaseUrl()))
+        const desiredJobNames = new Set(this.cluster.getAllServersInCluster())
         // the job names are the contentServerUrl
         return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
       }
@@ -117,7 +118,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager {
     const failedDeployments: FailedDeployment[] = await this.components.deployer.getAllFailedDeployments()
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 
-    const contentServersUrls = this.cluster.getAllServersInCluster().map(($) => $.getBaseUrl())
+    const contentServersUrls: ServerBaseUrl[] = this.cluster.getAllServersInCluster()
 
     // TODO: Implement an exponential backoff for retrying
     for (const failedDeployment of failedDeployments) {
