@@ -1,5 +1,5 @@
+import { ServerBaseUrl } from '@catalyst/commons'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { ContentServerClient } from '../service/synchronization/clients/ContentServerClient'
 import { ContentCluster } from '../service/synchronization/ContentCluster'
 
 /**
@@ -9,7 +9,7 @@ export async function ensureListOfCatalysts(
   cluster: ContentCluster,
   maxRetries: number,
   waitTime: number = 1000
-): Promise<ContentServerClient[]> {
+): Promise<ServerBaseUrl[]> {
   let i = 0
 
   // iterate until we have a list of catalysts

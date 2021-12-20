@@ -1,7 +1,7 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
+import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 import { AppComponents } from '../../types'
 import { ContentCluster } from './ContentCluster'
-import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 
 type BootstrapComponents = Pick<
   AppComponents,
@@ -26,9 +26,8 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents, cl
 
   // wait to get all the bootstrap data from all servers
   await Promise.all(
-    catalystServers.map(async (server) => {
+    catalystServers.map(async (contentServer) => {
       try {
-        const contentServer = server.getBaseUrl()
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,
           contentServer,

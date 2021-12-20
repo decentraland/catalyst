@@ -6,7 +6,6 @@ import future from 'fp-future'
 import ms from 'ms'
 import { AppComponents } from '../../types'
 import { ChallengeText } from './ChallengeSupervisor'
-import { ConnectionState, ContentServerClient } from './clients/ContentServerClient'
 
 export interface IdentityProvider {
   getIdentityInDAO(): ServerIdentity | undefined
@@ -26,7 +25,7 @@ export class ContentCluster implements IdentityProvider {
   // My own identity
   private myIdentity: ServerIdentity | undefined
   // Servers that were reached at least once
-  private serverClients: Map<ServerBaseUrl, ContentServerClient> = new Map()
+  private serverClients: Set<ServerBaseUrl> = new Set()
   // All the servers on the DAO. Renewed with each sync
   private allServersInDAO: Set<ServerMetadata>
   // Time of last sync with the DAO
@@ -69,17 +68,11 @@ export class ContentCluster implements IdentityProvider {
   }
 
   getStatus() {
-    const otherServers = Array.from(this.serverClients.entries()).map(([baseUrl, client]) => ({
-      baseUrl,
-      connectionState: ConnectionState.NEVER_REACHED, // TODO: [new-sync]
-      lastDeploymentTimestamp: 0 // TODO: [new-sync]
-    }))
-
-    return { otherServers, lastSyncWithDAO: this.timeOfLastSync }
+    return { lastSyncWithDAO: this.timeOfLastSync }
   }
 
-  getAllServersInCluster(): ContentServerClient[] {
-    return Array.from(this.serverClients.values())
+  getAllServersInCluster(): ServerBaseUrl[] {
+    return Array.from(this.serverClients)
   }
 
   getIdentityInDAO(): ServerIdentity | undefined {
@@ -116,8 +109,7 @@ export class ContentCluster implements IdentityProvider {
       if (newServerBaseUrls.length > 0) {
         for (const serverBaseUrl of newServerBaseUrls) {
           // Create and store the new client
-          const newClient = new ContentServerClient(serverBaseUrl)
-          this.serverClients.set(serverBaseUrl, newClient)
+          this.serverClients.add(serverBaseUrl)
           ContentCluster.LOGGER.info(`Discovered new server '${serverBaseUrl}'`)
         }
       }
@@ -135,7 +127,7 @@ export class ContentCluster implements IdentityProvider {
 
   private handleRemovalsFromDAO(allServersBaseUrls: string[]): void {
     // Calculate if any known servers where removed from the DAO
-    const serversRemovedFromDAO = Array.from(this.serverClients.keys()).filter(
+    const serversRemovedFromDAO = Array.from(this.serverClients).filter(
       (serverBaseUrl) => !allServersBaseUrls.includes(serverBaseUrl)
     )
 

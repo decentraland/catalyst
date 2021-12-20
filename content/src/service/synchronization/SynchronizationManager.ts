@@ -94,9 +94,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
       this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
       const setDesiredJobs = () => {
         this.synchronizationState = SynchronizationState.SYNCING
-        const desiredJobNames = new Set(
-          this.components.contentCluster.getAllServersInCluster().map(($) => $.getBaseUrl())
-        )
+        const desiredJobNames = new Set(this.components.contentCluster.getAllServersInCluster())
         // the job names are the contentServerUrl
         return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
       }
@@ -118,7 +116,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
     const failedDeployments: FailedDeployment[] = await this.components.deployer.getAllFailedDeployments()
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 
-    const contentServersUrls = this.components.contentCluster.getAllServersInCluster().map(($) => $.getBaseUrl())
+    const contentServersUrls = this.components.contentCluster.getAllServersInCluster()
 
     // TODO: Implement an exponential backoff for retrying
     for (const failedDeployment of failedDeployments) {
