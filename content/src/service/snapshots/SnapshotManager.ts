@@ -56,7 +56,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
 
   async stop() {
     // end jobs
-    for (let stopFunction of this.runningJobs) {
+    for (const stopFunction of this.runningJobs) {
       await stopFunction()
     }
   }
@@ -210,7 +210,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
 
     // update the snapshot sizes
     this.statusEndpointData.lastUpdatedTime = Date.now()
-    for (let key in inMemoryArrays) {
+    for (const key in inMemoryArrays) {
       this.statusEndpointData.activeEntities[key] = inMemoryArrays[key]!.length
     }
 

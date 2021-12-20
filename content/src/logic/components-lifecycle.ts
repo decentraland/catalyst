@@ -2,7 +2,7 @@
 
 export function stopAllComponents(components: Record<string, any>) {
   const pending: PromiseLike<any>[] = []
-  for (let c in components) {
+  for (const c in components) {
     const component = components[c]
     if (component.stop && typeof component.stop == 'function') {
       pending.push(component.stop())

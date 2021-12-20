@@ -51,8 +51,6 @@ export interface MetaverseContentService {
     authChain: AuthChain,
     errorDescription?: string
   ): Promise<null>
-
-  isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
