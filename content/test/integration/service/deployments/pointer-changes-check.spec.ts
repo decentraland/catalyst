@@ -75,6 +75,9 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     testEnv,
     'When an entity is deployed but set as inactive, and it overwrites others, then it is reported correctly',
     async (components) => {
+      // make noop validator
+      makeNoopValidator(components)
+
       await deployEntitiesCombo(components.deployer, E1, E2, E4, E3)
 
       const changes = await getChangesInPointersFor(components, E3)
@@ -103,8 +106,13 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     const result = await components.deployer.getPointerChanges(undefined, {
       filters: { entityTypes: [entityCombo.entity.type] }
     })
-    console.dir(result)
-    const { changes } = result.pointerChanges.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
-    return changes
+    const pointerChanges = result.pointerChanges.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
+
+    if (!pointerChanges) {
+      console.dir(result)
+      throw new Error(`There are no pointerChanges for entityId ${entityCombo.entity.id}`)
+    }
+
+    return pointerChanges.changes
   }
 })

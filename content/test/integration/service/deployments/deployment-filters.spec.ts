@@ -186,6 +186,8 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
       )
       if (isSuccessfulDeployment(deploymentResult)) {
         result.push(deploymentResult)
+      } else {
+        throw new Error(deploymentResult.errors.join(','))
       }
     }
     return result
