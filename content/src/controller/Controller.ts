@@ -170,22 +170,12 @@ export class Controller {
       deployFiles = files ? await this.readFiles(files) : []
       const auditInfo: LocalDeploymentAuditInfo = this.buildAuditInfo(authChain, ethAddress, signature, entityId)
 
-      let deploymentResult: DeploymentResult = { errors: [] }
-      if (fixAttempt) {
-        deploymentResult = await this.components.deployer.deployEntity(
-          deployFiles.map(({ content }) => content),
-          entityId,
-          auditInfo,
-          DeploymentContext.FIX_ATTEMPT
-        )
-      } else {
-        deploymentResult = await this.components.deployer.deployEntity(
-          deployFiles.map(({ content }) => content),
-          entityId,
-          auditInfo,
-          DeploymentContext.LOCAL
-        )
-      }
+      const deploymentResult = await this.components.deployer.deployEntity(
+        deployFiles.map(({ content }) => content),
+        entityId,
+        auditInfo,
+        fixAttempt ? DeploymentContext.FIX_ATTEMPT : DeploymentContext.LOCAL
+      )
 
       if (isSuccessfulDeployment(deploymentResult)) {
         res.send({ creationTimestamp: deploymentResult })

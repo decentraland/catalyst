@@ -81,7 +81,8 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
   ): Promise<null> {
     throw new Error('Method not implemented.')
   }
-  areEntitiesAlreadyDeployed(entityIds: string[]): Promise<Map<string, boolean>> {
+
+  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void> {
     throw new Error('Method not implemented.')
   }
 

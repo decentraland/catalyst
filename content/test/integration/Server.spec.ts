@@ -71,7 +71,7 @@ describe('Integration - Server', function () {
       ethNetwork
     )
 
-    server = new Server({ env, controller, metrics })
+    server = new Server({ env, controller, metrics, logs })
 
     await server.start()
   })

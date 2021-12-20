@@ -6,7 +6,6 @@ import { MockedAccessChecker } from '../../helpers/service/access/MockedAccessCh
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
-  assertDeploymentFailsWith,
   assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
   assertEntitiesAreDeployedButNotActive,
@@ -106,21 +105,21 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     await assertEntitiesAreDeployedButNotActive(server2, entityBeingDeployed1)
   })
 
-  it(`When a user tries to fix an entity that didn't exist, then an error is thrown`, async () => {
+  it(`When a user tries to fix an entity that didn't exist, the entity gets deployed`, async () => {
     // Start server
     await server1.startProgram()
 
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
+    const { deployData, controllerEntity } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
 
     // Try to deploy the entity, and fail
-    await assertDeploymentFailsWith(
-      () => server1.deploy(deployData, true),
-      'You are trying to fix an entity that is not marked as failed'
-    )
+    await server1.deploy(deployData, true)
+
+    // asser that the entity got deployed
+    await assertEntitiesAreActiveOnServer(server1, controllerEntity)
   })
 
-  it(`When a user tries to fix an entity that hadn't fail, then an error is thrown`, async () => {
+  it(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
     // Start server
     await server1.startProgram()
 
@@ -128,13 +127,13 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
 
     // Deploy the entity
-    await server1.deploy(deployData)
+    const firstDeploymentDatetime = await server1.deploy(deployData)
 
     // Try to fix the entity, and fail
-    await assertDeploymentFailsWith(
-      () => server1.deploy(deployData, true),
-      'You are trying to fix an entity that is not marked as failed'
-    )
+    const fixDatetime = await server1.deploy(deployData, true)
+
+    // expect idempotent operation to return the datetime of the deploy
+    expect(firstDeploymentDatetime).toEqual(fixDatetime)
   })
 
   it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {

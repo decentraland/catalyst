@@ -25,6 +25,7 @@ import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src
 import { EnvironmentConfig } from '../../src/Environment'
 import { main } from '../../src/service'
 import { FailedDeployment } from '../../src/service/errors/FailedDeploymentsManager'
+import { isInvalidDeployment } from '../../src/service/Service'
 import { AppComponents } from '../../src/types'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { deleteFolderRecursive, hashAndSignMessage, Identity } from './E2ETestUtils'
@@ -83,7 +84,10 @@ export class TestProgram {
   async deploy(deployData: DeploymentData, fix: boolean = false): Promise<Timestamp> {
     this.logger.info('Deploying entity ' + deployData.entityId)
     const returnValue = await this.client.deployEntity(deployData, fix)
-    this.logger.info('Deployinged entity ' + deployData.entityId, { returnValue })
+    if (isInvalidDeployment(returnValue)) {
+      throw new Error(returnValue.errors.join(','))
+    }
+    this.logger.info('Deployed entity ' + deployData.entityId, { returnValue })
     return returnValue
   }
 

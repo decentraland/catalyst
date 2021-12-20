@@ -2,6 +2,7 @@ import { delay } from '@catalyst/commons'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertContentNotIsDenylisted,
   assertDeploymentsAreReported,
@@ -26,6 +27,10 @@ loadTestEnvironment()('End 2 end - Denylist handling', (testEnv) => {
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .andBuildMany(3)
+
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
+    makeNoopValidator(onboardingServer.components)
   })
 
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes

@@ -1,6 +1,6 @@
 import { initializeMetricsServer } from '@catalyst/commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
-import { IBaseComponent } from '@well-known-components/interfaces'
+import { IBaseComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'
@@ -17,7 +17,7 @@ import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
 export class Server implements IBaseComponent {
-  private static readonly LOGGER = log4js.getLogger('Server')
+  private LOGGER: ILoggerComponent.ILogger
   private static readonly UPLOADS_DIRECTORY = 'uploads/'
 
   protected metricsServer: ReturnType<typeof initializeMetricsServer> | undefined
@@ -25,8 +25,9 @@ export class Server implements IBaseComponent {
   private app: express.Express
   private httpServer: http.Server
 
-  constructor(protected components: Pick<AppComponents, 'controller' | 'metrics' | 'env'>) {
-    const { env, controller, metrics } = components
+  constructor(protected components: Pick<AppComponents, 'controller' | 'metrics' | 'env' | 'logs'>) {
+    const { env, controller, metrics, logs } = components
+    this.LOGGER = logs.getLogger('HttpServer')
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
@@ -150,7 +151,7 @@ export class Server implements IBaseComponent {
 
     await once(this.httpServer, 'listening')
 
-    Server.LOGGER.info(`Content Server listening on port ${this.port}.`)
+    this.LOGGER.info(`Content Server listening on port ${this.port}.`)
 
     if (this.metricsServer) {
       await this.metricsServer.start()
@@ -165,19 +166,19 @@ export class Server implements IBaseComponent {
       await this.metricsServer.stop()
     }
 
-    Server.LOGGER.info(`Content Server stopped.`)
+    this.LOGGER.info(`Content Server stopped.`)
   }
 
   async purgeUploadsDirectory(): Promise<void> {
-    Server.LOGGER.info("Cleaning up the Server's uploads directory...")
+    this.LOGGER.info("Cleaning up the Server's uploads directory...")
     try {
       const directory = Server.UPLOADS_DIRECTORY
       fs.readdirSync(directory).forEach((file) => {
         fs.unlinkSync(path.join(directory, file))
       })
-      Server.LOGGER.info('Cleaned up!')
+      this.LOGGER.info('Cleaned up!')
     } catch (e) {
-      Server.LOGGER.error('There was an error while cleaning up the upload directory: ', e)
+      this.LOGGER.error('There was an error while cleaning up the upload directory: ', e)
     }
   }
 

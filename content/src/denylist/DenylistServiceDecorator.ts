@@ -52,8 +52,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.reportErrorDuringSync(entityType, entityId, reason, authChain, errorDescription)
   }
 
-  areEntitiesAlreadyDeployed(entityIds: string[]): Promise<Map<string, boolean>> {
-    return this.service.areEntitiesAlreadyDeployed(entityIds)
+  async getEntityById(entityId: EntityId) {
+    return this.service.getEntityById(entityId)
   }
 
   start(): Promise<void> {
@@ -100,7 +100,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext = DeploymentContext.LOCAL
+    context: DeploymentContext
   ): Promise<DeploymentResult> {
     return this.repository.task(
       async (task) => {

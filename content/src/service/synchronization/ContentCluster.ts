@@ -98,8 +98,6 @@ export class ContentCluster implements IdentityProvider {
   /** Update our data with the DAO's servers list */
   private async syncWithDAO() {
     try {
-      ContentCluster.LOGGER.debug(`Starting sync with DAO`)
-
       // Refresh the server list
       this.allServersInDAO = await this.components.daoClient.getAllContentServers()
 
@@ -130,8 +128,6 @@ export class ContentCluster implements IdentityProvider {
       for (const cb of this.syncFinishedEventCallbacks) {
         cb()
       }
-
-      ContentCluster.LOGGER.debug(`Finished sync with DAO`)
     } catch (error) {
       ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
     }

@@ -73,7 +73,7 @@ export class ServiceImpl implements MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    context?: DeploymentContext,
+    context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
     // Hash all files
@@ -100,7 +100,10 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     // Update the current list of pointers being deployed
-    if (!entity.pointers) throw new Error('The entity does not have any pointer')
+    if (!entity.pointers)
+      return {
+        errors: [`The entity does not have any pointer.`]
+      }
 
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
@@ -154,11 +157,11 @@ export class ServiceImpl implements MetaverseContentService {
     }
   }
 
-  private calculateIfLegacy(entity: Entity, authChain: AuthChain, context?: DeploymentContext): DeploymentContext {
-    if (!!context && this.isLegacyEntityV2(entity, authChain, context)) {
+  private calculateIfLegacy(entity: Entity, authChain: AuthChain, context: DeploymentContext): DeploymentContext {
+    if (this.isLegacyEntityV2(entity, authChain, context)) {
       return DeploymentContext.SYNCED_LEGACY_ENTITY
     }
-    return context ?? DeploymentContext.LOCAL
+    return context
   }
 
   // Legacy v2 content entities are only supported when syncing or fix attempt
@@ -191,7 +194,8 @@ export class ServiceImpl implements MetaverseContentService {
       task,
       (db) =>
         db.txIf(async (transaction) => {
-          const isEntityAlreadyDeployed = await this.isEntityAlreadyDeployed(entityId, transaction)
+          const deployedEntity = await this.getEntityById(entityId, transaction)
+          const isEntityAlreadyDeployed = !!deployedEntity
 
           // Prepare validation functions that need context
           const validationResult = await this.components.validator.validate(
@@ -266,6 +270,8 @@ export class ServiceImpl implements MetaverseContentService {
 
             // Store the entity's content
             await this.storeEntityContent(hashes, alreadyStoredContent)
+          } else {
+            auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
           }
 
           // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
@@ -429,12 +435,10 @@ export class ServiceImpl implements MetaverseContentService {
     return this.serviceStorage.storeContent(fileHash, content)
   }
 
-  areEntitiesAlreadyDeployed(entityIds: EntityId[], task?: Database): Promise<Map<EntityId, boolean>> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) => this.components.deploymentManager.areEntitiesDeployed(db.deployments, entityIds),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+  getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {
+    return this.components.repository.reuseIfPresent(task, (db) => db.deployments.getEntityById(entityId), {
+      priority: DB_REQUEST_PRIORITY.HIGH
+    })
   }
 
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
@@ -488,10 +492,5 @@ export class ServiceImpl implements MetaverseContentService {
 
   listenToDeployments(listener: DeploymentListener): void {
     this.listeners.push(listener)
-  }
-
-  private async isEntityAlreadyDeployed(entityId: EntityId, transaction: Database): Promise<boolean> {
-    const result = await this.areEntitiesAlreadyDeployed([entityId], transaction)
-    return result.get(entityId)!
   }
 }

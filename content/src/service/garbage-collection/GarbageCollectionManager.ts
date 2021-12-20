@@ -1,11 +1,11 @@
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
 import { SystemProperty } from '../../service/system-properties/SystemProperties'
 import { AppComponents } from '../../types'
 
 export class GarbageCollectionManager {
-  private static readonly LOGGER = log4js.getLogger('GarbageCollectionManager')
+  private LOGGER: ILoggerComponent.ILogger
   private hashesDeletedInLastSweep: Set<ContentFileHash> = new Set()
   private lastTimeOfCollection: Timestamp
   private nextGarbageCollectionTimeout: NodeJS.Timeout
@@ -13,10 +13,15 @@ export class GarbageCollectionManager {
   private sweeping = false
 
   constructor(
-    private readonly components: Pick<AppComponents, 'systemPropertiesManager' | 'repository' | 'deployer' | 'metrics'>,
+    private readonly components: Pick<
+      AppComponents,
+      'systemPropertiesManager' | 'repository' | 'deployer' | 'metrics' | 'logs'
+    >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
-  ) {}
+  ) {
+    this.LOGGER = components.logs.getLogger('GarbageCollectionManager')
+  }
 
   async start(): Promise<void> {
     if (this.performGarbageCollection) {
@@ -53,7 +58,7 @@ export class GarbageCollectionManager {
 
           this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 
-          GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
+          this.LOGGER.debug(`Hashes to delete are: ${hashes}`)
           await this.components.deployer.deleteContent(hashes)
           await this.components.systemPropertiesManager.setSystemProperty(
             SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
@@ -68,7 +73,8 @@ export class GarbageCollectionManager {
       )
       this.lastTimeOfCollection = newTimeOfCollection
     } catch (error) {
-      GarbageCollectionManager.LOGGER.warn(`Failed to perform garbage collection. Reason:\n${error}`)
+      this.LOGGER.error(`Failed to perform garbage collection.`)
+      this.LOGGER.error(error)
     } finally {
       if (!this.stopping) {
         this.nextGarbageCollectionTimeout = setTimeout(() => this.performSweep(), this.sweepInterval)

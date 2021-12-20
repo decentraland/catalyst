@@ -3,11 +3,14 @@ import { AppComponents } from '../../types'
 import { AccessCheckerImpl } from './AccessCheckerImpl'
 
 export class AccessCheckerImplFactory {
-  static create(components: Pick<AppComponents, 'authenticator' | 'catalystFetcher' | 'env'>): AccessCheckerImpl {
+  static create(
+    components: Pick<AppComponents, 'authenticator' | 'catalystFetcher' | 'env' | 'logs'>
+  ): AccessCheckerImpl {
     const { env } = components
     return new AccessCheckerImpl({
       authenticator: components.authenticator,
       fetcher: components.catalystFetcher,
+      logs: components.logs,
       landManagerSubgraphUrl: env.getConfig(EnvironmentConfig.LAND_MANAGER_SUBGRAPH_URL),
       collectionsL1SubgraphUrl: env.getConfig(EnvironmentConfig.COLLECTIONS_L1_SUBGRAPH_URL),
       collectionsL2SubgraphUrl: env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL),

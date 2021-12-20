@@ -30,7 +30,7 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    context?: DeploymentContext,
+    context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
@@ -51,15 +51,9 @@ export interface MetaverseContentService {
     authChain: AuthChain,
     errorDescription?: string
   ): Promise<null>
-  deployEntity(
-    files: Uint8Array[],
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
-    task?: Database
-  ): Promise<DeploymentResult>
+
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
+  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'migrationData'>

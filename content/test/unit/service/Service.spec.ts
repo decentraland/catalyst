@@ -8,7 +8,12 @@ import { metricsDeclaration } from '../../../src/metrics'
 import { Deployment } from '../../../src/service/deployments/DeploymentManager'
 import { Entity } from '../../../src/service/Entity'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
-import { DeploymentResult, isInvalidDeployment, LocalDeploymentAuditInfo } from '../../../src/service/Service'
+import {
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  LocalDeploymentAuditInfo
+} from '../../../src/service/Service'
 import { ServiceFactory } from '../../../src/service/ServiceFactory'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
@@ -45,7 +50,12 @@ describe('Service', function () {
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
     const service = await buildService()
-    const deploymentResult = await service.deployEntity([randomFile], 'not-actual-hash', auditInfo)
+    const deploymentResult = await service.deployEntity(
+      [randomFile],
+      'not-actual-hash',
+      auditInfo,
+      DeploymentContext.LOCAL
+    )
     if (isInvalidDeployment(deploymentResult)) {
       expect(deploymentResult.errors).toEqual([`Failed to find the entity file.`])
     } else {
@@ -60,7 +70,8 @@ describe('Service', function () {
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
       entity.id,
-      auditInfo
+      auditInfo,
+      DeploymentContext.LOCAL
     )
     if (isInvalidDeployment(deploymentResult)) {
       assert.fail(
@@ -83,7 +94,7 @@ describe('Service', function () {
     )
     const storeSpy = spyOn(service.components.storage, 'store')
 
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
     expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile)
     expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
@@ -153,7 +164,7 @@ describe('Service', function () {
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
-    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo)
+    await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
     // Reset spy and call again
     serviceSpy.calls.reset()
@@ -191,7 +202,7 @@ describe('Service', function () {
       new Map([['file', randomFileHash]]),
       'metadata'
     )
-    await service.deployEntity([deleterEntityFile, randomFile], deleterEntity.id, auditInfo)
+    await service.deployEntity([deleterEntityFile, randomFile], deleterEntity.id, auditInfo, DeploymentContext.LOCAL)
 
     // Reset spy and call again
     serviceSpy.calls.reset()

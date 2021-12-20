@@ -81,7 +81,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const accessChecker = AccessCheckerImplFactory.create({ authenticator, catalystFetcher, env })
+  const accessChecker = AccessCheckerImplFactory.create({ authenticator, catalystFetcher, env, logs })
   const failedDeploymentsManager = new FailedDeploymentsManager()
 
   const validator = ValidatorFactory.create({ authenticator, accessChecker, env })
@@ -116,7 +116,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const garbageCollectionManager = new GarbageCollectionManager(
-    { repository, deployer, systemPropertiesManager, metrics },
+    { repository, deployer, systemPropertiesManager, metrics, logs },
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION),
     env.getConfig(EnvironmentConfig.GARBAGE_COLLECTION_INTERVAL)
   )
@@ -207,7 +207,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const migrationManager = MigrationManagerFactory.create({ logs, env })
 
-  const server = new Server({ controller, metrics, env })
+  const server = new Server({ controller, metrics, env, logs })
 
   return {
     env,

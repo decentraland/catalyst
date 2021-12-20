@@ -1,6 +1,6 @@
 import { AuditInfo, DeploymentFilters, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { DeploymentResult, isSuccessfulDeployment } from '../../../../src/service/Service'
+import { DeploymentContext, DeploymentResult, isSuccessfulDeployment } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
@@ -182,7 +182,8 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
       const deploymentResult: DeploymentResult = await components.deployer.deployEntity(
         Array.from(deployData.files.values()),
         deployData.entityId,
-        newAuditInfo
+        newAuditInfo,
+        DeploymentContext.LOCAL
       )
       if (isSuccessfulDeployment(deploymentResult)) {
         result.push(deploymentResult)

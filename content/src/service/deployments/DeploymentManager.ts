@@ -22,13 +22,6 @@ import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManag
 export class DeploymentManager {
   private static MAX_HISTORY_LIMIT = 500
 
-  areEntitiesDeployed(
-    deploymentRepository: DeploymentsRepository,
-    entityIds: EntityId[]
-  ): Promise<Map<EntityId, boolean>> {
-    return deploymentRepository.areEntitiesDeployed(entityIds)
-  }
-
   async getDeployments(
     deploymentsRepository: DeploymentsRepository,
     contentFilesRepository: ContentFilesRepository,
