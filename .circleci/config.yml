@@ -221,7 +221,7 @@ workflows:
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
-            - linter
+            - checkout
       - build-commons:
           <<: *all_branches_and_tags
           requires:
