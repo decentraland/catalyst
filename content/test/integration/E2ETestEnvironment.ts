@@ -81,7 +81,7 @@ export class E2ETestEnvironment {
     })
 
     // lastly we kill the DB container
-    await this.postgresContainer.stop()
+    await this.postgresContainer?.stop()
   }
 
   async clearDatabases(): Promise<void> {
