@@ -17,6 +17,7 @@ import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
 import onFinished from 'on-finished'
+import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
@@ -36,7 +37,6 @@ import {
   LocalDeploymentAuditInfo
 } from '../service/Service'
 import { ContentItem } from '../storage/ContentStorage'
-import { AppComponents } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 

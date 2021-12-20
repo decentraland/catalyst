@@ -83,15 +83,12 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
     bootstrap: {
       // Note: If any deployment was overwritten by the snapshots, then we never reach them
       ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
-      this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 1)
       await bootstrapFromSnapshots(this.components, this.components.contentCluster)
-      this.components.metrics.observe('dcl_sync_state_summary', { state: 'bootstrapping' }, 0)
       this.synchronizationState = SynchronizationState.SYNCED
     }
 
     sync: {
       ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
-      this.components.metrics.observe('dcl_sync_state_summary', { state: 'syncing' }, 1)
       const setDesiredJobs = () => {
         this.synchronizationState = SynchronizationState.SYNCING
         const desiredJobNames = new Set(this.components.contentCluster.getAllServersInCluster())

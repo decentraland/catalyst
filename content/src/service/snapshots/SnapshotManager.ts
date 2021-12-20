@@ -182,6 +182,8 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
       array.push(tuple)
     }
 
+    const newActiveEntitiesCount = {}
+
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
@@ -203,6 +205,12 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
 
         // add the entoty to the inMemoryArray to be used by the legacy formatter
         appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
+
+        if (newActiveEntitiesCount[snapshotElem.entityType] != null) {
+          newActiveEntitiesCount[snapshotElem.entityType]++
+        } else {
+          newActiveEntitiesCount[snapshotElem.entityType] = 1
+        }
       }
     } finally {
       await fileWriterComponent.flushToDiskAndCloseFiles()

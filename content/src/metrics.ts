@@ -11,12 +11,6 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: ['entity_type']
   },
 
-  dcl_sync_state_summary: {
-    help: 'Summary of synchronization state',
-    type: 'summary',
-    labelNames: ['state']
-  },
-
   db_queued_queries_count: {
     help: 'Total number of queries that went through the queue since the service started',
     type: 'counter',
