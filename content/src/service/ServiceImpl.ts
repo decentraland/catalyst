@@ -71,6 +71,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     context?: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
+    // try {
     // Hash all files
     const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
 
@@ -145,6 +146,13 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
       entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.delete(pointer))
     }
+    // } catch (err: any) {
+    //   if (err.message)
+    //     return {
+    //       errors: [err.message]
+    //     }
+    //   throw err
+    // }
   }
 
   private calculateIfLegacy(entity: Entity, authChain: AuthChain, context?: DeploymentContext): DeploymentContext {
