@@ -88,7 +88,7 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
         return { errors: ['There was a problem parsing the entity, it was null'] }
       }
     } catch (error) {
-      console.debug(`There was an error parsing the entity: ${error}`)
+      ServiceImpl.LOGGER.error(`There was an error parsing the entity: ${error}`)
       return { errors: ['There was a problem parsing the entity'] }
     }
 
