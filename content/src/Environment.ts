@@ -261,7 +261,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX,
-      () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 100
+      () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 300
     )
     this.registerConfigIfNotAlreadySet(
       env,

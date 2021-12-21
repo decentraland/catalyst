@@ -81,7 +81,16 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     }
 
     // Parse entity file into an Entity
-    const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
+    let entity: Entity
+    try {
+      entity = EntityFactory.fromBufferWithId(entityFile, entityId)
+      if (!entity) {
+        return { errors: ['There was a problem parsing the entity, it was null'] }
+      }
+    } catch (error) {
+      ServiceImpl.LOGGER.error(`There was an error parsing the entity: ${error}`)
+      return { errors: ['There was a problem parsing the entity'] }
+    }
 
     // Validate that the entity's pointers are not currently being modified
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
