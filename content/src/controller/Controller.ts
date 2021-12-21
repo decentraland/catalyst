@@ -643,6 +643,7 @@ export class Controller {
 
     res.send({
       ...serverStatus,
+      version: CURRENT_CONTENT_VERSION,
       synchronizationStatus,
       commitHash: CURRENT_COMMIT_HASH,
       catalystVersion: CURRENT_CATALYST_VERSION,
