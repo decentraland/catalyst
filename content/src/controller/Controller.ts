@@ -17,6 +17,7 @@ import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
 import onFinished from 'on-finished'
+import { metricsComponent } from 'src/metrics'
 import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
@@ -144,14 +145,17 @@ export class Controller {
       )
 
       if (isSuccessfulDeployment(deploymentResult)) {
+        metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
         res.send({ creationTimestamp: deploymentResult })
       } else {
-        Controller.LOGGER.warn(`Returning error '${deploymentResult.errors.join('\n')}'`)
-        res.status(400).send(deploymentResult.errors.join('\n'))
+        metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+        Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
+        res.status(400).send(deploymentResult.errors.join('\n')).end()
       }
     } catch (error) {
-      Controller.LOGGER.warn(`Returning error '${error.message}'`)
-      res.status(500).send(error.message)
+      metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
+      Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
+      res.status(500).send(error.message).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
