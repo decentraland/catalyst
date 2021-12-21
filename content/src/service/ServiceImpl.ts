@@ -85,10 +85,11 @@ export class ServiceImpl implements MetaverseContentService, ClusterDeploymentsS
     try {
       entity = EntityFactory.fromBufferWithId(entityFile, entityId)
       if (!entity) {
-        return { errors: ['There was a problem parsing the entity'] }
+        return { errors: ['There was a problem parsing the entity, it was null'] }
       }
     } catch (error) {
-      return { errors: [error] }
+      console.debug(`There was an error parsing the entity: ${error}`)
+      return { errors: ['There was a problem parsing the entity'] }
     }
 
     // Validate that the entity's pointers are not currently being modified
