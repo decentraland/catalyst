@@ -200,12 +200,12 @@ export class Controller {
       } else {
         metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
         Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
-        res.status(400).send(deploymentResult.errors.join('\n')).end()
+        res.status(400).send({ errors: deploymentResult.errors }).end()
       }
     } catch (error) {
       metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
       Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
-      res.status(500).send(error.message).end()
+      res.status(500).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)
     }
