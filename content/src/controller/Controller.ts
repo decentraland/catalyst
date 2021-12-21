@@ -17,11 +17,11 @@ import express from 'express'
 import fs from 'fs'
 import log4js from 'log4js'
 import onFinished from 'on-finished'
-import { metricsComponent } from 'src/metrics'
 import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import { metricsComponent } from '../metrics'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
 import {
   Deployment,
