@@ -65,6 +65,12 @@ export const metrics = validateMetricsDeclaration({
     labelNames: []
   },
 
+  dcl_deployments_endpoint_counter: {
+    help: 'Total deployments through HTTP',
+    type: 'counter',
+    labelNames: ['kind'] // kind=(success|validation|error)
+  },
+
   dcl_deployment_time: {
     help: 'Time spent deploying an entity',
     type: 'histogram',

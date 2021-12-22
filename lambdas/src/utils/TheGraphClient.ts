@@ -163,13 +163,17 @@ export class TheGraphClient {
   }
 
   private async getWearablesByOwner(subgraph: keyof URLs, owner: string) {
-    const query: Query<{ nfts: { urn: string }[] }, WearableId[]> = {
+    const query: Query<
+      { nfts: { urn: string; collection: { isApproved: boolean } }[] },
+      { id: WearableId; isApproved: boolean }[]
+    > = {
       description: 'fetch wearables by owner',
       subgraph: subgraph,
       query: QUERY_WEARABLES_BY_OWNER,
-      mapper: (response) => response.nfts.map(({ urn }) => urn)
+      mapper: (response) => response.nfts.map(({ urn, collection }) => ({ id: urn, isApproved: collection.isApproved }))
     }
-    return this.paginatableQuery(query, { owner: owner.toLowerCase() })
+    const wearables = await this.paginatableQuery(query, { owner: owner.toLowerCase() })
+    return wearables.filter((wearable) => wearable.isApproved).map((wearable) => wearable.id)
   }
 
   public async findWearablesByFilters(
@@ -347,7 +351,10 @@ export class TheGraphClient {
 const QUERY_WEARABLES_BY_OWNER: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1"]}, first: $first, skip: $skip) {
-      urn
+      urn,
+      collection {
+        isApproved
+      }
     }
   }`
 
