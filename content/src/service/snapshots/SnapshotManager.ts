@@ -103,12 +103,10 @@ export class SnapshotManager implements StatusCapableComponent {
    */
   private async generateLegacySnapshotPerEntityType(
     entityType: EntityType,
-    inArrayFormat: Array<[string, string[]]>
+    inArrayFormat: Array<[string, string[]]>,
+    lastIncludedDeploymentTimestamp: number
   ): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
-
-    // Get the active entities
-    const snapshotTimestamp = 0
 
     // Format the snapshot in a buffer
     const buffer = Buffer.from(JSON.stringify(inArrayFormat))
@@ -120,10 +118,10 @@ export class SnapshotManager implements StatusCapableComponent {
     await this.service.storeContent(hash, buffer)
 
     // Store the metadata
-    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp })
+    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
     // Log
     this.LOGGER.debug(
-      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${lastIncludedDeploymentTimestamp}`
     )
 
     // Delete the previous snapshot (if it exists)
@@ -221,7 +219,11 @@ export class SnapshotManager implements StatusCapableComponent {
         // dump legacy format
         if (entityType !== ALL_ENTITIES && inMemoryArrays[entityType]) {
           try {
-            await this.generateLegacySnapshotPerEntityType(entityType, inMemoryArrays[entityType]!)
+            await this.generateLegacySnapshotPerEntityType(
+              entityType,
+              inMemoryArrays[entityType]!,
+              timestamps[entityType] || 0
+            )
           } catch (e: any) {
             this.LOGGER.error(e)
           }
