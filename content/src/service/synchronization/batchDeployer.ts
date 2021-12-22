@@ -58,7 +58,12 @@ export function createBatchDeployerComponent(
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
           try {
-            const alreadyDeployed = await deploymentExists(components, entity.entityId)
+            // this condition should be carefully handled:
+            // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
+            // 2) then it checks against the DB (deploymentExists)
+            const alreadyDeployed =
+              components.deployedEntitiesFilter.check(entity.entityId) &&
+              (await deploymentExists(components, entity.entityId))
 
             if (alreadyDeployed) {
               return
