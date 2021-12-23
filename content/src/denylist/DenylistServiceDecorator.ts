@@ -122,7 +122,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.repository.task(
       async (task) => {
         const deploymentHistory = await this.service.getDeployments(options, task)
-
         // Prepare holders
         const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
         const contentTargetsByEntity: Map<EntityId, Map<ContentFileHash, DenylistTarget>> = new Map()
@@ -138,9 +137,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
           const pointerTargets: Map<Pointer, DenylistTarget> = new Map(
             pointers.map((pointer) => [pointer, buildPointerTarget(entityType, pointer)])
           )
-          entityTargetsByEntity.set(entityId, entityTarget)
-          contentTargetsByEntity.set(entityId, hashTargets)
-          pointerTargetsByEntity.set(entityId, pointerTargets)
+          const entityIdLowerCased = entityId.toLowerCase()
+          entityTargetsByEntity.set(entityIdLowerCased, entityTarget)
+          contentTargetsByEntity.set(entityIdLowerCased, hashTargets)
+          pointerTargetsByEntity.set(entityIdLowerCased, pointerTargets)
           allTargets.push(entityTarget, ...hashTargets.values(), ...pointerTargets.values())
         })
 
@@ -149,25 +149,33 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
         // Filter out deployments with denylisted pointers
         const filteredDeployments = deploymentHistory.deployments.filter(({ entityId, pointers }) => {
-          if (options?.filters?.pointers && options.filters.pointers.length > 0) {
-            // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
-            const intersection = options.filters.pointers.filter((pointer) => pointers.includes(pointer))
-            const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId)!
-            // Check if there is at least one pointer on the intersection that is not denylisted
-            const isAtLeastOnePointerNotDenylisted = intersection
-              .map((pointer) => pointerTargets.get(pointer)!)
-              .some((target) => !isTargetDenylisted(target, queryResult))
-            // If there is one pointer on the intersection that is not denylisted, then the entity shouldn't be filtered out
-            return isAtLeastOnePointerNotDenylisted
+          if (!(options?.filters?.pointers && options.filters.pointers.length > 0)) {
+            return true
           }
-          return true
+
+          const pointersLowerCased = pointers.map((pointer) => pointer.toLowerCase())
+          // Calculate the intersection between the pointers used to filter, and the deployment's pointers. Consider that the intersection can't be empty
+          const intersection = options.filters.pointers
+            .map((pointer) => pointer.toLowerCase())
+            .filter((pointer) => pointersLowerCased.includes(pointer.toLowerCase()))
+
+          const pointerTargets: Map<Pointer, DenylistTarget> = pointerTargetsByEntity.get(entityId.toLowerCase())!
+          // Check if there is at least one pointer on the intersection that is not denylisted
+          const isAtLeastOnePointerNotDenylisted = intersection
+            .map((pointer) => pointerTargets.get(pointer)!)
+            .some((target) => !isTargetDenylisted(target, queryResult))
+
+          // If there is one pointer on the intersection that is not denylisted, then the entity shouldn't be filtered out
+          return isAtLeastOnePointerNotDenylisted
         })
 
         // Perform sanitization
         const sanitizedDeployments = filteredDeployments.map((deployment) => {
           const { entityId } = deployment
-          const entityTarget = entityTargetsByEntity.get(entityId)!
-          const contentTargets = contentTargetsByEntity.get(entityId)!
+          const entityIdLowerCased = entityId.toLowerCase()
+
+          const entityTarget = entityTargetsByEntity.get(entityIdLowerCased)!
+          const contentTargets = contentTargetsByEntity.get(entityIdLowerCased)!
 
           const isEntityDenylisted = isTargetDenylisted(entityTarget, queryResult)
           const denylistedContent = Array.from(contentTargets.entries())

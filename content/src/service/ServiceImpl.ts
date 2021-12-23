@@ -206,8 +206,7 @@ export class ServiceImpl implements MetaverseContentService {
               fetchDeploymentStatus: (type, id) =>
                 this.components.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
               isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
-              isEntityDeployedAlready: (entityIdToCheck: EntityId) =>
-                Promise.resolve(isEntityAlreadyDeployed && entityId === entityIdToCheck),
+              isEntityDeployedAlready: (): Promise<boolean> => Promise.resolve(isEntityAlreadyDeployed),
               isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
               fetchContentFileSize: async (hash) => await this.getSize(hash)
             }

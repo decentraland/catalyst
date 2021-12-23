@@ -44,6 +44,8 @@ export class AccessCheckerForWearables {
 
     const parsed = resolvedPointers[0]
 
+    console.log('AAAAAAAA resolvedPointers', resolvedPointers)
+
     if (parsed.type === 'off-chain') {
       // Validate Off Chain Asset
       if (accessParams.ethAddress.toLowerCase() !== DECENTRALAND_ADDRESS.toLowerCase()) {

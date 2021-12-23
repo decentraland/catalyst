@@ -15,7 +15,9 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
   beforeEach(async () => {
     server = await testEnv.configServer().andBuild()
     makeNoopSynchronizationManager(server.components.synchronizationManager)
-    makeNoopValidator(server.components)
+    if (false) {
+      makeNoopValidator(server.components)
+    }
     await server.startProgram()
   })
 
