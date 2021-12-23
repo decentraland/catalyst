@@ -27,8 +27,8 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   private LOGGER: ILoggerComponent.ILogger
   private runningJobs: Set<() => Promise<any>> = new Set()
 
-  private statusEndpointData: { activeEntities: Partial<Record<EntityType, number>>; lastUpdatedTime: number } = {
-    activeEntities: {},
+  private statusEndpointData: { entities: Partial<Record<EntityType, number>>; lastUpdatedTime: number } = {
+    entities: {},
     lastUpdatedTime: 0
   }
 
@@ -219,7 +219,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     // update the snapshot sizes
     this.statusEndpointData.lastUpdatedTime = Date.now()
     for (const key in inMemoryArrays) {
-      this.statusEndpointData.activeEntities[key] = inMemoryArrays[key]!.length
+      this.statusEndpointData.entities[key] = inMemoryArrays[key]!.length
     }
 
     // Phase 3) hash generated files and move them to content folder
