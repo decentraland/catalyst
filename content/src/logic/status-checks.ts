@@ -3,10 +3,7 @@ import { IStatusCapableComponent } from '../types'
 type StatusResponse = { successful: boolean; details: Record<string, any> }
 
 export function isStatusCapableComponent(component: any): component is IStatusCapableComponent {
-  if (component && typeof component === 'object' && typeof component['getComponentStatus'] == 'function') {
-    return true
-  }
-  return false
+  return component && typeof component === 'object' && typeof component['getComponentStatus'] == 'function'
 }
 
 /**
@@ -20,11 +17,9 @@ export async function statusResponseFromComponents(components: Record<string, an
 
   // get the status from all components asynchronously
   const statuses = await Promise.allSettled(
-    Object.values(components).map((component) => {
-      if (isStatusCapableComponent(component)) {
-        return component.getComponentStatus()
-      }
-    })
+    Object.values(components)
+      .filter(isStatusCapableComponent)
+      .map((component) => component.getComponentStatus())
   )
 
   // create the map of statuses
