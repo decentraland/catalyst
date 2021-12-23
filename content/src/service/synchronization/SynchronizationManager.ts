@@ -70,7 +70,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
   async getComponentStatus(): Promise<StatusProbeResult> {
     const clusterStatus = this.components.contentCluster.getStatus()
     return {
-      name: 'synchronizationManager',
+      name: 'synchronizationStatus',
       data: {
         ...clusterStatus,
         synchronizationState: this.synchronizationState
