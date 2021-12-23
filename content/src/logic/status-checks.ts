@@ -3,7 +3,11 @@ import { IStatusCapableComponent } from '../types'
 type StatusResponse = { successful: boolean; details: Record<string, any> }
 
 export function isStatusCapableComponent(component: any): component is IStatusCapableComponent {
-  return component && typeof component === 'object' && typeof component['getComponentStatus'] == 'function'
+  if (component && typeof component === 'object' && typeof component['getComponentStatus'] == 'function') {
+    return true
+  }
+
+  return false
 }
 
 /**
