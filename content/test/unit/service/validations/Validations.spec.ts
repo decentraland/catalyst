@@ -644,7 +644,10 @@ describe('Validations', function () {
 
       const result = Validations.RATE_LIMIT(args)
 
-      await assertErrorsWere(result, `The entity with id (${entity.id}) has been rate limited.`)
+      await assertErrorsWere(
+        result,
+        `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
+      )
     })
   })
 

@@ -128,7 +128,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   private async generateLegacySnapshotPerEntityType(
     entityType: EntityType,
     inArrayFormat: Array<[string, string[]]>,
-    snapshotTimestamp: number
+    lastIncludedDeploymentTimestamp: number
   ): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
 
@@ -142,10 +142,10 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     await this.components.deployer.storeContent(hash, buffer)
 
     // Store the metadata
-    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp })
+    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
     // Log
     this.LOGGER.debug(
-      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${lastIncludedDeploymentTimestamp}`
     )
 
     // Delete the previous snapshot (if it exists)
