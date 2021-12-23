@@ -24,18 +24,23 @@ export type FullSnapshot = {
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
-  async areEntitiesDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
-    if (entityIds.length === 0) {
-      return new Map()
-    }
+  async getEntityById(entityId: EntityId) {
     const result = await this.db.map(
-      'SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)',
-      [entityIds],
-      ({ entity_id }) => entity_id
+      `
+        SELECT
+          d.entity_id AS entity_id,
+          date_part('epoch', d.local_timestamp) * 1000 AS local_timestamp
+        FROM deployments d WHERE d.entity_id = $1
+        LIMIT 1
+      `,
+      [entityId],
+      (row) => ({
+        entityId: row.entity_id,
+        localTimestamp: row.local_timestamp
+      })
     )
-
-    const deployedIds = new Set(result)
-    return new Map(entityIds.map((entityId) => [entityId, deployedIds.has(entityId)]))
+    if (!result || result.length == 0) return undefined
+    return result[0]
   }
 
   async getAmountOfDeployments(): Promise<Map<EntityType, number>> {

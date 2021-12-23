@@ -1,13 +1,16 @@
-import { DAOClient, delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
-import { Fetcher, Timestamp } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
+import { delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
+import { ILoggerComponent } from '@well-known-components/interfaces'
+import { Timestamp } from 'dcl-catalyst-commons'
+import future from 'fp-future'
 import ms from 'ms'
-import { clearTimeout, setTimeout } from 'timers'
-import { ChallengeSupervisor, ChallengeText } from './ChallengeSupervisor'
+import { AppComponents } from '../../types'
+import { ChallengeText } from './ChallengeSupervisor'
 
 export interface IdentityProvider {
   getIdentityInDAO(): ServerIdentity | undefined
 }
+
 function shuffleArray<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
@@ -17,12 +20,10 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export class ContentCluster implements IdentityProvider {
-  private static readonly LOGGER = log4js.getLogger('ContentCluster')
+  private static LOGGER: ILoggerComponent.ILogger
 
   // My own identity
   private myIdentity: ServerIdentity | undefined
-  // Timeout set to sync with DAO
-  private syncTimeout: NodeJS.Timeout
   // Servers that were reached at least once
   private serverClients: Set<ServerBaseUrl> = new Set()
   // All the servers on the DAO. Renewed with each sync
@@ -32,24 +33,26 @@ export class ContentCluster implements IdentityProvider {
 
   private syncFinishedEventCallbacks: Array<() => void> = []
 
+  // this future is a signal to stop the synchronization
+  private stoppedFuture = future<void>()
+
   constructor(
-    private readonly dao: DAOClient,
-    private readonly timeBetweenSyncs: number,
-    private readonly challengeSupervisor: ChallengeSupervisor,
-    private readonly fetcher: Fetcher
-  ) {}
+    private readonly components: Pick<AppComponents, 'logs' | 'daoClient' | 'challengeSupervisor' | 'fetcher'>,
+    private readonly timeBetweenSyncs: number
+  ) {
+    ContentCluster.LOGGER = components.logs.getLogger('ContentCluster')
+  }
 
   /** Connect to the DAO for the first time */
-  async connect(): Promise<void> {
+  async start(): Promise<void> {
     // Get all servers on the DAO
-    this.allServersInDAO = await this.dao.getAllContentServers()
-
-    // Detect my own identity
-    // TODO: [new-sync] Make this configurable, and default 10
-    await this.detectMyIdentity(10)
+    this.allServersInDAO = await this.components.daoClient.getAllContentServers()
 
     // Perform first sync with the DAO
     await this.syncWithDAO()
+
+    // Start recurrent sync job
+    this.syncWithDAOJob().catch(ContentCluster.LOGGER.error)
   }
 
   /**
@@ -60,8 +63,8 @@ export class ContentCluster implements IdentityProvider {
   }
 
   /** Stop syncing with DAO */
-  disconnect(): void {
-    clearTimeout(this.syncTimeout)
+  stop(): void {
+    this.stoppedFuture.resolve()
   }
 
   getStatus() {
@@ -76,13 +79,20 @@ export class ContentCluster implements IdentityProvider {
     return this.myIdentity
   }
 
+  private async syncWithDAOJob() {
+    ContentCluster.LOGGER.info(`Starting sync with DAO every ${this.timeBetweenSyncs}ms`)
+    while (this.stoppedFuture.isPending) {
+      await Promise.race([sleep(this.timeBetweenSyncs), this.stoppedFuture])
+      if (!this.stoppedFuture.isPending) return
+      await this.syncWithDAO()
+    }
+  }
+
   /** Update our data with the DAO's servers list */
   private async syncWithDAO() {
     try {
-      ContentCluster.LOGGER.debug(`Starting sync with DAO`)
-
       // Refresh the server list
-      this.allServersInDAO = await this.dao.getAllContentServers()
+      this.allServersInDAO = await this.components.daoClient.getAllContentServers()
 
       if (!this.myIdentity) {
         await this.detectMyIdentity(1)
@@ -110,13 +120,8 @@ export class ContentCluster implements IdentityProvider {
       for (const cb of this.syncFinishedEventCallbacks) {
         cb()
       }
-
-      ContentCluster.LOGGER.debug(`Finished sync with DAO`)
     } catch (error) {
       ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
-    } finally {
-      // Set a timeout to stay in sync with the DAO
-      this.syncTimeout = setTimeout(() => this.syncWithDAO(), this.timeBetweenSyncs)
     }
   }
 
@@ -140,7 +145,7 @@ export class ContentCluster implements IdentityProvider {
       // Fetch server list from the DAO
       if (!this.allServersInDAO) {
         ContentCluster.LOGGER.info(`Fetching DAO servers`)
-        this.allServersInDAO = await this.dao.getAllContentServers()
+        this.allServersInDAO = await this.components.daoClient.getAllContentServers()
       }
 
       const challengesByAddress: Map<ServerBaseUrl, ChallengeText> = new Map()
@@ -148,9 +153,6 @@ export class ContentCluster implements IdentityProvider {
       const daoServerWithoutAnswers = new Set<string>(Array.from(this.allServersInDAO).map(($) => $.baseUrl))
 
       while (attempts > 0 && challengesByAddress.size < this.allServersInDAO.size) {
-        ContentCluster.LOGGER.info(
-          `Attempt ${attempts} - Pending answers from ${Array.from(daoServerWithoutAnswers).join(',')}`
-        )
         // Prepare challenges for unknown servers
         const challengeResults = await Promise.allSettled(
           Array.from(this.allServersInDAO)
@@ -161,6 +163,10 @@ export class ContentCluster implements IdentityProvider {
             }))
         )
 
+        ContentCluster.LOGGER.info(
+          `Attempt ${attempts} - Pending answers from [${Array.from(daoServerWithoutAnswers).join(',')}]`
+        )
+
         const serversWithMyChallengeText: ServerMetadata[] = []
 
         // Store new challenge results
@@ -169,7 +175,7 @@ export class ContentCluster implements IdentityProvider {
             challengesByAddress.set(r.value.server.baseUrl, r.value.challengeText)
             daoServerWithoutAnswers.delete(r.value.server.baseUrl)
             // Check if I was any of the servers who responded
-            if (this.challengeSupervisor.isChallengeOk(r.value.challengeText)) {
+            if (this.components.challengeSupervisor.isChallengeOk(r.value.challengeText)) {
               serversWithMyChallengeText.push(r.value.server)
             }
           }
@@ -181,7 +187,7 @@ export class ContentCluster implements IdentityProvider {
           break
         } else if (serversWithMyChallengeText.length > 1) {
           ContentCluster.LOGGER.warn(
-            `Expected to find only one server with my challenge text '${this.challengeSupervisor.getChallengeText()}', but found ${
+            `Expected to find only one server with my challenge text '${this.components.challengeSupervisor.getChallengeText()}', but found ${
               serversWithMyChallengeText.length
             }`
           )
@@ -213,13 +219,10 @@ export class ContentCluster implements IdentityProvider {
 
   /** Return the server's challenge text, or undefined if it couldn't be reached */
   private async getChallengeInServer(catalystBaseUrl: ServerBaseUrl): Promise<ChallengeText | undefined> {
-    try {
-      const { challengeText }: { challengeText: ChallengeText } = (await this.fetcher.fetchJson(
-        `${catalystBaseUrl}/challenge`
-      )) as { challengeText: ChallengeText }
-
-      return challengeText
-    } catch (error) {}
+    const response = await this.components.fetcher.fetch(`${catalystBaseUrl}/challenge`)
+    if (!response.ok) return
+    const json: { challengeText: ChallengeText } = await response.json()
+    return json.challengeText
   }
 }
 

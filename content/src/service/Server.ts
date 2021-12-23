@@ -1,5 +1,6 @@
 import { initializeMetricsServer } from '@catalyst/commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
+import { IBaseComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import compression from 'compression'
 import cors from 'cors'
 import { once } from 'events'
@@ -11,39 +12,28 @@ import log4js from 'log4js'
 import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
-import { Controller } from './controller/Controller'
-import { Bean, Environment, EnvironmentConfig } from './Environment'
-import { metricsComponent } from './metrics'
-import { MigrationManager } from './migrations/MigrationManager'
-import { Repository } from './repository/Repository'
-import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
-import { MetaverseContentService } from './service/Service'
-import { SnapshotManager } from './service/snapshots/SnapshotManager'
-import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
-import { AppComponents } from './types'
+import { Controller } from '../controller/Controller'
+import { EnvironmentConfig } from '../Environment'
+import { AppComponents } from '../types'
 
-export class Server {
-  private static readonly LOGGER = log4js.getLogger('Server')
+export class Server implements IBaseComponent {
+  private LOGGER: ILoggerComponent.ILogger
   private static readonly UPLOADS_DIRECTORY = 'uploads/'
 
   protected metricsServer: ReturnType<typeof initializeMetricsServer> | undefined
   private port: number
   private app: express.Express
   private httpServer: http.Server
-  private readonly synchronizationManager: SynchronizationManager
-  private readonly garbageCollectionManager: GarbageCollectionManager
-  private readonly snapshotManager?: SnapshotManager
-  private readonly migrationManager: MigrationManager
-  private readonly service: MetaverseContentService
-  private readonly repository: Repository
 
-  private stopSnapshots?: () => Promise<any>
-
-  constructor(env: Environment, private components: Pick<AppComponents, 'database' | 'batchDeployer'>) {
+  constructor(protected components: Pick<AppComponents, 'controller' | 'metrics' | 'env' | 'logs'>) {
+    const { env, controller, metrics, logs } = components
+    this.LOGGER = logs.getLogger('HttpServer')
     // Set logger
     log4js.configure({
       appenders: { console: { type: 'console', layout: { type: 'basic' } } },
-      categories: { default: { appenders: ['console'], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) } }
+      categories: {
+        default: { appenders: ['console'], level: env.getConfig<string>(EnvironmentConfig.LOG_LEVEL) }
+      }
     })
 
     env.logConfigValues()
@@ -53,7 +43,7 @@ export class Server {
     this.app = express()
 
     if (this.shouldInitializeMetricsServer()) {
-      this.metricsServer = initializeMetricsServer(this.app, metricsComponent)
+      this.metricsServer = initializeMetricsServer(this.app, metrics as any)
     }
 
     const corsOptions: cors.CorsOptions = {
@@ -65,13 +55,6 @@ export class Server {
     }
 
     const upload = multer({ dest: Server.UPLOADS_DIRECTORY, preservePath: true })
-    const controller: Controller = env.getBean(Bean.CONTROLLER)
-    this.garbageCollectionManager = env.getBean(Bean.GARBAGE_COLLECTION_MANAGER)
-    this.snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
-    this.service = env.getBean(Bean.SERVICE)
-    this.migrationManager = env.getBean(Bean.MIGRATION_MANAGER)
-    this.repository = env.getBean(Bean.REPOSITORY)
-    this.synchronizationManager = env.getBean(Bean.SYNCHRONIZATION_MANAGER)
 
     if (env.getConfig(EnvironmentConfig.USE_COMPRESSION_MIDDLEWARE)) {
       this.app.use(compression({ filter: (_req, _res) => true }))
@@ -122,7 +105,7 @@ export class Server {
    * Extending implementations should want to change the logic when to initialize metrics server (e.g. tests)
    */
   shouldInitializeMetricsServer(): boolean {
-    return true
+    return process.env.CI !== 'true' && process.env.RUNNING_TESTS !== 'true'
   }
 
   private registerRoute(
@@ -164,32 +147,18 @@ export class Server {
   }
 
   async start(): Promise<void> {
-    this.purgeUploadsDirectory()
-    await this.migrationManager.run()
-    await this.validateHistory()
-    await this.service.start()
-    await this.components.batchDeployer.start()
-
-    // generate snapshots before starting the server
-    if (this.snapshotManager) {
-      const { stop } = await this.snapshotManager.startCalculateFullSnapshots()
-      this.stopSnapshots = stop
-    }
-
     this.httpServer = this.app.listen(this.port)
+
     await once(this.httpServer, 'listening')
-    Server.LOGGER.info(`Content Server listening on port ${this.port}.`)
+
+    this.LOGGER.info(`Content Server listening on port ${this.port}.`)
+
     if (this.metricsServer) {
       await this.metricsServer.start()
     }
-
-    await this.synchronizationManager.start()
-    await this.garbageCollectionManager.start()
   }
 
-  async stop(options: { endDbConnection: boolean } = { endDbConnection: true }): Promise<void> {
-    await Promise.all([this.garbageCollectionManager.stop(), this.synchronizationManager.stop()])
-
+  async stop(): Promise<void> {
     if (this.httpServer) {
       await this.closeHTTPServer()
     }
@@ -197,49 +166,19 @@ export class Server {
       await this.metricsServer.stop()
     }
 
-    if (this.stopSnapshots) {
-      await this.stopSnapshots()
-      delete this.stopSnapshots
-    }
-
-    // await for jobs to end
-    await this.components.batchDeployer.onIdle()
-
-    Server.LOGGER.info(`Content Server stopped.`)
-    if (options.endDbConnection) await this.stopDB()
+    this.LOGGER.info(`Content Server stopped.`)
   }
 
-  async stopDB(): Promise<void> {
-    // TODO: this will be handled by well-known-components Lifecycle
-    await this.components.database.stop!()
-
-    await this.repository.shutdown()
-  }
-
-  private async validateHistory(): Promise<void> {
-    // Validate last history entry is before Date.now()
-    const lastDeployments = await this.service.getDeployments({ offset: 0, limit: 1 })
-    if (lastDeployments.deployments.length > 0) {
-      const currentTimestamp = Date.now()
-      if (lastDeployments.deployments[0].auditInfo.localTimestamp > currentTimestamp) {
-        console.error(
-          'Last stored timestamp for this server is newer than current time. The server can not be started.'
-        )
-        process.exit(1)
-      }
-    }
-  }
-
-  private purgeUploadsDirectory(): void {
-    Server.LOGGER.info("Cleaning up the Server's uploads directory...")
+  async purgeUploadsDirectory(): Promise<void> {
+    this.LOGGER.info("Cleaning up the Server's uploads directory...")
     try {
       const directory = Server.UPLOADS_DIRECTORY
       fs.readdirSync(directory).forEach((file) => {
         fs.unlinkSync(path.join(directory, file))
       })
-      Server.LOGGER.info('Cleaned up!')
+      this.LOGGER.info('Cleaned up!')
     } catch (e) {
-      Server.LOGGER.error('There was an error while cleaning up the upload directory: ', e)
+      this.LOGGER.error('There was an error while cleaning up the upload directory: ', e)
     }
   }
 

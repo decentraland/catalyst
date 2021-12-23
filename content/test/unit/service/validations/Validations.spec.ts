@@ -71,7 +71,7 @@ const wearable: Wearable = {
       text: 'una descripcion'
     }
   ],
-  collectionAddress: '0x...',
+  collectionAddress: '0x0000000collection_address',
   rarity: Rarity.LEGENDARY,
   names: [
     {

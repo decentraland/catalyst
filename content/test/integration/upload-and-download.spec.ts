@@ -1,24 +1,22 @@
 import { DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
-import { Bean } from '../../src/Environment'
-import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeMockedAccessChecker } from '../helpers/service/access/MockedAccessChecker'
+import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
-import { TestServer } from './TestServer'
+import { TestProgram } from './TestProgram'
 
-describe('End 2 end deploy test', () => {
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
+  let server: TestProgram
   const POINTER0 = 'X0,Y0'
   const POINTER1 = 'X1,Y1'
 
   beforeEach(async () => {
-    server = await testEnv
-      .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .andBuild()
-    await server.start()
+    server = await testEnv.configServer().andBuild()
+    makeNoopSynchronizationManager(server.components.synchronizationManager)
+    makeMockedAccessChecker(server.components)
+    await server.startProgram()
   })
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {

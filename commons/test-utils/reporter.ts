@@ -2,10 +2,11 @@ import { SpecReporter, StacktraceOption } from 'jasmine-spec-reporter'
 
 export const reporter = new SpecReporter({
   summary: {
-    displayDuration: true
+    displayDuration: true,
+    displayStacktrace: StacktraceOption.PRETTY
   },
   spec: {
-    displayStacktrace: StacktraceOption.NONE,
+    displayStacktrace: StacktraceOption.RAW,
     displayDuration: true
   }
 })

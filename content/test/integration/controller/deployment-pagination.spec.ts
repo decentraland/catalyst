@@ -4,19 +4,20 @@ import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dc
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { DeploymentOptions, PointerChangesFilters } from '../../../src/service/deployments/DeploymentManager'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('Integration - Deployment Pagination', () => {
+loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv) => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+  let server: TestProgram
 
   beforeEach(async () => {
     server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
-    await server.start()
+    makeNoopValidator(server.components)
+    await server.startProgram()
   })
 
   beforeAll(async () => {

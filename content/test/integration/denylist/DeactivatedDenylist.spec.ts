@@ -1,13 +1,13 @@
 import { EnvironmentConfig } from '../../../src/Environment'
 import { assertPromiseIsRejected } from '../../helpers/PromiseAssertions'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, createIdentity } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('Integration - DeactivatedDenylist', () => {
+loadStandaloneTestEnvironment()('Integration - DeactivatedDenylist', (testEnv) => {
   const decentralandIdentity = createIdentity()
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+  let server: TestProgram
 
   beforeEach(async () => {
     server = await testEnv
@@ -16,7 +16,9 @@ describe('Integration - DeactivatedDenylist', () => {
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, true)
       .andBuild()
 
-    await server.start()
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
   })
 
   it(`When an entity is denylisted, then an error is thrown`, async () => {

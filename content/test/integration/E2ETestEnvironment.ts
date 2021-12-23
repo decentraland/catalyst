@@ -1,37 +1,30 @@
-import { ServerBaseUrl } from '@catalyst/commons'
+import { DAOClient, ServerBaseUrl } from '@catalyst/commons'
+import { createLogComponent } from '@well-known-components/logger'
 import { random } from 'faker'
 import ms from 'ms'
+import { spy } from 'sinon'
 import { GenericContainer, StartedTestContainer } from 'testcontainers'
 import { Container } from 'testcontainers/dist/container'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
-import {
-  Bean,
-  DEFAULT_DATABASE_CONFIG,
-  Environment,
-  EnvironmentBuilder,
-  EnvironmentConfig
-} from '../../src/Environment'
+import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
+import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
-import { Repository } from '../../src/repository/Repository'
-import { RepositoryFactory } from '../../src/repository/RepositoryFactory'
-import { DB_REQUEST_PRIORITY } from '../../src/repository/RepositoryQueue'
-import { MetaverseContentService } from '../../src/service/Service'
-import { MockedAccessChecker } from '../helpers/service/access/MockedAccessChecker'
+import { createDatabaseComponent, IDatabaseComponent } from '../../src/ports/postgres'
+import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
-import { NoOpValidator } from '../helpers/service/validations/NoOpValidator'
 import { isCI } from './E2ETestUtils'
-import { TestServer } from './TestServer'
+import { TestProgram } from './TestProgram'
 
 export class E2ETestEnvironment {
   private static TEST_SCHEMA = 'e2etest'
   private static POSTGRES_PORT = 5432
-  private runningServers: TestServer[]
+  private runningServers: TestProgram[]
   private postgresContainer: StartedTestContainer
-  private repository: Repository
+  private database: IDatabaseComponent
   private sharedEnv: Environment
   private dao: MockedDAOClient
 
-  async start(overrideConfigs?: Map<EnvironmentConfig, any>): Promise<void> {
+  async start(overrideConfigs?: Record<number, any>): Promise<void> {
     if (!isCI()) {
       this.postgresContainer = await new GenericContainer('postgres', '12')
         .withName('postgres_test')
@@ -54,32 +47,53 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
       .setConfig(EnvironmentConfig.METRICS, false)
-      .registerBean(Bean.ACCESS_CHECKER, new MockedAccessChecker())
 
-    overrideConfigs?.forEach((value: any, key: EnvironmentConfig) => {
-      console.debug('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
-      this.sharedEnv.setConfig(key, value)
-    })
+    if (overrideConfigs) {
+      for (const key in overrideConfigs) {
+        const value = overrideConfigs[key]
+        console.debug('Override for Environment Config: ', (<any>EnvironmentConfig)[key], value)
+        this.sharedEnv.setConfig(parseInt(key) as EnvironmentConfig, value)
+      }
+    }
 
-    this.repository = await RepositoryFactory.create(this.sharedEnv)
+    const logs = createLogComponent()
+    this.database = await createDatabaseComponent(
+      { logs },
+      {
+        port: this.sharedEnv.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+        host: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+        database: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+        user: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_USER),
+        password: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
+        idleTimeoutMillis: this.sharedEnv.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+        query_timeout: this.sharedEnv.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+      }
+    )
   }
 
   async stop(): Promise<void> {
-    await this.repository.shutdown()
+    // first kill the servers
+    await this.stopAllComponentsFromAllServersAndDeref()
+
+    // then the components of the environment
+    await stopAllComponents({
+      database: this.database
+    })
+
+    // lastly we kill the DB container
     await this.postgresContainer?.stop()
   }
 
   async clearDatabases(): Promise<void> {
-    await this.repository.run((db) => db.query(`DROP SCHEMA IF EXISTS ${E2ETestEnvironment.TEST_SCHEMA} CASCADE`), {
-      priority: DB_REQUEST_PRIORITY.HIGH
-    })
+    await this.database.query(`
+      DROP SCHEMA IF EXISTS ${E2ETestEnvironment.TEST_SCHEMA} CASCADE
+    `)
   }
 
-  async stopServers(): Promise<void> {
+  async stopAllComponentsFromAllServersAndDeref(): Promise<void> {
     if (this.runningServers) {
-      await Promise.all(
-        this.runningServers.map((server) => server.stop({ deleteStorage: true, endDbConnection: true }, true))
-      )
+      await Promise.all(this.runningServers.map((server) => server.stopProgram()))
+      this.runningServers.length = 0
     }
   }
 
@@ -89,12 +103,14 @@ export class E2ETestEnvironment {
   }
 
   configServer(syncInternal?: number | string): ServerBuilder {
-    const asTestEnvCall = {
+    const asTestEnvCall: TestEnvCalls = {
       addToDAO: (address: string) => this.dao.add(address),
       createDatabases: (amount: number) => this.createDatabases(amount),
-      registerServers: (servers: TestServer[]) => this.registerServers(servers)
+      registerServer: (server: TestProgram) => this.runningServers.push(server)
     }
-    const builder = new ServerBuilder(asTestEnvCall, this.sharedEnv).withBean(Bean.DAO_CLIENT, this.dao)
+
+    const builder = new ServerBuilder(asTestEnvCall, this.sharedEnv, this.dao)
+
     if (syncInternal) {
       const interval = typeof syncInternal === 'number' ? syncInternal : ms(syncInternal)
       builder
@@ -108,48 +124,34 @@ export class E2ETestEnvironment {
   async getEnvForNewDatabase(): Promise<Environment> {
     const [dbName] = await this.createDatabases(1)
     const env = new Environment(this.sharedEnv).setConfig(EnvironmentConfig.PSQL_DATABASE, dbName)
-    const migrationManager = MigrationManagerFactory.create(env)
+    const migrationManager = MigrationManagerFactory.create({ logs: createLogComponent(), env })
     await migrationManager.run()
+    await stopAllComponents({ migrationManager })
     return env
   }
 
   /** Returns a service that connects to the database, with the migrations run */
-  async buildService(): Promise<MetaverseContentService & { stop: () => Promise<void> }> {
+  async buildService(): Promise<AppComponents> {
     const baseEnv = await this.getEnvForNewDatabase()
-    const { env, components } = await new EnvironmentBuilder(baseEnv)
-      .withBean(Bean.VALIDATOR, new NoOpValidator())
-      .build()
-    const service = env.getBean<MetaverseContentService>(Bean.SERVICE)
-    const repository = env.getBean<Repository>(Bean.REPOSITORY)
-    const stoppableService = Object.assign(service, {
-      stop: async () => {
-        await repository.shutdown()
-        await components.database.stop()
-      }
-    })
-
-    return stoppableService
+    const components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
+    return components
   }
 
   removeFromDAO(address: ServerBaseUrl) {
     this.dao.remove(address)
   }
 
-  buildMany(amount: number): Promise<TestServer[]> {
+  buildMany(amount: number): Promise<TestProgram[]> {
     return this.configServer().andBuildMany(amount)
   }
 
-  private registerServers(servers: TestServer[]) {
-    this.runningServers.push(...servers)
-  }
-
   private async createDatabases(amount: number) {
-    await this.repository.run((db) => db.none(`CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}`), {
-      priority: DB_REQUEST_PRIORITY.HIGH
-    })
+    await this.database.query(`
+      CREATE SCHEMA IF NOT EXISTS ${E2ETestEnvironment.TEST_SCHEMA}
+    `)
     const dbNames = new Array(amount).fill(0).map((_) => 'db' + random.alphaNumeric(8))
     for (const dbName of dbNames) {
-      await this.repository.run((db) => db.none(`CREATE DATABASE ${dbName}`), { priority: DB_REQUEST_PRIORITY.HIGH })
+      await this.database.query(`CREATE DATABASE ${dbName}`)
     }
     return dbNames
   }
@@ -158,19 +160,14 @@ export class E2ETestEnvironment {
 type TestEnvCalls = {
   addToDAO: (address: string) => void
   createDatabases: (amount: number) => Promise<string[]>
-  registerServers: (servers: TestServer[]) => void
+  registerServer: (servers: TestProgram) => void
 }
 
 export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
 
-  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment) {
+  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOClient) {
     this.builder = new EnvironmentBuilder(env)
-  }
-
-  withBean(bean: Bean, value: any): ServerBuilder {
-    this.builder.withBean(bean, value)
-    return this
   }
 
   withConfig(config: EnvironmentConfig, value: any): ServerBuilder {
@@ -178,33 +175,43 @@ export class ServerBuilder {
     return this
   }
 
-  async andBuild(): Promise<TestServer> {
+  async andBuild(): Promise<TestProgram> {
     const [server] = await this.andBuildMany(1)
     return server
   }
 
-  async andBuildMany(amount: number): Promise<TestServer[]> {
+  async andBuildMany(amount: number): Promise<TestProgram[]> {
     const ports = new Array(amount).fill(0).map((_, idx) => idx * 1010 + 6060)
     return this.andBuildOnPorts(ports)
   }
 
-  async andBuildOnPorts(ports: number[]): Promise<TestServer[]> {
+  async andBuildOnPorts(ports: number[]): Promise<TestProgram[]> {
     const databaseNames = await this.testEnvCalls.createDatabases(ports.length)
 
-    const servers: TestServer[] = []
+    const servers: TestProgram[] = []
     for (let i = 0; i < ports.length; i++) {
       const port = ports[i]
       const address = `http://localhost:${port}`
       this.testEnvCalls.addToDAO(address)
-      const { env, components } = await this.builder
+      const components = await this.builder
         .withConfig(EnvironmentConfig.SERVER_PORT, port)
         .withConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, `storage_${port}`)
         .withConfig(EnvironmentConfig.PSQL_DATABASE, databaseNames[i])
-        .build()
-      servers[i] = new TestServer(env, components)
-    }
+        .buildConfigAndComponents()
 
-    this.testEnvCalls.registerServers(servers)
+      if (this.dao) {
+        // mock DAO client
+        components.daoClient.getAllContentServers = spy(() => {
+          return this.dao.getAllContentServers()
+        })
+        components.daoClient.getAllServers = spy(() => {
+          return this.dao.getAllServers()
+        })
+      }
+
+      servers[i] = new TestProgram(components)
+      this.testEnvCalls.registerServer(servers[i])
+    }
 
     return servers
   }
@@ -245,32 +252,59 @@ class PostgresWaitStrategy extends LogWaitStrategy {
   }
 }
 
-export function loadStandaloneTestEnvironment(): E2ETestEnvironment {
-  return loadTestEnvironment(new Map([[EnvironmentConfig.DISABLE_SYNCHRONIZATION, true]]))
+export function loadStandaloneTestEnvironment(overrideConfigs?: Record<number, any>) {
+  return loadTestEnvironment({ [EnvironmentConfig.DISABLE_SYNCHRONIZATION]: true, ...overrideConfigs })
 }
 
 /**
  * This is an easy way to load a test environment into a test suite
  */
-export function loadTestEnvironment(overrideConfigs?: Map<EnvironmentConfig, any>): E2ETestEnvironment {
-  const testEnv = new E2ETestEnvironment()
+export function loadTestEnvironment(
+  overrideConfigs?: Record<number, any>
+): (name: string, test: (testEnv: E2ETestEnvironment) => void) => void {
+  return function (name, test) {
+    describe(name, () => {
+      const testEnv = new E2ETestEnvironment()
 
-  beforeAll(async () => {
-    await testEnv.start(overrideConfigs)
+      it('starts the test environment', async () => {
+        await testEnv.start(overrideConfigs)
+      })
+
+      describe('use cases for test environment', () => {
+        beforeEach(() => {
+          testEnv.resetDAOAndServers()
+        })
+
+        afterEach(async () => {
+          await testEnv.clearDatabases()
+          await testEnv.stopAllComponentsFromAllServersAndDeref()
+        })
+
+        test(testEnv)
+      })
+
+      it('stops the test environment', async () => {
+        await testEnv.stop()
+      })
+    })
+  }
+}
+
+/**
+ * Builds a complete server and returns its components.
+ * It does not start the components.
+ */
+export function testCaseWithComponents(
+  testEnv: E2ETestEnvironment,
+  name: string,
+  fn: (components: AppComponents) => Promise<void>
+) {
+  it(name, async () => {
+    const components = await testEnv.buildService()
+    try {
+      await fn(components)
+    } finally {
+      await stopAllComponents(components)
+    }
   })
-
-  afterAll(async () => {
-    await testEnv.stop()
-  })
-
-  beforeEach(() => {
-    testEnv.resetDAOAndServers()
-  })
-
-  afterEach(async () => {
-    await testEnv.clearDatabases()
-    await testEnv.stopServers()
-  })
-
-  return testEnv
 }

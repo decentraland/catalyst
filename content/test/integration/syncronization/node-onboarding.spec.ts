@@ -1,4 +1,5 @@
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
@@ -8,20 +9,23 @@ import {
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('End 2 end - Node onboarding', function () {
-  const testEnv = loadTestEnvironment()
-  let server1: TestServer, server2: TestServer, server3: TestServer
+loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
+  let server1: TestProgram, server2: TestProgram, server3: TestProgram
 
   beforeEach(async () => {
     ;[server1, server2, server3] = await testEnv.configServer('1s').andBuildMany(3)
+
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
+    makeNoopValidator(server3.components)
   })
 
   // TODO: [new-sync] don't know why this keeps failing :(
   xit('When a node starts, it gets the active entities', async () => {
     // Start server 1 and 2
-    await Promise.all([server1.start(), server2.start()])
+    await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
     const { deployData: deployData1, controllerEntity: entity1 } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
@@ -52,7 +56,7 @@ describe('End 2 end - Node onboarding', function () {
     await assertEntityIsOverwrittenBy(server2, entity1, entity2)
 
     // Start server 3
-    await server3.start()
+    await server3.startProgram()
 
     // Assert server 3 has the latest deployment
     await awaitUntil(async () => {
@@ -62,7 +66,7 @@ describe('End 2 end - Node onboarding', function () {
 
   it('When a node starts, it even gets history for nodes that are no longer on the DAO', async () => {
     // Start server 1 and 2
-    await Promise.all([server1.start(), server2.start()])
+    await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare data to be deployed
     const { deployData, controllerEntity: entity } = await buildDeployData(['X1,Y1', 'X2,Y2'], {
@@ -85,7 +89,7 @@ describe('End 2 end - Node onboarding', function () {
     testEnv.removeFromDAO(server1.getUrl())
 
     // Start server 3
-    await server3.start()
+    await server3.startProgram()
 
     await awaitUntil(() => assertDeploymentsAreReported(server3, deployment))
 

@@ -1,11 +1,12 @@
 import { Entity as ControllerEntity } from 'dcl-catalyst-commons'
+import { stub } from 'sinon'
 import { ControllerDenylistData } from '../../../src/controller/Controller'
 import { DenylistServiceDecorator } from '../../../src/denylist/DenylistServiceDecorator'
 import { buildEntityTarget, DenylistTargetType } from '../../../src/denylist/DenylistTarget'
-import { Bean, EnvironmentConfig } from '../../../src/Environment'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { assertPromiseIsRejected } from '../../helpers/PromiseAssertions'
-import { MockedContentCluster } from '../../helpers/service/synchronization/MockedContentCluster'
-import { MockedSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopSynchronizationManager } from '../../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertContentIsDenylisted,
   assertContentNotIsDenylisted,
@@ -17,25 +18,31 @@ import {
 } from '../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, createIdentity } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('Integration - Denylist', () => {
+loadStandaloneTestEnvironment()('Integration - Denylist', (testEnv) => {
   const metadata: string = 'Some metadata'
   const decentralandIdentity = createIdentity()
   const ownerIdentity = createIdentity()
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+  let server: TestProgram
 
   beforeEach(async () => {
     server = await testEnv
       .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .withBean(Bean.CONTENT_CLUSTER, MockedContentCluster.withAddress(ownerIdentity.address))
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, decentralandIdentity.address)
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .andBuild()
 
-    await server.start()
+    makeNoopValidator(server.components)
+    makeNoopSynchronizationManager(server.components.synchronizationManager)
+
+    stub(server.components.contentCluster, 'getIdentityInDAO').returns({
+      baseUrl: 'http://stub',
+      id: '1-stub',
+      owner: ownerIdentity.address
+    })
+
+    await server.startProgram()
   })
 
   it(`When an entity is denylisted, then the metadata and content are hidden`, async () => {

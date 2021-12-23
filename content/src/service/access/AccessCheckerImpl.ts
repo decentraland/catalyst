@@ -1,5 +1,5 @@
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
 import { ContentAuthenticator } from '../auth/Authenticator'
 import { AccessChecker, AccessParams } from './AccessChecker'
 import { AccessCheckerForProfiles } from './AccessCheckerForProfiles'
@@ -7,8 +7,6 @@ import { AccessCheckerForScenes } from './AccessCheckerForScenes'
 import { AccessCheckerForWearables } from './AccessCheckerForWearables'
 
 export class AccessCheckerImpl implements AccessChecker {
-  private static readonly LOGGER = log4js.getLogger('AccessCheckerImpl')
-
   private readonly accessCheckerForScenes: AccessCheckerForScenes
   private readonly accessCheckerForProfiles: AccessCheckerForProfiles
   private readonly accessCheckerForWearables: AccessCheckerForWearables
@@ -20,14 +18,12 @@ export class AccessCheckerImpl implements AccessChecker {
     collectionsL1SubgraphUrl,
     collectionsL2SubgraphUrl,
     blocksL1SubgraphUrl,
-    blocksL2SubgraphUrl
+    blocksL2SubgraphUrl,
+    logs
   }: AccessCheckerImplParams) {
-    this.accessCheckerForScenes = new AccessCheckerForScenes(
-      authenticator,
-      fetcher,
-      landManagerSubgraphUrl,
-      AccessCheckerImpl.LOGGER
-    )
+    const logger = logs.getLogger('AccessCheckerImpl')
+
+    this.accessCheckerForScenes = new AccessCheckerForScenes(authenticator, fetcher, landManagerSubgraphUrl, logger)
     this.accessCheckerForProfiles = new AccessCheckerForProfiles(authenticator)
     this.accessCheckerForWearables = new AccessCheckerForWearables(
       fetcher,
@@ -35,7 +31,7 @@ export class AccessCheckerImpl implements AccessChecker {
       collectionsL2SubgraphUrl,
       blocksL1SubgraphUrl,
       blocksL2SubgraphUrl,
-      AccessCheckerImpl.LOGGER
+      logger
     )
   }
 
@@ -56,6 +52,7 @@ export class AccessCheckerImpl implements AccessChecker {
 export type AccessCheckerImplParams = {
   authenticator: ContentAuthenticator
   fetcher: Fetcher
+  logs: ILoggerComponent
   landManagerSubgraphUrl: string
   collectionsL1SubgraphUrl: string
   collectionsL2SubgraphUrl: string

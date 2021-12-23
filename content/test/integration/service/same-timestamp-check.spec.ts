@@ -1,18 +1,16 @@
 import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
-import { MetaverseContentService } from '../../../src/service/Service'
-import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
+import { AppComponents } from '../../../src/types'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
 /**
  * This test verifies that the entities with the same entity timestamp are deployed correctly
  */
-describe('Integration - Same Timestamp Check', () => {
+loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) => {
   const P1 = 'X1,Y1'
   const type = EntityType.PROFILE
   let oldestEntity: EntityCombo, newestEntity: EntityCombo
-
-  const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService & { stop: () => Promise<void> }
 
   beforeAll(async () => {
     const timestamp = Date.now()
@@ -27,42 +25,47 @@ describe('Integration - Same Timestamp Check', () => {
     }
   })
 
-  beforeEach(async () => {
-    service = await testEnv.buildService()
-  })
+  testCaseWithComponents(
+    testEnv,
+    `When oldest is deployed first, they overwrites are calculated correctly correctly`,
+    async ({ deployer, validator }) => {
+      // make noop validator
+      makeNoopValidator({ validator })
 
-  afterEach(async () => {
-    await service.stop()
-  })
+      // Deploy the entities
+      await deployEntitiesCombo(deployer, oldestEntity)
+      await deployEntitiesCombo(deployer, newestEntity)
 
-  it(`When oldest is deployed first, they overwrites are calculated correctly correctly`, async () => {
-    // Deploy the entities
-    await deployEntitiesCombo(service, oldestEntity)
-    await deployEntitiesCombo(service, newestEntity)
+      // Verify overwrites
+      await assertOverwrittenBy(deployer, oldestEntity, newestEntity)
+      await assertNotOverwritten(deployer, newestEntity)
 
-    // Verify overwrites
-    await assertOverwrittenBy(oldestEntity, newestEntity)
-    await assertNotOverwritten(newestEntity)
+      // Assert newest entity is active
+      await assertIsActive(deployer, newestEntity)
+    }
+  )
 
-    // Assert newest entity is active
-    await assertIsActive(newestEntity)
-  })
+  testCaseWithComponents(
+    testEnv,
+    `When newest is deployed first, they overwrites are calculated correctly correctly`,
+    async ({ deployer, validator }) => {
+      // make noop validator
+      makeNoopValidator({ validator })
+      // Deploy the entities
+      await deployEntitiesCombo(deployer, newestEntity)
+      await deployEntitiesCombo(deployer, oldestEntity)
 
-  it(`When newest is deployed first, they overwrites are calculated correctly correctly`, async () => {
-    // Deploy the entities
-    await deployEntitiesCombo(service, newestEntity)
-    await deployEntitiesCombo(service, oldestEntity)
+      // Verify overwrites
+      await assertOverwrittenBy(deployer, oldestEntity, newestEntity)
+      await assertNotOverwritten(deployer, newestEntity)
 
-    // Verify overwrites
-    await assertOverwrittenBy(oldestEntity, newestEntity)
-    await assertNotOverwritten(newestEntity)
+      // Assert newest entity is active
+      await assertIsActive(deployer, newestEntity)
+    }
+  )
 
-    // Assert newest entity is active
-    await assertIsActive(newestEntity)
-  })
-
-  async function assertIsActive(entityCombo: EntityCombo) {
-    const { deployments } = await service.getDeployments({
+  async function assertIsActive(deployer: AppComponents['deployer'], entityCombo: EntityCombo) {
+    const { deployments } = await deployer.getDeployments({
       filters: { entityIds: [entityCombo.controllerEntity.id], onlyCurrentlyPointed: true }
     })
     expect(deployments.length).toEqual(1)
@@ -70,18 +73,22 @@ describe('Integration - Same Timestamp Check', () => {
     expect(activeEntity.entityId).toEqual(entityCombo.entity.id)
   }
 
-  async function assertOverwrittenBy(overwritten: EntityCombo, overwrittenBy: EntityCombo) {
-    const auditInfo = await getAuditInfo(overwritten)
+  async function assertOverwrittenBy(
+    deployer: AppComponents['deployer'],
+    overwritten: EntityCombo,
+    overwrittenBy: EntityCombo
+  ) {
+    const auditInfo = await getAuditInfo(deployer, overwritten)
     expect(auditInfo?.overwrittenBy).toEqual(overwrittenBy.entity.id)
   }
 
-  async function assertNotOverwritten(entity: EntityCombo) {
-    const auditInfo = await getAuditInfo(entity)
+  async function assertNotOverwritten(deployer: AppComponents['deployer'], entity: EntityCombo) {
+    const auditInfo = await getAuditInfo(deployer, entity)
     expect(auditInfo?.overwrittenBy).toBeUndefined()
   }
 
-  async function getAuditInfo(entity: EntityCombo): Promise<AuditInfo> {
-    const { deployments } = await service.getDeployments({
+  async function getAuditInfo(deployer: AppComponents['deployer'], entity: EntityCombo): Promise<AuditInfo> {
+    const { deployments } = await deployer.getDeployments({
       filters: { entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] }
     })
     return deployments[0].auditInfo

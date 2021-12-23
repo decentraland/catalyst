@@ -30,7 +30,7 @@ export class Repository {
   /**
    * Shutdown the database client
    */
-  async shutdown(): Promise<void> {
+  async stop(): Promise<void> {
     const promise = this.db.$pool.end()
     let finished = false
 

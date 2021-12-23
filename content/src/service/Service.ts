@@ -30,7 +30,7 @@ export interface MetaverseContentService {
     files: DeploymentFiles,
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
-    context?: DeploymentContext,
+    context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
@@ -44,13 +44,6 @@ export interface MetaverseContentService {
   getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
-}
-
-/**
- * This version of the service is aware of the fact that the content service lives inside a cluster,
- * and that deployments can also happen on other servers.
- */
-export interface ClusterDeploymentsService {
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
@@ -58,15 +51,7 @@ export interface ClusterDeploymentsService {
     authChain: AuthChain,
     errorDescription?: string
   ): Promise<null>
-  deployEntity(
-    files: Uint8Array[],
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    context: DeploymentContext,
-    task?: Database
-  ): Promise<DeploymentResult>
-  isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
+  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'migrationData'>

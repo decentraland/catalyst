@@ -2,6 +2,7 @@ import { delay } from '@catalyst/commons'
 import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertContentNotIsDenylisted,
   assertDeploymentsAreReported,
@@ -13,13 +14,12 @@ import {
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, createIdentity } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('End 2 end - Denylist handling', () => {
+loadTestEnvironment()('End 2 end - Denylist handling', (testEnv) => {
   const identity = createIdentity()
   const SYNC_INTERVAL: number = ms('5s')
-  const testEnv = loadTestEnvironment()
-  let server1: TestServer, server2: TestServer, onboardingServer: TestServer
+  let server1: TestProgram, server2: TestProgram, onboardingServer: TestProgram
 
   beforeEach(async () => {
     ;[server1, server2, onboardingServer] = await testEnv
@@ -27,12 +27,16 @@ describe('End 2 end - Denylist handling', () => {
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .andBuildMany(3)
+
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
+    makeNoopValidator(onboardingServer.components)
   })
 
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When an entity is denylisted across all nodes, then no entity is deployed`, async () => {
     // Start server 1
-    await server1.start()
+    await server1.startProgram()
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
@@ -46,7 +50,7 @@ describe('End 2 end - Denylist handling', () => {
     await server1.denylistEntity(entityBeingDeployed, identity)
 
     // Start onboarding server
-    await onboardingServer.start()
+    await onboardingServer.startProgram()
 
     // Wait for sync
     await delay(SYNC_INTERVAL)
@@ -61,7 +65,7 @@ describe('End 2 end - Denylist handling', () => {
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When content is denylisted across all nodes, then no entity is deployed`, async () => {
     // Start server 1
-    await server1.start()
+    await server1.startProgram()
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
@@ -77,7 +81,7 @@ describe('End 2 end - Denylist handling', () => {
     await server1.denylistContent(contentHash, identity)
 
     // Start onboarding server
-    await onboardingServer.start()
+    await onboardingServer.startProgram()
 
     // Wait for sync
     await delay(SYNC_INTERVAL)
@@ -91,7 +95,7 @@ describe('End 2 end - Denylist handling', () => {
 
   it(`When an entity is denylisted in some nodes, then onboarding node can still get it`, async () => {
     // Start server 1 and 2
-    await Promise.all([server1.start(), server2.start()])
+    await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
@@ -110,7 +114,7 @@ describe('End 2 end - Denylist handling', () => {
     await server1.denylistEntity(entityBeingDeployed, identity)
 
     // Start onboarding server
-    await onboardingServer.start()
+    await onboardingServer.startProgram()
 
     // Wait for servers to sync and assert entity is not denylisted on onboarding server
     await awaitUntil(() => assertEntityIsNotDenylisted(onboardingServer, entityBeingDeployed))
@@ -129,7 +133,7 @@ describe('End 2 end - Denylist handling', () => {
 
   it(`When content is denylisted in some nodes, then onboarding node can still get it`, async () => {
     // Start server 1 and 2
-    await Promise.all([server1.start(), server2.start()])
+    await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
@@ -149,7 +153,7 @@ describe('End 2 end - Denylist handling', () => {
     await server1.denylistContent(contentHash, identity)
 
     // Start onboarding server
-    await onboardingServer.start()
+    await onboardingServer.startProgram()
 
     // Wait for servers to sync and assert content is not denylisted on onboarding server
     await awaitUntil(() => assertContentNotIsDenylisted(onboardingServer, entityBeingDeployed, contentHash))

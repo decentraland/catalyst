@@ -1,5 +1,6 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
+import { IBaseComponent } from '@well-known-components/interfaces'
 import { deploymentExists, streamAllEntityIds } from '../../logic/deployments-queries'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { FailureReason } from '../errors/FailedDeploymentsManager'
@@ -26,7 +27,7 @@ export function createBatchDeployerComponent(
     | 'deployedEntitiesFilter'
   >,
   queueOptions: createJobQueue.Options
-): IDeployerComponent & { start(): Promise<void> } {
+): IDeployerComponent & IBaseComponent {
   const logs = components.logs.getLogger('DeployerComponent')
 
   const parallelDeploymentJobs = createJobQueue(queueOptions)
@@ -114,6 +115,9 @@ export function createBatchDeployerComponent(
   return {
     async start() {
       await createBloomFilterDeployments()
+    },
+    async stop() {
+      return parallelDeploymentJobs.onIdle()
     },
     onIdle() {
       return parallelDeploymentJobs.onIdle()

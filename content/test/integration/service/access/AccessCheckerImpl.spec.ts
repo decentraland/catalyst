@@ -1,4 +1,5 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { createLogComponent } from '@well-known-components/logger'
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { mock } from 'ts-mockito'
 import {
@@ -48,7 +49,9 @@ describe('Integration - AccessCheckerImpl', function () {
     })
 
     expect(errors.length).toBe(1)
-    expect(errors[0]).toEqual(`The provided Eth Address 'Some-address-without-permissions' does not have access to the following wearable: '${pointer}'`)
+    expect(errors[0]).toEqual(
+      `The provided Eth Address 'Some-address-without-permissions' does not have access to the following wearable: '${pointer}'`
+    )
   })
 
   it(`When an address without permissions tries to deploy a wearable it fails`, async () => {
@@ -63,7 +66,9 @@ describe('Integration - AccessCheckerImpl', function () {
     })
 
     expect(errors.length).toBe(1)
-    expect(errors[0]).toEqual(`The provided Eth Address 'Some-address-without-permissions' does not have access to the following wearable: '${pointer}'`)
+    expect(errors[0]).toEqual(
+      `The provided Eth Address 'Some-address-without-permissions' does not have access to the following wearable: '${pointer}'`
+    )
   })
 
   function buildAccessCheckerImpl(params: Partial<AccessCheckerImplParams>) {
@@ -75,6 +80,7 @@ describe('Integration - AccessCheckerImpl', function () {
       collectionsL2SubgraphUrl: 'Unused URL',
       blocksL1SubgraphUrl: 'Unused URL',
       blocksL2SubgraphUrl: 'Unused URL',
+      logs: createLogComponent(),
       ...params
     }
     return new AccessCheckerImpl(finalParams)

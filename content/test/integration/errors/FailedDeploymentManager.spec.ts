@@ -1,5 +1,8 @@
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { EntityId, EntityType } from 'dcl-catalyst-commons'
 import { random } from 'faker'
+import { stopAllComponents } from '../../../src/logic/components-lifecycle'
+import { metricsDeclaration } from '../../../src/metrics'
 import { Repository } from '../../../src/repository/Repository'
 import { RepositoryFactory } from '../../../src/repository/RepositoryFactory'
 import { DB_REQUEST_PRIORITY } from '../../../src/repository/RepositoryQueue'
@@ -12,39 +15,48 @@ import {
 } from '../../../src/service/errors/FailedDeploymentsManager'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 
-describe('Integration - Failed Deployments Manager', function () {
-  const testEnv = loadStandaloneTestEnvironment()
-  const manager = new FailedDeploymentsManager()
-  let repository: Repository
+loadStandaloneTestEnvironment()('Integration - Failed Deployments Manager', function (testEnv) {
+  function testCaseWithRepository(
+    name: string,
+    fn: (repository: Repository, manager: FailedDeploymentsManager) => Promise<void>
+  ) {
+    it(name, async () => {
+      const env = await testEnv.getEnvForNewDatabase()
+      const metrics = createTestMetricsComponent(metricsDeclaration)
+      const repository = await RepositoryFactory.create({ env, metrics })
+      const manager = new FailedDeploymentsManager()
+      try {
+        await fn(repository, manager)
+      } finally {
+        await stopAllComponents({ repository, manager })
+      }
+    })
+  }
 
-  beforeEach(async () => {
-    const env = await testEnv.getEnvForNewDatabase()
-    repository = await RepositoryFactory.create(env)
-  })
+  testCaseWithRepository(
+    `When failures are reported, then the last status is returned`,
+    async (repository, manager) => {
+      const deployment = buildRandomDeployment()
 
-  afterEach(async () => {
-    await repository.shutdown()
-  })
+      await reportDeployment({ repository, manager, deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-  it(`When failures are reported, then the last status is returned`, async () => {
-    const deployment = buildRandomDeployment()
+      let status = await getDeploymentStatus(repository, manager, deployment)
+      expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
+    }
+  )
 
-    await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
-
-    let status = await getDeploymentStatus(deployment)
-    expect(status).toBe(FailureReason.DEPLOYMENT_ERROR)
-  })
-
-  it(`When failures are reported, then all are reported correctly`, async () => {
+  testCaseWithRepository(`When failures are reported, then all are reported correctly`, async (repository, manager) => {
     const deployment1 = buildRandomDeployment()
     const deployment2 = buildRandomDeployment()
 
     await reportDeployment({
+      repository,
+      manager,
       deployment: deployment1,
       reason: FailureReason.DEPLOYMENT_ERROR,
       description: 'description'
     })
-    await reportDeployment({ deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
+    await reportDeployment({ repository, manager, deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
 
     const [failed1, failed2]: Array<FailedDeployment> = await repository.run(
       (db) => manager.getAllFailedDeployments(db.failedDeployments),
@@ -59,19 +71,22 @@ describe('Integration - Failed Deployments Manager', function () {
     expect(failed2.errorDescription).toEqual('description')
   })
 
-  it(`When successful deployment is reported, then all previous failures of such reported are deleted`, async () => {
-    const deployment = buildRandomDeployment()
+  testCaseWithRepository(
+    `When successful deployment is reported, then all previous failures of such reported are deleted`,
+    async (repository, manager) => {
+      const deployment = buildRandomDeployment()
 
-    await reportDeployment({ deployment, reason: FailureReason.DEPLOYMENT_ERROR })
+      await reportDeployment({ repository, manager, deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    await repository.run(
-      (db) => manager.reportSuccessfulDeployment(db.failedDeployments, deployment.entityType, deployment.entityId),
-      { priority: DB_REQUEST_PRIORITY.LOW }
-    )
+      await repository.run(
+        (db) => manager.reportSuccessfulDeployment(db.failedDeployments, deployment.entityType, deployment.entityId),
+        { priority: DB_REQUEST_PRIORITY.LOW }
+      )
 
-    const status = await getDeploymentStatus(deployment)
-    expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
-  })
+      const status = await getDeploymentStatus(repository, manager, deployment)
+      expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
+    }
+  )
 
   function assertFailureWasDueToDeployment(failedDeployment: FailedDeployment, deployment: FakeDeployment) {
     expect(failedDeployment.entityId).toEqual(deployment.entityId)
@@ -79,10 +94,14 @@ describe('Integration - Failed Deployments Manager', function () {
   }
 
   function reportDeployment({
+    repository,
+    manager,
     deployment,
     reason,
     description
   }: {
+    repository: Repository
+    manager: FailedDeploymentsManager
     deployment: FakeDeployment
     reason: FailureReason
     description?: string
@@ -94,7 +113,11 @@ describe('Integration - Failed Deployments Manager', function () {
     )
   }
 
-  function getDeploymentStatus(deployment: FakeDeployment): Promise<DeploymentStatus> {
+  function getDeploymentStatus(
+    repository: Repository,
+    manager: FailedDeploymentsManager,
+    deployment: FakeDeployment
+  ): Promise<DeploymentStatus> {
     return repository.run(
       (db) => manager.getDeploymentStatus(db.failedDeployments, deployment.entityType, deployment.entityId),
       { priority: DB_REQUEST_PRIORITY.LOW }

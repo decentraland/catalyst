@@ -3,27 +3,26 @@ import { ContentFileHash } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
-import { Bean, EnvironmentConfig } from '../../src/Environment'
+import { EnvironmentConfig } from '../../src/Environment'
 import { assertPromiseRejectionIs } from '../helpers/PromiseAssertions'
-import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData, createIdentity } from './E2ETestUtils'
-import { TestServer } from './TestServer'
+import { TestProgram } from './TestProgram'
 
-describe('End 2 end - Legacy Entities', () => {
+loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
   const identity = createIdentity()
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+  let server: TestProgram
 
   beforeEach(async () => {
     server = await testEnv
       .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES, true)
       .andBuild()
-    await server.start()
+    makeNoopSynchronizationManager(server.components.synchronizationManager)
+    await server.startProgram()
   })
 
   it(`When a non-decentraland address tries to deploy a legacy entity, then an exception is thrown`, async () => {
@@ -44,10 +43,9 @@ describe('End 2 end - Legacy Entities', () => {
     // Deploy the entity
     await deployLegacy(server, deployData)
   })
-
 })
 
-async function deployLegacy(server: TestServer, deployData: DeploymentData) {
+async function deployLegacy(server: TestProgram, deployData: DeploymentData) {
   const form = new FormData()
   form.append('entityId', deployData.entityId)
   addModelToFormData(deployData.authChain, form, 'authChain')

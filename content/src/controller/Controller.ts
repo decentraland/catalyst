@@ -1,4 +1,5 @@
 import { toQueryParams } from '@catalyst/commons'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   ContentFileHash,
   Entity as ControllerEntity,
@@ -15,13 +16,12 @@ import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-c
 import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
-import log4js from 'log4js'
 import onFinished from 'on-finished'
 import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
-import { metricsComponent } from '../metrics'
+import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
 import {
   Deployment,
@@ -34,28 +34,30 @@ import {
   DeploymentContext,
   DeploymentResult,
   isSuccessfulDeployment,
-  LocalDeploymentAuditInfo,
-  MetaverseContentService
+  LocalDeploymentAuditInfo
 } from '../service/Service'
-import { SnapshotManager } from '../service/snapshots/SnapshotManager'
-import { ChallengeSupervisor } from '../service/synchronization/ChallengeSupervisor'
-import { SynchronizationManager } from '../service/synchronization/SynchronizationManager'
 import { ContentItem } from '../storage/ContentStorage'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
 export class Controller {
-  private static readonly LOGGER = log4js.getLogger('Controller')
+  private static LOGGER: ILoggerComponent.ILogger
 
   constructor(
-    private readonly service: MetaverseContentService,
-    private readonly denylist: Denylist,
-    private readonly synchronizationManager: SynchronizationManager,
-    private readonly challengeSupervisor: ChallengeSupervisor,
-    private readonly snapshotManager: SnapshotManager,
-    private readonly ethNetwork: string,
-    private readonly components: Pick<AppComponents, 'status'>
-  ) {}
+    private readonly components: Pick<
+      AppComponents,
+      | 'synchronizationManager'
+      | 'snapshotManager'
+      | 'denylist'
+      | 'deployer'
+      | 'challengeSupervisor'
+      | 'logs'
+      | 'metrics'
+    >,
+    private readonly ethNetwork: string
+  ) {
+    Controller.LOGGER = components.logs.getLogger('Controller')
+  }
 
   async getEntities(req: express.Request, res: express.Response) {
     // Method: GET
@@ -87,9 +89,9 @@ export class Controller {
     // Calculate and mask entities
     let entities: Entity[]
     if (ids.length > 0) {
-      entities = await this.service.getEntitiesByIds(ids)
+      entities = await this.components.deployer.getEntitiesByIds(ids)
     } else {
-      entities = await this.service.getEntitiesByPointers(type, pointers)
+      entities = await this.components.deployer.getEntitiesByPointers(type, pointers)
     }
     const maskedEntities: ControllerEntity[] = entities.map((entity) =>
       ControllerEntityFactory.maskEntity(entity, enumFields)
@@ -137,7 +139,7 @@ export class Controller {
         }
       }
 
-      const deploymentResult: DeploymentResult = await this.service.deployEntity(
+      const deploymentResult: DeploymentResult = await this.components.deployer.deployEntity(
         deployFiles.map(({ content }) => content),
         entityId,
         auditInfo,
@@ -145,15 +147,15 @@ export class Controller {
       )
 
       if (isSuccessfulDeployment(deploymentResult)) {
-        metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
         res.send({ creationTimestamp: deploymentResult })
       } else {
-        metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
         Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
         res.status(400).send(deploymentResult.errors.join('\n')).end()
       }
     } catch (error) {
-      metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
+      this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
       Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
       res.status(500).send(error.message).end()
     } finally {
@@ -177,33 +179,23 @@ export class Controller {
       deployFiles = files ? await this.readFiles(files) : []
       const auditInfo: LocalDeploymentAuditInfo = this.buildAuditInfo(authChain, ethAddress, signature, entityId)
 
-      let deploymentResult: DeploymentResult = { errors: [] }
-      if (fixAttempt) {
-        deploymentResult = await this.service.deployEntity(
-          deployFiles.map(({ content }) => content),
-          entityId,
-          auditInfo,
-          DeploymentContext.FIX_ATTEMPT
-        )
-      } else {
-        deploymentResult = await this.service.deployEntity(
-          deployFiles.map(({ content }) => content),
-          entityId,
-          auditInfo,
-          DeploymentContext.LOCAL
-        )
-      }
+      const deploymentResult = await this.components.deployer.deployEntity(
+        deployFiles.map(({ content }) => content),
+        entityId,
+        auditInfo,
+        fixAttempt ? DeploymentContext.FIX_ATTEMPT : DeploymentContext.LOCAL
+      )
 
       if (isSuccessfulDeployment(deploymentResult)) {
-        metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
+        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
         res.send({ creationTimestamp: deploymentResult })
       } else {
-        metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
+        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
         Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
       }
     } catch (error) {
-      metricsComponent.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
+      this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
       Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
       res.status(500).end()
     } finally {
@@ -251,7 +243,7 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const contentItem: ContentItem | undefined = await this.service.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
 
     if (contentItem) {
       await setContentFileHeaders(contentItem, hashId, res)
@@ -265,7 +257,7 @@ export class Controller {
     // Path: /contents/:hashId
     const hashId = req.params.hashId
 
-    const contentItem: ContentItem | undefined = await this.service.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
 
     if (contentItem) {
       await setContentFileHeaders(contentItem, hashId, res)
@@ -289,7 +281,7 @@ export class Controller {
     if (!cids) {
       res.status(400).send('Please set at least one cid.')
     } else {
-      const availableContent = await this.service.isContentAvailable(cids)
+      const availableContent = await this.components.deployer.isContentAvailable(cids)
       res.send(
         Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
           cid: fileHash,
@@ -311,7 +303,7 @@ export class Controller {
       return
     }
 
-    const { deployments } = await this.service.getDeployments({
+    const { deployments } = await this.components.deployer.getDeployments({
       fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type] }
     })
@@ -407,7 +399,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.service.getPointerChanges(undefined, {
+    } = await this.components.deployer.getPointerChanges(undefined, {
       filters: requestFilters,
       offset,
       limit,
@@ -450,7 +442,7 @@ export class Controller {
     // Path: /contents/:hashId/active-entities
     const hashId = req.params.hashId
 
-    const result = await this.service.getActiveDeploymentsByContentHash(hashId)
+    const result = await this.components.deployer.getActiveDeploymentsByContentHash(hashId)
 
     if (result.length === 0) {
       res.status(404).send({ error: 'The entity was not found' })
@@ -567,7 +559,7 @@ export class Controller {
       limit: limit,
       lastId: lastId
     }
-    const { deployments, filters, pagination } = await this.service.getDeployments(deploymentOptions)
+    const { deployments, filters, pagination } = await this.components.deployer.getDeployments(deploymentOptions)
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
     )
@@ -644,14 +636,13 @@ export class Controller {
     // Method: GET
     // Path: /status
 
-    const serverStatus = await this.components.status.getStatus()
+    const serverStatus = await statusResponseFromComponents(this.components)
 
-    const synchronizationStatus = this.synchronizationManager.getStatus()
+    res.status(serverStatus.successful ? 200 : 503)
 
     res.send({
-      ...serverStatus,
+      ...serverStatus.details,
       version: CURRENT_CONTENT_VERSION,
-      synchronizationStatus,
       commitHash: CURRENT_COMMIT_HASH,
       catalystVersion: CURRENT_CATALYST_VERSION,
       ethNetwork: this.ethNetwork
@@ -673,7 +664,7 @@ export class Controller {
       return
     }
 
-    const metadata = this.snapshotManager.getSnapshotMetadataPerEntityType(type)
+    const metadata = this.components.snapshotManager.getSnapshotMetadataPerEntityType(type)
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })
@@ -686,7 +677,7 @@ export class Controller {
     // Method: GET
     // Path: /snapshot
 
-    const metadata = this.snapshotManager.getFullSnapshotMetadata()
+    const metadata = this.components.snapshotManager.getFullSnapshotMetadata()
 
     if (!metadata) {
       res.status(503).send({ error: 'Snapshot not yet created' })
@@ -716,7 +707,7 @@ export class Controller {
     }
 
     try {
-      const result: DenylistOperationResult = await this.denylist.addTarget(target, { timestamp, authChain })
+      const result: DenylistOperationResult = await this.components.denylist.addTarget(target, { timestamp, authChain })
       if (isSuccessfulOperation(result)) {
         res.status(201).send()
       } else {
@@ -744,7 +735,7 @@ export class Controller {
     const authChain: AuthChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
 
     try {
-      const result: DenylistOperationResult = await this.denylist.removeTarget(target, {
+      const result: DenylistOperationResult = await this.components.denylist.removeTarget(target, {
         timestamp,
         authChain
       })
@@ -762,7 +753,7 @@ export class Controller {
     // Method: GET
     // Path: /denylist
 
-    const denylistTargets = await this.denylist.getAllDenylistedTargets()
+    const denylistTargets = await this.components.denylist.getAllDenylistedTargets()
     const controllerTargets: ControllerDenylistData[] = denylistTargets.map(({ target, metadata }) => ({
       target: target.asObject(),
       metadata
@@ -778,7 +769,7 @@ export class Controller {
     const id = req.params.id
 
     const target = parseDenylistTypeAndId(type, id)
-    const isDenylisted = await this.denylist.isTargetDenylisted(target)
+    const isDenylisted = await this.components.denylist.isTargetDenylisted(target)
     res.status(isDenylisted ? 200 : 404).send()
   }
 
@@ -786,7 +777,7 @@ export class Controller {
     // Method: GET
     // Path: /failed-deployments
 
-    const failedDeployments = await this.service.getAllFailedDeployments()
+    const failedDeployments = await this.components.deployer.getAllFailedDeployments()
     res.send(failedDeployments)
   }
 
@@ -794,7 +785,7 @@ export class Controller {
     // Method: GET
     // Path: /challenge
 
-    const challengeText = this.challengeSupervisor.getChallengeText()
+    const challengeText = this.components.challengeSupervisor.getChallengeText()
     res.send({ challengeText })
   }
 }

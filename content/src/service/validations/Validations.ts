@@ -80,7 +80,7 @@ export class Validations {
 
   /** Validate if the entity can be re deployed or not */
   static readonly NO_REDEPLOYS: Validation = async ({ deployment, externalCalls }) => {
-    if (await externalCalls.isEntityDeployedAlready(deployment.entity.id)) {
+    if (await externalCalls.isEntityDeployedAlready()) {
       return [`This entity was already deployed. You can't redeploy it`]
     }
   }

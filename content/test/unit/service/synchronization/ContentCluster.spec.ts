@@ -1,10 +1,16 @@
 import { ServerBaseUrl } from '@catalyst/commons'
-import { Bean, Environment, EnvironmentConfig } from '../../../../src/Environment'
-import { ChallengeText } from '../../../../src/service/synchronization/ChallengeSupervisor'
+import { createLogComponent } from '@well-known-components/logger'
+import { Response } from 'node-fetch'
+import { stub } from 'sinon'
+import { Environment, EnvironmentConfig } from '../../../../src/Environment'
+import { createFetchComponent } from '../../../../src/ports/fetcher'
+import {
+  ChallengeSupervisor,
+  ChallengeText,
+  IChallengeSupervisor
+} from '../../../../src/service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
-import { ContentClusterFactory } from '../../../../src/service/synchronization/ContentClusterFactory'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
-import { MockedFetcher } from '../../helpers/MockedFetcher'
 
 describe('ContentCluster', function () {
   const address1: ServerBaseUrl = 'http://address1'
@@ -58,7 +64,7 @@ describe('ContentCluster', function () {
 
 class ContentClusterBuilder {
   private readonly servers: Set<ServerBaseUrl> = new Set()
-  private readonly fetchHelper: MockedFetcher = new MockedFetcher()
+  private readonly fetcher = stub(createFetchComponent())
   private localChallenge: ChallengeText | undefined
 
   addAddress(baseUrl: ServerBaseUrl): ContentClusterBuilder {
@@ -67,14 +73,7 @@ class ContentClusterBuilder {
   }
 
   addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: ChallengeText): ContentClusterBuilder {
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'challenge', { challengeText })
-    this.fetchHelper.addJsonEndpoint(baseUrl, 'status', {
-      name: encodeURIComponent(baseUrl),
-      version: 'version',
-      currentTime: 10,
-      lastImmutableTime: 10,
-      historySize: 10
-    })
+    this.fetcher.fetch.withArgs(`${baseUrl}/challenge`).resolves(new Response(JSON.stringify({ challengeText })))
     this.servers.add(baseUrl)
     return this
   }
@@ -87,19 +86,22 @@ class ContentClusterBuilder {
   build(): ContentCluster {
     const env = new Environment()
 
-    env.registerBean(Bean.DAO_CLIENT, MockedDAOClient.withAddresses(...this.servers.values()))
-    env.registerBean(Bean.FETCHER, this.fetchHelper)
+    const daoClient = MockedDAOClient.withAddresses(...this.servers.values())
     env.setConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL, 1000)
     env.setConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, 10000)
 
-    if (this.localChallenge) {
-      const challengeSupervisor = {
-        getChallengeText: () => this.localChallenge,
-        isChallengeOk: (text: ChallengeText) => this.localChallenge === text
-      }
-      env.registerBean(Bean.CHALLENGE_SUPERVISOR, challengeSupervisor)
-    }
+    const challengeSupervisor: IChallengeSupervisor = this.localChallenge
+      ? {
+          getChallengeText: () => this.localChallenge!,
+          isChallengeOk: (text: ChallengeText) => this.localChallenge === text
+        }
+      : new ChallengeSupervisor()
 
-    return ContentClusterFactory.create(env)
+    const logs = createLogComponent()
+
+    return new ContentCluster(
+      { daoClient, logs, challengeSupervisor, fetcher: this.fetcher },
+      env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
+    )
   }
 }

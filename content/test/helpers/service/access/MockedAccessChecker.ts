@@ -1,3 +1,5 @@
+import { stub } from 'sinon'
+import { AppComponents } from 'src/types'
 import { AccessChecker, AccessParams } from '../../../../src/service/access/AccessChecker'
 
 export class MockedAccessChecker implements AccessChecker {
@@ -17,5 +19,11 @@ export class MockedAccessChecker implements AccessChecker {
 
   stopReturningErrors() {
     this.returnErrors = false
+  }
+}
+
+export function makeMockedAccessChecker(components: Pick<AppComponents, 'accessChecker'>, returnErrors?: boolean) {
+  if (!returnErrors) {
+    stub(components.accessChecker, 'hasAccess').resolves([])
   }
 }

@@ -1,7 +1,6 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { createLogComponent } from '@well-known-components/logger'
 import { Fetcher } from 'dcl-catalyst-commons'
-import { Logger } from 'log4js'
-import { mock } from 'ts-mockito'
 import { AccessCheckerForScenes } from '../../../../src/service/access/AccessCheckerForScenes'
 import { AccessCheckerImplParams } from '../../../../src/service/access/AccessCheckerImpl'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
@@ -38,6 +37,7 @@ describe('AccessCheckerForScenes', function () {
       landManagerSubgraphUrl: 'Unused URL',
       ...params
     }
-    return new AccessCheckerForScenes(authenticator, fetcher, landManagerSubgraphUrl, mock(Logger))
+    const logger = createLogComponent().getLogger('AccessCheckerForTests')
+    return new AccessCheckerForScenes(authenticator, fetcher, landManagerSubgraphUrl, logger)
   }
 })

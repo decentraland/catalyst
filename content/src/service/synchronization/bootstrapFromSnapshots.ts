@@ -26,11 +26,11 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents, cl
 
   // wait to get all the bootstrap data from all servers
   await Promise.all(
-    catalystServers.map(async (server) => {
+    catalystServers.map(async (contentServer) => {
       try {
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,
-          contentServer: server,
+          contentServer,
           pointerChangesWaitTime: 0, // zero to not restart the timer
           requestMaxRetries,
           requestRetryWaitTime,
@@ -38,7 +38,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents, cl
         })
         for await (const entity of stream) {
           // schedule the deployment in the deployer. the await DOES NOT mean that the entity was deployed entirely.
-          await components.batchDeployer.deployEntity(entity, [server])
+          await components.batchDeployer.deployEntity(entity, [contentServer])
         }
       } catch (error: any) {
         logs.warn(error)

@@ -1,8 +1,8 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { EthAddress } from '@dcl/schemas'
 import { BlockchainCollectionV1Asset, BlockchainCollectionV2Asset, OffChainAsset, parseUrn } from '@dcl/urn-resolver'
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { Fetcher, Hashing, Timestamp } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
 import ms from 'ms'
 import { AccessParams } from './AccessChecker'
 
@@ -18,7 +18,7 @@ export class AccessCheckerForWearables {
     private readonly collectionsL2SubgraphUrl: string,
     private readonly blocksL1SubgraphUrl: string,
     private readonly blocksL2SubgraphUrl: string,
-    private readonly LOGGER: log4js.Logger
+    private readonly LOGGER: ILoggerComponent.ILogger
   ) {}
 
   public async checkAccess({ pointers, ...accessParams }: WearablesAccessParams): Promise<string[]> {
@@ -243,7 +243,7 @@ export class AccessCheckerForWearables {
       isCompleted: collectionResult?.isCompleted,
       itemManagers: itemResult?.managers,
       contentHash: itemResult?.contentHash,
-      committee: result.accounts.map(({ id }) => id)
+      committee: result.accounts.map(({ id }) => id.toLowerCase())
     }
   }
 
@@ -301,7 +301,7 @@ export class AccessCheckerForWearables {
           : undefined
       }
     } catch (error) {
-      this.LOGGER.error(`Error fetching the block number for timestamp: (${timestamp})`, error)
+      this.LOGGER.error(`Error fetching the block number for timestamp`, { timestamp, error: error.message })
       throw error
     }
   }

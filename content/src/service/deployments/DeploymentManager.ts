@@ -22,11 +22,8 @@ import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManag
 export class DeploymentManager {
   private static MAX_HISTORY_LIMIT = 500
 
-  areEntitiesDeployed(
-    deploymentRepository: DeploymentsRepository,
-    entityIds: EntityId[]
-  ): Promise<Map<EntityId, boolean>> {
-    return deploymentRepository.areEntitiesDeployed(entityIds)
+  async getEntityById(deploymentsRepository: DeploymentsRepository, entityId: string) {
+    return deploymentsRepository.getEntityById(entityId)
   }
 
   async getDeployments(
@@ -54,6 +51,8 @@ export class DeploymentManager {
     const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
     const content = await contentFilesRepository.getContentFiles(deploymentIds)
+
+    // TODO [new-sync]: migrationData nolonger required
     const migrationData = await migrationDataRepository.getMigrationData(deploymentIds)
 
     const deployments: Deployment[] = deploymentsResult.map((result) => ({

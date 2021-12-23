@@ -1,20 +1,14 @@
 import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/snapshots-fetcher'
-import { createTestMetricsComponent, validateMetricsDeclaration } from '@well-known-components/metrics'
+import { validateMetricsDeclaration } from '@well-known-components/metrics'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
 
-export const metrics = validateMetricsDeclaration({
+export const metricsDeclaration = validateMetricsDeclaration({
   ...getDefaultHttpMetrics(),
   ...snapshotFetcherMetricsDefinitions,
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',
     labelNames: ['entity_type']
-  },
-
-  dcl_sync_state_summary: {
-    help: 'Summary of synchronization state',
-    type: 'summary',
-    labelNames: ['state']
   },
 
   db_queued_queries_count: {
@@ -88,5 +82,3 @@ export const metrics = validateMetricsDeclaration({
     labelNames: ['entity_type']
   }
 })
-
-export const metricsComponent = createTestMetricsComponent(metrics)

@@ -8,7 +8,7 @@ import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFa
 import { retry } from '../../src/helpers/RetryHelper'
 import { Entity } from '../../src/service/Entity'
 import { EntityFactory } from '../../src/service/EntityFactory'
-import { DeploymentResult, MetaverseContentService } from '../../src/service/Service'
+import { DeploymentContext, DeploymentResult, MetaverseContentService } from '../../src/service/Service'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },
@@ -115,9 +115,19 @@ export async function deployEntitiesCombo(
 ): Promise<DeploymentResult> {
   let deploymentResult: DeploymentResult = { errors: [] }
   for (const { deployData } of entitiesCombo) {
-    deploymentResult = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, {
-      authChain: deployData.authChain
-    })
+    const r = await service.deployEntity(
+      Array.from(deployData.files.values()),
+      deployData.entityId,
+      {
+        authChain: deployData.authChain
+      },
+      DeploymentContext.LOCAL
+    )
+    if (typeof r == 'number') {
+      deploymentResult = r
+    } else {
+      throw new Error(r.errors.join('\n'))
+    }
   }
   return deploymentResult
 }

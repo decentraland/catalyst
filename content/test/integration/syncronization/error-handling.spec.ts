@@ -1,11 +1,11 @@
 import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
-import { Bean, EnvironmentConfig } from '../../../src/Environment'
+import { EnvironmentConfig } from '../../../src/Environment'
 import { FailedDeployment, FailureReason } from '../../../src/service/errors/FailedDeploymentsManager'
 import { MockedAccessChecker } from '../../helpers/service/access/MockedAccessChecker'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
-  assertDeploymentFailsWith,
   assertDeploymentsAreReported,
   assertEntitiesAreActiveOnServer,
   assertEntitiesAreDeployedButNotActive,
@@ -15,12 +15,11 @@ import {
 } from '../E2EAssertions'
 import { loadTestEnvironment } from '../E2ETestEnvironment'
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity, createIdentity } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('End 2 end - Error handling', () => {
+loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
   const identity = createIdentity()
-  const testEnv = loadTestEnvironment()
-  let server1: TestServer, server2: TestServer
+  let server1: TestProgram, server2: TestProgram
   const accessChecker = new MockedAccessChecker()
 
   beforeEach(async () => {
@@ -29,8 +28,10 @@ describe('End 2 end - Error handling', () => {
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
       .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
-      .withBean(Bean.ACCESS_CHECKER, accessChecker)
       .andBuildMany(2)
+
+    makeNoopValidator(server1.components)
+    makeNoopValidator(server2.components)
   })
 
   afterEach(async () => {
@@ -62,7 +63,7 @@ describe('End 2 end - Error handling', () => {
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
   xit(`When a user tries to fix an entity, it doesn't matter if there is already a newer entity deployed`, async () => {
     // Start servers
-    await Promise.all([server1.start(), server2.start()])
+    await Promise.all([server1.startProgram(), server2.startProgram()])
 
     // Prepare entity to deploy
     const { deployData: deployData1, controllerEntity: entityBeingDeployed1 } = await buildDeployData(['0,0', '0,1'], {
@@ -104,35 +105,35 @@ describe('End 2 end - Error handling', () => {
     await assertEntitiesAreDeployedButNotActive(server2, entityBeingDeployed1)
   })
 
-  it(`When a user tries to fix an entity that didn't exist, then an error is thrown`, async () => {
+  it(`When a user tries to fix an entity that didn't exist, the entity gets deployed`, async () => {
     // Start server
-    await server1.start()
+    await server1.startProgram()
 
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
+    const { deployData, controllerEntity } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
 
     // Try to deploy the entity, and fail
-    await assertDeploymentFailsWith(
-      () => server1.deploy(deployData, true),
-      'You are trying to fix an entity that is not marked as failed'
-    )
+    await server1.deploy(deployData, true)
+
+    // asser that the entity got deployed
+    await assertEntitiesAreActiveOnServer(server1, controllerEntity)
   })
 
-  it(`When a user tries to fix an entity that hadn't fail, then an error is thrown`, async () => {
+  it(`When a user tries to fix an entity that hadn't fail, then it is an idempotent operation`, async () => {
     // Start server
-    await server1.start()
+    await server1.startProgram()
 
     // Prepare entity to deploy
     const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata' })
 
     // Deploy the entity
-    await server1.deploy(deployData)
+    const firstDeploymentDatetime = await server1.deploy(deployData)
 
     // Try to fix the entity, and fail
-    await assertDeploymentFailsWith(
-      () => server1.deploy(deployData, true),
-      'You are trying to fix an entity that is not marked as failed'
-    )
+    const fixDatetime = await server1.deploy(deployData, true)
+
+    // expect idempotent operation to return the datetime of the deploy
+    expect(firstDeploymentDatetime).toEqual(fixDatetime)
   })
 
   it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
@@ -145,7 +146,7 @@ describe('End 2 end - Error handling', () => {
     removeCauseOfFailure?: () => Promise<void>
   ) {
     // Start server1
-    await server1.start()
+    await server1.startProgram()
 
     // Prepare entity to deploy
     const { deployData, controllerEntity: entityBeingDeployed } = await buildDeployData(['0,0', '0,1'], {
@@ -161,7 +162,7 @@ describe('End 2 end - Error handling', () => {
 
     // Start server2
 
-    await server2.start()
+    await server2.startProgram()
 
     // Assert deployment is marked as failed
     await awaitUntil(() => assertDeploymentFailed(server2, errorType, entityBeingDeployed))
