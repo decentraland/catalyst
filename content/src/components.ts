@@ -200,7 +200,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       challengeSupervisor,
       snapshotManager,
       deployer,
-      logs
+      logs,
+      metrics
     },
     ethNetwork
   )

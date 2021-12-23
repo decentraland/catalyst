@@ -67,7 +67,7 @@ describe('Integration - Server', function () {
     const metrics = createTestMetricsComponent(metricsDeclaration)
 
     const controller = new Controller(
-      { deployer, denylist, challengeSupervisor, snapshotManager, synchronizationManager, logs },
+      { deployer, denylist, challengeSupervisor, snapshotManager, synchronizationManager, logs, metrics },
       ethNetwork
     )
 
