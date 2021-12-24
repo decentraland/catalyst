@@ -2511,10 +2511,10 @@ dcl-catalyst-commons@7.1.3, dcl-catalyst-commons@^7.1.3:
     multihashing-async "^2.1.4"
     node-fetch "^3.0.0"
 
-dcl-catalyst-commons@tag-7.1.3-user-store:
-  version "7.1.4-20211224170729.commit-1d1c594"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.4-20211224170729.commit-1d1c594.tgz#4681979cc642b68985bd84a6e6966d38b7c48456"
-  integrity sha512-oB4rETLKMHpMuwC6kAYZjwML5spU22JpdfkMyZaUz6Fjg5eGtfwIafODMwhxRNpMJE7aTZt/FMj6SA5U8dyM0g==
+dcl-catalyst-commons@7.1.4-20211224174658.commit-e3fd334:
+  version "7.1.4-20211224174658.commit-e3fd334"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.4-20211224174658.commit-e3fd334.tgz#90244c438e692fd3178e08ead7e275637d55242f"
+  integrity sha512-71GlTTinx+oQo8rT/HUncKzFLa4UPHfRUE1NiPsAcrQbKAzIpb0P9M7eP+Y8x5b8C1+Gb3dUGjgvZwminMDLnw==
   dependencies:
     "@dcl/schemas" "3.1.1"
     abort-controller "^3.0.0"
