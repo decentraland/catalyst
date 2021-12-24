@@ -2496,6 +2496,18 @@ dcl-catalyst-client@9.0.3:
     form-data "^4.0.0"
     log4js "^6.3.0"
 
+dcl-catalyst-client@9.0.5-20211224182952.commit-aaaaac7:
+  version "9.0.5-20211224182952.commit-aaaaac7"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-9.0.5-20211224182952.commit-aaaaac7.tgz#41a30ab6c2344688bdc5ef93a9c275a601814dcf"
+  integrity sha512-J3G5sWOaA2aBuDrY5eotZCOZCmw644aennXuK6heILcIVxpv13FfxzXa0cWTSS3x3LebrO4cxjFusA4n+OcVwA==
+  dependencies:
+    "@types/form-data" "^2.5.0"
+    cookie "^0.4.1"
+    dcl-catalyst-commons "7.1.4-20211224181902.commit-03602b7"
+    dcl-crypto "^2.2.0"
+    form-data "^4.0.0"
+    log4js "^6.3.0"
+
 dcl-catalyst-commons@7.1.3, dcl-catalyst-commons@^7.1.3:
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.3.tgz#1c8eac2ea08173caaa9bdfebd96c26588961c601"
@@ -2511,10 +2523,10 @@ dcl-catalyst-commons@7.1.3, dcl-catalyst-commons@^7.1.3:
     multihashing-async "^2.1.4"
     node-fetch "^3.0.0"
 
-dcl-catalyst-commons@7.1.4-20211224174658.commit-e3fd334:
-  version "7.1.4-20211224174658.commit-e3fd334"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.4-20211224174658.commit-e3fd334.tgz#90244c438e692fd3178e08ead7e275637d55242f"
-  integrity sha512-71GlTTinx+oQo8rT/HUncKzFLa4UPHfRUE1NiPsAcrQbKAzIpb0P9M7eP+Y8x5b8C1+Gb3dUGjgvZwminMDLnw==
+dcl-catalyst-commons@7.1.4-20211224181902.commit-03602b7:
+  version "7.1.4-20211224181902.commit-03602b7"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.4-20211224181902.commit-03602b7.tgz#cb210dff0ca29e946baa1c098cec1083792a071c"
+  integrity sha512-xiac6XHXg5KKV913gqgmdYG2RkH0FjHBmXAzB6UsRPdoEZyJ/VhIvUJU6faSxt7SDwvsUX8NmCTwZswcq56ePg==
   dependencies:
     "@dcl/schemas" "3.1.1"
     abort-controller "^3.0.0"
