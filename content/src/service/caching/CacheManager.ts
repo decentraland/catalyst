@@ -68,4 +68,5 @@ export const ENTITIES_BY_POINTERS_CACHE_CONFIG = new CacheConfigBuilder('ENTITIE
   .withDefaultSize(EntityType.PROFILE, 2000)
   .withDefaultSize(EntityType.SCENE, 10000)
   .withDefaultSize(EntityType.WEARABLE, 2000)
+  .withDefaultSize(EntityType.STORE, 2000)
   .build()
