@@ -12,7 +12,8 @@ export class ValidatorFactory {
       maxUploadSizePerTypeInMB: new Map([
         [EntityType.SCENE, 15],
         [EntityType.PROFILE, 15],
-        [EntityType.WEARABLE, 3]
+        [EntityType.WEARABLE, 3],
+        [EntityType.STORE, 1]
       ]),
       wearableSizeLimitInMB: 2
     })

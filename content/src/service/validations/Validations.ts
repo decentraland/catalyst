@@ -1,5 +1,5 @@
-import { Avatar, Profile, Scene, Wearable } from '@dcl/schemas'
-import { EntityType } from 'dcl-catalyst-commons'
+import { Avatar, Profile, Wearable } from '@dcl/schemas'
+import { EntityType, validateMetadata } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
@@ -176,14 +176,9 @@ export class Validations {
 
   /** Validate entities metadata against its corresponding schema */
   static readonly METADATA_SCHEMA: Validation = async ({ deployment }) => {
-    const validate = {
-      [EntityType.PROFILE]: Profile.validate,
-      [EntityType.SCENE]: Scene.validate,
-      [EntityType.WEARABLE]: Wearable.validate
-    }
+    const validMetadata = validateMetadata(deployment.entity.type, deployment.entity.metadata)
 
-    if (!validate[deployment.entity.type](deployment.entity.metadata))
-      return [`The metadata for this entity type (${deployment.entity.type}) is not valid.`]
+    if (!validMetadata) return [`The metadata for this entity type (${deployment.entity.type}) is not valid.`]
   }
 
   /** Validate the deployment is not rate limited */

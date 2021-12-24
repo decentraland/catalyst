@@ -78,6 +78,13 @@
   dependencies:
     ajv "^7.1.0"
 
+"@dcl/schemas@3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.1.1.tgz#9bb118fe14a48127ebdb82d05a45be815e46ae85"
+  integrity sha512-LsNpyjf6T8OM8FkuHrzO2vPoSAggBj1iKY3myoH5K+YYM1s4xBD6wZK9JTcXa9dhBfPnlrr7aJWIsJ81oztlIQ==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/snapshots-fetcher@^2.0.0-20211217194037.commit-ce91e73":
   version "2.0.0-20211217194037.commit-ce91e73"
   resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-2.0.0-20211217194037.commit-ce91e73.tgz#688d852e05d9e6f2a06951811e1589bfd395c375"
@@ -2494,6 +2501,22 @@ dcl-catalyst-commons@7.1.3, dcl-catalyst-commons@^7.1.3:
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.3.tgz#1c8eac2ea08173caaa9bdfebd96c26588961c601"
   integrity sha512-mnvgTPuLw9RtFf768IsFvSJsJajgK0V3thd1IyKiEguKuhI5LYr1VzGFm4bNl34AXhqcJpMo9ykkm5Nru3r8kA==
   dependencies:
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ipfs-only-hash "^4.0.0"
+    ms "^2.1.2"
+    multihashing-async "^2.1.4"
+    node-fetch "^3.0.0"
+
+dcl-catalyst-commons@tag-7.1.3-user-store:
+  version "7.1.4-20211224170729.commit-1d1c594"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.4-20211224170729.commit-1d1c594.tgz#4681979cc642b68985bd84a6e6966d38b7c48456"
+  integrity sha512-oB4rETLKMHpMuwC6kAYZjwML5spU22JpdfkMyZaUz6Fjg5eGtfwIafODMwhxRNpMJE7aTZt/FMj6SA5U8dyM0g==
+  dependencies:
+    "@dcl/schemas" "3.1.1"
     abort-controller "^3.0.0"
     cids "^1.1.9"
     cookie "^0.4.1"
