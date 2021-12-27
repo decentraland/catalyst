@@ -35,7 +35,7 @@ loadStandaloneTestEnvironment({
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
-    ;[sharedContent, onlyE1Content] = E1.entity.content?.map((c) => c.hash) ?? []
+    ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
   })
 
   beforeEach(async () => {

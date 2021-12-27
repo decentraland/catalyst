@@ -106,12 +106,12 @@ export class Validations {
     const errors: string[] = await this.validateContentV3(entity, files, externalCalls)
 
     if (entity.content) {
-      for (const item of entity.content) {
+      for (const { file, hash } of entity.content) {
         // Validate all content files correspond to at least one avatar snapshot
         if (entity.type === EntityType.PROFILE) {
-          if (!Validations.correspondsToASnapshot(item.file, item.hash, entity.metadata)) {
+          if (!Validations.correspondsToASnapshot(file, hash, entity.metadata)) {
             errors.push(
-              `This file is not expected: '${item.file}' or its hash is invalid: '${item.hash}'. Please, include only valid snapshot files.`
+              `This file is not expected: '${file}' or its hash is invalid: '${hash}'. Please, include only valid snapshot files.`
             )
           }
         }
@@ -129,18 +129,16 @@ export class Validations {
     if (entity.content) {
       const alreadyStoredHashes = await externalCalls.isContentStoredAlready(Array.from(files.keys()))
 
-      for (const item of entity.content) {
+      for (const { hash } of entity.content) {
         // Validate that all hashes in entity were uploaded, or were already stored on the service
-        if (!(files.has(item.hash) || alreadyStoredHashes.get(item.hash))) {
-          errors.push(
-            `This hash is referenced in the entity but was not uploaded or previously available: ${item.hash}`
-          )
+        if (!(files.has(hash) || alreadyStoredHashes.get(hash))) {
+          errors.push(`This hash is referenced in the entity but was not uploaded or previously available: ${hash}`)
         }
       }
     }
 
     // Validate that all hashes that belong to uploaded files are actually reported on the entity
-    const entityHashes = new Set(entity.content?.map((item) => item.hash) ?? [])
+    const entityHashes = new Set(entity.content?.map(({ hash }) => hash) ?? [])
     for (const [hash] of files) {
       if (!entityHashes.has(hash) && hash !== entity.id) {
         errors.push(`This hash was uploaded but is not referenced in the entity: ${hash}`)
@@ -161,7 +159,7 @@ export class Validations {
   static readonly IPFS_HASHING: Validation = ({ deployment }) => {
     const { entity } = deployment
 
-    const hashesInContent = entity.content?.map((item) => item.hash) ?? []
+    const hashesInContent = entity.content?.map(({ hash }) => hash) ?? []
     const allHashes = [entity.id, ...hashesInContent]
 
     const errors: string[] = allHashes
@@ -266,7 +264,7 @@ export class Validations {
     // read thumbnail field from metadata
     const metadata = deployment.entity.metadata as Wearable
 
-    const hash = deployment.entity.content?.find((item) => item.file === metadata.thumbnail)?.hash
+    const hash = deployment.entity.content?.find(({ file }) => file === metadata.thumbnail)?.hash
     if (!hash) return [`Couldn't find hash for thumbnail file with name: ${metadata.thumbnail}`]
 
     const errors: string[] = []
@@ -296,7 +294,7 @@ export class Validations {
     const modelSizeInMB = env.wearableSizeLimitInMB
 
     const metadata = entity.metadata as Wearable
-    const thumbnailHash = entity.content?.find((item) => item.file === metadata.thumbnail)?.hash
+    const thumbnailHash = entity.content?.find(({ file }) => file === metadata.thumbnail)?.hash
     if (!thumbnailHash) return
 
     try {

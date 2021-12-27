@@ -44,7 +44,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities By Content Ha
 
     const result = await fetchActiveEntity(
       server,
-      deployResult.entity.content?.find((item) => item.file === 'some-binary-file.png')?.hash ?? ''
+      deployResult.entity.content?.find(({ file }) => file === 'some-binary-file.png')?.hash ?? ''
     )
 
     expect(result).toEqual([deployResult.entity.id, secondDeployResult.entity.id])

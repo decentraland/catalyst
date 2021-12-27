@@ -62,18 +62,17 @@ export class EntityFactory {
   }
 
   private static parseContent(contents: any[]): EntityContentItemReference[] {
-    const entries: EntityContentItemReference[] = contents.map((content) => {
-      if (!content.file || !content.hash) {
+    return contents.map(({ file, hash }) => {
+      if (!file || !hash) {
         throw new Error('Content must contain a file name and a file hash')
       }
 
-      if (!this.isString(content.file) || !this.isString(content.hash)) {
+      if (!this.isString(file) || !this.isString(hash)) {
         throw new Error('Please make sure that all file names and a file hashes are valid strings')
       }
 
-      return { file: content.file, hash: content.hash }
+      return { file, hash }
     })
-    return entries
   }
 
   private static isPointerArray<T>(array: T[]): boolean {
