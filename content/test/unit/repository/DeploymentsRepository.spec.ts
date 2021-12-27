@@ -1,7 +1,6 @@
-import { EntityType, EntityVersion, SortingField, SortingOrder } from 'dcl-catalyst-commons'
+import { Entity, EntityType, EntityVersion, SortingField, SortingOrder } from 'dcl-catalyst-commons'
 import { anything, capture, deepEqual, instance, mock, spy, verify, when } from 'ts-mockito'
 import { DeploymentsRepository } from '../../../src/repository/extensions/DeploymentsRepository'
-import { Entity } from '../../../src/service/Entity'
 import MockedDataBase from './MockedDataBase'
 
 describe('DeploymentRepository', () => {

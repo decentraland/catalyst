@@ -1,10 +1,9 @@
-import { Pointer } from 'dcl-catalyst-commons'
+import { Entity, Pointer } from 'dcl-catalyst-commons'
 import NodeCache from 'node-cache'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 import { ENTITIES_BY_POINTERS_CACHE_CONFIG } from './caching/CacheManager'
 import { CacheManagerFactory } from './caching/CacheManagerFactory'
-import { Entity } from './Entity'
 import { ServiceImpl } from './ServiceImpl'
 
 export class ServiceFactory {

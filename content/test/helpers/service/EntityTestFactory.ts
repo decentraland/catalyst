@@ -1,13 +1,13 @@
 import {
   buildEntityAndFile as buildEntityAndFileHelper,
   ContentFileHash,
+  Entity,
   EntityType,
   EntityVersion,
   Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { random } from 'faker'
-import { Entity } from '../../../src/service/Entity'
 import { EntityFactory } from '../../../src/service/EntityFactory'
 
 /** Builds an entity with the given params, and also the file what represents it */

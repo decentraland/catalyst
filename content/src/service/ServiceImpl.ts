@@ -4,6 +4,8 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   AuditInfo,
   ContentFileHash,
+  Deployment,
+  Entity,
   EntityId,
   EntityType,
   Hashing,
@@ -19,12 +21,10 @@ import { ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
 import {
-  Deployment,
   DeploymentOptions,
   PartialDeploymentPointerChanges,
   PointerChangesOptions
 } from './deployments/DeploymentManager'
-import { Entity } from './Entity'
 import { EntityFactory } from './EntityFactory'
 import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
 import {
@@ -119,7 +119,7 @@ export class ServiceImpl implements MetaverseContentService {
 
     // Check for if content is already stored
     const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
-      Array.from(entity.content?.values() ?? [])
+      entity.content?.map((contentFile) => contentFile.hash) ?? []
     )
 
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
@@ -362,7 +362,7 @@ export class ServiceImpl implements MetaverseContentService {
         type: entityType,
         pointers,
         timestamp: entityTimestamp,
-        content,
+        content: content?.map(({ key, hash }) => ({ file: key, hash })),
         metadata
       })
     )

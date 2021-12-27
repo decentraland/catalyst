@@ -1,9 +1,9 @@
 import {
   AuditInfo,
-  ContentFileHash,
-  Deployment as ControllerDeployment,
+  Deployment,
   DeploymentFilters,
   DeploymentSorting,
+  Entity,
   EntityId,
   EntityType,
   PartialDeploymentHistory,
@@ -16,13 +16,21 @@ import { ContentFilesRepository } from '../../repository/extensions/ContentFiles
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
 import { MigrationDataRepository } from '../../repository/extensions/MigrationDataRepository'
-import { Entity } from '../../service/Entity'
 import { DELTA_POINTER_RESULT, DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
   private static MAX_HISTORY_LIMIT = 500
 
-  async getEntityById(deploymentsRepository: DeploymentsRepository, entityId: string) {
+  async getEntityById(
+    deploymentsRepository: DeploymentsRepository,
+    entityId: string
+  ): Promise<
+    | {
+        entityId: any
+        localTimestamp: any
+      }
+    | undefined
+  > {
     return deploymentsRepository.getEntityById(entityId)
   }
 
@@ -118,7 +126,7 @@ export class DeploymentManager {
     deploymentsRepository: DeploymentsRepository,
     overwritten: Set<DeploymentId>,
     overwrittenBy: DeploymentId
-  ) {
+  ): Promise<void> {
     return deploymentsRepository.setEntitiesAsOverwritten(overwritten, overwrittenBy)
   }
 
@@ -169,7 +177,7 @@ export class DeploymentManager {
     deploymentPointerChangesRepo: DeploymentPointerChangesRepository,
     deploymentId: DeploymentId,
     result: DeploymentResult
-  ) {
+  ): Promise<void> {
     return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
   }
 
@@ -186,8 +194,6 @@ export class DeploymentManager {
     return new Map(newEntries)
   }
 }
-
-export type Deployment = Omit<ControllerDeployment, 'content'> & { content?: Map<string, ContentFileHash> }
 
 export type DeploymentPointerChanges = {
   entityType: EntityType

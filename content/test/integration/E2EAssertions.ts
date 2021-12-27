@@ -251,7 +251,7 @@ export function buildDeployment(
   return {
     ...entity,
     entityVersion: EntityVersion.V3,
-    content: entity.content ? entity.content.map(({ file, hash }) => ({ key: file, hash })) : undefined,
+    content: entity.content?.map(({ file, hash }) => ({ key: file, hash })),
     entityType: entity.type,
     entityId: entity.id,
     entityTimestamp: entity.timestamp,

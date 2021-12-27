@@ -2,7 +2,9 @@ import { toQueryParams } from '@catalyst/commons'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   ContentFileHash,
+  Deployment,
   Entity as ControllerEntity,
+  Entity,
   EntityId,
   EntityType,
   EntityVersion,
@@ -24,12 +26,10 @@ import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION 
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
 import {
-  Deployment,
   DeploymentOptions,
   DeploymentPointerChanges,
   PointerChangesFilters
 } from '../service/deployments/DeploymentManager'
-import { Entity } from '../service/Entity'
 import {
   DeploymentContext,
   DeploymentResult,
