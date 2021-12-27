@@ -69,6 +69,6 @@
     "destroy": "1.0.4",
     "faker": "^5.4.0",
     "on-finished": "2.3.0",
-    "testcontainers": "2.8.1"
+    "testcontainers": "8.1.2"
   }
 }
