@@ -3,7 +3,6 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   ContentFileHash,
   Deployment,
-  Entity as ControllerEntity,
   Entity,
   EntityId,
   EntityType,
@@ -93,9 +92,7 @@ export class Controller {
     } else {
       entities = await this.components.deployer.getEntitiesByPointers(type, pointers)
     }
-    const maskedEntities: ControllerEntity[] = entities.map((entity) =>
-      ControllerEntityFactory.maskEntity(entity, enumFields)
-    )
+    const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
   }
 
