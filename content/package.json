@@ -44,7 +44,7 @@
     "p-queue": "6.6.2",
     "parallel-transform": "1.2.0",
     "pg": "^8.7.1",
-    "pg-promise": "10.11.0",
+    "pg-promise": "10.11.1",
     "pg-query-stream": "^4.2.1",
     "sharp": "0.29.2",
     "sql-template-strings": "^2.2.2",
