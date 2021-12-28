@@ -1,6 +1,5 @@
 import { addModelToFormData, DeploymentData } from 'dcl-catalyst-client'
 import { ContentFileHash } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
@@ -26,18 +25,29 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
 
   it(`When a non-decentraland address tries to deploy a legacy entity, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity: createIdentity() })
+    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity: createIdentity() })
 
     // Try to deploy the entity
     await assertPromiseRejectionIs(
       () => deployLegacy(server, deployData),
-      `Expected an address owned by decentraland. Instead, we found ${Authenticator.ownerAddress(deployData.authChain)}`
+      "The provided Eth Address does not have access to the following parcel: (0,0)"
     )
   })
 
-  it(`When a decentraland address tries to deploy a legacy entity, then it is successful`, async () => {
+  it(`When a decentraland address tries to deploy a legacy entity with new timestamp, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity })
+    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity })
+
+    // Try to deploy the entity
+    await assertPromiseRejectionIs(
+      () => deployLegacy(server, deployData),
+      "The provided Eth Address does not have access to the following parcel: (0,0)"
+    )
+  })
+
+  it(`When a decentraland address tries to deploy a legacy entity with old timestamp, then it is successful`, async () => {
+    // Prepare entity to deploy
+    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity, timestamp: 1500000000000 })
 
     // Deploy the entity
     await deployLegacy(server, deployData)
