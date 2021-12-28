@@ -28,12 +28,7 @@ import {
   DeploymentPointerChanges,
   PointerChangesFilters
 } from '../service/deployments/DeploymentManager'
-import {
-  DeploymentContext,
-  DeploymentResult,
-  isSuccessfulDeployment,
-  LocalDeploymentAuditInfo
-} from '../service/Service'
+import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
 import { ContentItem } from '../storage/ContentStorage'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
