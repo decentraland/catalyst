@@ -9,7 +9,6 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
-import { Database } from '../repository/Database'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -220,8 +219,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     )
   }
 
-  getPointerChanges(task?: Database, options?: PointerChangesOptions) {
-    return this.service.getPointerChanges(task, options)
+  getPointerChanges(options?: PointerChangesOptions) {
+    return this.service.getPointerChanges(options)
   }
 
   getAllFailedDeployments() {

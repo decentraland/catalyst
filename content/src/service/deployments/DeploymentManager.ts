@@ -11,7 +11,9 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
+import { AppComponents } from 'src/types'
 import { DeploymentField } from '../../controller/Controller'
+import { getHistoricalDeployments } from '../../logic/deployments-queries'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
@@ -152,6 +154,50 @@ export class DeploymentManager {
     const deployments = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
     const deltasForDeployments = await deploymentPointerChangesRepo.getPointerChangesForDeployments(deploymentIds)
+    const pointerChanges: DeploymentPointerChanges[] = deployments.map(
+      ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
+        const delta = deltasForDeployments.get(deploymentId) ?? new Map()
+        const changes = this.transformPointerChanges(entityId, delta)
+        return { entityType, entityId, localTimestamp, changes, authChain }
+      }
+    )
+
+    return {
+      pointerChanges,
+      filters: {
+        ...options?.filters
+      },
+      pagination: {
+        offset: curatedOffset,
+        limit: curatedLimit,
+        moreData
+      }
+    }
+  }
+
+  async newGetPointerChanges(
+    components: Pick<AppComponents, 'database'>,
+    options?: PointerChangesOptions
+  ): Promise<PartialDeploymentPointerChanges> {
+    const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
+    const curatedLimit =
+      options?.limit && options?.limit > 0 && options?.limit <= DeploymentManager.MAX_HISTORY_LIMIT
+        ? options?.limit
+        : DeploymentManager.MAX_HISTORY_LIMIT
+    const deploymentsWithExtra = await getHistoricalDeployments(
+      components,
+      curatedOffset,
+      curatedLimit + 1,
+      options?.filters,
+      options?.sortBy,
+      options?.lastId
+    )
+    const moreData = deploymentsWithExtra.length > curatedLimit
+
+    const deployments = deploymentsWithExtra.slice(0, curatedLimit)
+    const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
+    // const deltasForDeployments = await getPointerChangesForDeployments(deploymentIds)
+    const deltasForDeployments = { deploymentIds } as any
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
       ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()

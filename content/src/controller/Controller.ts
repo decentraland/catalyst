@@ -345,7 +345,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.components.deployer.getPointerChanges(undefined, {
+    } = await this.components.deployer.getPointerChanges({
       filters: requestFilters,
       offset,
       limit,

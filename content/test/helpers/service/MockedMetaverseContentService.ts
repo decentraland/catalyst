@@ -15,7 +15,6 @@ import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
-import { Database } from '../../../src/repository/Database'
 import {
   DeploymentOptions,
   DeploymentPointerChanges,
@@ -98,7 +97,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     throw new Error('Method not implemented.')
   }
 
-  getPointerChanges(task?: Database, options?: PointerChangesOptions) {
+  getPointerChanges(options?: PointerChangesOptions) {
     return Promise.resolve({
       pointerChanges: this.pointerChanges,
       filters: {},

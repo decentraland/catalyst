@@ -480,17 +480,8 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
-  getPointerChanges(task?: Database, options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.taskIf((task) =>
-          this.components.deploymentManager.getPointerChanges(task.deploymentPointerChanges, task.deployments, options)
-        ),
-      {
-        priority: DB_REQUEST_PRIORITY.LOW
-      }
-    )
+  getPointerChanges(options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges> {
+    return this.components.deploymentManager.newGetPointerChanges(this.components, options)
   }
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {
