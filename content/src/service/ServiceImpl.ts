@@ -1,4 +1,3 @@
-import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
@@ -59,6 +58,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'validator'
       | 'repository'
       | 'logs'
+      | 'authenticator'
     >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
@@ -178,13 +178,8 @@ export class ServiceImpl implements MetaverseContentService {
     return (
       (context === DeploymentContext.FIX_ATTEMPT || context === DeploymentContext.SYNCED) &&
       new Date(entity.timestamp) < this.LEGACY_CONTENT_MIGRATION_TIMESTAMP &&
-      this.isADecentralandAddress(authChain)
+      this.components.authenticator.isAddressOwnedByDecentraland(Authenticator.ownerAddress(authChain))
     )
-  }
-
-  private isADecentralandAddress(authChain: AuthChain): boolean {
-    const address = Authenticator.ownerAddress(authChain)
-    return address.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
   }
 
   private async storeDeploymentInDatabase(

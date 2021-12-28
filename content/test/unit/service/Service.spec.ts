@@ -1,3 +1,4 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
@@ -5,6 +6,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
+import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
@@ -236,6 +238,7 @@ describe('Service', function () {
     const logs = createLogComponent()
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
+    const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
 
     return ServiceFactory.create({
       env,
@@ -246,7 +249,8 @@ describe('Service', function () {
       repository,
       validator,
       metrics,
-      logs
+      logs,
+      authenticator
     })
   }
 

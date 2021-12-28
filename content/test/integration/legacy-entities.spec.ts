@@ -25,23 +25,23 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
 
   it(`When a non-decentraland address tries to deploy a legacy entity, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity: createIdentity() })
+    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity: createIdentity() })
 
     // Try to deploy the entity
     await assertPromiseRejectionIs(
       () => deployLegacy(server, deployData),
-      "The provided Eth Address does not have access to the following parcel: (0,0)"
+      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)","The provided Eth Address does not have access to the following parcel: (0,1)"]}'
     )
   })
 
   it(`When a decentraland address tries to deploy a legacy entity with new timestamp, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity })
+    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity })
 
     // Try to deploy the entity
     await assertPromiseRejectionIs(
       () => deployLegacy(server, deployData),
-      "The provided Eth Address does not have access to the following parcel: (0,0)"
+      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)","The provided Eth Address does not have access to the following parcel: (0,1)"]}'
     )
   })
 

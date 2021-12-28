@@ -13,6 +13,7 @@ import { Logger } from 'log4js'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
 import { AccessCheckerForWearables, WearableCollection } from '../../../../src/service/access/AccessCheckerForWearables'
 import { AccessCheckerImplParams } from '../../../../src/service/access/AccessCheckerImpl'
+import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
 
 describe('AccessCheckerForWearables', () => {
   const COMMITTEE_MEMBER = '0xCOMMITEE_MEMBER'
@@ -342,7 +343,8 @@ describe('AccessCheckerForWearables', () => {
       collectionsL2SubgraphUrl,
       blocksL1SubgraphUrl,
       blocksL2SubgraphUrl,
-      mock(Logger)
+      mock(Logger),
+      new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     )
   }
 
