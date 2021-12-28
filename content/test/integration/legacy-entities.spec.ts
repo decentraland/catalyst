@@ -19,7 +19,6 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     server = await testEnv
       .configServer()
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .withConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES, true)
       .andBuild()
     makeNoopSynchronizationManager(server.components.synchronizationManager)
     await server.startProgram()
@@ -56,7 +55,7 @@ async function deployLegacy(server: TestProgram, deployData: DeploymentData) {
     form.append(hash, Buffer.isBuffer(f) ? f : Buffer.from(arrayBufferFrom(f)), { filename: hash })
   )
 
-  const deployResponse = await fetch(`${server.getUrl()}/legacy-entities`, { method: 'POST', body: form })
+  const deployResponse = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
   await assertResponseIsOkOrThrow(deployResponse)
 }
 

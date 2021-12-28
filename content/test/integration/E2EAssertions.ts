@@ -181,7 +181,7 @@ export async function assertEntityIsOverwrittenBy(
   assert.equal(auditInfo.overwrittenBy, overwrittenBy.id)
 
   // Deployments check
-  const deployment = await getEntitysDeployment(server, entity)
+  const deployment = await getEntitiesDeployment(server, entity)
   assert.equal(deployment.auditInfo.overwrittenBy, overwrittenBy.id)
 }
 
@@ -191,7 +191,7 @@ export async function assertEntityIsNotOverwritten(server: TestProgram, entity: 
   assert.equal(auditInfo.overwrittenBy, undefined)
 
   // Deployments check
-  const deployment = await getEntitysDeployment(server, entity)
+  const deployment = await getEntitiesDeployment(server, entity)
   assert.equal(deployment.auditInfo.overwrittenBy, undefined)
 }
 
@@ -201,7 +201,7 @@ export async function assertEntityIsNotDenylisted(server: TestProgram, entity: C
   assert.equal(auditInfo.isDenylisted, undefined)
 
   // Deployments check
-  const deployment = await getEntitysDeployment(server, entity)
+  const deployment = await getEntitiesDeployment(server, entity)
   assert.equal(deployment.auditInfo.isDenylisted, undefined)
 }
 
@@ -211,7 +211,7 @@ export async function assertEntityIsDenylisted(server: TestProgram, entity: Cont
   assert.ok(auditInfo.isDenylisted)
 
   // Deployments check
-  const deployment = await getEntitysDeployment(server, entity)
+  const deployment = await getEntitiesDeployment(server, entity)
   assert.ok(deployment.auditInfo.isDenylisted)
 }
 
@@ -225,7 +225,7 @@ export async function assertContentNotIsDenylisted(
   assert.ok(!auditInfo.denylistedContent || !auditInfo.denylistedContent.includes(contentHash))
 
   // Deployments check
-  const deployment = await getEntitysDeployment(server, entity)
+  const deployment = await getEntitiesDeployment(server, entity)
   assert.ok(!deployment.auditInfo.denylistedContent || !deployment.auditInfo.denylistedContent.includes(contentHash))
 }
 
@@ -239,7 +239,7 @@ export async function assertContentIsDenylisted(
   assert.ok(auditInfo.denylistedContent!.includes(contentHash))
 
   // Deployments check
-  const deployment = await getEntitysDeployment(server, entity)
+  const deployment = await getEntitiesDeployment(server, entity)
   assert.ok(deployment.auditInfo.denylistedContent!.includes(contentHash))
 }
 
@@ -293,7 +293,7 @@ function assertEntityIsTheSameAsDeployment(entity: ControllerEntity, deployment:
   }
 }
 
-async function getEntitysDeployment(server: TestProgram, entity: ControllerEntity): Promise<ControllerDeployment> {
+async function getEntitiesDeployment(server: TestProgram, entity: ControllerEntity): Promise<ControllerDeployment> {
   const deployments = await server.getDeployments({ filters: { entityIds: [entity.id] } })
   assert.equal(deployments.length, 1)
   const [deployment] = deployments

@@ -16,16 +16,6 @@ export const VALIDATIONS_V3: ValidationsForContext = {
     Validations.CONTENT_V3,
     Validations.RATE_LIMIT
   ],
-  [DeploymentContext.LOCAL_LEGACY_ENTITY]: [
-    // TODO: Add limit so that v3 entities can only be deployed up to a certain date
-    Validations.SIGNATURE,
-    Validations.ENTITY_STRUCTURE,
-    Validations.NO_NEWER,
-    Validations.RECENT,
-    Validations.NO_REDEPLOYS,
-    Validations.CONTENT_V3,
-    Validations.DECENTRALAND_ADDRESS
-  ],
   // This is a context during synchronization: when the deployment is already deployed.
   // That's why here it's not present NO_REDEPLOY, during sync you can receive the same deployment from different catalysts.
   [DeploymentContext.SYNCED]: [

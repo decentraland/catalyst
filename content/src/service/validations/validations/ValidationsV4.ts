@@ -38,6 +38,5 @@ export const VALIDATIONS_V4: ValidationsForContext = {
     Validations.WEARABLE_FILES
   ],
   // Note: there is no need for legacy entities anymore, so we won't allow then in v4
-  [DeploymentContext.SYNCED_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS],
-  [DeploymentContext.LOCAL_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS]
+  [DeploymentContext.SYNCED_LEGACY_ENTITY]: [Validations.FAIL_ALWAYS]
 }

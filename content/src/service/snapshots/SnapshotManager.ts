@@ -203,7 +203,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
         // write deployment to entityType file
         await fileWriterComponent.appendToFile(snapshotElem.entityType as EntityType, str)
 
-        // add the entoty to the inMemoryArray to be used by the legacy formatter
+        // add the entity to the inMemoryArray to be used by the legacy formatter
         appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
 
         if (newActiveEntitiesCount[snapshotElem.entityType] != null) {

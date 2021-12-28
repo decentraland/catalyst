@@ -89,7 +89,6 @@ export enum EnvironmentConfig {
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
   CHECK_SYNC_RANGE,
-  ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
   DEPLOYMENTS_RATE_LIMIT_TTL,
   DEPLOYMENTS_RATE_LIMIT_MAX,
@@ -185,11 +184,6 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX,
       () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 300
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.ALLOW_LEGACY_ENTITIES,
-      () => process.env.ALLOW_LEGACY_ENTITIES === 'true'
     )
     this.registerConfigIfNotAlreadySet(
       env,
