@@ -1,5 +1,5 @@
 import { addModelToFormData, DeploymentData } from 'dcl-catalyst-client'
-import { ContentFileHash } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityType } from 'dcl-catalyst-commons'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
@@ -45,11 +45,22 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     )
   })
 
-  it(`When a decentraland address tries to deploy a legacy entity with old timestamp, then it is successful`, async () => {
+  it(`When a decentraland address tries to deploy a legacy scene with old timestamp, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity, timestamp: 1500000000000 })
+    const { deployData } = await buildDeployData(['0,0', '0,1'], { type: EntityType.SCENE, metadata: 'metadata', identity, timestamp: 1500000000000 })
 
-    // Deploy the entity
+    // Try to deploy the entity
+    await assertPromiseRejectionIs(
+      () => deployLegacy(server, deployData),
+      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)","The provided Eth Address does not have access to the following parcel: (0,1)"]}'
+    )
+  })
+
+  it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it succeeds`, async () => {
+    // Prepare entity to deploy
+    const { deployData } = await buildDeployData(['0,0', '0,1'], { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 })
+
+    // Try to deploy the entity
     await deployLegacy(server, deployData)
   })
 })

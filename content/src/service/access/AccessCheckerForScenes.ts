@@ -52,8 +52,8 @@ export class AccessCheckerForScenes {
                 if (!hasAccess) {
                   errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
                 }
-              } catch (e) {
-                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y}). ${e}`)
+              } catch {
+                errors.push(`The provided Eth Address does not have access to the following parcel: (${x},${y})`)
               }
             } else {
               errors.push(
