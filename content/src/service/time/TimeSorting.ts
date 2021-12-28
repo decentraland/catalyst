@@ -1,6 +1,4 @@
-import { EntityId, Timestamp } from 'dcl-catalyst-commons'
-import { Deployment } from '../deployments/DeploymentManager'
-import { Entity } from '../Entity'
+import { Deployment, Entity, EntityId, Timestamp } from 'dcl-catalyst-commons'
 
 /** Return true if the first object happened before the second one */
 function happenedBeforeComparable(comparable1: EntityComparable, comparable2: EntityComparable): boolean {

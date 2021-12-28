@@ -1,5 +1,13 @@
 import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, WearableRepresentation } from '@dcl/schemas'
-import { EntityType, EntityVersion, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import {
+  Entity,
+  EntityContentItemReference,
+  EntityType,
+  EntityVersion,
+  Hashing,
+  Pointer,
+  Timestamp
+} from 'dcl-catalyst-commons'
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
@@ -103,9 +111,9 @@ function buildEntity(options?: {
   version?: EntityVersion
   id?: string
   timestamp?: Timestamp
-  content?: Map<string, string>
+  content?: EntityContentItemReference[]
   pointers?: Pointer[]
-}) {
+}): Entity {
   const opts = Object.assign(
     {
       version: EntityVersion.V3,
@@ -215,7 +223,7 @@ describe('Validations', function () {
   describe('Content', () => {
     it(`When a hash that was not uploaded and not present is referenced, it is reported`, async () => {
       const entity = buildEntity({
-        content: new Map([['name', 'hash']])
+        content: [{ file: 'name', hash: 'hash' }]
       })
       const args = buildArgs({ deployment: { entity, files: new Map() } })
 
@@ -226,7 +234,7 @@ describe('Validations', function () {
 
     it(`When a hash that was not uploaded was already stored, then no error is returned`, async () => {
       const entity = buildEntity({
-        content: new Map([['name', 'hash']])
+        content: [{ file: 'name', hash: 'hash' }]
       })
       const args = buildArgs({
         deployment: { entity, files: new Map() },
@@ -240,7 +248,7 @@ describe('Validations', function () {
 
     it(`When a hash that was uploaded wasn't already stored, then no error is returned`, async () => {
       const entity = buildEntity({
-        content: new Map([['name', 'hash']])
+        content: [{ file: 'name', hash: 'hash' }]
       })
       const args = buildArgs({
         deployment: { entity, files: new Map([['hash', Buffer.from([])]]) }
@@ -252,7 +260,7 @@ describe('Validations', function () {
     })
 
     it(`When a hash is uploaded but not referenced, it is reported`, async () => {
-      const entity = buildEntity({ content: new Map([['name-1', 'hash-1']]) })
+      const entity = buildEntity({ content: [{ file: 'name-1', hash: 'hash-1' }] })
       const args = buildArgs({
         deployment: {
           entity,
@@ -272,7 +280,7 @@ describe('Validations', function () {
       const expectedFile = 'face.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[expectedFile, 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q']])
+        content: [{ file: expectedFile, hash: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q' }]
       }
 
       const args = buildArgs({
@@ -291,7 +299,12 @@ describe('Validations', function () {
       const expectedFile = 'face.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[expectedFile, 'someInvalidHash']])
+        content: [
+          {
+            file: expectedFile,
+            hash: 'someInvalidHash'
+          }
+        ]
       }
 
       const args = buildArgs({
@@ -313,7 +326,7 @@ describe('Validations', function () {
       const unexpectedFile = 'unexpected-file.png'
       const entity = {
         ...buildEntityV4(EntityType.PROFILE, VALID_PROFILE_METADATA),
-        content: new Map([[unexpectedFile, 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q']])
+        content: [{ file: unexpectedFile, hash: 'bafybeiasb5vpmaounyilfuxbd3lryvosl4yefqrfahsb2esg46q6tu6y5q' }]
       }
 
       const args = buildArgs({
@@ -444,7 +457,7 @@ describe('Validations', function () {
 
   describe('Request size (v4)', () => {
     it(`when an entity is too big per pointer, then it fails`, async () => {
-      const content = new Map([['C', 'C']])
+      const content = [{ file: 'C', hash: 'C' }]
 
       const entity = buildEntity({ content })
       const args = buildArgs({
@@ -452,20 +465,18 @@ describe('Validations', function () {
         env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 2]]) }
       })
 
-      const result = Validations.REQUEST_SIZE_V4(args)
-
-      const actualErrors = await result
+      const actualErrors = await Validations.REQUEST_SIZE_V4(args)
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
       expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
     })
 
     it(`when an entity final version is too big, then it fails`, async () => {
-      const content = new Map([
-        ['A', 'A'],
-        ['B', 'B'],
-        ['C', 'C']
-      ])
+      const content = [
+        { file: 'A', hash: 'A' },
+        { file: 'B', hash: 'B' },
+        { file: 'C', hash: 'C' }
+      ]
 
       const contentSizes = new Map([
         ['A', 1024 * 1024 * 5],
@@ -480,19 +491,17 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.REQUEST_SIZE_V4(args)
-
-      const actualErrors = await result
+      const actualErrors = await Validations.REQUEST_SIZE_V4(args)
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
       expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
     })
 
     it(`when cannot fetch content file in order to check size, then it fails`, async () => {
-      const content = new Map([
-        ['A', 'A'],
-        ['C', 'C']
-      ])
+      const content = [
+        { file: 'A', hash: 'A' },
+        { file: 'C', hash: 'C' }
+      ]
 
       const entity = buildEntity({ content })
       const args = buildArgs({
@@ -503,16 +512,14 @@ describe('Validations', function () {
         }
       })
 
-      const result = Validations.REQUEST_SIZE_V4(args)
-
-      const actualErrors = await result
+      const actualErrors = await Validations.REQUEST_SIZE_V4(args)
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
       expect(actualErrors?.[0]).toMatch(`Couldn't fetch content file with hash: A`)
     })
 
     it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
-      const entity = buildEntity({ pointers: ['P1', 'P2'], content: new Map([]) })
+      const entity = buildEntity({ pointers: ['P1', 'P2'], content: [] })
       const args = buildArgs({
         deployment: { entity, files: getFileWithSize(3) },
         env: { maxUploadSizePerTypeInMB: new Map([[EntityType.SCENE, 2]]) }
@@ -524,12 +531,11 @@ describe('Validations', function () {
     })
 
     it(`when there are repeated hashes in content, then it doesnt count multiple times and is ok`, async () => {
-      const content = new Map([
-        ['A', 'A'],
-        ['B', 'A'],
-        ['C', 'C']
-      ])
-
+      const content = [
+        { file: 'A', hash: 'A' },
+        { file: 'B', hash: 'C' },
+        { file: 'C', hash: 'C' }
+      ]
       const contentSizes = new Map([['A', 1024 * 1024 * 5]])
       const entity = buildEntity({ content })
       const args = buildArgs({
@@ -559,7 +565,7 @@ describe('Validations', function () {
     })
 
     it(`when an entity's content file is not an ipfs hash, then it fails`, async () => {
-      const entity = buildEntity({ content: new Map([['key', 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P']]) })
+      const entity = buildEntity({ content: [{ file: 'key', hash: 'QmaG2d2bsb4fW8En9ZUVVhjvAghSpPbfD1XSeoHrYPpn3P' }] })
       const args = buildArgs({ deployment: { entity } })
 
       const result = Validations.IPFS_HASHING(args)
@@ -572,7 +578,7 @@ describe('Validations', function () {
 
     it(`when all entity's hashes are ipfs, then no errors are reported`, async () => {
       const someHash = await Hashing.calculateIPFSHash(Buffer.from('some file'))
-      const entity = buildEntity({ content: new Map([['key', someHash]]) })
+      const entity = buildEntity({ content: [{ file: 'key', hash: someHash }] })
       const args = buildArgs({ deployment: { entity } })
 
       const result = Validations.IPFS_HASHING(args)
@@ -654,7 +660,7 @@ describe('Validations', function () {
   describe('Wearable custom validation: ', () => {
     let validThumbnailBuffer: Buffer
     let invalidThumbnailBuffer: Buffer
-    const fileName = 'thumbnail.png'
+    const file = 'thumbnail.png'
     const hash = 'thumbnail'
 
     const createImage = async (size: number, format: 'png' | 'jpg' = 'png'): Promise<Buffer> => {
@@ -679,17 +685,17 @@ describe('Validations', function () {
 
     describe('Thumbnail:', () => {
       it('when there is no hash for given thumbnail file name, it should return an error', async () => {
-        const content = new Map<string, string>([])
+        const content = []
         const files = new Map([[hash, validThumbnailBuffer]])
         const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
         const args = buildArgs({ deployment: { entity, files } })
 
         const result = Validations.WEARABLE_THUMBNAIL(args)
-        await assertErrorsWere(result, `Couldn't find hash for thumbnail file with name: ${fileName}`)
+        await assertErrorsWere(result, `Couldn't find hash for thumbnail file with name: ${file}`)
       })
 
       it('when there is no file for given thumbnail file hash, it should return an error', async () => {
-        const content = new Map<string, string>([[fileName, hash]])
+        const content = [{ file, hash }]
         const files = new Map([['notSame' + hash, validThumbnailBuffer]])
         const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
         const args = buildArgs({ deployment: { entity, files } })
@@ -699,7 +705,7 @@ describe('Validations', function () {
       })
 
       it('when thumbnail image format is not valid, it should return an error', async () => {
-        const content = new Map<string, string>([[fileName, hash]])
+        const content = [{ file, hash }]
         const files = new Map([[hash, Buffer.alloc(1)]])
         const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
         const args = buildArgs({ deployment: { entity, files } })
@@ -709,7 +715,7 @@ describe('Validations', function () {
       })
 
       it('when thumbnail image size is invalid, it should return an error', async () => {
-        const content = new Map<string, string>([[fileName, hash]])
+        const content = [{ file, hash }]
         const files = new Map([[hash, invalidThumbnailBuffer]])
         const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
         const args = buildArgs({ deployment: { entity, files } })
@@ -720,7 +726,7 @@ describe('Validations', function () {
 
       it('when thumbnail image format is not png, it should return an error', async () => {
         const jpgImage = await createImage(DEFAULT_THUMBNAIL_SIZE, 'jpg')
-        const content = new Map<string, string>([[fileName, hash]])
+        const content = [{ file, hash }]
         const files = new Map([[hash, jpgImage]])
         const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
         const args = buildArgs({ deployment: { entity, files } })
@@ -731,7 +737,7 @@ describe('Validations', function () {
       })
 
       it('when thumbnail image size is valid, should not return any error', async () => {
-        const content = new Map<string, string>([[fileName, hash]])
+        const content = [{ file, hash }]
         const files = new Map([[hash, validThumbnailBuffer]])
         const entity = { ...buildEntityV4(EntityType.WEARABLE, wearable), content }
         const args = buildArgs({ deployment: { entity, files } })
@@ -745,11 +751,11 @@ describe('Validations', function () {
     describe('Size:', () => {
       it(`when a wearable is deployed and model is too big, then it fails`, async () => {
         const withSize = (size: number) => Buffer.alloc(size * 1024 * 1024)
-        const content = new Map([
-          ['A', 'A'],
-          ['C', 'C'],
-          ['thumbnail.png', 'thumbnail']
-        ])
+        const content = [
+          { file: 'A', hash: 'A' },
+          { file: 'C', hash: 'C' },
+          { file: 'thumbnail.png', hash: 'thumbnail' }
+        ]
         const files = new Map([
           ['A', withSize(1)],
           ['C', withSize(1.5)],
@@ -773,11 +779,11 @@ describe('Validations', function () {
 
       it(`when a wearable is deployed and thumbnail is too big, then it fails`, async () => {
         const withSize = (size: number) => Buffer.alloc(size * 1024 * 1024)
-        const content = new Map([
-          ['A', 'A'],
-          ['C', 'C'],
-          ['thumbnail.png', 'thumbnail']
-        ])
+        const content = [
+          { file: 'A', hash: 'A' },
+          { file: 'C', hash: 'C' },
+          { file: 'thumbnail.png', hash: 'thumbnail' }
+        ]
         const files = new Map([
           ['A', withSize(1)],
           ['C', withSize(1)],
@@ -799,11 +805,11 @@ describe('Validations', function () {
 
       it(`when a wearable is deployed and sizes are correct, then it is ok`, async () => {
         const withSize = (sizeInMB: number) => Buffer.alloc(sizeInMB * 1024 * 1024)
-        const content = new Map([
-          ['A', 'A'],
-          ['C', 'C'],
-          ['thumbnail.png', 'thumbnail']
-        ])
+        const content = [
+          { file: 'A', hash: 'A' },
+          { file: 'C', hash: 'C' },
+          { file: 'thumbnail.png', hash: 'thumbnail' }
+        ]
         const files = new Map([
           ['A', withSize(1)],
           ['C', withSize(1)],

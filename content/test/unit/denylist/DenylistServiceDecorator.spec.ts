@@ -1,4 +1,4 @@
-import { Pointer } from 'dcl-catalyst-commons'
+import { Deployment, Entity, Pointer } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { random } from 'faker'
 import { anything, instance, mock, when } from 'ts-mockito'
@@ -13,8 +13,6 @@ import {
   DenylistTargetId,
   DenylistTargetType
 } from '../../../src/denylist/DenylistTarget'
-import { Deployment } from '../../../src/service/deployments/DeploymentManager'
-import { Entity } from '../../../src/service/Entity'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../../../src/service/Service'
 import { streamToBuffer } from '../../../src/storage/ContentStorage'
 import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
@@ -338,7 +336,7 @@ describe('DenylistServiceDecorator', () => {
     expect(entity.type).toEqual(deployment.entityType)
     expect(entity.pointers).toEqual(deployment.pointers)
     expect(entity.timestamp).toEqual(deployment.entityTimestamp)
-    expect(entity.content).toEqual(deployment.content)
+    expect(entity.content).toEqual(deployment.content?.map(({ key, hash }) => ({ file: key, hash })))
     expect(entity.metadata).toEqual(deployment.metadata)
   }
 

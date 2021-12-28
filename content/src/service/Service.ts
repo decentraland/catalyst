@@ -1,6 +1,8 @@
 import {
   AuditInfo,
   ContentFileHash,
+  Deployment,
+  Entity,
   EntityId,
   EntityType,
   PartialDeploymentHistory,
@@ -12,12 +14,10 @@ import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
 import {
-  Deployment,
   DeploymentOptions,
   PartialDeploymentPointerChanges,
   PointerChangesOptions
 } from './deployments/DeploymentManager'
-import { Entity } from './Entity'
 import { FailedDeployment } from './errors/FailedDeploymentsManager'
 
 /**x

@@ -2,6 +2,7 @@ import {
   AuditInfo,
   DeploymentFilters,
   DeploymentSorting,
+  Entity,
   EntityId,
   EntityType,
   Pointer,
@@ -11,7 +12,6 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import { Database } from '../../repository/Database'
-import { Entity } from '../../service/Entity'
 
 export type FullSnapshot = {
   entityId: EntityId

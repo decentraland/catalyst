@@ -1,4 +1,12 @@
-import { ContentFileHash, EntityId, EntityType, PartialDeploymentHistory, Pointer } from 'dcl-catalyst-commons'
+import {
+  ContentFileHash,
+  Deployment,
+  Entity,
+  EntityId,
+  EntityType,
+  PartialDeploymentHistory,
+  Pointer
+} from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
@@ -6,8 +14,7 @@ import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { Deployment, DeploymentOptions, PointerChangesOptions } from '../service/deployments/DeploymentManager'
-import { Entity } from '../service/Entity'
+import { DeploymentOptions, PointerChangesOptions } from '../service/deployments/DeploymentManager'
 import { EntityFactory } from '../service/EntityFactory'
 import {
   DeploymentContext,
@@ -131,9 +138,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         // Calculate and group targets by entity
         deploymentHistory.deployments.forEach(({ entityId, entityType, content, pointers }) => {
           const entityTarget = buildEntityTarget(entityType, entityId)
-          const hashTargets: Map<ContentFileHash, DenylistTarget> = !content
-            ? new Map()
-            : new Map(Array.from(content.entries()).map(([, hash]) => [hash, buildContentTarget(hash)]))
+          const hashTargets: Map<ContentFileHash, DenylistTarget> = (content ?? []).reduce(
+            (map, item) => map.set(item.hash, buildContentTarget(item.hash)),
+            new Map()
+          )
           const pointerTargets: Map<Pointer, DenylistTarget> = new Map(
             pointers.map((pointer) => [pointer, buildPointerTarget(entityType, pointer)])
           )
@@ -282,9 +290,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
 
     // No deployments with denylisted hash are allowed
-    const contentTargets: DenylistTarget[] = Array.from(entity.content?.values() ?? []).map((fileHash) =>
-      buildContentTarget(fileHash)
-    )
+    const contentTargets: DenylistTarget[] = (entity.content ?? []).map((item) => buildContentTarget(item.hash))
     if (await this.areDenylisted(denylistRepo, ...contentTargets)) {
       throw new Error(`Can't allow the deployment since the entity contains a denylisted content.`)
     }

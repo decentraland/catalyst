@@ -1,6 +1,8 @@
 import {
   AuditInfo,
   ContentFileHash,
+  Deployment,
+  Entity,
   EntityId,
   EntityType,
   EntityVersion,
@@ -15,12 +17,10 @@ import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { Database } from '../../../src/repository/Database'
 import {
-  Deployment,
   DeploymentOptions,
   DeploymentPointerChanges,
   PointerChangesOptions
 } from '../../../src/service/deployments/DeploymentManager'
-import { Entity } from '../../../src/service/Entity'
 import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
 import {
   DeploymentContext,
@@ -129,7 +129,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
   getActiveDeploymentsByContentHash(hash: string): Promise<EntityId[]> {
     return Promise.resolve(
       this.entities
-        .filter((entity) => entity.content?.has(hash))
+        .filter((entity) => entity.content?.find((item) => item.hash === hash) !== undefined)
         .map((entity) => this.entityToDeployment(entity))
         .map((entity) => entity.entityId)
     )
@@ -196,7 +196,8 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
       entityId: entity.id,
       entityTimestamp: entity.timestamp,
       deployedBy: '',
-      auditInfo: MockedMetaverseContentService.AUDIT_INFO
+      auditInfo: MockedMetaverseContentService.AUDIT_INFO,
+      content: entity.content?.map(({ file, hash }) => ({ key: file, hash })) ?? []
     }
   }
 

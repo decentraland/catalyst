@@ -1,5 +1,13 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { ContentFileHash, EntityVersion, Fetcher, Hashing, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import {
+  ContentFileHash,
+  EntityContentItemReference,
+  EntityVersion,
+  Fetcher,
+  Hashing,
+  Pointer,
+  Timestamp
+} from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Logger } from 'log4js'
 import { anything, instance, mock, verify, when } from 'ts-mockito'
@@ -186,14 +194,13 @@ describe('AccessCheckerForWearables', () => {
 
     describe('When content hash is set', () => {
       const METADATA = { some: 'value' }
-      const CONTENT = new Map([['key', 'hash']])
+      const CONTENT = [{ file: 'key', hash: 'hash' }]
       let hash: ContentFileHash
 
       // TODO [entities-v4] use commons/snapshot-fetcher hashing functions
       beforeEach(async () => {
-        const entries = Array.from(CONTENT.entries())
         const contentAsJson =
-          entries.map(([key, hash]) => ({ key, hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1)) ?? []
+          CONTENT.map((item) => ({ key: item.file, hash: item.hash })).sort((a, b) => (a.hash > b.hash ? 1 : -1)) ?? []
         const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata: METADATA }))
         hash = await Hashing.calculateIPFSHash(buffer)
       })
@@ -343,7 +350,7 @@ describe('AccessCheckerForWearables', () => {
     accessChecker: AccessCheckerForWearables,
     options: {
       metadata?: any
-      content?: Map<string, ContentFileHash>
+      content?: EntityContentItemReference[]
       pointers?: Pointer[]
       timestamp?: Timestamp
       ethAddress?: EthAddress
@@ -352,7 +359,7 @@ describe('AccessCheckerForWearables', () => {
     const withDefaults = {
       version: EntityVersion.V3,
       metadata: {},
-      content: new Map(),
+      content: [],
       pointers: ['invalid pointer'],
       timestamp: Date.now(),
       ethAddress: 'some address',

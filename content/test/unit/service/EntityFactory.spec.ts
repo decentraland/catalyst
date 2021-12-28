@@ -1,5 +1,4 @@
-import { EntityId, EntityType } from 'dcl-catalyst-commons'
-import { Entity } from '../../../src/service/Entity'
+import { Entity, EntityId, EntityType } from 'dcl-catalyst-commons'
 import { EntityFactory } from '../../../src/service/EntityFactory'
 import { buildEntityAndFile, entityToFile } from '../../helpers/service/EntityTestFactory'
 

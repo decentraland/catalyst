@@ -1,7 +1,6 @@
-import { ContentFileHash, EntityId, EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { ContentFileHash, Entity, EntityId, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { AccessChecker } from '../access/AccessChecker'
 import { ContentAuthenticator } from '../auth/Authenticator'
-import { Entity } from '../Entity'
 import { DeploymentStatus } from '../errors/FailedDeploymentsManager'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'
 import { VALIDATIONS_V2 } from './validations/ValidationsV2'

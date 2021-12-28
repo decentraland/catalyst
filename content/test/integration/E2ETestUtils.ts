@@ -1,12 +1,11 @@
 import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
-import { Entity as ControllerEntity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Entity as ControllerEntity, Entity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { Authenticator, EthAddress } from 'dcl-crypto'
 import EthCrypto from 'eth-crypto'
 import fs from 'fs'
 import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
 import { retry } from '../../src/helpers/RetryHelper'
-import { Entity } from '../../src/service/Entity'
 import { EntityFactory } from '../../src/service/EntityFactory'
 import { DeploymentContext, DeploymentResult, MetaverseContentService } from '../../src/service/Service'
 
@@ -55,7 +54,7 @@ export async function buildDeployData(pointers: Pointer[], options?: DeploymentO
     deploymentPreparationData.entityId
   )
 
-  if (!entity.content || entity.content.size === 0) {
+  if (!entity.content || entity.content.length === 0) {
     delete entity.content
   }
 

@@ -1,12 +1,11 @@
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
-import { ContentFileHash, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
+import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
-import { Deployment, DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
-import { Entity } from '../../../src/service/Entity'
+import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
   DeploymentContext,

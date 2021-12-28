@@ -181,8 +181,8 @@ export class AccessCheckerForWearables {
             else if (a.hash < b.hash) return -1
             else return a.key > b.key ? 1 : -1
           }
-          const entries = Array.from(content?.entries() ?? [])
-          const contentAsJson = entries.map(([key, hash]) => ({ key, hash })).sort(compare)
+
+          const contentAsJson = content?.map(({ file, hash }) => ({ key: file, hash })).sort(compare)
           const buffer = Buffer.from(JSON.stringify({ content: contentAsJson, metadata }))
           return Promise.all([Hashing.calculateBufferHash(buffer), Hashing.calculateIPFSHash(buffer)])
         }

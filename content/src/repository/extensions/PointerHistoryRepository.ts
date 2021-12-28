@@ -1,6 +1,6 @@
+import { Entity } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
-import { Entity } from '../../service/Entity'
 
 export class PointerHistoryRepository {
   constructor(private readonly db: Database) {}
