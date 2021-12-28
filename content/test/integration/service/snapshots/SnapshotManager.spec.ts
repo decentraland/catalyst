@@ -2,7 +2,7 @@ import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-pro
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { inspect } from 'util'
 import { unzipSync } from 'zlib'
-import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
+import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
 import { bufferToStream, ContentItem, streamToBuffer } from '../../../../src/storage/ContentStorage'
@@ -27,7 +27,6 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
     components = await new EnvironmentBuilder(baseEnv)
-      .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
       .buildConfigAndComponents()
     makeNoopValidator(components)
   })

@@ -1,5 +1,5 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
+import { EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
@@ -113,7 +113,6 @@ export enum EnvironmentConfig {
   PG_QUERY_TIMEOUT,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
-  SNAPSHOT_FREQUENCY,
   SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
@@ -306,16 +305,6 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_QUERY_TIMEOUT, () =>
       process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('60s')
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.SNAPSHOT_FREQUENCY,
-      () =>
-        new Map([
-          [EntityType.SCENE, 100],
-          [EntityType.PROFILE, 500],
-          [EntityType.WEARABLE, 50]
-        ])
     )
     this.registerConfigIfNotAlreadySet(
       env,
