@@ -176,11 +176,7 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CHECK_SYNC_RANGE,
       () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.DECENTRALAND_ADDRESS,
-      () => process.env.DECENTRALAND_ADDRESS ?? DECENTRALAND_ADDRESS
-    )
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL, () =>
       Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
     )
