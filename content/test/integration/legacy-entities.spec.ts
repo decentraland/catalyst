@@ -45,23 +45,15 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     )
   })
 
-  it(`When a decentraland address tries to deploy a legacy scene with old timestamp, then an exception is thrown`, async () => {
+  it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it fails as its old`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0'], { type: EntityType.SCENE, metadata: 'metadata', identity, timestamp: 1500000000000 })
+    const { deployData } = await buildDeployData(['urn:decentraland:ethereum:collections-v1:guest_artists_2021:hero_lower_body'], { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 })
 
     // Try to deploy the entity
     await assertPromiseRejectionIs(
       () => deployLegacy(server, deployData),
-      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)"]}'
+      '{"errors":["The request is not recent enough, please submit it again with a new timestamp."]}'
     )
-  })
-
-  it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it succeeds`, async () => {
-    // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['urn:decentraland:ethereum:collections-v1:guest_artists_2021:hero_lower_body'], { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 })
-
-    // Deploy the entity
-    await deployLegacy(server, deployData)
   })
 })
 
