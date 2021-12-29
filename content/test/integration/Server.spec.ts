@@ -43,7 +43,7 @@ describe('Integration - Server', () => {
     stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
   })
 
-  it(`Get all scenes by id`, async () => {
+  testCaseWithComponents(testEnv, `Get all scenes by id`, async () => {
     const response = await fetch(`${address}/entities/scenes?id=${entity1.id}&id=${entity2.id}`)
     expect(response.ok).toBe(true)
     const scenes: ControllerEntity[] = await response.json()
@@ -88,7 +88,7 @@ describe('Integration - Server', () => {
     expect(buffer).toEqual(content.buffer)
   })
 
-  it(`PointerChanges`, async () => {
+  xit(`PointerChanges`, async () => {
     const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
     const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()
