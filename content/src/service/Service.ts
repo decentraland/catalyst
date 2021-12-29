@@ -79,7 +79,6 @@ export function isInvalidDeployment(deploymentResult: DeploymentResult): deploym
 
 export enum DeploymentContext {
   LOCAL = 'LOCAL',
-  LOCAL_LEGACY_ENTITY = 'LOCAL_LEGACY_ENTITY',
   SYNCED = 'SYNCED',
   SYNCED_LEGACY_ENTITY = 'SYNCED_LEGACY_ENTITY',
   FIX_ATTEMPT = 'FIX_ATTEMPT'

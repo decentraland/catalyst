@@ -28,7 +28,6 @@ services:
     environment:
       - METRICS=true
       - STORAGE_ROOT_FOLDER=/app/storage/content_server/
-      - ALLOW_LEGACY_ENTITIES=true
       - SEGMENT_WRITE_KEY=$segment_write_key
       - DCL_API_URL=$dcl_api_url
       - ETH_NETWORK=$eth_network

@@ -19,6 +19,7 @@ export class ServiceFactory {
       | 'metrics'
       | 'env'
       | 'logs'
+      | 'authenticator'
     >
   ): ServiceImpl {
     const { env } = components

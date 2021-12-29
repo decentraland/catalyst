@@ -1,12 +1,8 @@
-import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { httpProviderForNetwork } from '@catalyst/contracts'
 import { AuthChain, Authenticator, EthAddress, ValidationResult } from 'dcl-crypto'
 
 export class ContentAuthenticator extends Authenticator {
-  constructor(
-    private readonly network: string,
-    private readonly decentralandAddress: EthAddress = DECENTRALAND_ADDRESS
-  ) {
+  constructor(private readonly network: string, private readonly decentralandAddress: EthAddress) {
     super()
   }
 

@@ -1,9 +1,9 @@
-import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { EthAddress } from '@dcl/schemas'
 import { BlockchainCollectionV1Asset, BlockchainCollectionV2Asset, OffChainAsset, parseUrn } from '@dcl/urn-resolver'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { Fetcher, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
+import { ContentAuthenticator } from '../auth/Authenticator'
 import { AccessParams } from './AccessChecker'
 
 type SupportedAssets = BlockchainCollectionV1Asset | BlockchainCollectionV2Asset | OffChainAsset
@@ -18,7 +18,8 @@ export class AccessCheckerForWearables {
     private readonly collectionsL2SubgraphUrl: string,
     private readonly blocksL1SubgraphUrl: string,
     private readonly blocksL2SubgraphUrl: string,
-    private readonly LOGGER: ILoggerComponent.ILogger
+    private readonly LOGGER: ILoggerComponent.ILogger,
+    private readonly authenticator: ContentAuthenticator
   ) {}
 
   public async checkAccess({ pointers, ...accessParams }: WearablesAccessParams): Promise<string[]> {
@@ -46,7 +47,7 @@ export class AccessCheckerForWearables {
 
     if (parsed.type === 'off-chain') {
       // Validate Off Chain Asset
-      if (accessParams.ethAddress.toLowerCase() !== DECENTRALAND_ADDRESS.toLowerCase()) {
+      if (!this.authenticator.isAddressOwnedByDecentraland(accessParams.ethAddress)) {
         return [
           `The provided Eth Address '${accessParams.ethAddress}' does not have access to the following wearable: '${parsed.uri}'`
         ]
@@ -65,7 +66,7 @@ export class AccessCheckerForWearables {
         )
         if (!hasAccess) {
           // Some L1 collections are deployed by Decentraland Address
-          const isDecentralandAddress = accessParams.ethAddress.toLowerCase() === DECENTRALAND_ADDRESS.toLowerCase()
+          const isDecentralandAddress = this.authenticator.isAddressOwnedByDecentraland(accessParams.ethAddress)
           // Maybe this is not necessary as we already know that it's a 'blockchain-collection-v1-asset'
           const isAllowlistedCollection = parsed.uri.toString().startsWith('urn:decentraland:ethereum:collections-v1')
           if (!isDecentralandAddress || !isAllowlistedCollection) {

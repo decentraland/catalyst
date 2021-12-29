@@ -6,7 +6,6 @@ import {
   Entity,
   EntityId,
   EntityType,
-  EntityVersion,
   LegacyAuditInfo,
   Pointer,
   SortingField,
@@ -29,12 +28,7 @@ import {
   DeploymentPointerChanges,
   PointerChangesFilters
 } from '../service/deployments/DeploymentManager'
-import {
-  DeploymentContext,
-  DeploymentResult,
-  isSuccessfulDeployment,
-  LocalDeploymentAuditInfo
-} from '../service/Service'
+import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
 import { ContentItem } from '../storage/ContentStorage'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
@@ -113,51 +107,6 @@ export class Controller {
       return elements
     }
     return [elements]
-  }
-
-  async createLegacyEntity(req: express.Request, res: express.Response): Promise<void> {
-    // Method: POST
-    // Path: /legacy-entities
-    // Body: JSON with entityId,ethAddress,signature,version,migration_data; and a set of files
-    const entityId: EntityId = req.body.entityId
-    const authChain: AuthChain = req.body.authChain
-    const originalVersion: EntityVersion = EntityVersion[req.body.version.toUpperCase().trim()]
-    const migrationInformation = JSON.parse(req.body.migration_data)
-    const files = req.files
-
-    let deployFiles: ContentFile[] = []
-    try {
-      deployFiles = files ? await this.readFiles(files) : []
-      const auditInfo: LocalDeploymentAuditInfo = {
-        authChain,
-        migrationData: {
-          originalVersion,
-          data: migrationInformation
-        }
-      }
-
-      const deploymentResult: DeploymentResult = await this.components.deployer.deployEntity(
-        deployFiles.map(({ content }) => content),
-        entityId,
-        auditInfo,
-        DeploymentContext.LOCAL_LEGACY_ENTITY
-      )
-
-      if (isSuccessfulDeployment(deploymentResult)) {
-        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
-        res.send({ creationTimestamp: deploymentResult })
-      } else {
-        this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
-        res.status(400).send(deploymentResult.errors.join('\n')).end()
-      }
-    } catch (error) {
-      this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
-      res.status(500).send(error.message).end()
-    } finally {
-      await this.deleteUploadedFiles(deployFiles)
-    }
   }
 
   async createEntity(req: express.Request, res: express.Response): Promise<void> {

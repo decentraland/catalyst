@@ -1,6 +1,5 @@
 import { addModelToFormData, DeploymentData } from 'dcl-catalyst-client'
-import { ContentFileHash } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { ContentFileHash, EntityType } from 'dcl-catalyst-commons'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
@@ -19,7 +18,6 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     server = await testEnv
       .configServer()
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .withConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES, true)
       .andBuild()
     makeNoopSynchronizationManager(server.components.synchronizationManager)
     await server.startProgram()
@@ -27,21 +25,35 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
 
   it(`When a non-decentraland address tries to deploy a legacy entity, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity: createIdentity() })
+    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity: createIdentity() })
 
     // Try to deploy the entity
     await assertPromiseRejectionIs(
       () => deployLegacy(server, deployData),
-      `Expected an address owned by decentraland. Instead, we found ${Authenticator.ownerAddress(deployData.authChain)}`
+      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)"]}'
     )
   })
 
-  it(`When a decentraland address tries to deploy a legacy entity, then it is successful`, async () => {
+  it(`When a decentraland address tries to deploy a legacy entity with new timestamp, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity })
+    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity })
 
-    // Deploy the entity
-    await deployLegacy(server, deployData)
+    // Try to deploy the entity
+    await assertPromiseRejectionIs(
+      () => deployLegacy(server, deployData),
+      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)"]}'
+    )
+  })
+
+  it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it fails as its old`, async () => {
+    // Prepare entity to deploy
+    const { deployData } = await buildDeployData(['urn:decentraland:ethereum:collections-v1:guest_artists_2021:hero_lower_body'], { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 })
+
+    // Try to deploy the entity
+    await assertPromiseRejectionIs(
+      () => deployLegacy(server, deployData),
+      '{"errors":["The request is not recent enough, please submit it again with a new timestamp."]}'
+    )
   })
 })
 
@@ -56,7 +68,7 @@ async function deployLegacy(server: TestProgram, deployData: DeploymentData) {
     form.append(hash, Buffer.isBuffer(f) ? f : Buffer.from(arrayBufferFrom(f)), { filename: hash })
   )
 
-  const deployResponse = await fetch(`${server.getUrl()}/legacy-entities`, { method: 'POST', body: form })
+  const deployResponse = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
   await assertResponseIsOkOrThrow(deployResponse)
 }
 

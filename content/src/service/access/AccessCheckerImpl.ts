@@ -31,7 +31,8 @@ export class AccessCheckerImpl implements AccessChecker {
       collectionsL2SubgraphUrl,
       blocksL1SubgraphUrl,
       blocksL2SubgraphUrl,
-      logger
+      logger,
+      authenticator
     )
   }
 

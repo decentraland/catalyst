@@ -1,3 +1,4 @@
+import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
 import { Locale, Rarity, Wearable, WearableBodyShape, WearableCategory, WearableRepresentation } from '@dcl/schemas'
 import {
   Entity,
@@ -169,7 +170,7 @@ function buildArgs(args: {
     },
     env: {
       accessChecker: new MockedAccessChecker(),
-      authenticator: new ContentAuthenticator('ropsten'),
+      authenticator: new ContentAuthenticator('ropsten', DECENTRALAND_ADDRESS),
       requestTtlBackwards: ms('10m'),
       maxUploadSizePerTypeInMB: new Map(),
       wearableSizeLimitInMB: 2,

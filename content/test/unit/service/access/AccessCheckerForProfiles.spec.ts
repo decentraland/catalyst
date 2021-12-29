@@ -63,7 +63,7 @@ describe('AccessCheckerForProfiles', function () {
   })
 
   function buildAccessChecker() {
-    const authenticator = new ContentAuthenticator('')
+    const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     return new AccessCheckerForProfiles(authenticator)
   }
 })
