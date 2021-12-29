@@ -13,11 +13,8 @@ import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
-import {
-  DeploymentOptions,
-  PartialDeploymentPointerChanges,
-  PointerChangesOptions
-} from './deployments/DeploymentManager'
+import { DeploymentOptions } from './deployments/DeploymentManager'
+import { PartialDeploymentPointerChanges, PointerChangesOptions } from './deployments/deployments'
 import { FailedDeployment } from './errors/FailedDeploymentsManager'
 
 /**x

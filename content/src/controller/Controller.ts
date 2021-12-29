@@ -23,11 +23,8 @@ import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import {
-  DeploymentOptions,
-  DeploymentPointerChanges,
-  PointerChangesFilters
-} from '../service/deployments/DeploymentManager'
+import { DeploymentOptions } from '../service/deployments/DeploymentManager'
+import { DeploymentPointerChanges, PointerChangesFilters } from '../service/deployments/deployments'
 import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
 import { ContentItem } from '../storage/ContentStorage'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'

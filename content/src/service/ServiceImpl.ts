@@ -19,11 +19,8 @@ import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
-import {
-  DeploymentOptions,
-  PartialDeploymentPointerChanges,
-  PointerChangesOptions
-} from './deployments/DeploymentManager'
+import { DeploymentOptions } from './deployments/DeploymentManager'
+import { getPointerChanges, PartialDeploymentPointerChanges, PointerChangesOptions } from './deployments/deployments'
 import { EntityFactory } from './EntityFactory'
 import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
 import {
@@ -481,7 +478,7 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   getPointerChanges(options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges> {
-    return this.components.deploymentManager.newGetPointerChanges(this.components, options)
+    return getPointerChanges(this.components, options)
   }
 
   getAllFailedDeployments(): Promise<FailedDeployment[]> {
