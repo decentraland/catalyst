@@ -15,12 +15,9 @@ import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
-import {
-  DeploymentOptions,
-  DeploymentPointerChanges,
-  PointerChangesOptions
-} from '../../../src/service/deployments/types'
+import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
 import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
+import { DeploymentPointerChanges } from '../../../src/service/pointers/types'
 import {
   DeploymentContext,
   DeploymentListener,

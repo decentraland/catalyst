@@ -1,6 +1,6 @@
 import { Pointer } from 'dcl-catalyst-commons'
-import { getPointerChanges } from '../../../../src/service/deployments/deployments'
-import { PointerChanges } from '../../../../src/service/deployments/types'
+import { getPointerChanges } from '../../../../src/service/pointers/pointers'
+import { PointerChanges } from '../../../../src/service/pointers/types'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
