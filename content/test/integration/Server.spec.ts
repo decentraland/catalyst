@@ -43,7 +43,7 @@ describe('Integration - Server', () => {
     stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
   })
 
-  testCaseWithComponents(testEnv, `Get all scenes by id`, async () => {
+  it(`Get all scenes by id`, async () => {
     const response = await fetch(`${address}/entities/scenes?id=${entity1.id}&id=${entity2.id}`)
     expect(response.ok).toBe(true)
     const scenes: ControllerEntity[] = await response.json()
