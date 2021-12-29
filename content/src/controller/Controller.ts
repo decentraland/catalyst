@@ -17,6 +17,7 @@ import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
 import onFinished from 'on-finished'
+import { getPointerChanges } from 'src/service/deployments/deployments'
 import { AppComponents } from 'src/types'
 import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
 import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
@@ -42,6 +43,7 @@ export class Controller {
       | 'challengeSupervisor'
       | 'logs'
       | 'metrics'
+      | 'database'
     >,
     private readonly ethNetwork: string
   ) {
@@ -341,7 +343,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.components.deployer.getPointerChanges({
+    } = await getPointerChanges(this.components, {
       filters: requestFilters,
       offset,
       limit,

@@ -7,6 +7,7 @@ import { Controller, ControllerPointerChanges } from '../../src/controller/Contr
 import { ActiveDenylist } from '../../src/denylist/ActiveDenylist'
 import { Environment, EnvironmentConfig } from '../../src/Environment'
 import { metricsDeclaration } from '../../src/metrics'
+import { createDatabaseComponent } from '../../src/ports/postgres'
 import { ContentAuthenticator } from '../../src/service/auth/Authenticator'
 import { DeploymentPointerChanges } from '../../src/service/deployments/types'
 import { Server } from '../../src/service/Server'
@@ -62,11 +63,23 @@ describe('Integration - Server', function () {
       },
       async generateSnapshots() {}
     }
+    const database = await createDatabaseComponent(
+      { logs },
+      {
+        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
+        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
+        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+      }
+    )
 
     const metrics = createTestMetricsComponent(metricsDeclaration)
 
     const controller = new Controller(
-      { deployer, denylist, challengeSupervisor, snapshotManager, synchronizationManager, logs, metrics },
+      { deployer, denylist, challengeSupervisor, snapshotManager, synchronizationManager, logs, metrics, database },
       ethNetwork
     )
 
