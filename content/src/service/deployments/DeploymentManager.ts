@@ -13,6 +13,7 @@ import {
 import { AuthChain } from 'dcl-crypto'
 import { AppComponents } from 'src/types'
 import { DeploymentField } from '../../controller/Controller'
+import { getPointerChangesForDeployments } from '../../logic/deployment-deltas'
 import { getHistoricalDeployments } from '../../logic/deployments-queries'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
@@ -196,8 +197,7 @@ export class DeploymentManager {
 
     const deployments = deploymentsWithExtra.slice(0, curatedLimit)
     const deploymentIds = deployments.map(({ deploymentId }) => deploymentId)
-    // const deltasForDeployments = await getPointerChangesForDeployments(deploymentIds)
-    const deltasForDeployments = { deploymentIds } as any
+    const deltasForDeployments = await getPointerChangesForDeployments(components, deploymentIds)
     const pointerChanges: DeploymentPointerChanges[] = deployments.map(
       ({ deploymentId, entityId, entityType, localTimestamp, authChain }) => {
         const delta = deltasForDeployments.get(deploymentId) ?? new Map()

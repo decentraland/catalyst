@@ -103,7 +103,7 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     components: Pick<AppComponents, 'deployer'>,
     entityCombo: EntityCombo
   ): Promise<PointerChanges> {
-    const result = await components.deployer.getPointerChanges(undefined, {
+    const result = await components.deployer.getPointerChanges({
       filters: { entityTypes: [entityCombo.entity.type] }
     })
     const pointerChanges = result.pointerChanges.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
