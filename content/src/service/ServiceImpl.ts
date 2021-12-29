@@ -460,8 +460,22 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
+<<<<<<< HEAD
   getAllFailedDeployments(): FailedDeployment[] {
     return this.components.failedDeploymentsCache.getAllFailedDeployments()
+=======
+  getPointerChanges(options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges> {
+    return getPointerChanges(this.components, options)
+  }
+
+  getAllFailedDeployments(): Promise<FailedDeployment[]> {
+    return this.components.repository.run(
+      (db) => this.components.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments),
+      {
+        priority: DB_REQUEST_PRIORITY.LOW
+      }
+    )
+>>>>>>> c4684108 (refactor)
   }
 
   listenToDeployments(listener: DeploymentListener): void {
