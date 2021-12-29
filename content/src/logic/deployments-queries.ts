@@ -164,14 +164,13 @@ export function getHistoricalDeploymentsQuery(
     whereClause.push(SQL`dep1.entity_pointers && ARRAY[${pointers}]`)
   }
 
-  const where =
-    whereClause.length > 0
-      ? SQL` WHERE `.append(
-          whereClause.slice(1).reduce((previous, current) => {
-            return previous.append(' AND ').append(current)
-          }, whereClause[0])
-        )
-      : ''
+  let where = SQL``
+  if (whereClause.length > 0) {
+    where = SQL` WHERE `.append(whereClause[0])
+    for (const condition of whereClause.slice(1)) {
+      where = where.append(' AND ').append(condition)
+    }
+  }
 
   query.append(where)
   query
