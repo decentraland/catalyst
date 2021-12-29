@@ -138,7 +138,7 @@ loadStandaloneTestEnvironment()('Integration - Server', (testEnv) => {
     expect(buffer).toEqual(content.buffer)
   })
 
-  xit(`PointerChanges`, async () => {
+  it(`PointerChanges`, async () => {
     const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
     const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()
