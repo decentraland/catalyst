@@ -18,8 +18,9 @@ import { MockedRepository } from '../helpers/repository/MockedRepository'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { buildContent, MockedMetaverseContentServiceBuilder } from '../helpers/service/MockedMetaverseContentService'
 import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { E2ETestEnvironment, loadStandaloneTestEnvironment, testCaseWithComponents } from './E2ETestEnvironment'
 
-describe('Integration - Server', function () {
+loadStandaloneTestEnvironment()('Integration - Server', (testEnv) => {
   let server: Server
   const content = buildContent()
   const entity1 = randomEntity(EntityType.SCENE)
@@ -52,17 +53,8 @@ describe('Integration - Server', function () {
     const env = new Environment()
       .setConfig(EnvironmentConfig.SERVER_PORT, port)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
+      .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
 
-    const challengeSupervisor = new ChallengeSupervisor()
-    const snapshotManager: ISnapshotManager = {
-      getFullSnapshotMetadata() {
-        throw new Error('not implemented')
-      },
-      getSnapshotMetadataPerEntityType() {
-        throw new Error('not implemented')
-      },
-      async generateSnapshots() {}
-    }
     const database = await createDatabaseComponent(
       { logs },
       {
@@ -76,6 +68,17 @@ describe('Integration - Server', function () {
       }
     )
 
+    const challengeSupervisor = new ChallengeSupervisor()
+    const snapshotManager: ISnapshotManager = {
+      getFullSnapshotMetadata() {
+        throw new Error('not implemented')
+      },
+      getSnapshotMetadataPerEntityType() {
+        throw new Error('not implemented')
+      },
+      async generateSnapshots() {}
+    }
+
     const metrics = createTestMetricsComponent(metricsDeclaration)
 
     const controller = new Controller(
@@ -88,7 +91,7 @@ describe('Integration - Server', function () {
     await server.start()
   })
 
-  it(`Get all scenes by id`, async () => {
+  testCaseWithComponents(testEnv, `Get all scenes by id`, async () => {
     const response = await fetch(`${address}/entities/scenes?id=${entity1.id}&id=${entity2.id}`)
     expect(response.ok).toBe(true)
     const scenes: ControllerEntity[] = await response.json()
@@ -99,8 +102,11 @@ describe('Integration - Server', function () {
     const response = await fetch(
       `${address}/entities/scenes?pointer=${entity1.pointers[0]}&pointer=${entity2.pointers[0]}`
     )
+
+    console.log('RESPONSE')
     expect(response.ok).toBe(true)
     const scenes: Entity[] = await response.json()
+    console.log('RESPONSE2', scenes)
     expect(scenes.length).toBe(2)
     scenes.forEach((scene) => {
       expect(scene.type).toBe(EntityType.SCENE)
@@ -132,7 +138,7 @@ describe('Integration - Server', function () {
     expect(buffer).toEqual(content.buffer)
   })
 
-  it(`PointerChanges`, async () => {
+  xit(`PointerChanges`, async () => {
     const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
     const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()

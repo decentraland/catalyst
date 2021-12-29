@@ -16,8 +16,8 @@ import { isCI } from './E2ETestUtils'
 import { TestProgram } from './TestProgram'
 
 export class E2ETestEnvironment {
-  private static TEST_SCHEMA = 'e2etest'
-  private static POSTGRES_PORT = 5432
+  public static TEST_SCHEMA = 'e2etest'
+  public static POSTGRES_PORT = 5432
   private runningServers: TestProgram[]
   private postgresContainer: StartedTestContainer
   private database: IDatabaseComponent
