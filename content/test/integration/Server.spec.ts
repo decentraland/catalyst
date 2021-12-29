@@ -2,85 +2,41 @@ import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
-import { mock } from 'ts-mockito'
-import { Controller, ControllerPointerChanges } from '../../src/controller/Controller'
-import { ActiveDenylist } from '../../src/denylist/ActiveDenylist'
+import { stub } from 'sinon'
+import { ControllerPointerChanges } from '../../src/controller/Controller'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { metricsDeclaration } from '../../src/metrics'
-import { ContentAuthenticator } from '../../src/service/auth/Authenticator'
-import { DeploymentPointerChanges } from '../../src/service/pointers/types'
 import { Server } from '../../src/service/Server'
-import { ISnapshotManager } from '../../src/service/snapshots/SnapshotManager'
-import { ChallengeSupervisor } from '../../src/service/synchronization/ChallengeSupervisor'
-import { ContentCluster } from '../../src/service/synchronization/ContentCluster'
-import { MockedRepository } from '../helpers/repository/MockedRepository'
+import { SimpleContentItem } from '../../src/storage/ContentStorage'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
-import { buildContent, MockedMetaverseContentServiceBuilder } from '../helpers/service/MockedMetaverseContentService'
-import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { buildContent } from '../helpers/service/MockedMetaverseContentService'
 
 describe('Integration - Server', () => {
   let server: Server
   const content = buildContent()
   const entity1 = randomEntity(EntityType.SCENE)
   const entity2 = randomEntity(EntityType.SCENE)
-  const pointerChanges: DeploymentPointerChanges = {
-    entityId: entity1.id,
-    entityType: entity1.type,
-    localTimestamp: 10,
-    changes: new Map([[entity1.pointers[0], { before: undefined, after: entity1.id }]]),
-    authChain: []
-  }
+
   let address: string
 
   it('starts the server', async () => {
-    const deployer = new MockedMetaverseContentServiceBuilder()
-      .withEntity(entity1)
-      .withEntity(entity2)
-      .withPointerChanges(pointerChanges)
-      .withContent(content)
-      .build()
-
     const logs = createLogComponent()
-    const repository = MockedRepository.build()
-    const synchronizationManager = new MockedSynchronizationManager()
-
-    const ethNetwork = 'network'
-    const denylist = new ActiveDenylist(repository, mock(ContentAuthenticator), mock(ContentCluster), ethNetwork)
 
     const env = await new EnvironmentBuilder().buildConfigAndComponents()
 
-    const challengeSupervisor = new ChallengeSupervisor()
-    const snapshotManager: ISnapshotManager = {
-      getFullSnapshotMetadata() {
-        throw new Error('not implemented')
-      },
-      getSnapshotMetadataPerEntityType() {
-        throw new Error('not implemented')
-      },
-      async generateSnapshots() {}
-    }
-
     const metrics = createTestMetricsComponent(metricsDeclaration)
 
-    const controller = new Controller(
-      {
-        deployer,
-        denylist,
-        challengeSupervisor,
-        snapshotManager,
-        synchronizationManager,
-        logs,
-        metrics,
-        database: env.database
-      },
-      ethNetwork
-    )
+    const controller = env.controller
 
     server = new Server({ env: env.env, controller, metrics, logs })
 
     address = `http://localhost:${env.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
 
     await server.start()
+
+    stub(env.deployer, 'getEntitiesByIds').resolves([entity1, entity2])
+    stub(env.deployer, 'getEntitiesByPointers').resolves([entity1, entity2])
+    stub(env.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
   })
 
   it(`Get all scenes by id`, async () => {
