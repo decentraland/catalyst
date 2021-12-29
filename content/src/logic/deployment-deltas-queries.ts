@@ -5,6 +5,14 @@ import { AppComponents } from 'src/types'
 import { DeploymentId } from '../repository/extensions/DeploymentsRepository'
 import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
 
+export interface DeploymentDeltasRow {
+  deployment: number
+  pointer: string
+  before?: string
+  after: DELTA_POINTER_RESULT
+  auth_chain: AuthChain
+}
+
 export async function getPointerChangesForDeployments(
   components: Pick<AppComponents, 'database'>,
   deploymentIds: DeploymentId[]
@@ -30,7 +38,7 @@ export async function getPointerChangesForDeployments(
     )
   ).rows
 
-  deltas.forEach(({ deployment, pointer, before, after, auth_chain }) => {
+  deltas.forEach(({ deployment, pointer, before, after, auth_chain }: DeploymentDeltasRow) => {
     if (!result.has(deployment)) {
       result.set(deployment, new Map())
     }
