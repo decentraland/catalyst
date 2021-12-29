@@ -43,6 +43,8 @@ export class AccessCheckerImpl implements AccessChecker {
         return this.accessCheckerForProfiles.checkAccess(params)
       case EntityType.WEARABLE:
         return this.accessCheckerForWearables.checkAccess(params)
+      case EntityType.STORE:
+        return this.accessCheckerForProfiles.checkAccess(params)
       default:
         return ['Unknown type provided']
     }
