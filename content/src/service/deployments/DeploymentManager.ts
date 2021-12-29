@@ -1,18 +1,10 @@
-import {
-  AuditInfo,
-  Deployment,
-  DeploymentFilters,
-  DeploymentSorting,
-  Entity,
-  EntityId,
-  PartialDeploymentHistory
-} from 'dcl-catalyst-commons'
-import { DeploymentField } from '../../controller/Controller'
+import { AuditInfo, Deployment, Entity, EntityId, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
 import { MigrationDataRepository } from '../../repository/extensions/MigrationDataRepository'
 import { DeploymentResult } from '../pointers/PointerManager'
+import { DeploymentOptions } from './types'
 
 export class DeploymentManager {
   private static MAX_HISTORY_LIMIT = 500
@@ -133,13 +125,4 @@ export class DeploymentManager {
   ): Promise<void> {
     return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
   }
-}
-
-export type DeploymentOptions = {
-  fields?: DeploymentField[]
-  filters?: DeploymentFilters
-  sortBy?: DeploymentSorting
-  offset?: number
-  limit?: number
-  lastId?: string
 }

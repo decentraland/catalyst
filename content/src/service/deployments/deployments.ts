@@ -1,42 +1,14 @@
-import { DeploymentFilters, DeploymentSorting, EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
-import { AuthChain } from 'dcl-crypto'
+import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { AppComponents } from 'src/types'
-import { getPointerChangesForDeployments } from '../../logic/deployment-deltas'
+import { getPointerChangesForDeployments } from '../../logic/deployment-deltas-queries'
 import { getHistoricalDeployments } from '../../logic/deployments-queries'
 import { DELTA_POINTER_RESULT } from '../pointers/PointerManager'
-
-export type PointerChanges = Map<Pointer, { before: EntityId | undefined; after: EntityId | undefined }>
-
-export type DeploymentPointerChanges = {
-  entityType: EntityType
-  entityId: EntityId
-  localTimestamp: Timestamp
-  changes: PointerChanges
-  authChain: AuthChain
-}
-
-export type PointerChangesFilters = Pick<DeploymentFilters, 'from' | 'to' | 'entityTypes'>
-
-export type PartialDeploymentPointerChanges = {
-  pointerChanges: DeploymentPointerChanges[]
-  filters: Omit<PointerChangesFilters, 'entityType'>
-  pagination: {
-    offset: number
-    limit: number
-    moreData: boolean
-    lastId?: string
-    next?: string
-  }
-}
-
-export type PointerChangesOptions = {
-  filters?: DeploymentFilters
-  sortBy?: DeploymentSorting
-  offset?: number
-  limit?: number
-  lastId?: string
-  includeAuthChain?: boolean
-}
+import {
+  DeploymentPointerChanges,
+  PartialDeploymentPointerChanges,
+  PointerChanges,
+  PointerChangesOptions
+} from './types'
 
 const MAX_HISTORY_LIMIT = 500
 

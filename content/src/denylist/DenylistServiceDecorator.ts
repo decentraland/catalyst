@@ -8,13 +8,12 @@ import {
   Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { PointerChangesOptions } from 'src/service/deployments/deployments'
+import { DeploymentOptions, PointerChangesOptions } from 'src/service/deployments/types'
 import { Readable } from 'stream'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { DeploymentOptions } from '../service/deployments/DeploymentManager'
 import { EntityFactory } from '../service/EntityFactory'
 import {
   DeploymentContext,
