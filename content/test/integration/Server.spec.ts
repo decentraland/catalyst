@@ -1,78 +1,46 @@
-import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
-import { mock } from 'ts-mockito'
-import { Controller, ControllerPointerChanges } from '../../src/controller/Controller'
-import { ActiveDenylist } from '../../src/denylist/ActiveDenylist'
-import { Environment, EnvironmentConfig } from '../../src/Environment'
-import { metricsDeclaration } from '../../src/metrics'
-import { ContentAuthenticator } from '../../src/service/auth/Authenticator'
-import { DeploymentPointerChanges } from '../../src/service/deployments/DeploymentManager'
+import { stub } from 'sinon'
+import { ControllerPointerChanges } from '../../src/controller/Controller'
+import { EnvironmentConfig } from '../../src/Environment'
 import { Server } from '../../src/service/Server'
-import { ISnapshotManager } from '../../src/service/snapshots/SnapshotManager'
-import { ChallengeSupervisor } from '../../src/service/synchronization/ChallengeSupervisor'
-import { ContentCluster } from '../../src/service/synchronization/ContentCluster'
-import { MockedRepository } from '../helpers/repository/MockedRepository'
+import { SimpleContentItem } from '../../src/storage/ContentStorage'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
-import { buildContent, MockedMetaverseContentServiceBuilder } from '../helpers/service/MockedMetaverseContentService'
-import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { buildContent } from '../helpers/service/MockedMetaverseContentService'
+import { E2ETestEnvironment } from './E2ETestEnvironment'
 
-describe('Integration - Server', function () {
+describe('Integration - Server', () => {
   let server: Server
   const content = buildContent()
   const entity1 = randomEntity(EntityType.SCENE)
   const entity2 = randomEntity(EntityType.SCENE)
-  const pointerChanges: DeploymentPointerChanges = {
-    entityId: entity1.id,
-    entityType: entity1.type,
-    localTimestamp: 10,
-    changes: new Map([[entity1.pointers[0], { before: undefined, after: entity1.id }]]),
-    authChain: []
-  }
-  const port = 8080
-  const address: string = `http://localhost:${port}`
+
+  let address: string
+
+  const testEnv = new E2ETestEnvironment()
+
+  beforeAll(async () => {
+    await testEnv.start()
+  })
+
+  afterAll(async () => {
+    await testEnv.clearDatabases()
+    await testEnv.stopAllComponentsFromAllServersAndDeref()
+    await testEnv.stop()
+  })
 
   it('starts the server', async () => {
-    const deployer = new MockedMetaverseContentServiceBuilder()
-      .withEntity(entity1)
-      .withEntity(entity2)
-      .withPointerChanges(pointerChanges)
-      .withContent(content)
-      .build()
+    const components = await testEnv.buildService()
 
-    const logs = createLogComponent()
-    const repository = MockedRepository.build()
-    const synchronizationManager = new MockedSynchronizationManager()
+    server = components.server
 
-    const ethNetwork = 'network'
-    const denylist = new ActiveDenylist(repository, mock(ContentAuthenticator), mock(ContentCluster), ethNetwork)
-
-    const env = new Environment()
-      .setConfig(EnvironmentConfig.SERVER_PORT, port)
-      .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
-
-    const challengeSupervisor = new ChallengeSupervisor()
-    const snapshotManager: ISnapshotManager = {
-      getFullSnapshotMetadata() {
-        throw new Error('not implemented')
-      },
-      getSnapshotMetadataPerEntityType() {
-        throw new Error('not implemented')
-      },
-      async generateSnapshots() {}
-    }
-
-    const metrics = createTestMetricsComponent(metricsDeclaration)
-
-    const controller = new Controller(
-      { deployer, denylist, challengeSupervisor, snapshotManager, synchronizationManager, logs, metrics },
-      ethNetwork
-    )
-
-    server = new Server({ env, controller, metrics, logs })
+    address = `http://localhost:${components.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
 
     await server.start()
+
+    stub(components.deployer, 'getEntitiesByIds').resolves([entity1, entity2])
+    stub(components.deployer, 'getEntitiesByPointers').resolves([entity1, entity2])
+    stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
   })
 
   it(`Get all scenes by id`, async () => {
@@ -86,6 +54,7 @@ describe('Integration - Server', function () {
     const response = await fetch(
       `${address}/entities/scenes?pointer=${entity1.pointers[0]}&pointer=${entity2.pointers[0]}`
     )
+
     expect(response.ok).toBe(true)
     const scenes: Entity[] = await response.json()
     expect(scenes.length).toBe(2)
@@ -123,17 +92,7 @@ describe('Integration - Server', function () {
     const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
     const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()
-    expect(deltas.length).toBe(1)
-    const [controllerDelta] = deltas
-    expect(controllerDelta.entityId).toBe(pointerChanges.entityId)
-    expect(controllerDelta.entityType).toBe(pointerChanges.entityType)
-    expect(controllerDelta.localTimestamp).toBe(pointerChanges.localTimestamp)
-    const { changes } = controllerDelta
-    expect(changes.length).toBe(1)
-    const [change] = changes
-    expect(change.pointer).toBe(entity1.pointers[0])
-    expect(change.before).toBe(undefined)
-    expect(change.after).toBe(entity1.id)
+    expect(Array.isArray(deltas)).toBe(true)
   })
 
   it(`PointerChanges with offset too high`, async () => {

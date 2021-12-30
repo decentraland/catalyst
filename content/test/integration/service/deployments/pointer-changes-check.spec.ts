@@ -1,5 +1,6 @@
 import { Pointer } from 'dcl-catalyst-commons'
-import { PointerChanges } from '../../../../src/service/deployments/DeploymentManager'
+import { getPointerChanges } from '../../../../src/service/pointers/pointers'
+import { PointerChanges } from '../../../../src/service/pointers/types'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
@@ -100,10 +101,10 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
   }
 
   async function getChangesInPointersFor(
-    components: Pick<AppComponents, 'deployer'>,
+    components: Pick<AppComponents, 'database'>,
     entityCombo: EntityCombo
   ): Promise<PointerChanges> {
-    const result = await components.deployer.getPointerChanges(undefined, {
+    const result = await getPointerChanges(components, {
       filters: { entityTypes: [entityCombo.entity.type] }
     })
     const pointerChanges = result.pointerChanges.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
