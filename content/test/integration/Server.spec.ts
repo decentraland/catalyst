@@ -22,7 +22,12 @@ describe('Integration - Server', () => {
   it('starts the server', async () => {
     const logs = createLogComponent()
 
-    const env = await new EnvironmentBuilder().buildConfigAndComponents()
+    let env
+    try {
+      env = await new EnvironmentBuilder().buildConfigAndComponents()
+    } catch (err) {
+      console.log('err', err)
+    }
 
     const metrics = createTestMetricsComponent(metricsDeclaration)
 
