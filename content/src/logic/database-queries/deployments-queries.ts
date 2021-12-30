@@ -2,6 +2,7 @@ import {
   DeploymentFilters,
   DeploymentSorting,
   EntityType,
+  EntityVersion,
   Pointer,
   SortingField,
   SortingOrder
@@ -9,7 +10,7 @@ import {
 import { AuthChain } from 'dcl-crypto'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import { AppComponents } from '../types'
+import { AppComponents } from '../../types'
 
 export interface HistoricalDeployment {
   deploymentId: number
@@ -19,7 +20,7 @@ export interface HistoricalDeployment {
   entityTimestamp: number
   metadata: any
   deployerAddress: string
-  version: string
+  version: EntityVersion
   authChain: AuthChain
   localTimestamp: number
   overwrittenBy?: string
@@ -28,7 +29,7 @@ export interface HistoricalDeployment {
 interface HistoricalDeploymentsRow {
   id: number
   deployer_address: string
-  version: string
+  version: EntityVersion
   entity_type: EntityType
   entity_id: string
   entity_metadata: any

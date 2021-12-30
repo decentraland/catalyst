@@ -1,6 +1,6 @@
 import { AuthChain } from 'dcl-crypto'
 import SQL from 'sql-template-strings'
-import { AppComponents } from '../types'
+import { AppComponents } from '../../types'
 
 export type DeploymentWithAuthChain = {
   entityId: string

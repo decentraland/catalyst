@@ -1,11 +1,12 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { deploymentExists, streamAllEntityIds } from '../../logic/deployments-queries'
+import { deploymentExists, streamAllEntityIds } from '../../logic/database-queries/deployments-queries'
 import { FailureReason } from '../../ports/failedDeploymentsCache'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
+
 /**
  * An IDeployerComponent parallelizes deployments with a JobQueue.
  * The JobQueue concurrency can be configured.
