@@ -1,11 +1,8 @@
-import { createLogComponent } from '@well-known-components/logger'
-import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { ControllerPointerChanges } from '../../src/controller/Controller'
 import { EnvironmentConfig } from '../../src/Environment'
-import { metricsDeclaration } from '../../src/metrics'
 import { Server } from '../../src/service/Server'
 import { SimpleContentItem } from '../../src/storage/ContentStorage'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
@@ -33,15 +30,9 @@ describe('Integration - Server', () => {
   })
 
   it('starts the server', async () => {
-    const logs = createLogComponent()
-
     const components = await testEnv.buildService()
 
-    const metrics = createTestMetricsComponent(metricsDeclaration)
-
-    const controller = components.controller
-
-    server = new Server({ env: components.env, controller, metrics, logs })
+    server = components.server
 
     address = `http://localhost:${components.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
 
