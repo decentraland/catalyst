@@ -4,12 +4,13 @@ import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-com
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
 import { ControllerPointerChanges } from '../../src/controller/Controller'
-import { EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
+import { EnvironmentConfig } from '../../src/Environment'
 import { metricsDeclaration } from '../../src/metrics'
 import { Server } from '../../src/service/Server'
 import { SimpleContentItem } from '../../src/storage/ContentStorage'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
 import { buildContent } from '../helpers/service/MockedMetaverseContentService'
+import { E2ETestEnvironment } from './E2ETestEnvironment'
 
 describe('Integration - Server', () => {
   let server: Server
@@ -19,29 +20,36 @@ describe('Integration - Server', () => {
 
   let address: string
 
+  const testEnv = new E2ETestEnvironment()
+
+  beforeAll(async () => {
+    await testEnv.start()
+  })
+
+  afterAll(async () => {
+    await testEnv.clearDatabases()
+    await testEnv.stopAllComponentsFromAllServersAndDeref()
+    await testEnv.stop()
+  })
+
   it('starts the server', async () => {
     const logs = createLogComponent()
 
-    let env
-    try {
-      env = await new EnvironmentBuilder().buildConfigAndComponents()
-    } catch (err) {
-      console.log('err', err)
-    }
+    const components = await testEnv.buildService()
 
     const metrics = createTestMetricsComponent(metricsDeclaration)
 
-    const controller = env.controller
+    const controller = components.controller
 
-    server = new Server({ env: env.env, controller, metrics, logs })
+    server = new Server({ env: components.env, controller, metrics, logs })
 
-    address = `http://localhost:${env.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
+    address = `http://localhost:${components.env.getConfig(EnvironmentConfig.SERVER_PORT)}`
 
     await server.start()
 
-    stub(env.deployer, 'getEntitiesByIds').resolves([entity1, entity2])
-    stub(env.deployer, 'getEntitiesByPointers').resolves([entity1, entity2])
-    stub(env.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
+    stub(components.deployer, 'getEntitiesByIds').resolves([entity1, entity2])
+    stub(components.deployer, 'getEntitiesByPointers').resolves([entity1, entity2])
+    stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
   })
 
   it(`Get all scenes by id`, async () => {
@@ -94,16 +102,6 @@ describe('Integration - Server', () => {
     expect(response.ok).toBe(true)
     const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()
     expect(Array.isArray(deltas)).toBe(true)
-    const [controllerDelta] = deltas
-    expect(controllerDelta.entityId).not.toBeNull()
-    expect(controllerDelta.entityType).not.toBeNull()
-    expect(controllerDelta.localTimestamp).not.toBeNull()
-    const { changes } = controllerDelta
-    expect(Array.isArray(changes)).toBe(true)
-    const [change] = changes
-    expect(change.pointer).not.toBeNull()
-    expect(change.before).not.toBeNull()
-    expect(change.after).not.toBeNull()
   })
 
   it(`PointerChanges with offset too high`, async () => {
