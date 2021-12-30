@@ -19,9 +19,18 @@ describe('Integration - Server', () => {
 
   const testEnv = new E2ETestEnvironment()
 
+<<<<<<< HEAD
   beforeAll(async () => {
     await testEnv.start()
   })
+=======
+    let env
+    try {
+      env = await new EnvironmentBuilder().buildConfigAndComponents()
+    } catch (err) {
+      console.log('err', err)
+    }
+>>>>>>> 4fefc614 (add error on env creation)
 
   afterAll(async () => {
     await testEnv.clearDatabases()
