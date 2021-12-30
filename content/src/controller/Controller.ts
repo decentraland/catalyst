@@ -23,11 +23,9 @@ import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import {
-  DeploymentOptions,
-  DeploymentPointerChanges,
-  PointerChangesFilters
-} from '../service/deployments/DeploymentManager'
+import { DeploymentOptions } from '../service/deployments/types'
+import { getPointerChanges } from '../service/pointers/pointers'
+import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
 import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
 import { ContentItem } from '../storage/ContentStorage'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
@@ -46,6 +44,7 @@ export class Controller {
       | 'challengeSupervisor'
       | 'logs'
       | 'metrics'
+      | 'database'
     >,
     private readonly ethNetwork: string
   ) {
@@ -345,7 +344,7 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await this.components.deployer.getPointerChanges(undefined, {
+    } = await getPointerChanges(this.components, {
       filters: requestFilters,
       offset,
       limit,

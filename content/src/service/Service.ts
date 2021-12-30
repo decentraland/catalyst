@@ -13,11 +13,7 @@ import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
-import {
-  DeploymentOptions,
-  PartialDeploymentPointerChanges,
-  PointerChangesOptions
-} from './deployments/DeploymentManager'
+import { DeploymentOptions } from './deployments/types'
 import { FailedDeployment } from './errors/FailedDeploymentsManager'
 
 /**x
@@ -40,7 +36,6 @@ export interface MetaverseContentService {
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): FailedDeployment[]
-  getPointerChanges(task?: Database, options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges>
   getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
