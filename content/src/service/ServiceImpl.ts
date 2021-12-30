@@ -208,7 +208,7 @@ export class ServiceImpl implements MetaverseContentService {
             {
               areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
               fetchDeploymentStatus: (type, id) =>
-                this.components.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
+                this.components.failedDeploymentsManager.getDeploymentStatus(type, id),
               isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
               isEntityDeployedAlready: (): Promise<boolean> => Promise.resolve(isEntityAlreadyDeployed),
               isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
@@ -283,11 +283,7 @@ export class ServiceImpl implements MetaverseContentService {
           }
 
           // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-          await this.components.failedDeploymentsManager.reportSuccessfulDeployment(
-            transaction.failedDeployments,
-            entity.type,
-            entity.id
-          )
+          await this.components.failedDeploymentsManager.reportSuccessfulDeployment(entity.type, entity.id)
 
           return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
         }),
@@ -301,21 +297,16 @@ export class ServiceImpl implements MetaverseContentService {
     reason: FailureReason,
     authChain: AuthChain,
     errorDescription?: string
-  ): Promise<null> {
+  ): void {
     ServiceImpl.LOGGER.warn(
       `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
     )
-    return this.components.repository.run(
-      (db) =>
-        this.components.failedDeploymentsManager.reportFailure(
-          db.failedDeployments,
-          entityType,
-          entityId,
-          reason,
-          authChain,
-          errorDescription
-        ),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
+    return this.components.failedDeploymentsManager.reportFailure(
+      entityType,
+      entityId,
+      reason,
+      authChain,
+      errorDescription
     )
   }
 
@@ -493,13 +484,8 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
-  getAllFailedDeployments(): Promise<FailedDeployment[]> {
-    return this.components.repository.run(
-      (db) => this.components.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments),
-      {
-        priority: DB_REQUEST_PRIORITY.LOW
-      }
-    )
+  getAllFailedDeployments(): FailedDeployment[] {
+    return this.components.failedDeploymentsManager.getAllFailedDeployments()
   }
 
   listenToDeployments(listener: DeploymentListener): void {

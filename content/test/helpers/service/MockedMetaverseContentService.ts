@@ -165,7 +165,7 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     }
   }
 
-  getAllFailedDeployments(): Promise<FailedDeployment[]> {
+  getAllFailedDeployments(): FailedDeployment[] {
     throw new Error('Method not implemented.')
   }
 

@@ -49,19 +49,16 @@ loadStandaloneTestEnvironment()('Integration - Failed Deployments Manager', func
     const deployment1 = buildRandomDeployment()
     const deployment2 = buildRandomDeployment()
 
-    await reportDeployment({
+    reportDeployment({
       repository,
       manager,
       deployment: deployment1,
       reason: FailureReason.DEPLOYMENT_ERROR,
       description: 'description'
     })
-    await reportDeployment({ repository, manager, deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
+    reportDeployment({ repository, manager, deployment: deployment2, reason: FailureReason.DEPLOYMENT_ERROR })
 
-    const [failed1, failed2]: Array<FailedDeployment> = await repository.run(
-      (db) => manager.getAllFailedDeployments(db.failedDeployments),
-      { priority: DB_REQUEST_PRIORITY.LOW }
-    )
+    const [failed1, failed2]: Array<FailedDeployment> = manager.getAllFailedDeployments()
 
     assertFailureWasDueToDeployment(failed1, deployment2)
     expect(failed1.reason).toBe(FailureReason.DEPLOYMENT_ERROR)
@@ -76,12 +73,9 @@ loadStandaloneTestEnvironment()('Integration - Failed Deployments Manager', func
     async (repository, manager) => {
       const deployment = buildRandomDeployment()
 
-      await reportDeployment({ repository, manager, deployment, reason: FailureReason.DEPLOYMENT_ERROR })
+      reportDeployment({ repository, manager, deployment, reason: FailureReason.DEPLOYMENT_ERROR })
 
-      await repository.run(
-        (db) => manager.reportSuccessfulDeployment(db.failedDeployments, deployment.entityType, deployment.entityId),
-        { priority: DB_REQUEST_PRIORITY.LOW }
-      )
+      manager.reportSuccessfulDeployment(deployment.entityType, deployment.entityId)
 
       const status = await getDeploymentStatus(repository, manager, deployment)
       expect(status).toBe(NoFailure.NOT_MARKED_AS_FAILED)
@@ -105,12 +99,9 @@ loadStandaloneTestEnvironment()('Integration - Failed Deployments Manager', func
     deployment: FakeDeployment
     reason: FailureReason
     description?: string
-  }): Promise<null> {
+  }): void {
     const { entityType, entityId } = deployment
-    return repository.run(
-      (db) => manager.reportFailure(db.failedDeployments, entityType, entityId, reason, [], description),
-      { priority: DB_REQUEST_PRIORITY.LOW }
-    )
+    manager.reportFailure(entityType, entityId, reason, [], description)
   }
 
   function getDeploymentStatus(
@@ -119,7 +110,7 @@ loadStandaloneTestEnvironment()('Integration - Failed Deployments Manager', func
     deployment: FakeDeployment
   ): Promise<DeploymentStatus> {
     return repository.run(
-      (db) => manager.getDeploymentStatus(db.failedDeployments, deployment.entityType, deployment.entityId),
+      (db) => manager.getDeploymentStatus(deployment.entityType, deployment.entityId),
       { priority: DB_REQUEST_PRIORITY.LOW }
     )
   }

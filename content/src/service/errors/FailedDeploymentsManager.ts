@@ -1,48 +1,40 @@
 import { EntityId, EntityType, Timestamp } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { FailedDeploymentsRepository } from '../../repository/extensions/FailedDeploymentsRepository'
+import {
+  findFailedDeployment,
+  getAllFailedDeployments,
+  reportFailure,
+  reportSuccessfulDeployment
+} from '../../ports/failedDeploymentsCache'
 
 /**
  * This manager will handle all failed deployments
  */
 export class FailedDeploymentsManager {
   reportFailure(
-    failedDeploymentsRepo: FailedDeploymentsRepository,
     entityType: EntityType,
     entityId: EntityId,
     reason: FailureReason,
     authChain: AuthChain,
     errorDescription?: string
-  ): Promise<null> {
-    return failedDeploymentsRepo.reportFailure(entityType, entityId, Date.now(), reason, authChain, errorDescription)
+  ): void {
+    return reportFailure({ entityType, entityId, failureTimestamp: Date.now(), reason, authChain, errorDescription })
   }
 
-  getAllFailedDeployments(failedDeploymentsRepo: FailedDeploymentsRepository): Promise<FailedDeployment[]> {
-    return failedDeploymentsRepo.getAllFailedDeployments()
+  getAllFailedDeployments(): FailedDeployment[] {
+    return getAllFailedDeployments()
   }
 
-  reportSuccessfulDeployment(
-    failedDeploymentsRepo: FailedDeploymentsRepository,
-    entityType: EntityType,
-    entityId: EntityId
-  ): Promise<null> {
-    return failedDeploymentsRepo.reportSuccessfulDeployment(entityType, entityId)
+  reportSuccessfulDeployment(entityType: EntityType, entityId: EntityId): boolean {
+    return reportSuccessfulDeployment(entityType, entityId)
   }
 
-  async getFailedDeployment(
-    failedDeploymentsRepo: FailedDeploymentsRepository,
-    entityType: EntityType,
-    entityId: EntityId
-  ): Promise<FailedDeployment | null> {
-    return failedDeploymentsRepo.findFailedDeployment(entityType, entityId)
+  getFailedDeployment(entityType: EntityType, entityId: EntityId): FailedDeployment | undefined {
+    return findFailedDeployment(entityType, entityId)
   }
 
-  async getDeploymentStatus(
-    failedDeploymentsRepo: FailedDeploymentsRepository,
-    entityType: EntityType,
-    entityId: EntityId
-  ): Promise<DeploymentStatus> {
-    const failedDeployment = await failedDeploymentsRepo.findFailedDeployment(entityType, entityId)
+  async getDeploymentStatus(entityType: EntityType, entityId: EntityId): Promise<DeploymentStatus> {
+    const failedDeployment = findFailedDeployment(entityType, entityId)
     return failedDeployment?.reason ?? NoFailure.NOT_MARKED_AS_FAILED
   }
 }

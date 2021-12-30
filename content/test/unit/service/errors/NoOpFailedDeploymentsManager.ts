@@ -5,14 +5,14 @@ import { FailedDeploymentsManager, FailureReason } from '../../../../src/service
 export class NoOpFailedDeploymentsManager {
   static build(): FailedDeploymentsManager {
     const mockedManager: FailedDeploymentsManager = mock(FailedDeploymentsManager)
-    when(mockedManager.getFailedDeployment(anything(), anything(), anything())).thenReturn(
-      Promise.resolve({
+    when(mockedManager.getFailedDeployment(anything(), anything())).thenReturn(
+      {
         entityType: EntityType.PROFILE,
         entityId: 'id',
         failureTimestamp: 20,
         reason: FailureReason.DEPLOYMENT_ERROR,
         authChain: []
-      })
+      }
     )
     return instance(mockedManager)
   }
