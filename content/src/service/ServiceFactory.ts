@@ -11,7 +11,7 @@ export class ServiceFactory {
     components: Pick<
       AppComponents,
       | 'pointerManager'
-      | 'failedDeploymentsManager'
+      | 'failedDeploymentsCache'
       | 'deploymentManager'
       | 'storage'
       | 'repository'

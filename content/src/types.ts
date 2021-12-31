@@ -11,12 +11,12 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { IBloomFilterComponent } from './ports/bloomFilter'
+import { IFailedDeploymentsCacheComponent } from './ports/FailedDeploymentsCache'
 import { IDatabaseComponent } from './ports/postgres'
 import { Repository } from './repository/Repository'
 import { AccessChecker } from './service/access/AccessChecker'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
-import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
@@ -51,7 +51,7 @@ export type AppComponents = {
   challengeSupervisor: IChallengeSupervisor
   contentCluster: ContentCluster
   pointerManager: PointerManager
-  failedDeploymentsManager: FailedDeploymentsManager
+  failedDeploymentsCache: IFailedDeploymentsCacheComponent
   deploymentManager: DeploymentManager
   storage: ContentStorage
   authenticator: ContentAuthenticator

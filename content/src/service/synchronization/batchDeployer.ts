@@ -3,7 +3,7 @@ import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetch
 import { IBaseComponent } from '@well-known-components/interfaces'
 import { deploymentExists, streamAllEntityIds } from '../../logic/deployments-queries'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
-import { FailureReason } from '../errors/FailedDeploymentsManager'
+import { FailureReason } from '../../ports/FailedDeploymentsCache'
 import { DeploymentContext } from '../Service'
 import { deployEntityFromRemoteServer } from './deployRemoteEntity'
 /**

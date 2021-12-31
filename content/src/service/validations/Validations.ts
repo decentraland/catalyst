@@ -3,7 +3,7 @@ import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
-import { DeploymentStatus, NoFailure } from '../errors/FailedDeploymentsManager'
+import { DeploymentStatus, NoFailure } from '../../ports/FailedDeploymentsCache'
 import { ServiceImpl } from '../ServiceImpl'
 import { DeploymentToValidate, ExternalCalls, Validation } from './Validator'
 
@@ -86,8 +86,7 @@ export class Validations {
 
   /** Make sure that the deployment actually failed, and that it can be re-deployed */
   static readonly MUST_HAVE_FAILED_BEFORE: Validation = async ({ deployment, externalCalls }) => {
-    const { type, id } = deployment.entity
-    const deploymentStatus: DeploymentStatus = await externalCalls.fetchDeploymentStatus(type, id)
+    const deploymentStatus: DeploymentStatus = await externalCalls.fetchDeploymentStatus(deployment.entity.id)
     if (deploymentStatus === NoFailure.NOT_MARKED_AS_FAILED) {
       return [`You are trying to fix an entity that is not marked as failed`]
     }

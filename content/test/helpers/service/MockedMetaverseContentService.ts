@@ -16,7 +16,7 @@ import { random } from 'faker'
 import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
-import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
+import { FailedDeployment } from '../../../src/ports/FailedDeploymentsCache'
 import { DeploymentPointerChanges } from '../../../src/service/pointers/types'
 import {
   DeploymentContext,

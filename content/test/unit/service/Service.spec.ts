@@ -6,6 +6,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
+import { createFailedDeploymentsCache } from '../../../src/ports/FailedDeploymentsCache'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
@@ -20,7 +21,6 @@ import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../storage/MockedStorage'
-import { NoOpFailedDeploymentsManager } from './errors/NoOpFailedDeploymentsManager'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 
 describe('Service', function () {
@@ -233,7 +233,7 @@ describe('Service', function () {
     const env = new Environment()
     const validator = new NoOpValidator()
     const deploymentManager = new DeploymentManager()
-    const failedDeploymentsManager = NoOpFailedDeploymentsManager.build()
+    const failedDeploymentsCache = createFailedDeploymentsCache()
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const logs = createLogComponent()
     const storage = new MockedStorage()
@@ -243,7 +243,7 @@ describe('Service', function () {
     return ServiceFactory.create({
       env,
       pointerManager,
-      failedDeploymentsManager,
+      failedDeploymentsCache,
       deploymentManager,
       storage,
       repository,

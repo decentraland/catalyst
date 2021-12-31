@@ -14,7 +14,7 @@ import { Readable } from 'stream'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
 import { DeploymentOptions } from './deployments/types'
-import { FailedDeployment } from './errors/FailedDeploymentsManager'
+import { FailedDeployment } from '../ports/FailedDeploymentsCache'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
