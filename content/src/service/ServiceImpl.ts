@@ -14,7 +14,7 @@ import {
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
-import { FailedDeployment, FailureReason } from '../ports/FailedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../src/ports/FailedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'

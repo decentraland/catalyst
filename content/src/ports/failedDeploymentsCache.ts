@@ -1,6 +1,16 @@
 import { EntityId, EntityType, Timestamp } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 
+export enum FailureReason {
+  DEPLOYMENT_ERROR = 'Deployment error' // During sync, there was an error during deployment. Could be due to a validation
+}
+
+export enum NoFailure {
+  NOT_MARKED_AS_FAILED
+}
+
+export type DeploymentStatus = FailureReason | NoFailure
+
 export type FailedDeployment = {
   entityType: EntityType
   entityId: EntityId
@@ -38,13 +48,3 @@ export function createFailedDeploymentsCache(): IFailedDeploymentsCacheComponent
     }
   }
 }
-
-export enum FailureReason {
-  DEPLOYMENT_ERROR = 'Deployment error' // During sync, there was an error during deployment. Could be due to a validation
-}
-
-export enum NoFailure {
-  NOT_MARKED_AS_FAILED
-}
-
-export type DeploymentStatus = FailureReason | NoFailure
