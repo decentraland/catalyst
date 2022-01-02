@@ -52,7 +52,26 @@ These are some of the more important configuration values:
 
 ## Run integration tests
 
+To run all tests:
+
     `yarn test:integration`
+
+Every integration test will start a docker container with a postgres database, that will be used just for that test and then it will be stopped and removed.
+
+In case you want to avoid this behaviour, you can start the postgres instance manually by executing `yarn start:db` and then adding `CI` env. variable to skip setup and tear down:
+
+```
+  yarn start:db
+  CI=true yarn test:integration
+```
+
+## Debugging tests
+
+To debug any test you may need the recommended VS Code extensions to discover jasmine tests, then use editor UI to run/debug them.
+
+Note: Typescript must compile to show up UI buttons, otherwise see jasmine console to see more information
+
+Here is an [example](https://user-images.githubusercontent.com/7695773/135918419-7417b26a-f4e9-4a14-96ae-22785c414b9e.gif) showing how it should look.
 
 ## Project Structure: History
 
