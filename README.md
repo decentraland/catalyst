@@ -32,19 +32,7 @@ yarn test
 
 ## Contributions
 
-If using Visual Studio, please download:
-
-- [`prettier` extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-- [`eslint` extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-
-### Install Husky
-
-```
-yarn add husky
-yarn husky install
-yarn husky add .husky/pre-commit "yarn lint-staged"
-```
-
+If using Visual Studio Code, please install recommended extensions listed in [this file](.vscode/extensions.json).
 
 ## Release
 
