@@ -12,7 +12,7 @@ import {
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { Response } from 'node-fetch'
-import { FailedDeployment, FailureReason } from '../../src/ports/FailedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../../src/ports/failedDeploymentsCache'
 import { DeploymentResult, isSuccessfulDeployment } from '../../src/service/Service'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestProgram } from './TestProgram'

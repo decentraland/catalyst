@@ -11,10 +11,10 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
+import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
 import { DeploymentOptions } from './deployments/types'
-import { FailedDeployment } from '../ports/FailedDeploymentsCache'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments

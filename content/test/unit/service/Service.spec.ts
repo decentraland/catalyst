@@ -6,7 +6,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
-import { createFailedDeploymentsCache } from '../../../src/ports/FailedDeploymentsCache'
+import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'

@@ -1,7 +1,7 @@
 import { createIdentity } from "eth-crypto";
 import { stub } from "sinon";
 import { EnvironmentConfig } from "../../../src/Environment";
-import { FailedDeployment, FailureReason } from "../../../src/ports/FailedDeploymentsCache";
+import { FailedDeployment, FailureReason } from "../../../src/ports/failedDeploymentsCache";
 import { assertDeploymentFailed, assertDeploymentFailsWith, assertEntitiesAreActiveOnServer } from "../E2EAssertions";
 import { loadTestEnvironment } from "../E2ETestEnvironment";
 import { awaitUntil, buildDeployData, buildDeployDataAfterEntity } from "../E2ETestUtils";

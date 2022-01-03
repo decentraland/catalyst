@@ -1,5 +1,5 @@
 import { ContentFileHash, Entity, EntityId, EntityType, EntityVersion } from 'dcl-catalyst-commons'
-import { DeploymentStatus } from '../../ports/FailedDeploymentsCache'
+import { DeploymentStatus } from '../../ports/failedDeploymentsCache'
 import { AccessChecker } from '../access/AccessChecker'
 import { ContentAuthenticator } from '../auth/Authenticator'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'

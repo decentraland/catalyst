@@ -3,7 +3,7 @@ import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
-import { DeploymentStatus, NoFailure } from '../../ports/FailedDeploymentsCache'
+import { DeploymentStatus, NoFailure } from '../../ports/failedDeploymentsCache'
 import { ServiceImpl } from '../ServiceImpl'
 import { DeploymentToValidate, ExternalCalls, Validation } from './Validator'
 
