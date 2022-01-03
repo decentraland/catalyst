@@ -20,6 +20,7 @@ export class ServiceFactory {
       | 'env'
       | 'logs'
       | 'authenticator'
+      | 'database'
     >
   ): ServiceImpl {
     const { env } = components

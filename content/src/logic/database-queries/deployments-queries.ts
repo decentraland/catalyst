@@ -162,7 +162,7 @@ export function getHistoricalDeploymentsQuery(
 
   if (filters?.pointers && filters.pointers.length > 0) {
     const pointers = filters.pointers.map((p) => p.toLowerCase())
-    whereClause.push(SQL`dep1.entity_pointers && ARRAY[${pointers}]`)
+    whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
   }
 
   let where = SQL``

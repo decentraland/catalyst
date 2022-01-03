@@ -96,7 +96,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     validator,
     env,
     logs,
-    authenticator
+    authenticator,
+    database
   })
 
   const denylist = new ActiveDenylist(

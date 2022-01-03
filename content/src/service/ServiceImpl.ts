@@ -20,6 +20,7 @@ import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
+import { getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
 import {
@@ -55,6 +56,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'repository'
       | 'logs'
       | 'authenticator'
+      | 'database'
     >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
@@ -202,7 +204,7 @@ export class ServiceImpl implements MetaverseContentService {
             { entity, auditInfo, files: hashes },
             context,
             {
-              areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
+              areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity),
               fetchDeploymentStatus: (entityId) =>
                 Promise.resolve(this.components.failedDeploymentsCache.getDeploymentStatus(entityId)),
               isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
@@ -307,17 +309,20 @@ export class ServiceImpl implements MetaverseContentService {
     })
   }
 
-  async getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]> {
-    const deployments = await this.getDeployments({ filters: { entityIds: ids } }, task)
+  async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
+    const deployments = await this.getDeployments({ filters: { entityIds: ids } })
     return this.mapDeploymentsToEntities(deployments)
   }
 
-  async getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]> {
+  async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
     const allEntities = await this.cache.get(type, pointers, async (type, pointers) => {
-      const deployments = await this.getDeployments(
-        { filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true } },
-        task
-      )
+      console.log('type, pointers', type, pointers)
+      console.log('filters', JSON.stringify({ entityTypes: [type], pointers, onlyCurrentlyPointed: true }, null, 4))
+      const deployments = await this.getDeployments({
+        filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
+      })
+      console.log('deployments', deployments)
+
       const entities = this.mapDeploymentsToEntities(deployments)
       const entries: [Pointer, Entity][][] = entities.map((entity) =>
         entity.pointers.map((pointer) => [pointer, entity])
@@ -352,12 +357,11 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   /** Check if there are newer entities on the given entity's pointers */
-  private async areThereNewerEntitiesOnPointers(entity: Entity, transaction: Database): Promise<boolean> {
+  private async areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await this.getDeployments(
-      { filters: { entityTypes: [entity.type], pointers: entity.pointers } },
-      transaction
-    )
+    const { deployments: lastDeployments } = await this.getDeployments({
+      filters: { entityTypes: [entity.type], pointers: entity.pointers }
+    })
     for (const lastDeployment of lastDeployments) {
       if (happenedBefore(entity, lastDeployment)) {
         return true
@@ -441,17 +445,8 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
-  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.taskIf((task) =>
-          this.components.deploymentManager.getDeployments(task.deployments, task.content, task.migrationData, options)
-        ),
-      {
-        priority: DB_REQUEST_PRIORITY.HIGH
-      }
-    )
+  getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
+    return getDeployments(this.components, options)
   }
 
   // This endpoint is for debugging purposes

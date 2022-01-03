@@ -4,9 +4,10 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { Environment } from '../../../src/Environment'
+import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
@@ -239,6 +240,18 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
+    const database = await createDatabaseComponent(
+      { logs },
+      {
+        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
+        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
+        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+      }
+    )
 
     return ServiceFactory.create({
       env,
@@ -250,7 +263,8 @@ describe('Service', function () {
       validator,
       metrics,
       logs,
-      authenticator
+      authenticator,
+      database
     })
   }
 
