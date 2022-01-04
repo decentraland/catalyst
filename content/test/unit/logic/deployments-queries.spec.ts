@@ -147,7 +147,7 @@ describe('deployments-queries', () => {
         const pointers = ['jOn', 'aGus']
         const result = getHistoricalDeploymentsQuery(offset, limit, { pointers })
 
-        expect(result.text).toContain(`dep1.entity_pointers && ARRAY[$1]`)
+        expect(result.text).toContain(`dep1.entity_pointers && $1`)
         expect(result.values).toEqual([pointers.map((x) => x.toLowerCase()), limit, offset])
       })
     })

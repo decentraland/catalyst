@@ -10,6 +10,7 @@ import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymen
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
+import * as deployments from '../../../src/service/deployments/deployments'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 import {
   DeploymentContext,
@@ -118,7 +119,7 @@ describe('Service', function () {
 
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+    const serviceSpy = spyOn(deployments, 'getDeployments').and.callFake(() =>
       Promise.resolve({
         deployments: [fakeDeployment()],
         filters: {},
@@ -139,9 +140,9 @@ describe('Service', function () {
 
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+    const serviceSpy = spyOn(deployments, 'getDeployments').and.callFake(() =>
       Promise.resolve({
-        deployments: [],
+        deployments: [fakeDeployment()],
         filters: {},
         pagination: { offset: 0, limit: 0, moreData: true }
       })
@@ -149,6 +150,7 @@ describe('Service', function () {
 
     // Call the first time
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
@@ -168,7 +170,7 @@ describe('Service', function () {
         ])
       )
     )
-    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
+    const serviceSpy = spyOn(deployments, 'getDeployments').and.callFake(() =>
       Promise.resolve({
         deployments: [fakeDeployment()],
         filters: {},
@@ -258,7 +260,7 @@ describe('Service', function () {
   }
 
   function expectSpyToBeCalled(serviceSpy: jasmine.Spy, pointers: string[]) {
-    expect(serviceSpy).toHaveBeenCalledWith({
+    expect(serviceSpy).toHaveBeenCalledWith(jasmine.anything(), {
       filters: { entityTypes: [EntityType.SCENE], pointers: pointers, onlyCurrentlyPointed: true }
     })
   }

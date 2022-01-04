@@ -183,11 +183,6 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     const newFailedDeployments: FailedDeployment[] = await server2.getFailedDeployments()
     expect(newFailedDeployments.length).toBe(0)
 
-    console.log(
-      'server2.getDeployments()',
-      await server2.getEntitiesByPointers(entityBeingDeployed.type, entityBeingDeployed.pointers)
-    )
-
     // Assert entity is there
     await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
 
