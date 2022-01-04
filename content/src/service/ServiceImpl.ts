@@ -14,6 +14,7 @@ import {
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
+import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
@@ -21,7 +22,6 @@ import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
-import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
 import {
   DeploymentContext,
   DeploymentFiles,
@@ -49,7 +49,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'metrics'
       | 'storage'
       | 'pointerManager'
-      | 'failedDeploymentsManager'
+      | 'failedDeploymentsCache'
       | 'deploymentManager'
       | 'validator'
       | 'repository'
@@ -203,8 +203,8 @@ export class ServiceImpl implements MetaverseContentService {
             context,
             {
               areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity, transaction),
-              fetchDeploymentStatus: (type, id) =>
-                this.components.failedDeploymentsManager.getDeploymentStatus(transaction.failedDeployments, type, id),
+              fetchDeploymentStatus: (entityId) =>
+                Promise.resolve(this.components.failedDeploymentsCache.getDeploymentStatus(entityId)),
               isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
               isEntityDeployedAlready: (): Promise<boolean> => Promise.resolve(isEntityAlreadyDeployed),
               isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
@@ -279,11 +279,7 @@ export class ServiceImpl implements MetaverseContentService {
           }
 
           // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-          await this.components.failedDeploymentsManager.reportSuccessfulDeployment(
-            transaction.failedDeployments,
-            entity.type,
-            entity.id
-          )
+          this.components.failedDeploymentsCache.reportSuccessfulDeployment(entity.id)
 
           return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
         }),
@@ -297,22 +293,18 @@ export class ServiceImpl implements MetaverseContentService {
     reason: FailureReason,
     authChain: AuthChain,
     errorDescription?: string
-  ): Promise<null> {
+  ): void {
     ServiceImpl.LOGGER.warn(
       `Deployment of entity (${entityType}, ${entityId}) failed. Reason was: '${errorDescription}'`
     )
-    return this.components.repository.run(
-      (db) =>
-        this.components.failedDeploymentsManager.reportFailure(
-          db.failedDeployments,
-          entityType,
-          entityId,
-          reason,
-          authChain,
-          errorDescription
-        ),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+    return this.components.failedDeploymentsCache.reportFailure({
+      entityType,
+      entityId,
+      reason,
+      authChain,
+      errorDescription,
+      failureTimestamp: Date.now()
+    })
   }
 
   async getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]> {
@@ -476,13 +468,8 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
-  getAllFailedDeployments(): Promise<FailedDeployment[]> {
-    return this.components.repository.run(
-      (db) => this.components.failedDeploymentsManager.getAllFailedDeployments(db.failedDeployments),
-      {
-        priority: DB_REQUEST_PRIORITY.LOW
-      }
-    )
+  getAllFailedDeployments(): FailedDeployment[] {
+    return this.components.failedDeploymentsCache.getAllFailedDeployments()
   }
 
   listenToDeployments(listener: DeploymentListener): void {

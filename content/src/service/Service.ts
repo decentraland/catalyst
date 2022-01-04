@@ -11,10 +11,10 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
+import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { ContentItem } from '../storage/ContentStorage'
 import { DeploymentOptions } from './deployments/types'
-import { FailedDeployment } from './errors/FailedDeploymentsManager'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
@@ -35,7 +35,7 @@ export interface MetaverseContentService {
   storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
   getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
-  getAllFailedDeployments(): Promise<FailedDeployment[]>
+  getAllFailedDeployments(): FailedDeployment[]
   getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
@@ -45,7 +45,7 @@ export interface MetaverseContentService {
     reason: string,
     authChain: AuthChain,
     errorDescription?: string
-  ): Promise<null>
+  ): void
   getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 

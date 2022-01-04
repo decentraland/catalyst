@@ -12,7 +12,7 @@ import {
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { Response } from 'node-fetch'
-import { FailedDeployment, FailureReason } from '../../src/service/errors/FailedDeploymentsManager'
+import { FailedDeployment, FailureReason } from '../../src/ports/failedDeploymentsCache'
 import { DeploymentResult, isSuccessfulDeployment } from '../../src/service/Service'
 import { assertPromiseIsRejected, assertPromiseRejectionGeneric } from '../helpers/PromiseAssertions'
 import { TestProgram } from './TestProgram'
@@ -119,6 +119,7 @@ export async function assertDeploymentsAreReported(
 
 export function assertDeploymentFailsWith(promiseExecution: () => Promise<any>, errorMessage: string) {
   return assertPromiseRejectionGeneric(promiseExecution, (error) => {
+    console.debug(error)
     expect(error.endsWith(`Got status 400. Response was '${JSON.stringify({ errors: [errorMessage] })}'`)).toBeTruthy()
   })
 }

@@ -12,8 +12,8 @@ import {
 import * as EthCrypto from 'eth-crypto'
 import ms from 'ms'
 import sharp from 'sharp'
+import { NoFailure } from '../../../../src/ports/failedDeploymentsCache'
 import { ContentAuthenticator } from '../../../../src/service/auth/Authenticator'
-import { NoFailure } from '../../../../src/service/errors/FailedDeploymentsManager'
 import { DEFAULT_THUMBNAIL_SIZE, Validations } from '../../../../src/service/validations/Validations'
 import {
   DeploymentToValidate,

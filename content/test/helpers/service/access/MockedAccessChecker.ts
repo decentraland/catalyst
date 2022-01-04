@@ -23,7 +23,9 @@ export class MockedAccessChecker implements AccessChecker {
 }
 
 export function makeMockedAccessChecker(components: Pick<AppComponents, 'accessChecker'>, returnErrors?: boolean) {
-  if (!returnErrors) {
-    stub(components.accessChecker, 'hasAccess').resolves([])
+  const response: string[] = []
+  if (returnErrors) {
+    response.push('anyError')
   }
+  stub(components.accessChecker, 'hasAccess').resolves(response)
 }

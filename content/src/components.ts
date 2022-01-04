@@ -12,14 +12,13 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createBloomFilterComponent } from './ports/bloomFilter'
-// import { createBloomFilterComponent } from './ports/bloomFilter'
+import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
-import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
@@ -82,15 +81,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointerManager = new PointerManager()
 
   const accessChecker = AccessCheckerImplFactory.create({ authenticator, catalystFetcher, env, logs })
-  const failedDeploymentsManager = new FailedDeploymentsManager()
 
   const validator = ValidatorFactory.create({ authenticator, accessChecker, env })
+
+  const failedDeploymentsCache = createFailedDeploymentsCache()
 
   let deployer: MetaverseContentService = ServiceFactory.create({
     metrics,
     storage,
     deploymentManager,
-    failedDeploymentsManager,
+    failedDeploymentsCache,
     pointerManager,
     repository,
     validator,
@@ -232,7 +232,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     snapshotManager,
     contentCluster,
     deploymentManager,
-    failedDeploymentsManager,
+    failedDeploymentsCache,
     pointerManager,
     storage,
     authenticator,

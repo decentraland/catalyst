@@ -54,7 +54,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     reason: string,
     authChain: AuthChain,
     errorDescription?: string
-  ): Promise<null> {
+  ): void {
     return this.service.reportErrorDuringSync(entityType, entityId, reason, authChain, errorDescription)
   }
 
