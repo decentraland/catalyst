@@ -90,8 +90,6 @@ describe('deployments service', () => {
         .resolves({ rows: migrationData, rowCount: 2 })
 
       result = await getDeployments(components, options)
-
-      console.log('RESULT', result)
     })
 
     afterAll(() => {

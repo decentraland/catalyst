@@ -316,12 +316,9 @@ export class ServiceImpl implements MetaverseContentService {
 
   async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
     const allEntities = await this.cache.get(type, pointers, async (type, pointers) => {
-      console.log('type, pointers', type, pointers)
-      console.log('filters', JSON.stringify({ entityTypes: [type], pointers, onlyCurrentlyPointed: true }, null, 4))
       const deployments = await this.getDeployments({
         filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
       })
-      console.log('deployments', deployments)
 
       const entities = this.mapDeploymentsToEntities(deployments)
       const entries: [Pointer, Entity][][] = entities.map((entity) =>

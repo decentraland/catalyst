@@ -187,7 +187,6 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
       'server2.getDeployments()',
       await server2.getEntitiesByPointers(entityBeingDeployed.type, entityBeingDeployed.pointers)
     )
-    console.log('LLEGA HASTA ACA', entityBeingDeployed)
 
     // Assert entity is there
     await assertEntitiesAreActiveOnServer(server2, entityBeingDeployed)
