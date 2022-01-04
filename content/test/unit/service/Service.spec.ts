@@ -4,7 +4,7 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { Environment, EnvironmentConfig } from '../../../src/Environment'
+import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
@@ -240,18 +240,7 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
-    const database = await createDatabaseComponent(
-      { logs },
-      {
-        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
-        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
-        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
-        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
-        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
-        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
-      }
-    )
+    const database = await createDatabaseComponent({ logs, env })
 
     return ServiceFactory.create({
       env,

@@ -24,13 +24,9 @@ describe('Integration - Server', () => {
   })
 
   afterAll(async () => {
-    try {
-      await testEnv.clearDatabases()
-      await testEnv.stopAllComponentsFromAllServersAndDeref()
-      await testEnv.stop()
-    } catch (error) {
-      console.warn('failed at stopping the test env')
-    }
+    await testEnv.clearDatabases()
+    await testEnv.stopAllComponentsFromAllServersAndDeref()
+    await testEnv.stop()
   })
 
   it('starts the server', async () => {

@@ -57,18 +57,7 @@ export class E2ETestEnvironment {
     }
 
     const logs = createLogComponent()
-    this.database = await createDatabaseComponent(
-      { logs },
-      {
-        port: this.sharedEnv.getConfig<number>(EnvironmentConfig.PSQL_PORT),
-        host: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_HOST),
-        database: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
-        user: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_USER),
-        password: this.sharedEnv.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
-        idleTimeoutMillis: this.sharedEnv.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-        query_timeout: this.sharedEnv.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
-      }
-    )
+    this.database = await createDatabaseComponent({ logs, env: this.sharedEnv })
   }
 
   async stop(): Promise<void> {

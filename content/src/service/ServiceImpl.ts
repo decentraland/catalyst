@@ -310,13 +310,13 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
-    const deployments = await this.getDeployments({ filters: { entityIds: ids } })
+    const deployments = await getDeployments(this.components, { filters: { entityIds: ids } })
     return this.mapDeploymentsToEntities(deployments)
   }
 
   async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
     const allEntities = await this.cache.get(type, pointers, async (type, pointers) => {
-      const deployments = await this.getDeployments({
+      const deployments = await getDeployments(this.components, {
         filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
       })
 
@@ -356,7 +356,7 @@ export class ServiceImpl implements MetaverseContentService {
   /** Check if there are newer entities on the given entity's pointers */
   private async areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await this.getDeployments({
+    const { deployments: lastDeployments } = await getDeployments(this.components, {
       filters: { entityTypes: [entity.type], pointers: entity.pointers }
     })
     for (const lastDeployment of lastDeployments) {

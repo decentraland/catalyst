@@ -79,7 +79,7 @@ describe('deployments service', () => {
       }
     }
 
-    beforeAll(async () => {
+    beforeAll(() => {
       components = { database: { queryWithValues: () => {} } as any }
       stub(components.database, 'queryWithValues')
         .onFirstCall()
@@ -88,8 +88,6 @@ describe('deployments service', () => {
         .resolves({ rows: contentFiles, rowCount: 2 })
         .onThirdCall()
         .resolves({ rows: migrationData, rowCount: 2 })
-
-      result = await getDeployments(components, options)
     })
 
     afterAll(() => {
@@ -97,6 +95,8 @@ describe('deployments service', () => {
     })
 
     it('should return the deployments result of passing the correct filters to get the historical deployments', async () => {
+      result = await getDeployments(components, options)
+
       expect(result).toEqual(
         jasmine.objectContaining({
           deployments: jasmine.arrayContaining([
