@@ -5,15 +5,21 @@ import { getHistoricalDeployments } from '../../logic/database-queries/deploymen
 import { getMigrationData } from '../../logic/database-queries/migration-data-queries'
 import { DeploymentOptions } from './types'
 
-const MAX_HISTORY_LIMIT = 500
+export const MAX_HISTORY_LIMIT = 500
+
+export function getCuratedOffset(options?: DeploymentOptions): number {
+  return options?.offset && options.offset >= 0 ? options.offset : 0
+}
+export function getCuratedLimit(options?: DeploymentOptions): number {
+  return options?.limit && options.limit > 0 && options.limit <= MAX_HISTORY_LIMIT ? options.limit : MAX_HISTORY_LIMIT
+}
 
 export async function getDeployments(
   components: Pick<AppComponents, 'database'>,
   options?: DeploymentOptions
 ): Promise<PartialDeploymentHistory<Deployment>> {
-  const curatedOffset = options?.offset && options.offset >= 0 ? options.offset : 0
-  const curatedLimit =
-    options?.limit && options.limit > 0 && options.limit <= MAX_HISTORY_LIMIT ? options.limit : MAX_HISTORY_LIMIT
+  const curatedOffset = getCuratedOffset(options)
+  const curatedLimit = getCuratedLimit(options)
 
   const deploymentsWithExtra = await getHistoricalDeployments(
     components,

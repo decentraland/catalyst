@@ -3,7 +3,7 @@ import SQL from 'sql-template-strings'
 import { DeploymentId } from 'src/repository/extensions/DeploymentsRepository'
 import { AppComponents } from 'src/types'
 
-interface ContentFilesRow {
+export interface ContentFilesRow {
   deployment: number
   key: string
   content_hash: string

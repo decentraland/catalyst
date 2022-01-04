@@ -26,7 +26,7 @@ export interface HistoricalDeployment {
   overwrittenBy?: string
 }
 
-interface HistoricalDeploymentsRow {
+export interface HistoricalDeploymentsRow {
   id: number
   deployer_address: string
   version: EntityVersion

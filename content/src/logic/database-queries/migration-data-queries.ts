@@ -2,7 +2,7 @@ import SQL from 'sql-template-strings'
 import { DeploymentId } from 'src/repository/extensions/DeploymentsRepository'
 import { AppComponents } from 'src/types'
 
-interface MigrationDataRow {
+export interface MigrationDataRow {
   deployment: number
   original_metadata: any
 }
