@@ -1,7 +1,7 @@
 import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { FailedDeployment, FailureReason } from '../../../src/service/errors/FailedDeploymentsManager'
+import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
 import { MockedAccessChecker } from '../../helpers/service/access/MockedAccessChecker'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
