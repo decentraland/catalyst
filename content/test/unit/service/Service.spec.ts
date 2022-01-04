@@ -269,12 +269,9 @@ describe('Service', function () {
   }
 
   function expectSpyToBeCalled(serviceSpy: jasmine.Spy, pointers: string[]) {
-    expect(serviceSpy).toHaveBeenCalledWith(
-      {
-        filters: { entityTypes: [EntityType.SCENE], pointers: pointers, onlyCurrentlyPointed: true }
-      },
-      undefined
-    )
+    expect(serviceSpy).toHaveBeenCalledWith({
+      filters: { entityTypes: [EntityType.SCENE], pointers: pointers, onlyCurrentlyPointed: true }
+    })
   }
 
   function fakeDeployment(): Deployment {
