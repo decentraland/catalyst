@@ -1118,7 +1118,7 @@
   dependencies:
     node-fetch "*"
 
-"@types/node-fetch@^2.5.10":
+"@types/node-fetch@^2.5.10", "@types/node-fetch@^2.5.12":
   version "2.5.12"
   resolved "https://registry.npmjs.org/@types/node-fetch/-/node-fetch-2.5.12.tgz"
   integrity sha512-MKgC4dlq4kKNa/mYrwpKfzQMB5X3ee5U6fSprkKpToBqBmX4nFZL9cW5jl6sWn+xpRJ7ypWh2yyqqr8UUCstSw==
@@ -1140,6 +1140,11 @@
   version "14.17.15"
   resolved "https://registry.npmjs.org/@types/node/-/node-14.17.15.tgz"
   integrity sha512-D1sdW0EcSCmNdLKBGMYb38YsHUS6JcM7yQ6sLQ9KuZ35ck7LYCKE7kYFHOO59ayFOY3zobWVZxf4KXhYHcHYFA==
+
+"@types/node@^14.17.16":
+  version "14.18.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.5.tgz#0dd636fe7b2c6055cbed0d4ca3b7fb540f130a96"
+  integrity sha512-LMy+vDDcQR48EZdEx5wRX1q/sEl6NdGuHXPnfeL8ixkwCOSZ2qnIyIZmcCbdX0MeRqHhAcHmX+haCbrS8Run+A==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.1"
@@ -1340,6 +1345,16 @@
     node-fetch "^2.6.2"
     on-finished "^2.3.0"
     path-to-regexp "^6.2.0"
+
+"@well-known-components/interfaces@@next":
+  version "1.1.1-20220105134657.commit-c2396a6"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1-20220105134657.commit-c2396a6.tgz#4e1b6b4a1d548770daa4bbc72cd1bb68cdc17d14"
+  integrity sha512-wb1Tun1nvVwacBXTFpvJaAEv3/zBjxOCBn5+/clcXwycUcKoFGdMkc/xfATsy8b+Ro3zMd0Y6B2RJvHdnaT5AA==
+  dependencies:
+    "@types/node" "^14.17.16"
+    "@types/node-fetch" "^2.5.12"
+    fp-future "^1.0.1"
+    typed-url-params "^1.0.1"
 
 "@well-known-components/interfaces@^1.1.0":
   version "1.1.0"
