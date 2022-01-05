@@ -1,6 +1,6 @@
 import { stub } from 'sinon'
-import { AppComponents } from 'src/types'
 import { AccessChecker, AccessParams } from '../../../../src/service/access/AccessChecker'
+import { AppComponents } from '../../../../src/types'
 
 export class MockedAccessChecker implements AccessChecker {
   private returnErrors: boolean = false

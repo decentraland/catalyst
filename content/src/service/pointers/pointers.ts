@@ -1,7 +1,7 @@
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
-import { AppComponents } from 'src/types'
 import { getPointerChangesForDeployments } from '../../logic/deployment-deltas-queries'
 import { getHistoricalDeployments } from '../../logic/deployments-queries'
+import { AppComponents } from '../../types'
 import { PointerChangesOptions } from '../deployments/types'
 import { DELTA_POINTER_RESULT } from '../pointers/PointerManager'
 import { DeploymentPointerChanges, PartialDeploymentPointerChanges, PointerChanges } from './types'
