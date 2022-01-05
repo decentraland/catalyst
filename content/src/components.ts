@@ -44,18 +44,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   }
 
-  const database = await createDatabaseComponent(
-    { logs },
-    {
-      port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
-      host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
-      database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
-      user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
-      password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
-      idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-      query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
-    }
-  )
+  const database = await createDatabaseComponent({ logs, env })
 
   const systemPropertiesManager = new SystemPropertiesManager(repository)
 
@@ -96,7 +85,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     validator,
     env,
     logs,
-    authenticator
+    authenticator,
+    database
   })
 
   const denylist = new ActiveDenylist(

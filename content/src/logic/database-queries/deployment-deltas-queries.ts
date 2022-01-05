@@ -1,9 +1,9 @@
 import { EntityId, Pointer } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import SQL from 'sql-template-strings'
-import { DeploymentId } from '../repository/extensions/DeploymentsRepository'
-import { DELTA_POINTER_RESULT } from '../service/pointers/PointerManager'
-import { AppComponents } from '../types'
+import { AppComponents } from 'src/types'
+import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
+import { DELTA_POINTER_RESULT } from '../../service/pointers/PointerManager'
 
 export interface DeploymentDeltasRow {
   deployment: number

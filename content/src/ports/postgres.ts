@@ -1,8 +1,10 @@
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
-import { IBaseComponent, IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
+import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
 import { Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
+import { AppComponents } from 'src/types'
+import { EnvironmentConfig } from '../Environment'
 
 export interface IDatabaseComponent extends IDatabase {
   queryWithValues<T>(sql: SQLStatement): Promise<IDatabase.IQueryResult<T>>
@@ -29,16 +31,26 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
 }
 
 export async function createDatabaseComponent(
-  components: {
-    logs: ILoggerComponent
-  },
-  options: PoolConfig
+  components: Pick<AppComponents, 'logs' | 'env'>,
+  options?: PoolConfig
 ): Promise<IDatabaseComponent & IBaseComponent> {
   const { logs } = components
   const logger = logs.getLogger('database-component')
 
+  const defaultOptions = {
+    port: components.env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
+    host: components.env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
+    database: components.env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
+    user: components.env.getConfig<string>(EnvironmentConfig.PSQL_USER),
+    password: components.env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
+    idleTimeoutMillis: components.env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
+    query_timeout: components.env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
+  }
+
+  const finalOptions = { ...defaultOptions, ...options }
+
   // Config
-  const pool: Pool = new Pool(options)
+  const pool: Pool = new Pool(finalOptions)
 
   // Methods
   async function start() {

@@ -127,7 +127,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   async getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return this.repository.task(
       async (task) => {
-        const deploymentHistory = await this.service.getDeployments(options, task)
+        const deploymentHistory = await this.service.getDeployments(options)
         // Prepare holders
         const entityTargetsByEntity: Map<EntityId, DenylistTarget> = new Map()
         const contentTargetsByEntity: Map<EntityId, Map<ContentFileHash, DenylistTarget>> = new Map()
@@ -234,7 +234,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
   getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
     return this.repository.task(
       async (task) => {
-        const entities: Entity[] = await this.service.getEntitiesByIds(ids, task)
+        const entities: Entity[] = await this.service.getEntitiesByIds(ids)
         return this.sanitizeEntities(task.denylist, entities)
       },
       {
@@ -249,7 +249,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
         const nonDenylistedPointers: Pointer[] = await this.filterDenylisted(task.denylist, pointers, (pointer) =>
           buildPointerTarget(type, pointer)
         )
-        const entities: Entity[] = await this.service.getEntitiesByPointers(type, nonDenylistedPointers, task)
+        const entities: Entity[] = await this.service.getEntitiesByPointers(type, nonDenylistedPointers)
         return this.sanitizeEntities(task.denylist, entities)
       },
       {

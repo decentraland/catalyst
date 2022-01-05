@@ -1,7 +1,10 @@
 import { IDatabase } from '@well-known-components/interfaces'
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { stub } from 'sinon'
-import { DeploymentDeltasRow, getPointerChangesForDeployments } from '../../../src/logic/deployment-deltas-queries'
+import {
+  DeploymentDeltasRow,
+  getPointerChangesForDeployments
+} from '../../../src/logic/database-queries/deployment-deltas-queries'
 import { IDatabaseComponent } from '../../../src/ports/postgres'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 

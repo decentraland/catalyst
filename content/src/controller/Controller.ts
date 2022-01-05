@@ -248,6 +248,7 @@ export class Controller {
       return
     }
 
+    // don't replace this until the denylist is implemented outside of the service
     const { deployments } = await this.components.deployer.getDeployments({
       fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type] }
@@ -504,6 +505,8 @@ export class Controller {
       limit: limit,
       lastId: lastId
     }
+
+    // don't replace this until the denylist is implemented outside of the service
     const { deployments, filters, pagination } = await this.components.deployer.getDeployments(deploymentOptions)
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)

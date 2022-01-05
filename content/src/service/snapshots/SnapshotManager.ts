@@ -5,7 +5,7 @@ import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-co
 import future from 'fp-future'
 import * as fs from 'fs'
 import * as path from 'path'
-import { streamActiveDeployments } from '../../logic/snapshots-queries'
+import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { compressContentFile } from '../../storage/compression'
 import { AppComponents, IStatusCapableComponent } from '../../types'
