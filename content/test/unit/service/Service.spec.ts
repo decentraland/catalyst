@@ -67,14 +67,14 @@ describe('Service', function () {
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     const service = await buildService()
-    spyOn(service, 'getEntityById').and.resolveTo(undefined)
-    const storageSpy = spyOn(service.components.storage, 'store').and.callThrough()
-    spyOn(service.components.deploymentManager, 'saveDeployment').and.callFake(async (...args) => {
+    jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
+    const storageSpy = jest.spyOn(service.components.storage, 'store')
+    jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
     })
-    spyOn(service.components.deploymentManager, 'savePointerChanges').and.resolveTo()
-    spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').and.resolveTo()
+    jest.spyOn(service.components.deploymentManager, 'savePointerChanges').mockResolvedValue()
+    jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     const deploymentResult: DeploymentResult = await service.deployEntity(
       [entityFile, randomFile],
@@ -97,19 +97,18 @@ describe('Service', function () {
 
   it(`When a file is already uploaded, then don't try to upload it again`, async () => {
     const service = await buildService()
-    spyOn(service, 'getEntityById').and.resolveTo(undefined)
+    jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
 
     // Consider the random file as already uploaded, but not the entity file
-    spyOn(service.components.storage, 'exist').and.callFake((ids: string[]) =>
-      Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash])))
-    )
-    const storeSpy = spyOn(service.components.storage, 'store')
-    spyOn(service.components.deploymentManager, 'saveDeployment').and.callFake(async (...args) => {
+    jest.spyOn(service.components.storage, 'exist').mockImplementation((ids: string[]) =>
+      Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
+    const storeSpy = jest.spyOn(service.components.storage, 'store')
+    jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
     })
-    spyOn(service.components.deploymentManager, 'savePointerChanges').and.resolveTo()
-    spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').and.resolveTo()
+    jest.spyOn(service.components.deploymentManager, 'savePointerChanges').mockResolvedValue()
+    jest.spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten').mockResolvedValue()
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
@@ -119,7 +118,7 @@ describe('Service', function () {
 
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = spyOn(deployments, 'getDeployments').and.callFake(() =>
+    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
       Promise.resolve({
         deployments: [fakeDeployment()],
         filters: {},
@@ -133,14 +132,14 @@ describe('Service', function () {
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
-    serviceSpy.calls.reset()
+    serviceSpy.mockReset()
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
   it(`Given a pointer with no deployment, when is asked twice, then the second time cached the result is returned`, async () => {
     const service = await buildService()
-    const serviceSpy = spyOn(deployments, 'getDeployments').and.callFake(() =>
+    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
       Promise.resolve({
         deployments: [fakeDeployment()],
         filters: {},
@@ -154,7 +153,7 @@ describe('Service', function () {
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
-    serviceSpy.calls.reset()
+    serviceSpy.mockReset()
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
@@ -162,7 +161,7 @@ describe('Service', function () {
   // TODO [well-known-components]: evaluate if this test makes sense
   xit(`When a pointer is affected by a deployment, then it is invalidated from the cache`, async () => {
     const service = await buildService()
-    spyOn(service.components.pointerManager, 'referenceEntityFromPointers').and.callFake(() =>
+    jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
       Promise.resolve(
         new Map([
           [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.CLEARED }],
@@ -170,14 +169,14 @@ describe('Service', function () {
         ])
       )
     )
-    const serviceSpy = spyOn(deployments, 'getDeployments').and.callFake(() =>
+    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
       Promise.resolve({
         deployments: [fakeDeployment()],
         filters: {},
         pagination: { offset: 0, limit: 0, moreData: true }
       })
     )
-    spyOn(service, 'getEntityById').and.resolveTo({ entityId: entity.id, localTimestamp: entity.timestamp })
+    jest.spyOn(service, 'getEntityById').mockResolvedValue({ entityId: entity.id, localTimestamp: entity.timestamp })
 
     // Call the first time
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
@@ -187,7 +186,7 @@ describe('Service', function () {
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
     // Reset spy and call again
-    serviceSpy.calls.reset()
+    serviceSpy.mockReset()
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
   })
@@ -195,21 +194,19 @@ describe('Service', function () {
   // TODO [well-known-components]: evaluate if this test makes sense
   xit(`When a pointer has no entity after a deployment, then it is invalidated from the cache`, async () => {
     const service = await buildService()
-    spyOn(service.components.pointerManager, 'referenceEntityFromPointers').and.callFake(() =>
-      Promise.resolve(
-        new Map([
-          [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
-          [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.SET }]
-        ])
-      )
-    )
-    const serviceSpy = spyOn(service, 'getDeployments').and.callFake(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
-    )
+    jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
+    Promise.resolve(
+      new Map([
+        [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
+        [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.SET }]
+      ])
+    ))
+    const serviceSpy = jest.spyOn(service, 'getDeployments').mockImplementation(() =>
+    Promise.resolve({
+      deployments: [fakeDeployment()],
+      filters: {},
+      pagination: { offset: 0, limit: 0, moreData: true }
+    }))
 
     // Call the first time
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
@@ -226,7 +223,7 @@ describe('Service', function () {
     await service.deployEntity([deleterEntityFile, randomFile], deleterEntity.id, auditInfo, DeploymentContext.LOCAL)
 
     // Reset spy and call again
-    serviceSpy.calls.reset()
+    serviceSpy.mockReset()
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
   })
@@ -259,8 +256,8 @@ describe('Service', function () {
     })
   }
 
-  function expectSpyToBeCalled(serviceSpy: jasmine.Spy, pointers: string[]) {
-    expect(serviceSpy).toHaveBeenCalledWith(jasmine.anything(), {
+  function expectSpyToBeCalled(serviceSpy: jest.SpyInstance, pointers: string[]) {
+    expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), {
       filters: { entityTypes: [EntityType.SCENE], pointers: pointers, onlyCurrentlyPointed: true }
     })
   }
