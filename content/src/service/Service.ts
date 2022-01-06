@@ -33,11 +33,11 @@ export interface MetaverseContentService {
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
   storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
-  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
+  getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): FailedDeployment[]
-  getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
-  getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
+  getEntitiesByIds(ids: EntityId[]): Promise<Entity[]>
+  getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
   reportErrorDuringSync(
     entityType: EntityType,

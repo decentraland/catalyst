@@ -2,6 +2,7 @@ import {
   DeploymentFilters,
   DeploymentSorting,
   EntityType,
+  EntityVersion,
   Pointer,
   SortingField,
   SortingOrder
@@ -9,7 +10,7 @@ import {
 import { AuthChain } from 'dcl-crypto'
 import pg from 'pg'
 import SQL, { SQLStatement } from 'sql-template-strings'
-import { AppComponents } from '../types'
+import { AppComponents } from '../../types'
 
 export interface HistoricalDeployment {
   deploymentId: number
@@ -19,16 +20,16 @@ export interface HistoricalDeployment {
   entityTimestamp: number
   metadata: any
   deployerAddress: string
-  version: string
+  version: EntityVersion
   authChain: AuthChain
   localTimestamp: number
   overwrittenBy?: string
 }
 
-interface HistoricalDeploymentsRow {
+export interface HistoricalDeploymentsRow {
   id: number
   deployer_address: string
-  version: string
+  version: EntityVersion
   entity_type: EntityType
   entity_id: string
   entity_metadata: any
@@ -161,7 +162,7 @@ export function getHistoricalDeploymentsQuery(
 
   if (filters?.pointers && filters.pointers.length > 0) {
     const pointers = filters.pointers.map((p) => p.toLowerCase())
-    whereClause.push(SQL`dep1.entity_pointers && ARRAY[${pointers}]`)
+    whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
   }
 
   let where = SQL``
