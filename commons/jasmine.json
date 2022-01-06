@@ -1,5 +1,0 @@
-{
-  "helpers": ["test-utils/helpers.ts"],
-  "spec_dir": "",
-  "spec_files": ["**/*[sS]pec.ts"]
-}
