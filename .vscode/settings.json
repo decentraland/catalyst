@@ -24,10 +24,5 @@
   ],
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "files.trimFinalNewlines": true,
-  "jasmineExplorer.nodeArgv": [
-    "-r",
-    "ts-node/register"
-  ],
-  "jasmineExplorer.config": "jasmine.json"
+  "files.trimFinalNewlines": true
 }
