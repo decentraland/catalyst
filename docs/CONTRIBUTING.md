@@ -17,14 +17,22 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 1. Fork the repo and create your branch from `master`.
 1. If you've added code that should be tested, add tests.
-1. Before changing the API, update the protocol by sending a pull request at the [api spec repository](https://github.com/decentraland/catalyst-api-specs)
-1. Ensure the test suite passes.
-1. Make sure your code lints. (Though we have a linter check)
+1. Before changing the API, update the protocol by sending a pull request at the [api spec repository](https://github.com/decentraland/catalyst-api-specs).
+1. Run `yarn run test` to ensure the test suite passes.
+1. Make sure your code lints.
 1. Issue that pull request!
 
-## Any contributions you make will be under the MIT Software License
+## Creating a pull request
 
-In short, when you submit code changes, your submissions are understood to be under the same [Apache License](https://choosealicense.com/licenses/apache-2.0/) that covers the project. Feel free to contact the [maintainers](https://github.com/decentraland/catalyst/blob/master/docs/codeowners) if that's a concern.
+We follow [this](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) guideline for git usage
+
+1. In case that the pr is done using a branch within the service, it should have the semantic prefix.
+1. Before merging into master make sure the squash commit has the correct semantic type prefix.
+1. If the pull request is related to a issue, link it in the description of the pull request.
+
+## Any contributions you make will be under the Apache 2.0 Software License
+
+In short, when you submit code changes, your submissions are understood to be under the same [Apache 2.0 License](https://choosealicense.com/licenses/apache-2.0/) that covers the project. Feel free to contact the [maintainers](https://github.com/decentraland/catalyst/blob/master/docs/codeowners) if that's a concern.
 
 ## Report bugs using Github's [issues](https://github.com/decentraland/catalyst/issues)
 
@@ -48,7 +56,7 @@ People _love_ thorough bug reports. We'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-- You can try running `yarn run lint` for style unification.
+- You can try running `yarn run lint:check` for style verification and `yarn run lint:check` for a best-effort fix of any style errors.
 - Follow as best as possible the current code architecture, but don't hesitate to propose a change if you see a place for improvement.
 
 ## License
