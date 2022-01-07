@@ -1,5 +1,5 @@
+import { Validator } from '@dcl/content-validator'
 import { stub } from 'sinon'
-import { Validator } from '../../../../src/service/validations/Validator'
 import { AppComponents } from '../../../../src/types'
 
 export class NoOpValidator implements Validator {
@@ -8,6 +8,7 @@ export class NoOpValidator implements Validator {
   }
 }
 
-export function makeNoopValidator(components: Pick<AppComponents, 'validator'>) {
+export function makeNoopValidator(components: Pick<AppComponents, 'validator' | 'serverValidator'>) {
   stub(components.validator, 'validate').resolves({ ok: true })
+  stub(components.serverValidator, 'validate').resolves({ ok: true })
 }

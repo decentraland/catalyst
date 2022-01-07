@@ -2,7 +2,6 @@ import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
-import { MockedAccessChecker } from '../../helpers/service/access/MockedAccessChecker'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
@@ -20,7 +19,6 @@ import { TestProgram } from '../TestProgram'
 loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
   const identity = createIdentity()
   let server1: TestProgram, server2: TestProgram
-  const accessChecker = new MockedAccessChecker()
 
   beforeEach(async () => {
     ;[server1, server2] = await testEnv
@@ -32,10 +30,6 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
 
     makeNoopValidator(server1.components)
     makeNoopValidator(server2.components)
-  })
-
-  afterEach(async () => {
-    accessChecker.stopReturningErrors()
   })
 
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
@@ -50,11 +44,11 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     await runTest(
       FailureReason.DEPLOYMENT_ERROR,
       (_) => {
-        accessChecker.startReturningErrors()
+        // accessChecker.startReturningErrors()
         return Promise.resolve()
       },
       () => {
-        accessChecker.stopReturningErrors()
+        // accessChecker.stopReturningErrors()
         return Promise.resolve()
       }
     )

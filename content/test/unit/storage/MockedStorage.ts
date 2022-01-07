@@ -2,8 +2,15 @@ import { Readable } from 'stream'
 import { ContentItem, ContentStorage, SimpleContentItem, streamToBuffer } from '../../../src/storage/ContentStorage'
 
 export class MockedStorage implements ContentStorage {
-  private storage: Map<string, Buffer> = new Map()
+  private storage: Map<string, Uint8Array> = new Map()
 
+  size(fileHash: string): Promise<number | undefined> {
+    const buffer = this.storage.get(fileHash)
+    return Promise.resolve(buffer?.byteLength)
+  }
+  storeContent(fileHash: string, content: Uint8Array | Readable) {
+    return Promise.resolve()
+  }
   async storeStream(id: string, content: Readable): Promise<void> {
     this.storage.set(id, await streamToBuffer(content))
   }

@@ -1,3 +1,4 @@
+import { ContentFileHash } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
 
 export type ContentEncoding = 'gzip'
@@ -10,6 +11,8 @@ export interface ContentStorage {
   retrieve(id: string): Promise<ContentItem | undefined>
   exist(ids: string[]): Promise<Map<string, boolean>>
   stats(id: string): Promise<{ size: number } | undefined>
+  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void>
+  size(fileHash: ContentFileHash): Promise<number | undefined>
 }
 
 export interface ContentItem {
@@ -25,7 +28,7 @@ export class SimpleContentItem implements ContentItem {
     private encoding?: ContentEncoding | null
   ) {}
 
-  static fromBuffer(buffer: Buffer): SimpleContentItem {
+  static fromBuffer(buffer: Uint8Array): SimpleContentItem {
     return new SimpleContentItem(async () => bufferToStream(buffer), buffer.length, null)
   }
 

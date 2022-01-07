@@ -11,6 +11,12 @@ export class S3ContentStorage implements ContentStorage {
       secretAccessKey
     })
   }
+  storeContent(fileHash: string, content: Readable | Uint8Array): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  size(fileHash: string): Promise<number | undefined> {
+    throw new Error('Method not implemented.')
+  }
 
   static async build(accessKeyId: string, secretAccessKey: string, bucket: string): Promise<S3ContentStorage> {
     return new S3ContentStorage(accessKeyId, secretAccessKey, bucket)

@@ -28,9 +28,9 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
   testCaseWithComponents(
     testEnv,
     `When oldest is deployed first, they overwrites are calculated correctly correctly`,
-    async ({ deployer, validator }) => {
+    async ({ deployer, validator, serverValidator }) => {
       // make noop validator
-      makeNoopValidator({ validator })
+      makeNoopValidator({ validator, serverValidator })
 
       // Deploy the entities
       await deployEntitiesCombo(deployer, oldestEntity)
@@ -48,9 +48,9 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
   testCaseWithComponents(
     testEnv,
     `When newest is deployed first, they overwrites are calculated correctly correctly`,
-    async ({ deployer, validator }) => {
+    async ({ deployer, validator, serverValidator }) => {
       // make noop validator
-      makeNoopValidator({ validator })
+      makeNoopValidator({ validator, serverValidator })
       // Deploy the entities
       await deployEntitiesCombo(deployer, newestEntity)
       await deployEntitiesCombo(deployer, oldestEntity)

@@ -1,6 +1,5 @@
 import { DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
-import { makeMockedAccessChecker } from '../helpers/service/access/MockedAccessChecker'
 import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
@@ -15,7 +14,6 @@ loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
   beforeEach(async () => {
     server = await testEnv.configServer().andBuild()
     makeNoopSynchronizationManager(server.components.synchronizationManager)
-    makeMockedAccessChecker(server.components)
     await server.startProgram()
   })
 
