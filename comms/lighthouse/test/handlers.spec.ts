@@ -12,7 +12,7 @@ describe('require parameters', () => {
 
     response = createResponse()
 
-    next = jasmine.createSpy()
+    next = jest.fn()
   })
 
   describe('requireAll', () => {
@@ -65,7 +65,7 @@ describe('require parameters', () => {
       handler(request, response, next)
       expect(next).toHaveBeenCalled()
 
-      next = jasmine.createSpy()
+      next = jest.fn()
       request.body = { userId: 'userId' }
       handler(request, response, next)
       expect(next).toHaveBeenCalled()
@@ -112,7 +112,7 @@ describe('Validate token', () => {
         }
       }
     }
-    next = jasmine.createSpy()
+    next = jest.fn()
   })
 
   it('should reject when no token is provided', () => {

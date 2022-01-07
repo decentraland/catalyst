@@ -5,7 +5,10 @@ export class TimeRefreshedDataHolder<T> {
   private valuePromise: Promise<T>
   private lastUpdateCall: Date
 
-  constructor(private readonly provider: () => Promise<T>, private readonly refreshTime: string) {}
+  constructor(
+    private readonly provider: () => Promise<T>,
+    private readonly refreshTime: string // private isStarted: boolean = true
+  ) {}
 
   async get(): Promise<T> {
     if (!this.valuePromise) {
