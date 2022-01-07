@@ -9,7 +9,7 @@ We love your input! We want to make contributing to this project as easy and tra
 
 ## We Develop with Github
 
-We use github to host code, to track issues and feature requests, as well as accept pull requests.
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
 ## We Use [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow), So All Code Changes Happen Through Pull Requests
 
@@ -56,7 +56,7 @@ People _love_ thorough bug reports. We'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-- You can try running `yarn run lint:check` for style verification and `yarn run lint:check` for a best-effort fix of any style errors.
+- You can try running `yarn run lint:check` for style verification and `yarn run lint:fix` for a best-effort fix of any style errors.
 - Follow as best as possible the current code architecture, but don't hesitate to propose a change if you see a place for improvement.
 
 ## License
