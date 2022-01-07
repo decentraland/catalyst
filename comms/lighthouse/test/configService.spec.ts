@@ -2,6 +2,10 @@ import { Config, ConfigService, EnvironmentWrapper, LighthouseConfig } from '../
 import { ISimpleStorage } from '../src/config/simpleStorage'
 
 describe('Config service', () => {
+
+  beforeAll(() => jest.useFakeTimers())
+
+  afterAll(() => jest.useRealTimers())
   it('When the config service is built, then environment takes precedence over all', async () => {
     const config = LighthouseConfig.MAX_PEERS_PER_ISLAND
 

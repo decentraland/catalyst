@@ -8,7 +8,7 @@
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
     "start": "node ./dist/src/entrypoints/run-server.js",
-    "test": "jasmine-ts --config=jasmine.json"
+    "test": "jest"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",

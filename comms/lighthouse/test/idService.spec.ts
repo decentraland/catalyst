@@ -4,18 +4,11 @@ import { IdService } from '../src/peers/idService'
 require('isomorphic-fetch')
 
 describe('id service generation', function () {
-  let originalTimeout
 
   let idService: IdService
 
   beforeEach(() => {
-    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
     idService = new IdService({ idLength: 2 })
-  })
-
-  afterEach(function () {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
   })
 
   it('generates an id', () => {
@@ -43,7 +36,7 @@ describe('id service generation', function () {
     expect(idService.nextId()).toBe('00')
   })
 
-  it('can use all ids in urls', (done) => {
+    it('can use all ids in urls', (done) => {
     const app = express()
 
     const requestedIds: string[] = []
@@ -55,8 +48,7 @@ describe('id service generation', function () {
     })
 
     const port = 19992 + Math.floor(Math.random() * 10000)
-
-    app.listen(port, async () => {
+    const server = app.listen(port, async () => {
       for (let i = 0; i < idService.config.alphabet.length * idService.config.alphabet.length; i++) {
         const id = idService.nextId()
         requestedIds.push(id)
@@ -68,7 +60,7 @@ describe('id service generation', function () {
       }
 
       expect(requestedIds).toEqual(receivedIds)
-      done()
+      server.close(() => done())
     })
   }, 30000)
 })
