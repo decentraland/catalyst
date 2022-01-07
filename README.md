@@ -30,9 +30,15 @@ yarn build
 yarn test
 ```
 
-## Contributions
+## Contributing
 
-If using Visual Studio Code, please install recommended extensions listed in [this file](.vscode/extensions.json).
+### [Code of Conduct](https://github.com/decentraland/catalyst/blob/master/docs/CODE_OF_CONDUCT.md)
+
+Please read [the full text](https://github.com/decentraland/catalyst/blob/master/docs/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
+
+### [Contributing Guide](https://github.com/decentraland/catalyst/blob/master/docs/CONTRIBUTING.md)
+
+Read our [contributing guide](https://github.com/decentraland/catalyst/blob/master/docs/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
 
 ## Release
 
