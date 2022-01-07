@@ -32,13 +32,13 @@ yarn test
 
 ## Contributing
 
-### [Code of Conduct](https://github.com/decentraland/catalyst/blob/master/docs/CODE_OF_CONDUCT.md)
+### [Code of Conduct](https://github.com/decentraland/catalyst/blob/main/docs/CODE_OF_CONDUCT.md)
 
-Please read [the full text](https://github.com/decentraland/catalyst/blob/master/docs/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
+Please read [the full text](https://github.com/decentraland/catalyst/blob/main/docs/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
-### [Contributing Guide](https://github.com/decentraland/catalyst/blob/master/docs/CONTRIBUTING.md)
+### [Contributing Guide](https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md)
 
-Read our [contributing guide](https://github.com/decentraland/catalyst/blob/master/docs/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
+Read our [contributing guide](https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
 
 ## Release
 

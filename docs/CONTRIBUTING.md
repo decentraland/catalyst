@@ -15,7 +15,7 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 
 Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow)). We actively welcome your pull requests:
 
-1. Fork the repo and create your branch from `master`.
+1. Fork the repo and create your branch from `main`.
 1. If you've added code that should be tested, add tests.
 1. Contribution should not break the current protocol implementation, this means not breaking any existing API, as this could have an impact on many people work and API consumers. If your contribution needs to add a breaking change, please file a [DAO poll](https://governance.decentraland.org/) so that the community can understand and accept your suggestion. Once accepted update the protocol by sending a pull request at the [api spec repository](https://github.com/decentraland/catalyst-api-specs). Then send the pull request with the implementation in this repository.
 1. Run `yarn run test` to ensure the test suite passes.
@@ -27,12 +27,12 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 We follow [this](https://github.com/decentraland/adr/blob/main/docs/ADR-6-git-style-guide.md) guideline for git usage
 
 1. In case that the pr is done using a branch within the service, it should have the semantic prefix.
-1. Before merging into master make sure the squash commit has the correct semantic type prefix.
+1. Before merging into main make sure the squash commit has the correct semantic type prefix.
 1. If the pull request is related to a issue, link it in the description of the pull request.
 
 ## Any contributions you make will be under the Apache 2.0 Software License
 
-In short, when you submit code changes, your submissions are understood to be under the same [Apache 2.0 License](https://choosealicense.com/licenses/apache-2.0/) that covers the project. Feel free to contact the [maintainers](https://github.com/decentraland/catalyst/blob/master/docs/codeowners) if that's a concern.
+In short, when you submit code changes, your submissions are understood to be under the same [Apache 2.0 License](https://choosealicense.com/licenses/apache-2.0/) that covers the project. Feel free to contact the [maintainers](https://github.com/decentraland/catalyst/blob/main/docs/codeowners) if that's a concern.
 
 ## Report bugs using Github's [issues](https://github.com/decentraland/catalyst/issues)
 

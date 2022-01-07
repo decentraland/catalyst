@@ -21,7 +21,7 @@ references:
   .testing_branches: &testing_branches
     filters:
       branches:
-        ignore: master
+        ignore: main
       tags:
         ignore: /(.*)/
 
@@ -32,10 +32,10 @@ references:
       tags:
         only: /^\d+\.\d+\.\d(.*)/ # semver
 
-  .master_and_tags: &master_and_tags
+  .main_and_tags: &main_and_tags
     filters:
       branches:
-        only: master
+        only: main
       tags:
         only: /^\d+\.\d+\.\d(.*)/ # semver
 
@@ -163,7 +163,7 @@ jobs:
               # TODO: publish SNS message for stable channel
             fi
 
-            if [ "${CIRCLE_BRANCH}" = "master" ]; then
+            if [ "${CIRCLE_BRANCH}" = "main" ]; then
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
               docker push "${DOCKER_IMAGE_NAME}:next"
 
@@ -227,17 +227,17 @@ workflows:
           requires:
             - checkout
 
-      # publish docker image in "master" and semver tags
-      # master publishes to @next
+      # publish docker image in "main" and semver tags
+      # main publishes to @next
       # semver tags publish to @latest
       - publish-docker:
-          <<: *master_and_tags
+          <<: *main_and_tags
           requires:
             - build-lighthouse
             - build-content
             - build-lambdas
 
-      # NOT (master | semver) enables manual approval to release untagged docker images
+      # NOT (main | semver) enables manual approval to release untagged docker images
       - accept-publish-docker-for-testing:
           <<: *testing_branches
           type: approval
