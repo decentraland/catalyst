@@ -71,10 +71,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/schemas@2.2.1":
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-2.2.1.tgz#8e4602e3f91a2371efe0096660d46398a15e269c"
-  integrity sha512-Fiftil4oxKewr0/+IwQkBDI52GEaYaKyPgsZ8049G6qLefGiVlga/Ib+raLHw2Dxwgm5jwPFHucDSgRK1cAx0g==
+"@dcl/schemas@3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.1.1.tgz#9bb118fe14a48127ebdb82d05a45be815e46ae85"
+  integrity sha512-LsNpyjf6T8OM8FkuHrzO2vPoSAggBj1iKY3myoH5K+YYM1s4xBD6wZK9JTcXa9dhBfPnlrr7aJWIsJ81oztlIQ==
   dependencies:
     ajv "^7.1.0"
 
