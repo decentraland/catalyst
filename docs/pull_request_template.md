@@ -22,7 +22,7 @@ What types of changes does your code introduce? Put an `x` in all the boxes that
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change). If there's an API change, link the pull request in the [API spec repository](https://github.com/decentraland/catalyst-api-specs).
+- [ ] Breaking change (fix or feature that would cause existing functionality to change). If there's an API change, link the pull request in the [API spec repository](https://github.com/decentraland/catalyst-api-specs) and the accepted [DAO governance poll](https://governance.decentraland.org/)
 - [ ] I have read the [**CONTRIBUTING**](https://github.com/decentraland/catalyst/blob/master/docs/CONTRIBUTING.md) document.
 - [ ] My code follows the code style of this project.
 - [ ] My change requires a change to the documentation.

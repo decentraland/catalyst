@@ -13,11 +13,11 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 
 ## We Use [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow), So All Code Changes Happen Through Pull Requests
 
-Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://guides.github.com/introduction/flow/index.html)). We actively welcome your pull requests:
+Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow)). We actively welcome your pull requests:
 
 1. Fork the repo and create your branch from `master`.
 1. If you've added code that should be tested, add tests.
-1. Before changing the API, update the protocol by sending a pull request at the [api spec repository](https://github.com/decentraland/catalyst-api-specs).
+1. Contribution should not break the current protocol implementation, this means not breaking any existing API, as this could have an impact on many people work and API consumers. If your contribution needs to add a breaking change, please file a [DAO poll](https://governance.decentraland.org/) so that the community can understand and accept your suggestion. Once accepted update the protocol by sending a pull request at the [api spec repository](https://github.com/decentraland/catalyst-api-specs). Then send the pull request with the implementation in this repository.
 1. Run `yarn run test` to ensure the test suite passes.
 1. Make sure your code lints.
 1. Issue that pull request!
@@ -58,10 +58,6 @@ People _love_ thorough bug reports. We'm not even kidding.
 
 - You can try running `yarn run lint:check` for style verification and `yarn run lint:fix` for a best-effort fix of any style errors.
 - Follow as best as possible the current code architecture, but don't hesitate to propose a change if you see a place for improvement.
-
-## License
-
-By contributing, you agree that your contributions will be licensed under its [Apache License](https://choosealicense.com/licenses/apache-2.0/).
 
 ## References
 
