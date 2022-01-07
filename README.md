@@ -32,8 +32,6 @@ yarn test
 
 ## Contributing
 
-The main purpose of this repository is to continue evolving React core, making it faster and easier to use. Development of React happens in the open on GitHub, and we are grateful to the community for contributing bugfixes and improvements. Read below to learn how you can take part in improving React.
-
 ### [Code of Conduct](https://github.com/decentraland/catalyst/blob/master/docs/CODE_OF_CONDUCT.md)
 
 Please read [the full text](https://github.com/decentraland/catalyst/blob/master/docs/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
