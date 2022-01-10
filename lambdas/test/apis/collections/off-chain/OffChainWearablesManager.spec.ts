@@ -30,7 +30,7 @@ describe('OffChainWearablesManager', () => {
     assertContentServerWasCalledOnceWithIds(contentClientMock, WEARABLE_ID_3)
   })
 
-  it(`When expire time ends, then the content server is called again `, async () => {
+  it(`When expire time ends, then the content server is called again`, async () => {
     const { instance: contentClient, mock: contentClientMock } = contentServer()
     const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
