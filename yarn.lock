@@ -1607,11 +1607,6 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jasmine@3.9.1":
-  version "3.9.1"
-  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.9.1.tgz#94c65ee8bf9d24d9e1d84abaed57b6e0da8b49de"
-  integrity sha512-PVpjh8S8lqKFKurWSKdFATlfBHGPzgy0PoDdzQ+rr78jTQ0aacyh9YndzZcAUPxhk4kRujItFFGQdUJ7flHumw==
-
 "@types/jest@27.4.0", "@types/jest@^27.4.0":
   version "27.4.0"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-27.4.0.tgz#037ab8b872067cae842a320841693080f9cb84ed"
@@ -2958,7 +2953,7 @@ colorette@^2.0.16:
   resolved "https://registry.yarnpkg.com/colorette/-/colorette-2.0.16.tgz#713b9af84fdb000139f04546bd4a93f62a5085da"
   integrity sha512-hUewv7oMjCp+wkBv5Rm0v87eJhq4woh5rSR+42YSQJKecCqgIqNkZ6lAlQms/BwHPJA5NKMRlpxPRv0n8HQW6g==
 
-colors@1.4.0, colors@^1.4.0:
+colors@^1.4.0:
   version "1.4.0"
   resolved "https://registry.npmjs.org/colors/-/colors-1.4.0.tgz"
   integrity sha512-a+UqTh4kgZg/SlGvfbzDHpgRu7AAQOmmqRHJnxhRZICKFUT91brVhNNt58CMWU9PsBbv3PDCZUHbVxuDiH2mtA==
@@ -4640,7 +4635,7 @@ glob-to-regexp@^0.3.0:
   resolved "https://registry.npmjs.org/glob-to-regexp/-/glob-to-regexp-0.3.0.tgz"
   integrity sha1-jFoUlNIGbFcMw7/kSWF1rMTVAqs=
 
-glob@^7.0.0, glob@^7.1.3, glob@^7.1.6, glob@^7.1.7:
+glob@^7.0.0, glob@^7.1.3, glob@^7.1.7:
   version "7.1.7"
   resolved "https://registry.npmjs.org/glob/-/glob-7.1.7.tgz"
   integrity sha512-OvD9ENzPLbegENnYP5UUfJIirTg4+XwMWGaQfQTY0JenxNvvIKP3U3/tAQSPIu/lHxXYSZmpXlUHeqAIdKzBLQ==
@@ -5576,33 +5571,6 @@ it-parallel-batch@^1.0.9:
   integrity sha512-lfCxXsHoEtgyWj5HLrEQXlZF0p3c0hfYeVJAbxQIHIzHLq4lkYplUIe3UGxYl4n1Sjpcs6YL/87352399aVeIA==
   dependencies:
     it-batch "^1.0.8"
-
-jasmine-core@3.9.0, jasmine-core@~3.9.0:
-  version "3.9.0"
-  resolved "https://registry.npmjs.org/jasmine-core/-/jasmine-core-3.9.0.tgz"
-  integrity sha512-Tv3kVbPCGVrjsnHBZ38NsPU3sDOtNa0XmbG2baiyJqdb5/SPpDO6GVwJYtUryl6KB4q1Ssckwg612ES9Z0dreQ==
-
-jasmine-spec-reporter@7.0.0:
-  version "7.0.0"
-  resolved "https://registry.npmjs.org/jasmine-spec-reporter/-/jasmine-spec-reporter-7.0.0.tgz"
-  integrity sha512-OtC7JRasiTcjsaCBPtMO0Tl8glCejM4J4/dNuOJdA8lBjz4PmWjYQ6pzb0uzpBNAWJMDudYuj9OdXJWqM2QTJg==
-  dependencies:
-    colors "1.4.0"
-
-jasmine-ts@0.4.0:
-  version "0.4.0"
-  resolved "https://registry.npmjs.org/jasmine-ts/-/jasmine-ts-0.4.0.tgz"
-  integrity sha512-bIAWJKUwxfuZfGI1ctEbny7+dsyFzsN0eLzOokxh0qIUCofai2WUEKoe3MMllkGEBXJzbEVYr2IyhJBv4j7SBA==
-  dependencies:
-    yargs "^17.0.1"
-
-jasmine@3.9.0:
-  version "3.9.0"
-  resolved "https://registry.npmjs.org/jasmine/-/jasmine-3.9.0.tgz"
-  integrity sha512-JgtzteG7xnqZZ51fg7N2/wiQmXon09szkALcRMTgCMX4u/m17gVJFjObnvw5FXkZOWuweHPaPRVB6DI2uN0wVA==
-  dependencies:
-    glob "^7.1.6"
-    jasmine-core "~3.9.0"
 
 jest-changed-files@^27.4.2:
   version "27.4.2"
@@ -9690,7 +9658,7 @@ yargs@^16.1.1, yargs@^16.2.0:
     y18n "^5.0.5"
     yargs-parser "^20.2.2"
 
-yargs@^17.0.1, yargs@~17.1.0:
+yargs@~17.1.0:
   version "17.1.1"
   resolved "https://registry.npmjs.org/yargs/-/yargs-17.1.1.tgz"
   integrity sha512-c2k48R0PwKIqKhPMWjeiF6y2xY/gPMUlro0sgxqXpbOIohWiLNXWslsootttv7E1e73QPAMQSg5FeySbVcpsPQ==
