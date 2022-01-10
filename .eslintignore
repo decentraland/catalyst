@@ -7,3 +7,5 @@ tmpbin
 content/test
 lambdas/test
 comms/lighthouse/test
+jest.config.js
+jest.*.ts
