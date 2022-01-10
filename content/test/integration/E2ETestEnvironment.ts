@@ -200,18 +200,26 @@ export function loadTestEnvironment(
     describe(name, () => {
       const testEnv = new E2ETestEnvironment()
 
-      beforeEach(async () => {
+      it('starts the test environment', async () => {
         await testEnv.start(overrideConfigs)
-        testEnv.resetDAOAndServers()
       })
 
-      afterEach(async () => {
-        await testEnv.clearDatabases()
-        await testEnv.stopAllComponentsFromAllServersAndDeref()
+      describe('use cases for test environment', () => {
+        beforeEach(() => {
+          testEnv.resetDAOAndServers()
+        })
+
+        afterEach(async () => {
+          await testEnv.clearDatabases()
+          await testEnv.stopAllComponentsFromAllServersAndDeref()
+        })
+
+        test(testEnv)
+      })
+
+      it('stops the test environment', async () => {
         await testEnv.stop()
       })
-
-      test(testEnv)
     })
   }
 }
