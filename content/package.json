@@ -10,7 +10,7 @@
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "test": "run-p 'test:*'",
-    "test:unit": "jest ./test/unit --config=./jest.config.unit.json",
+    "test:unit": "jest ./test/unit --config=./jest.config.unit.json --runInBand --detectOpenHandles --forceExit",
     "test:integration": "jest ./test/integration --config=./jest.config.integration.json --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {
