@@ -67,9 +67,9 @@ In case you want to avoid this behaviour, you can start the postgres instance ma
 
 ## Debugging tests
 
-To debug any test you may need the recommended VS Code extensions to discover jasmine tests, then use editor UI to run/debug them.
+To debug any test you may need the recommended VS Code extensions to discover jest tests, then use editor UI to run/debug them.
 
-Note: Typescript must compile to show up UI buttons, otherwise see jasmine console to see more information
+Note: Typescript must compile to show up UI buttons, otherwise see jest console to see more information
 
 Here is an [example](https://user-images.githubusercontent.com/7695773/135918419-7417b26a-f4e9-4a14-96ae-22785c414b9e.gif) showing how it should look.
 
