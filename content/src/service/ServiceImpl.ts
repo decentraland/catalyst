@@ -224,7 +224,6 @@ export class ServiceImpl implements MetaverseContentService {
             files: hashes
           }
           const validationResult = await this.components.validator.validate(deployment)
-
           if (!validationResult.ok) {
             ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
               entityId,

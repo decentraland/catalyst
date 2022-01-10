@@ -22,7 +22,7 @@ import {
 import { ServiceFactory } from '../../../src/service/ServiceFactory'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
-import { NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../storage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 
@@ -236,6 +236,7 @@ describe('Service', function () {
     const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
     const env = new Environment()
     const validator = new NoOpValidator()
+    const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
     const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -257,6 +258,7 @@ describe('Service', function () {
       storage,
       repository,
       validator,
+      serverValidator,
       metrics,
       logs,
       authenticator,

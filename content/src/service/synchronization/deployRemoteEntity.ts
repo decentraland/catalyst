@@ -73,8 +73,7 @@ export async function deployDownloadedEntity(
     }
 
     const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, kind)
-
-    if (typeof deploymentResult === 'object' && 'errors' in deploymentResult && deploymentResult.errors.length) {
+    if (typeof deploymentResult === 'object' && deploymentResult.errors && deploymentResult.errors.length > 0) {
       throw new Error(
         `Errors deploying entity(${entityId}):\n${deploymentResult.errors.map(($) => ' - ' + $).join('\n')}`
       )

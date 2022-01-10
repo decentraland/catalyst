@@ -20,10 +20,15 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       await this.server1.startProgram()
 
       this.validatorStub1 = stub(this.server1.components.validator, 'validate')
-      this.validatorStub2 = stub(this.server2.components.serverValidator, 'validate')
       this.validatorStub1.returns(Promise.resolve({ ok: true }))
-      this.validatorStub2.onCall(0).returns(Promise.resolve({ ok: false, errors: 'anyError' }))
-      this.validatorStub2.onCall(1).returns(Promise.resolve({ ok: true }))
+      this.validatorStub2 = stub(this.server2.components.validator, 'validate')
+      this.validatorStub2.returns(Promise.resolve({ ok: true }))
+
+      this.serverValidatorStub2 = stub(this.server2.components.serverValidator, 'validate')
+      this.serverValidatorStub2.onCall(0).returns(Promise.resolve({ ok: false, message: 'anyError' }))
+      this.serverValidatorStub2.onCall(1).returns(Promise.resolve({ ok: true }))
+      this.serverValidatorStub2.onCall(2).returns(Promise.resolve({ ok: true }))
+      this.serverValidatorStub2.onCall(3).returns(Promise.resolve({ ok: true }))
 
       // Prepare entity to deploy
       const entityCombo = await buildDeployData(['0,0', '0,1'], {
@@ -42,8 +47,9 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
     })
 
     afterEach(async function () {
-      // this.validatorStub1.restore()
+      this.validatorStub1.restore()
       this.validatorStub2.restore()
+      this.serverValidatorStub2.restore()
     })
 
     it('stores it as failed deployment locally', async function () {
@@ -110,12 +116,15 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       this.identity = createIdentity()
       this.server1 = await testEnv
         .configServer('2s')
+        .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
         .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
         .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
         .andBuild()
 
-      // this.accessCheckerStub1 = stub(this.server1.components.accessChecker, 'hasAccess')
-      // this.accessCheckerStub1.returns(Promise.resolve([]))
+      this.validatorStub1 = stub(this.server1.components.serverValidator, 'validate')
+      this.validatorStub1.returns(
+        Promise.resolve({ ok: false, message: 'You are trying to fix an entity that is not marked as failed' })
+      )
 
       // Start server1
       await this.server1.startProgram()
@@ -130,7 +139,7 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
     })
 
     afterEach(async function () {
-      // this.accessCheckerStub1.restore()
+      this.validatorStub1.restore()
     })
 
     it('fails', async function () {
