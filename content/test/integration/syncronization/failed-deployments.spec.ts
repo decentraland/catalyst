@@ -19,9 +19,9 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       // Start server1
       await this.server1.startProgram()
 
-      // this.validatorStub1 = stub(this.server1.components.validator, 'validate')
+      this.validatorStub1 = stub(this.server1.components.validator, 'validate')
       this.validatorStub2 = stub(this.server2.components.serverValidator, 'validate')
-      // this.validatorStub1.returns(Promise.resolve({ ok: true }))
+      this.validatorStub1.returns(Promise.resolve({ ok: true }))
       this.validatorStub2.onCall(0).returns(Promise.resolve({ ok: false, errors: 'anyError' }))
       this.validatorStub2.onCall(1).returns(Promise.resolve({ ok: true }))
 

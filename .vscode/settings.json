@@ -25,5 +25,6 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "files.trimFinalNewlines": true,
-  "jestrunner.runOptions": ["--forceExit"]
+  "jestrunner.runOptions": ["--forceExit"],
+  "typescript.preferences.importModuleSpecifier": "relative",
 }
