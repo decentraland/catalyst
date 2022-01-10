@@ -1,6 +1,6 @@
 import SQL from 'sql-template-strings'
-import { DeploymentId } from 'src/repository/extensions/DeploymentsRepository'
-import { AppComponents } from 'src/types'
+import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
+import { AppComponents } from '../../types'
 
 export interface MigrationDataRow {
   deployment: number
