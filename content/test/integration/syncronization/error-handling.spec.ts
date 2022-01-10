@@ -2,7 +2,7 @@ import { Entity as ControllerEntity, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { FailedDeployment, FailureReason } from '../../../src/ports/failedDeploymentsCache'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import {
   assertDeploymentFailed,
   assertDeploymentsAreReported,
@@ -29,7 +29,9 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
       .andBuildMany(2)
 
     makeNoopValidator(server1.components)
+    makeNoopServerValidator(server1.components)
     makeNoopValidator(server2.components)
+    makeNoopServerValidator(server2.components)
   })
 
   //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes

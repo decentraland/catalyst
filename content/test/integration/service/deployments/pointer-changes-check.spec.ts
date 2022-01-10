@@ -2,7 +2,7 @@ import { Pointer } from 'dcl-catalyst-commons'
 import { getPointerChanges } from '../../../../src/service/pointers/pointers'
 import { PointerChanges } from '../../../../src/service/pointers/types'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
@@ -28,6 +28,7 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       await deployEntitiesCombo(components.deployer, E1)
 
@@ -43,6 +44,7 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       await deployEntitiesCombo(components.deployer, E1, E3)
 
@@ -63,6 +65,7 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       await deployEntitiesCombo(components.deployer, E3, E1)
 
@@ -78,6 +81,7 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       await deployEntitiesCombo(components.deployer, E1, E2, E4, E3)
 

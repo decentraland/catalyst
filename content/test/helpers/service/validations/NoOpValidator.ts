@@ -13,7 +13,10 @@ export class NoOpServerValidator implements Validator {
     return { ok: true }
   }
 }
-export function makeNoopValidator(components: Pick<AppComponents, 'validator' | 'serverValidator'>) {
+export function makeNoopValidator(components: Pick<AppComponents, 'validator'>) {
   stub(components.validator, 'validate').resolves({ ok: true })
+}
+
+export function makeNoopServerValidator(components: Pick<AppComponents, 'serverValidator'>) {
   stub(components.serverValidator, 'validate').resolves({ ok: true })
 }
