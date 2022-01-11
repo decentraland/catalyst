@@ -11,7 +11,7 @@
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "test": "run-p 'test:*'",
     "test:unit": "jest ./test/unit --config=./test/unit/jest.config.js --runInBand --forceExit --coverage",
-    "test:integration": "jest ./test/integration --config=./test/integration/jest.config.js --runInBand --forceExit --coverage"
+    "test:integration": "jest ./test/integration --config=./test/integration/jest.config.js --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",
