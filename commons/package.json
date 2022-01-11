@@ -10,7 +10,7 @@
   "scripts": {
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "dependencies": {
     "@catalyst/contracts": "^0.1.0",
