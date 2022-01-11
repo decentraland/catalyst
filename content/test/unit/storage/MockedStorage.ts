@@ -9,7 +9,7 @@ export class MockedStorage implements ContentStorage {
     return Promise.resolve(buffer?.byteLength)
   }
   storeContent(fileHash: string, content: Uint8Array | Readable) {
-    return Promise.resolve()
+    this.storage.set(id, content instanceof Uint8Array ? content : await streamToBuffer(content))
   }
   async storeStream(id: string, content: Readable): Promise<void> {
     this.storage.set(id, await streamToBuffer(content))
