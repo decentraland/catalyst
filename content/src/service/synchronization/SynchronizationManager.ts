@@ -130,7 +130,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
             contentServersUrls,
             DeploymentContext.FIX_ATTEMPT
           )
-        } catch {}
+        } catch (error) {
+          ClusterSynchronizationManager.LOGGER.info(
+            `Failed to fix deploy entity with id: '${entityId}'. Reason was: '${error.message}'`
+          )
+        }
       } else {
         ClusterSynchronizationManager.LOGGER.info(
           `Can't retry failed deployment: '${entityId}' because it lacks of authChain`
