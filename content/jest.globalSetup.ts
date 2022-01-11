@@ -5,7 +5,7 @@ import { DEFAULT_DATABASE_CONFIG } from './src/Environment'
 import { E2ETestEnvironment } from './test/integration/E2ETestEnvironment'
 import { isCI } from './test/integration/E2ETestUtils'
 
-export default async (): Promise<void> => {
+const globalSetup = async (): Promise<void> => {
   if (!isCI()) {
     global.__POSTGRES_CONTAINER__ = await new GenericContainer('postgres', '12')
       .withName('postgres_test')
@@ -51,3 +51,5 @@ class PostgresWaitStrategy extends LogWaitStrategy {
     })
   }
 }
+
+export default globalSetup
