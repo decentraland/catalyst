@@ -96,20 +96,23 @@ jobs:
           POSTGRES_DB: postgres_test
           POSTGRES_PASSWORD: '12345678'
           POSTGRES_USER: postgres
+    parallelism: 20
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
       - run:
-          name: Run unit tests
-          command: yarn workspace @catalyst/content-server test:unit
+          name: Run tests
+          command: |
+            cd content
+            TESTFILES=$(circleci tests glob "**/test/**/*.spec.ts" | circleci tests split --split-by=timings)
+            yarn test $TESTFILES
           environment:
             CI: 'true'
-      - run:
-          name: Run integration tests
-          command: yarn workspace @catalyst/content-server test:integration
-          environment:
-            CI: 'true'
-
+            JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+      - store_test_results:
+          path: ./reports/junit/
+      - store_artifacts:
+          path: ./reports/junit/
   build-lambdas:
     <<: *base_env
     steps:
@@ -213,11 +216,11 @@ workflows:
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
-            - build-commons
+            - checkout
       - build-content:
           <<: *all_branches_and_tags
           requires:
-            - build-commons
+            - checkout
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
