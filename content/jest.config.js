@@ -1,7 +1,6 @@
 module.exports = {
   coverageDirectory: 'coverage',
   collectCoverageFrom: ['./src/**/*.ts'],
-  silent: true,
   testEnvironment: 'node',
   testTimeout: 60000,
   verbose: true,
