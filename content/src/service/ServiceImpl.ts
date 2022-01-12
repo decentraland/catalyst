@@ -283,6 +283,10 @@ export class ServiceImpl implements MetaverseContentService {
               deploymentId
             )
 
+            if (context === DeploymentContext.FIX_ATTEMPT) {
+              this.components.failedDeploymentsCache.reportSuccessfulDeployment(entity.id)
+            }
+
             // Store the entity's content
             await this.storeEntityContent(hashes, alreadyStoredContent)
           } else {
