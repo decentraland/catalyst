@@ -16,7 +16,7 @@ import { AuthChain, Authenticator } from 'dcl-crypto'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
 import { EnvironmentConfig } from '../Environment'
-import { FailedDeployment, FailureReason, NoFailure } from '../ports/failedDeploymentsCache'
+import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
@@ -208,7 +208,6 @@ export class ServiceImpl implements MetaverseContentService {
             entity,
             context,
             auditInfo,
-            transaction,
             isEntityAlreadyDeployed
           )
 
@@ -282,10 +281,6 @@ export class ServiceImpl implements MetaverseContentService {
               overwrote,
               deploymentId
             )
-
-            if (context === DeploymentContext.FIX_ATTEMPT) {
-              this.components.failedDeploymentsCache.reportSuccessfulDeployment(entity.id)
-            }
 
             // Store the entity's content
             await this.storeEntityContent(hashes, alreadyStoredContent)
@@ -486,14 +481,13 @@ export class ServiceImpl implements MetaverseContentService {
     entity: Entity,
     context: DeploymentContext,
     auditInfo: LocalDeploymentAuditInfo,
-    transaction: Database,
     isEntityDeployedAlready: boolean
   ): Promise<{ ok: true } | { ok: false; message: string }> {
     return await this.components.serverValidator.validate(entity, context, {
       areThereNewerEntities: () => this.areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
-      isFailedDeployment: (entity) =>
-        this.components.failedDeploymentsCache.getDeploymentStatus(entity.id) !== NoFailure.NOT_MARKED_AS_FAILED,
+      isNotFailedDeployment: (entity) =>
+        this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
       isAddressOwnedByDecentraland: () =>
         this.components.authenticator.isAddressOwnedByDecentraland(Authenticator.ownerAddress(auditInfo.authChain)),
       isEntityRateLimited: (entity) => this.isEntityRateLimited(entity),

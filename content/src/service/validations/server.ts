@@ -15,7 +15,7 @@ export interface ServerValidator {
 interface ServiceCalls {
   areThereNewerEntities: EntityCheck
   isEntityDeployedAlready: EntityCheck
-  isFailedDeployment: EntityCheck
+  isNotFailedDeployment: EntityCheck
   isAddressOwnedByDecentraland: EntityCheck
   isEntityRateLimited: EntityCheck
   isRequestTtlBackwards: EntityCheck
@@ -53,7 +53,7 @@ export const createServerValidator = (): ServerValidator => ({
     } else if (context === DeploymentContext.FIX_ATTEMPT) {
       checks = [
         {
-          check: serviceCalls.isFailedDeployment,
+          check: serviceCalls.isNotFailedDeployment,
           response: 'You are trying to fix an entity that is not marked as failed'
         }
       ]
