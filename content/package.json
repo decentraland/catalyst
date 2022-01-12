@@ -9,9 +9,9 @@
     "build": "tsc -b",
     "start:server": "node ./dist/src/entrypoints/run-server.js",
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
-    "test": "run-p 'test:*'",
-    "test:unit": "jest ./test/unit --config=./test/unit/jest.config.js --runInBand --forceExit --coverage",
-    "test:integration": "jest ./test/integration --config=./test/integration/jest.config.js --runInBand --forceExit --detectOpenHandles --coverage"
+    "test": "jest --runInBand --forceExit --detectOpenHandles --coverage",
+    "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage",
+    "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",
