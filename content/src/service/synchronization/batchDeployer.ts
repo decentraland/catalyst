@@ -1,7 +1,8 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { deploymentExists, streamAllEntityIds } from '../../logic/database-queries/deployments-queries'
+import { streamAllEntityIds } from '../../logic/database-queries/deployments-queries'
+import { isEntityDeployed } from '../../logic/deployments'
 import { FailureReason } from '../../ports/failedDeploymentsCache'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
 import { DeploymentContext } from '../Service'
@@ -35,8 +36,28 @@ export function createBatchDeployerComponent(
 
   // accumulator of all deployments
   const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
+  const succesfulDeployments = new Set<string>()
+
+  async function shouldEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
+    // ignore entities if those were succesfully deployed during this execution
+    if (succesfulDeployments.has(entity.entityId)) return true
+
+    // ignore entities that are already deployed locally
+    if (await isEntityDeployed(components, entity.entityId)) {
+      succesfulDeployments.add(entity.entityId)
+      return true
+    }
+
+    return false
+  }
 
   async function handleDeploymentFromServer(entity: RemoteEntityDeployment, contentServer: string) {
+    if (await shouldEntityDeploymentBeIgnored(entity)) {
+      // early return to prevent noops
+      components.metrics.increment('dcl_ignored_sync_deployments')
+      return
+    }
+
     let elementInMap = deploymentsMap.get(entity.entityId)
     if (elementInMap) {
       // if the element to deploy exists in the map, then we add the server to the list for load balancing
@@ -60,14 +81,7 @@ export function createBatchDeployerComponent(
       parallelDeploymentJobs
         .scheduleJobWithPriority(async () => {
           try {
-            // this condition should be carefully handled:
-            // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
-            // 2) then it checks against the DB (deploymentExists)
-            const alreadyDeployed =
-              components.deployedEntitiesFilter.check(entity.entityId) &&
-              (await deploymentExists(components, entity.entityId))
-
-            if (alreadyDeployed) {
+            if (await isEntityDeployed(components, entity.entityId)) {
               return
             }
 
@@ -79,10 +93,13 @@ export function createBatchDeployerComponent(
               elementInMap!.servers,
               DeploymentContext.SYNCED
             )
+
             components.deployedEntitiesFilter.add(entity.entityId)
+            succesfulDeployments.add(entity.entityId)
+            deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
             // failed deployments are automatically rescheduled
-            await components.deployer.reportErrorDuringSync(
+            components.deployer.reportErrorDuringSync(
               entity.entityType as any,
               entity.entityId,
               FailureReason.DEPLOYMENT_ERROR,
