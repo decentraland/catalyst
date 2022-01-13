@@ -3,46 +3,29 @@ import { createLogComponent } from '@well-known-components/logger'
 import { random } from 'faker'
 import ms from 'ms'
 import { spy } from 'sinon'
-import { GenericContainer, StartedTestContainer } from 'testcontainers'
-import { Container } from 'testcontainers/dist/container'
-import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
 import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
 import { createDatabaseComponent, IDatabaseComponent } from '../../src/ports/postgres'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
-import { isCI } from './E2ETestUtils'
 import { TestProgram } from './TestProgram'
 
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
   public static POSTGRES_PORT = 5432
   private runningServers: TestProgram[]
-  private postgresContainer: StartedTestContainer
   private database: IDatabaseComponent
   private sharedEnv: Environment
   private dao: MockedDAOClient
 
   async start(overrideConfigs?: Record<number, any>): Promise<void> {
-    if (!isCI()) {
-      this.postgresContainer = await new GenericContainer('postgres', '12')
-        .withName('postgres_test')
-        .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
-        .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
-        .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
-        .withWaitStrategy(new PostgresWaitStrategy())
-        .start()
-    }
-
-    const mappedPort =
-      this.postgresContainer?.getMappedPort(E2ETestEnvironment.POSTGRES_PORT) ?? E2ETestEnvironment.POSTGRES_PORT
     this.sharedEnv = new Environment()
       .setConfig(EnvironmentConfig.PSQL_PASSWORD, DEFAULT_DATABASE_CONFIG.password)
       .setConfig(EnvironmentConfig.PSQL_USER, DEFAULT_DATABASE_CONFIG.user)
-      .setConfig(EnvironmentConfig.PSQL_PORT, mappedPort)
+      .setConfig(EnvironmentConfig.PSQL_PORT, E2ETestEnvironment.POSTGRES_PORT)
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
-      .setConfig(EnvironmentConfig.PSQL_HOST, this.postgresContainer?.getContainerIpAddress() ?? 'localhost')
+      .setConfig(EnvironmentConfig.PSQL_HOST, 'localhost')
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
@@ -68,9 +51,6 @@ export class E2ETestEnvironment {
     await stopAllComponents({
       database: this.database
     })
-
-    // lastly we kill the DB container
-    await this.postgresContainer?.stop()
   }
 
   async clearDatabases(): Promise<void> {
@@ -203,41 +183,6 @@ export class ServerBuilder {
     }
 
     return servers
-  }
-}
-
-/** During startup, the db is restarted, so we need to wait for the log message twice */
-class PostgresWaitStrategy extends LogWaitStrategy {
-  private static LOG = 'database system is ready to accept connections'
-  constructor() {
-    super(PostgresWaitStrategy.LOG)
-  }
-
-  public async waitUntilReady(container: Container): Promise<void> {
-    let counter = 0
-    return new Promise(async (resolve, reject) => {
-      const stream = await container.logs()
-      stream
-        .on('data', (line) => {
-          if (line.toString().includes(PostgresWaitStrategy.LOG)) {
-            counter++
-            if (counter === 2) {
-              resolve()
-            }
-          }
-        })
-        .on('err', (line) => {
-          if (line.toString().includes(PostgresWaitStrategy.LOG)) {
-            counter++
-            if (counter === 2) {
-              resolve()
-            }
-          }
-        })
-        .on('end', () => {
-          reject()
-        })
-    })
   }
 }
 

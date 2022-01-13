@@ -2,6 +2,6 @@
   "recommendations": [
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
-    "hbenl.vscode-jasmine-test-adapter"
+    "firsttris.vscode-jest-runner"
   ]
 }

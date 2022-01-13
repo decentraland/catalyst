@@ -17,6 +17,6 @@ describe('HandlersRegistry', () => {
 
     handlersRegistry.handle(undefined, { type: MessageType.OPEN, src: 'src', dst: 'dst' }).catch(console.error)
 
-    expect(handled).toBeTrue()
+    expect(handled).toBe(true)
   })
 })

@@ -137,7 +137,7 @@ async function assertSignatureInInvalid(result: undefined | string[] | Promise<u
   const actualErrors = await result
   expect(actualErrors).toBeDefined()
   expect(actualErrors?.length).toBe(1)
-  expect(actualErrors?.[0]).toMatch('The signature is invalid.*')
+  expect(actualErrors?.[0]).toMatch(/^The signature is invalid.?/)
 }
 
 async function assertErrorsWere(
@@ -440,7 +440,7 @@ describe('Validations', function () {
       const actualErrors = await result
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
-      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+      expect(actualErrors?.[0]).toMatch(/^The deployment is too big. The maximum allowed size per pointer is ?/)
     })
 
     it(`when an entity is big, but has enough pointers, then it is ok`, async () => {
@@ -469,7 +469,7 @@ describe('Validations', function () {
       const actualErrors = await Validations.REQUEST_SIZE_V4(args)
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
-      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+      expect(actualErrors?.[0]).toMatch(/^The deployment is too big. The maximum allowed size per pointer is ?/)
     })
 
     it(`when an entity final version is too big, then it fails`, async () => {
@@ -495,7 +495,7 @@ describe('Validations', function () {
       const actualErrors = await Validations.REQUEST_SIZE_V4(args)
       expect(actualErrors).toBeDefined()
       expect(actualErrors?.length).toBe(1)
-      expect(actualErrors?.[0]).toMatch('The deployment is too big. The maximum allowed size per pointer is *')
+      expect(actualErrors?.[0]).toMatch(/^The deployment is too big. The maximum allowed size per pointer is ?/)
     })
 
     it(`when cannot fetch content file in order to check size, then it fails`, async () => {
@@ -774,7 +774,7 @@ describe('Validations', function () {
         expect(actualErrors).toBeDefined()
         expect(actualErrors?.length).toBe(1)
         expect(actualErrors?.[0]).toMatch(
-          'The deployment is too big. The maximum allowed size for wearable model files *'
+          /^The deployment is too big. The maximum allowed size for wearable model files ?/
         )
       })
 
@@ -801,7 +801,7 @@ describe('Validations', function () {
         const actualErrors = await result
         expect(actualErrors).toBeDefined()
         expect(actualErrors?.length).toBe(1)
-        expect(actualErrors?.[0]).toMatch('The deployment is too big. *')
+        expect(actualErrors?.[0]).toMatch(/^The deployment is too big. ?/)
       })
 
       it(`when a wearable is deployed and sizes are correct, then it is ok`, async () => {

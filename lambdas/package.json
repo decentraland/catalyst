@@ -8,7 +8,7 @@
     "cleanup": "shx rm -rf dist node_modules",
     "build": "tsc -b",
     "start": "node ./dist/src/entrypoints/run-server.js",
-    "test": "jasmine-ts --config=jasmine.json"
+    "test": "jest --runInBand --forceExit --coverage"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",
@@ -31,5 +31,10 @@
     "ms": "2.1.3",
     "node-fetch": "2.6.1",
     "sharp": "0.29.1"
+  },
+  "devDependencies": {
+    "@types/jest": "27.4.0",
+    "jest": "27.4.7",
+    "ts-jest": "27.1.2"
   }
 }

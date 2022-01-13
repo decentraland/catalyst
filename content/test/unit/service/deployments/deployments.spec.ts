@@ -98,10 +98,10 @@ describe('deployments service', () => {
       result = await getDeployments(components, options)
 
       expect(result).toEqual(
-        jasmine.objectContaining({
-          deployments: jasmine.arrayContaining([
-            jasmine.objectContaining({ entityId: historicalDeploymentsRows[0].entity_id }),
-            jasmine.objectContaining({ entityId: historicalDeploymentsRows[1].entity_id })
+        expect.objectContaining({
+          deployments: expect.arrayContaining([
+            expect.objectContaining({ entityId: historicalDeploymentsRows[0].entity_id }),
+            expect.objectContaining({ entityId: historicalDeploymentsRows[1].entity_id })
           ]),
           filters: options.filters
         })

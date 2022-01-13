@@ -12,7 +12,7 @@ describe('validate signature handler', () => {
 
     response = createResponse()
 
-    next = jasmine.createSpy()
+    next = jest.fn()
   })
 
   it('should validate that the signature data is provided', async () => {
