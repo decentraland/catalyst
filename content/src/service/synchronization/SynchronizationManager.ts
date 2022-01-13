@@ -83,7 +83,12 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
     bootstrap: {
       // Note: If any deployment was overwritten by the snapshots, then we never reach them
       ClusterSynchronizationManager.LOGGER.info(`Starting to bootstrap from snapshots`)
-      await bootstrapFromSnapshots(this.components, this.components.contentCluster)
+      try {
+        await bootstrapFromSnapshots(this.components, this.components.contentCluster)
+      } catch (error) {
+        ClusterSynchronizationManager.LOGGER.info(`Error bootstrapping: ${error}`)
+        process.exit(1)
+      }
       this.synchronizationState = SynchronizationState.SYNCED
     }
 
