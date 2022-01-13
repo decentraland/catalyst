@@ -87,7 +87,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
         await bootstrapFromSnapshots(this.components, this.components.contentCluster)
       } catch (error) {
         ClusterSynchronizationManager.LOGGER.info(`Error bootstrapping: ${error}`)
-        process.exit(1)
+        throw error;
       }
       this.synchronizationState = SynchronizationState.SYNCED
     }
