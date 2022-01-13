@@ -155,8 +155,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
             pointerChangesWaitTime: 5000,
 
             // reconnection time for the whole catalyst
-            reconnectTime: 1000,
+            reconnectTime: 1000 /* one second */,
             reconnectRetryTimeExponent: 1.2,
+            maxReconnectionTime: 3_600_000 /* one hour */,
 
             // download entities retry
             requestMaxRetries: 10,
