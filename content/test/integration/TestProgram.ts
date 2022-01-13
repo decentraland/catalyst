@@ -1,16 +1,9 @@
 import { ServerBaseUrl } from '@catalyst/commons'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
-import {
-  ContentClient,
-  DeploymentData,
-  DeploymentFields,
-  DeploymentOptions,
-  DeploymentWithMetadataContentAndPointers
-} from 'dcl-catalyst-client'
+import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import {
   ContentFileHash,
-  Deployment as ControllerDeployment,
-  DeploymentBase,
+  Deployment,
   Entity as ControllerEntity,
   EntityId,
   EntityType,
@@ -25,6 +18,8 @@ import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src
 import { EnvironmentConfig } from '../../src/Environment'
 import { FailedDeployment } from '../../src/ports/failedDeploymentsCache'
 import { main } from '../../src/service'
+import { getDeployments } from '../../src/service/deployments/deployments'
+import { DeploymentOptions } from '../../src/service/deployments/types'
 import { isInvalidDeployment } from '../../src/service/Service'
 import { AppComponents } from '../../src/types'
 import { assertResponseIsOkOrThrow } from './E2EAssertions'
@@ -44,7 +39,6 @@ export class TestProgram {
   constructor(public components: AppComponents) {
     this.client = new ContentClient({
       contentUrl: this.getUrl(),
-      proofOfWorkEnabled: false,
       fetcher: components.catalystFetcher
     })
     this.logger = components.logs.getLogger('TestProgram')
@@ -99,18 +93,10 @@ export class TestProgram {
     return this.client.fetchEntitiesByPointers(type, pointers)
   }
 
-  getDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-    options?: DeploymentOptions<T>
-  ): Promise<ControllerDeployment[]> {
+  async getDeployments(options?: DeploymentOptions): Promise<Deployment[]> {
     const filters = Object.assign({ from: 1 }, options?.filters)
-
-    return this.client.fetchAllDeployments({
-      fields: DeploymentFields.POINTERS_CONTENT_METADATA_AND_AUDIT_INFO,
-      ...options,
-      filters: {
-        ...filters
-      }
-    })
+    const deployments = await getDeployments(this.program!.components, { ...options, filters })
+    return deployments.deployments
   }
 
   getStatus(): Promise<ServerStatus> {

@@ -4,15 +4,12 @@ import {
   ContentAPI,
   ContentClient,
   DeploymentData,
-  DeploymentOptions,
-  DeploymentPreparationData,
-  DeploymentWithMetadataContentAndPointers
+  DeploymentPreparationData
 } from 'dcl-catalyst-client'
 import {
   AvailableContentResult,
   CompleteRequestOptions,
   ContentFileHash,
-  DeploymentBase,
   Entity,
   EntityId,
   EntityType,
@@ -25,7 +22,6 @@ import {
 } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import log4js from 'log4js'
-import { Readable } from 'stream'
 /**
  * This content client  tries to use the internal docker network to connect lambdas with the content server.
  * If it can't, then it will try to contact it externally
@@ -36,13 +32,7 @@ export class SmartContentClient implements ContentAPI {
 
   private contentClient: IFuture<ContentAPI> | undefined
 
-  constructor(private readonly externalContentServerUrl: string, private readonly proofOfWorkEnabled: boolean) {}
-  iterateThroughDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-    deploymentOptions?: DeploymentOptions<T>,
-    options?: Partial<CompleteRequestOptions>
-  ): AsyncIterable<T> {
-    throw new Error('Method not implemented.')
-  }
+  constructor(private readonly externalContentServerUrl: string) {}
 
   async fetchEntitiesByPointers(type: EntityType, pointers: Pointer[], options?: RequestOptions): Promise<Entity[]> {
     const client = await this.getClient()
@@ -67,21 +57,6 @@ export class SmartContentClient implements ContentAPI {
   async fetchContentStatus(options?: RequestOptions): Promise<ServerStatus> {
     const client = await this.getClient()
     return client.fetchContentStatus(options)
-  }
-
-  async fetchAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-    deploymentOptions: DeploymentOptions<T>,
-    options?: RequestOptions
-  ): Promise<T[]> {
-    const client = await this.getClient()
-    return client.fetchAllDeployments(deploymentOptions, options)
-  }
-
-  streamAllDeployments<T extends DeploymentBase = DeploymentWithMetadataContentAndPointers>(
-    deploymentOptions?: DeploymentOptions<T>,
-    options?: RequestOptions
-  ): Readable {
-    throw new Error('Deployments streaming is currently not supported')
   }
 
   async downloadContent(contentHash: ContentFileHash, options?: RequestOptions): Promise<Buffer> {
@@ -149,8 +124,7 @@ export class SmartContentClient implements ContentAPI {
       }
       this.contentClient.resolve(
         new ContentClient({
-          contentUrl: contentClientUrl,
-          proofOfWorkEnabled: contentClientUrl === this.externalContentServerUrl && this.proofOfWorkEnabled
+          contentUrl: contentClientUrl
         })
       )
     }
