@@ -2,12 +2,12 @@ import { ServerBaseUrl } from '@catalyst/commons'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import {
+  AuditInfo,
   ContentFileHash,
   Deployment,
   Entity as ControllerEntity,
   EntityId,
   EntityType,
-  LegacyAuditInfo,
   Pointer,
   ServerStatus,
   Timestamp
@@ -18,7 +18,6 @@ import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src
 import { EnvironmentConfig } from '../../src/Environment'
 import { FailedDeployment } from '../../src/ports/failedDeploymentsCache'
 import { main } from '../../src/service'
-import { getDeployments } from '../../src/service/deployments/deployments'
 import { DeploymentOptions } from '../../src/service/deployments/types'
 import { isInvalidDeployment } from '../../src/service/Service'
 import { AppComponents } from '../../src/types'
@@ -93,12 +92,6 @@ export class TestProgram {
     return this.client.fetchEntitiesByPointers(type, pointers)
   }
 
-  async getDeployments(options?: DeploymentOptions): Promise<Deployment[]> {
-    const filters = Object.assign({ from: 1 }, options?.filters)
-    const deployments = await getDeployments(this.program!.components, { ...options, filters })
-    return deployments.deployments
-  }
-
   getStatus(): Promise<ServerStatus> {
     return this.client.fetchContentStatus()
   }
@@ -115,8 +108,15 @@ export class TestProgram {
     return this.client.downloadContent(fileHash)
   }
 
-  getAuditInfo(entity: ControllerEntity): Promise<LegacyAuditInfo> {
-    return this.client.fetchAuditInfo(entity.type, entity.id)
+  async getAuditInfo(entity: ControllerEntity): Promise<AuditInfo> {
+    const legacyAuditInfo = await this.client.fetchAuditInfo(entity.type, entity.id)
+    return { ...legacyAuditInfo, localTimestamp: 0 }
+  }
+
+  async getDeployments(options?: DeploymentOptions): Promise<Deployment[]> {
+    const filters = Object.assign({ from: 1 }, options?.filters)
+    const deployments = await this.components.deployer.getDeployments({ ...options, filters })
+    return deployments.deployments
   }
 
   getDenylistTargets(): Promise<ControllerDenylistData[]> {
