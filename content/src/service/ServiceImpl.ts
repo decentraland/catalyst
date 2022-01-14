@@ -57,6 +57,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'logs'
       | 'authenticator'
       | 'database'
+      | 'deployedEntitiesFilter'
     >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
@@ -156,6 +157,10 @@ export class ServiceImpl implements MetaverseContentService {
           })
         }
       }
+
+      // add the entity to the bloom filter to prevent expensive operations during the sync
+      this.components.deployedEntitiesFilter.add(entity.id)
+
       return storeResult.auditInfoComplete.localTimestamp
     } finally {
       // Remove the updated pointer from the list of current being deployed
