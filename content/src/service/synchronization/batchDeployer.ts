@@ -36,15 +36,15 @@ export function createBatchDeployerComponent(
 
   // accumulator of all deployments
   const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
-  const succesfulDeployments = new Set<string>()
+  const successfulDeployments = new Set<string>()
 
   async function shouldEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
-    // ignore entities if those were succesfully deployed during this execution
-    if (succesfulDeployments.has(entity.entityId)) return true
+    // ignore entities if those were successfully deployed during this execution
+    if (successfulDeployments.has(entity.entityId)) return true
 
     // ignore entities that are already deployed locally
     if (await isEntityDeployed(components, entity.entityId)) {
-      succesfulDeployments.add(entity.entityId)
+      successfulDeployments.add(entity.entityId)
       return true
     }
 
@@ -95,7 +95,7 @@ export function createBatchDeployerComponent(
             )
 
             components.deployedEntitiesFilter.add(entity.entityId)
-            succesfulDeployments.add(entity.entityId)
+            successfulDeployments.add(entity.entityId)
             deploymentsMap.delete(entity.entityId)
           } catch (err: any) {
             // failed deployments are automatically rescheduled
