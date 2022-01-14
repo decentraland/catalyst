@@ -76,6 +76,11 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'gauge',
     labelNames: ['entity_type']
   },
+  dcl_ignored_sync_deployments: {
+    help: 'Entities ignored during the synchronization and bootstrapping',
+    type: 'counter',
+    labelNames: []
+  },
   dcl_pending_download_gauge: {
     help: 'Pending downloading jobs',
     type: 'gauge',

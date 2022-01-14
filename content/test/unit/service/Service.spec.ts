@@ -6,6 +6,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
+import { createBloomFilterComponent } from '../../../src/ports/bloomFilter'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -100,8 +101,9 @@ describe('Service', function () {
     jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
 
     // Consider the random file as already uploaded, but not the entity file
-    jest.spyOn(service.components.storage, 'exist').mockImplementation((ids: string[]) =>
-      Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
+    jest
+      .spyOn(service.components.storage, 'exist')
+      .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
     const storeSpy = jest.spyOn(service.components.storage, 'store')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
@@ -195,18 +197,20 @@ describe('Service', function () {
   xit(`When a pointer has no entity after a deployment, then it is invalidated from the cache`, async () => {
     const service = await buildService()
     jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
-    Promise.resolve(
-      new Map([
-        [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
-        [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.SET }]
-      ])
-    ))
+      Promise.resolve(
+        new Map([
+          [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.SET }],
+          [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.SET }]
+        ])
+      )
+    )
     const serviceSpy = jest.spyOn(service, 'getDeployments').mockImplementation(() =>
-    Promise.resolve({
-      deployments: [fakeDeployment()],
-      filters: {},
-      pagination: { offset: 0, limit: 0, moreData: true }
-    }))
+      Promise.resolve({
+        deployments: [fakeDeployment()],
+        filters: {},
+        pagination: { offset: 0, limit: 0, moreData: true }
+      })
+    )
 
     // Call the first time
     await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
@@ -241,6 +245,10 @@ describe('Service', function () {
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
 
+    const deployedEntitiesFilter = createBloomFilterComponent({
+      sizeInBytes: 512
+    })
+
     return ServiceFactory.create({
       env,
       pointerManager,
@@ -252,7 +260,8 @@ describe('Service', function () {
       metrics,
       logs,
       authenticator,
-      database
+      database,
+      deployedEntitiesFilter
     })
   }
 

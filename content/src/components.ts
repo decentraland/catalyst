@@ -75,6 +75,10 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
 
+  const deployedEntitiesFilter = createBloomFilterComponent({
+    sizeInBytes: 512
+  })
+
   let deployer: MetaverseContentService = ServiceFactory.create({
     metrics,
     storage,
@@ -86,7 +90,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     env,
     logs,
     authenticator,
-    database
+    database,
+    deployedEntitiesFilter
   })
 
   const denylist = new ActiveDenylist(
@@ -116,10 +121,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     autoStart: true,
     concurrency: 10,
     timeout: 60000
-  })
-
-  const deployedEntitiesFilter = createBloomFilterComponent({
-    sizeInBytes: 512
   })
 
   const batchDeployer = createBatchDeployerComponent(
@@ -155,8 +156,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
             pointerChangesWaitTime: 5000,
 
             // reconnection time for the whole catalyst
-            reconnectTime: 1000,
+            reconnectTime: 1000 /* one second */,
             reconnectRetryTimeExponent: 1.2,
+            maxReconnectionTime: 3_600_000 /* one hour */,
 
             // download entities retry
             requestMaxRetries: 10,

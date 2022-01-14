@@ -21,6 +21,7 @@ export class ServiceFactory {
       | 'logs'
       | 'authenticator'
       | 'database'
+      | 'deployedEntitiesFilter'
     >
   ): ServiceImpl {
     const { env } = components
