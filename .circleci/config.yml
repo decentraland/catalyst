@@ -104,11 +104,11 @@ jobs:
           command: yarn workspace @catalyst/content-server test:unit
           environment:
             CI: 'true'
-      - run:
-          name: Run integration tests
-          command: yarn workspace @catalyst/content-server test:integration
-          environment:
-            CI: 'true'
+      # - run:
+      #     name: Run integration tests
+      #     command: yarn workspace @catalyst/content-server test:integration
+      #     environment:
+      #       CI: 'true'
 
   build-lambdas:
     <<: *base_env
