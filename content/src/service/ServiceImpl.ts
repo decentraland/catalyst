@@ -1,4 +1,3 @@
-import { DeploymentToValidate } from '@dcl/content-validator'
 import { IPFSv2 } from '@dcl/schemas'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
@@ -217,12 +216,11 @@ export class ServiceImpl implements MetaverseContentService {
             }
           }
 
-          const deployment: DeploymentToValidate = {
+          const validationResult = await this.components.validator.validate({
             entity,
             auditInfo,
             files: hashes
-          }
-          const validationResult = await this.components.validator.validate(deployment)
+          })
           if (!validationResult.ok) {
             ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
               entityId,
@@ -488,8 +486,6 @@ export class ServiceImpl implements MetaverseContentService {
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
         this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
-      isNotAddressOwnedByDecentraland: () =>
-        !this.components.authenticator.isAddressOwnedByDecentraland(Authenticator.ownerAddress(auditInfo.authChain)),
       isEntityRateLimited: (entity) => this.isEntityRateLimited(entity),
       isRequestTtlBackwards: (entity) =>
         Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
