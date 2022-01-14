@@ -3360,6 +3360,22 @@ dcl-catalyst-commons@7.2.0:
     multihashing-async "^2.1.4"
     node-fetch "^3.0.0"
 
+dcl-catalyst-commons@7.2.1-20220114144153.commit-48fc483:
+  version "7.2.1-20220114144153.commit-48fc483"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1-20220114144153.commit-48fc483.tgz#d96b778ca41994f01c6bc35e9e61987a54022955"
+  integrity sha512-+SlB30edkVDQMaz9C+v7CjFPPWH7FevSrGYXBb3JSutGUTrw3+TaX8+s35nNpiil01ZG13LCdFsIhsmB7siZhA==
+  dependencies:
+    "@dcl/schemas" "3.1.1"
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ipfs-only-hash "^4.0.0"
+    ms "^2.1.2"
+    multihashing-async "^2.1.4"
+    node-fetch "^3.0.0"
+
 dcl-crypto@2.3.0, dcl-crypto@^2.1.0, dcl-crypto@^2.2.0:
   version "2.3.0"
   resolved "https://registry.npmjs.org/dcl-crypto/-/dcl-crypto-2.3.0.tgz"
