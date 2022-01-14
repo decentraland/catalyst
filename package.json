@@ -64,7 +64,7 @@
     "pg": "8.7.1",
     "prettier": "2.4.1",
     "shx": "0.3.3",
-    "sinon": "11.1.2",
+    "sinon": "12.0.1",
     "ts-mockito": "2.6.1",
     "ts-node": "10.2.1",
     "ts-path-mapping": "0.1.4",
