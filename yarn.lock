@@ -355,15 +355,15 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/content-validator@^1.0.0-20220112182410.commit-ad532c0":
-  version "1.0.0-20220112182410.commit-ad532c0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.0-20220112182410.commit-ad532c0.tgz#e406b17490517a965c9b83df8d1298417caaeac2"
-  integrity sha512-lZDGhWmndykNlZSuoZmEbltDlCYBwRAQaa4NXAnJXZN1e+qf4JqrsdY6x0wlUvP7RXovkaBMIxq/DD2dt0LBRg==
+"@dcl/content-validator@^1.0.0-20220114193347.commit-f0ad6d6":
+  version "1.0.0-20220117135517.commit-a5cf3f7"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.0-20220117135517.commit-a5cf3f7.tgz#e948ec5823d677b9af2eb3657e0a7183f956e225"
+  integrity sha512-1yD43YkfVuzDOG4lvWW5uml5DlKkGnjob7PQ4mMmToFM9E+9BAnDNXrS5glBdoJ0aNA79QcxG5kE1axJ5fwjsw==
   dependencies:
     "@dcl/schemas" "^3.1.1"
     "@dcl/urn-resolver" "^1.3.0"
     "@ethersproject/address" "^5.5.0"
-    dcl-catalyst-commons "7.1.4-20220105153139.commit-79398b8"
+    dcl-catalyst-commons "7.2.1-20220117123346.commit-e7a644a"
     ms "^2.1.3"
     sharp "^0.29.3"
 
@@ -3328,22 +3328,6 @@ dcl-catalyst-client@10.0.0:
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@7.1.4-20220105153139.commit-79398b8:
-  version "7.1.4-20220105153139.commit-79398b8"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.1.4-20220105153139.commit-79398b8.tgz#d94ca2de38ecac49b3380bddaeb62066e6b1aaa8"
-  integrity sha512-ZCJLrQlSN0Xj5Ops6aTHyslCyKMNxZpEhhmlZzucAW53EYQCSHG9UpTLeZ/kGgoknPjPnspMl4xpwsoQj4pjIQ==
-  dependencies:
-    "@dcl/schemas" "3.1.1"
-    abort-controller "^3.0.0"
-    cids "^1.1.9"
-    cookie "^0.4.1"
-    cross-fetch "^3.1.4"
-    dcl-crypto "^2.1.0"
-    ipfs-only-hash "^4.0.0"
-    ms "^2.1.2"
-    multihashing-async "^2.1.4"
-    node-fetch "^3.0.0"
-
 dcl-catalyst-commons@7.2.0:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.0.tgz#b94dd999f05b20ebb92bc01e233cd6d9e7ae94a6"
@@ -3364,6 +3348,22 @@ dcl-catalyst-commons@7.2.1-20220114144153.commit-48fc483:
   version "7.2.1-20220114144153.commit-48fc483"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1-20220114144153.commit-48fc483.tgz#d96b778ca41994f01c6bc35e9e61987a54022955"
   integrity sha512-+SlB30edkVDQMaz9C+v7CjFPPWH7FevSrGYXBb3JSutGUTrw3+TaX8+s35nNpiil01ZG13LCdFsIhsmB7siZhA==
+  dependencies:
+    "@dcl/schemas" "3.1.1"
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ipfs-only-hash "^4.0.0"
+    ms "^2.1.2"
+    multihashing-async "^2.1.4"
+    node-fetch "^3.0.0"
+
+dcl-catalyst-commons@7.2.1-20220117123346.commit-e7a644a:
+  version "7.2.1-20220117123346.commit-e7a644a"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1-20220117123346.commit-e7a644a.tgz#cf3fe2cfd25ec9d85c740f017dc5ddae9a37d1e7"
+  integrity sha512-tUvY7+DDv6iA2FkmEWf4pW9A0FZrDaxHyj7L11geQ+Yi/LteFG2yjjwkuRsw9tRs/KOkD3LwN2bXFrPtSd+btg==
   dependencies:
     "@dcl/schemas" "3.1.1"
     abort-controller "^3.0.0"
