@@ -16,7 +16,7 @@ interface ServiceCalls {
   areThereNewerEntities: EntityCheck
   isEntityDeployedAlready: EntityCheck
   isNotFailedDeployment: EntityCheck
-  isAddressOwnedByDecentraland: EntityCheck
+  isNotAddressOwnedByDecentraland: EntityCheck
   isEntityRateLimited: EntityCheck
   isRequestTtlBackwards: EntityCheck
 }
@@ -60,7 +60,7 @@ export const createServerValidator = (): ServerValidator => ({
     } else if (context === DeploymentContext.SYNCED_LEGACY_ENTITY) {
       checks = [
         {
-          check: serviceCalls.isAddressOwnedByDecentraland,
+          check: serviceCalls.isNotAddressOwnedByDecentraland,
           response: `Expected an address owned by decentraland.`
         }
       ]

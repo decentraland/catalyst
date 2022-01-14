@@ -488,8 +488,8 @@ export class ServiceImpl implements MetaverseContentService {
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
         this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
-      isAddressOwnedByDecentraland: () =>
-        this.components.authenticator.isAddressOwnedByDecentraland(Authenticator.ownerAddress(auditInfo.authChain)),
+      isNotAddressOwnedByDecentraland: () =>
+        !this.components.authenticator.isAddressOwnedByDecentraland(Authenticator.ownerAddress(auditInfo.authChain)),
       isEntityRateLimited: (entity) => this.isEntityRateLimited(entity),
       isRequestTtlBackwards: (entity) =>
         Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
