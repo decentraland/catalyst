@@ -1,23 +1,25 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
 import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 import { AppComponents } from '../../types'
-import { ContentCluster } from './ContentCluster'
 
 type BootstrapComponents = Pick<
   AppComponents,
-  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue'
+  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue' | 'contentCluster'
 >
 
 /**
  * This function fetches all the full snapshots from remote catalysts and
  * then iterates over all of the deployments to call the batch deployer for each deployed entity.
  */
-export async function bootstrapFromSnapshots(components: BootstrapComponents, cluster: ContentCluster): Promise<void> {
-  const catalystServers = await ensureListOfCatalysts(cluster, 10 /* retries */, 1000 /* wait time */)
+export async function bootstrapFromSnapshots(components: BootstrapComponents): Promise<void> {
+  // first ensure the content cluster gets our identity
+  await components.contentCluster.getIdentity()
+
+  // then find catalyst servers
+  const catalystServers = await ensureListOfCatalysts(components, 30 /* up to 30 retries */, 1_000 /* wait time */)
 
   if (catalystServers.length == 0) {
-    console.error('There are no servers. Cancelling bootstrapping')
-    return
+    throw new Error('There are no servers. Cancelling bootstrapping')
   }
 
   const logs = components.logs.getLogger('BootstrapFromSnapshots')

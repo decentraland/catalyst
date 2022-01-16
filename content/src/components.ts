@@ -60,7 +60,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       daoClient,
       challengeSupervisor,
       fetcher,
-      logs
+      logs,
+      env
     },
     env.getConfig(EnvironmentConfig.UPDATE_FROM_DAO_INTERVAL)
   )
@@ -169,20 +170,16 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const synchronizationManager = new ClusterSynchronizationManager(
-    {
-      synchronizationJobManager,
-      downloadQueue,
-      deployer,
-      fetcher,
-      metrics,
-      staticConfigs,
-      batchDeployer,
-      logs,
-      contentCluster
-    },
-    env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
-  )
+  const synchronizationManager = new ClusterSynchronizationManager({
+    synchronizationJobManager,
+    downloadQueue,
+    deployer,
+    fetcher,
+    metrics,
+    staticConfigs,
+    logs,
+    contentCluster
+  })
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
 
