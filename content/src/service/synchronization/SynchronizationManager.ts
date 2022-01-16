@@ -1,7 +1,7 @@
 import { delay } from '@catalyst/commons'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
-import { retryFailedDeploymentExecution } from 'src/logic/deployments'
+import { retryFailedDeploymentExecution } from '../../logic/deployments'
 import { AppComponents, IStatusCapableComponent, StatusProbeResult } from '../../types'
 
 type ContentSyncComponents = Pick<
