@@ -4,8 +4,8 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { Timestamp } from 'dcl-catalyst-commons'
 import future, { IFuture } from 'fp-future'
 import ms from 'ms'
-import { EnvironmentConfig } from 'src/Environment'
-import { getChallengeInServer } from 'src/logic/cluster-helpers'
+import { EnvironmentConfig } from '../../Environment'
+import { getChallengeInServer } from '../../logic/cluster-helpers'
 import { AppComponents } from '../../types'
 
 export interface IdentityProvider {
