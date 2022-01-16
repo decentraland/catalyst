@@ -147,7 +147,7 @@ export class ContentCluster implements IdentityProvider {
           const daoServers = await this.components.daoClient.getAllContentServers()
           const normalizedBaseUrl = normalizeBaseUrl(this.normalizedContentServerAddress)
 
-          for (let server of daoServers) {
+          for (const server of daoServers) {
             if (normalizeBaseUrl(server.baseUrl) == normalizedBaseUrl) {
               this.identityFuture.resolve(server)
               ContentCluster.LOGGER.info(`Calculated my identity. My baseUrl is ${server.baseUrl}`)
