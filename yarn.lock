@@ -355,7 +355,7 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/content-validator@^1.0.0-20220114193347.commit-f0ad6d6":
+"@dcl/content-validator@^1.0.0-20220117135517.commit-a5cf3f7":
   version "1.0.0-20220117135517.commit-a5cf3f7"
   resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.0-20220117135517.commit-a5cf3f7.tgz#e948ec5823d677b9af2eb3657e0a7183f956e225"
   integrity sha512-1yD43YkfVuzDOG4lvWW5uml5DlKkGnjob7PQ4mMmToFM9E+9BAnDNXrS5glBdoJ0aNA79QcxG5kE1axJ5fwjsw==
