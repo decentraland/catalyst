@@ -202,25 +202,14 @@ export class ServiceImpl implements MetaverseContentService {
         db.txIf(async (transaction) => {
           const deployedEntity = await this.getEntityById(entityId, transaction)
           const isEntityAlreadyDeployed = !!deployedEntity
-          // When deploying a new entity in some context which is not sync, we run some server side checks
-          const shouldValidateEntity = await this.shouldValidateEntity(
+
+          const validationResult = await this.validateDeployment(
             entity,
             context,
+            isEntityAlreadyDeployed,
             auditInfo,
-            isEntityAlreadyDeployed
+            hashes
           )
-
-          if (!shouldValidateEntity.ok) {
-            return {
-              errors: [shouldValidateEntity.message]
-            }
-          }
-
-          const validationResult = await this.components.validator.validate({
-            entity,
-            auditInfo,
-            files: hashes
-          })
           if (!validationResult.ok) {
             ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
               entityId,
@@ -475,20 +464,36 @@ export class ServiceImpl implements MetaverseContentService {
     this.listeners.push(listener)
   }
 
-  private async shouldValidateEntity(
+  private async validateDeployment(
     entity: Entity,
     context: DeploymentContext,
+    isEntityDeployedAlready: boolean,
     auditInfo: LocalDeploymentAuditInfo,
-    isEntityDeployedAlready: boolean
-  ): Promise<{ ok: true } | { ok: false; message: string }> {
-    return await this.components.serverValidator.validate(entity, context, {
-      areThereNewerEntities: () => this.areThereNewerEntitiesOnPointers(entity),
+    hashes: Map<string, Uint8Array>
+  ): Promise<{ ok: boolean; errors?: string[] }> {
+    // When deploying a new entity in some context which is not sync, we run some server side checks
+    const serverValidationResult = await this.components.serverValidator.validate(entity, context, {
+      areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity),
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
         this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
       isEntityRateLimited: (entity) => this.isEntityRateLimited(entity),
       isRequestTtlBackwards: (entity) =>
         Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    })
+
+    // If there is an error in the server side validation, we won't run protocol validations
+    if (!serverValidationResult.ok) {
+      return {
+        ok: false,
+        errors: [serverValidationResult.message]
+      }
+    }
+
+    return await this.components.validator.validate({
+      entity,
+      auditInfo,
+      files: hashes
     })
   }
 }

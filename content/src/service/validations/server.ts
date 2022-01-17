@@ -26,55 +26,50 @@ const isRequestTtlForwards: EntityCheck = async (entity) => Date.now() - entity.
 /**
  * Checks when context is DeploymentContext.LOCAL
  */
-const localChecks = (entity: Entity, serviceCalls: ServiceCalls) => [
-  {
-    check: serviceCalls.areThereNewerEntities,
-    response: 'There is a newer entity pointed by one or more of the pointers you provided.'
-  },
-  {
-    check: serviceCalls.isEntityDeployedAlready,
-    response: `This entity was already deployed. You can't redeploy it`
-  },
-  {
-    check: serviceCalls.isEntityRateLimited,
-    response: `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
-  },
-  {
-    check: serviceCalls.isRequestTtlBackwards,
-    response: 'The request is not recent enough, please submit it again with a new timestamp.'
-  },
-  {
-    check: isRequestTtlForwards,
-    response: 'The request is too far in the future, please submit it again with a new timestamp.'
-  }
-]
+const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<string | undefined> => {
+  /** Validate that there are no newer deployments on the entity's pointers */
+  if (await serviceCalls.areThereNewerEntities(entity))
+    return 'There is a newer entity pointed by one or more of the pointers you provided.'
+
+  /** Validate if the entity can be re deployed or not */
+  if (await serviceCalls.isEntityDeployedAlready(entity))
+    return `This entity was already deployed. You can't redeploy it`
+
+  /** Validate the deployment is not rate limited */
+  if (await serviceCalls.isEntityRateLimited(entity))
+    return `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
+
+  /** Validate that the deployment is recent */
+  if (await serviceCalls.isRequestTtlBackwards(entity))
+    return 'The request is not recent enough, please submit it again with a new timestamp.'
+
+  /** Validate that the deployment is not too far in the future */
+  if (isRequestTtlForwards(entity))
+    return 'The request is too far in the future, please submit it again with a new timestamp.'
+}
+
 /**
  * Checks when context is DeploymentContext.FIX_ATTEMPT
  */
-const fixAttemptChecks = (serviceCalls: ServiceCalls) => [
-  {
-    check: serviceCalls.isNotFailedDeployment,
-    response: 'You are trying to fix an entity that is not marked as failed'
-  }
-]
+const fixAttemptChecks = (entity: Entity, serviceCalls: ServiceCalls): string | undefined => {
+  /** Make sure that the deployment actually failed, and that it can be re-deployed */
+  if (serviceCalls.isNotFailedDeployment(entity)) return 'You are trying to fix an entity that is not marked as failed'
+}
+
 /**
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
 export const createServerValidator = (): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
-    let checks: { check: EntityCheck; response: string }[] = []
-
-    // this contexts doesn't validate anything in this side
+    // these contexts doesn't validate anything in this side
     if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) return { ok: true }
 
     if (context === DeploymentContext.LOCAL) {
-      checks = localChecks(entity, serviceCalls)
+      const result = await localChecks(entity, serviceCalls)
+      if (result) return { ok: false, message: result }
     } else if (context === DeploymentContext.FIX_ATTEMPT) {
-      checks = fixAttemptChecks(serviceCalls)
-    }
-
-    for (const { check, response } of checks) {
-      if (await check(entity)) return { ok: false, message: response }
+      const result = fixAttemptChecks(entity, serviceCalls)
+      if (result) return { ok: false, message: result }
     }
 
     return { ok: true }
