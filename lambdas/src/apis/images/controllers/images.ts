@@ -95,7 +95,7 @@ export async function getResizedImage(
           downloadFuture.resolve()
           if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath]
         } catch (error) {
-          LOGGER.error(`Error while trying to conver image of ${cid} to size ${size}`, error)
+          LOGGER.error(`Error while trying to convert image of ${cid} to size ${size}`, error)
           throw new ServiceError("Couldn't resize content. Is content a valid image?", 400)
         }
       } else if (contentServerResponse.status === 404) {
@@ -107,8 +107,8 @@ export async function getResizedImage(
     } catch (e) {
       downloadFuture.reject(e)
       if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath]
-      throw e
     }
+    return downloadFuture
   }
 
   async function getStreamFor(cid: string, size: string) {
