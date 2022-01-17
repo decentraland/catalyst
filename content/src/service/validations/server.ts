@@ -21,7 +21,7 @@ interface ServiceCalls {
 }
 
 const REQUEST_TTL_FORWARDS: number = ms('15m')
-const isRequestTtlForwards: EntityCheck = async (entity) => Date.now() - entity.timestamp < -REQUEST_TTL_FORWARDS
+const isRequestTtlForwards: EntityCheck = (entity) => Date.now() - entity.timestamp < -REQUEST_TTL_FORWARDS
 
 /**
  * Checks when context is DeploymentContext.LOCAL
@@ -51,9 +51,10 @@ const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<
 /**
  * Checks when context is DeploymentContext.FIX_ATTEMPT
  */
-const fixAttemptChecks = (entity: Entity, serviceCalls: ServiceCalls): string | undefined => {
+const fixAttemptChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<string | undefined> => {
   /** Make sure that the deployment actually failed, and that it can be re-deployed */
-  if (serviceCalls.isNotFailedDeployment(entity)) return 'You are trying to fix an entity that is not marked as failed'
+  if (await serviceCalls.isNotFailedDeployment(entity))
+    return 'You are trying to fix an entity that is not marked as failed'
 }
 
 /**
@@ -68,7 +69,7 @@ export const createServerValidator = (): ServerValidator => ({
       const result = await localChecks(entity, serviceCalls)
       if (result) return { ok: false, message: result }
     } else if (context === DeploymentContext.FIX_ATTEMPT) {
-      const result = fixAttemptChecks(entity, serviceCalls)
+      const result = await fixAttemptChecks(entity, serviceCalls)
       if (result) return { ok: false, message: result }
     }
 
