@@ -64,7 +64,7 @@ describe('DeploymentRepository', () => {
           expect(args[0]).toContain(
             `dep1.entity_timestamp >= to_timestamp($(fromEntityTimestamp) / 1000.0) AND dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`
           )
-          expect(args[1]).toEqual(jasmine.objectContaining({ fromEntityTimestamp: 1, toEntityTimestamp: 11 }))
+          expect(args[1]).toEqual(expect.objectContaining({ fromEntityTimestamp: 1, toEntityTimestamp: 11 }))
         })
       })
 
@@ -78,7 +78,7 @@ describe('DeploymentRepository', () => {
           expect(args[0]).toContain(
             `dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0) AND dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`
           )
-          expect(args[1]).toEqual(jasmine.objectContaining({ fromLocalTimestamp: 1, toLocalTimestamp: 11 }))
+          expect(args[1]).toEqual(expect.objectContaining({ fromLocalTimestamp: 1, toLocalTimestamp: 11 }))
         })
       })
     })
@@ -114,7 +114,7 @@ describe('DeploymentRepository', () => {
               `AND dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`
           )
 
-          expect(args[1]).toEqual(jasmine.objectContaining({ fromEntityTimestamp: 1, toEntityTimestamp: 11 }))
+          expect(args[1]).toEqual(expect.objectContaining({ fromEntityTimestamp: 1, toEntityTimestamp: 11 }))
         })
       })
 
@@ -132,7 +132,7 @@ describe('DeploymentRepository', () => {
               `OR (dep1.local_timestamp < to_timestamp($(toLocalTimestamp) / 1000.0)))`
           )
 
-          expect(args[1]).toEqual(jasmine.objectContaining({ fromLocalTimestamp: 1, toLocalTimestamp: 11 }))
+          expect(args[1]).toEqual(expect.objectContaining({ fromLocalTimestamp: 1, toLocalTimestamp: 11 }))
         })
       })
     })
@@ -152,7 +152,7 @@ describe('DeploymentRepository', () => {
         const args = capture(db.map).last()
 
         expect(args[0]).toContain(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
-        expect(args[1]).toEqual(jasmine.objectContaining({ deployedBy: ['jon', 'agus'] }))
+        expect(args[1]).toEqual(expect.objectContaining({ deployedBy: ['jon', 'agus'] }))
       })
     })
 
@@ -164,7 +164,7 @@ describe('DeploymentRepository', () => {
         const args = capture(db.map).last()
 
         expect(args[0]).toContain(`dep1.entity_type IN ($(entityTypes:list))`)
-        expect(args[1]).toEqual(jasmine.objectContaining({ entityTypes }))
+        expect(args[1]).toEqual(expect.objectContaining({ entityTypes }))
       })
     })
 
@@ -177,7 +177,7 @@ describe('DeploymentRepository', () => {
         const args = capture(db.map).last()
 
         expect(args[0]).toContain(`dep1.entity_id IN ($(entityIds:list))`)
-        expect(args[1]).toEqual(jasmine.objectContaining({ entityIds }))
+        expect(args[1]).toEqual(expect.objectContaining({ entityIds }))
       })
     })
 
@@ -199,7 +199,7 @@ describe('DeploymentRepository', () => {
         const args = capture(db.map).last()
 
         expect(args[0]).toContain(`dep1.entity_pointers && ARRAY[$(pointers:list)]`)
-        expect(args[1]).toEqual(jasmine.objectContaining({ pointers: pointers.map((x) => x.toLowerCase()) }))
+        expect(args[1]).toEqual(expect.objectContaining({ pointers: pointers.map((x) => x.toLowerCase()) }))
       })
     })
 

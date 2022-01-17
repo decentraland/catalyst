@@ -39,19 +39,17 @@ describe('content files queries', () => {
 
     it('should return a map from deployment id to an array of content', async () => {
       const result = await getContentFiles(components, deploymentIds)
-      expect(result).toEqual(
-        jasmine.mapContaining(
-          new Map([
+      expect(result).toMatchObject(
+        new Map([
+          [
+            deploymentIds[0],
             [
-              deploymentIds[0],
-              [
-                { key: content_files_response[0].key, hash: content_files_response[0].content_hash },
-                { key: content_files_response[1].key, hash: content_files_response[1].content_hash }
-              ]
-            ],
-            [deploymentIds[1], [{ key: content_files_response[2].key, hash: content_files_response[2].content_hash }]]
-          ])
-        )
+              { key: content_files_response[0].key, hash: content_files_response[0].content_hash },
+              { key: content_files_response[1].key, hash: content_files_response[1].content_hash }
+            ]
+          ],
+          [deploymentIds[1], [{ key: content_files_response[2].key, hash: content_files_response[2].content_hash }]]
+        ])
       )
     })
   })

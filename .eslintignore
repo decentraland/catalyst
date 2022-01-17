@@ -1,4 +1,5 @@
  # We need to skip that file as it makes eslint to hang
+coverage/
 dist/
 node_modules/
 **/dist
@@ -7,3 +8,5 @@ tmpbin
 content/test
 lambdas/test
 comms/lighthouse/test
+jest.config.js
+jest.*.ts

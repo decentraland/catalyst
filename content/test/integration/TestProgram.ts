@@ -202,7 +202,7 @@ export class TestProgram {
 
   private async makeRequest(url: string): Promise<any> {
     const response = await fetch(url)
-    expect(response.ok).toBe(true, `The request to ${url} failed`)
+    expect(response.ok).toBe(true)
     return response.json()
   }
 }
