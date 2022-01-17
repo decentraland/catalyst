@@ -29,7 +29,7 @@ export function initializeMetricsServer<T extends string>(
 
   return {
     async start(port?: number) {
-      const usedPort = port === undefined ? parseInt(process.env.METRICS_PORT ?? '9092') : port
+      const usedPort = port === undefined ? parseInt(process.env.METRICS_PORT ?? '9090') : port
       if (isNaN(usedPort)) {
         throw new Error('Invalid non-numeric METRICS_PORT')
       }
