@@ -69,7 +69,7 @@ export async function getResizedImage(
     if (e instanceof ServiceError) {
       res.status(e.statusCode).send(JSON.stringify({ status: e.statusCode, message: e.message }))
     } else {
-      res.status(500).end() 
+      res.status(500).end()
     }
   }
 
