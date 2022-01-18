@@ -1,5 +1,4 @@
 import { delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
