@@ -18,7 +18,7 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   const disableSynchronization = components.env.getConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION)
 
   if (!disableSynchronization) {
-    await bootstrapFromSnapshots(this.components)
+    await bootstrapFromSnapshots(components)
     await components.synchronizationManager.syncWithServers()
   }
 }
