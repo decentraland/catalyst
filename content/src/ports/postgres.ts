@@ -3,8 +3,8 @@ import { IBaseComponent, IDatabase } from '@well-known-components/interfaces'
 import { Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
-import { AppComponents } from 'src/types'
 import { EnvironmentConfig } from '../Environment'
+import { AppComponents } from '../types'
 
 export interface IDatabaseComponent extends IDatabase {
   queryWithValues<T>(sql: SQLStatement): Promise<IDatabase.IQueryResult<T>>

@@ -1,6 +1,6 @@
 import { restore, stub } from 'sinon'
-import { AppComponents } from 'src/types'
 import { getMigrationData } from '../../../src/logic/database-queries/migration-data-queries'
+import { AppComponents } from '../../../src/types'
 
 describe('migration-data-queries', () => {
   describe('getMigrationData', () => {

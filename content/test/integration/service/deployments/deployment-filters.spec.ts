@@ -2,7 +2,7 @@ import { AuditInfo, DeploymentFilters, EntityType, EntityVersion, Timestamp } fr
 import { Authenticator } from 'dcl-crypto'
 import { DeploymentContext, DeploymentResult, isSuccessfulDeployment } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, EntityCombo } from '../../E2ETestUtils'
 
@@ -27,6 +27,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       // Deploy E1, E2 and E3
       const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(components, E1, E2, E3)
@@ -44,6 +45,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       // Deploy E1 and E2
       await deploy(components, E1, E2)
@@ -61,6 +63,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       // Deploy E1 and E2
       await deploy(components, E1, E2)
@@ -78,6 +81,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       const identity1 = 'Some-Identity'
       const identity2 = 'another-identity'
@@ -101,6 +105,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       await deploy(components, E1, E2, E3)
 
@@ -116,6 +121,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       await deploy(components, E1, E2, E3)
 
@@ -133,6 +139,7 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
     async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       const deployments = await deploy(components, E1, E2, E3)
       console.dir({ deployments })

@@ -57,7 +57,9 @@ class CacheConfigBuilder {
   build(): CacheConfig {
     Object.values(EntityType).forEach((entityType: EntityType) => {
       if (!this.defaultSizes.has(entityType)) {
-        throw new Error(`Can't build a cache config since it is missing the type '${entityType}'.`)
+        // fill default size for missing type with default value (2000)
+        // making not required for new entities to define a default size
+        this.defaultSizes.set(entityType, 2000)
       }
     })
     return new CacheConfig(this)
@@ -68,4 +70,5 @@ export const ENTITIES_BY_POINTERS_CACHE_CONFIG = new CacheConfigBuilder('ENTITIE
   .withDefaultSize(EntityType.PROFILE, 2000)
   .withDefaultSize(EntityType.SCENE, 10000)
   .withDefaultSize(EntityType.WEARABLE, 2000)
+  .withDefaultSize(EntityType.STORE, 2000)
   .build()

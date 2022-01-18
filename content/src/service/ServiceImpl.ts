@@ -14,6 +14,7 @@ import {
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import NodeCache from 'node-cache'
 import { Readable } from 'stream'
+import { EnvironmentConfig } from '../Environment'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -32,15 +33,12 @@ import {
   LocalDeploymentAuditInfo,
   MetaverseContentService
 } from './Service'
-import { ServiceStorage } from './ServiceStorage'
 import { happenedBefore } from './time/TimeSorting'
 
 export class ServiceImpl implements MetaverseContentService {
   private static LOGGER: ILoggerComponent.ILogger
   private readonly listeners: DeploymentListener[] = []
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
-  // TODO (menduz): I'd remove this serviceStorage class
-  private serviceStorage: ServiceStorage
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
 
@@ -53,16 +51,17 @@ export class ServiceImpl implements MetaverseContentService {
       | 'failedDeploymentsCache'
       | 'deploymentManager'
       | 'validator'
+      | 'serverValidator'
       | 'repository'
       | 'logs'
       | 'authenticator'
       | 'database'
       | 'deployedEntitiesFilter'
+      | 'env'
     >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {
-    this.serviceStorage = new ServiceStorage(components.storage)
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
   }
 
@@ -204,27 +203,19 @@ export class ServiceImpl implements MetaverseContentService {
           const deployedEntity = await this.getEntityById(entityId, transaction)
           const isEntityAlreadyDeployed = !!deployedEntity
 
-          // Prepare validation functions that need context
-          const validationResult = await this.components.validator.validate(
-            { entity, auditInfo, files: hashes },
+          const validationResult = await this.validateDeployment(
+            entity,
             context,
-            {
-              areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity),
-              fetchDeploymentStatus: (entityId) =>
-                Promise.resolve(this.components.failedDeploymentsCache.getDeploymentStatus(entityId)),
-              isContentStoredAlready: () => Promise.resolve(alreadyStoredContent),
-              isEntityDeployedAlready: (): Promise<boolean> => Promise.resolve(isEntityAlreadyDeployed),
-              isEntityRateLimited: (entity) => Promise.resolve(this.isEntityRateLimited(entity)),
-              fetchContentFileSize: async (hash) => await this.getSize(hash)
-            }
+            isEntityAlreadyDeployed,
+            auditInfo,
+            hashes
           )
-
           if (!validationResult.ok) {
             ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
               entityId,
-              errors: validationResult.errors.join(',')
+              errors: validationResult.errors?.join(',') ?? ''
             })
-            return { errors: validationResult.errors }
+            return { errors: validationResult.errors ?? [] }
           }
 
           const auditInfoComplete: AuditInfo = {
@@ -392,7 +383,7 @@ export class ServiceImpl implements MetaverseContentService {
     // If entity was committed, then store all it's content (that isn't already stored)
     const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
       .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-      .map(([fileHash, file]) => this.serviceStorage.storeContent(fileHash, file))
+      .map(([fileHash, file]) => this.storeContent(fileHash, file))
 
     return Promise.all(contentStorageActions)
   }
@@ -418,23 +409,23 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   getSize(fileHash: ContentFileHash): Promise<number | undefined> {
-    return this.serviceStorage.getSize(fileHash)
+    return this.components.storage.size(fileHash)
   }
 
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
-    return this.serviceStorage.getContent(fileHash)
+    return this.components.storage.retrieve(fileHash)
   }
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
-    return this.serviceStorage.isContentAvailable(fileHashes)
+    return this.components.storage.exist(fileHashes)
   }
 
   deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
-    return this.serviceStorage.deleteContent(fileHashes)
+    return this.components.storage.delete(fileHashes)
   }
 
-  storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void> {
-    return this.serviceStorage.storeContent(fileHash, content)
+  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
+    return this.components.storage.storeContent(fileHash, content)
   }
 
   getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {
@@ -471,5 +462,38 @@ export class ServiceImpl implements MetaverseContentService {
 
   listenToDeployments(listener: DeploymentListener): void {
     this.listeners.push(listener)
+  }
+
+  private async validateDeployment(
+    entity: Entity,
+    context: DeploymentContext,
+    isEntityDeployedAlready: boolean,
+    auditInfo: LocalDeploymentAuditInfo,
+    hashes: Map<string, Uint8Array>
+  ): Promise<{ ok: boolean; errors?: string[] }> {
+    // When deploying a new entity in some context which is not sync, we run some server side checks
+    const serverValidationResult = await this.components.serverValidator.validate(entity, context, {
+      areThereNewerEntities: (entity) => this.areThereNewerEntitiesOnPointers(entity),
+      isEntityDeployedAlready: () => isEntityDeployedAlready,
+      isNotFailedDeployment: (entity) =>
+        this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
+      isEntityRateLimited: (entity) => this.isEntityRateLimited(entity),
+      isRequestTtlBackwards: (entity) =>
+        Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
+    })
+
+    // If there is an error in the server side validation, we won't run protocol validations
+    if (!serverValidationResult.ok) {
+      return {
+        ok: false,
+        errors: [serverValidationResult.message]
+      }
+    }
+
+    return await this.components.validator.validate({
+      entity,
+      auditInfo,
+      files: hashes
+    })
   }
 }

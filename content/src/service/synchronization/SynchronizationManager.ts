@@ -1,7 +1,6 @@
 import { delay } from '@catalyst/commons'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import ms from 'ms'
-import { FailedDeployment } from '../../ports/failedDeploymentsCache'
 import { AppComponents, IStatusCapableComponent, StatusProbeResult } from '../../types'
 import { DeploymentContext } from '../Service'
 import { bootstrapFromSnapshots } from './bootstrapFromSnapshots'
@@ -110,7 +109,7 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
 
   private async retryFailedDeploymentExecution(): Promise<void> {
     // Get Failed Deployments from local storage
-    const failedDeployments: FailedDeployment[] = await this.components.deployer.getAllFailedDeployments()
+    const failedDeployments = this.components.deployer.getAllFailedDeployments()
     ClusterSynchronizationManager.LOGGER.info(`Found ${failedDeployments.length} failed deployments.`)
 
     const contentServersUrls = this.components.contentCluster.getAllServersInCluster()
@@ -130,7 +129,11 @@ export class ClusterSynchronizationManager implements SynchronizationManager, IS
             contentServersUrls,
             DeploymentContext.FIX_ATTEMPT
           )
-        } catch {}
+        } catch (error) {
+          ClusterSynchronizationManager.LOGGER.info(
+            `Failed to fix deployment of entity with id: '${entityId}'. Reason was: '${error.message}'`
+          )
+        }
       } else {
         ClusterSynchronizationManager.LOGGER.info(
           `Can't retry failed deployment: '${entityId}' because it lacks of authChain`
