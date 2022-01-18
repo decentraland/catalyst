@@ -1,7 +1,6 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
 import destroy from 'destroy'
 import { Request, Response } from 'express'
-import future, { IFuture } from 'fp-future'
 import fs from 'fs'
 import log4js from 'log4js'
 import fetch from 'node-fetch'
@@ -12,8 +11,6 @@ import { SmartContentServerFetcher } from '../../../utils/SmartContentServerFetc
 const LOGGER = log4js.getLogger('ImagesController')
 
 const validSizes = ['128', '256', '512']
-
-const existingDownloadsFutures: Record<string, IFuture<void>> = {}
 
 class ServiceError extends Error {
   statusCode: number
@@ -79,61 +76,48 @@ export async function getResizedImage(
   }
 
   async function downloadAndResize(cid: string, size: string, filePath: string) {
-    const downloadFuture = (existingDownloadsFutures[filePath] = future())
+    const contentServerResponse = await fetchContentFromServer(fetcher, cid)
 
-    try {
-      const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`
-      const contentServerResponse = await fetch(v3Url)
-
-      if (contentServerResponse.ok) {
+    if (contentServerResponse.ok) {
+      try {
         const imageData = await contentServerResponse.arrayBuffer()
-        try {
-          await sharp(Buffer.from(imageData))
-            .resize({ width: parseInt(size) })
-            .toFile(filePath)
-
-          downloadFuture.resolve()
-          if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath]
-        } catch (error) {
-          LOGGER.error(`Error while trying to conver image of ${cid} to size ${size}`, error)
-          throw new ServiceError("Couldn't resize content. Is content a valid image?", 400)
-        }
-      } else if (contentServerResponse.status === 404) {
-        throw new ServiceError('Content not found in server', 404)
-      } else {
-        const body = await contentServerResponse.text()
-        throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500)
+        await sharp(Buffer.from(imageData))
+          .resize({ width: parseInt(size) })
+          .toFile(filePath)
+        return
+      } catch (error) {
+        LOGGER.error(`Error while trying to convert image of ${cid} to size ${size}`, error)
+        throw new ServiceError("Couldn't resize content. Is content a valid image?", 400)
       }
-    } catch (e) {
-      downloadFuture.reject(e)
-      if (existingDownloadsFutures[filePath] === downloadFuture) delete existingDownloadsFutures[filePath]
-      throw e
+    } else if (contentServerResponse.status === 404) {
+      throw new ServiceError('Content not found in server', 404)
+    } else {
+      const body = await contentServerResponse.text()
+      throw new ServiceError(`Unexpected response from server: ${contentServerResponse.status} - ${body}`, 500)
     }
   }
 
   async function getStreamFor(cid: string, size: string) {
-    const storageLocation = await getStorageLocation(rooStorageLocation)
-    const filePath = `${storageLocation}/${cid}_${size}`
-
-    await existingDownloadOf(filePath)
+    const filePath = await getFilePath(rooStorageLocation, cid, size)
 
     try {
+      // First try to get it from fs if it's already stored
       return await getFileStream(filePath)
     } catch (e) {
-      if (!(await existingDownloadOf(filePath))) {
-        await downloadAndResize(cid, size, filePath)
-      }
-
+      // Generate the image
+      await downloadAndResize(cid, size, filePath)
       return await getFileStream(filePath)
     }
   }
-}
-async function existingDownloadOf(filePath: string): Promise<boolean> {
-  const downloadFuture = existingDownloadsFutures[filePath]
-  if (downloadFuture !== undefined) {
-    await existingDownloadsFutures[filePath]
-    return true
+
+  async function fetchContentFromServer(fetcher: SmartContentServerFetcher, cid: string) {
+    const v3Url = (await fetcher.getContentServerUrl()) + `/contents/${cid}`
+    const contentServerResponse = await fetch(v3Url)
+    return contentServerResponse
   }
 
-  return false
+  async function getFilePath(rooStorageLocation: string, cid: string, size: string) {
+    const storageLocation = await getStorageLocation(rooStorageLocation)
+    return `${storageLocation}/${cid}_${size}`
+  }
 }
