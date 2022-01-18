@@ -1,4 +1,4 @@
-import { DAOClient, ServerBaseUrl } from '@catalyst/commons'
+import { ServerBaseUrl } from '@catalyst/commons'
 import { createLogComponent } from '@well-known-components/logger'
 import { random } from 'faker'
 import ms from 'ms'
@@ -135,7 +135,7 @@ type TestEnvCalls = {
 export class ServerBuilder {
   private readonly builder: EnvironmentBuilder
 
-  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: DAOClient) {
+  constructor(private readonly testEnvCalls: TestEnvCalls, env: Environment, public dao: MockedDAOClient) {
     this.builder = new EnvironmentBuilder(env)
   }
 
@@ -175,6 +175,9 @@ export class ServerBuilder {
         })
         components.daoClient.getAllServers = spy(() => {
           return this.dao.getAllServers()
+        })
+        components.contentCluster.getAllServersInCluster = spy( () => {
+          return this.dao.getAllServersInCluster()
         })
       }
 

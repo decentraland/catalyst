@@ -16,6 +16,10 @@ export class MockedDAOClient implements DAOClient {
     throw new Error('Not Implemented')
   }
 
+  getAllServersInCluster(): string[] {
+    return Array.from(this.serversByAddress.values()).map(s => s.baseUrl)
+  }
+
   add(baseUrl: ServerBaseUrl) {
     this.serversByAddress.set(baseUrl, { baseUrl, owner: '0xCatalyst_owner_address_1', id: 'Id' })
   }
