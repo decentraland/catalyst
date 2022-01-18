@@ -374,6 +374,13 @@
   dependencies:
     ajv "^7.1.0"
 
+"@dcl/schemas@3.4.1":
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.4.1.tgz#ee4a4d6f913b5f5974e1d235d361ba764f357311"
+  integrity sha512-xtt11/QGplk9ohwBIHub9l9kRQvYX+FIcXke58hhkRDATAcGx01ONSvp4qX+EoXQhERtNjfuxheC2uCrwqDakg==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/snapshots-fetcher@2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-2.0.0.tgz#0e30d71d50cdbbe4b1fc7d023034d3bcfd3562d0"
