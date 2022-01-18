@@ -22,7 +22,7 @@ import {
 import { ServiceFactory } from '../../../src/service/ServiceFactory'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
-import { NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
+import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../storage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 
@@ -68,8 +68,9 @@ describe('Service', function () {
 
   it(`When an entity is successfully deployed, then the content is stored correctly`, async () => {
     const service = await buildService()
+
     jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
-    const storageSpy = jest.spyOn(service.components.storage, 'store')
+    const storageSpy = jest.spyOn(service.components.storage, 'storeContent')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
@@ -104,7 +105,7 @@ describe('Service', function () {
     jest
       .spyOn(service.components.storage, 'exist')
       .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
-    const storeSpy = jest.spyOn(service.components.storage, 'store')
+    const storeSpy = jest.spyOn(service.components.storage, 'storeContent')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
@@ -236,6 +237,7 @@ describe('Service', function () {
     const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
     const env = new Environment()
     const validator = new NoOpValidator()
+    const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
     const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -257,6 +259,7 @@ describe('Service', function () {
       storage,
       repository,
       validator,
+      serverValidator,
       metrics,
       logs,
       authenticator,

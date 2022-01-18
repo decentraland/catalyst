@@ -1,8 +1,8 @@
 import { Deployment, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
-import { AppComponents } from 'src/types'
 import { getContentFiles } from '../../logic/database-queries/content-files-queries'
 import { getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
 import { getMigrationData } from '../../logic/database-queries/migration-data-queries'
+import { AppComponents } from '../../types'
 import { DeploymentOptions } from './types'
 
 export const MAX_HISTORY_LIMIT = 500

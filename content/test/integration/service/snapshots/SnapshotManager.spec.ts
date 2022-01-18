@@ -7,7 +7,7 @@ import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
 import { bufferToStream, ContentItem, streamToBuffer } from '../../../../src/storage/ContentStorage'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
@@ -26,9 +26,9 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    components = await new EnvironmentBuilder(baseEnv)
-      .buildConfigAndComponents()
+    components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
     makeNoopValidator(components)
+    makeNoopServerValidator(components)
   })
 
   afterEach(async () => {

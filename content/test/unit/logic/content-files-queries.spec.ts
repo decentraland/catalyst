@@ -1,6 +1,6 @@
 import { restore, stub } from 'sinon'
-import { AppComponents } from 'src/types'
 import { ContentFilesRow, getContentFiles } from '../../../src/logic/database-queries/content-files-queries'
+import { AppComponents } from '../../../src/types'
 
 describe('content files queries', () => {
   describe('getContentFiles', () => {

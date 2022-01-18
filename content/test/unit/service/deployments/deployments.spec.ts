@@ -1,6 +1,5 @@
 import { Deployment, EntityType, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { restore, stub } from 'sinon'
-import { AppComponents } from 'src/types'
 import { ContentFilesRow } from '../../../../src/logic/database-queries/content-files-queries'
 import { HistoricalDeploymentsRow } from '../../../../src/logic/database-queries/deployments-queries'
 import { MigrationDataRow } from '../../../../src/logic/database-queries/migration-data-queries'
@@ -11,6 +10,7 @@ import {
   MAX_HISTORY_LIMIT
 } from '../../../../src/service/deployments/deployments'
 import { DeploymentOptions } from '../../../../src/service/deployments/types'
+import { AppComponents } from '../../../../src/types'
 
 describe('deployments service', () => {
   describe('getDeployments', () => {

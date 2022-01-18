@@ -32,7 +32,7 @@ export async function retryFailedDeploymentExecution(
     // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
     if (authChain) {
-      logger.info(`Will retry to deploy entity with id: '${entityId}'`)
+      logger.debug(`Will retry to deploy entity`, { entityId, entityType })
       try {
         await deployEntityFromRemoteServer(
           components,
@@ -42,11 +42,12 @@ export async function retryFailedDeploymentExecution(
           contentServersUrls,
           DeploymentContext.FIX_ATTEMPT
         )
-      } catch (err) {
-        logger.error(err)
+      } catch (error) {
+        logger.info(`Failed to fix deployment of entity`, { entityId, entityType })
+        logger.error(error)
       }
     } else {
-      logger.info(`Can't retry failed deployment: '${entityId}' because it lacks of authChain`)
+      logger.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
     }
   }
 }

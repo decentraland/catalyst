@@ -1,6 +1,6 @@
 import { AuditInfo, EntityType } from 'dcl-catalyst-commons'
 import { AppComponents } from '../../../src/types'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
@@ -28,9 +28,10 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
   testCaseWithComponents(
     testEnv,
     `When oldest is deployed first, they overwrites are calculated correctly correctly`,
-    async ({ deployer, validator }) => {
+    async ({ deployer, validator, serverValidator }) => {
       // make noop validator
       makeNoopValidator({ validator })
+      makeNoopServerValidator({ serverValidator })
 
       // Deploy the entities
       await deployEntitiesCombo(deployer, oldestEntity)
@@ -48,9 +49,10 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
   testCaseWithComponents(
     testEnv,
     `When newest is deployed first, they overwrites are calculated correctly correctly`,
-    async ({ deployer, validator }) => {
+    async ({ deployer, validator, serverValidator }) => {
       // make noop validator
       makeNoopValidator({ validator })
+      makeNoopServerValidator({ serverValidator })
       // Deploy the entities
       await deployEntitiesCombo(deployer, newestEntity)
       await deployEntitiesCombo(deployer, oldestEntity)

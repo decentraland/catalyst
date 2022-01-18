@@ -5,7 +5,7 @@ import ms from 'ms'
 import { EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { AppComponents } from '../../../../src/types'
-import { makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import {
   awaitUntil,
@@ -45,6 +45,7 @@ loadStandaloneTestEnvironment({
       .withConfig(EnvironmentConfig.GARBAGE_COLLECTION, 'true')
       .buildConfigAndComponents()
     makeNoopValidator(components)
+    makeNoopServerValidator(components)
   })
 
   afterEach(async () => {

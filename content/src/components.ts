@@ -16,7 +16,6 @@ import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
 import { RepositoryFactory } from './repository/RepositoryFactory'
-import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -31,7 +30,8 @@ import { DAOClientFactory } from './service/synchronization/clients/DAOClientFac
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { ClusterSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
-import { ValidatorFactory } from './service/validations/ValidatorFactory'
+import { createServerValidator } from './service/validations/server'
+import { createValidator } from './service/validations/validator'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
 import { AppComponents } from './types'
 
@@ -70,10 +70,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const accessChecker = AccessCheckerImplFactory.create({ authenticator, catalystFetcher, env, logs })
-
-  const validator = ValidatorFactory.create({ authenticator, accessChecker, env })
-
+  const validator = createValidator({ storage, authenticator, catalystFetcher, env })
+  const serverValidator = createServerValidator()
   const failedDeploymentsCache = createFailedDeploymentsCache()
 
   const deployedEntitiesFilter = createBloomFilterComponent({
@@ -88,6 +86,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     pointerManager,
     repository,
     validator,
+    serverValidator,
     env,
     logs,
     authenticator,
@@ -227,9 +226,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     authenticator,
     migrationManager,
     validator,
+    serverValidator,
     garbageCollectionManager,
     systemPropertiesManager,
-    accessChecker,
     catalystFetcher,
     daoClient,
     server

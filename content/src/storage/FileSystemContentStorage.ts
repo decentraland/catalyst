@@ -1,4 +1,5 @@
 import { ensureDirectoryExists, existPath } from '@catalyst/commons'
+import { ContentFileHash } from 'dcl-catalyst-commons'
 import fs from 'fs'
 import path from 'path'
 import { pipeline, Readable } from 'stream'
@@ -29,7 +30,7 @@ export class FileSystemContentStorage implements ContentStorage {
     await pipe(stream, fs.createWriteStream(this.getFilePath(id)))
   }
 
-  store(id: string, content: Buffer): Promise<void> {
+  store(id: string, content: Uint8Array): Promise<void> {
     return fs.promises.writeFile(this.getFilePath(id), content)
   }
 
@@ -77,5 +78,17 @@ export class FileSystemContentStorage implements ContentStorage {
 
   private getFilePath(id: string): string {
     return path.join(this.root, id)
+  }
+
+  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
+    if (content instanceof Uint8Array || Buffer.isBuffer(content)) {
+      return this.store(fileHash, content)
+    } else {
+      return this.storeStream(fileHash, content)
+    }
+  }
+
+  async size(fileHash: ContentFileHash): Promise<number | undefined> {
+    return (await this.stats(fileHash))?.size
   }
 }

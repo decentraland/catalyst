@@ -1,4 +1,5 @@
 import { DAOClient } from '@catalyst/commons'
+import { Validator } from '@dcl/content-validator'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
@@ -14,7 +15,6 @@ import { IBloomFilterComponent } from './ports/bloomFilter'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { IDatabaseComponent } from './ports/postgres'
 import { Repository } from './repository/Repository'
-import { AccessChecker } from './service/access/AccessChecker'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
 import { GarbageCollectionManager } from './service/garbage-collection/GarbageCollectionManager'
@@ -26,8 +26,9 @@ import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervi
 import { ContentCluster } from './service/synchronization/ContentCluster'
 import { ClusterSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
-import { Validator } from './service/validations/Validator'
+import { ServerValidator } from './service/validations/server'
 import { ContentStorage } from './storage/ContentStorage'
+
 // Minimum amount of needed stuff to make the sync work
 
 export type AppComponents = {
@@ -56,10 +57,10 @@ export type AppComponents = {
   storage: ContentStorage
   authenticator: ContentAuthenticator
   migrationManager: MigrationManager
+  serverValidator: ServerValidator
   validator: Validator
   garbageCollectionManager: GarbageCollectionManager
   systemPropertiesManager: SystemPropertiesManager
-  accessChecker: AccessChecker
   catalystFetcher: Fetcher
   daoClient: DAOClient
   server: Server

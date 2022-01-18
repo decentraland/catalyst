@@ -1,6 +1,6 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { MetaverseContentService } from '../../../src/service/Service'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
@@ -29,6 +29,7 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
 
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       // Perform all the deployments concurrently
       await Promise.all(entities.map((entityCombo) => deployEntity(deployer, entityCombo)))

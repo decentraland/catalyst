@@ -44,12 +44,7 @@ export async function refreshContentServerStatus(
 
 async function timeContentDeployments(contentService: SmartContentClient): Promise<number> {
   const startingTime = Date.now()
-  await contentService.fetchAllDeployments(
-    {
-      filters: { pointers: ['0,0'], onlyCurrentlyPointed: true, entityTypes: [EntityType.SCENE] }
-    },
-    { timeout: '30s' }
-  )
+  await contentService.fetchEntitiesByPointers(EntityType.SCENE, ['0,0'])
   const endingTime = Date.now()
 
   return endingTime - startingTime

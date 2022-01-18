@@ -1,6 +1,6 @@
 import { AuditInfo } from 'dcl-catalyst-commons'
 import { AppComponents } from '../../../src/types'
-import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
+import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
 
@@ -31,6 +31,7 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
     testCaseWithComponents(testEnv, names, async (components) => {
       // make noop validator
       makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
       const entityCombos = indices.map((idx) => allEntities[idx])
       await deployEntitiesCombo(components.deployer, ...entityCombos)
