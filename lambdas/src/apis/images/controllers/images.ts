@@ -65,8 +65,11 @@ export async function getResizedImage(
     // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
     onFinished(res, () => destroy(stream))
   } catch (e) {
+    LOGGER.error(e)
     if (e instanceof ServiceError) {
       res.status(e.statusCode).send(JSON.stringify({ status: e.statusCode, message: e.message }))
+    } else {
+      res.status(500).end()
     }
   }
 
