@@ -1,5 +1,4 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
-import { ensureListOfCatalysts } from '../../logic/cluster-helpers'
 import { AppComponents } from '../../types'
 
 type BootstrapComponents = Pick<
@@ -12,13 +11,10 @@ type BootstrapComponents = Pick<
  * then iterates over all of the deployments to call the batch deployer for each deployed entity.
  */
 export async function bootstrapFromSnapshots(components: BootstrapComponents): Promise<void> {
-  // first ensure the content cluster gets our identity
-  await components.contentCluster.getIdentity()
+  // then find all other DAO catalyst servers
+  const catalystServersButThisOne = await components.contentCluster.getContentServersFromDao()
 
-  // then find catalyst servers
-  const catalystServers = await ensureListOfCatalysts(components, 30 /* up to 30 retries */, 1_000 /* wait time */)
-
-  if (catalystServers.length == 0) {
+  if (catalystServersButThisOne.length == 0) {
     throw new Error('There are no servers. Cancelling bootstrapping')
   }
 
@@ -28,7 +24,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
 
   // wait to get all the bootstrap data from all servers
   await Promise.all(
-    catalystServers.map(async (contentServer) => {
+    catalystServersButThisOne.map(async (contentServer) => {
       try {
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,

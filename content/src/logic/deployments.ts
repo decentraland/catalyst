@@ -25,6 +25,7 @@ export async function retryFailedDeploymentExecution(
   // Get Failed Deployments from local storage
   const failedDeployments: FailedDeployment[] = components.deployer.getAllFailedDeployments()
 
+  // TODO: there may be chances that failed deployments are not part of all catalyst in cluster
   const contentServersUrls = components.contentCluster.getAllServersInCluster()
 
   // TODO: Implement an exponential backoff for retrying

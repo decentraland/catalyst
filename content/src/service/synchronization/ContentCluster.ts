@@ -49,7 +49,7 @@ export class ContentCluster implements IdentityProvider {
     await this.getIdentity()
 
     // Perform first sync with the DAO
-    await this.syncWithDAO()
+    await this.getContentServersFromDao()
 
     // Start recurrent sync job
     this.syncWithDAOJob().catch(ContentCluster.LOGGER.error)
@@ -88,12 +88,12 @@ export class ContentCluster implements IdentityProvider {
     while (this.stoppedFuture.isPending) {
       await Promise.race([sleep(this.timeBetweenSyncs), this.stoppedFuture])
       if (!this.stoppedFuture.isPending) return
-      await this.syncWithDAO()
+      await this.getContentServersFromDao()
     }
   }
 
-  /** Update our data with the DAO's servers list */
-  private async syncWithDAO() {
+  /** Update our data with the DAO's servers list. Returns all servers in DAO excluding this one */
+  async getContentServersFromDao() {
     try {
       // Refresh the server list
       const allServersInDAO = await this.components.daoClient.getAllContentServers()
@@ -127,6 +127,7 @@ export class ContentCluster implements IdentityProvider {
     } catch (error) {
       ContentCluster.LOGGER.error(`Failed to sync with the DAO \n${error}`)
     }
+    return Array.from(this.serverClients)
   }
 
   /** Returns all the addresses on the DAO, except for the current server's */

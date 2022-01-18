@@ -6,31 +6,6 @@ import { AppComponents } from '../types'
 const IDENTITY_DETERMINATION_MAX_ATTEMPTS = 10
 const IDENTITY_DETERMINATION_ATTEMPTS_INTERVAL = process.env.CI ? 1_000 /* 1sec */ : 5_000 /* 5sec */
 
-/**
- * Waits until the cluster has a list of peers to connect to
- */
-// TODO: make this an awaitable function inside contentCluster
-export async function ensureListOfCatalysts(
-  components: Pick<AppComponents, 'contentCluster'>,
-  maxRetries: number,
-  waitTime: number = 1000
-): Promise<ServerBaseUrl[]> {
-  let i = 0
-
-  // iterate until we have a list of catalysts
-  while (i++ < maxRetries) {
-    const servers = components.contentCluster.getAllServersInCluster()
-
-    if (servers.length) {
-      return servers
-    }
-
-    await sleep(waitTime)
-  }
-
-  return []
-}
-
 export async function getChallengeInServer(
   components: Pick<AppComponents, 'fetcher'>,
   catalystBaseUrl: ServerBaseUrl
