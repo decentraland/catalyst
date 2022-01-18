@@ -24,7 +24,8 @@ yarn test
 
 - Start the content server
 
-  `yarn start`
+- Start lambdas server
+  `CONTENT_SERVER_ADDRESS=localhost:6969 SERVER_PORT=9091 METRICS_PORT=9092 yarn start`
 
 ## Configuration
 
