@@ -44,7 +44,7 @@ export class ClusterSynchronizationManager implements IStatusCapableComponent {
 
   // This is the method that is called to sync with other catalysts
   async syncWithServers(): Promise<void> {
-    ClusterSynchronizationManager.LOGGER.info(`Starting to sync with servers`)
+    ClusterSynchronizationManager.LOGGER.info(`Starting to sync entities from servers pointer changes`)
     const setDesiredJobs = () => {
       this.synchronizationState = SynchronizationState.SYNCING
       const desiredJobNames = new Set(this.components.contentCluster.getAllServersInCluster())

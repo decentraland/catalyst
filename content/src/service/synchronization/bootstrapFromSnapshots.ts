@@ -19,12 +19,14 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
   }
 
   const logs = components.logs.getLogger('BootstrapFromSnapshots')
+  logs.info(`Starting to bootstrap from snapshots`)
   const requestMaxRetries = 2
   const requestRetryWaitTime = 1000
 
   // wait to get all the bootstrap data from all servers
   await Promise.all(
     catalystServersButThisOne.map(async (contentServer) => {
+      logs.info(`Will deploy entities from ${contentServer} snapshots`)
       try {
         const stream = getDeployedEntitiesStream(components, {
           contentFolder: components.staticConfigs.contentStorageFolder,
@@ -39,7 +41,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
           await components.batchDeployer.deployEntity(entity, [contentServer])
         }
       } catch (error: any) {
-        logs.warn(error)
+        logs.warn(`There was an error deploying entities from ${contentServer} snapshots`, error)
       }
     })
   )
