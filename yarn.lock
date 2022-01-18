@@ -355,10 +355,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/schemas@3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.1.1.tgz#9bb118fe14a48127ebdb82d05a45be815e46ae85"
-  integrity sha512-LsNpyjf6T8OM8FkuHrzO2vPoSAggBj1iKY3myoH5K+YYM1s4xBD6wZK9JTcXa9dhBfPnlrr7aJWIsJ81oztlIQ==
+"@dcl/schemas@3.4.1":
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.4.1.tgz#ee4a4d6f913b5f5974e1d235d361ba764f357311"
+  integrity sha512-xtt11/QGplk9ohwBIHub9l9kRQvYX+FIcXke58hhkRDATAcGx01ONSvp4qX+EoXQhERtNjfuxheC2uCrwqDakg==
   dependencies:
     ajv "^7.1.0"
 
