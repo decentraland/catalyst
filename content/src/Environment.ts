@@ -326,7 +326,9 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
-      () => process.env.CONTENT_SERVER_ADDRESS
+      () =>
+        process.env.CONTENT_SERVER_ADDRESS ||
+        'http://localhost:' + env.getConfig<number>(EnvironmentConfig.SERVER_PORT).toString()
     )
 
     this.registerConfigIfNotAlreadySet(
