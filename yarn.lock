@@ -355,15 +355,15 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/content-validator@^1.0.0-20220117135517.commit-a5cf3f7":
-  version "1.0.0-20220117135517.commit-a5cf3f7"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.0-20220117135517.commit-a5cf3f7.tgz#e948ec5823d677b9af2eb3657e0a7183f956e225"
-  integrity sha512-1yD43YkfVuzDOG4lvWW5uml5DlKkGnjob7PQ4mMmToFM9E+9BAnDNXrS5glBdoJ0aNA79QcxG5kE1axJ5fwjsw==
+"@dcl/content-validator@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.0.tgz#0e6aa313bb244e2cb7a7b60ab3b5f9d12fd9307c"
+  integrity sha512-7cX8Bg4TALPmQFLb5mkZpk+SH1qpkX7wITpo1sh1pOxCgJdpVIJwwM7E1pdqI9FpJs9C07LFpgBRO3ciGGpJMw==
   dependencies:
     "@dcl/schemas" "^3.1.1"
     "@dcl/urn-resolver" "^1.3.0"
     "@ethersproject/address" "^5.5.0"
-    dcl-catalyst-commons "7.2.1-20220117123346.commit-e7a644a"
+    dcl-catalyst-commons "7.2.1"
     ms "^2.1.3"
     sharp "^0.29.3"
 
@@ -3317,53 +3317,21 @@ date-format@^3.0.0:
   resolved "https://registry.npmjs.org/date-format/-/date-format-3.0.0.tgz"
   integrity sha512-eyTcpKOcamdhWJXj56DpQMo1ylSQpcGtGKXcU0Tb97+K56/CF5amAqqqNj0+KvA0iw2ynxtHWFsPDSClCxe48w==
 
-dcl-catalyst-client@10.0.0:
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-10.0.0.tgz#4964f2e7923811c40b06cb8874827b3c41d68e39"
-  integrity sha512-GvNDdcbl/Dmrltu4vHSSDSPWltcvC6v44fL8O/zk2/0DO3aegOE71bT1wx5EG+o4FAo2Xk2H+qVwRUbryvd+1g==
+dcl-catalyst-client@10.0.1:
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-10.0.1.tgz#99968b05378ef28c97fd55fc3663dc4d4d8ff522"
+  integrity sha512-ZDqjlCU5/9I8KR4YQAcgS1ff4oP3gpB9uou5CUWpL/VQWShJzabmbQBQ/7dRpTOg2/vBeX98AymsCzfOO7igBw==
   dependencies:
     "@types/form-data" "^2.5.0"
     cookie "^0.4.1"
-    dcl-catalyst-commons "7.2.0"
+    dcl-catalyst-commons "7.2.1"
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
-dcl-catalyst-commons@7.2.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.0.tgz#b94dd999f05b20ebb92bc01e233cd6d9e7ae94a6"
-  integrity sha512-CZBb4H5E+KgFuCijUb5Bh1VzWH9uRdQ+cJTVCmuEAVyQzGOXimNCcru9aobLKwQ+Okw+0jdke+LrHG/dcWMPSw==
-  dependencies:
-    "@dcl/schemas" "3.1.1"
-    abort-controller "^3.0.0"
-    cids "^1.1.9"
-    cookie "^0.4.1"
-    cross-fetch "^3.1.4"
-    dcl-crypto "^2.1.0"
-    ipfs-only-hash "^4.0.0"
-    ms "^2.1.2"
-    multihashing-async "^2.1.4"
-    node-fetch "^3.0.0"
-
-dcl-catalyst-commons@7.2.1-20220114144153.commit-48fc483:
-  version "7.2.1-20220114144153.commit-48fc483"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1-20220114144153.commit-48fc483.tgz#d96b778ca41994f01c6bc35e9e61987a54022955"
-  integrity sha512-+SlB30edkVDQMaz9C+v7CjFPPWH7FevSrGYXBb3JSutGUTrw3+TaX8+s35nNpiil01ZG13LCdFsIhsmB7siZhA==
-  dependencies:
-    "@dcl/schemas" "3.1.1"
-    abort-controller "^3.0.0"
-    cids "^1.1.9"
-    cookie "^0.4.1"
-    cross-fetch "^3.1.4"
-    dcl-crypto "^2.1.0"
-    ipfs-only-hash "^4.0.0"
-    ms "^2.1.2"
-    multihashing-async "^2.1.4"
-    node-fetch "^3.0.0"
-
-dcl-catalyst-commons@7.2.1-20220117123346.commit-e7a644a:
-  version "7.2.1-20220117123346.commit-e7a644a"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1-20220117123346.commit-e7a644a.tgz#cf3fe2cfd25ec9d85c740f017dc5ddae9a37d1e7"
-  integrity sha512-tUvY7+DDv6iA2FkmEWf4pW9A0FZrDaxHyj7L11geQ+Yi/LteFG2yjjwkuRsw9tRs/KOkD3LwN2bXFrPtSd+btg==
+dcl-catalyst-commons@7.2.1:
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1.tgz#8a44d41e527a6e96fe94278ee8099bfa0a6c96df"
+  integrity sha512-aXeKlJmQIJ0ihBJbaIfqYM++1ZqVpUTw9Rm0+CE+d9JOmAGQ4x+7ZSJ7XcgujPwOHhXwYpURJAVo2ud1dqC7EA==
   dependencies:
     "@dcl/schemas" "3.1.1"
     abort-controller "^3.0.0"
