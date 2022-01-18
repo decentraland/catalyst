@@ -1,14 +1,15 @@
-import { delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { Timestamp } from 'dcl-catalyst-commons'
-import future, { IFuture } from 'fp-future'
-import ms from 'ms'
+import future from 'fp-future'
 import { EnvironmentConfig } from '../../Environment'
-import { getChallengeInServer } from '../../logic/cluster-helpers'
+import { determineCatalystIdentity, normalizeContentBaseUrl } from '../../logic/cluster-helpers'
 import { AppComponents } from '../../types'
 
 export interface IdentityProvider {
+  /**
+   * Returns undefined when this servers configured CONTENT_SERVER_URL is unreachable or missconfigured
+   */
   getIdentity(): Promise<ServerMetadata | undefined>
 }
 
@@ -20,24 +21,17 @@ function shuffleArray<T>(arr: T[]): T[] {
   return arr
 }
 
-function normalizeBaseUrl(url: string): string {
-  return url.toLowerCase().replace(/\/$/, '')
-}
-
 export class ContentCluster implements IdentityProvider {
   private static LOGGER: ILoggerComponent.ILogger
 
   // Servers that were reached at least once
   private serverClients: Set<ServerBaseUrl> = new Set()
   // Time of last sync with the DAO
-  private timeOfLastSync: Timestamp = 0
+  private timeOfLastSync: number = 0
 
   private syncFinishedEventCallbacks: Array<() => void> = []
 
-  private identityFuture: IFuture<ServerMetadata | undefined> = future()
-
-  // from CONTENT_SERVER_ADDRESS, normalized
-  private normalizedContentServerAddress: string
+  private identityFuture: Promise<ServerMetadata | undefined> | undefined
 
   // this future is a signal to stop the synchronization
   private stoppedFuture = future<void>()
@@ -47,15 +41,12 @@ export class ContentCluster implements IdentityProvider {
     private readonly timeBetweenSyncs: number
   ) {
     ContentCluster.LOGGER = components.logs.getLogger('ContentCluster')
-    this.normalizedContentServerAddress = normalizeBaseUrl(
-      this.components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
-    )
   }
 
   /** Connect to the DAO for the first time */
   async start(): Promise<void> {
     // determine my identity
-    await this.detectMyIdentity(3)
+    await this.getIdentity()
 
     // Perform first sync with the DAO
     await this.syncWithDAO()
@@ -85,6 +76,9 @@ export class ContentCluster implements IdentityProvider {
   }
 
   getIdentity(): Promise<ServerMetadata | undefined> {
+    if (!this.identityFuture) {
+      this.identityFuture = determineCatalystIdentity(this.components)
+    }
     return this.identityFuture
   }
 
@@ -135,43 +129,16 @@ export class ContentCluster implements IdentityProvider {
     }
   }
 
-  /** Detect my own identity */
-  async detectMyIdentity(attempts: number): Promise<void> {
-    try {
-      ContentCluster.LOGGER.info('Attempting to determine my identity')
-
-      while (attempts > 0) {
-        const response = await getChallengeInServer(this.components, this.normalizedContentServerAddress)
-
-        if (response && this.components.challengeSupervisor.isChallengeOk(response)) {
-          const daoServers = await this.components.daoClient.getAllContentServers()
-          const normalizedBaseUrl = normalizeBaseUrl(this.normalizedContentServerAddress)
-
-          for (const server of daoServers) {
-            if (normalizeBaseUrl(server.baseUrl) == normalizedBaseUrl) {
-              this.identityFuture.resolve(server)
-              ContentCluster.LOGGER.info(`Calculated my identity. My baseUrl is ${server.baseUrl}`)
-              return
-            }
-          }
-        }
-
-        attempts--
-        if (attempts > 0) {
-          await delay(ms('30s'))
-        }
-      }
-    } catch (error) {
-      ContentCluster.LOGGER.error(`Failed to detect my own identity \n${error}`)
-    }
-  }
-
   /** Returns all the addresses on the DAO, except for the current server's */
   private getAllOtherAddressesOnDAO(allServers: Set<ServerMetadata>): ServerBaseUrl[] {
+    const normalizedContentServerAddress = normalizeContentBaseUrl(
+      this.components.env.getConfig<string>(EnvironmentConfig.CONTENT_SERVER_ADDRESS)
+    )
+
     // Filter myself out
     const serverUrls = Array.from(allServers)
       .map(({ baseUrl }) => baseUrl)
-      .filter((baseUrl) => normalizeBaseUrl(baseUrl) != this.normalizedContentServerAddress)
+      .filter((baseUrl) => normalizeContentBaseUrl(baseUrl) != normalizedContentServerAddress)
 
     // We are sorting the array, so when we query the servers, we will choose a different one each time
     return shuffleArray(serverUrls)

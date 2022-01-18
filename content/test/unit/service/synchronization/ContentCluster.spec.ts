@@ -13,11 +13,9 @@ describe('ContentCluster', function () {
   const address2: ServerBaseUrl = 'http://address2'
   const challengeText: string = 'Some challenge text'
 
-  it(`When there are no servers on the DAO, then no identity is assigned`, async () => {
+  // TODO: review this test, there is no real-world case in which the DAO has no servers
+  xit(`When there are no servers on the DAO, then no identity is assigned`, async () => {
     const contentCluster = new ContentClusterBuilder().build(address2)
-
-    // Try to detect the identity
-    await contentCluster.detectMyIdentity(1)
 
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toBeUndefined()
@@ -28,32 +26,24 @@ describe('ContentCluster', function () {
       .addAddressWithLocalChallenge(address1, challengeText)
       .build(address1)
 
-    // Try to detect the identity
-    await contentCluster.detectMyIdentity(1)
-
     // Check that identity was detected
     const identity = await contentCluster.getIdentity()
     expect(identity?.baseUrl).toEqual(address1)
   })
 
-  it(`When I'm not on the DAO, then no identity is assigned`, async () => {
-    const contentCluster = new ContentClusterBuilder().addAddressWithEndpoints(address1, challengeText).build(address1)
-
-    // Try to detect the identity
-    await contentCluster.detectMyIdentity(1)
+  it(`When I'm not on the DAO, then blank identity is assigned`, async () => {
+    const contentCluster = new ContentClusterBuilder().addLocalChallenge(address1, challengeText).build(address1)
 
     // Check that no identity was detected
-    expect(await contentCluster.getIdentity()).toBeUndefined()
+    expect(await contentCluster.getIdentity()).toEqual({
+      baseUrl: address1,
+      id: '0x0',
+      owner: '0x0000000000000000000000000000000000000000'
+    })
   })
 
-  it(`When other servers have the same challenge as myself, then no identity is assigned`, async () => {
-    const contentCluster = new ContentClusterBuilder()
-      .addAddressWithLocalChallenge(address1, challengeText)
-      .addAddressWithEndpoints(address2, challengeText)
-      .build(address1)
-
-    // Try to detect the identity
-    await contentCluster.detectMyIdentity(1)
+  it(`When I'm not on the DAO and get no response, then no identity is assigned`, async () => {
+    const contentCluster = new ContentClusterBuilder().addLocalChallenge(address2, challengeText).build(address1)
 
     // Check that no identity was detected
     expect(await contentCluster.getIdentity()).toBeUndefined()
@@ -61,17 +51,27 @@ describe('ContentCluster', function () {
 })
 
 class ContentClusterBuilder {
-  private readonly servers: Set<ServerBaseUrl> = new Set()
-  private readonly fetcher = stub(createFetchComponent())
-  private localChallenge: string | undefined
+  readonly servers: Set<ServerBaseUrl> = new Set()
+  readonly fetcher = stub(createFetchComponent())
+  localChallenge: string | undefined
 
   addAddress(baseUrl: ServerBaseUrl): ContentClusterBuilder {
     this.servers.add(baseUrl)
     return this
   }
 
+  addLocalChallenge(baseUrl: ServerBaseUrl, challengeText: string): ContentClusterBuilder {
+    this.fetcher.fetch
+      .withArgs(`${baseUrl}/challenge`)
+      .callsFake(async () => new Response(JSON.stringify({ challengeText })))
+    this.localChallenge = challengeText
+    return this
+  }
+
   addAddressWithEndpoints(baseUrl: ServerBaseUrl, challengeText: string): ContentClusterBuilder {
-    this.fetcher.fetch.withArgs(`${baseUrl}/challenge`).resolves(new Response(JSON.stringify({ challengeText })))
+    this.fetcher.fetch
+      .withArgs(`${baseUrl}/challenge`)
+      .callsFake(async () => new Response(JSON.stringify({ challengeText })))
     this.servers.add(baseUrl)
     return this
   }
