@@ -105,14 +105,36 @@ jobs:
           command: |
             cd content
             TESTFILES=$(circleci tests glob "**/test/**/*.spec.ts" | circleci tests split --split-by=timings)
-            yarn test $TESTFILES
+            yarn test $TESTFILES --coverageDirectory=reports/${CIRCLE_NODE_INDEX:-0} --reporters=jest-junit
+            mv reports/${CIRCLE_NODE_INDEX:-0}/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
           environment:
             CI: 'true'
-            JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+            JEST_JUNIT_OUTPUT_DIR: './test-result'
       - store_test_results:
-          path: ./reports/junit/
+          path: content/test-result
       - store_artifacts:
-          path: ./reports/junit/
+          path: content/test-result
+
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - content/reports
+  report-content-coverage:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Report coverage
+          command: |
+            cd content
+            yarn nyc merge reports
+            mkdir .nyc_output/
+            mv coverage.json .nyc_output/coverage.json
+            yarn nyc report --reporter=lcov --reporter=text
+      - store_test_results:
+          path: content/coverage
+      - store_artifacts:
+          path: content/coverage
   build-lambdas:
     <<: *base_env
     steps:
@@ -221,6 +243,10 @@ workflows:
           <<: *all_branches_and_tags
           requires:
             - checkout
+      - report-content-coverage:
+          <<: *all_branches_and_tags
+          requires:
+            - build-content
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
