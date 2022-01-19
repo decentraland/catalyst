@@ -1,5 +1,4 @@
 import { validateSignature } from '@catalyst/commons'
-import { EthAddress } from 'dcl-crypto'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -135,7 +134,7 @@ export class ActiveDenylist extends Denylist {
     target: DenylistTarget,
     metadata: DenylistMetadata
   ): Promise<DenylistOperationResult> {
-    const nodeOwner: EthAddress | undefined = this.cluster.getIdentityInDAO()?.owner
+    const identity = await this.cluster.getIdentity()
     const messageToSign = Denylist.internalBuildMessageToSign(action, target, metadata.timestamp)
 
     return new Promise((resolve, reject) => {
@@ -153,7 +152,10 @@ export class ActiveDenylist extends Denylist {
             type: DenylistValidationType.SIGNATURE_VALIDATION,
             message: `Failed to authenticate the blocker. Error was: ${errorMessage}`
           }),
-        (signer) => !!signer && (nodeOwner === signer || this.authenticator.isAddressOwnedByDecentraland(signer)),
+        (signer) =>
+          !!signer &&
+          (identity?.owner.toLowerCase() === signer.toLowerCase() ||
+            this.authenticator.isAddressOwnedByDecentraland(signer)),
         this.network
       ).catch(reject)
     })

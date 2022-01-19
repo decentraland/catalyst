@@ -24,7 +24,7 @@ import { MetaverseContentService } from './service/Service'
 import { ISnapshotManager } from './service/snapshots/SnapshotManager'
 import { IChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { ContentCluster } from './service/synchronization/ContentCluster'
-import { SynchronizationManager } from './service/synchronization/SynchronizationManager'
+import { ClusterSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { ServerValidator } from './service/validations/server'
 import { ContentStorage } from './storage/ContentStorage'
@@ -45,7 +45,7 @@ export type AppComponents = {
   batchDeployer: IDeployerComponent
   synchronizationJobManager: JobLifecycleManagerComponent
   deployedEntitiesFilter: IBloomFilterComponent
-  synchronizationManager: SynchronizationManager
+  synchronizationManager: ClusterSynchronizationManager
   controller: Controller
   snapshotManager: ISnapshotManager
   denylist: Denylist
