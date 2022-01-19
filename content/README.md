@@ -39,12 +39,13 @@ There are many ways to configure the content server. You can provide these confi
 
 These are some of the more important configuration values:
 
-| Name                | Description                                                                                          |  Default  |
-| ------------------- | ---------------------------------------------------------------------------------------------------- | :-------: |
-| ETH_NETWORK         | Which Ethereum network you want to use. Usually is `ropsten` for testing or `mainnet` for production | 'ropsten' |
-| STORAGE_ROOT_FOLDER | Folder where all content will be stored                                                              | 'storage' |
-| SERVER_PORT         | Port to be used by the service                                                                       |   6969    |
-| LOG_LEVEL           | Minimum log level                                                                                    |  'info'   |
+| Name                    | Description                                                                                          |  Default  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- | :-------: |
+| ETH_NETWORK             | Which Ethereum network you want to use. Usually is `ropsten` for testing or `mainnet` for production | 'ropsten' |
+| STORAGE_ROOT_FOLDER.    | Folder where all content will be stored                                                              | 'storage' |
+| SERVER_PORT             | Port to be used by the service                                                                       |   6969    |
+| LOG_LEVEL               | Minimum log level                                                                                    |  'info'   |
+| DISABLE_SYNCHRONIZATION | Disables synchronization with other content servers                                                  |   false   |
 
 ## Run unit tests
 
