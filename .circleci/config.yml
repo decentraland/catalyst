@@ -96,7 +96,7 @@ jobs:
           POSTGRES_DB: postgres_test
           POSTGRES_PASSWORD: '12345678'
           POSTGRES_USER: postgres
-    parallelism: 20
+    parallelism: 4
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
@@ -110,6 +110,7 @@ jobs:
           environment:
             CI: 'true'
             JEST_JUNIT_OUTPUT_DIR: './test-result'
+            JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX:-0}.xml
       - store_test_results:
           path: content/test-result
       - store_artifacts:

@@ -33,7 +33,7 @@ const globalSetup = async (): Promise<void> => {
       .withWaitStrategy(new PostgresWaitStrategy())
       .start()
 
-    global.__POSTGRES_CONTAINER__ = container
+    globalThis.__POSTGRES_CONTAINER__ = container
     // get mapped port to be used for testing purposes
     process.env.MAPPED_POSTGRES_PORT = container.getMappedPort(E2ETestEnvironment.POSTGRES_PORT).toString()
   }
