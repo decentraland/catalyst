@@ -103,6 +103,7 @@ jobs:
       - run:
           name: Run tests
           command: |
+            echo 'export JEST_JUNIT_OUTPUT_NAME=junit-${CIRCLE_NODE_INDEX:-0}.xml' >> $BASH_ENV
             cd content
             TESTFILES=$(circleci tests glob "**/test/**/*.spec.ts" | circleci tests split --split-by=timings)
             yarn test $TESTFILES --coverageDirectory=reports/${CIRCLE_NODE_INDEX:-0} --reporters=jest-junit
@@ -110,7 +111,7 @@ jobs:
           environment:
             CI: 'true'
             JEST_JUNIT_OUTPUT_DIR: './test-result'
-            JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX:-0}.xml
+            JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
       - store_test_results:
           path: content/test-result
       - store_artifacts:
