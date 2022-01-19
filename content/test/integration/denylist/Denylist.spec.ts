@@ -36,7 +36,7 @@ loadStandaloneTestEnvironment()('Integration - Denylist', (testEnv) => {
     makeNoopValidator(server.components)
     makeNoopSynchronizationManager(server.components.synchronizationManager)
 
-    stub(server.components.contentCluster, 'getIdentityInDAO').returns({
+    stub(server.components.contentCluster, 'getIdentity').resolves({
       baseUrl: 'http://stub',
       id: '1-stub',
       owner: ownerIdentity.address
