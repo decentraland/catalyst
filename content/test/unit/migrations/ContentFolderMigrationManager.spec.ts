@@ -44,6 +44,27 @@ describe('ContentFolderMigrationManager', () => {
       )
     })
   })
+
+  describe('when running the migration with an error', () => {
+    let moveFileSpy: jest.SpyInstance
+
+    beforeAll(() => {
+      moveFileSpy = jest.spyOn(fileHelpers, 'moveFile').mockRejectedValueOnce('Failure').mockResolvedValue()
+    })
+
+    afterAll(() => {
+      moveFileSpy.mockRestore()
+    })
+
+    it('should call moveFile 11 times, once for each file', async () => {
+      await runMigration()
+
+      expect(moveFileSpy).toHaveBeenCalledTimes(11)
+      expect(moveFileSpy.mock.calls).toEqual(
+        expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
+      )
+    })
+  })
 })
 
 async function runMigration() {

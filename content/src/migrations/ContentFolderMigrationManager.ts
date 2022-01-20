@@ -36,20 +36,40 @@ export class ContentFolderMigrationManager {
 
     const files = await opendir(this.contentsFolder)
 
+    const pending: Promise<void>[] = []
+    const failures: string[] = []
+
     for await (const file of files) {
-      try {
-        await this.queue.add(async () => {
+      pending.push(
+        this.queue.add(async () => {
           try {
             await moveFile(file.name, this.contentsFolder, getPath(file.name))
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
-            this.logs.error(`Couldn't migrate ${file} due to ${err}`)
+            this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
+            failures.push(file.name)
           }
         })
-      } catch (err) {
-        this.logs.error(`Couldn't migrate ${file} due to ${err}`)
-      }
+      )
     }
+
+    await Promise.all(pending)
+
+    for (const file of failures) {
+      pending.push(
+        this.queue.add(async () => {
+          try {
+            await moveFile(file, this.contentsFolder, getPath(file))
+            this.metrics.increment('dcl_files_migrated')
+          } catch (err) {
+            this.logs.error(`Retry for ${file} failed due to ${err}`)
+            failures.push(file)
+          }
+        })
+      )
+    }
+
+    await Promise.all(pending)
   }
 
   pendingInQueue(): number {
