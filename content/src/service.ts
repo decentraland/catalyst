@@ -13,6 +13,8 @@ export async function main(program: Lifecycle.EntryPointParameters<AppComponents
   // TODO: move this purgeUploadsDirectory method to a standalone function inside src/logic/ folder
   await components.server.purgeUploadsDirectory()
 
+  await components.contentFolderMigrationManager.run()
+
   // start ports: db, listeners, synchronizations, etc
   await startComponents()
 
