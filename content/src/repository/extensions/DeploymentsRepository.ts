@@ -140,11 +140,6 @@ export class DeploymentsRepository {
       }
     }
 
-    if (filters?.deployedBy && filters.deployedBy.length > 0) {
-      values.deployedBy = filters.deployedBy.map((deployedBy) => deployedBy.toLocaleLowerCase())
-      whereClause.push(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
-    }
-
     if (filters?.entityTypes && filters.entityTypes.length > 0) {
       values.entityTypes = filters.entityTypes
       whereClause.push(`dep1.entity_type IN ($(entityTypes:list))`)

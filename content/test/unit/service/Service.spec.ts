@@ -91,7 +91,7 @@ describe('Service', function () {
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult
       expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
-      expect(deltaMilliseconds).toBeLessThanOrEqual(10)
+      expect(deltaMilliseconds).toBeLessThanOrEqual(30)
       expect(storageSpy).toHaveBeenCalledWith(entity.id, entityFile)
       expect(storageSpy).toHaveBeenCalledWith(randomFileHash, randomFile)
     }
@@ -130,13 +130,13 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     // When a pointer is asked the first time, then the database is reached
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -151,13 +151,13 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
 
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -182,7 +182,7 @@ describe('Service', function () {
     jest.spyOn(service, 'getEntityById').mockResolvedValue({ entityId: entity.id, localTimestamp: entity.timestamp })
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
@@ -190,7 +190,7 @@ describe('Service', function () {
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
   })
 
@@ -214,7 +214,7 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
@@ -229,7 +229,7 @@ describe('Service', function () {
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByTypeAndPointers(EntityType.SCENE, POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
   })
 

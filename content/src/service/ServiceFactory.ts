@@ -2,8 +2,7 @@ import { Entity, Pointer } from 'dcl-catalyst-commons'
 import NodeCache from 'node-cache'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
-import { ENTITIES_BY_POINTERS_CACHE_CONFIG } from './caching/CacheManager'
-import { CacheManagerFactory } from './caching/CacheManagerFactory'
+import { Cache } from './caching/Cache'
 import { ServiceImpl } from './ServiceImpl'
 
 export class ServiceFactory {
@@ -26,9 +25,8 @@ export class ServiceFactory {
     >
   ): ServiceImpl {
     const { env } = components
-    // TODO: move this inside ServiceImpl constructor
-    const cacheManager = CacheManagerFactory.create(env)
-    const cache = cacheManager.buildEntityTypedCache<Pointer, Entity>(ENTITIES_BY_POINTERS_CACHE_CONFIG)
+    // TODO: Config this in env var
+    const cache = new Cache<Pointer, Entity>(10000)
     const ttl = env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
     const deploymentsCache = new NodeCache({ stdTTL: ttl, checkperiod: ttl })
     return new ServiceImpl(components, cache, {

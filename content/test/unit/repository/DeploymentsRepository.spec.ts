@@ -137,25 +137,6 @@ describe('DeploymentRepository', () => {
       })
     })
 
-    describe('when there is a deployed by filter', () => {
-      beforeEach(() => {
-        db = mock(MockedDataBase)
-        repository = new DeploymentsRepository(instance(db) as any)
-
-        when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve([]))
-      })
-
-      it('should add the expected where clause to the query with the addresses on lowercase', async () => {
-        const deployedBy = ['jOn', 'aGus']
-        await repository.getHistoricalDeployments(0, 10, { deployedBy })
-
-        const args = capture(db.map).last()
-
-        expect(args[0]).toContain(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
-        expect(args[1]).toEqual(expect.objectContaining({ deployedBy: ['jon', 'agus'] }))
-      })
-    })
-
     describe('when there is entityTypes filter', () => {
       it('should add the expected where clause to the query', async () => {
         const entityTypes = [EntityType.SCENE, EntityType.PROFILE]

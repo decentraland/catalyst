@@ -51,8 +51,8 @@ export function buildContentTarget(fileHash: ContentFileHash) {
   return new DenylistTarget(DenylistTargetType.CONTENT, fileHash)
 }
 
-export function buildPointerTarget(entityType: EntityType, pointer: Pointer) {
-  return new DenylistTarget(DenylistTargetType.POINTER, combineWithEntityType(entityType, pointer))
+export function buildPointerTarget(pointer: Pointer) {
+  return new DenylistTarget(DenylistTargetType.POINTER, pointer)
 }
 
 export function buildEntityTarget(entityType: EntityType, entityId: EntityId) {

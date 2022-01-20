@@ -3,6 +3,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   ContentFileHash,
   Deployment,
+  DeploymentFilters,
   Entity,
   EntityId,
   EntityType,
@@ -22,14 +23,11 @@ import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { ContentAuthenticator } from '../service/auth/Authenticator'
-import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
 import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
 import { ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
-import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
-import { ControllerEntityFactory } from './ControllerEntityFactory'
 
 export class Controller {
   private static LOGGER: ILoggerComponent.ILogger
@@ -51,6 +49,7 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
+  // TODO: Deprecate this
   async getEntities(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /entities/:type
@@ -79,14 +78,35 @@ export class Controller {
     }
 
     // Calculate and mask entities
+    let entities: { deployments: Deployment[]; filters: Pick<DeploymentFilters, 'pointers' | 'entityIds'> }
+    if (ids.length > 0) {
+      entities = await this.components.deployer.getEntitiesByIds(ids)
+    } else {
+      entities = await this.components.deployer.getEntitiesByTypeAndPointers(type, pointers)
+    }
+    res.send(entities)
+  }
+
+  async getEntitiesV2(req: express.Request, res: express.Response) {
+    // Method: POST
+    // Path: /entities/:type
+    // Body params: pointers=string[], ids=string[]
+    const pointers: Pointer[] = this.asArray<Pointer>(req.body.pointers as string)?.map((p) => p.toLowerCase()) ?? []
+    const ids: EntityId[] = this.asArray<EntityId>(req.body.ids as string) ?? []
+
+    // Validate pointers or ids are present, but not both
+    if ((ids.length > 0 && pointers.length > 0) || (ids.length == 0 && pointers.length == 0)) {
+      res.status(400).send({ error: 'ids or pointers must be present, but not both' })
+      return
+    }
+
     let entities: Entity[]
     if (ids.length > 0) {
       entities = await this.components.deployer.getEntitiesByIds(ids)
     } else {
-      entities = await this.components.deployer.getEntitiesByPointers(type, pointers)
+      entities = await this.components.deployer.getEntitiesByPointers(pointers)
     }
-    const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
-    res.send(maskedEntities)
+    res.send(entities)
   }
 
   private parseEntityType(strType: string): EntityType {
@@ -398,161 +418,6 @@ export class Controller {
     res.json(result)
   }
 
-  async getDeployments(req: express.Request, res: express.Response) {
-    // Method: GET
-    // Path: /deployments
-    // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
-
-    const stringEntityTypes = this.asArray<string>(req.query.entityType as string | string[])
-    const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => this.parseEntityType(type))
-      : undefined
-    const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
-    const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-    const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)?.map((p) =>
-      p.toLowerCase()
-    )
-    const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase())
-    const offset: number | undefined = this.asInt(req.query.offset)
-    const limit: number | undefined = this.asInt(req.query.limit)
-    const fields: string | undefined = req.query.fields as string | undefined
-    const sortingFieldParam: string | undefined = req.query.sortingField as string
-    const snake_case_sortingField = sortingFieldParam ? this.fromCamelCaseToSnakeCase(sortingFieldParam) : undefined
-    const sortingField: SortingField | undefined | 'unknown' = this.asEnumValue(SortingField, snake_case_sortingField)
-    const sortingOrder: SortingOrder | undefined | 'unknown' = this.asEnumValue(
-      SortingOrder,
-      req.query.sortingOrder as string
-    )
-    const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    // deprecated
-    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-    // deprecated
-    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
-    const from: number | undefined = this.asInt(req.query.from)
-    const to: number | undefined = this.asInt(req.query.to)
-
-    // Validate type is valid
-    if (entityTypes && entityTypes.some((type) => !type)) {
-      res.status(400).send({ error: `Found an unrecognized entity type` })
-      return
-    }
-
-    if (offset && offset > 5000) {
-      res
-        .status(400)
-        .send({ error: `Offset can't be higher than 5000. Please use the 'next' property for pagination.` })
-      return
-    }
-
-    // Validate fields are correct or empty
-    let enumFields: DeploymentField[] = DEFAULT_FIELDS_ON_DEPLOYMENTS
-    if (fields && fields.trim().length > 0) {
-      const acceptedValues = Object.values(DeploymentField).map((e) => e.toString())
-      enumFields = fields
-        .split(',')
-        .filter((f) => acceptedValues.includes(f))
-        .map((f) => f as DeploymentField)
-    }
-
-    // Validate sorting fields and create sortBy
-    const sortBy: { field?: SortingField; order?: SortingOrder } = {}
-    if (sortingField) {
-      if (sortingField == 'unknown') {
-        res.status(400).send({ error: `Found an unrecognized sort field param` })
-        return
-      } else {
-        sortBy.field = sortingField
-      }
-    }
-    if (sortingOrder) {
-      if (sortingOrder == 'unknown') {
-        res.status(400).send({ error: `Found an unrecognized sort order param` })
-        return
-      } else {
-        sortBy.order = sortingOrder
-      }
-    }
-
-    // Validate to and from are valid
-    if (sortingField == SortingField.ENTITY_TIMESTAMP && (fromLocalTimestamp || toLocalTimestamp)) {
-      res.status(400).send({
-        error: 'The filters fromLocalTimestamp and toLocalTimestamp can not be used when sorting by entity timestamp.'
-      })
-      return
-    }
-
-    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
-    const fromFilter =
-      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && fromLocalTimestamp ? fromLocalTimestamp : from
-    const toFilter =
-      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && toLocalTimestamp ? toLocalTimestamp : to
-
-    const requestFilters = {
-      pointers,
-      entityTypes: entityTypes as EntityType[],
-      entityIds,
-      deployedBy,
-      onlyCurrentlyPointed,
-      from: fromFilter,
-      to: toFilter
-    }
-
-    const deploymentOptions = {
-      fields: enumFields,
-      filters: requestFilters,
-      sortBy: sortBy,
-      offset: offset,
-      limit: limit,
-      lastId: lastId
-    }
-
-    // don't replace this until the denylist is implemented outside of the service
-    const { deployments, filters, pagination } = await this.components.deployer.getDeployments(deploymentOptions)
-    const controllerDeployments = deployments.map((deployment) =>
-      ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
-    )
-
-    if (deployments.length > 0 && pagination.moreData) {
-      const lastDeployment = deployments[deployments.length - 1]
-      pagination.next = this.calculateNextRelativePath(deploymentOptions, lastDeployment)
-    }
-
-    res.send({ deployments: controllerDeployments, filters, pagination })
-  }
-
-  private calculateNextRelativePath(options: DeploymentOptions, lastDeployment: Deployment): string {
-    const nextFilters = Object.assign({}, options?.filters)
-
-    const field = options?.sortBy?.field ?? SortingField.LOCAL_TIMESTAMP
-    const order = options?.sortBy?.order ?? SortingOrder.DESCENDING
-
-    if (field == SortingField.LOCAL_TIMESTAMP) {
-      if (order == SortingOrder.ASCENDING) {
-        nextFilters.from = lastDeployment.auditInfo.localTimestamp
-      } else {
-        nextFilters.to = lastDeployment.auditInfo.localTimestamp
-      }
-    } else {
-      if (order == SortingOrder.ASCENDING) {
-        nextFilters.from = lastDeployment.entityTimestamp
-      } else {
-        nextFilters.to = lastDeployment.entityTimestamp
-      }
-    }
-
-    const fields = !options.fields || options.fields === DEFAULT_FIELDS_ON_DEPLOYMENTS ? '' : options.fields.join(',')
-
-    const nextQueryParams = toQueryParams({
-      ...nextFilters,
-      fields,
-      sortingField: field,
-      sortingOrder: order,
-      lastId: lastDeployment.entityId,
-      limit: options?.limit
-    })
-    return '?' + nextQueryParams
-  }
-
   private fromCamelCaseToSnakeCase(phrase: string): string {
     const withoutUpperCase: string = phrase.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
     if (withoutUpperCase[0] === '_') {
@@ -791,9 +656,3 @@ type ContentFile = {
   path?: string
   content: Buffer
 }
-
-const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
-  DeploymentField.POINTERS,
-  DeploymentField.CONTENT,
-  DeploymentField.METADATA
-]

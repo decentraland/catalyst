@@ -1,4 +1,5 @@
 import {
+  Deployment,
   DeploymentFilters,
   DeploymentSorting,
   EntityType,
@@ -13,14 +14,14 @@ import SQL, { SQLStatement } from 'sql-template-strings'
 import { AppComponents } from '../../types'
 
 export interface HistoricalDeployment {
-  deploymentId: number
+  version: EntityVersion
   entityType: EntityType
   entityId: string
-  pointers: Pointer[]
   entityTimestamp: number
-  metadata: any
   deployerAddress: string
-  version: EntityVersion
+  pointers: Pointer[]
+  metadata: any
+  deploymentId: number
   authChain: AuthChain
   localTimestamp: number
   overwrittenBy?: string
@@ -69,6 +70,66 @@ export async function* streamAllEntityIds(components: Pick<AppComponents, 'datab
   }
 }
 
+export async function getHistoricalDeployments(
+  components: Pick<AppComponents, 'database'>,
+  offset: number,
+  limit: number,
+  filters?: DeploymentFilters,
+  sortBy?: DeploymentSorting,
+  lastId?: string
+): Promise<HistoricalDeployment[]> {
+  const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId)
+
+  const historicalDeploymentsResponse = await components.database.queryWithValues(query)
+
+  const historicalDeployments: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
+    (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
+      deploymentId: row.id,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      pointers: row.entity_pointers,
+      entityTimestamp: row.entity_timestamp,
+      metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+      deployerAddress: row.deployer_address,
+      version: row.version,
+      authChain: row.auth_chain,
+      localTimestamp: row.local_timestamp,
+      overwrittenBy: row.overwritten_by ?? undefined
+    })
+  )
+
+  return historicalDeployments
+}
+
+export async function getActiveDeploymentsFromDb(
+  components: Pick<AppComponents, 'database'>,
+  filters?: Pick<DeploymentFilters, 'pointers' | 'entityIds'>
+): Promise<(Deployment & { deploymentId: number })[]> {
+  const query = getActiveDeploymentsQuery(filters)
+
+  const historicalDeploymentsResponse = await components.database.queryWithValues(query)
+
+  const historicalDeployments: (Deployment & { deploymentId: number })[] = historicalDeploymentsResponse.rows.map(
+    (row: HistoricalDeploymentsRow): Deployment & { deploymentId: number } => ({
+      deploymentId: row.id,
+      entityVersion: row.version,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      entityTimestamp: row.entity_timestamp,
+      deployedBy: row.deployer_address,
+      pointers: row.entity_pointers,
+      metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
+      auditInfo: {
+        version: row.version,
+        authChain: row.auth_chain,
+        localTimestamp: row.local_timestamp
+      }
+    })
+  )
+
+  return historicalDeployments
+}
+
 export function getHistoricalDeploymentsQuery(
   offset: number,
   limit: number,
@@ -103,48 +164,7 @@ export function getHistoricalDeploymentsQuery(
    * If the filter specifies a timestamp value that it's repeated among many deployments,
    * then to know where the page should start we will use the lastId.
    */
-  const pageBorder: string =
-    (order === SortingOrder.ASCENDING ? 'from' : 'to') +
-    (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
-
-  if (filters?.from && timestampField == SortingField.LOCAL_TIMESTAMP) {
-    const fromLocalTimestamp = filters.from
-    if (pageBorder == 'fromLocalTimestamp' && lastId) {
-      whereClause.push(createOrClause('local_timestamp', '>', fromLocalTimestamp, lastId))
-    } else {
-      whereClause.push(SQL`dep1.local_timestamp >= to_timestamp(${fromLocalTimestamp} / 1000.0)`)
-    }
-  }
-  if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
-    const toLocalTimestamp = filters.to
-    if (pageBorder == 'toLocalTimestamp' && lastId) {
-      whereClause.push(createOrClause('local_timestamp', '<', toLocalTimestamp, lastId))
-    } else {
-      whereClause.push(SQL`dep1.local_timestamp <= to_timestamp(${toLocalTimestamp} / 1000.0)`)
-    }
-  }
-
-  if (filters?.from && timestampField == SortingField.ENTITY_TIMESTAMP) {
-    const fromEntityTimestamp = filters.from
-    if (pageBorder == 'fromEntityTimestamp' && lastId) {
-      whereClause.push(createOrClause('entity_timestamp', '>', fromEntityTimestamp, lastId))
-    } else {
-      whereClause.push(SQL`dep1.entity_timestamp >= to_timestamp(${fromEntityTimestamp} / 1000.0)`)
-    }
-  }
-  if (filters?.to && timestampField == SortingField.ENTITY_TIMESTAMP) {
-    const toEntityTimestamp = filters.to
-    if (pageBorder == 'toEntityTimestamp' && lastId) {
-      whereClause.push(createOrClause('entity_timestamp', '<', toEntityTimestamp, lastId))
-    } else {
-      whereClause.push(SQL`dep1.entity_timestamp <= to_timestamp(${toEntityTimestamp} / 1000.0)`)
-    }
-  }
-
-  if (filters?.deployedBy && filters.deployedBy.length > 0) {
-    const deployedBy = filters.deployedBy.map((deployedBy) => deployedBy.toLocaleLowerCase())
-    whereClause.push(SQL`LOWER(dep1.deployer_address) = ANY (${deployedBy})`)
-  }
+  configureSortWhereClause(order, timestampField, filters, lastId, whereClause)
 
   if (filters?.entityTypes && filters.entityTypes.length > 0) {
     const entityTypes = filters.entityTypes
@@ -183,35 +203,110 @@ export function getHistoricalDeploymentsQuery(
   return query
 }
 
-export async function getHistoricalDeployments(
-  components: Pick<AppComponents, 'database'>,
-  offset: number,
-  limit: number,
-  filters?: DeploymentFilters,
-  sortBy?: DeploymentSorting,
-  lastId?: string
-): Promise<HistoricalDeployment[]> {
-  const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId)
+// TODO: Paginate this query
+export function getActiveDeploymentsQuery(filters?: Pick<DeploymentFilters, 'pointers' | 'entityIds'>): SQLStatement {
+  const sorting = { field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }
 
-  const historicalDeploymentsResponse = await components.database.queryWithValues(query)
+  const timestampField: string = sorting.field
+  const order: string = sorting.order
 
-  const historicalDeployments: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
-    (row: HistoricalDeploymentsRow): HistoricalDeployment => ({
-      deploymentId: row.id,
-      entityType: row.entity_type,
-      entityId: row.entity_id,
-      pointers: row.entity_pointers,
-      entityTimestamp: row.entity_timestamp,
-      metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
-      deployerAddress: row.deployer_address,
-      version: row.version,
-      authChain: row.auth_chain,
-      localTimestamp: row.local_timestamp,
-      overwrittenBy: row.overwritten_by ?? undefined
-    })
-  )
+  const query = SQL`
+            SELECT
+                dep1.id,
+                dep1.entity_type,
+                dep1.entity_id,
+                dep1.entity_pointers,
+                date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+                dep1.entity_metadata,
+                dep1.deployer_address,
+                dep1.version,
+                dep1.auth_chain,
+                date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
+            FROM deployments AS dep1`
 
-  return historicalDeployments
+  const whereClause: SQLStatement[] = []
+
+  // Only active entities
+  whereClause.push(SQL`dep1.deleter_deployment IS NULL`)
+
+  /**  The lastId is a field that we only want to compare with when paginating.
+   * If the filter specifies a timestamp value that it's repeated among many deployments,
+   * then to know where the page should start we will use the lastId.
+   */
+  configureSortWhereClause(order, timestampField, filters, undefined, whereClause)
+
+  if (filters?.entityIds && filters.entityIds.length > 0) {
+    const entityIds = filters.entityIds
+    whereClause.push(SQL`dep1.entity_id = ANY (${entityIds})`)
+  }
+
+  if (filters?.pointers && filters.pointers.length > 0) {
+    const pointers = filters.pointers.map((p) => p.toLowerCase())
+    whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
+  }
+
+  let where = SQL``
+  if (whereClause.length > 0) {
+    where = SQL` WHERE `.append(whereClause[0])
+    for (const condition of whereClause.slice(1)) {
+      where = where.append(' AND ').append(condition)
+    }
+  }
+
+  query.append(where)
+  query
+    .append(` ORDER BY dep1.`)
+    .append(pg.Client.prototype.escapeIdentifier(timestampField))
+    .append(` ${order}, LOWER(dep1.entity_id) ${order} `) // raw values need to be strings not sql templates
+  // .append(SQL`LIMIT ${limit} OFFSET ${offset}`) // TODO: Paginate this query
+
+  return query
+}
+
+function configureSortWhereClause(
+  order: string,
+  timestampField: string,
+  filters: DeploymentFilters | undefined,
+  lastId: string | undefined,
+  whereClause: SQLStatement[]
+) {
+  const pageBorder: string =
+    (order === SortingOrder.ASCENDING ? 'from' : 'to') +
+    (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
+
+  if (filters?.from && timestampField == SortingField.LOCAL_TIMESTAMP) {
+    const fromLocalTimestamp = filters.from
+    if (pageBorder == 'fromLocalTimestamp' && lastId) {
+      whereClause.push(createOrClause('local_timestamp', '>', fromLocalTimestamp, lastId))
+    } else {
+      whereClause.push(SQL`dep1.local_timestamp >= to_timestamp(${fromLocalTimestamp} / 1000.0)`)
+    }
+  }
+  if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
+    const toLocalTimestamp = filters.to
+    if (pageBorder == 'toLocalTimestamp' && lastId) {
+      whereClause.push(createOrClause('local_timestamp', '<', toLocalTimestamp, lastId))
+    } else {
+      whereClause.push(SQL`dep1.local_timestamp <= to_timestamp(${toLocalTimestamp} / 1000.0)`)
+    }
+  }
+
+  if (filters?.from && timestampField == SortingField.ENTITY_TIMESTAMP) {
+    const fromEntityTimestamp = filters.from
+    if (pageBorder == 'fromEntityTimestamp' && lastId) {
+      whereClause.push(createOrClause('entity_timestamp', '>', fromEntityTimestamp, lastId))
+    } else {
+      whereClause.push(SQL`dep1.entity_timestamp >= to_timestamp(${fromEntityTimestamp} / 1000.0)`)
+    }
+  }
+  if (filters?.to && timestampField == SortingField.ENTITY_TIMESTAMP) {
+    const toEntityTimestamp = filters.to
+    if (pageBorder == 'toEntityTimestamp' && lastId) {
+      whereClause.push(createOrClause('entity_timestamp', '<', toEntityTimestamp, lastId))
+    } else {
+      whereClause.push(SQL`dep1.entity_timestamp <= to_timestamp(${toEntityTimestamp} / 1000.0)`)
+    }
+  }
 }
 
 /**

@@ -50,7 +50,7 @@ describe('DenylistServiceDecorator', () => {
     ;[entity1, entityFile1] = await buildEntity([P1, P3], content1)
     ;[entity2] = await buildEntity([P2], content2)
 
-    P1Target = buildPointerTarget(entity1.type, P1)
+    P1Target = buildPointerTarget(P1)
     content1Target = buildContentTarget(content1.hash)
     entity2Target = buildEntityTarget(entity2.type, entity2.id)
     ethAddressTarget = buildAddressTarget(ethAddress)
@@ -79,7 +79,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(P1Target)
     const decorator = getDecorator(denylist)
 
-    const entities = await decorator.getEntitiesByPointers(entity1.type, [P1])
+    const entities = await decorator.getEntitiesByTypeAndPointers(entity1.type, [P1])
 
     expect(entities.length).toBe(0)
   })
@@ -88,7 +88,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(P1Target)
     const decorator = getDecorator(denylist)
 
-    const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers)
+    const entities = await decorator.getEntitiesByTypeAndPointers(entity2.type, entity2.pointers)
 
     expect(entities).toEqual([entity2])
   })
@@ -97,7 +97,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(entity2Target)
     const decorator = getDecorator(denylist)
 
-    const entities = await decorator.getEntitiesByPointers(entity2.type, entity2.pointers)
+    const entities = await decorator.getEntitiesByTypeAndPointers(entity2.type, entity2.pointers)
 
     expect(entities.length).toBe(1)
     const returnedEntity = entities[0]
@@ -110,7 +110,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(entity2Target)
     const decorator = getDecorator(denylist)
 
-    const entities = await decorator.getEntitiesByPointers(entity1.type, entity1.pointers)
+    const entities = await decorator.getEntitiesByTypeAndPointers(entity1.type, entity1.pointers)
 
     expect(entities).toEqual([entity1])
   })

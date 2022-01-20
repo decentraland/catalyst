@@ -142,7 +142,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
             new Map()
           )
           const pointerTargets: Map<Pointer, DenylistTarget> = new Map(
-            pointers.map((pointer) => [pointer, buildPointerTarget(entityType, pointer)])
+            pointers.map((pointer) => [pointer, buildPointerTarget(pointer)])
           )
           const entityIdLowerCased = entityId.toLowerCase()
           entityTargetsByEntity.set(entityIdLowerCased, entityTarget)
@@ -243,13 +243,28 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     )
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
+  getEntitiesByTypeAndPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
     return this.repository.task(
       async (task) => {
         const nonDenylistedPointers: Pointer[] = await this.filterDenylisted(task.denylist, pointers, (pointer) =>
-          buildPointerTarget(type, pointer)
+          buildPointerTarget(pointer)
         )
-        const entities: Entity[] = await this.service.getEntitiesByPointers(type, nonDenylistedPointers)
+        const entities: Entity[] = await this.service.getEntitiesByTypeAndPointers(type, nonDenylistedPointers)
+        return this.sanitizeEntities(task.denylist, entities)
+      },
+      {
+        priority: DB_REQUEST_PRIORITY.HIGH
+      }
+    )
+  }
+
+  getEntitiesByPointers(pointers: string[]): Promise<Entity[]> {
+    return this.repository.task(
+      async (task) => {
+        const nonDenylistedPointers: Pointer[] = await this.filterDenylisted(task.denylist, pointers, (pointer) =>
+          buildPointerTarget(pointer)
+        )
+        const entities: Entity[] = await this.service.getEntitiesByPointers(nonDenylistedPointers)
         return this.sanitizeEntities(task.denylist, entities)
       },
       {
@@ -291,7 +306,7 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     }
 
     // No deployments on denylisted pointers are allowed
-    const pointerTargets: DenylistTarget[] = entity.pointers.map((pointer) => buildPointerTarget(entity.type, pointer))
+    const pointerTargets: DenylistTarget[] = entity.pointers.map((pointer) => buildPointerTarget(pointer))
     if (await this.areDenylisted(denylistRepo, ...pointerTargets)) {
       throw new Error(`Can't allow the deployment since the entity contains a denylisted pointer.`)
     }

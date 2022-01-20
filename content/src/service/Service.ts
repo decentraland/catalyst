@@ -2,6 +2,7 @@ import {
   AuditInfo,
   ContentFileHash,
   Deployment,
+  DeploymentFilters,
   Entity,
   EntityId,
   EntityType,
@@ -36,8 +37,15 @@ export interface MetaverseContentService {
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): FailedDeployment[]
-  getEntitiesByIds(ids: EntityId[]): Promise<Entity[]>
-  getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>
+  getEntitiesByIds(
+    ids: EntityId[]
+  ): Promise<{ deployments: Deployment[]; filters: Pick<DeploymentFilters, 'pointers' | 'entityIds'> }>
+  // TODO: Deprecate this
+  getEntitiesByTypeAndPointers(
+    type: EntityType,
+    pointers: Pointer[]
+  ): Promise<{ deployments: Deployment[]; filters: Pick<DeploymentFilters, 'pointers' | 'entityIds'> }>
+  getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]>
   listenToDeployments(listener: DeploymentListener): void
   reportErrorDuringSync(
     entityType: EntityType,

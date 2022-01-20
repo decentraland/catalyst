@@ -1,6 +1,6 @@
-import { Deployment, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { Deployment, DeploymentFilters, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { getContentFiles } from '../../logic/database-queries/content-files-queries'
-import { getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
+import { getActiveDeploymentsFromDb, getHistoricalDeployments } from '../../logic/database-queries/deployments-queries'
 import { getMigrationData } from '../../logic/database-queries/migration-data-queries'
 import { AppComponents } from '../../types'
 import { DeploymentOptions } from './types'
@@ -67,6 +67,44 @@ export async function getDeployments(
       limit: curatedLimit,
       moreData: moreData,
       lastId: options?.lastId
+    }
+  }
+}
+
+export async function getActiveDeployments(
+  components: Pick<AppComponents, 'database'>,
+  filters?: Pick<DeploymentFilters, 'pointers' | 'entityIds'>
+): Promise<{ deployments: Deployment[]; filters: Pick<DeploymentFilters, 'pointers' | 'entityIds'> }> {
+  const deploymentsResult: (Deployment & { deploymentId: number })[] = await getActiveDeploymentsFromDb(
+    components,
+    filters
+  )
+
+  const content = await getContentFiles(
+    components,
+    deploymentsResult.map((d) => d.deploymentId)
+  )
+
+  const deployments: Deployment[] = deploymentsResult.map((result) => ({
+    entityVersion: result.entityVersion as EntityVersion,
+    entityType: result.entityType,
+    entityId: result.entityId,
+    pointers: result.pointers,
+    entityTimestamp: result.entityTimestamp,
+    content: content.get(result.deploymentId),
+    metadata: result.metadata,
+    deployedBy: result.deployedBy,
+    auditInfo: {
+      version: result.auditInfo.version,
+      authChain: result.auditInfo.authChain,
+      localTimestamp: result.auditInfo.localTimestamp
+    }
+  }))
+
+  return {
+    deployments: deployments,
+    filters: {
+      ...filters
     }
   }
 }

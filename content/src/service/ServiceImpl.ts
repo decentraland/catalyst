@@ -4,6 +4,7 @@ import {
   AuditInfo,
   ContentFileHash,
   Deployment,
+  DeploymentFilters,
   Entity,
   EntityId,
   EntityType,
@@ -20,8 +21,8 @@ import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
-import { CacheByType } from './caching/Cache'
-import { getDeployments } from './deployments/deployments'
+import { Cache } from './caching/Cache'
+import { getActiveDeployments, getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
 import {
@@ -59,7 +60,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'deployedEntitiesFilter'
       | 'env'
     >,
-    private readonly cache: CacheByType<Pointer, Entity>,
+    private readonly cache: Cache<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
@@ -146,7 +147,7 @@ export class ServiceImpl implements MetaverseContentService {
         this.components.metrics.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
-        storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
+        storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(pointer))
 
         // Insert in deployments cache the updated entities
         if (entity.type == EntityType.PROFILE) {
@@ -305,16 +306,46 @@ export class ServiceImpl implements MetaverseContentService {
     })
   }
 
-  async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
-    const deployments = await getDeployments(this.components, { filters: { entityIds: ids } })
-    return this.mapDeploymentsToEntities(deployments)
-  }
-
-  async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
-    const allEntities = await this.cache.get(type, pointers, async (type, pointers) => {
+  // TODO: Deprecate this
+  async getEntitiesByTypeAndPointers(
+    type: EntityType,
+    pointers: Pointer[]
+  ): Promise<{ deployments: Deployment[]; filters: Pick<DeploymentFilters, 'pointers' | 'entityIds'> }> {
+    const allEntities = await this.cache.get(pointers, async (pointers) => {
       const deployments = await getDeployments(this.components, {
         filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
       })
+
+      const entities = this.mapDeploymentsToEntities(deployments)
+      const entries: [Pointer, Entity][][] = entities.map((entity) =>
+        entity.pointers.map((pointer) => [pointer, entity])
+      )
+
+      const pointersMap = new Map<Pointer, Entity | undefined>(entries.flat())
+
+      // Get Deployments only retrieves the active entities, so if a pointer has a null value we need to manually define it
+      for (const pointer of pointers) {
+        if (!pointersMap.has(pointer)) pointersMap.set(pointer, undefined)
+      }
+      return pointersMap
+    })
+
+    // Since the same entity might appear many times, we must remove duplicates
+    const grouped = new Map(allEntities.map((entity) => [entity.id, entity]))
+    return Array.from(grouped.values())
+  }
+
+  async getEntitiesByIds(
+    ids: EntityId[]
+  ): Promise<{ deployments: Deployment[]; filters: Pick<DeploymentFilters, 'pointers' | 'entityIds'> }> {
+    const deployments = await getActiveDeployments(this.components, { entityIds: ids })
+    return deployments
+  }
+
+  // TODO: Add params for pagination
+  async getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]> {
+    const allEntities = await this.cache.get(pointers, async (pointers) => {
+      const deployments = await getActiveDeployments(this.components, { pointers })
 
       const entities = this.mapDeploymentsToEntities(deployments)
       const entries: [Pointer, Entity][][] = entities.map((entity) =>
