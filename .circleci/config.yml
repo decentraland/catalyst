@@ -96,20 +96,46 @@ jobs:
           POSTGRES_DB: postgres_test
           POSTGRES_PASSWORD: '12345678'
           POSTGRES_USER: postgres
+    parallelism: 4
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
       - run:
-          name: Run unit tests
-          command: yarn workspace @catalyst/content-server test:unit
+          name: Run tests
+          command: |
+            cd content
+            TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
+            yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit
+            mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
           environment:
             CI: 'true'
-      - run:
-          name: Run integration tests
-          command: yarn workspace @catalyst/content-server test:integration
-          environment:
-            CI: 'true'
+            JEST_JUNIT_OUTPUT_DIR: './test-result'
+            JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
+      - store_test_results:
+          path: content/test-result
+      - store_artifacts:
+          path: content/test-result
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - content/reports
 
+  report-content-coverage:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Report coverage
+          command: |
+            cd content
+            yarn nyc merge reports
+            mkdir .nyc_output/
+            mv coverage.json .nyc_output/coverage.json
+            yarn nyc report --reporter=lcov --reporter=text
+      - store_test_results:
+          path: content/coverage
+      - store_artifacts:
+          path: content/coverage
   build-lambdas:
     <<: *base_env
     steps:
@@ -213,11 +239,15 @@ workflows:
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
-            - build-commons
+            - checkout
       - build-content:
           <<: *all_branches_and_tags
           requires:
-            - build-commons
+            - checkout
+      - report-content-coverage:
+          <<: *all_branches_and_tags
+          requires:
+            - build-content
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
