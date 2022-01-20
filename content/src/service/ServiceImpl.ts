@@ -306,7 +306,9 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
-    const deployments = await getDeployments(this.components, { filters: { entityIds: ids } })
+    const deployments = await getDeployments(this.components, {
+      filters: { entityIds: ids, onlyCurrentlyPointed: true }
+    })
     return this.mapDeploymentsToEntities(deployments)
   }
 

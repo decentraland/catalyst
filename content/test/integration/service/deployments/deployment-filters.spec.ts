@@ -1,5 +1,4 @@
 import { AuditInfo, DeploymentFilters, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
 import { DeploymentContext, DeploymentResult, isSuccessfulDeployment } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
@@ -127,15 +126,6 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
 
   async function deploy(components: Pick<AppComponents, 'deployer'>, ...entities: EntityCombo[]): Promise<Timestamp[]> {
     return deployWithAuditInfo(components, entities, {})
-  }
-
-  async function deployWithIdentity(
-    components: Pick<AppComponents, 'deployer'>,
-    deployedBy: string,
-    ...entities: EntityCombo[]
-  ): Promise<Timestamp[]> {
-    const authChain = Authenticator.createSimpleAuthChain('', deployedBy, '')
-    return deployWithAuditInfo(components, entities, { authChain })
   }
 
   async function deployWithAuditInfo(
