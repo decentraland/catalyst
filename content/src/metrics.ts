@@ -85,5 +85,10 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Pending downloading jobs',
     type: 'gauge',
     labelNames: ['entity_type']
+  },
+  dcl_files_migrated: {
+    help: 'Files migrated to new folder structure',
+    type: 'counter',
+    labelNames: []
   }
 })

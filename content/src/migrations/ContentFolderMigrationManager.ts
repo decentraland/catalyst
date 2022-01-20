@@ -1,21 +1,28 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
-import { ILoggerComponent } from '@well-known-components/interfaces'
-import { readdir } from 'fs/promises'
+import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
+import { opendir } from 'fs/promises'
+import ms from 'ms'
+import PQueue from 'p-queue'
 import { join } from 'path'
 import { AppComponents } from 'src/types'
 import { EnvironmentConfig } from '../Environment'
 import { moveFile } from '../helpers/files'
+import { metricsDeclaration } from '../metrics'
 
 export class ContentFolderMigrationManager {
   logs: ILoggerComponent.ILogger
+  metrics: IMetricsComponent<keyof typeof metricsDeclaration>
   contentsFolder: string
-  blockSize: number
+  concurrency: number
+  queue: PQueue
 
-  constructor(components: Pick<AppComponents, 'logs' | 'env'>) {
+  constructor(components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>) {
     this.logs = components.logs.getLogger('ContentFolderMigrationManager')
 
     this.contentsFolder = join(components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    this.blockSize = components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_BLOCK_SIZE)
+    this.concurrency = components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY)
+    this.queue = new PQueue({ concurrency: this.concurrency, timeout: ms('30s') })
+    this.metrics = components.metrics
   }
 
   async run(): Promise<void> {
@@ -27,61 +34,26 @@ export class ContentFolderMigrationManager {
 
     this.logs.debug('Running folder migration')
 
-    const files = await readdir(this.contentsFolder)
+    const files = await opendir(this.contentsFolder)
 
-    let failures = await migrateFiles(files, this.blockSize, this.contentsFolder, this.logs)
-    let retries = 0
-
-    while (retries < 3 && failures.length > 0) {
-      failures = await migrateFiles(failures, this.blockSize, this.contentsFolder, this.logs)
-      retries++
+    for await (const file of files) {
+      try {
+        await this.queue.add(async () => {
+          try {
+            await moveFile(file.name, this.contentsFolder, getPath(file.name))
+            this.metrics.increment('dcl_files_migrated')
+          } catch (err) {
+            this.logs.error(`Couldn't migrate ${file} due to ${err}`)
+          }
+        })
+      } catch (err) {
+        this.logs.error(`Couldn't migrate ${file} due to ${err}`)
+      }
     }
   }
-}
 
-async function migrateFiles(
-  files: string[],
-  blockSize: number,
-  contentsFolder: string,
-  logger: ILoggerComponent.ILogger
-): Promise<string[]> {
-  const iteration = iterateArray(files, blockSize)
-
-  let block = iteration.next()
-
-  let migrated = 0
-
-  const failures: string[] = []
-
-  while (!block.done && block.value.length > 0) {
-    await Promise.all(
-      block.value.map((file) => {
-        try {
-          return moveFile(file, contentsFolder, getPath(file))
-        } catch (err) {
-          logger.error(`Couldn't move ${file} due to ${err}`)
-          failures.push(file)
-        }
-      })
-    )
-
-    migrated += block.value.length
-
-    logger.info(`Migrated ${migrated} files`)
-
-    block = iteration.next()
-  }
-
-  return failures
-}
-
-function* iterateArray<T>(array: Array<T>, blockSize: number) {
-  let currentIndex = 0
-
-  while (currentIndex < array.length) {
-    yield array.slice(currentIndex, currentIndex + blockSize)
-
-    currentIndex += blockSize
+  pendingInQueue(): number {
+    return this.queue.size
   }
 }
 

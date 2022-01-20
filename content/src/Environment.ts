@@ -8,7 +8,7 @@ import { AppComponents } from './types'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
-const DEFAULT_FOLDER_MIGRATION_BLOCK_SIZE = 100
+const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 const DEFAULT_SERVER_PORT = 6969
 export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
@@ -126,7 +126,7 @@ export enum EnvironmentConfig {
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
   VALIDATE_API,
-  FOLDER_MIGRATION_BLOCK_SIZE
+  FOLDER_MIGRATION_MAX_CONCURRENCY
 }
 
 export class EnvironmentBuilder {
@@ -158,8 +158,8 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.FOLDER_MIGRATION_BLOCK_SIZE,
-      () => process.env.FOLDER_MIGRATION_BLOCK_SIZE ?? DEFAULT_FOLDER_MIGRATION_BLOCK_SIZE
+      EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY,
+      () => process.env.FOLDER_MIGRATION_MAX_CONCURRENCY ?? DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY
     )
     this.registerConfigIfNotAlreadySet(
       env,
