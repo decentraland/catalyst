@@ -54,7 +54,7 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
   }
 
   async function getActiveDeployments(components: Pick<AppComponents, 'deployer'>) {
-    const { deployments } = await components.deployer.getDeployments({ filters: { onlyCurrentlyPointed: true } })
+    const { deployments } = await components.deployer.getDeployments({ filters: { onlyCurrentlyPointed: true, includeOverwrittenInfo: true } })
     return deployments
   }
 
