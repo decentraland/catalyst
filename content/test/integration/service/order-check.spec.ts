@@ -54,7 +54,12 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
   }
 
   async function getActiveDeployments(components: Pick<AppComponents, 'deployer'>) {
-    const { deployments } = await components.deployer.getDeployments({ filters: { onlyCurrentlyPointed: true, includeOverwrittenInfo: true } })
+    const { deployments } = await components.deployer.getDeployments({
+      filters: {
+        onlyCurrentlyPointed: true,
+        includeOverwrittenInfo: true
+      }
+    })
     return deployments
   }
 
@@ -74,7 +79,11 @@ loadStandaloneTestEnvironment()('Integration - Order Check', (testEnv) => {
 
   async function getAuditInfo(components: Pick<AppComponents, 'deployer'>, entity: EntityCombo): Promise<AuditInfo> {
     const { deployments } = await components.deployer.getDeployments({
-      filters: { entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] }
+      filters: {
+        entityTypes: [entity.controllerEntity.type],
+        entityIds: [entity.controllerEntity.id],
+        includeOverwrittenInfo: true
+      }
     })
     return deployments[0].auditInfo
   }
