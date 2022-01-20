@@ -103,16 +103,6 @@ describe('deployments-queries', () => {
       })
     })
 
-    describe('when there is a deployed by filter', () => {
-      it('should add the expected where clause to the query with the addresses on lowercase', async () => {
-        const deployedBy = ['jOn', 'aGus']
-        const result = getHistoricalDeploymentsQuery(offset, limit, { deployedBy })
-
-        expect(result.text).toContain(`LOWER(dep1.deployer_address) = ANY ($1)`)
-        expect(result.values).toEqual([['jon', 'agus'], limit, offset])
-      })
-    })
-
     describe('when there is entityTypes filter', () => {
       it('should add the expected where clause to the query', async () => {
         const entityTypes = [EntityType.SCENE, EntityType.PROFILE]

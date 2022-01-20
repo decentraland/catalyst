@@ -251,7 +251,7 @@ export class Controller {
     // don't replace this until the denylist is implemented outside of the service
     const { deployments } = await this.components.deployer.getDeployments({
       fields: [DeploymentField.AUDIT_INFO],
-      filters: { entityIds: [entityId], entityTypes: [type] }
+      filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true }
     })
 
     if (deployments.length > 0) {
@@ -338,7 +338,8 @@ export class Controller {
       entityTypes: entityTypes as EntityType[] | undefined,
       from: fromFilter,
       to: toFilter,
-      includeAuthChain
+      includeAuthChain,
+      includeOverwrittenInfo: includeAuthChain
     }
 
     const {
@@ -401,7 +402,7 @@ export class Controller {
   async getDeployments(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments
-    // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}&deployedBy={ethAddress}
+    // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 
     const stringEntityTypes = this.asArray<string>(req.query.entityType as string | string[])
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
@@ -409,9 +410,6 @@ export class Controller {
       : undefined
     const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
-    const deployedBy: EthAddress[] | undefined = this.asArray<EthAddress>(req.query.deployedBy)?.map((p) =>
-      p.toLowerCase()
-    )
     const pointers: Pointer[] | undefined = this.asArray<Pointer>(req.query.pointer)?.map((p) => p.toLowerCase())
     const offset: number | undefined = this.asInt(req.query.offset)
     const limit: number | undefined = this.asInt(req.query.limit)
@@ -491,7 +489,6 @@ export class Controller {
       pointers,
       entityTypes: entityTypes as EntityType[],
       entityIds,
-      deployedBy,
       onlyCurrentlyPointed,
       from: fromFilter,
       to: toFilter

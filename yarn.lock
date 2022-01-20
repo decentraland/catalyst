@@ -371,6 +371,8 @@
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.1.1.tgz#9bb118fe14a48127ebdb82d05a45be815e46ae85"
   integrity sha512-LsNpyjf6T8OM8FkuHrzO2vPoSAggBj1iKY3myoH5K+YYM1s4xBD6wZK9JTcXa9dhBfPnlrr7aJWIsJ81oztlIQ==
+  dependencies:
+    ajv "^7.1.0"
 
 "@dcl/schemas@3.4.1":
   version "3.4.1"
@@ -3337,6 +3339,22 @@ dcl-catalyst-commons@7.2.1:
   version "7.2.1"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.1.tgz#8a44d41e527a6e96fe94278ee8099bfa0a6c96df"
   integrity sha512-aXeKlJmQIJ0ihBJbaIfqYM++1ZqVpUTw9Rm0+CE+d9JOmAGQ4x+7ZSJ7XcgujPwOHhXwYpURJAVo2ud1dqC7EA==
+  dependencies:
+    "@dcl/schemas" "3.1.1"
+    abort-controller "^3.0.0"
+    cids "^1.1.9"
+    cookie "^0.4.1"
+    cross-fetch "^3.1.4"
+    dcl-crypto "^2.1.0"
+    ipfs-only-hash "^4.0.0"
+    ms "^2.1.2"
+    multihashing-async "^2.1.4"
+    node-fetch "^3.0.0"
+
+dcl-catalyst-commons@tag-7.2.2-include-deployed-by:
+  version "7.2.2-20220120193508.commit-c07abc0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.2-20220120193508.commit-c07abc0.tgz#71b8f3ad6eb128cf6cd119c2f9bb357486564ddd"
+  integrity sha512-1VWjOVp78cRtAhH3/PMKX6jpbhG5Fy0Prsh2PSATI6HKTYvoDQvuhsZaLWp9hqjGarA8sU7Cglq7iC7Xa/E8CA==
   dependencies:
     "@dcl/schemas" "3.1.1"
     abort-controller "^3.0.0"
