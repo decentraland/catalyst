@@ -84,10 +84,9 @@ export class FileSystemContentStorage implements ContentStorage {
     return (await this.stats(id))?.size
   }
 
-  // async fixContentItem(id: string, oldContentPath: string): Promise<void> {
-  //     // TODO: move con rename -> es solamente mover punteros, mv hace
-  //     // await fs.promises.rename(path.join(oldFolder, fileName), path.join(newFolder, fileName))
-  // }
+  async fixContentItem(id: string, oldContentPath: string): Promise<void> {
+    return fs.promises.rename(path.join(oldContentPath, id), this.getFilePath(id))
+  }
 
   create(id: string): UnsavedContentItem {
     // Check if it doesn't exist

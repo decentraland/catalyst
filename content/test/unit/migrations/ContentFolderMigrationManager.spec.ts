@@ -18,56 +18,64 @@ import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
-import * as fileHelpers from '../../../src/helpers/files'
 import { metricsDeclaration } from '../../../src/metrics'
 import { ContentFolderMigrationManager } from '../../../src/migrations/ContentFolderMigrationManager'
+import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
 import { FileSystemUtils as fsu } from '../storage/FileSystemUtils'
 
 describe('ContentFolderMigrationManager', () => {
-  describe('when running the migration with no errors', () => {
-    let moveFileSpy: jest.SpyInstance
+  let fixContentItemSpy: jest.Mock
 
+  let storage: FileSystemContentStorage
+
+  describe('when running the migration with no errors', () => {
     beforeAll(() => {
-      moveFileSpy = jest.spyOn(fileHelpers, 'moveFile').mockResolvedValue()
+      fixContentItemSpy = jest.fn().mockResolvedValue(undefined)
+
+      storage = {
+        fixContentItem: fixContentItemSpy
+      } as any
     })
 
     afterAll(() => {
-      moveFileSpy.mockRestore()
+      fixContentItemSpy.mockClear()
     })
 
     it('should call moveFile 10 times, once for each file', async () => {
-      await runMigration()
+      await runMigration(storage)
 
-      expect(moveFileSpy).toHaveBeenCalledTimes(10)
-      expect(moveFileSpy.mock.calls).toEqual(
+      expect(fixContentItemSpy).toHaveBeenCalledTimes(10)
+      expect(fixContentItemSpy.mock.calls).toEqual(
         expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
       )
     })
   })
 
   describe('when running the migration with an error', () => {
-    let moveFileSpy: jest.SpyInstance
-
     beforeAll(() => {
-      moveFileSpy = jest.spyOn(fileHelpers, 'moveFile').mockRejectedValueOnce('Failure').mockResolvedValue()
+      fixContentItemSpy = jest.fn().mockRejectedValueOnce('Failure').mockResolvedValue(undefined)
+
+      storage = {
+        fixContentItem: fixContentItemSpy
+      } as any
     })
 
     afterAll(() => {
-      moveFileSpy.mockRestore()
+      fixContentItemSpy.mockClear()
     })
 
     it('should call moveFile 11 times, once for each file', async () => {
-      await runMigration()
+      await runMigration(storage)
 
-      expect(moveFileSpy).toHaveBeenCalledTimes(11)
-      expect(moveFileSpy.mock.calls).toEqual(
+      expect(fixContentItemSpy).toHaveBeenCalledTimes(11)
+      expect(fixContentItemSpy.mock.calls).toEqual(
         expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
       )
     })
   })
 })
 
-async function runMigration() {
+async function runMigration(storage: FileSystemContentStorage) {
   const logs = createLogComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const env = new Environment()
@@ -76,7 +84,7 @@ async function runMigration() {
   env.setConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY, 2)
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, dir)
 
-  const instance = new ContentFolderMigrationManager({ logs, env, metrics })
+  const instance = new ContentFolderMigrationManager({ logs, env, metrics, storage })
   await instance.run()
 
   while (instance.pendingInQueue() > 0) {

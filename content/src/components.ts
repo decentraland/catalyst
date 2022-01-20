@@ -34,6 +34,7 @@ import { SystemPropertiesManager } from './service/system-properties/SystemPrope
 import { createServerValidator } from './service/validations/server'
 import { createValidator } from './service/validations/validator'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
+import { FileSystemContentStorage } from './storage/FileSystemContentStorage'
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
@@ -198,7 +199,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const migrationManager = MigrationManagerFactory.create({ logs, env })
-  const contentFolderMigrationManager = new ContentFolderMigrationManager({ logs, env, metrics })
+  const contentFolderMigrationManager = new ContentFolderMigrationManager({
+    logs,
+    env,
+    metrics,
+    storage: storage as FileSystemContentStorage
+  })
 
   const server = new Server({ controller, metrics, env, logs })
 

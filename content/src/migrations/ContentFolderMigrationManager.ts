@@ -6,8 +6,8 @@ import PQueue from 'p-queue'
 import { join } from 'path'
 import { AppComponents } from 'src/types'
 import { EnvironmentConfig } from '../Environment'
-import { moveFile } from '../helpers/files'
 import { metricsDeclaration } from '../metrics'
+import { FileSystemContentStorage } from '../storage/FileSystemContentStorage'
 
 export class ContentFolderMigrationManager {
   logs: ILoggerComponent.ILogger
@@ -15,14 +15,16 @@ export class ContentFolderMigrationManager {
   contentsFolder: string
   concurrency: number
   queue: PQueue
+  storage: FileSystemContentStorage
 
-  constructor(components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>) {
+  constructor(components: Pick<AppComponents, 'logs' | 'env' | 'metrics'> & { storage: FileSystemContentStorage }) {
     this.logs = components.logs.getLogger('ContentFolderMigrationManager')
 
     this.contentsFolder = join(components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
     this.concurrency = components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY)
     this.queue = new PQueue({ concurrency: this.concurrency, timeout: ms('30s') })
     this.metrics = components.metrics
+    this.storage = components.storage
   }
 
   async run(): Promise<void> {
@@ -43,7 +45,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await moveFile(file.name, this.contentsFolder, getPath(file.name))
+            await this.storage.fixContentItem(file.name, this.contentsFolder)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
@@ -59,7 +61,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await moveFile(file, this.contentsFolder, getPath(file))
+            await this.storage.fixContentItem(file, this.contentsFolder)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Retry for ${file} failed due to ${err}`)
@@ -75,8 +77,4 @@ export class ContentFolderMigrationManager {
   pendingInQueue(): number {
     return this.queue.size
   }
-}
-
-function getPath(fileName: string): string {
-  return fileName
 }
