@@ -425,7 +425,7 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
-    return this.components.storage.storeContent(fileHash, content)
+    return this.components.storage.store(fileHash, content)
   }
 
   getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {

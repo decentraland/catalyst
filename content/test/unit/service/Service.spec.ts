@@ -70,7 +70,7 @@ describe('Service', function () {
     const service = await buildService()
 
     jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
-    const storageSpy = jest.spyOn(service.components.storage, 'storeContent')
+    const storageSpy = jest.spyOn(service.components.storage, 'store')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
@@ -105,7 +105,7 @@ describe('Service', function () {
     jest
       .spyOn(service.components.storage, 'exist')
       .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
-    const storeSpy = jest.spyOn(service.components.storage, 'storeContent')
+    const storeSpy = jest.spyOn(service.components.storage, 'store')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123

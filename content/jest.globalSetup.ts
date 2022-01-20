@@ -7,13 +7,17 @@ import { isCI } from './test/integration/E2ETestUtils'
 
 const globalSetup = async (): Promise<void> => {
   if (!isCI()) {
-    global.__POSTGRES_CONTAINER__ = await new GenericContainer('postgres', '12')
+    // global.__POSTGRES_CONTAINER__ = await new GenericContainer('postgres', '12')
+    const container = await new GenericContainer('postgres', '12')
       .withName('postgres_test')
       .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
       .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
       .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
       .withWaitStrategy(new PostgresWaitStrategy())
       .start()
+
+      process.env.MAPPED_POSTGRES_PORT = container.getMappedPort(E2ETestEnvironment.POSTGRES_PORT).toString()
+      global.__POSTGRES_CONTAINER__ = container
   }
 }
 

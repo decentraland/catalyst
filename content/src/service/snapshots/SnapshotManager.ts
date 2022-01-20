@@ -8,7 +8,7 @@ import * as path from 'path'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { compressContentFile } from '../../storage/compression'
-import { AppComponents, IStatusCapableComponent } from '../../types'
+import { AppComponents, IStatusCapableComponent, StatusProbeResult } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')
 type ALL_ENTITIES = typeof ALL_ENTITIES
@@ -39,14 +39,14 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     this.LOGGER = components.logs.getLogger('SnapshotManager')
   }
 
-  async getComponentStatus() {
+  async getComponentStatus(): Promise<StatusProbeResult> {
     return {
       name: NAME_FOR_STATUS_ENDPOINT,
       data: this.statusEndpointData
     }
   }
 
-  async start() {
+  async start(): Promise<void> {
     // generate a first snapshot
     await this.generateSnapshots()
 
@@ -54,7 +54,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     await this.startCalculateFullSnapshots()
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     // end jobs
     for (const stopFunction of this.runningJobs) {
       await stopFunction()

@@ -56,7 +56,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
       file.on('error', reject)
     })
 
-    // the follosing lines exist to naively emulate a buffering algorithm to reduce disk IO
+    // the following lines exist to naively emulate a buffering algorithm to reduce disk IO
     // and thus, block the disk for less time using more memory
     const MAX_WRITE_BUFFER_SIZE = 1000
     const writeBuffer: Array<string> = []

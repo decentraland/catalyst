@@ -1,18 +1,15 @@
-import { ContentFileHash } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
 
 export type ContentEncoding = 'gzip'
 
 export interface ContentStorage {
-  storeStream(id: string, content: Readable): Promise<void>
-  /** @deprecated use storeStream instead */
-  store(id: string, content: Uint8Array): Promise<void>
   delete(ids: string[]): Promise<void>
   retrieve(id: string): Promise<ContentItem | undefined>
   exist(ids: string[]): Promise<Map<string, boolean>>
   stats(id: string): Promise<{ size: number } | undefined>
-  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void>
-  size(fileHash: ContentFileHash): Promise<number | undefined>
+  store(id: string, content: Uint8Array | Readable): Promise<void>
+  size(id: string): Promise<number | undefined>
+  create(id: string): UnsavedContentItem
 }
 
 export interface ContentItem {
@@ -21,6 +18,10 @@ export interface ContentItem {
   asStream(): Promise<Readable>
 }
 
+export interface UnsavedContentItem {
+  append(buffer: string): void
+  save(): void
+}
 export class SimpleContentItem implements ContentItem {
   constructor(
     private streamCreator: () => Promise<Readable>,
@@ -40,7 +41,7 @@ export class SimpleContentItem implements ContentItem {
     return this.length
   }
 
-  async contentEncoding() {
+  async contentEncoding(): Promise<'gzip' | null> {
     return this.encoding ?? null
   }
 }

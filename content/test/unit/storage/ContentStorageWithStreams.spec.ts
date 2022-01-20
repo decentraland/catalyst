@@ -19,7 +19,7 @@ describe('ContentStorage', () => {
   })
 
   it(`When content is stored, then it can be retrieved`, async () => {
-    await storage.storeStream(id, bufferToStream(content))
+    await storage.store(id, bufferToStream(content))
 
     const retrievedContent = await storage.retrieve(id)
 
@@ -27,7 +27,7 @@ describe('ContentStorage', () => {
   })
 
   it(`When content is stored, then we can check if it exists`, async function () {
-    await storage.storeStream(id, bufferToStream(content))
+    await storage.store(id, bufferToStream(content))
 
     const exists = await storage.exist([id])
 
@@ -37,15 +37,15 @@ describe('ContentStorage', () => {
   it(`When content is stored on already existing id, then it overwrites the previous content`, async function () {
     const newContent = Buffer.from('456')
 
-    await storage.storeStream(id, bufferToStream(content))
-    await storage.storeStream(id, bufferToStream(newContent))
+    await storage.store(id, bufferToStream(content))
+    await storage.store(id, bufferToStream(newContent))
 
     const retrievedContent = await storage.retrieve(id)
     expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(newContent)
   })
 
   it(`When content is deleted, then it is no longer available`, async function () {
-    await storage.storeStream(id, bufferToStream(content))
+    await storage.store(id, bufferToStream(content))
 
     let exists = await storage.exist([id])
     expect(exists.get(id)).toBe(true)
