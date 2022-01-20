@@ -104,7 +104,7 @@ jobs:
           name: Run tests
           command: |
             cd content
-            TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings --timings-type=classname)
+            TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
             yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit
             mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
           environment:
