@@ -77,46 +77,6 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
 
   testCaseWithComponents(
     testEnv,
-    'When deployed by filter is set, then results are calculated ignoring the casing',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
-
-      const identity1 = 'Some-Identity'
-      const identity2 = 'another-identity'
-
-      // Deploy E1 and E2
-      await deployWithIdentity(components, identity1, E1)
-      await deployWithIdentity(components, identity2, E2)
-
-      await assertDeploymentsWithFilterAre(components, {}, E1, E2)
-      await assertDeploymentsWithFilterAre(components, { deployedBy: [identity1] }, E1)
-      await assertDeploymentsWithFilterAre(components, { deployedBy: [identity1.toLowerCase()] }, E1)
-      await assertDeploymentsWithFilterAre(components, { deployedBy: [identity2] }, E2)
-      await assertDeploymentsWithFilterAre(components, { deployedBy: [identity1, identity2] }, E1, E2)
-      await assertDeploymentsWithFilterAre(components, { deployedBy: ['not-and-identity'] })
-    }
-  )
-
-  testCaseWithComponents(
-    testEnv,
-    'When deployed by filter is set, then results are calculated correctly',
-    async (components) => {
-      // make noop validator
-      makeNoopValidator(components)
-      makeNoopServerValidator(components)
-
-      await deploy(components, E1, E2, E3)
-
-      await assertDeploymentsWithFilterAre(components, {}, E1, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { onlyCurrentlyPointed: true }, E2, E3)
-      await assertDeploymentsWithFilterAre(components, { onlyCurrentlyPointed: false }, E1, E2, E3)
-    }
-  )
-
-  testCaseWithComponents(
-    testEnv,
     'When pointers filter is set, then results are calculated correctly',
     async (components) => {
       // make noop validator
