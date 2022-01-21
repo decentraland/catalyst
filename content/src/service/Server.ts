@@ -88,12 +88,10 @@ export class Server implements IBaseComponent {
     this.registerRoute('/denylist/:type/:id', controller, controller.addToDenylist, HttpMethod.PUT)
     this.registerRoute('/denylist/:type/:id', controller, controller.removeFromDenylist, HttpMethod.DELETE)
     this.registerRoute('/denylist/:type/:id', controller, controller.isTargetDenylisted, HttpMethod.HEAD)
-    this.registerRoute('/failedDeployments', controller, controller.getFailedDeployments) // TODO: Deprecate
     this.registerRoute('/failed-deployments', controller, controller.getFailedDeployments)
     this.registerRoute('/challenge', controller, controller.getChallenge)
-    this.registerRoute('/pointerChanges', controller, controller.getPointerChanges) // TODO: Deprecate
     this.registerRoute('/pointer-changes', controller, controller.getPointerChanges)
-    this.registerRoute('/snapshot/:type', controller, controller.getSnapshot)
+    this.registerRoute('/snapshot/:type', controller, controller.getSnapshot) // TODO: Deprecate
     this.registerRoute('/snapshot', controller, controller.getAllSnapshots)
   }
 
