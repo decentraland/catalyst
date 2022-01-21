@@ -29,7 +29,7 @@ export class MockedStorage implements ContentStorage {
   create(id: string) {
   return {
     async append(buffer: string) { },
-    async save() { },
+    async save() { return true },
     async abort() { }
   }
   }

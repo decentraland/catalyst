@@ -13,6 +13,7 @@ describe('FileSystemContentStorage', () => {
   let testTmpDir: string
 
   beforeAll(() => {
+    jest.useFakeTimers()
     testSuiteTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'testSuite-'))
     content = Buffer.from('123')
     id = 'some-id'
