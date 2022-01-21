@@ -129,6 +129,6 @@ describe('FileSystemContentStorage', () => {
   })
 
   afterAll(async () => {
-    // fs.rmSync(testSuiteTmpDir, {recursive: true, force: true})
+    fs.rmSync(testSuiteTmpDir, {recursive: true, force: true})
   })
 })
