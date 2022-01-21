@@ -1,5 +1,6 @@
 module.exports = {
   coverageDirectory: 'coverage',
+  coverageReporters: ['json'],
   collectCoverageFrom: ['./src/**/*.ts'],
   testEnvironment: 'node',
   testTimeout: 60000,

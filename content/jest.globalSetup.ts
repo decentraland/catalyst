@@ -1,23 +1,41 @@
+import { exec } from 'child_process'
 import { GenericContainer } from 'testcontainers'
 import { Container } from 'testcontainers/dist/container'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
+import { promisify } from 'util'
 import { DEFAULT_DATABASE_CONFIG } from './src/Environment'
 import { E2ETestEnvironment } from './test/integration/E2ETestEnvironment'
 import { isCI } from './test/integration/E2ETestUtils'
 
+const execute = promisify(exec)
+const postgresContainerName = 'postgres_test'
+
+const deletePreviousPsql = async (): Promise<void> => {
+  const { stderr, stdout } = await execute(`docker rm -f ${postgresContainerName}`)
+  if (stderr && !stderr.includes(`Error: No such container: ${postgresContainerName}`)) {
+    console.log('Failed to delete the existing postgres container')
+  } else if (stdout) {
+    console.log('Deleted the previous container')
+  }
+}
+
 const globalSetup = async (): Promise<void> => {
   if (!isCI()) {
-    // global.__POSTGRES_CONTAINER__ = await new GenericContainer('postgres', '12')
+    // delete postgres_test container if it exists
+    await deletePreviousPsql()
+
+    // start postgres container and wait for it to be ready
     const container = await new GenericContainer('postgres', '12')
-      .withName('postgres_test')
+      .withName(postgresContainerName)
       .withEnv('POSTGRES_PASSWORD', DEFAULT_DATABASE_CONFIG.password)
       .withEnv('POSTGRES_USER', DEFAULT_DATABASE_CONFIG.user)
       .withExposedPorts(E2ETestEnvironment.POSTGRES_PORT)
       .withWaitStrategy(new PostgresWaitStrategy())
       .start()
 
-      process.env.MAPPED_POSTGRES_PORT = container.getMappedPort(E2ETestEnvironment.POSTGRES_PORT).toString()
-      global.__POSTGRES_CONTAINER__ = container
+    globalThis.__POSTGRES_CONTAINER__ = container
+    // get mapped port to be used for testing purposes
+    process.env.MAPPED_POSTGRES_PORT = container.getMappedPort(E2ETestEnvironment.POSTGRES_PORT).toString()
   }
 }
 
