@@ -19,8 +19,9 @@ export interface ContentItem {
 }
 
 export interface UnsavedContentItem {
-  append(buffer: string): void
-  save(): void
+  append(buffer: string): Promise<void>
+  save(): Promise<boolean>
+  abort(): Promise<void>
 }
 export class SimpleContentItem implements ContentItem {
   constructor(
