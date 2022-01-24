@@ -265,6 +265,7 @@ workflows:
           requires:
             - build-lighthouse
             - build-content
+            - report-content-coverage
             - build-lambdas
 
       # NOT (main | semver) enables manual approval to release untagged docker images
