@@ -21,7 +21,10 @@ const serverLru = new Map<string, number>()
  * This function downloads an entity from a remote catalyst(s) and deploys the entity locally.
  */
 export async function deployEntityFromRemoteServer(
-  components: Pick<AppComponents, 'metrics' | 'staticConfigs' | 'fetcher' | 'downloadQueue' | 'logs' | 'deployer'>,
+  components: Pick<
+    AppComponents,
+    'metrics' | 'staticConfigs' | 'fetcher' | 'downloadQueue' | 'logs' | 'deployer' | 'storage'
+  >,
   entityId: string,
   entityType: string,
   authChain: AuthChain,
@@ -33,7 +36,7 @@ export async function deployEntityFromRemoteServer(
 }
 
 async function downloadFullEntity(
-  components: Pick<AppComponents, 'metrics' | 'staticConfigs' | 'fetcher'>,
+  components: Pick<AppComponents, 'metrics' | 'staticConfigs' | 'fetcher' | 'storage'>,
   entityId: string,
   entityType: string,
   servers: string[]

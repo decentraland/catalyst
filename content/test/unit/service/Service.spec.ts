@@ -91,7 +91,7 @@ describe('Service', function () {
     } else {
       const deltaMilliseconds = Date.now() - deploymentResult
       expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
-      expect(deltaMilliseconds).toBeLessThanOrEqual(10)
+      expect(deltaMilliseconds).toBeLessThanOrEqual(1000)
       expect(storageSpy).toHaveBeenCalledWith(entity.id, entityFile)
       expect(storageSpy).toHaveBeenCalledWith(randomFileHash, randomFile)
     }

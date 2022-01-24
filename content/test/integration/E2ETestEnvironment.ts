@@ -26,7 +26,6 @@ export class E2ETestEnvironment {
     this.sharedEnv = new Environment()
       .setConfig(EnvironmentConfig.PSQL_PASSWORD, DEFAULT_DATABASE_CONFIG.password)
       .setConfig(EnvironmentConfig.PSQL_USER, DEFAULT_DATABASE_CONFIG.user)
-      // .setConfig(EnvironmentConfig.PSQL_PORT, E2ETestEnvironment.POSTGRES_PORT)
       .setConfig(EnvironmentConfig.PSQL_PORT, port)
       .setConfig(EnvironmentConfig.PSQL_SCHEMA, E2ETestEnvironment.TEST_SCHEMA)
       .setConfig(EnvironmentConfig.PSQL_HOST, 'localhost')

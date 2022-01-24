@@ -24,28 +24,28 @@ import { FileSystemContentStorage } from '../../../src/storage/FileSystemContent
 import { FileSystemUtils as fsu } from '../storage/FileSystemUtils'
 
 describe('ContentFolderMigrationManager', () => {
-  let fixContentItemSpy: jest.Mock
+  let storeExistingContentItemSpy: jest.Mock
 
   let storage: FileSystemContentStorage
 
   describe('when running the migration with no errors', () => {
     beforeAll(() => {
-      fixContentItemSpy = jest.fn().mockResolvedValue(undefined)
+      storeExistingContentItemSpy = jest.fn().mockResolvedValue(undefined)
 
       storage = {
-        fixContentItem: fixContentItemSpy
+        storeExistingContentItem: storeExistingContentItemSpy
       } as any
     })
 
     afterAll(() => {
-      fixContentItemSpy.mockClear()
+      storeExistingContentItemSpy.mockClear()
     })
 
     it('should call moveFile 10 times, once for each file', async () => {
       await runMigration(storage)
 
-      expect(fixContentItemSpy).toHaveBeenCalledTimes(10)
-      expect(fixContentItemSpy.mock.calls).toEqual(
+      expect(storeExistingContentItemSpy).toHaveBeenCalledTimes(10)
+      expect(storeExistingContentItemSpy.mock.calls).toEqual(
         expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
       )
     })
@@ -53,22 +53,22 @@ describe('ContentFolderMigrationManager', () => {
 
   describe('when running the migration with an error', () => {
     beforeAll(() => {
-      fixContentItemSpy = jest.fn().mockRejectedValueOnce('Failure').mockResolvedValue(undefined)
+      storeExistingContentItemSpy = jest.fn().mockRejectedValueOnce('Failure').mockResolvedValue(undefined)
 
       storage = {
-        fixContentItem: fixContentItemSpy
+        storeExistingContentItem: storeExistingContentItemSpy
       } as any
     })
 
     afterAll(() => {
-      fixContentItemSpy.mockClear()
+      storeExistingContentItemSpy.mockClear()
     })
 
     it('should call moveFile 11 times, once for each file', async () => {
       await runMigration(storage)
 
-      expect(fixContentItemSpy).toHaveBeenCalledTimes(11)
-      expect(fixContentItemSpy.mock.calls).toEqual(
+      expect(storeExistingContentItemSpy).toHaveBeenCalledTimes(11)
+      expect(storeExistingContentItemSpy.mock.calls).toEqual(
         expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
       )
     })

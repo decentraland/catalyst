@@ -18,7 +18,7 @@ export async function isEntityDeployed(
 export async function retryFailedDeploymentExecution(
   components: Pick<
     AppComponents,
-    'metrics' | 'staticConfigs' | 'fetcher' | 'downloadQueue' | 'logs' | 'deployer' | 'contentCluster'
+    'metrics' | 'staticConfigs' | 'fetcher' | 'downloadQueue' | 'logs' | 'deployer' | 'contentCluster' | 'storage'
   >,
   logger: ILoggerComponent.ILogger
 ): Promise<void> {

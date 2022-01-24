@@ -134,7 +134,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer,
       staticConfigs,
-      deployedEntitiesFilter
+      deployedEntitiesFilter,
+      storage
     },
     {
       autoStart: true,
@@ -179,7 +180,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     staticConfigs,
     logs,
-    contentCluster
+    contentCluster,
+    storage
   })
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
