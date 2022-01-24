@@ -177,7 +177,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     staticConfigs,
     logs,
-    contentCluster
+    contentCluster,
+    failedDeploymentsCache
   })
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
