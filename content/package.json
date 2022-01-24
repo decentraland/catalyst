@@ -34,7 +34,7 @@
     "express-openapi-validator": "4.13.1",
     "form-data": "4.0.0",
     "fp-future": "^1.0.1",
-    "log4js": "6.3.0",
+    "log4js": "6.4.0",
     "lru-cache": "6.0.0",
     "morgan": "1.10.0",
     "ms": "2.1.3",
