@@ -27,7 +27,7 @@
     "compression": "1.7.4",
     "cors": "2.8.5",
     "dcl-catalyst-client": "10.0.1",
-    "dcl-catalyst-commons": "tag-7.2.2-include-deployed-by",
+    "dcl-catalyst-commons": "7.2.2",
     "dcl-crypto": "2.3.0",
     "eth-crypto": "2.1.0",
     "express": "4.17.1",
