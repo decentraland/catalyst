@@ -27,6 +27,7 @@ export function createBatchDeployerComponent(
     | 'staticConfigs'
     | 'database'
     | 'deployedEntitiesFilter'
+    | 'storage'
   >,
   queueOptions: createJobQueue.Options
 ): IDeployerComponent & IBaseComponent {
