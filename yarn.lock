@@ -3382,12 +3382,12 @@ dcl-catalyst-commons@7.2.1:
     multihashing-async "^2.1.4"
     node-fetch "^3.0.0"
 
-dcl-catalyst-commons@tag-7.2.2-include-deployed-by:
-  version "7.2.2-20220120193508.commit-c07abc0"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.2-20220120193508.commit-c07abc0.tgz#71b8f3ad6eb128cf6cd119c2f9bb357486564ddd"
-  integrity sha512-1VWjOVp78cRtAhH3/PMKX6jpbhG5Fy0Prsh2PSATI6HKTYvoDQvuhsZaLWp9hqjGarA8sU7Cglq7iC7Xa/E8CA==
+dcl-catalyst-commons@7.2.2:
+  version "7.2.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.2.tgz#88aa7ead766affd8fd1b1da8fb98e133f67beb92"
+  integrity sha512-/tspVyNjlgIiKMor4Wz21rmvzgZ41y54KtfdePRPJFecJqiaMaFb+lOkdE/4fi+MWS2d2+gQmjW7MYqMS9Aivw==
   dependencies:
-    "@dcl/schemas" "3.1.1"
+    "@dcl/schemas" "3.5.0"
     abort-controller "^3.0.0"
     cids "^1.1.9"
     cookie "^0.4.1"
