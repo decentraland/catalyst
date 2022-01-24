@@ -45,7 +45,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await this.storage.fixContentItem(file.name, this.contentsFolder)
+            await this.storage.storeExistingContentItem(file.name, this.contentsFolder)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
@@ -61,7 +61,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await this.storage.fixContentItem(file, this.contentsFolder)
+            await this.storage.storeExistingContentItem(file, this.contentsFolder)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Retry for ${file} failed due to ${err}`)
