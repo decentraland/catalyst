@@ -84,8 +84,8 @@ export class FileSystemContentStorage implements ContentStorage {
     return (await this.stats(id))?.size
   }
 
-  async storeExistingContentItem(id: string, oldContentPath: string): Promise<void> {
-    return fs.promises.rename(path.join(oldContentPath, id), this.getFilePath(id))
+  async storeExistingContentItem(currentFilePath: string, id: string): Promise<void> {
+    return fs.promises.rename(currentFilePath, this.getFilePath(id))
   }
 
   create(id: string): UnsavedContentItem {
