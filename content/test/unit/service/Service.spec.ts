@@ -70,7 +70,7 @@ describe('Service', function () {
     const service = await buildService()
 
     jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
-    const storageSpy = jest.spyOn(service.components.storage, 'storeContent')
+    const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
@@ -103,9 +103,9 @@ describe('Service', function () {
 
     // Consider the random file as already uploaded, but not the entity file
     jest
-      .spyOn(service.components.storage, 'exist')
+      .spyOn(service.components.storage, 'existMultiple')
       .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
-    const storeSpy = jest.spyOn(service.components.storage, 'storeContent')
+    const storeSpy = jest.spyOn(service.components.storage, 'storeStream')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123

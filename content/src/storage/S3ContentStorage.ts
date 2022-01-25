@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk'
 import { Readable } from 'stream'
-import { ContentItem, ContentStorage } from './ContentStorage'
+import { ContentItem, ContentStorage, RawContentItem } from './ContentStorage'
 
 export class S3ContentStorage implements ContentStorage {
   private s3Client: AWS.S3
@@ -11,10 +11,7 @@ export class S3ContentStorage implements ContentStorage {
       secretAccessKey
     })
   }
-  storeContent(fileHash: string, content: Readable | Uint8Array): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  size(fileHash: string): Promise<number | undefined> {
+  exist(fileId: string): Promise<boolean> {
     throw new Error('Method not implemented.')
   }
 
@@ -23,26 +20,13 @@ export class S3ContentStorage implements ContentStorage {
   }
 
   async storeStream(id: string, content: Readable): Promise<void> {
-    return this.store(id, content)
-  }
-
-  async store(id: string, content: Uint8Array | Readable): Promise<void> {
     const request: AWS.S3.Types.PutObjectRequest = {
       Bucket: this.bucket,
       Key: id,
       Body: content
     }
 
-    return new Promise((resolve, reject) => {
-      this.s3Client.upload(request, (error, data) => {
-        if (error) {
-          console.error(`Error uploading data to S3. Id: ${id}`, error)
-          return reject(error)
-        }
-        console.log(`Successfully uploaded data to S3. Id: ${id}`)
-        return resolve()
-      })
-    })
+    await this.s3Client.upload(request).promise()
   }
 
   delete(ids: string[]): Promise<void> {
@@ -93,7 +77,7 @@ export class S3ContentStorage implements ContentStorage {
     })
   }
 
-  exist(ids: string[]): Promise<Map<string, boolean>> {
+  existMultiple(ids: string[]): Promise<Map<string, boolean>> {
     throw new Error('Not implemented')
     // const request: AWS.S3.Types.HeadObjectRequest = {
     //     Bucket: this.bucket,
@@ -112,10 +96,6 @@ export class S3ContentStorage implements ContentStorage {
     //     })
     // })
   }
-
-  stats(id: string): Promise<{ size: number } | undefined> {
-    throw new Error('Not implemented')
-  }
 }
 
 class S3ContentItem implements ContentItem {
@@ -123,6 +103,14 @@ class S3ContentItem implements ContentItem {
 
   async asStream(): Promise<Readable> {
     return this.readable
+  }
+
+  async asRawStream(): Promise<RawContentItem> {
+    return {
+      stream: this.readable,
+      encoding: null,
+      size: this.length || null
+    }
   }
 
   getLength(): number | undefined {

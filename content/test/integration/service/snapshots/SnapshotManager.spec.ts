@@ -1,11 +1,10 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { inspect } from 'util'
-import { unzipSync } from 'zlib'
 import { EnvironmentBuilder } from '../../../../src/Environment'
 import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
 import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
-import { bufferToStream, ContentItem, streamToBuffer } from '../../../../src/storage/ContentStorage'
+import { ContentItem } from '../../../../src/storage/ContentStorage'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
@@ -115,23 +114,16 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
     ...entitiesCombo: EntityCombo[]
   ) {
     const { hash } = snapshotMetadata!
-    const content: ContentItem = (await components.deployer.getContent(hash))!
-
-    let uncompressedFile: Buffer
-
-    if ((await content.contentEncoding()) === 'gzip') {
-      uncompressedFile = unzipSync(await streamToBuffer(await content.asStream()))
-    } else {
-      uncompressedFile = await streamToBuffer(await content.asStream())
-    }
+    const content: ContentItem = (await components.storage.retrieve(hash))!
 
     const snapshot: Map<EntityId, Pointer[]> = new Map()
 
-    const readStream = bufferToStream(uncompressedFile)
+    const readStream = await content.asStream()
 
     for await (const deployment of processDeploymentsInStream(readStream)) {
       snapshot.set(deployment.entityId, (deployment as any).pointers)
     }
+
     try {
       expect(snapshot.size).toBe(entitiesCombo.length)
 
@@ -139,7 +131,7 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
         expect(snapshot.get(entity.id)).toEqual(entity.pointers)
       }
     } catch (e) {
-      process.stderr.write(inspect({ hash, content, snapshot, uncompressedFile: uncompressedFile.toString() }) + '\n')
+      process.stderr.write(inspect({ hash, content, snapshot }) + '\n')
       throw e
     }
   }

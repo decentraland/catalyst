@@ -13,12 +13,11 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import NodeCache from 'node-cache'
-import { Readable } from 'stream'
 import { EnvironmentConfig } from '../Environment'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { ContentItem } from '../storage/ContentStorage'
+import { bufferToStream, ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
 import { getDeployments } from './deployments/deployments'
@@ -64,8 +63,6 @@ export class ServiceImpl implements MetaverseContentService {
   ) {
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
   }
-
-  async start(): Promise<void> {}
 
   async deployEntity(
     files: DeploymentFiles,
@@ -383,7 +380,7 @@ export class ServiceImpl implements MetaverseContentService {
     // If entity was committed, then store all it's content (that isn't already stored)
     const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
       .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-      .map(([fileHash, file]) => this.storeContent(fileHash, file))
+      .map(([fileHash, file]) => this.components.storage.storeStream(fileHash, bufferToStream(file)))
 
     return Promise.all(contentStorageActions)
   }
@@ -408,24 +405,12 @@ export class ServiceImpl implements MetaverseContentService {
     return IPFSv2.validate(hash)
   }
 
-  getSize(fileHash: ContentFileHash): Promise<number | undefined> {
-    return this.components.storage.size(fileHash)
-  }
-
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
     return this.components.storage.retrieve(fileHash)
   }
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
-    return this.components.storage.exist(fileHashes)
-  }
-
-  deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
-    return this.components.storage.delete(fileHashes)
-  }
-
-  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
-    return this.components.storage.storeContent(fileHash, content)
+    return this.components.storage.existMultiple(fileHashes)
   }
 
   getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {

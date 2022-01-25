@@ -15,7 +15,7 @@ export class GarbageCollectionManager {
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'systemPropertiesManager' | 'repository' | 'deployer' | 'metrics' | 'logs'
+      'systemPropertiesManager' | 'repository' | 'deployer' | 'metrics' | 'logs' | 'storage'
     >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
@@ -59,7 +59,7 @@ export class GarbageCollectionManager {
           this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 
           this.LOGGER.debug(`Hashes to delete are: ${hashes}`)
-          await this.components.deployer.deleteContent(hashes)
+          await this.components.storage.delete(hashes)
           await this.components.systemPropertiesManager.setSystemProperty(
             SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
             newTimeOfCollection,

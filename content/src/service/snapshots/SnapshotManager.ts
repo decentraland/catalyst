@@ -4,10 +4,10 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import future from 'fp-future'
 import * as fs from 'fs'
-import * as path from 'path'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
-import { compressContentFile } from '../../storage/compression'
+import { bufferToStream } from '../../storage/ContentStorage'
+import { FileSystemContentStorage } from '../../storage/FileSystemContentStorage'
 import { AppComponents, IStatusCapableComponent } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')
@@ -33,7 +33,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   }
 
   constructor(
-    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs' | 'deployer'>,
+    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage'>,
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
@@ -139,7 +139,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     const hash = await Hashing.calculateIPFSHash(buffer)
 
     // Store the new snapshot
-    await this.components.deployer.storeContent(hash, buffer)
+    await this.components.storage.storeStream(hash, bufferToStream(buffer))
 
     // Store the metadata
     this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
@@ -150,7 +150,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
 
     // Delete the previous snapshot (if it exists)
     if (previousSnapshot) {
-      await this.components.deployer.deleteContent([previousSnapshot.hash])
+      await this.components.storage.delete([previousSnapshot.hash])
     }
   }
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
@@ -270,7 +270,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     // the deletion of the files is deferred two minutes because there may be peers
     // still using the content files
     setTimeout(() => {
-      this.components.deployer.deleteContent([previousHash]).catch(this.LOGGER.error)
+      this.components.storage.delete([previousHash]).catch(this.LOGGER.error)
     }, 2 * 60000)
   }
 
@@ -281,17 +281,19 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
       snapshotTimestamp: number
     }
   ) {
-    const destinationFilename = path.resolve(this.components.staticConfigs.contentStorageFolder, options.hash)
-
-    const hasContent = await this.components.deployer.getContent(options.hash)
+    const hasContent = await this.components.storage.retrieve(options.hash)
 
     if (!hasContent) {
       // move and compress the file into the destinationFilename
-      await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile))
+      await this.components.storage.storeStream(options.hash, fs.createReadStream(tmpFile))
       this.LOGGER.info(
         `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
       )
-      await compressContentFile(destinationFilename)
+      if (this.components.storage instanceof FileSystemContentStorage) {
+        // TODO: [mendez] this MAY be handled in a parallel process upon storeStream.
+        //                This hack should not exist
+        await this.components.storage.compress(options.hash)
+      }
     }
   }
 }

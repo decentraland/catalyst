@@ -8,7 +8,6 @@ import {
   Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { Readable } from 'stream'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -60,10 +59,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   async getEntityById(entityId: EntityId) {
     return this.service.getEntityById(entityId)
-  }
-
-  start(): Promise<void> {
-    return this.service.start()
   }
 
   async getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
@@ -118,10 +113,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
       },
       { priority: DB_REQUEST_PRIORITY.HIGH }
     )
-  }
-
-  deleteContent(fileHashes: string[]): Promise<void> {
-    return this.service.deleteContent(fileHashes)
   }
 
   async getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
@@ -221,10 +212,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   getAllFailedDeployments() {
     return this.service.getAllFailedDeployments()
-  }
-
-  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
-    return this.service.storeContent(fileHash, content)
   }
 
   listenToDeployments(listener: DeploymentListener): void {
