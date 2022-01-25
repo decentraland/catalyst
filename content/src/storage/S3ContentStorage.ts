@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk'
 import { Readable } from 'stream'
-import { ContentItem, ContentStorage, SimpleContentItem } from './ContentStorage'
+import { ContentItem, ContentStorage, RawContentItem } from './ContentStorage'
 
 export class S3ContentStorage implements ContentStorage {
   private s3Client: AWS.S3
@@ -17,10 +17,6 @@ export class S3ContentStorage implements ContentStorage {
 
   static async build(accessKeyId: string, secretAccessKey: string, bucket: string): Promise<S3ContentStorage> {
     return new S3ContentStorage(accessKeyId, secretAccessKey, bucket)
-  }
-
-  async storeStreamAndCompress(fileId: string, content: Readable): Promise<void> {
-    return this.storeStream(fileId, content)
   }
 
   async storeStream(id: string, content: Readable): Promise<void> {
@@ -99,5 +95,29 @@ export class S3ContentStorage implements ContentStorage {
     //         return resolve(!error)
     //     })
     // })
+  }
+}
+
+class S3ContentItem implements ContentItem {
+  constructor(private readable: Readable, private length?: number) {}
+
+  async asStream(): Promise<Readable> {
+    return this.readable
+  }
+
+  async asRawStream(): Promise<RawContentItem> {
+    return {
+      stream: this.readable,
+      encoding: null,
+      size: this.length || null
+    }
+  }
+
+  getLength(): number | undefined {
+    return this.length
+  }
+
+  async contentEncoding() {
+    return null
   }
 }

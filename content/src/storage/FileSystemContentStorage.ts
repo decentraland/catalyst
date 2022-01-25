@@ -31,25 +31,20 @@ export class FileSystemContentStorage implements ContentStorage {
     await pipe(stream, fs.createWriteStream(this.getFilePath(id)))
   }
 
-  async storeStreamAndCompress(id: string, stream: Readable): Promise<void> {
-    await this.storeStream(id, stream)
-    if (await compressContentFile(this.getFilePath(id))) {
-      // try to remove original file if present
-      const compressed = await this.retrieve(id)
-      if (compressed) {
-        const raw = await compressed.asRawStream()
-        if (raw.encoding) {
-          await noFailUnlink(this.getFilePath(id))
-        }
-      }
-    }
-  }
-
   async delete(ids: string[]): Promise<void> {
     for (const id of ids) {
       await noFailUnlink(this.getFilePath(id))
       await noFailUnlink(this.getFilePath(id) + '.gzip')
     }
+  }
+
+  // returns true if the file was successfuly compressed
+  async compress(id: string): Promise<boolean> {
+    const uncompressed = await this.retrieveWithEncoding(id, null)
+    if (uncompressed) {
+      return await compressContentFile(this.getFilePath(id))
+    }
+    return false
   }
 
   private async retrieveWithEncoding(id: string, encoding: ContentEncoding | null): Promise<ContentItem | undefined> {

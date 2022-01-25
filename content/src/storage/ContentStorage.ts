@@ -5,14 +5,13 @@ export type ContentEncoding = 'gzip'
 
 export interface ContentStorage {
   storeStream(fileId: string, content: Readable): Promise<void>
-  storeStreamAndCompress(fileId: string, content: Readable): Promise<void>
   delete(fileIds: string[]): Promise<void>
   retrieve(fileId: string): Promise<ContentItem | undefined>
   exist(fileId: string): Promise<boolean>
   existMultiple(fileIds: string[]): Promise<Map<string, boolean>>
 }
 
-export type RawContent = {
+export type RawContentItem = {
   stream: Readable
   encoding: ContentEncoding | null
   size: number | null
@@ -29,7 +28,7 @@ export interface ContentItem {
    * That may imply that the stream may be compressed, if so, the
    * compression encoding should be available in "content".
    */
-  asRawStream(): Promise<RawContent>
+  asRawStream(): Promise<RawContentItem>
 }
 
 export class SimpleContentItem implements ContentItem {
@@ -61,7 +60,7 @@ export class SimpleContentItem implements ContentItem {
    * That may imply that the stream may be compressed, if so, the
    * compression encoding should be available in "content".
    */
-  async asRawStream(): Promise<RawContent> {
+  async asRawStream() {
     return {
       stream: await this.streamCreator(),
       encoding: this.encoding || null,

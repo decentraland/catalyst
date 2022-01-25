@@ -7,6 +7,7 @@ import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { bufferToStream } from '../../storage/ContentStorage'
+import { FileSystemContentStorage } from '../../storage/FileSystemContentStorage'
 import { AppComponents, IStatusCapableComponent } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')
@@ -284,10 +285,15 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
 
     if (!hasContent) {
       // move and compress the file into the destinationFilename
-      await this.components.storage.storeStreamAndCompress(options.hash, fs.createReadStream(tmpFile))
+      await this.components.storage.storeStream(options.hash, fs.createReadStream(tmpFile))
       this.LOGGER.info(
         `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
       )
+      if (this.components.storage instanceof FileSystemContentStorage) {
+        // TODO: [mendez] this MAY be handled in a parallel process upon storeStream.
+        //                This hack should not exist
+        await this.components.storage.compress(options.hash)
+      }
     }
   }
 }

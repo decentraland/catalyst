@@ -151,6 +151,10 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     throw new Error('Method not implemented.')
   }
 
+  listenToDeployments(listener: DeploymentListener): void {
+    throw new Error('Method not implemented.')
+  }
+
   getEntitiesByIds(ids: string[]): Promise<Entity[]> {
     return Promise.resolve(this.entities.filter(({ id }) => ids.includes(id)))
   }

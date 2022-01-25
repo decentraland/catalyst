@@ -58,7 +58,7 @@ export class GarbageCollectionManager {
 
           this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 
-          this.LOGGER.debug(`Hashes to delete are: (${hashes.join(',')})`)
+          this.LOGGER.debug(`Hashes to delete are: ${hashes}`)
           await this.components.storage.delete(hashes)
           await this.components.systemPropertiesManager.setSystemProperty(
             SystemProperty.LAST_GARBAGE_COLLECTION_TIME,

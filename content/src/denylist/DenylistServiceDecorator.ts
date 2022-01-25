@@ -213,6 +213,10 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getAllFailedDeployments()
   }
 
+  listenToDeployments(listener: DeploymentListener): void {
+    return this.service.listenToDeployments(listener)
+  }
+
   getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
     return this.repository.task(
       async (task) => {

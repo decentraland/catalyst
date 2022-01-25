@@ -10,13 +10,9 @@ export function createValidator(
   const externalCalls: ExternalCalls = {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
     fetchContentFileSize: async (hash) => {
-      const maybeFile = await components.storage.retrieve(hash)
-      if (maybeFile) {
-        const stream = await maybeFile.asStream()
-        const buffer = await streamToBuffer(stream)
-        return buffer.byteLength
-      }
-      return undefined
+      const file = await components.storage.retrieve(hash)
+      if (file) return (await streamToBuffer(await file.asStream())).byteLength
+      throw new Error(`File ${hash} is missing`)
     },
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.authenticator.isAddressOwnedByDecentraland(address),
