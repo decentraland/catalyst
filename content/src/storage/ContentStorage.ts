@@ -3,25 +3,22 @@ import { Readable } from 'stream'
 export type ContentEncoding = 'gzip'
 
 export interface ContentStorage {
+  /** @deprecated use storeStream instead */
+  store(id: string, content: Uint8Array, encoding?: ContentEncoding): Promise<void>
+  storeStream(id: string, content: Readable, encoding?: ContentEncoding): Promise<void>
+  storeContent(id: string, content: Uint8Array | Readable, encoding?: ContentEncoding): Promise<void>
+  storeFromFile(id: string, filePath: string, encoding?: ContentEncoding): Promise<void>
   delete(ids: string[]): Promise<void>
   retrieve(id: string): Promise<ContentItem | undefined>
   exist(ids: string[]): Promise<Map<string, boolean>>
   stats(id: string): Promise<{ size: number } | undefined>
-  store(id: string, content: Uint8Array | Readable): Promise<void>
   size(id: string): Promise<number | undefined>
-  create(id: string): UnsavedContentItem
 }
 
 export interface ContentItem {
   contentEncoding(): Promise<ContentEncoding | null>
   getLength(): number | undefined
   asStream(): Promise<Readable>
-}
-
-export interface UnsavedContentItem {
-  append(buffer: string): Promise<void>
-  save(): Promise<boolean>
-  abort(): Promise<void>
 }
 export class SimpleContentItem implements ContentItem {
   constructor(

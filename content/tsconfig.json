@@ -6,7 +6,7 @@
     "rootDir": ".",
     "baseUrl": ".",
     "composite": false,
-    "sourceMap": false,
+    "sourceMap": true,
     "declarationMap": false,
     "declaration": false,
     "tsBuildInfoFile": "./dist/.tsbuildinfo"

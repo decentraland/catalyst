@@ -24,7 +24,7 @@ import {
   MetaverseContentService
 } from '../service/Service'
 import { ServiceImpl } from '../service/ServiceImpl'
-import { ContentItem } from '../storage/ContentStorage'
+import { ContentEncoding, ContentItem } from '../storage/ContentStorage'
 import { Denylist } from './Denylist'
 import {
   buildAddressTarget,
@@ -223,8 +223,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getAllFailedDeployments()
   }
 
-  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
-    return this.service.storeContent(fileHash, content)
+  storeContent(fileHash: string, content: Buffer | Readable, encoding?: ContentEncoding): Promise<void> {
+    return this.service.storeContent(fileHash, content, encoding)
   }
 
   listenToDeployments(listener: DeploymentListener): void {

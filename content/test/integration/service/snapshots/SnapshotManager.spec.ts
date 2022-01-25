@@ -43,6 +43,7 @@ loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
     const { snapshotManager, deployer } = components
     // Deploy E1 and E2
     const deploymentResult = await deployEntitiesCombo(deployer, E1, E2)
+    console.log(deploymentResult)
 
     // force snapshot generation
     await snapshotManager.generateSnapshots()

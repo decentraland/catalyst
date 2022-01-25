@@ -3,8 +3,7 @@ import { hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import future from 'fp-future'
-import * as fs from 'fs'
-import * as path from 'path'
+import fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
 import { compressContentFile } from '../../storage/compression'
@@ -227,10 +226,18 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
       // compress and commit
       for (const [entityType, { fileName }] of fileWriterComponent.allFiles) {
         const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
-
+        if (previousHash) {
+          console.log(previousHash)
+        }
         // Hash the snapshot
+        const fileReadableForHash = fs.createReadStream(fileName)
+        const readableForHashFuture = new Promise((resolve, reject) => {
+          fileReadableForHash.on('close', resolve)
+          fileReadableForHash.on('error', reject)
+        })
         const hash = await hashStreamV1(fs.createReadStream(fileName) as any)
-
+        fileReadableForHash.close()
+        await readableForHashFuture
         // if success move the file to the contents folder
         await this.moveSnapshotFileToContentFolder(fileName, { hash, snapshotTimestamp: timestamps[entityType] || 0 })
 
@@ -263,7 +270,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
       stopTimer({ failed: 'false' })
     }
 
-    await fileWriterComponent.deleteAllFiles()
+    // await fileWriterComponent.deleteAllFiles()
   }
 
   private removePreviousSnapshotFile(previousHash: string) {
@@ -281,17 +288,19 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
       snapshotTimestamp: number
     }
   ) {
-    const destinationFilename = path.resolve(this.components.staticConfigs.contentStorageFolder, options.hash)
-
     const hasContent = await this.components.deployer.getContent(options.hash)
-
-    if (!hasContent) {
-      // move and compress the file into the destinationFilename
-      await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile))
-      this.LOGGER.info(
-        `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
-      )
-      await compressContentFile(destinationFilename)
+    try {
+      if (!hasContent) {
+        await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile))
+        await compressContentFile(tmpFile)
+        await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile + '.gzip'), 'gzip')
+        this.LOGGER.info(
+          `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
+        )
+      }
+    } catch (err) {
+      console.log(`error moving or compressing ${tmpFile}`)
+      console.log(err)
     }
   }
 }

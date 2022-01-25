@@ -18,7 +18,7 @@ import { EnvironmentConfig } from '../Environment'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { ContentItem } from '../storage/ContentStorage'
+import { ContentEncoding, ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
 import { getDeployments } from './deployments/deployments'
@@ -424,8 +424,8 @@ export class ServiceImpl implements MetaverseContentService {
     return this.components.storage.delete(fileHashes)
   }
 
-  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
-    return this.components.storage.store(fileHash, content)
+  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable, encoding?: ContentEncoding): Promise<void> {
+    return this.components.storage.storeContent(fileHash, content, encoding)
   }
 
   getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {

@@ -13,7 +13,7 @@ import { AuthChain } from 'dcl-crypto'
 import { Readable } from 'stream'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { ContentItem } from '../storage/ContentStorage'
+import { ContentEncoding, ContentItem } from '../storage/ContentStorage'
 import { DeploymentOptions } from './deployments/types'
 
 /**x
@@ -32,7 +32,7 @@ export interface MetaverseContentService {
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
   deleteContent(fileHashes: ContentFileHash[]): Promise<void>
-  storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
+  storeContent(fileHash: ContentFileHash, content: Buffer | Readable, encoding?: ContentEncoding): Promise<void>
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): FailedDeployment[]

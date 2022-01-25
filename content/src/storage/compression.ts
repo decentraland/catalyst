@@ -26,6 +26,20 @@ async function gzipCompressFile(input: string, output: string): Promise<Compress
   const source = fs.createReadStream(input)
   const destination = fs.createWriteStream(output)
 
+  const destinationCompressionFinishedFuture = new Promise<void>((resolve, reject) => {
+    destination.on('finish', resolve)
+    destination.on('close', resolve)
+    destination.on('end', resolve)
+    destination.on('error', reject)
+  })
+
+  const sourceCompressionFinishedFuture = new Promise<void>((resolve, reject) => {
+    destination.on('finish', resolve)
+    destination.on('close', resolve)
+    destination.on('end', resolve)
+    destination.on('error', reject)
+  })
+
   try {
     await pipe(source, gzip, destination)
   } finally {
@@ -33,16 +47,19 @@ async function gzipCompressFile(input: string, output: string): Promise<Compress
     destroy(destination)
   }
 
+  await destinationCompressionFinishedFuture
+  await sourceCompressionFinishedFuture
+
   const originalSize = await fs.promises.lstat(input)
   const newSize = await fs.promises.lstat(output)
 
-  if (newSize.size * 1.1 > originalSize.size) {
-    // if the new file is bigger than the original file then we delete the compressed file
-    // the 1.1 magic constant is to establish a gain of at least 10% of the size to justify the
-    // extra CPU of the decompression
-    fs.unlink(output, () => {})
-    return null
-  }
+  // if (newSize.size * 1.1 > originalSize.size) {
+  //   // if the new file is bigger than the original file then we delete the compressed file
+  //   // the 1.1 magic constant is to establish a gain of at least 10% of the size to justify the
+  //   // extra CPU of the decompression
+  //   fs.unlink(output, () => {})
+  //   return null
+  // }
 
   return {
     originalSize: originalSize.size,
