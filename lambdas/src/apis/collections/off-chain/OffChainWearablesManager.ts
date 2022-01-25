@@ -23,7 +23,7 @@ export class OffChainWearablesManager {
   }) {
     this.definitions = new TimeRefreshedDataHolder(
       () => OffChainWearablesManager.fetchOffChain(client, collections ?? DEFAULT_COLLECTIONS),
-      refreshTime ?? '1d'
+      refreshTime ?? '15m'
     )
   }
 
