@@ -359,14 +359,11 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
-  private storeEntityContent(
-    hashes: Map<ContentFileHash, Uint8Array>,
-    alreadyStoredHashes: Map<ContentFileHash, boolean>
-  ): Promise<any> {
-    // If entity was committed, then store all it's content (that isn't already stored)
-    const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
-      .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-      .map(([fileHash, file]) => this.components.storage.storeStream(fileHash, bufferToStream(file)))
+  private async storeEntityContent(hashes: Map<ContentFileHash, Uint8Array>): Promise<any> {
+    // Check for if content is already stored
+    const alreadyStoredHashes: Map<ContentFileHash, boolean> = await this.components.storage.existMultiple(
+      Array.from(hashes.keys())
+    )
 
     // If entity was committed, then store all it's content (that isn't already stored)
     for (const [fileHash, content] of hashes) {

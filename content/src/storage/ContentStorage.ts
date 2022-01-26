@@ -11,7 +11,7 @@ export interface ContentStorage {
   existMultiple(fileIds: string[]): Promise<Map<string, boolean>>
 }
 
-export type RawContentItem = {
+export type RawContent = {
   stream: Readable
   encoding: ContentEncoding | null
   size: number | null
@@ -28,7 +28,7 @@ export interface ContentItem {
    * That may imply that the stream may be compressed, if so, the
    * compression encoding should be available in "content".
    */
-  asRawStream(): Promise<RawContentItem>
+  asRawStream(): Promise<RawContent>
 }
 
 export class SimpleContentItem implements ContentItem {

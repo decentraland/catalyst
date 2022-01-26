@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk'
 import { Readable } from 'stream'
-import { ContentItem, ContentStorage, RawContentItem } from './ContentStorage'
+import { ContentItem, ContentStorage, RawContent } from './ContentStorage'
 
 export class S3ContentStorage implements ContentStorage {
   private s3Client: AWS.S3
@@ -105,7 +105,7 @@ class S3ContentItem implements ContentItem {
     return this.readable
   }
 
-  async asRawStream(): Promise<RawContentItem> {
+  async asRawStream(): Promise<RawContent> {
     return {
       stream: this.readable,
       encoding: null,
