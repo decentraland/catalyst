@@ -18,6 +18,7 @@ export async function compressContentFile(contentFilePath: string) {
     const ratio = ((result.compressedSize * 100) / result.originalSize).toFixed(2)
     console.info(`Content file compressed. ratio=${ratio}% file=${contentFilePath}`)
   }
+  return result
 }
 
 async function gzipCompressFile(input: string, output: string): Promise<CompressionResult | null> {

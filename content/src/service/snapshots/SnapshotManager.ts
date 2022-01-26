@@ -290,8 +290,9 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     try {
       if (!hasContent) {
         await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile))
-        await compressContentFile(tmpFile)
-        await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile + '.gzip'), 'gzip')
+        if (await compressContentFile(tmpFile)) {
+          await this.components.deployer.storeContent(options.hash, fs.createReadStream(tmpFile + '.gzip'), 'gzip')
+        }
         this.LOGGER.info(
           `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
         )
