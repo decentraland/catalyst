@@ -70,9 +70,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   // TODO: this should be in the src/logic folder. It is not a component
   const pointerManager = new PointerManager()
 
-  const validator = createValidator({ storage, authenticator, catalystFetcher, env })
-  const serverValidator = createServerValidator()
   const failedDeploymentsCache = createFailedDeploymentsCache()
+  const validator = createValidator({ storage, authenticator, catalystFetcher, env })
+  const serverValidator = createServerValidator({ failedDeploymentsCache })
 
   const deployedEntitiesFilter = createBloomFilterComponent({
     sizeInBytes: 512
@@ -177,7 +177,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     metrics,
     staticConfigs,
     logs,
-    contentCluster
+    contentCluster,
+    failedDeploymentsCache
   })
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)

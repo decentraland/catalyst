@@ -277,7 +277,7 @@ export class ServiceImpl implements MetaverseContentService {
           }
 
           // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-          this.components.failedDeploymentsCache.reportSuccessfulDeployment(entity.id)
+          this.components.failedDeploymentsCache.removeFailedDeployment(entity.id)
 
           return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
         }),

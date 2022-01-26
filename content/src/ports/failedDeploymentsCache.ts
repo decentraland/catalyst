@@ -23,7 +23,7 @@ export type FailedDeployment = {
 export type IFailedDeploymentsCacheComponent = {
   getAllFailedDeployments(): FailedDeployment[]
   findFailedDeployment(entityId: EntityId): FailedDeployment | undefined
-  reportSuccessfulDeployment(entityId: EntityId): boolean
+  removeFailedDeployment(entityId: EntityId): boolean
   reportFailure(failedDeployment: FailedDeployment): void
   getDeploymentStatus(entityId: EntityId): DeploymentStatus
 }
@@ -37,7 +37,7 @@ export function createFailedDeploymentsCache(): IFailedDeploymentsCacheComponent
     findFailedDeployment(entityId: EntityId) {
       return failedDeployments.get(entityId)
     },
-    reportSuccessfulDeployment(entityId: EntityId) {
+    removeFailedDeployment(entityId: EntityId) {
       return failedDeployments.delete(entityId)
     },
     reportFailure(failedDeployment: FailedDeployment) {

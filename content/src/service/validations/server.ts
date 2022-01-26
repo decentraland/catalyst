@@ -1,5 +1,6 @@
 import { Entity } from 'dcl-catalyst-commons'
 import ms from 'ms'
+import { AppComponents } from '../../types'
 import { DeploymentContext } from '../Service'
 
 type EntityCheck = (entity: Entity) => boolean | Promise<boolean>
@@ -60,7 +61,7 @@ const fixAttemptChecks = async (entity: Entity, serviceCalls: ServiceCalls): Pro
 /**
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
-export const createServerValidator = (): ServerValidator => ({
+export const createServerValidator = (components: Pick<AppComponents, 'failedDeploymentsCache'>): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side
     if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) return { ok: true }
@@ -69,6 +70,16 @@ export const createServerValidator = (): ServerValidator => ({
       const result = await localChecks(entity, serviceCalls)
       if (result) return { ok: false, message: result }
     } else if (context === DeploymentContext.FIX_ATTEMPT) {
+      // if there are newer entities, we can end up in a loop (unfixeable failed deployment)
+      // so we remove it from failed deployments cache
+
+      if (await serviceCalls.areThereNewerEntities(entity)) {
+        components.failedDeploymentsCache.removeFailedDeployment(entity.id)
+        return {
+          ok: false,
+          message: `Ignoring fix for failed deployment since there are newer entities with pointer: ${entity.pointers}`
+        }
+      }
       const result = await fixAttemptChecks(entity, serviceCalls)
       if (result) return { ok: false, message: result }
     }

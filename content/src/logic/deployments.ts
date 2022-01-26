@@ -18,7 +18,14 @@ export async function isEntityDeployed(
 export async function retryFailedDeploymentExecution(
   components: Pick<
     AppComponents,
-    'metrics' | 'staticConfigs' | 'fetcher' | 'downloadQueue' | 'logs' | 'deployer' | 'contentCluster'
+    | 'metrics'
+    | 'staticConfigs'
+    | 'fetcher'
+    | 'downloadQueue'
+    | 'logs'
+    | 'deployer'
+    | 'contentCluster'
+    | 'failedDeploymentsCache'
   >,
   logger: ILoggerComponent.ILogger
 ): Promise<void> {
@@ -44,6 +51,10 @@ export async function retryFailedDeploymentExecution(
           DeploymentContext.FIX_ATTEMPT
         )
       } catch (error) {
+        // it failed again, override failed deployment error description
+        const errorDescription = error.message
+        components.failedDeploymentsCache.reportFailure({ ...failedDeployment, errorDescription })
+
         logger.info(`Failed to fix deployment of entity`, { entityId, entityType })
         logger.error(error)
       }
