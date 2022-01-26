@@ -92,8 +92,8 @@ describe('Service', function () {
       const deltaMilliseconds = Date.now() - deploymentResult
       expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
       expect(deltaMilliseconds).toBeLessThanOrEqual(1000)
-      expect(storageSpy).toHaveBeenCalledWith(entity.id, entityFile)
-      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, randomFile)
+      expect(storageSpy).toHaveBeenCalledWith(entity.id, expect.anything())
+      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, expect.anything())
     }
   })
 
@@ -115,8 +115,8 @@ describe('Service', function () {
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
-    expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile)
-    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
+    expect(storeSpy).toHaveBeenCalledWith(entity.id, expect.anything())
+    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything())
   })
 
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
