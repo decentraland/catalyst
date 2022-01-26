@@ -240,7 +240,6 @@ export async function assertContentIsDenylisted(
 
   // Deployments check
   const deployment = await getEntitiesDeployment(server, entity)
-  console.log(deployment.auditInfo)
   assert.ok(deployment.auditInfo.denylistedContent!.includes(contentHash))
 }
 

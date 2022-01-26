@@ -226,9 +226,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
       // compress and commit
       for (const [entityType, { fileName }] of fileWriterComponent.allFiles) {
         const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
-        if (previousHash) {
-          console.log(previousHash)
-        }
+
         // Hash the snapshot
         const fileReadableForHash = fs.createReadStream(fileName)
         const readableForHashFuture = new Promise((resolve, reject) => {

@@ -253,9 +253,7 @@ export class Controller {
       fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type] }
     })
-    console.log(
-      `deployments: ${JSON.stringify(deployments)} - lenght: ${deployments.length} - params: ${req.params.entityId}`
-    )
+
     if (deployments.length > 0) {
       const { auditInfo } = deployments[0]
       const legacyAuditInfo: LegacyAuditInfo = {
