@@ -3,7 +3,7 @@ import { ILoggerComponent, IMetricsComponent } from '@well-known-components/inte
 import { opendir } from 'fs/promises'
 import ms from 'ms'
 import PQueue from 'p-queue'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { AppComponents } from 'src/types'
 import { EnvironmentConfig } from '../Environment'
 import { metricsDeclaration } from '../metrics'
@@ -45,7 +45,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await this.storage.storeExistingContentItem(file.name, this.contentsFolder)
+            await this.storage.storeExistingContentItem(resolve(this.contentsFolder, file.name), file.name)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
@@ -61,7 +61,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await this.storage.storeExistingContentItem(file, this.contentsFolder)
+            await this.storage.storeExistingContentItem(resolve(this.contentsFolder, file), file)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Retry for ${file} failed due to ${err}`)
