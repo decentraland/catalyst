@@ -34,7 +34,6 @@ export interface MetaverseContentService {
   getAllFailedDeployments(): FailedDeployment[]
   getEntitiesByIds(ids: EntityId[]): Promise<Entity[]>
   getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>
-  listenToDeployments(listener: DeploymentListener): void
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
@@ -51,8 +50,6 @@ export type DeploymentEvent = {
   entity: Entity
   auditInfo: AuditInfo
 }
-
-export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>
 
 export type InvalidResult = { errors: string[] }
 

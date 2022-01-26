@@ -17,7 +17,6 @@ import { EntityFactory } from '../service/EntityFactory'
 import {
   DeploymentContext,
   DeploymentFiles,
-  DeploymentListener,
   DeploymentResult,
   LocalDeploymentAuditInfo,
   MetaverseContentService
@@ -212,10 +211,6 @@ export class DenylistServiceDecorator implements MetaverseContentService {
 
   getAllFailedDeployments() {
     return this.service.getAllFailedDeployments()
-  }
-
-  listenToDeployments(listener: DeploymentListener): void {
-    return this.service.listenToDeployments(listener)
   }
 
   getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {

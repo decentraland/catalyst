@@ -16,7 +16,7 @@ export function createValidator(
         const buffer = await streamToBuffer(stream)
         return buffer.byteLength
       }
-      throw new Error(`File ${hash} is missing`)
+      return undefined
     },
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.authenticator.isAddressOwnedByDecentraland(address),

@@ -48,12 +48,12 @@ export class FileSystemContentStorage implements ContentStorage {
   }
 
   private async retrieveWithEncoding(id: string, encoding: ContentEncoding | null): Promise<ContentItem | undefined> {
-    const filePath = this.getFilePath(id)
     const extension = encoding ? '.' + encoding : ''
+    const filePath = this.getFilePath(id) + extension
 
-    if (await existPath(filePath + extension)) {
-      const stat = await fs.promises.stat(filePath + extension)
-      return new SimpleContentItem(async () => fs.createReadStream(filePath + extension), stat.size, encoding)
+    if (await existPath(filePath)) {
+      const stat = await fs.promises.stat(filePath)
+      return new SimpleContentItem(async () => fs.createReadStream(filePath), stat.size, encoding)
     }
   }
 

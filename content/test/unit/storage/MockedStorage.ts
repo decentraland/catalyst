@@ -2,11 +2,11 @@ import { Readable } from 'stream'
 import { ContentItem, ContentStorage, SimpleContentItem, streamToBuffer } from '../../../src/storage/ContentStorage'
 
 export class MockedStorage implements ContentStorage {
+  private storage: Map<string, Uint8Array> = new Map()
+
   async exist(fileId: string): Promise<boolean> {
     return this.storage.has(fileId)
   }
-  private storage: Map<string, Uint8Array> = new Map()
-
   async storeStream(id: string, content: Readable): Promise<void> {
     this.storage.set(id, await streamToBuffer(content))
   }

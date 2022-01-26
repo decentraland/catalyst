@@ -11,7 +11,7 @@ export interface ContentStorage {
   existMultiple(fileIds: string[]): Promise<Map<string, boolean>>
 }
 
-export type RawContentItem = {
+export type RawContent = {
   stream: Readable
   encoding: ContentEncoding | null
   size: number | null
@@ -28,7 +28,7 @@ export interface ContentItem {
    * That may imply that the stream may be compressed, if so, the
    * compression encoding should be available in "content".
    */
-  asRawStream(): Promise<RawContentItem>
+  asRawStream(): Promise<RawContent>
 }
 
 export class SimpleContentItem implements ContentItem {
@@ -70,14 +70,21 @@ export class SimpleContentItem implements ContentItem {
 }
 
 export function bufferToStream(buffer: Uint8Array): Readable {
-  return Readable.from(buffer)
+  return Readable.from(Buffer.from(buffer))
 }
 
 export function streamToBuffer(stream: Readable): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const buffers: any[] = []
+    const buffers: Uint8Array[] = []
     stream.on('error', reject)
-    stream.on('data', (data) => buffers.push(data))
+    stream.on('data', (data) => {
+      if (data instanceof Uint8Array) {
+        buffers.push(data)
+      } else {
+        reject(new Error('Stream did not emit Uint8Array'))
+        stream.destroy()
+      }
+    })
     stream.on('end', () => resolve(Buffer.concat(buffers)))
   })
 }
