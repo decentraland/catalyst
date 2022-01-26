@@ -64,9 +64,7 @@ describe('ContentStorage', () => {
     // only big files with a good ratio of compression are stored compressed
     const newContent = Buffer.from(new Uint8Array(10000).fill(0))
 
-    await storage.storeStream(id, bufferToStream(newContent))
-
-    expect(await storage.compress(id)).toBe(true)
+    await storage.storeStreamAndCompress(id, bufferToStream(newContent))
 
     const retrievedContent = await storage.retrieve(id)
     const rawStream = await retrievedContent!.asRawStream()
