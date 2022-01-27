@@ -80,7 +80,7 @@ export class ServiceImpl implements MetaverseContentService {
     // Find entity file
     const entityFile = hashes.get(entityId)
     if (!entityFile) {
-      return { errors: [`Failed to find the entity file.`] }
+      return { errors: [`Failed to find the entity file.`] } as InvalidResult
     }
 
     // Parse entity file into an Entity
@@ -88,11 +88,11 @@ export class ServiceImpl implements MetaverseContentService {
     try {
       entity = EntityFactory.fromBufferWithId(entityFile, entityId)
       if (!entity) {
-        return { errors: ['There was a problem parsing the entity, it was null'] }
+        return { errors: ['There was a problem parsing the entity, it was null'] } as InvalidResult
       }
     } catch (error) {
       ServiceImpl.LOGGER.error(`There was an error parsing the entity: ${error}`)
-      return { errors: ['There was a problem parsing the entity'] }
+      return { errors: ['There was a problem parsing the entity'] } as InvalidResult
     }
 
     // Validate that the entity's pointers are not currently being modified
@@ -103,14 +103,14 @@ export class ServiceImpl implements MetaverseContentService {
         errors: [
           `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
         ]
-      }
+      } as InvalidResult
     }
 
     // Update the current list of pointers being deployed
     if (!entity.pointers)
       return {
         errors: [`The entity does not have any pointer.`]
-      }
+      } as InvalidResult
 
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
@@ -135,8 +135,8 @@ export class ServiceImpl implements MetaverseContentService {
         alreadyStoredContent
       )
 
-      if (!('auditInfoComplete' in storeResult)) {
-        return storeResult
+      if ('errors' in storeResult) {
+        return storeResult as InvalidResult
       } else if (storeResult.wasEntityDeployed) {
         // Report deployment to listeners
         await Promise.all(
@@ -160,7 +160,13 @@ export class ServiceImpl implements MetaverseContentService {
       // add the entity to the bloom filter to prevent expensive operations during the sync
       this.components.deployedEntitiesFilter.add(entity.id)
 
+      // review this
       return storeResult.auditInfoComplete.localTimestamp
+    } catch (error) {
+      ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`)
+      return {
+        errors: [`There was an error deploying the entity`]
+      } as InvalidResult
     } finally {
       // Remove the updated pointer from the list of current being deployed
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
