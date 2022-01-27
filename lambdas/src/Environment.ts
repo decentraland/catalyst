@@ -221,7 +221,7 @@ export class EnvironmentBuilder {
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.OFF_CHAIN_WEARABLES_REFRESH_TIME,
-      () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '1d'
+      () => process.env.OFF_CHAIN_WEARABLES_REFRESH_TIME ?? '15m'
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 

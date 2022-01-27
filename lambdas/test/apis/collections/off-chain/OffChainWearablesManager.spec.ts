@@ -22,7 +22,7 @@ describe('OffChainWearablesManager', () => {
 
   it(`When definitions are loaded for the first time, then content server is queried`, async () => {
     const { instance: contentClient, mock: contentClientMock } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
     await manager.find({ collectionIds: [COLLECTION_ID_1] })
 
@@ -77,7 +77,7 @@ describe('OffChainWearablesManager', () => {
 
   it(`When multiple requests happen concurrently, then definition is only calculated once`, async () => {
     const { instance: contentClient, mock: contentClientMock } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
     await Promise.all([
       manager.find({ collectionIds: [COLLECTION_ID_1] }),
@@ -90,7 +90,7 @@ describe('OffChainWearablesManager', () => {
 
   it(`When the collection id filter is used, then wearables are filtered correctly`, async () => {
     const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
     const wearables = await manager.find({ collectionIds: [COLLECTION_ID_1] })
 
@@ -99,7 +99,7 @@ describe('OffChainWearablesManager', () => {
 
   it(`When the wearable id filter is used, then wearables are filtered correctly`, async () => {
     const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
     const wearables = await manager.find({ wearableIds: [WEARABLE_ID_2, WEARABLE_ID_3] })
 
@@ -108,7 +108,7 @@ describe('OffChainWearablesManager', () => {
 
   it(`When the text search filter is used, then wearables are filtered correctly`, async () => {
     const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
     const wearables = await manager.find({ textSearch: 'other' })
 
@@ -117,7 +117,7 @@ describe('OffChainWearablesManager', () => {
 
   it(`When multiple filters are used, then wearables are filtered correctly`, async () => {
     const { instance: contentClient } = contentServer()
-    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS })
+    const manager = new OffChainWearablesManager({ client: contentClient, collections: COLLECTIONS, refreshTime: '2s' })
 
     const wearables = await manager.find({ textSearch: 'other', collectionIds: [COLLECTION_ID_1] })
 
