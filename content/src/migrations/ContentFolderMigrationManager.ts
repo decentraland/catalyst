@@ -1,6 +1,6 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
 import { createReadStream } from 'fs'
-import { opendir, stat } from 'fs/promises'
+import { opendir, stat, unlink } from 'fs/promises'
 import ms from 'ms'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
@@ -77,6 +77,8 @@ async function processFile(components: ContentFolderMigrationComponents, folder:
   }
 
   await components.storage.storeStream(file, stream)
+
+  await unlink(fileName)
 
   components.metrics.increment('dcl_files_migrated')
 }

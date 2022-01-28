@@ -10,7 +10,8 @@ jest.mock('fs/promises', () => ({
   },
   stat: () => ({
     isDirectory: () => false
-  })
+  }),
+  unlink: async () => {}
 }))
 
 import { createLogComponent } from '@well-known-components/logger'
@@ -87,8 +88,4 @@ async function runMigration(storage: FileSystemContentStorage) {
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, dir)
 
   await migrateContentFolderStructure({ logs, metrics, env, storage })
-
-  // while (instance.pendingInQueue() > 0) {
-  //   await sleep(100)
-  // }
 }
