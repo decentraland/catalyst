@@ -355,15 +355,16 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/content-validator@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.0.tgz#0e6aa313bb244e2cb7a7b60ab3b5f9d12fd9307c"
-  integrity sha512-7cX8Bg4TALPmQFLb5mkZpk+SH1qpkX7wITpo1sh1pOxCgJdpVIJwwM7E1pdqI9FpJs9C07LFpgBRO3ciGGpJMw==
+"@dcl/content-validator@1.0.1-20220128144241.commit-9e37746":
+  version "1.0.1-20220128144241.commit-9e37746"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.0.1-20220128144241.commit-9e37746.tgz#d3f93f23423c5c061d7b7efaf179745d1c0381c8"
+  integrity sha512-Bbzj/LbAagOBAamXAdpcRE2yvMm6Yt9qtkCsYaM0/DBuuU80dMKTnnICqON64hM3ri6PWYr4wzvG3SNfW/uZTQ==
   dependencies:
     "@dcl/schemas" "^3.1.1"
     "@dcl/urn-resolver" "^1.3.0"
     "@ethersproject/address" "^5.5.0"
-    dcl-catalyst-commons "7.2.1"
+    "@well-known-components/interfaces" "1.1.1"
+    dcl-catalyst-commons "7.2.2"
     ms "^2.1.3"
     sharp "^0.29.3"
 
@@ -1985,6 +1986,15 @@
     on-finished "^2.3.0"
     path-to-regexp "^6.2.0"
 
+"@well-known-components/interfaces@1.1.1", "@well-known-components/interfaces@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
+  integrity sha512-LCIBhzHvxXhT/uXrMXuvfWsIcHmK9lQ65StVMOgkPRqzo29X3U4crUB/dy2wFYITE5WnLUk/d25tpOKvvOlUeA==
+  dependencies:
+    "@types/node" "^16.11.19"
+    "@types/node-fetch" "^2.5.12"
+    typed-url-params "^1.0.1"
+
 "@well-known-components/interfaces@^1.1.0":
   version "1.1.0"
   resolved "https://registry.npmjs.org/@well-known-components/interfaces/-/interfaces-1.1.0.tgz"
@@ -1993,15 +2003,6 @@
     "@types/node" "^14.14.37"
     "@types/node-fetch" "^2.5.10"
     fp-future "^1.0.1"
-    typed-url-params "^1.0.1"
-
-"@well-known-components/interfaces@^1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@well-known-components/interfaces/-/interfaces-1.1.1.tgz#d7e6552dd9ebee9ff9a2c9b5e1a88fc8247eb106"
-  integrity sha512-LCIBhzHvxXhT/uXrMXuvfWsIcHmK9lQ65StVMOgkPRqzo29X3U4crUB/dy2wFYITE5WnLUk/d25tpOKvvOlUeA==
-  dependencies:
-    "@types/node" "^16.11.19"
-    "@types/node-fetch" "^2.5.12"
     typed-url-params "^1.0.1"
 
 "@well-known-components/logger@^1.1.0":

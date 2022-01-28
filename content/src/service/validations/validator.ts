@@ -5,7 +5,7 @@ import { streamToBuffer } from '../../storage/ContentStorage'
 import { AppComponents } from '../../types'
 
 export function createValidator(
-  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env'>
+  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env' | 'logs'>
 ): IValidatorComponent {
   const externalCalls: ExternalCalls = {
     isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
@@ -36,5 +36,5 @@ export function createValidator(
     }
   }
 
-  return validator(externalCalls)
+  return validator(externalCalls, components)
 }
