@@ -12,12 +12,14 @@ export type CompressionResult = {
 }
 
 // this whole file can be extracted to a worker in a different process
-export async function compressContentFile(contentFilePath: string) {
+export async function compressContentFile(contentFilePath: string): Promise<boolean> {
   const result = await gzipCompressFile(contentFilePath, contentFilePath + '.gzip')
   if (result) {
     const ratio = ((result.compressedSize * 100) / result.originalSize).toFixed(2)
     console.info(`Content file compressed. ratio=${ratio}% file=${contentFilePath}`)
+    return true
   }
+  return false
 }
 
 async function gzipCompressFile(input: string, output: string): Promise<CompressionResult | null> {
