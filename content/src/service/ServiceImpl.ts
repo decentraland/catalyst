@@ -78,7 +78,7 @@ export class ServiceImpl implements MetaverseContentService {
 
     // entity deployments are idempotent operations
     if (deployedEntity) {
-      ServiceImpl.LOGGER.error(`Entity was already deployed`, {
+      ServiceImpl.LOGGER.debug(`Entity was already deployed`, {
         entityId,
         deployedTimestamp: deployedEntity.localTimestamp,
         delta: Date.now() - deployedEntity.localTimestamp
