@@ -229,42 +229,39 @@ export class ServiceImpl implements MetaverseContentService {
     | InvalidResult
     | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
   > {
-    return await this.components.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.txIf(async (transaction) => {
-          const deployedEntity = await this.getEntityById(entityId, transaction)
-          const isEntityAlreadyDeployed = !!deployedEntity
+    const deployedEntity = await this.getEntityById(entityId)
+    const isEntityAlreadyDeployed = !!deployedEntity
 
-          const validationResult = await this.validateDeployment(
-            entity,
-            context,
-            isEntityAlreadyDeployed,
-            auditInfo,
-            hashes
-          )
-          if (!validationResult.ok) {
-            ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
-              entityId,
-              errors: validationResult.errors?.join(',') ?? ''
-            })
-            return {
-              errors: validationResult.errors ?? [
-                'The validateDeployment was not successful but it did not return any error'
-              ]
-            }
-          }
+    const validationResult = await this.validateDeployment(entity, context, isEntityAlreadyDeployed, auditInfo, hashes)
 
-          const auditInfoComplete: AuditInfo = {
-            ...auditInfo,
-            version: entity.version,
-            localTimestamp: Date.now()
-          }
+    if (!validationResult.ok) {
+      ServiceImpl.LOGGER.warn(`Validations for deployment failed`, {
+        entityId,
+        errors: validationResult.errors?.join(',') ?? ''
+      })
+      return {
+        errors: validationResult.errors ?? ['The validateDeployment was not successful but it did not return any error']
+      }
+    }
 
-          let affectedPointers: Pointer[] | undefined
+    const auditInfoComplete: AuditInfo = {
+      ...auditInfo,
+      version: entity.version,
+      localTimestamp: Date.now()
+    }
 
-          if (!isEntityAlreadyDeployed) {
-            // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
+    let affectedPointers: Pointer[] | undefined
+
+    if (!isEntityAlreadyDeployed) {
+      // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
+
+      // Store the entity's content
+      await this.storeEntityContent(hashes, alreadyStoredContent)
+
+      await this.components.repository.reuseIfPresent(
+        task,
+        (db) =>
+          db.txIf(async (transaction) => {
             // Calculate overwrites
             const { overwrote, overwrittenBy } = await this.components.pointerManager.calculateOverwrites(
               transaction.pointerHistory,
@@ -305,21 +302,18 @@ export class ServiceImpl implements MetaverseContentService {
               overwrote,
               deploymentId
             )
+          }),
+        { priority: DB_REQUEST_PRIORITY.HIGH }
+      )
+    } else {
+      ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
+      auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
+    }
 
-            // Store the entity's content
-            await this.storeEntityContent(hashes, alreadyStoredContent)
-          } else {
-            ServiceImpl.LOGGER.info(`Entity already deployed`, { entityId })
-            auditInfoComplete.localTimestamp = deployedEntity.localTimestamp
-          }
+    // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
+    this.components.failedDeploymentsCache.removeFailedDeployment(entity.id)
 
-          // Mark deployment as successful (this does nothing it if hadn't failed on the first place)
-          this.components.failedDeploymentsCache.removeFailedDeployment(entity.id)
-
-          return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
-        }),
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+    return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed, affectedPointers }
   }
 
   reportErrorDuringSync(

@@ -15,7 +15,7 @@ import {
 } from '../../../src/denylist/DenylistTarget'
 import { DeploymentContext, LocalDeploymentAuditInfo } from '../../../src/service/Service'
 import { streamToBuffer } from '../../../src/storage/ContentStorage'
-import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
+import { assertPromiseRejectionMatches } from '../../helpers/PromiseAssertions'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import {
   buildContent as buildRandomContent,
@@ -281,7 +281,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(ethAddressTarget)
     const decorator = getDecorator(denylist)
 
-    await assertPromiseRejectionIs(
+    await assertPromiseRejectionMatches(
       () => decorator.deployEntity([entityFile1], entity1.id, auditInfo, DeploymentContext.LOCAL),
       `Can't allow a deployment from address '${ethAddress}' since it was denylisted.`
     )
@@ -291,7 +291,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(P1Target)
     const decorator = getDecorator(denylist)
 
-    await assertPromiseRejectionIs(
+    await assertPromiseRejectionMatches(
       () => decorator.deployEntity([entityFile1], entity1.id, auditInfo, DeploymentContext.LOCAL),
       `Can't allow the deployment since the entity contains a denylisted pointer.`
     )
@@ -301,7 +301,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith(content1Target)
     const decorator = getDecorator(denylist)
 
-    await assertPromiseRejectionIs(
+    await assertPromiseRejectionMatches(
       () => decorator.deployEntity([entityFile1], entity1.id, auditInfo, DeploymentContext.LOCAL),
       `Can't allow the deployment since the entity contains a denylisted content.`
     )
@@ -311,7 +311,7 @@ describe('DenylistServiceDecorator', () => {
     const denylist = denylistWith()
     const decorator = getDecorator(denylist)
 
-    await assertPromiseRejectionIs(
+    await assertPromiseRejectionMatches(
       () => decorator.deployEntity([entityFile1], 'some-random-id', auditInfo, DeploymentContext.LOCAL),
       `Failed to find the entity file.`
     )

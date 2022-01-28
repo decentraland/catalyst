@@ -3,9 +3,7 @@ import { ContentFileHash, EntityType } from 'dcl-catalyst-commons'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../src/Environment'
-import { assertPromiseRejectionIs } from '../helpers/PromiseAssertions'
 import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
-import { assertResponseIsOkOrThrow } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData, createIdentity } from './E2ETestUtils'
 import { TestProgram } from './TestProgram'
@@ -28,10 +26,8 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity: createIdentity() })
 
     // Try to deploy the entity
-    await assertPromiseRejectionIs(
-      () => deployLegacy(server, deployData),
-      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)"]}'
-    )
+    const result = await deployLegacy(server, deployData)
+    expect(result).toMatch(/The provided Eth Address does not have access to the following parcel/)
   })
 
   it(`When a decentraland address tries to deploy a legacy entity with new timestamp, then an exception is thrown`, async () => {
@@ -39,10 +35,8 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity })
 
     // Try to deploy the entity
-    await assertPromiseRejectionIs(
-      () => deployLegacy(server, deployData),
-      '{"errors":["The provided Eth Address does not have access to the following parcel: (0,0)"]}'
-    )
+    const result = await deployLegacy(server, deployData)
+    expect(result).toMatch(/The provided Eth Address does not have access to the following parcel/)
   })
 
   it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it fails as its old`, async () => {
@@ -53,9 +47,8 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
     )
 
     // Try to deploy the entity
-    await expect(() => deployLegacy(server, deployData)).rejects.toMatch(
-      /The request is not recent enough, please submit it again with a new timestamp/
-    )
+    const result = await deployLegacy(server, deployData)
+    expect(result).toMatch(/The request is not recent enough, please submit it again with a new timestamp/)
   })
 })
 
@@ -71,7 +64,8 @@ async function deployLegacy(server: TestProgram, deployData: DeploymentData) {
   )
 
   const deployResponse = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
-  await assertResponseIsOkOrThrow(deployResponse)
+
+  return await deployResponse.text()
 }
 
 function arrayBufferFrom(value: Buffer | Uint8Array) {
