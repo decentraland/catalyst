@@ -145,7 +145,16 @@ export class ServiceImpl implements MetaverseContentService {
         alreadyStoredContent
       )
 
-      if (isInvalidResult(storeResult)) {
+      if (!storeResult) {
+        ServiceImpl.LOGGER.error(`Error calling storeDeploymentInDatabase, returned void`, {
+          entityId,
+          auditInfo: JSON.stringify(auditInfo),
+          entity: JSON.stringify(entity),
+          context,
+          storeResult: JSON.stringify(storeResult)
+        })
+        return InvalidResult({ errors: ['An internal server error occured. This will raise an automatic alarm.'] })
+      } else if (isInvalidResult(storeResult)) {
         if (storeResult.errors.length == 0) {
           ServiceImpl.LOGGER.error(`Invalid InvalidResult, got 0 errors`, {
             entityId,
