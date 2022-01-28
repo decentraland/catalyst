@@ -1,4 +1,5 @@
 import { ensureDirectoryExists, existPath } from '@catalyst/commons'
+import { createHash } from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import { pipeline, Readable } from 'stream'
@@ -83,6 +84,14 @@ export class FileSystemContentStorage implements ContentStorage {
   }
 
   private getFilePath(id: string): string {
-    return path.join(this.root, id)
+    // We are sharding the files using the first 4 digits of its sha1 hash, because it makes troubles
+    // for the file system to handle millions of files in the same directory.
+    // This way, asuming that sha1 hash distribution is ~uniform we are reducing by 16^4 the max amount of files in a directory.
+    const directoryPath = path.join(this.root, createHash('sha1').update(id).digest('hex').substring(0, 4))
+    if (!fs.existsSync(directoryPath)) {
+      fs.mkdirSync(directoryPath, { recursive: true })
+    }
+    const filePath = path.join(directoryPath, id)
+    return filePath
   }
 }
