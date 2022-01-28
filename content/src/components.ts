@@ -134,7 +134,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer,
       staticConfigs,
-      deployedEntitiesFilter
+      deployedEntitiesFilter,
+      storage
     },
     {
       autoStart: true,
@@ -149,9 +150,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       jobManagerName: 'SynchronizationJobManager',
       createJob(contentServer) {
         return createCatalystDeploymentStream(
-          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer },
+          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage },
           {
-            contentFolder: staticConfigs.contentStorageFolder,
+            tmpDownloadFolder: path.join(staticConfigs.contentStorageFolder, '_tmp'),
             contentServer,
 
             // time between every poll to /pointer-changes
@@ -180,7 +181,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     staticConfigs,
     logs,
     contentCluster,
-    failedDeploymentsCache
+    failedDeploymentsCache,
+    storage
   })
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)

@@ -15,6 +15,7 @@ type ContentSyncComponents = Pick<
   | 'deployer'
   | 'contentCluster'
   | 'failedDeploymentsCache'
+  | 'storage'
 >
 
 export enum SynchronizationState {

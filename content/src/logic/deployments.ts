@@ -26,6 +26,7 @@ export async function retryFailedDeploymentExecution(
     | 'deployer'
     | 'contentCluster'
     | 'failedDeploymentsCache'
+    | 'storage'
   >,
   logger: ILoggerComponent.ILogger
 ): Promise<void> {
