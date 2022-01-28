@@ -1,7 +1,7 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { createReadStream } from 'fs'
-import { opendir } from 'fs/promises'
+import { opendir, stat } from 'fs/promises'
 import ms from 'ms'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
@@ -46,7 +46,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await this.storage.storeStream(file.name, createReadStream(resolve(this.contentsFolder, file.name)))
+            await this.processFile(file.name)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
@@ -62,7 +62,7 @@ export class ContentFolderMigrationManager {
       pending.push(
         this.queue.add(async () => {
           try {
-            await this.storage.storeStream(file, createReadStream(resolve(this.contentsFolder, file)))
+            await this.processFile(file)
             this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Retry for ${file} failed due to ${err}`)
@@ -78,4 +78,24 @@ export class ContentFolderMigrationManager {
   pendingInQueue(): number {
     return this.queue.size
   }
+
+  private async processFile(file: string): Promise<void> {
+    const stream = await getFileStream(this.contentsFolder, file)
+    if (!stream) {
+      throw new Error(`Couldn\' t find the file ${file}`)
+    }
+
+    await this.storage.storeStream(file, stream)
+  }
+}
+
+async function getFileStream(folder: string, file: string) {
+  const fileName = resolve(folder, file)
+  const fileStats = await stat(fileName)
+
+  if (fileStats.isDirectory()) {
+    return undefined
+  }
+
+  return createReadStream(fileName)
 }
