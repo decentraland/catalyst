@@ -47,12 +47,14 @@ loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
 
   it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it fails as its old`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['urn:decentraland:ethereum:collections-v1:guest_artists_2021:hero_lower_body'], { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 })
+    const { deployData } = await buildDeployData(
+      ['urn:decentraland:ethereum:collections-v1:guest_artists_2021:hero_lower_body'],
+      { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 }
+    )
 
     // Try to deploy the entity
-    await assertPromiseRejectionIs(
-      () => deployLegacy(server, deployData),
-      '{"errors":["The request is not recent enough, please submit it again with a new timestamp."]}'
+    await expect(() => deployLegacy(server, deployData)).rejects.toMatch(
+      /The request is not recent enough, please submit it again with a new timestamp/
     )
   })
 })
