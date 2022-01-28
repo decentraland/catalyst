@@ -1,5 +1,4 @@
 import { getDeployedEntitiesStream } from '@dcl/snapshots-fetcher'
-import path from 'path'
 import { AppComponents } from '../../types'
 
 type BootstrapComponents = Pick<
@@ -30,7 +29,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
       logs.info(`Will deploy entities from ${contentServer} snapshots`)
       try {
         const stream = getDeployedEntitiesStream(components, {
-          tmpDownloadFolder: path.join(components.staticConfigs.contentStorageFolder, '_tmp'),
+          tmpDownloadFolder: components.staticConfigs.tmpDownloadFolder,
           contentServer,
           pointerChangesWaitTime: 0, // zero to not restart the timer
           requestMaxRetries,

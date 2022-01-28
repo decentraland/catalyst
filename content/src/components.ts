@@ -41,7 +41,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
   const staticConfigs = {
-    contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents'),
+    tmpDownloadFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents', '_tmp')
   }
 
   const database = await createDatabaseComponent({ logs, env })
@@ -150,7 +151,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
         return createCatalystDeploymentStream(
           { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage },
           {
-            tmpDownloadFolder: path.join(staticConfigs.contentStorageFolder, '_tmp'),
+            tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
             contentServer,
 
             // time between every poll to /pointer-changes
