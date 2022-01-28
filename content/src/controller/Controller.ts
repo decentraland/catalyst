@@ -149,7 +149,12 @@ export class Controller {
       }
     } catch (error) {
       this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`)
+      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`, {
+        entityId,
+        authChain: JSON.stringify(authChain),
+        ethAddress,
+        signature
+      })
       Controller.LOGGER.error(error)
       res.status(500).end()
     } finally {
