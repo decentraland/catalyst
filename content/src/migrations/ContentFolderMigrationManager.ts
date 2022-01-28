@@ -47,7 +47,6 @@ export class ContentFolderMigrationManager {
         this.queue.add(async () => {
           try {
             await this.processFile(file.name)
-            this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
             failures.push(file.name)
@@ -63,7 +62,6 @@ export class ContentFolderMigrationManager {
         this.queue.add(async () => {
           try {
             await this.processFile(file)
-            this.metrics.increment('dcl_files_migrated')
           } catch (err) {
             this.logs.error(`Retry for ${file} failed due to ${err}`)
             failures.push(file)
@@ -80,22 +78,21 @@ export class ContentFolderMigrationManager {
   }
 
   private async processFile(file: string): Promise<void> {
-    const stream = await getFileStream(this.contentsFolder, file)
+    const fileName = resolve(this.contentsFolder, file)
+    const fileStats = await stat(fileName)
+
+    if (fileStats.isDirectory()) {
+      return
+    }
+
+    const stream = createReadStream(fileName)
+
     if (!stream) {
       throw new Error(`Couldn\' t find the file ${file}`)
     }
 
     await this.storage.storeStream(file, stream)
+
+    this.metrics.increment('dcl_files_migrated')
   }
-}
-
-async function getFileStream(folder: string, file: string) {
-  const fileName = resolve(folder, file)
-  const fileStats = await stat(fileName)
-
-  if (fileStats.isDirectory()) {
-    return undefined
-  }
-
-  return createReadStream(fileName)
 }
