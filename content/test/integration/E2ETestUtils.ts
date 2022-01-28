@@ -117,9 +117,9 @@ export async function deployEntitiesCombo(
   service: MetaverseContentService,
   ...entitiesCombo: EntityCombo[]
 ): Promise<DeploymentResult> {
-  let deploymentResult: DeploymentResult = { errors: [] }
+  let ret: DeploymentResult = { errors: ['empty entities combo'] }
   for (const { deployData } of entitiesCombo) {
-    const r = await service.deployEntity(
+    const deploymentResult = await service.deployEntity(
       Array.from(deployData.files.values()),
       deployData.entityId,
       {
@@ -127,15 +127,15 @@ export async function deployEntitiesCombo(
       },
       DeploymentContext.LOCAL
     )
-    if (typeof r == 'number') {
-      deploymentResult = r
-    } else if (isInvalidDeployment(r)) {
-      throw new Error(JSON.stringify({ r, deployData }))
+    if (typeof deploymentResult == 'number') {
+      ret = deploymentResult
+    } else if (isInvalidDeployment(deploymentResult)) {
+      throw new Error(JSON.stringify({ r: deploymentResult, deployData }))
     } else {
-      throw new Error('invalid result from deployEntity' + JSON.stringify(r))
+      throw new Error('invalid result from deployEntity ' + JSON.stringify({ deploymentResult, deployData }))
     }
   }
-  return deploymentResult
+  return ret
 }
 
 export type Identity = {
