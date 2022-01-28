@@ -89,7 +89,7 @@ export const createServerValidator = (components: Pick<AppComponents, 'failedDep
         components.failedDeploymentsCache.removeFailedDeployment(entity.id)
         return {
           ok: false,
-          message: IGNORING_FIX_ERROR + ` (pointers=${entity.pointers.join(',')})`
+          message: `${IGNORING_FIX_ERROR} (pointers=${entity.pointers.join(',')})`
         }
       }
 

@@ -46,7 +46,7 @@ export class SimpleContentItem implements ContentItem {
 }
 
 export function bufferToStream(buffer: Uint8Array): Readable {
-  return Readable.from(buffer)
+  return Readable.from(Buffer.from(buffer))
 }
 
 export function streamToBuffer(stream: Readable): Promise<Buffer> {

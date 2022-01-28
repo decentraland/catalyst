@@ -229,13 +229,13 @@ export class ServiceImpl implements MetaverseContentService {
     | InvalidResult
     | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
   > {
-    const deployedEntity = await this.getEntityById(entityId)
-    const isEntityAlreadyDeployed = !!deployedEntity
-
     return await this.components.repository.reuseIfPresent(
       task,
       (db) =>
         db.txIf(async (transaction) => {
+          const deployedEntity = await this.getEntityById(entityId, transaction)
+          const isEntityAlreadyDeployed = !!deployedEntity
+
           const validationResult = await this.validateDeployment(
             entity,
             context,

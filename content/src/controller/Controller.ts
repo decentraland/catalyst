@@ -136,12 +136,13 @@ export class Controller {
         res.send({ creationTimestamp: deploymentResult })
       } else {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
+        Controller.LOGGER.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
       }
     } catch (error) {
       this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
+      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`)
+      Controller.LOGGER.error(error)
       res.status(500).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)
