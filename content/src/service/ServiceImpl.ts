@@ -248,7 +248,11 @@ export class ServiceImpl implements MetaverseContentService {
               entityId,
               errors: validationResult.errors?.join(',') ?? ''
             })
-            return { errors: validationResult.errors ?? [''] }
+            return {
+              errors: validationResult.errors ?? [
+                'The validateDeployment was not successful but it did not return any error'
+              ]
+            }
           }
 
           const auditInfoComplete: AuditInfo = {
