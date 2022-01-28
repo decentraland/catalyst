@@ -4,7 +4,7 @@ import { EnvironmentConfig } from '../../Environment'
 import { AppComponents } from '../../types'
 
 export function createValidator(
-  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env'>
+  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env' | 'logs'>
 ): IValidatorComponent {
   const externalCalls: ExternalCalls = {
     isContentStoredAlready: (hashes) => components.storage.exist(hashes),
@@ -27,5 +27,5 @@ export function createValidator(
     }
   }
 
-  return validator(externalCalls)
+  return validator(externalCalls, components)
 }
