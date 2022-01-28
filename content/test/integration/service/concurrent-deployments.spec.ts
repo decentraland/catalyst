@@ -10,7 +10,7 @@ import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUti
  */
 loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv) => {
   const P1 = 'x1,y1'
-  const AMOUNT_OF_DEPLOYMENTS = 50
+  const AMOUNT_OF_DEPLOYMENTS = 500
   const type = EntityType.PROFILE
 
   let entities: EntityCombo[]
@@ -51,12 +51,9 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
       logger.info('deploying', entity as any)
       await deployEntitiesCombo(service, entity)
     } catch (error) {
-      logger.error('deploying error')
-      logger.error(error)
-      if (
-        error.message !==
-        `The following pointers are currently being deployed: '${P1}'. Please try again in a few seconds.`
-      ) {
+      if (!error.message.startsWith(`The following pointers are currently being deployed`)) {
+        logger.error('deploying error')
+        logger.error(error)
         throw error
       }
     }

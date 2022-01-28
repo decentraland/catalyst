@@ -75,7 +75,7 @@ export class ServiceImpl implements MetaverseContentService {
     context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
-    const deployedEntity = await this.getEntityById(entityId)
+    const deployedEntity = await this.getEntityById(entityId, task)
 
     // entity deployments are idempotent operations
     if (deployedEntity) {
@@ -515,7 +515,7 @@ export class ServiceImpl implements MetaverseContentService {
     })
 
     // If there is an error in the server side validation, we won't run protocol validations
-    if (!serverValidationResult.ok) {
+    if (serverValidationResult.ok == false) {
       return {
         ok: false,
         errors: [serverValidationResult.message]
