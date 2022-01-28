@@ -69,7 +69,9 @@ export async function deployDownloadedEntity(
   const deploymentTimeTimer = metrics.startTimer('dcl_deployment_time', { entity_type: entityType })
 
   try {
-    const entityFile = await fs.promises.readFile(path.join(components.staticConfigs.contentStorageFolder, entityId))
+    const entityFile = await fs.promises.readFile(
+      path.join(components.staticConfigs.contentStorageFolder, '_tmp', entityId)
+    )
 
     if (entityFile.length == 0) {
       throw new Error('Trying to deploy empty entityFile')
