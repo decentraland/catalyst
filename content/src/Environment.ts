@@ -9,6 +9,7 @@ import { AppComponents } from './types'
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
+const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
@@ -124,7 +125,8 @@ export enum EnvironmentConfig {
   CACHE_SIZES,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
-  VALIDATE_API
+  VALIDATE_API,
+  FOLDER_MIGRATION_MAX_CONCURRENCY
 }
 
 export class EnvironmentBuilder {
@@ -153,6 +155,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.STORAGE_ROOT_FOLDER,
       () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY,
+      () => process.env.FOLDER_MIGRATION_MAX_CONCURRENCY ?? DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY
     )
     this.registerConfigIfNotAlreadySet(
       env,
