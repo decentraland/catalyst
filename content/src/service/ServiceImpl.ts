@@ -172,8 +172,14 @@ export class ServiceImpl implements MetaverseContentService {
       // add the entity to the bloom filter to prevent expensive operations during the sync
       this.components.deployedEntitiesFilter.add(entity.id)
 
+      if (!storeResult.auditInfoComplete.localTimestamp) {
+        ServiceImpl.LOGGER.error(`auditInfoComplete is missbehaving`, {
+          auditInfoComplete: JSON.stringify(storeResult.auditInfoComplete)
+        })
+      }
+
       // review this
-      return storeResult.auditInfoComplete.localTimestamp
+      return storeResult.auditInfoComplete.localTimestamp || Date.now()
     } catch (error) {
       ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`, { entityId })
       return InvalidResult({
