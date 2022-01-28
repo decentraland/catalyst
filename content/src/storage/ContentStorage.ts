@@ -1,24 +1,35 @@
-import { ContentFileHash } from 'dcl-catalyst-commons'
 import { Readable } from 'stream'
+import { createGunzip } from 'zlib'
 
 export type ContentEncoding = 'gzip'
 
 export interface ContentStorage {
-  storeStream(id: string, content: Readable): Promise<void>
-  /** @deprecated use storeStream instead */
-  store(id: string, content: Uint8Array): Promise<void>
-  delete(ids: string[]): Promise<void>
-  retrieve(id: string): Promise<ContentItem | undefined>
-  exist(ids: string[]): Promise<Map<string, boolean>>
-  stats(id: string): Promise<{ size: number } | undefined>
-  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void>
-  size(fileHash: ContentFileHash): Promise<number | undefined>
+  storeStream(fileId: string, content: Readable): Promise<void>
+  storeStreamAndCompress(fileId: string, content: Readable): Promise<void>
+  delete(fileIds: string[]): Promise<void>
+  retrieve(fileId: string): Promise<ContentItem | undefined>
+  exist(fileId: string): Promise<boolean>
+  existMultiple(fileIds: string[]): Promise<Map<string, boolean>>
+}
+
+export type RawContent = {
+  stream: Readable
+  encoding: ContentEncoding | null
+  size: number | null
 }
 
 export interface ContentItem {
-  contentEncoding(): Promise<ContentEncoding | null>
-  getLength(): number | undefined
+  /**
+   * Gets the readable stream, uncompressed if necessary.
+   */
   asStream(): Promise<Readable>
+
+  /**
+   * Used to get the raw stream, no matter how it is stored.
+   * That may imply that the stream may be compressed, if so, the
+   * compression encoding should be available in "content".
+   */
+  asRawStream(): Promise<RawContent>
 }
 
 export class SimpleContentItem implements ContentItem {
@@ -32,16 +43,30 @@ export class SimpleContentItem implements ContentItem {
     return new SimpleContentItem(async () => bufferToStream(buffer), buffer.length, null)
   }
 
-  asStream(): Promise<Readable> {
-    return this.streamCreator()
+  /**
+   * Gets the readable stream, uncompressed if necessary.
+   */
+  async asStream(): Promise<Readable> {
+    const stream = await this.streamCreator()
+
+    if (this.encoding == 'gzip') {
+      return stream.pipe(createGunzip())
+    }
+
+    return stream
   }
 
-  getLength(): number | undefined {
-    return this.length
-  }
-
-  async contentEncoding() {
-    return this.encoding ?? null
+  /**
+   * Used to get the raw stream, no matter how it is stored.
+   * That may imply that the stream may be compressed, if so, the
+   * compression encoding should be available in "content".
+   */
+  async asRawStream(): Promise<RawContent> {
+    return {
+      stream: await this.streamCreator(),
+      encoding: this.encoding || null,
+      size: this.length || null
+    }
   }
 }
 
@@ -51,9 +76,16 @@ export function bufferToStream(buffer: Uint8Array): Readable {
 
 export function streamToBuffer(stream: Readable): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const buffers: any[] = []
+    const buffers: Uint8Array[] = []
     stream.on('error', reject)
-    stream.on('data', (data) => buffers.push(data))
+    stream.on('data', (data) => {
+      if (data instanceof Uint8Array) {
+        buffers.push(data)
+      } else {
+        reject(new Error('Stream did not emit Uint8Array'))
+        stream.destroy()
+      }
+    })
     stream.on('end', () => resolve(Buffer.concat(buffers)))
   })
 }

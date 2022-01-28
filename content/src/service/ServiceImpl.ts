@@ -13,12 +13,11 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import NodeCache from 'node-cache'
-import { Readable } from 'stream'
 import { EnvironmentConfig } from '../Environment'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { ContentItem } from '../storage/ContentStorage'
+import { bufferToStream, ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { CacheByType } from './caching/Cache'
 import { getDeployments } from './deployments/deployments'
@@ -27,7 +26,6 @@ import { EntityFactory } from './EntityFactory'
 import {
   DeploymentContext,
   DeploymentFiles,
-  DeploymentListener,
   DeploymentResult,
   InvalidResult,
   isInvalidDeployment,
@@ -38,7 +36,6 @@ import { happenedBefore } from './time/TimeSorting'
 
 export class ServiceImpl implements MetaverseContentService {
   private static LOGGER: ILoggerComponent.ILogger
-  private readonly listeners: DeploymentListener[] = []
   private readonly pointersBeingDeployed: Map<EntityType, Set<Pointer>> = new Map()
 
   private readonly LEGACY_CONTENT_MIGRATION_TIMESTAMP: Date = new Date(1582167600000) // DCL Launch Day
@@ -65,8 +62,6 @@ export class ServiceImpl implements MetaverseContentService {
   ) {
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
   }
-
-  async start(): Promise<void> {}
 
   async deployEntity(
     files: DeploymentFiles,
@@ -128,11 +123,6 @@ export class ServiceImpl implements MetaverseContentService {
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
 
-    // Check for if content is already stored
-    const alreadyStoredContent: Map<ContentFileHash, boolean> = await this.isContentAvailable(
-      entity.content?.map((contentFile) => contentFile.hash) ?? []
-    )
-
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
 
     try {
@@ -142,8 +132,7 @@ export class ServiceImpl implements MetaverseContentService {
         entity,
         auditInfo,
         hashes,
-        contextToDeploy,
-        alreadyStoredContent
+        contextToDeploy
       )
 
       if (!storeResult) {
@@ -166,11 +155,6 @@ export class ServiceImpl implements MetaverseContentService {
         }
         return storeResult
       } else if (storeResult.wasEntityDeployed) {
-        // Report deployment to listeners
-        await Promise.all(
-          this.listeners.map((listener) => listener({ entity, auditInfo: storeResult.auditInfoComplete }))
-        )
-
         this.components.metrics.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
@@ -224,8 +208,7 @@ export class ServiceImpl implements MetaverseContentService {
     entity: Entity,
     auditInfo: LocalDeploymentAuditInfo,
     hashes: Map<string, Uint8Array>,
-    context: DeploymentContext,
-    alreadyStoredContent: Map<string, boolean>
+    context: DeploymentContext
   ): Promise<
     | InvalidResult
     | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
@@ -257,7 +240,7 @@ export class ServiceImpl implements MetaverseContentService {
       // IF THIS POINT WAS REACHED, THEN THE DEPLOYMENT WILL BE COMMITTED
 
       // Store the entity's content
-      await this.storeEntityContent(hashes, alreadyStoredContent)
+      await this.storeEntityContent(hashes)
 
       await this.components.repository.reuseIfPresent(
         task,
@@ -408,16 +391,18 @@ export class ServiceImpl implements MetaverseContentService {
     )
   }
 
-  private storeEntityContent(
-    hashes: Map<ContentFileHash, Uint8Array>,
-    alreadyStoredHashes: Map<ContentFileHash, boolean>
-  ): Promise<any> {
-    // If entity was committed, then store all it's content (that isn't already stored)
-    const contentStorageActions: Promise<void>[] = Array.from(hashes.entries())
-      .filter(([fileHash]) => !alreadyStoredHashes.get(fileHash))
-      .map(([fileHash, file]) => this.storeContent(fileHash, file))
+  private async storeEntityContent(hashes: Map<ContentFileHash, Uint8Array>): Promise<any> {
+    // Check for if content is already stored
+    const alreadyStoredHashes: Map<ContentFileHash, boolean> = await this.components.storage.existMultiple(
+      Array.from(hashes.keys())
+    )
 
-    return Promise.all(contentStorageActions)
+    // If entity was committed, then store all it's content (that isn't already stored)
+    for (const [fileHash, content] of hashes) {
+      if (!alreadyStoredHashes.get(fileHash)) {
+        await this.components.storage.storeStream(fileHash, bufferToStream(content))
+      }
+    }
   }
 
   /**
@@ -440,24 +425,12 @@ export class ServiceImpl implements MetaverseContentService {
     return IPFSv2.validate(hash)
   }
 
-  getSize(fileHash: ContentFileHash): Promise<number | undefined> {
-    return this.components.storage.size(fileHash)
-  }
-
   getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
     return this.components.storage.retrieve(fileHash)
   }
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
-    return this.components.storage.exist(fileHashes)
-  }
-
-  deleteContent(fileHashes: ContentFileHash[]): Promise<void> {
-    return this.components.storage.delete(fileHashes)
-  }
-
-  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
-    return this.components.storage.storeContent(fileHash, content)
+    return this.components.storage.existMultiple(fileHashes)
   }
 
   getEntityById(entityId: EntityId, task?: Database): Promise<{ entityId: EntityId; localTimestamp: number } | void> {
@@ -490,10 +463,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   getAllFailedDeployments(): FailedDeployment[] {
     return this.components.failedDeploymentsCache.getAllFailedDeployments()
-  }
-
-  listenToDeployments(listener: DeploymentListener): void {
-    this.listeners.push(listener)
   }
 
   private async validateDeployment(

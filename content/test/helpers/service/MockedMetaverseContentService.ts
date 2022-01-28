@@ -13,17 +13,11 @@ import {
 } from 'dcl-catalyst-commons'
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
-import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
 import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
 import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
 import { DeploymentPointerChanges } from '../../../src/service/pointers/types'
-import {
-  DeploymentContext,
-  DeploymentListener,
-  LocalDeploymentAuditInfo,
-  MetaverseContentService
-} from '../../../src/service/Service'
+import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
 import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStorage'
 import { IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
 import { buildEntityAndFile } from './EntityTestFactory'
@@ -84,14 +78,6 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
 
   async deployEntityFromRemoteServer() {
     // noop
-  }
-
-  start(): Promise<void> {
-    return Promise.resolve()
-  }
-
-  deleteContent(fileHashes: string[]): Promise<void> {
-    throw new Error('Method not implemented.')
   }
 
   getPointerChanges(options?: PointerChangesOptions) {
@@ -162,13 +148,6 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
   }
 
   getAllFailedDeployments(): FailedDeployment[] {
-    throw new Error('Method not implemented.')
-  }
-
-  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  listenToDeployments(listener: DeploymentListener): void {
     throw new Error('Method not implemented.')
   }
 
