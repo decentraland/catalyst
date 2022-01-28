@@ -10,6 +10,7 @@ import { DenylistServiceDecorator } from './denylist/DenylistServiceDecorator'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
+import { ContentFolderMigrationManager } from './migrations/ContentFolderMigrationManager'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createBloomFilterComponent } from './ports/bloomFilter'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
@@ -33,6 +34,7 @@ import { SystemPropertiesManager } from './service/system-properties/SystemPrope
 import { createServerValidator } from './service/validations/server'
 import { createValidator } from './service/validations/validator'
 import { ContentStorageFactory } from './storage/ContentStorageFactory'
+import { FileSystemContentStorage } from './storage/FileSystemContentStorage'
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
@@ -199,6 +201,13 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const migrationManager = MigrationManagerFactory.create({ logs, env })
 
+  const contentFolderMigrationManager = new ContentFolderMigrationManager({
+    logs,
+    env,
+    metrics,
+    storage: storage as FileSystemContentStorage
+  })
+
   const server = new Server({ controller, metrics, env, logs })
 
   return {
@@ -232,6 +241,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     systemPropertiesManager,
     catalystFetcher,
     daoClient,
-    server
+    server,
+    contentFolderMigrationManager
   }
 }

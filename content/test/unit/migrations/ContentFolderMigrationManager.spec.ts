@@ -7,11 +7,10 @@ jest.mock('fs/promises', () => ({
       yield { name: files[current] }
       current++
     }
-  }
-}))
-
-jest.mock('@catalyst/commons', () => ({
-  ensureDirectoryExists: () => {}
+  },
+  stat: () => ({
+    isDirectory: () => false
+  })
 }))
 
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
@@ -23,29 +22,33 @@ import { ContentFolderMigrationManager } from '../../../src/migrations/ContentFo
 import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
 import { FileSystemUtils as fsu } from '../storage/FileSystemUtils'
 
+jest.mock('@catalyst/commons', () => ({
+  ensureDirectoryExists: () => {}
+}))
+
 describe('ContentFolderMigrationManager', () => {
-  let storeExistingContentItemSpy: jest.Mock
+  let storeStreamSpy: jest.Mock
 
   let storage: FileSystemContentStorage
 
   describe('when running the migration with no errors', () => {
     beforeAll(() => {
-      storeExistingContentItemSpy = jest.fn().mockResolvedValue(undefined)
+      storeStreamSpy = jest.fn().mockResolvedValue(undefined)
 
       storage = {
-        storeExistingContentItem: storeExistingContentItemSpy
+        storeStream: storeStreamSpy
       } as any
     })
 
     afterAll(() => {
-      storeExistingContentItemSpy.mockClear()
+      storeStreamSpy.mockClear()
     })
 
     it('should call moveFile 10 times, once for each file', async () => {
       await runMigration(storage)
 
-      expect(storeExistingContentItemSpy).toHaveBeenCalledTimes(10)
-      expect(storeExistingContentItemSpy.mock.calls).toEqual(
+      expect(storeStreamSpy).toHaveBeenCalledTimes(10)
+      expect(storeStreamSpy.mock.calls).toEqual(
         expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
       )
     })
@@ -53,22 +56,22 @@ describe('ContentFolderMigrationManager', () => {
 
   describe('when running the migration with an error', () => {
     beforeAll(() => {
-      storeExistingContentItemSpy = jest.fn().mockRejectedValueOnce('Failure').mockResolvedValue(undefined)
+      storeStreamSpy = jest.fn().mockRejectedValueOnce('Failure').mockResolvedValue(undefined)
 
       storage = {
-        storeExistingContentItem: storeExistingContentItemSpy
+        storeStream: storeStreamSpy
       } as any
     })
 
     afterAll(() => {
-      storeExistingContentItemSpy.mockClear()
+      storeStreamSpy.mockClear()
     })
 
     it('should call moveFile 11 times, once for each file', async () => {
       await runMigration(storage)
 
-      expect(storeExistingContentItemSpy).toHaveBeenCalledTimes(11)
-      expect(storeExistingContentItemSpy.mock.calls).toEqual(
+      expect(storeStreamSpy).toHaveBeenCalledTimes(11)
+      expect(storeStreamSpy.mock.calls).toEqual(
         expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
       )
     })
