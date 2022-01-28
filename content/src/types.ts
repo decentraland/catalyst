@@ -10,7 +10,6 @@ import { Controller } from './controller/Controller'
 import { Denylist } from './denylist/Denylist'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
-import { ContentFolderMigrationManager } from './migrations/ContentFolderMigrationManager'
 import { MigrationManager } from './migrations/MigrationManager'
 import { IBloomFilterComponent } from './ports/bloomFilter'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
@@ -65,7 +64,6 @@ export type AppComponents = {
   catalystFetcher: Fetcher
   daoClient: DAOClient
   server: Server
-  contentFolderMigrationManager: ContentFolderMigrationManager
 
   // this will be replaced by `database` and removed from here
   repository: Repository

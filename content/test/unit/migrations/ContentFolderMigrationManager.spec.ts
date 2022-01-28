@@ -10,15 +10,15 @@ jest.mock('fs/promises', () => ({
   },
   stat: () => ({
     isDirectory: () => false
-  })
+  }),
+  unlink: async () => {}
 }))
 
-import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
-import { ContentFolderMigrationManager } from '../../../src/migrations/ContentFolderMigrationManager'
+import { migrateContentFolderStructure } from '../../../src/migrations/ContentFolderMigrationManager'
 import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
 import { FileSystemUtils as fsu } from '../storage/FileSystemUtils'
 
@@ -87,10 +87,5 @@ async function runMigration(storage: FileSystemContentStorage) {
   env.setConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY, 2)
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, dir)
 
-  const instance = new ContentFolderMigrationManager({ logs, env, metrics, storage })
-  await instance.run()
-
-  while (instance.pendingInQueue() > 0) {
-    await sleep(100)
-  }
+  await migrateContentFolderStructure({ logs, metrics, env, storage })
 }
