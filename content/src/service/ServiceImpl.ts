@@ -74,13 +74,25 @@ export class ServiceImpl implements MetaverseContentService {
     context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult> {
+    const deployedEntity = await this.getEntityById(entityId)
+
+    // entity deployments are idempotent operations
+    if (deployedEntity) {
+      ServiceImpl.LOGGER.error(`Entity was already deployed`, {
+        entityId,
+        deployedTimestamp: deployedEntity.localTimestamp,
+        delta: Date.now() - deployedEntity.localTimestamp
+      })
+      return deployedEntity.localTimestamp
+    }
+
     // Hash all files
     const hashes: Map<ContentFileHash, Uint8Array> = await ServiceImpl.hashFiles(files, entityId)
 
     // Find entity file
     const entityFile = hashes.get(entityId)
     if (!entityFile) {
-      return { errors: [`Failed to find the entity file.`] } as InvalidResult
+      return InvalidResult({ errors: [`Failed to find the entity file.`] })
     }
 
     // Parse entity file into an Entity
@@ -88,29 +100,29 @@ export class ServiceImpl implements MetaverseContentService {
     try {
       entity = EntityFactory.fromBufferWithId(entityFile, entityId)
       if (!entity) {
-        return { errors: ['There was a problem parsing the entity, it was null'] } as InvalidResult
+        return InvalidResult({ errors: ['There was a problem parsing the entity, it was null'] })
       }
     } catch (error) {
       ServiceImpl.LOGGER.error(`There was an error parsing the entity: ${error}`)
-      return { errors: ['There was a problem parsing the entity'] } as InvalidResult
+      return InvalidResult({ errors: ['There was a problem parsing the entity'] })
     }
 
     // Validate that the entity's pointers are not currently being modified
     const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type) ?? new Set()
     const overlappingPointers = entity.pointers.filter((pointer) => pointersCurrentlyBeingDeployed.has(pointer))
     if (overlappingPointers.length > 0) {
-      return {
+      return InvalidResult({
         errors: [
           `The following pointers are currently being deployed: '${overlappingPointers.join()}'. Please try again in a few seconds.`
         ]
-      } as InvalidResult
+      })
     }
 
     // Update the current list of pointers being deployed
     if (!entity.pointers)
-      return {
+      return InvalidResult({
         errors: [`The entity does not have any pointer.`]
-      } as InvalidResult
+      })
 
     entity.pointers.forEach((pointer) => pointersCurrentlyBeingDeployed.add(pointer))
     this.pointersBeingDeployed.set(entity.type, pointersCurrentlyBeingDeployed)
@@ -123,9 +135,7 @@ export class ServiceImpl implements MetaverseContentService {
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
 
     try {
-      const storeResult:
-        | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
-        | InvalidResult = await this.storeDeploymentInDatabase(
+      const storeResult = await this.storeDeploymentInDatabase(
         task,
         entityId,
         entity,
@@ -135,8 +145,16 @@ export class ServiceImpl implements MetaverseContentService {
         alreadyStoredContent
       )
 
-      if ('errors' in storeResult) {
-        return storeResult as InvalidResult
+      if (isInvalidResult(storeResult)) {
+        if (storeResult.errors.length == 0) {
+          ServiceImpl.LOGGER.error(`Invalid InvalidResult, got 0 errors`, {
+            entityId,
+            auditInfo: JSON.stringify(auditInfo),
+            entity: JSON.stringify(entity),
+            context
+          })
+        }
+        return storeResult
       } else if (storeResult.wasEntityDeployed) {
         // Report deployment to listeners
         await Promise.all(
@@ -163,10 +181,10 @@ export class ServiceImpl implements MetaverseContentService {
       // review this
       return storeResult.auditInfoComplete.localTimestamp
     } catch (error) {
-      ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`)
-      return {
+      ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`, { entityId })
+      return InvalidResult({
         errors: [`There was an error deploying the entity`]
-      } as InvalidResult
+      })
     } finally {
       // Remove the updated pointer from the list of current being deployed
       const pointersCurrentlyBeingDeployed = this.pointersBeingDeployed.get(entity.type)!
@@ -202,13 +220,13 @@ export class ServiceImpl implements MetaverseContentService {
     | InvalidResult
     | { auditInfoComplete: AuditInfo; wasEntityDeployed: boolean; affectedPointers: Pointer[] | undefined }
   > {
+    const deployedEntity = await this.getEntityById(entityId)
+    const isEntityAlreadyDeployed = !!deployedEntity
+
     return await this.components.repository.reuseIfPresent(
       task,
       (db) =>
         db.txIf(async (transaction) => {
-          const deployedEntity = await this.getEntityById(entityId, transaction)
-          const isEntityAlreadyDeployed = !!deployedEntity
-
           const validationResult = await this.validateDeployment(
             entity,
             context,
@@ -221,7 +239,7 @@ export class ServiceImpl implements MetaverseContentService {
               entityId,
               errors: validationResult.errors?.join(',') ?? ''
             })
-            return { errors: validationResult.errors ?? [] }
+            return { errors: validationResult.errors ?? [''] }
           }
 
           const auditInfoComplete: AuditInfo = {
@@ -502,4 +520,12 @@ export class ServiceImpl implements MetaverseContentService {
       files: hashes
     })
   }
+}
+
+function isInvalidResult(value: any): value is InvalidResult {
+  if (value && typeof value === 'object' && Array.isArray(value['errors'])) {
+    return true
+  }
+
+  return false
 }

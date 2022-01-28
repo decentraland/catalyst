@@ -30,7 +30,9 @@ const isRequestTtlForwards: EntityCheck = (entity) => Date.now() - entity.timest
 const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<string | undefined> => {
   /** Validate that there are no newer deployments on the entity's pointers */
   if (await serviceCalls.areThereNewerEntities(entity))
-    return 'There is a newer entity pointed by one or more of the pointers you provided.'
+    return `There is a newer entity pointed by one or more of the pointers you provided (entityId=${
+      entity.id
+    } pointers=${entity.pointers.join(',')}).`
 
   /** Validate if the entity can be re deployed or not */
   if (await serviceCalls.isEntityDeployedAlready(entity))
@@ -42,11 +44,15 @@ const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<
 
   /** Validate that the deployment is recent */
   if (await serviceCalls.isRequestTtlBackwards(entity))
-    return 'The request is not recent enough, please submit it again with a new timestamp.'
+    return `The request is not recent enough, please submit it again with a new timestamp (entityId=${
+      entity.id
+    } pointers=${entity.pointers.join(',')}).`
 
   /** Validate that the deployment is not too far in the future */
   if (isRequestTtlForwards(entity))
-    return 'The request is too far in the future, please submit it again with a new timestamp.'
+    return `The request is too far in the future, please submit it again with a new timestamp (entityId=${
+      entity.id
+    } pointers=${entity.pointers.join(',')}).`
 }
 
 /**
@@ -58,17 +64,23 @@ const fixAttemptChecks = async (entity: Entity, serviceCalls: ServiceCalls): Pro
     return 'You are trying to fix an entity that is not marked as failed'
 }
 
+export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since there are newer entities. '
+
 /**
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
 export const createServerValidator = (components: Pick<AppComponents, 'failedDeploymentsCache'>): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side
-    if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) return { ok: true }
+    if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) {
+      return { ok: true }
+    }
 
     if (context === DeploymentContext.LOCAL) {
-      const result = await localChecks(entity, serviceCalls)
-      if (result) return { ok: false, message: result }
+      const error = await localChecks(entity, serviceCalls)
+      if (error) {
+        return { ok: false, message: error }
+      }
     } else if (context === DeploymentContext.FIX_ATTEMPT) {
       // if there are newer entities, we can end up in a loop (unfixeable failed deployment)
       // so we remove it from failed deployments cache
@@ -77,11 +89,14 @@ export const createServerValidator = (components: Pick<AppComponents, 'failedDep
         components.failedDeploymentsCache.removeFailedDeployment(entity.id)
         return {
           ok: false,
-          message: `Ignoring fix for failed deployment since there are newer entities with pointer: ${entity.pointers}`
+          message: IGNORING_FIX_ERROR + ` (pointers=${entity.pointers.join(',')})`
         }
       }
-      const result = await fixAttemptChecks(entity, serviceCalls)
-      if (result) return { ok: false, message: result }
+
+      const error = await fixAttemptChecks(entity, serviceCalls)
+      if (error) {
+        return { ok: false, message: error }
+      }
     }
 
     return { ok: true }

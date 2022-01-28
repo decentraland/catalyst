@@ -59,6 +59,9 @@ export type DeploymentEvent = {
 export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>
 
 export type InvalidResult = { errors: string[] }
+export function InvalidResult(val: InvalidResult): InvalidResult {
+  return val
+}
 
 export type DeploymentResult = Timestamp | InvalidResult
 
