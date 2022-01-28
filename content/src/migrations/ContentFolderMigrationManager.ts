@@ -1,5 +1,4 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
-import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { createReadStream } from 'fs'
 import { opendir, stat } from 'fs/promises'
 import ms from 'ms'
@@ -7,92 +6,77 @@ import PQueue from 'p-queue'
 import { join, resolve } from 'path'
 import { AppComponents } from 'src/types'
 import { EnvironmentConfig } from '../Environment'
-import { metricsDeclaration } from '../metrics'
-import { FileSystemContentStorage } from '../storage/FileSystemContentStorage'
 
-export class ContentFolderMigrationManager {
-  logs: ILoggerComponent.ILogger
-  metrics: IMetricsComponent<keyof typeof metricsDeclaration>
-  contentsFolder: string
-  concurrency: number
-  queue: PQueue
-  storage: FileSystemContentStorage
+export type ContentFolderMigrationComponents = Pick<AppComponents, 'logs' | 'env' | 'metrics' | 'storage'>
 
-  constructor(components: Pick<AppComponents, 'logs' | 'env' | 'metrics'> & { storage: FileSystemContentStorage }) {
-    this.logs = components.logs.getLogger('ContentFolderMigrationManager')
+export async function migrateContentFolderStructure(components: ContentFolderMigrationComponents) {
+  const queue = new PQueue({
+    concurrency: components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY),
+    timeout: ms('30s')
+  })
+  const logs = components.logs.getLogger('ContentFolderMigrationManager')
 
-    this.contentsFolder = join(components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    this.concurrency = components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY)
-    this.queue = new PQueue({ concurrency: this.concurrency, timeout: ms('30s') })
-    this.metrics = components.metrics
-    this.storage = components.storage
+  let contentsFolder = join(components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+
+  while (contentsFolder.endsWith('/')) {
+    contentsFolder = contentsFolder.slice(0, -1)
   }
 
-  async run(): Promise<void> {
-    while (this.contentsFolder.endsWith('/')) {
-      this.contentsFolder = this.contentsFolder.slice(0, -1)
-    }
+  await ensureDirectoryExists(contentsFolder)
 
-    await ensureDirectoryExists(this.contentsFolder)
+  logs.debug('Running folder migration')
 
-    this.logs.debug('Running folder migration')
+  const files = await opendir(contentsFolder)
 
-    const files = await opendir(this.contentsFolder)
+  const pending: Promise<void>[] = []
+  const failures: string[] = []
 
-    const pending: Promise<void>[] = []
-    const failures: string[] = []
-
-    for await (const file of files) {
-      pending.push(
-        this.queue.add(async () => {
-          try {
-            await this.processFile(file.name)
-          } catch (err) {
-            this.logs.error(`Couldn't migrate ${file.name} due to ${err}`)
-            failures.push(file.name)
-          }
-        })
-      )
-    }
-
-    await Promise.all(pending)
-
-    for (const file of failures) {
-      pending.push(
-        this.queue.add(async () => {
-          try {
-            await this.processFile(file)
-          } catch (err) {
-            this.logs.error(`Retry for ${file} failed due to ${err}`)
-            failures.push(file)
-          }
-        })
-      )
-    }
-
-    await Promise.all(pending)
+  for await (const file of files) {
+    pending.push(
+      queue.add(async () => {
+        try {
+          await processFile(components, contentsFolder, file.name)
+        } catch (err) {
+          logs.error(`Couldn't migrate ${file.name} due to ${err}`)
+          failures.push(file.name)
+        }
+      })
+    )
   }
 
-  pendingInQueue(): number {
-    return this.queue.size
+  await Promise.all(pending)
+
+  for (const file of failures) {
+    pending.push(
+      queue.add(async () => {
+        try {
+          await processFile(components, contentsFolder, file)
+        } catch (err) {
+          logs.error(`Retry for ${file} failed due to ${err}`)
+          failures.push(file)
+        }
+      })
+    )
   }
 
-  private async processFile(file: string): Promise<void> {
-    const fileName = resolve(this.contentsFolder, file)
-    const fileStats = await stat(fileName)
+  await Promise.all(pending)
+}
 
-    if (fileStats.isDirectory()) {
-      return
-    }
+async function processFile(components: ContentFolderMigrationComponents, folder: string, file: string): Promise<void> {
+  const fileName = resolve(folder, file)
+  const fileStats = await stat(fileName)
 
-    const stream = createReadStream(fileName)
-
-    if (!stream) {
-      throw new Error(`Couldn\' t find the file ${file}`)
-    }
-
-    await this.storage.storeStream(file, stream)
-
-    this.metrics.increment('dcl_files_migrated')
+  if (fileStats.isDirectory()) {
+    return
   }
+
+  const stream = createReadStream(fileName)
+
+  if (!stream) {
+    throw new Error(`Couldn\' t find the file ${file}`)
+  }
+
+  await components.storage.storeStream(file, stream)
+
+  components.metrics.increment('dcl_files_migrated')
 }
