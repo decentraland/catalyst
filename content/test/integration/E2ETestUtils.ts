@@ -130,7 +130,7 @@ export async function deployEntitiesCombo(
     if (typeof r == 'number') {
       deploymentResult = r
     } else if (isInvalidDeployment(r)) {
-      throw new Error(r.errors.join('\n'))
+      throw new Error(JSON.stringify({ r, deployData }))
     } else {
       throw new Error('invalid result from deployEntity' + JSON.stringify(r))
     }

@@ -46,7 +46,7 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
     entity: EntityCombo,
     components: Pick<AppComponents, 'logs'>
   ) {
-    const logger = components.logs.getLogger('deployEntity')
+    const logger = components.logs.getLogger('ConcurrentCheckTest/DeployEntity')
     try {
       logger.info('deploying', entity as any)
       await deployEntitiesCombo(service, entity)
