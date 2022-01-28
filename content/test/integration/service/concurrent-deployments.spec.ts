@@ -51,7 +51,8 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
       logger.info('deploying', entity as any)
       await deployEntitiesCombo(service, entity)
     } catch (error) {
-      logger.error('deploying error', error)
+      logger.error('deploying error')
+      logger.error(error)
       if (
         error.message !==
         `The following pointers are currently being deployed: '${P1}'. Please try again in a few seconds.`
