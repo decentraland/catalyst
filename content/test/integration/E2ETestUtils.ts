@@ -7,7 +7,12 @@ import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
 import { retry } from '../../src/helpers/RetryHelper'
 import { EntityFactory } from '../../src/service/EntityFactory'
-import { DeploymentContext, DeploymentResult, MetaverseContentService } from '../../src/service/Service'
+import {
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  MetaverseContentService
+} from '../../src/service/Service'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },
@@ -124,8 +129,10 @@ export async function deployEntitiesCombo(
     )
     if (typeof r == 'number') {
       deploymentResult = r
-    } else {
+    } else if (isInvalidDeployment(r)) {
       throw new Error(r.errors.join('\n'))
+    } else {
+      throw new Error('invalid result from deployEntity' + JSON.stringify(r))
     }
   }
   return deploymentResult

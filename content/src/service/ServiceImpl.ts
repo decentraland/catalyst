@@ -30,6 +30,7 @@ import {
   DeploymentListener,
   DeploymentResult,
   InvalidResult,
+  isInvalidDeployment,
   LocalDeploymentAuditInfo,
   MetaverseContentService
 } from './Service'
@@ -154,7 +155,7 @@ export class ServiceImpl implements MetaverseContentService {
           storeResult: JSON.stringify(storeResult)
         })
         return InvalidResult({ errors: ['An internal server error occured. This will raise an automatic alarm.'] })
-      } else if (isInvalidResult(storeResult)) {
+      } else if (isInvalidDeployment(storeResult)) {
         if (storeResult.errors.length == 0) {
           ServiceImpl.LOGGER.error(`Invalid InvalidResult, got 0 errors`, {
             entityId,
@@ -527,12 +528,4 @@ export class ServiceImpl implements MetaverseContentService {
       files: hashes
     })
   }
-}
-
-function isInvalidResult(value: any): value is InvalidResult {
-  if (value && typeof value === 'object' && Array.isArray(value['errors'])) {
-    return true
-  }
-
-  return false
 }
