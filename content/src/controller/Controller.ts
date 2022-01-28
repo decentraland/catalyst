@@ -144,6 +144,7 @@ export class Controller {
         Controller.LOGGER.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
       } else {
+        Controller.LOGGER.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
         throw new Error('deploymentResult is invalid')
       }
     } catch (error) {
