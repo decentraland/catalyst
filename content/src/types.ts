@@ -11,7 +11,7 @@ import { Denylist } from './denylist/Denylist'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
-import { IBloomFilterComponent } from './ports/bloomFilter'
+import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { IDatabaseComponent } from './ports/postgres'
 import { Repository } from './repository/Repository'
@@ -44,7 +44,7 @@ export type AppComponents = {
   }
   batchDeployer: IDeployerComponent
   synchronizationJobManager: JobLifecycleManagerComponent
-  deployedEntitiesFilter: IBloomFilterComponent
+  deployedEntitiesFilter: DeploymentListComponent
   synchronizationManager: ClusterSynchronizationManager
   controller: Controller
   snapshotManager: ISnapshotManager
