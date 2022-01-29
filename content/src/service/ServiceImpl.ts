@@ -178,7 +178,7 @@ export class ServiceImpl implements MetaverseContentService {
         })
       }
 
-      // review this
+      // TODO: review this
       return storeResult.auditInfoComplete.localTimestamp || Date.now()
     } catch (error) {
       ServiceImpl.LOGGER.error(`There was an error deploying the entity: ${error}`, { entityId })

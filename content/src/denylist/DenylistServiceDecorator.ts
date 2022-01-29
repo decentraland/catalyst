@@ -98,16 +98,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult> {
-    // return this.repository.task(
-    //   async (task) => {
-    //     // Validate the deployment
-    //     const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
-
-    //     // If all validations passed, then deploy the entity
+    // TODO: validations were removed in PR #866
     return this.service.deployEntity(files, entityId, auditInfo, context)
-    //   },
-    //   { priority: DB_REQUEST_PRIORITY.HIGH }
-    // )
   }
 
   async getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
