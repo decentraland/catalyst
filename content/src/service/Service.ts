@@ -52,6 +52,9 @@ export type DeploymentEvent = {
 }
 
 export type InvalidResult = { errors: string[] }
+export function InvalidResult(val: InvalidResult): InvalidResult {
+  return val
+}
 
 export type DeploymentResult = Timestamp | InvalidResult
 
@@ -61,8 +64,12 @@ export function isSuccessfulDeployment(deploymentResult: DeploymentResult): depl
   return typeof deploymentResult === 'number'
 }
 
-export function isInvalidDeployment(deploymentResult: DeploymentResult): deploymentResult is InvalidResult {
-  return !isSuccessfulDeployment(deploymentResult)
+export function isInvalidDeployment(deploymentResult: any): deploymentResult is InvalidResult {
+  if (deploymentResult && typeof deploymentResult === 'object' && Array.isArray(deploymentResult['errors'])) {
+    return true
+  }
+
+  return false
 }
 
 export enum DeploymentContext {

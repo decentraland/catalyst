@@ -1,5 +1,5 @@
 import { DeploymentFilters, DeploymentSorting } from 'dcl-catalyst-commons'
-import { DeploymentField } from 'src/controller/Controller'
+import { DeploymentField } from '../../controller/Controller'
 
 interface DeploymentRequestOptions {
   filters?: DeploymentFilters

@@ -25,7 +25,12 @@ import { ContentAuthenticator } from '../service/auth/Authenticator'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
-import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
+import {
+  DeploymentContext,
+  isInvalidDeployment,
+  isSuccessfulDeployment,
+  LocalDeploymentAuditInfo
+} from '../service/Service'
 import { ContentItem, RawContent } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
@@ -134,14 +139,23 @@ export class Controller {
       if (isSuccessfulDeployment(deploymentResult)) {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
         res.send({ creationTimestamp: deploymentResult })
-      } else {
+      } else if (isInvalidDeployment(deploymentResult)) {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
+        Controller.LOGGER.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
+      } else {
+        Controller.LOGGER.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+        throw new Error('deploymentResult is invalid')
       }
     } catch (error) {
       this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
+      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`, {
+        entityId,
+        authChain: JSON.stringify(authChain),
+        ethAddress,
+        signature
+      })
+      Controller.LOGGER.error(error)
       res.status(500).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)

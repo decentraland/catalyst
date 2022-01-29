@@ -2,6 +2,7 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
+import { IGNORING_FIX_ERROR } from '../service/validations/server'
 import { AppComponents } from '../types'
 import { deploymentExists } from './database-queries/deployments-queries'
 
@@ -52,10 +53,14 @@ export async function retryFailedDeploymentExecution(
         )
       } catch (error) {
         // it failed again, override failed deployment error description
-        const errorDescription = error.message
-        components.failedDeploymentsCache.reportFailure({ ...failedDeployment, errorDescription })
+        const errorDescription = error.message + ''
 
-        logger.info(`Failed to fix deployment of entity`, { entityId, entityType })
+        // TODO [mendez] this condition has no test coverage
+        if (!errorDescription.startsWith(IGNORING_FIX_ERROR)) {
+          components.failedDeploymentsCache.reportFailure({ ...failedDeployment, errorDescription })
+        }
+
+        logger.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
         logger.error(error)
       }
     } else {

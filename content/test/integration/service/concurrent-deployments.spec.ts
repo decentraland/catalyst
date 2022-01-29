@@ -1,5 +1,6 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { MetaverseContentService } from '../../../src/service/Service'
+import { AppComponents } from '../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../E2ETestEnvironment'
 import { buildDeployData, deployEntitiesCombo, EntityCombo } from '../E2ETestUtils'
@@ -32,7 +33,7 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
       makeNoopServerValidator(components)
 
       // Perform all the deployments concurrently
-      await Promise.all(entities.map((entityCombo) => deployEntity(deployer, entityCombo)))
+      await Promise.all(entities.map((entityCombo) => deployEntity(deployer, entityCombo, components)))
 
       // Assert that only one is active
       const { deployments } = await deployer.getDeployments({ filters: { pointers: [P1], onlyCurrentlyPointed: true } })
@@ -40,14 +41,19 @@ loadStandaloneTestEnvironment()('Integration - Concurrent deployments', (testEnv
     }
   )
 
-  async function deployEntity(service: MetaverseContentService, entity: EntityCombo) {
+  async function deployEntity(
+    service: MetaverseContentService,
+    entity: EntityCombo,
+    components: Pick<AppComponents, 'logs'>
+  ) {
+    const logger = components.logs.getLogger('ConcurrentCheckTest/DeployEntity')
     try {
+      logger.info('deploying', entity as any)
       await deployEntitiesCombo(service, entity)
     } catch (error) {
-      if (
-        error.message !==
-        `The following pointers are currently being deployed: '${P1}'. Please try again in a few seconds.`
-      ) {
+      if (!error.message.startsWith(`The following pointers are currently being deployed`)) {
+        logger.error('deploying error')
+        logger.error(error)
         throw error
       }
     }
