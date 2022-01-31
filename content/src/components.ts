@@ -3,6 +3,7 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import fs from 'fs'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { ActiveDenylist } from './denylist/ActiveDenylist'
@@ -40,9 +41,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
+  const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents', '_tmp')
+  const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
+  await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
   const staticConfigs = {
-    contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents'),
-    tmpDownloadFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents', '_tmp')
+    contentStorageFolder,
+    tmpDownloadFolder
   }
 
   const database = await createDatabaseComponent({ logs, env })
