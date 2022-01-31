@@ -52,8 +52,6 @@ async function downloadFullEntity(
       requestMaxRetries,
       requestRetryWaitTime
     )
-  } catch (e) {
-    console.log(`Error downloading file ${entityId}. Error: ${e}`)
   } finally {
     metrics.decrement('dcl_pending_download_gauge', { entity_type: entityType })
   }
