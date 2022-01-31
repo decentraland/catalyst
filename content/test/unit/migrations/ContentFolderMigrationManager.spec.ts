@@ -55,29 +55,6 @@ describe('ContentFolderMigrationManager', () => {
       )
     })
   })
-
-  describe('when running the migration with an error', () => {
-    beforeAll(() => {
-      storeStreamSpy = jest.fn().mockRejectedValueOnce('Failure').mockResolvedValue(undefined)
-
-      storage = {
-        storeStream: storeStreamSpy
-      } as any
-    })
-
-    afterAll(() => {
-      storeStreamSpy.mockClear()
-    })
-
-    it('should call moveFile 11 times, once for each file', async () => {
-      await runMigration(storage)
-
-      expect(storeStreamSpy).toHaveBeenCalledTimes(11)
-      expect(storeStreamSpy.mock.calls).toEqual(
-        expect.arrayContaining(files.map((file) => expect.arrayContaining([file, expect.any(String), file])))
-      )
-    })
-  })
 })
 
 async function runMigration(storage: FileSystemContentStorage) {

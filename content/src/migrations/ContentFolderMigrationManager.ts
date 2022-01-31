@@ -1,6 +1,5 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
 import { opendir, stat, unlink } from 'fs/promises'
-import ms from 'ms'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
 import { AppComponents } from '../../src/types'
@@ -11,8 +10,7 @@ export type ContentFolderMigrationComponents = Pick<AppComponents, 'logs' | 'env
 
 export async function migrateContentFolderStructure(components: ContentFolderMigrationComponents) {
   const queue = new PQueue({
-    concurrency: components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY),
-    timeout: ms('30s')
+    concurrency: components.env.getConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY)
   })
   const logs = components.logs.getLogger('ContentFolderMigrationManager')
 
@@ -29,7 +27,6 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
   const files = await opendir(contentsFolder)
 
   const pending: Promise<void>[] = []
-  const failures: string[] = []
 
   for await (const file of files) {
     pending.push(
@@ -38,22 +35,6 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
           await processFile(components, contentsFolder, file.name)
         } catch (err) {
           logs.error(`Couldn't migrate ${file.name} due to ${err}`)
-          failures.push(file.name)
-        }
-      })
-    )
-  }
-
-  await Promise.all(pending)
-
-  for (const file of failures) {
-    pending.push(
-      queue.add(async () => {
-        try {
-          await processFile(components, contentsFolder, file)
-        } catch (err) {
-          logs.error(`Retry for ${file} failed due to ${err}`)
-          failures.push(file)
         }
       })
     )
