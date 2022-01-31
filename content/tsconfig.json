@@ -1,6 +1,8 @@
 {
   "extends": "../tsconfig.json",
-  "include": ["src", "test"],
+  "include": [
+    "src"
+  ],
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": ".",
@@ -12,7 +14,11 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
   "references": [
-    { "path": "../commons" },
-    { "path": "../contracts" }
+    {
+      "path": "../commons"
+    },
+    {
+      "path": "../contracts"
+    }
   ]
 }

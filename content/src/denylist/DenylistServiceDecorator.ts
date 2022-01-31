@@ -11,9 +11,7 @@ import { AuthChain } from 'dcl-crypto'
 import { DenylistRepository } from '../repository/extensions/DenylistRepository'
 import { Repository } from '../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
-import { ContentAuthenticator } from '../service/auth/Authenticator'
 import { DeploymentOptions } from '../service/deployments/types'
-import { EntityFactory } from '../service/EntityFactory'
 import {
   DeploymentContext,
   DeploymentFiles,
@@ -21,11 +19,9 @@ import {
   LocalDeploymentAuditInfo,
   MetaverseContentService
 } from '../service/Service'
-import { ServiceImpl } from '../service/ServiceImpl'
 import { ContentItem } from '../storage/ContentStorage'
 import { Denylist } from './Denylist'
 import {
-  buildAddressTarget,
   buildContentTarget,
   buildEntityTarget,
   buildPointerTarget,
@@ -102,16 +98,8 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext
   ): Promise<DeploymentResult> {
-    return this.repository.task(
-      async (task) => {
-        // Validate the deployment
-        const hashedFiles = await this.validateDeployment(task.denylist, files, entityId, auditInfo)
-
-        // If all validations passed, then deploy the entity
-        return this.service.deployEntity(hashedFiles, entityId, auditInfo, context, task)
-      },
-      { priority: DB_REQUEST_PRIORITY.HIGH }
-    )
+    // TODO: validations were removed in PR #866
+    return this.service.deployEntity(files, entityId, auditInfo, context)
   }
 
   async getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
@@ -244,42 +232,42 @@ export class DenylistServiceDecorator implements MetaverseContentService {
     return this.service.getActiveDeploymentsByContentHash(hash)
   }
 
-  private async validateDeployment(
-    denylistRepo: DenylistRepository,
-    files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo
-  ) {
-    // No deployments from denylisted eth addresses are allowed
-    const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo.authChain)
-    if (await this.areDenylisted(denylistRepo, buildAddressTarget(ownerAddress))) {
-      throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was denylisted.`)
-    }
+  // private async validateDeployment(
+  //   denylistRepo: DenylistRepository,
+  //   files: DeploymentFiles,
+  //   entityId: EntityId,
+  //   auditInfo: LocalDeploymentAuditInfo
+  // ) {
+  //   // No deployments from denylisted eth addresses are allowed
+  //   const ownerAddress = ContentAuthenticator.ownerAddress(auditInfo.authChain)
+  //   if (await this.areDenylisted(denylistRepo, buildAddressTarget(ownerAddress))) {
+  //     throw new Error(`Can't allow a deployment from address '${ownerAddress}' since it was denylisted.`)
+  //   }
 
-    // Find the entity file
-    const hashes = await ServiceImpl.hashFiles(files, entityId)
-    const entityFile = hashes.get(entityId)
-    if (!entityFile) {
-      throw new Error(`Failed to find the entity file.`)
-    }
+  //   // Find the entity file
+  //   const hashes = await ServiceImpl.hashFiles(files, entityId)
+  //   const entityFile = hashes.get(entityId)
+  //   if (!entityFile) {
+  //     throw new Error(`Failed to find the entity file.`)
+  //   }
 
-    // Parse entity file into an Entity
-    const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
+  //   // Parse entity file into an Entity
+  //   const entity: Entity = EntityFactory.fromBufferWithId(entityFile, entityId)
 
-    // No deployments with denylisted hash are allowed
-    const contentTargets: DenylistTarget[] = (entity.content ?? []).map((item) => buildContentTarget(item.hash))
-    if (await this.areDenylisted(denylistRepo, ...contentTargets)) {
-      throw new Error(`Can't allow the deployment since the entity contains a denylisted content.`)
-    }
+  //   // No deployments with denylisted hash are allowed
+  //   const contentTargets: DenylistTarget[] = (entity.content ?? []).map((item) => buildContentTarget(item.hash))
+  //   if (await this.areDenylisted(denylistRepo, ...contentTargets)) {
+  //     throw new Error(`Can't allow the deployment since the entity contains a denylisted content.`)
+  //   }
 
-    // No deployments on denylisted pointers are allowed
-    const pointerTargets: DenylistTarget[] = entity.pointers.map((pointer) => buildPointerTarget(entity.type, pointer))
-    if (await this.areDenylisted(denylistRepo, ...pointerTargets)) {
-      throw new Error(`Can't allow the deployment since the entity contains a denylisted pointer.`)
-    }
+  //   // No deployments on denylisted pointers are allowed
+  //   const pointerTargets: DenylistTarget[] = entity.pointers.map((pointer) => buildPointerTarget(entity.type, pointer))
+  //   if (await this.areDenylisted(denylistRepo, ...pointerTargets)) {
+  //     throw new Error(`Can't allow the deployment since the entity contains a denylisted pointer.`)
+  //   }
 
-    return hashes
-  }
+  //   return hashes
+  // }
 
   /** Since entity ids are also file hashes, we need to check for all possible targets */
   private getHashTargets(fileHash: string): DenylistTarget[] {

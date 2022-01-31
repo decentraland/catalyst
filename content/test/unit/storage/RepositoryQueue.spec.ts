@@ -3,7 +3,7 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import future from 'fp-future'
 import { metricsDeclaration } from '../../../src/metrics'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from '../../../src/repository/RepositoryQueue'
-import { assertPromiseRejectionIs } from '../../helpers/PromiseAssertions'
+import { assertPromiseRejectionMatches } from '../../helpers/PromiseAssertions'
 
 describe('RepositoryQueue', () => {
   const metrics = createTestMetricsComponent(metricsDeclaration)
@@ -99,7 +99,7 @@ describe('RepositoryQueue', () => {
     expect(stuckRequest2.started).toBe(false)
     expect(request.started).toBe(false)
 
-    await assertPromiseRejectionIs(() => requestResult, RepositoryQueue.TOO_MANY_QUEUED_ERROR)
+    await assertPromiseRejectionMatches(() => requestResult, RepositoryQueue.TOO_MANY_QUEUED_ERROR)
 
     resolve(stuckRequest, stuckRequest2, request)
     await awaitAll(stuckResult, stuckResult2)
@@ -116,7 +116,7 @@ describe('RepositoryQueue', () => {
     const errorMessage = 'Some error'
     request.reject(new Error(errorMessage))
 
-    await assertPromiseRejectionIs(() => requestResult, errorMessage)
+    await assertPromiseRejectionMatches(() => requestResult, errorMessage)
   })
 
   /** Await for all the given promises */

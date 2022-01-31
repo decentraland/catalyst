@@ -7,7 +7,12 @@ import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
 import { retry } from '../../src/helpers/RetryHelper'
 import { EntityFactory } from '../../src/service/EntityFactory'
-import { DeploymentContext, DeploymentResult, MetaverseContentService } from '../../src/service/Service'
+import {
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  MetaverseContentService
+} from '../../src/service/Service'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },
@@ -112,9 +117,9 @@ export async function deployEntitiesCombo(
   service: MetaverseContentService,
   ...entitiesCombo: EntityCombo[]
 ): Promise<DeploymentResult> {
-  let deploymentResult: DeploymentResult = { errors: [] }
+  let ret: DeploymentResult = { errors: ['empty entities combo'] }
   for (const { deployData } of entitiesCombo) {
-    const r = await service.deployEntity(
+    const deploymentResult = await service.deployEntity(
       Array.from(deployData.files.values()),
       deployData.entityId,
       {
@@ -122,13 +127,15 @@ export async function deployEntitiesCombo(
       },
       DeploymentContext.LOCAL
     )
-    if (typeof r == 'number') {
-      deploymentResult = r
+    if (typeof deploymentResult == 'number') {
+      ret = deploymentResult
+    } else if (isInvalidDeployment(deploymentResult)) {
+      throw new Error(deploymentResult.errors.join(','))
     } else {
-      throw new Error(r.errors.join('\n'))
+      throw new Error('invalid result from deployEntity ' + JSON.stringify({ deploymentResult, deployData }))
     }
   }
-  return deploymentResult
+  return ret
 }
 
 export type Identity = {
