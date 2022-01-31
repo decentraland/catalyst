@@ -30,17 +30,23 @@ export const createRetryFailedDeployments = (
   return {
     start: async () => {
       running = true
+      logger.debug('Starting retry failed deployments')
     },
     stop: async () => {
       running = false
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
+      logger.debug('Stopping retry failed deployments')
     },
     schedule: async () => {
       while (running) {
-        timeoutId = setTimeout(async () => {}, retryDelay)
+        await new Promise((resolve) => {
+          timeoutId = setTimeout(resolve, retryDelay)
+        })
+        if (!running) return
         try {
+          logger.debug('Executing retry failed deployments')
           await retryFailedDeploymentExecution(components, logger)
         } catch (err: any) {
           logger.error(err)
