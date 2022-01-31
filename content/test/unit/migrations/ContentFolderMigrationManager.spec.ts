@@ -14,6 +14,8 @@ jest.mock('fs/promises', () => ({
   unlink: async () => {}
 }))
 
+jest.mock('../../../src/helpers/fsWrapper', () => ({ createReadStream: (x) => x }))
+
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'

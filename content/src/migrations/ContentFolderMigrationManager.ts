@@ -1,11 +1,11 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
-import { createReadStream } from 'fs'
 import { opendir, stat, unlink } from 'fs/promises'
 import ms from 'ms'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
 import { AppComponents } from '../../src/types'
 import { EnvironmentConfig } from '../Environment'
+import { createReadStream } from '../helpers/fsWrapper'
 
 export type ContentFolderMigrationComponents = Pick<AppComponents, 'logs' | 'env' | 'metrics' | 'storage'>
 
