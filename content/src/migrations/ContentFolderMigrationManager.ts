@@ -26,21 +26,25 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
 
   const files = await opendir(contentsFolder)
 
-  const pending: Promise<void>[] = []
+  const failures: string[] = []
 
   for await (const file of files) {
-    pending.push(
-      queue.add(async () => {
-        try {
-          await processFile(components, contentsFolder, file.name)
-        } catch (err) {
-          logs.error(`Couldn't migrate ${file.name} due to ${err}`)
-        }
-      })
-    )
+    void queue.add(async () => {
+      try {
+        await processFile(components, contentsFolder, file.name)
+        logs.debug(`Successfully migrated ${file.name}`)
+      } catch (err) {
+        logs.error(`Couldn't migrate ${file.name} due to ${err}`)
+        failures.push(file.name)
+      }
+    })
   }
 
-  await Promise.all(pending)
+  await queue.onIdle()
+
+  if (failures.length > 0) {
+    throw Error(failures.join('\n'))
+  }
 }
 
 async function processFile(components: ContentFolderMigrationComponents, folder: string, file: string): Promise<void> {
