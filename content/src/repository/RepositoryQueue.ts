@@ -23,7 +23,7 @@ export class RepositoryQueue {
       timeout: RepositoryQueue.DEFAULT_TIMEOUT,
       ...withoutUndefined
     }
-    this.queue = new PQueue({ concurrency: maxConcurrency, timeout: ms(timeout) })
+    this.queue = new PQueue({ concurrency: maxConcurrency, timeout: ms(timeout), autoStart: true })
     this.maxQueued = maxQueued
   }
 

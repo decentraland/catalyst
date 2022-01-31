@@ -9,7 +9,7 @@ import { AuthChain } from 'dcl-crypto'
 import * as fs from 'fs'
 import * as path from 'path'
 import { AppComponents } from '../../types'
-import { DeploymentContext, LocalDeploymentAuditInfo } from '../Service'
+import { DeploymentContext, isInvalidDeployment, LocalDeploymentAuditInfo } from '../Service'
 
 const requestMaxRetries = 10
 const requestRetryWaitTime = 1000
@@ -76,7 +76,7 @@ export async function deployDownloadedEntity(
     }
 
     const deploymentResult = await components.deployer.deployEntity([entityFile], entityId, auditInfo, kind)
-    if (typeof deploymentResult === 'object' && deploymentResult.errors && deploymentResult.errors.length > 0) {
+    if (isInvalidDeployment(deploymentResult)) {
       throw new Error(
         `Errors deploying entity(${entityId}):\n${deploymentResult.errors.map(($) => ' - ' + $).join('\n')}`
       )

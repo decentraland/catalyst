@@ -2,9 +2,12 @@ export function assertPromiseIsRejected(promiseExecution: () => Promise<any>): P
   return assertPromiseRejectionGeneric(promiseExecution, () => {})
 }
 
-export function assertPromiseRejectionIs(promiseExecution: () => Promise<any>, errorMessage: string): Promise<void> {
+export function assertPromiseRejectionMatches(
+  promiseExecution: () => Promise<any>,
+  errorMessage: string | RegExp
+): Promise<void> {
   return assertPromiseRejectionGeneric(promiseExecution, (returnedMessage) =>
-    expect(returnedMessage).toEqual(errorMessage)
+    expect(returnedMessage).toMatch(errorMessage)
   )
 }
 

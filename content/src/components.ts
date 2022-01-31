@@ -72,7 +72,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointerManager = new PointerManager()
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
-  const validator = createValidator({ storage, authenticator, catalystFetcher, env })
+  const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
   const deployedEntitiesFilter = createBloomFilterComponent({
