@@ -82,9 +82,8 @@ export function getHistoricalDeploymentsQuery(
   const order: string = sorting.order
 
   // Generate the select according the info needed
-  let query: SQLStatement
-  if (!!filters?.includeOverwrittenInfo) {
-    query = SQL`
+  const doTheJoin: boolean = !!filters?.includeOverwrittenInfo
+  let select: string = `
               SELECT
                   dep1.id,
                   dep1.entity_type,
@@ -95,25 +94,18 @@ export function getHistoricalDeploymentsQuery(
                   dep1.deployer_address,
                   dep1.version,
                   dep1.auth_chain,
-                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
+                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,`
+  if (doTheJoin) {
+    select += `
                   dep2.entity_id AS overwritten_by
               FROM deployments AS dep1
               LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
   } else {
-    query = SQL`
-              SELECT
-                  dep1.id,
-                  dep1.entity_type,
-                  dep1.entity_id,
-                  dep1.entity_pointers,
-                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                  dep1.entity_metadata,
-                  dep1.deployer_address,
-                  dep1.version,
-                  dep1.auth_chain,
-                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
+    select += `
               FROM deployments AS dep1`
   }
+
+  const query: SQLStatement = SQL(select)
 
   const whereClause: SQLStatement[] = []
   // Configure sort and order
