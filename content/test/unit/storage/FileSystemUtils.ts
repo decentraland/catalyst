@@ -7,10 +7,6 @@ export class FileSystemUtils {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'foo-'))
   }
 
-  static directoryExists(...pathParts: string[]): boolean {
-    return this.evaluateStatus(<boolean>false, (stats) => stats.isDirectory(), pathParts)
-  }
-
   static fileExists(...pathParts: string[]): boolean {
     return this.evaluateStatus(<boolean>false, (stats) => stats.isFile(), pathParts)
   }

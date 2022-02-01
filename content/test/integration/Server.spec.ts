@@ -40,7 +40,7 @@ describe('Integration - Server', () => {
 
     stub(components.deployer, 'getEntitiesByIds').resolves([entity1, entity2])
     stub(components.deployer, 'getEntitiesByPointers').resolves([entity1, entity2])
-    stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(Buffer.from(content.buffer)))
+    stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(content.buffer))
   })
 
   it(`Get all scenes by id`, async () => {

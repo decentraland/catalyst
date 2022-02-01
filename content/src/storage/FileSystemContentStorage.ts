@@ -1,9 +1,9 @@
 import { ensureDirectoryExists, existPath } from '@catalyst/commons'
-import { ContentFileHash } from 'dcl-catalyst-commons'
 import fs from 'fs'
 import path from 'path'
 import { pipeline, Readable } from 'stream'
 import { promisify } from 'util'
+import { compressContentFile } from './compression'
 import { ContentEncoding, ContentItem, ContentStorage, SimpleContentItem } from './ContentStorage'
 const pipe = promisify(pipeline)
 
@@ -19,7 +19,8 @@ export class FileSystemContentStorage implements ContentStorage {
   private constructor(private root: string) {}
 
   static async build(root: string): Promise<FileSystemContentStorage> {
-    while (root.endsWith('/')) {
+    // remove path separators / \ from the end of the folder
+    while (root.endsWith(path.sep)) {
       root = root.slice(0, -1)
     }
     await ensureDirectoryExists(root)
@@ -30,8 +31,18 @@ export class FileSystemContentStorage implements ContentStorage {
     await pipe(stream, fs.createWriteStream(this.getFilePath(id)))
   }
 
-  store(id: string, content: Uint8Array): Promise<void> {
-    return fs.promises.writeFile(this.getFilePath(id), content)
+  async storeStreamAndCompress(id: string, stream: Readable): Promise<void> {
+    await this.storeStream(id, stream)
+    if (await compressContentFile(this.getFilePath(id))) {
+      // try to remove original file if present
+      const compressed = await this.retrieve(id)
+      if (compressed) {
+        const raw = await compressed.asRawStream()
+        if (raw.encoding) {
+          await noFailUnlink(this.getFilePath(id))
+        }
+      }
+    }
   }
 
   async delete(ids: string[]): Promise<void> {
@@ -42,12 +53,12 @@ export class FileSystemContentStorage implements ContentStorage {
   }
 
   private async retrieveWithEncoding(id: string, encoding: ContentEncoding | null): Promise<ContentItem | undefined> {
-    const filePath = this.getFilePath(id)
     const extension = encoding ? '.' + encoding : ''
+    const filePath = this.getFilePath(id) + extension
 
-    if (await existPath(filePath + extension)) {
-      const stat = await fs.promises.stat(filePath + extension)
-      return new SimpleContentItem(async () => fs.createReadStream(filePath + extension), stat.size, encoding)
+    if (await existPath(filePath)) {
+      const stat = await fs.promises.stat(filePath)
+      return new SimpleContentItem(async () => fs.createReadStream(filePath), stat.size, encoding)
     }
   }
 
@@ -60,16 +71,11 @@ export class FileSystemContentStorage implements ContentStorage {
     return undefined
   }
 
-  async stats(id: string): Promise<{ size: number } | undefined> {
-    const filePath = this.getFilePath(id)
-    if (await existPath(filePath)) {
-      try {
-        return await fs.promises.stat(filePath)
-      } catch (e) {}
-    }
+  async exist(id: string): Promise<boolean> {
+    return !!(await this.retrieve(id))
   }
 
-  async exist(ids: string[]): Promise<Map<string, boolean>> {
+  async existMultiple(ids: string[]): Promise<Map<string, boolean>> {
     const checks = await Promise.all(
       ids.map<Promise<[string, boolean]>>(async (id) => [id, !!(await this.retrieve(id))])
     )
@@ -78,17 +84,5 @@ export class FileSystemContentStorage implements ContentStorage {
 
   private getFilePath(id: string): string {
     return path.join(this.root, id)
-  }
-
-  storeContent(fileHash: ContentFileHash, content: Uint8Array | Readable): Promise<void> {
-    if (content instanceof Uint8Array || Buffer.isBuffer(content)) {
-      return this.store(fileHash, content)
-    } else {
-      return this.storeStream(fileHash, content)
-    }
-  }
-
-  async size(fileHash: ContentFileHash): Promise<number | undefined> {
-    return (await this.stats(fileHash))?.size
   }
 }

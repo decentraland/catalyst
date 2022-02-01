@@ -25,8 +25,13 @@ import { ContentAuthenticator } from '../service/auth/Authenticator'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
-import { DeploymentContext, isSuccessfulDeployment, LocalDeploymentAuditInfo } from '../service/Service'
-import { ContentItem } from '../storage/ContentStorage'
+import {
+  DeploymentContext,
+  isInvalidDeployment,
+  isSuccessfulDeployment,
+  LocalDeploymentAuditInfo
+} from '../service/Service'
+import { ContentItem, RawContent } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
@@ -134,14 +139,23 @@ export class Controller {
       if (isSuccessfulDeployment(deploymentResult)) {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'success' })
         res.send({ creationTimestamp: deploymentResult })
-      } else {
+      } else if (isInvalidDeployment(deploymentResult)) {
         this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'validation_error' })
-        Controller.LOGGER.error(`POST /entities - Returning error '${deploymentResult.errors.join('\n')}'`)
+        Controller.LOGGER.error(`POST /entities - Deployment failed (${deploymentResult.errors.join(',')})`)
         res.status(400).send({ errors: deploymentResult.errors }).end()
+      } else {
+        Controller.LOGGER.error(`deploymentResult is invalid ${JSON.stringify(deploymentResult)}`)
+        throw new Error('deploymentResult is invalid')
       }
     } catch (error) {
       this.components.metrics.increment('dcl_deployments_endpoint_counter', { kind: 'error' })
-      Controller.LOGGER.error(`POST /entities - returning error '${error.message}'`)
+      Controller.LOGGER.error(`POST /entities - Internal server error '${error}'`, {
+        entityId,
+        authChain: JSON.stringify(authChain),
+        ethAddress,
+        signature
+      })
+      Controller.LOGGER.error(error)
       res.status(500).end()
     } finally {
       await this.deleteUploadedFiles(deployFiles)
@@ -191,7 +205,9 @@ export class Controller {
     const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
 
     if (contentItem) {
-      await setContentFileHeaders(contentItem, hashId, res)
+      const rawStream = await contentItem.asRawStream()
+      await setContentFileHeaders(rawStream, hashId, res)
+      destroy(rawStream.stream)
     } else {
       res.status(404).send()
     }
@@ -205,9 +221,10 @@ export class Controller {
     const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
 
     if (contentItem) {
-      await setContentFileHeaders(contentItem, hashId, res)
+      const rawStream = await contentItem.asRawStream()
+      await setContentFileHeaders(rawStream, hashId, res)
 
-      const stream = await contentItem.asStream()
+      const { stream } = rawStream
       stream.pipe(res)
 
       // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
@@ -735,20 +752,18 @@ export class Controller {
   }
 }
 
-async function setContentFileHeaders(content: ContentItem, hashId: string, res: express.Response) {
-  const encoding = await content.contentEncoding()
+async function setContentFileHeaders(content: RawContent, hashId: string, res: express.Response) {
   res.contentType('application/octet-stream')
   res.setHeader('ETag', JSON.stringify(hashId)) // by spec, the ETag must be a double-quoted string
   res.setHeader('Access-Control-Expose-Headers', 'ETag')
   res.setHeader('Cache-Control', 'public,max-age=31536000,s-maxage=31536000,immutable')
 
-  if (encoding) {
-    // gz, br
-    res.setHeader('Content-Encoding', encoding)
+  if (content.encoding) {
+    res.setHeader('Content-Encoding', content.encoding)
   }
 
-  if (content.getLength()) {
-    res.setHeader('Content-Length', content.getLength()!.toString())
+  if (content.size) {
+    res.setHeader('Content-Length', content.size.toString())
   }
 }
 

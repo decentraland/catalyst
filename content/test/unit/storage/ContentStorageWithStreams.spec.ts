@@ -1,11 +1,12 @@
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
-import { bufferToStream, ContentStorage, streamToBuffer } from '../../../src/storage/ContentStorage'
+import { bufferToStream, streamToBuffer } from '../../../src/storage/ContentStorage'
 import { ContentStorageFactory } from '../../../src/storage/ContentStorageFactory'
+import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
 import { FileSystemUtils as fsu } from './FileSystemUtils'
 
 describe('ContentStorage', () => {
   let env: Environment
-  let storage: ContentStorage
+  let storage: FileSystemContentStorage
   let id: string
   let content: Buffer
 
@@ -29,7 +30,7 @@ describe('ContentStorage', () => {
   it(`When content is stored, then we can check if it exists`, async function () {
     await storage.storeStream(id, bufferToStream(content))
 
-    const exists = await storage.exist([id])
+    const exists = await storage.existMultiple([id])
 
     expect(exists.get(id)).toBe(true)
   })
@@ -47,12 +48,27 @@ describe('ContentStorage', () => {
   it(`When content is deleted, then it is no longer available`, async function () {
     await storage.storeStream(id, bufferToStream(content))
 
-    let exists = await storage.exist([id])
-    expect(exists.get(id)).toBe(true)
+    expect(await storage.exist(id)).toBe(true)
 
     await storage.delete([id])
 
-    exists = await storage.exist([id])
-    expect(exists.get(id)).toBe(false)
+    expect(await storage.exist(id)).toBe(false)
+  })
+
+  it(`When content is stored on compressed, then the asStream returns with unzipped content`, async function () {
+    // make sure the files we are going to use are not present in the file system
+    await storage.delete([id])
+
+    expect(await storage.retrieve(id)).toBeUndefined()
+
+    // only big files with a good ratio of compression are stored compressed
+    const newContent = Buffer.from(new Uint8Array(10000).fill(0))
+
+    await storage.storeStreamAndCompress(id, bufferToStream(newContent))
+
+    const retrievedContent = await storage.retrieve(id)
+    const rawStream = await retrievedContent!.asRawStream()
+    expect({ encoding: rawStream.encoding, size: rawStream.size }).toEqual({ encoding: 'gzip', size: 45 })
+    expect(await streamToBuffer(await retrievedContent!.asStream())).toEqual(newContent)
   })
 })

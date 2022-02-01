@@ -61,7 +61,7 @@ export async function* streamAllEntityIds(components: Pick<AppComponents, 'datab
     SQL`
       SELECT entity_id FROM deployments
     `,
-    { batchSize: 1000 }
+    { batchSize: 10000 }
   )) {
     yield {
       entityId: row.entity_id

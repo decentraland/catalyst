@@ -1,14 +1,23 @@
 import { createValidator as validator, ExternalCalls, Validator as IValidatorComponent } from '@dcl/content-validator'
 import { Authenticator } from 'dcl-crypto'
 import { EnvironmentConfig } from '../../Environment'
+import { streamToBuffer } from '../../storage/ContentStorage'
 import { AppComponents } from '../../types'
 
 export function createValidator(
-  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env'>
+  components: Pick<AppComponents, 'storage' | 'catalystFetcher' | 'authenticator' | 'env' | 'logs'>
 ): IValidatorComponent {
   const externalCalls: ExternalCalls = {
-    isContentStoredAlready: (hashes) => components.storage.exist(hashes),
-    fetchContentFileSize: (hash) => components.storage.size(hash),
+    isContentStoredAlready: (hashes) => components.storage.existMultiple(hashes),
+    fetchContentFileSize: async (hash) => {
+      const maybeFile = await components.storage.retrieve(hash)
+      if (maybeFile) {
+        const stream = await maybeFile.asStream()
+        const buffer = await streamToBuffer(stream)
+        return buffer.byteLength
+      }
+      return undefined
+    },
     ownerAddress: (auditInfo) => Authenticator.ownerAddress(auditInfo.authChain),
     isAddressOwnedByDecentraland: (address: string) => components.authenticator.isAddressOwnedByDecentraland(address),
     validateSignature: (entityId, auditInfo, timestamp) =>
@@ -27,5 +36,5 @@ export function createValidator(
     }
   }
 
-  return validator(externalCalls)
+  return validator(externalCalls, components)
 }

@@ -6,7 +6,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
-import { createBloomFilterComponent } from '../../../src/ports/bloomFilter'
+import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -70,7 +70,7 @@ describe('Service', function () {
     const service = await buildService()
 
     jest.spyOn(service, 'getEntityById').mockResolvedValue(undefined)
-    const storageSpy = jest.spyOn(service.components.storage, 'storeContent')
+    const storageSpy = jest.spyOn(service.components.storage, 'storeStream')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
@@ -92,8 +92,8 @@ describe('Service', function () {
       const deltaMilliseconds = Date.now() - deploymentResult
       expect(deltaMilliseconds).toBeGreaterThanOrEqual(0)
       expect(deltaMilliseconds).toBeLessThanOrEqual(1000)
-      expect(storageSpy).toHaveBeenCalledWith(entity.id, entityFile)
-      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, randomFile)
+      expect(storageSpy).toHaveBeenCalledWith(entity.id, expect.anything())
+      expect(storageSpy).toHaveBeenCalledWith(randomFileHash, expect.anything())
     }
   })
 
@@ -103,9 +103,9 @@ describe('Service', function () {
 
     // Consider the random file as already uploaded, but not the entity file
     jest
-      .spyOn(service.components.storage, 'exist')
+      .spyOn(service.components.storage, 'existMultiple')
       .mockImplementation((ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, id === randomFileHash]))))
-    const storeSpy = jest.spyOn(service.components.storage, 'storeContent')
+    const storeSpy = jest.spyOn(service.components.storage, 'storeStream')
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(async (...args) => {
       console.dir([...args])
       return 123
@@ -115,8 +115,8 @@ describe('Service', function () {
 
     await service.deployEntity([entityFile, randomFile], entity.id, auditInfo, DeploymentContext.LOCAL)
 
-    expect(storeSpy).toHaveBeenCalledWith(entity.id, entityFile)
-    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, randomFile)
+    expect(storeSpy).toHaveBeenCalledWith(entity.id, expect.anything())
+    expect(storeSpy).not.toHaveBeenCalledWith(randomFileHash, expect.anything())
   })
 
   it(`When the same pointer is asked twice, then the second time cached the result is returned`, async () => {
@@ -246,10 +246,7 @@ describe('Service', function () {
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
-
-    const deployedEntitiesFilter = createBloomFilterComponent({
-      sizeInBytes: 512
-    })
+    const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
 
     return ServiceFactory.create({
       env,

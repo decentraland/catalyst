@@ -1,5 +1,5 @@
-import { ClusterSynchronizationManager } from 'src/service/synchronization/SynchronizationManager'
+import { ISynchronizationManager } from '../../../../src/service/synchronization/SynchronizationManager'
 
-export function makeNoopSynchronizationManager(component: ClusterSynchronizationManager) {
+export function makeNoopSynchronizationManager(component: ISynchronizationManager) {
   jest.spyOn(component, 'syncWithServers').mockResolvedValue()
 }

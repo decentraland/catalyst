@@ -94,6 +94,6 @@ loadTestEnvironment()('End 2 end - Node onboarding', function (testEnv) {
     await awaitUntil(() => assertDeploymentsAreReported(server3, deployment))
 
     // Make sure that even the content is properly propagated
-    await assertFileIsOnServer(server1, entityContentHash)
+    await assertFileIsOnServer(server3, entityContentHash)
   })
 })

@@ -1,5 +1,5 @@
 import { AuditInfo, DeploymentFilters, EntityType, EntityVersion, Timestamp } from 'dcl-catalyst-commons'
-import { DeploymentContext, DeploymentResult, isSuccessfulDeployment } from '../../../../src/service/Service'
+import { DeploymentContext, DeploymentResult, isInvalidDeployment, isSuccessfulDeployment } from '../../../../src/service/Service'
 import { AppComponents } from '../../../../src/types'
 import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
@@ -144,8 +144,10 @@ loadStandaloneTestEnvironment()('Integration - Deployment Filters', (testEnv) =>
       )
       if (isSuccessfulDeployment(deploymentResult)) {
         result.push(deploymentResult)
-      } else {
+      } else if (isInvalidDeployment(deploymentResult)) {
         throw new Error(deploymentResult.errors.join(','))
+      } else {
+        throw new Error('deployEntity returned invalid result' + JSON.stringify(deploymentResult))
       }
     }
     return result
