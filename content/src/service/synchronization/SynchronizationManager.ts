@@ -1,8 +1,4 @@
-import { delay } from '@catalyst/commons'
-import { ILoggerComponent } from '@well-known-components/interfaces'
-import ms from 'ms'
-import { retryFailedDeploymentExecution } from '../../logic/deployments'
-import { AppComponents, IStatusCapableComponent, StatusProbeResult } from '../../types'
+import { AppComponents, IStatusCapableComponent } from '../../types'
 
 type ContentSyncComponents = Pick<
   AppComponents,
@@ -24,62 +20,49 @@ export enum SynchronizationState {
   SYNCING = 'Syncing'
 }
 
-export class ClusterSynchronizationManager implements IStatusCapableComponent {
-  private static LOGGER: ILoggerComponent.ILogger
+export type ISynchronizationManager = IStatusCapableComponent & {
+  syncWithServers(): Promise<void>
+}
 
-  private synchronizationState: SynchronizationState = SynchronizationState.BOOTSTRAPPING
+export const createSynchronizationManager = (components: ContentSyncComponents): ISynchronizationManager => {
+  const logger = components.logs.getLogger('ClusterSynchronizationManager')
 
-  constructor(public components: ContentSyncComponents) {
-    ClusterSynchronizationManager.LOGGER = components.logs.getLogger('ClusterSynchronizationManager')
-  }
+  let synchronizationState = SynchronizationState.BOOTSTRAPPING
 
-  async getComponentStatus(): Promise<StatusProbeResult> {
-    const clusterStatus = this.components.contentCluster.getStatus()
-    return {
-      name: 'synchronizationStatus',
-      data: {
-        ...clusterStatus,
-        synchronizationState: this.synchronizationState
+  return {
+    getComponentStatus: async () => {
+      const clusterStatus = components.contentCluster.getStatus()
+      return {
+        name: 'synchronizationStatus',
+        data: {
+          ...clusterStatus,
+          synchronizationState: synchronizationState
+        }
       }
-    }
-  }
+    },
+    syncWithServers: async () => {
+      logger.info(`Starting to sync entities from servers pointer changes`)
+      const setDesiredJobs = () => {
+        synchronizationState = SynchronizationState.SYNCING
+        const desiredJobNames = new Set(components.contentCluster.getAllServersInCluster())
+        // the job names are the contentServerUrl
+        return components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
+      }
 
-  // This is the method that is called to sync with other catalysts
-  async syncWithServers(): Promise<void> {
-    ClusterSynchronizationManager.LOGGER.info(`Starting to sync entities from servers pointer changes`)
-    const setDesiredJobs = () => {
-      this.synchronizationState = SynchronizationState.SYNCING
-      const desiredJobNames = new Set(this.components.contentCluster.getAllServersInCluster())
-      // the job names are the contentServerUrl
-      return this.components.synchronizationJobManager.setDesiredJobs(desiredJobNames)
-    }
-
-    // start the sync jobs
-    setDesiredJobs()
-
-    // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
-    // the setDesiredJobs function handles the lifecycle od those async jobs.
-    this.components.contentCluster.onSyncFinished(() => {
-      this.synchronizationState = SynchronizationState.SYNCED
+      // start the sync jobs
       setDesiredJobs()
-    })
 
-    // Configure retry for failed deployments
-    this.retryFailedDeployments().catch(() => {
-      ClusterSynchronizationManager.LOGGER.error('There was an error during the retry of failed deployments.')
-    })
-  }
+      // setDesiredJobs every time we synchronize the DAO servers, this is an asynchronous job.
+      // the setDesiredJobs function handles the lifecycle od those async jobs.
+      components.contentCluster.onSyncFinished(() => {
+        synchronizationState = SynchronizationState.SYNCED
+        setDesiredJobs()
+      })
 
-  // TODO: [wkc] make this a CronJob stoppable component
-  private async retryFailedDeployments(): Promise<void> {
-    while (true) {
-      // TODO: [new-sync] Make this configurable
-      await delay(ms('15m'))
-      try {
-        await retryFailedDeploymentExecution(this.components, ClusterSynchronizationManager.LOGGER)
-      } catch (err: any) {
-        ClusterSynchronizationManager.LOGGER.error(err)
-      }
+      // Configure retry for failed deployments
+      components.retryFailedDeployments.schedule().catch(() => {
+        logger.error('There was an error during the retry of failed deployments.')
+      })
     }
   }
 }

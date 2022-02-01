@@ -115,7 +115,7 @@ export class ServiceImpl implements MetaverseContentService {
     }
 
     // Update the current list of pointers being deployed
-    if (!entity.pointers)
+    if (!entity.pointers || entity.pointers.length == 0)
       return InvalidResult({
         errors: [`The entity does not have any pointer.`]
       })
@@ -126,6 +126,11 @@ export class ServiceImpl implements MetaverseContentService {
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
 
     try {
+      ServiceImpl.LOGGER.error(`Deploying entity`, {
+        entityId,
+        pointers: entity.pointers.join(' ')
+      })
+
       const storeResult = await this.storeDeploymentInDatabase(
         task,
         entityId,
@@ -145,6 +150,11 @@ export class ServiceImpl implements MetaverseContentService {
         })
         return InvalidResult({ errors: ['An internal server error occured. This will raise an automatic alarm.'] })
       } else if (isInvalidDeployment(storeResult)) {
+        ServiceImpl.LOGGER.error(`Error deploying entity`, {
+          entityId,
+          pointers: entity.pointers.join(' '),
+          errors: storeResult.errors.join(' ')
+        })
         if (storeResult.errors.length == 0) {
           ServiceImpl.LOGGER.error(`Invalid InvalidResult, got 0 errors`, {
             entityId,
@@ -155,6 +165,10 @@ export class ServiceImpl implements MetaverseContentService {
         }
         return storeResult
       } else if (storeResult.wasEntityDeployed) {
+        ServiceImpl.LOGGER.error(`Entity deployed`, {
+          entityId,
+          pointers: entity.pointers.join(' ')
+        })
         this.components.metrics.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
@@ -327,7 +341,9 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
-    const deployments = await getDeployments(this.components, { filters: { entityIds: ids } })
+    const deployments = await getDeployments(this.components, {
+      filters: { entityIds: ids, onlyCurrentlyPointed: true }
+    })
     return this.mapDeploymentsToEntities(deployments)
   }
 

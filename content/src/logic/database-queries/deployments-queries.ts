@@ -61,7 +61,7 @@ export async function* streamAllEntityIds(components: Pick<AppComponents, 'datab
     SQL`
       SELECT entity_id FROM deployments
     `,
-    { batchSize: 1000 }
+    { batchSize: 10000 }
   )) {
     yield {
       entityId: row.entity_id
@@ -81,28 +81,92 @@ export function getHistoricalDeploymentsQuery(
   const timestampField: string = sorting.field
   const order: string = sorting.order
 
-  const query = SQL`
-            SELECT
-                dep1.id,
-                dep1.entity_type,
-                dep1.entity_id,
-                dep1.entity_pointers,
-                date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                dep1.entity_metadata,
-                dep1.deployer_address,
-                dep1.version,
-                dep1.auth_chain,
-                date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
-                dep2.entity_id AS overwritten_by
-            FROM deployments AS dep1
-            LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
+  // Generate the select according the info needed
+  let query: SQLStatement
+  if (!!filters?.includeOverwrittenInfo) {
+    query = SQL`
+              SELECT
+                  dep1.id,
+                  dep1.entity_type,
+                  dep1.entity_id,
+                  dep1.entity_pointers,
+                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+                  dep1.entity_metadata,
+                  dep1.deployer_address,
+                  dep1.version,
+                  dep1.auth_chain,
+                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
+                  dep2.entity_id AS overwritten_by
+              FROM deployments AS dep1
+              LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
+  } else {
+    query = SQL`
+              SELECT
+                  dep1.id,
+                  dep1.entity_type,
+                  dep1.entity_id,
+                  dep1.entity_pointers,
+                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+                  dep1.entity_metadata,
+                  dep1.deployer_address,
+                  dep1.version,
+                  dep1.auth_chain,
+                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
+              FROM deployments AS dep1`
+  }
 
   const whereClause: SQLStatement[] = []
+  // Configure sort and order
+  configureSortWhereClause(order, timestampField, filters, lastId, whereClause)
 
-  /**  The lastId is a field that we only want to compare with when paginating.
-   * If the filter specifies a timestamp value that it's repeated among many deployments,
-   * then to know where the page should start we will use the lastId.
-   */
+  if (filters?.entityTypes && filters.entityTypes.length > 0) {
+    const entityTypes = filters.entityTypes
+    whereClause.push(SQL`dep1.entity_type = ANY (${entityTypes})`)
+  }
+
+  if (filters?.entityIds && filters.entityIds.length > 0) {
+    const entityIds = filters.entityIds
+    whereClause.push(SQL`dep1.entity_id = ANY (${entityIds})`)
+  }
+
+  if (filters?.onlyCurrentlyPointed) {
+    whereClause.push(SQL`dep1.deleter_deployment IS NULL`)
+  }
+
+  if (filters?.pointers && filters.pointers.length > 0) {
+    const pointers = filters.pointers.map((p) => p.toLowerCase())
+    whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
+  }
+
+  let where = SQL``
+  if (whereClause.length > 0) {
+    where = SQL` WHERE `.append(whereClause[0])
+    for (const condition of whereClause.slice(1)) {
+      where = where.append(' AND ').append(condition)
+    }
+  }
+
+  query.append(where)
+  query
+    .append(` ORDER BY dep1.`)
+    .append(pg.Client.prototype.escapeIdentifier(timestampField))
+    .append(` ${order}, LOWER(dep1.entity_id) ${order} `) // raw values need to be strings not sql templates
+    .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
+
+  return query
+}
+
+/**  The lastId is a field that we only want to compare with when paginating.
+ * If the filter specifies a timestamp value that it's repeated among many deployments,
+ * then to know where the page should start we will use the lastId.
+ */
+function configureSortWhereClause(
+  order: string,
+  timestampField: string,
+  filters: DeploymentFilters | undefined,
+  lastId: string | undefined,
+  whereClause: SQLStatement[]
+) {
   const pageBorder: string =
     (order === SortingOrder.ASCENDING ? 'from' : 'to') +
     (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
@@ -140,47 +204,6 @@ export function getHistoricalDeploymentsQuery(
       whereClause.push(SQL`dep1.entity_timestamp <= to_timestamp(${toEntityTimestamp} / 1000.0)`)
     }
   }
-
-  if (filters?.deployedBy && filters.deployedBy.length > 0) {
-    const deployedBy = filters.deployedBy.map((deployedBy) => deployedBy.toLocaleLowerCase())
-    whereClause.push(SQL`LOWER(dep1.deployer_address) = ANY (${deployedBy})`)
-  }
-
-  if (filters?.entityTypes && filters.entityTypes.length > 0) {
-    const entityTypes = filters.entityTypes
-    whereClause.push(SQL`dep1.entity_type = ANY (${entityTypes})`)
-  }
-
-  if (filters?.entityIds && filters.entityIds.length > 0) {
-    const entityIds = filters.entityIds
-    whereClause.push(SQL`dep1.entity_id = ANY (${entityIds})`)
-  }
-
-  if (filters?.onlyCurrentlyPointed) {
-    whereClause.push(SQL`dep1.deleter_deployment IS NULL`)
-  }
-
-  if (filters?.pointers && filters.pointers.length > 0) {
-    const pointers = filters.pointers.map((p) => p.toLowerCase())
-    whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
-  }
-
-  let where = SQL``
-  if (whereClause.length > 0) {
-    where = SQL` WHERE `.append(whereClause[0])
-    for (const condition of whereClause.slice(1)) {
-      where = where.append(' AND ').append(condition)
-    }
-  }
-
-  query.append(where)
-  query
-    .append(` ORDER BY dep1.`)
-    .append(pg.Client.prototype.escapeIdentifier(timestampField))
-    .append(` ${order}, LOWER(dep1.entity_id) ${order} `) // raw values need to be strings not sql templates
-    .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
-
-  return query
 }
 
 export async function getHistoricalDeployments(

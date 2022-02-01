@@ -13,7 +13,7 @@ export async function isEntityDeployed(
   // this condition should be carefully handled:
   // 1) it first uses the bloom filter to know wheter or not an entity may exist or definitely don't exist (.check)
   // 2) then it checks against the DB (deploymentExists)
-  return components.deployedEntitiesFilter.check(entityId) && (await deploymentExists(components, entityId))
+  return (await components.deployedEntitiesFilter.check(entityId)) && (await deploymentExists(components, entityId))
 }
 
 export async function retryFailedDeploymentExecution(
@@ -29,8 +29,9 @@ export async function retryFailedDeploymentExecution(
     | 'failedDeploymentsCache'
     | 'storage'
   >,
-  logger: ILoggerComponent.ILogger
+  logger?: ILoggerComponent.ILogger
 ): Promise<void> {
+  const logs = logger || components.logs.getLogger('retryFailedDeploymentExecution')
   // Get Failed Deployments from local storage
   const failedDeployments: FailedDeployment[] = components.deployer.getAllFailedDeployments()
 
@@ -42,7 +43,7 @@ export async function retryFailedDeploymentExecution(
     // Build Deployment from other servers
     const { entityId, entityType, authChain } = failedDeployment
     if (authChain) {
-      logger.debug(`Will retry to deploy entity`, { entityId, entityType })
+      logs.debug(`Will retry to deploy entity`, { entityId, entityType })
       try {
         await deployEntityFromRemoteServer(
           components,
@@ -56,16 +57,15 @@ export async function retryFailedDeploymentExecution(
         // it failed again, override failed deployment error description
         const errorDescription = error.message + ''
 
-        // TODO [mendez] this condition has no test coverage
-        if (!errorDescription.startsWith(IGNORING_FIX_ERROR)) {
+        if (!errorDescription.includes(IGNORING_FIX_ERROR)) {
           components.failedDeploymentsCache.reportFailure({ ...failedDeployment, errorDescription })
         }
 
-        logger.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
-        logger.error(error)
+        logs.error(`Failed to fix deployment of entity`, { entityId, entityType, errorDescription })
+        logs.error(error)
       }
     } else {
-      logger.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
+      logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
     }
   }
 }

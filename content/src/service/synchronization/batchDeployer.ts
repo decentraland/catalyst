@@ -1,7 +1,6 @@
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IBaseComponent } from '@well-known-components/interfaces'
-import { streamAllEntityIds } from '../../logic/database-queries/deployments-queries'
 import { isEntityDeployed } from '../../logic/deployments'
 import { FailureReason } from '../../ports/failedDeploymentsCache'
 import { AppComponents, CannonicalEntityDeployment } from '../../types'
@@ -116,26 +115,11 @@ export function createBatchDeployerComponent(
     }
   }
 
-  async function createBloomFilterDeployments() {
-    const start = Date.now()
-
-    const filter = components.deployedEntitiesFilter
-    filter.reset()
-    let elements = 0
-    for await (const row of streamAllEntityIds(components)) {
-      elements++
-      filter.add(row.entityId)
-    }
-    logs.info(`Bloom filter recreated.`, { timeMs: Date.now() - start, elements })
-  }
-
   // TODO: [new-sync] every now and then cleanup the deploymentsMap of old deployments
 
   return {
-    async start() {
-      await createBloomFilterDeployments()
-    },
     async stop() {
+      // stop will wait for the queue to end.
       return parallelDeploymentJobs.onIdle()
     },
     onIdle() {

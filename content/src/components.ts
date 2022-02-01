@@ -12,7 +12,7 @@ import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-import { createBloomFilterComponent } from './ports/bloomFilter'
+import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
@@ -29,7 +29,8 @@ import { createBatchDeployerComponent } from './service/synchronization/batchDep
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
 import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
 import { ContentCluster } from './service/synchronization/ContentCluster'
-import { ClusterSynchronizationManager } from './service/synchronization/SynchronizationManager'
+import { createRetryFailedDeployments } from './service/synchronization/retryFailedDeployments'
+import { createSynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { createServerValidator } from './service/validations/server'
 import { createValidator } from './service/validations/validator'
@@ -79,9 +80,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
-  const deployedEntitiesFilter = createBloomFilterComponent({
-    sizeInBytes: 512
-  })
+  const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
 
   let deployer: MetaverseContentService = ServiceFactory.create({
     metrics,
@@ -175,17 +174,24 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     }
   )
 
-  const synchronizationManager = new ClusterSynchronizationManager({
-    synchronizationJobManager,
-    downloadQueue,
-    deployer,
-    fetcher,
+  const retryFailedDeployments = createRetryFailedDeployments({
+    env,
     metrics,
     staticConfigs,
+    fetcher,
+    downloadQueue,
     logs,
+    deployer,
     contentCluster,
     failedDeploymentsCache,
     storage
+  })
+
+  const synchronizationManager = createSynchronizationManager({
+    synchronizationJobManager,
+    logs,
+    contentCluster,
+    retryFailedDeployments
   })
 
   const ethNetwork: string = env.getConfig(EnvironmentConfig.ETH_NETWORK)
@@ -239,6 +245,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     systemPropertiesManager,
     catalystFetcher,
     daoClient,
-    server
+    server,
+    retryFailedDeployments
   }
 }

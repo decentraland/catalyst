@@ -126,7 +126,8 @@ export enum EnvironmentConfig {
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
   VALIDATE_API,
-  FOLDER_MIGRATION_MAX_CONCURRENCY
+  FOLDER_MIGRATION_MAX_CONCURRENCY,
+  RETRY_FAILED_DEPLOYMENTS_DELAY_TIME
 }
 
 export class EnvironmentBuilder {
@@ -367,6 +368,12 @@ export class EnvironmentBuilder {
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
+      () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
+    )
 
     return await initComponentsWithEnv(env)
   }
