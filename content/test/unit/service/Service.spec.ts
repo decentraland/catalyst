@@ -6,7 +6,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
-import { createBloomFilterComponent } from '../../../src/ports/bloomFilter'
+import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -246,10 +246,7 @@ describe('Service', function () {
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
-
-    const deployedEntitiesFilter = createBloomFilterComponent({
-      sizeInBytes: 512
-    })
+    const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
 
     return ServiceFactory.create({
       env,
