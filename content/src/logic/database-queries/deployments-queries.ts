@@ -85,34 +85,34 @@ export function getHistoricalDeploymentsQuery(
   let query: SQLStatement
   if (!!filters?.includeOverwrittenInfo) {
     query = SQL`
-            SELECT
-                dep1.id,
-                dep1.entity_type,
-                dep1.entity_id,
-                dep1.entity_pointers,
-                date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                dep1.entity_metadata,
-                dep1.deployer_address,
-                dep1.version,
-                dep1.auth_chain,
-                date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
-                dep2.entity_id AS overwritten_by
-            FROM deployments AS dep1
-            LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
+              SELECT
+                  dep1.id,
+                  dep1.entity_type,
+                  dep1.entity_id,
+                  dep1.entity_pointers,
+                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+                  dep1.entity_metadata,
+                  dep1.deployer_address,
+                  dep1.version,
+                  dep1.auth_chain,
+                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
+                  dep2.entity_id AS overwritten_by
+              FROM deployments AS dep1
+              LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
   } else {
     query = SQL`
-            SELECT
-                dep1.id,
-                dep1.entity_type,
-                dep1.entity_id,
-                dep1.entity_pointers,
-                date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                dep1.entity_metadata,
-                dep1.deployer_address,
-                dep1.version,
-                dep1.auth_chain,
-                date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
-            FROM deployments AS dep1`
+              SELECT
+                  dep1.id,
+                  dep1.entity_type,
+                  dep1.entity_id,
+                  dep1.entity_pointers,
+                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
+                  dep1.entity_metadata,
+                  dep1.deployer_address,
+                  dep1.version,
+                  dep1.auth_chain,
+                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
+              FROM deployments AS dep1`
   }
 
   const whereClause: SQLStatement[] = []
