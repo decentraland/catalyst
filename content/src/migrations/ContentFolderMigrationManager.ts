@@ -28,12 +28,17 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
 
   const failures: string[] = []
   const queued: Promise<void>[] = []
+  let migratedCount = 0
 
   for await (const file of files) {
     const promise = queue.add(async () => {
       try {
         await processFile(components, contentsFolder, file.name)
-        logs.debug(`Successfully migrated ${file.name}`)
+
+        migratedCount++
+        if (migratedCount % 10000 == 0) {
+          logs.debug(`Migrated ${migratedCount} files`)
+        }
       } catch (err) {
         logs.error(`Couldn't migrate ${file.name} due to ${err}`)
         failures.push(file.name)
