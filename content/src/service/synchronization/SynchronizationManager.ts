@@ -2,16 +2,7 @@ import { AppComponents, IStatusCapableComponent } from '../../types'
 
 type ContentSyncComponents = Pick<
   AppComponents,
-  | 'staticConfigs'
-  | 'logs'
-  | 'downloadQueue'
-  | 'metrics'
-  | 'fetcher'
-  | 'synchronizationJobManager'
-  | 'deployer'
-  | 'contentCluster'
-  | 'failedDeploymentsCache'
-  | 'storage'
+  'logs' | 'synchronizationJobManager' | 'contentCluster' | 'retryFailedDeployments'
 >
 
 export enum SynchronizationState {

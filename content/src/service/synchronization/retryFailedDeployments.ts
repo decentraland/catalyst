@@ -21,6 +21,7 @@ export const createRetryFailedDeployments = (
     | 'deployer'
     | 'contentCluster'
     | 'failedDeploymentsCache'
+    | 'storage'
   >
 ): IRetryFailedDeploymentsComponent => {
   const retryDelay = components.env.getConfig<number>(EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME)
