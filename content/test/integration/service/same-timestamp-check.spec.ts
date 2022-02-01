@@ -91,7 +91,11 @@ loadStandaloneTestEnvironment()('Integration - Same Timestamp Check', (testEnv) 
 
   async function getAuditInfo(deployer: AppComponents['deployer'], entity: EntityCombo): Promise<AuditInfo> {
     const { deployments } = await deployer.getDeployments({
-      filters: { entityTypes: [entity.controllerEntity.type], entityIds: [entity.controllerEntity.id] }
+      filters: {
+        entityTypes: [entity.controllerEntity.type],
+        entityIds: [entity.controllerEntity.id],
+        includeOverwrittenInfo: true
+      }
     })
     return deployments[0].auditInfo
   }
