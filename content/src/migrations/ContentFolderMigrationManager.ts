@@ -30,20 +30,35 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
   const queued: Promise<void>[] = []
 
   for await (const file of files) {
-    queued.push(
-      queue.add(async () => {
-        try {
-          await processFile(components, contentsFolder, file.name)
-          logs.debug(`Successfully migrated ${file.name}`)
-        } catch (err) {
-          logs.error(`Couldn't migrate ${file.name} due to ${err}`)
-          failures.push(file.name)
-        }
-      })
-    )
+    const promise = queue.add(async () => {
+      try {
+        await processFile(components, contentsFolder, file.name)
+        logs.debug(`Successfully migrated ${file.name}`)
+      } catch (err) {
+        logs.error(`Couldn't migrate ${file.name} due to ${err}`)
+        failures.push(file.name)
+      }
+    })
+
+    const wrappedPromise = async () => {
+      try {
+        await promise
+      } catch (error) {
+        logs.error(`Error while adding ${file.name} to the queue`)
+        failures.push(file.name)
+      }
+    }
+
+    queued.push(wrappedPromise())
   }
 
-  await Promise.all(queued)
+  try {
+    await Promise.all(queued)
+  } catch (err) {
+    logs.error(`Failure while migrating ${err}`)
+    throw Error(failures.join('\n'))
+  }
+
   await queue.onIdle()
 
   if (failures.length > 0) {
