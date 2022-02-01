@@ -11,7 +11,7 @@ import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-import { createBloomFilterComponent } from './ports/bloomFilter'
+import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
@@ -75,9 +75,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
-  const deployedEntitiesFilter = createBloomFilterComponent({
-    sizeInBytes: 512
-  })
+  const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
 
   let deployer: MetaverseContentService = ServiceFactory.create({
     metrics,
