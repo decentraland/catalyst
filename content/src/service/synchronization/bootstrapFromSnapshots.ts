@@ -3,7 +3,7 @@ import { AppComponents } from '../../types'
 
 type BootstrapComponents = Pick<
   AppComponents,
-  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue' | 'contentCluster'
+  'staticConfigs' | 'logs' | 'batchDeployer' | 'metrics' | 'fetcher' | 'downloadQueue' | 'contentCluster' | 'storage'
 >
 
 /**
@@ -29,7 +29,7 @@ export async function bootstrapFromSnapshots(components: BootstrapComponents): P
       logs.info(`Will deploy entities from ${contentServer} snapshots`)
       try {
         const stream = getDeployedEntitiesStream(components, {
-          contentFolder: components.staticConfigs.contentStorageFolder,
+          tmpDownloadFolder: components.staticConfigs.tmpDownloadFolder,
           contentServer,
           pointerChangesWaitTime: 0, // zero to not restart the timer
           requestMaxRetries,

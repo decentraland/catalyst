@@ -42,6 +42,7 @@ export type AppComponents = {
   deployer: MetaverseContentService
   staticConfigs: {
     contentStorageFolder: string
+    tmpDownloadFolder: string
   }
   batchDeployer: IDeployerComponent
   synchronizationJobManager: JobLifecycleManagerComponent

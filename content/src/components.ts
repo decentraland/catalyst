@@ -3,6 +3,7 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import fs from 'fs'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { ActiveDenylist } from './denylist/ActiveDenylist'
@@ -41,8 +42,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
+  const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+  const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
+  await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
   const staticConfigs = {
-    contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    contentStorageFolder,
+    tmpDownloadFolder
   }
 
   const database = await createDatabaseComponent({ logs, env })
@@ -131,7 +136,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       deployer,
       staticConfigs,
-      deployedEntitiesFilter
+      deployedEntitiesFilter,
+      storage
     },
     {
       autoStart: true,
@@ -146,9 +152,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       jobManagerName: 'SynchronizationJobManager',
       createJob(contentServer) {
         return createCatalystDeploymentStream(
-          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer },
+          { logs, downloadQueue, fetcher, metrics, deployer: batchDeployer, storage },
           {
-            contentFolder: staticConfigs.contentStorageFolder,
+            tmpDownloadFolder: staticConfigs.tmpDownloadFolder,
             contentServer,
 
             // time between every poll to /pointer-changes
@@ -177,7 +183,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     deployer,
     contentCluster,
-    failedDeploymentsCache
+    failedDeploymentsCache,
+    storage
   })
 
   const synchronizationManager = createSynchronizationManager({

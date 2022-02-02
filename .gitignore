@@ -12,4 +12,5 @@ tmpbin
 linked-peer-package
 **/tsconfig.tsbuildinfo
 storage_*/**
+storage/**
 serverStorage.json

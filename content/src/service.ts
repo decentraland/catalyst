@@ -1,11 +1,14 @@
 import { Lifecycle } from '@well-known-components/interfaces'
 import { EnvironmentConfig } from './Environment'
+import { migrateContentFolderStructure } from './migrations/ContentFolderMigrationManager'
 import { bootstrapFromSnapshots } from './service/synchronization/bootstrapFromSnapshots'
 import { AppComponents } from './types'
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents>) {
   const { components, startComponents } = program
+
+  await migrateContentFolderStructure(components)
 
   // first of all, run the migrations
   await components.migrationManager.run()

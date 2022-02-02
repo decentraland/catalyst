@@ -202,10 +202,8 @@ export function loadTestEnvironment(
   return function (name, test) {
     describe(name, () => {
       const testEnv = new E2ETestEnvironment()
-
-      beforeEach(async () => {
-        await testEnv.start(overrideConfigs)
-      })
+      
+      beforeAll(async () => {  await testEnv.start(overrideConfigs) })
 
       describe('use cases for test environment', () => {
         beforeEach(() => {
@@ -219,10 +217,8 @@ export function loadTestEnvironment(
 
         test(testEnv)
       })
-
-      afterEach(async () => {
-        await testEnv.stop()
-      })
+      
+      afterAll(async () => { await testEnv.stop() })
     })
   }
 }
