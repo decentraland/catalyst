@@ -25,20 +25,12 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
       .configServer('2s')
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
       .withConfig(EnvironmentConfig.REQUEST_TTL_BACKWARDS, ms('2s'))
-      .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
       .andBuildMany(2)
 
     makeNoopValidator(server1.components)
     makeNoopServerValidator(server1.components)
     makeNoopValidator(server2.components)
     makeNoopServerValidator(server2.components)
-  })
-
-  //TODO: [new-sync] Fix this when deny-listed items are excluded from the snapshots and pointer changes
-  xit(`When content can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) =>
-      server1.denylistContent(entity.content![0].hash, identity)
-    )
   })
 
   //TODO: [new-sync] Check that this is being tested somewhere else
@@ -72,7 +64,7 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
     await server1.deploy(deployData1)
 
     // Cause sync failure
-    await server1.denylistContent(entity1Content, identity)
+    // TODO!: Add sync failure
 
     // Assert deployment is marked as failed on server 2
     await awaitUntil(() => assertThereIsAFailedDeployment(server2))
@@ -130,10 +122,6 @@ loadTestEnvironment()('End 2 end - Error handling', (testEnv) => {
 
     // expect idempotent operation to return the datetime of the deploy
     expect(firstDeploymentDatetime).toEqual(fixDatetime)
-  })
-
-  it(`When entity can't be retrieved, then the error is recorded and no entity is created`, async () => {
-    await runTest(FailureReason.DEPLOYMENT_ERROR, (entity) => server1.denylistEntity(entity, identity))
   })
 
   async function runTest(

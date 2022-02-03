@@ -14,7 +14,6 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
       ;[this.server1, this.server2] = await testEnv
         .configServer('2s')
         .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
-        .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
         .andBuildMany(2)
 
       // Start server1
@@ -146,7 +145,6 @@ loadTestEnvironment()('Errors during sync', (testEnv) => {
         .configServer('2s')
         .withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true)
         .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, this.identity.address)
-        .withConfig(EnvironmentConfig.DISABLE_DENYLIST, false)
         .andBuild()
 
       this.validatorStub1 = stub(this.server1.components.serverValidator, 'validate')

@@ -7,7 +7,6 @@ import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
-import { Denylist } from './denylist/Denylist'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
@@ -50,7 +49,6 @@ export type AppComponents = {
   deployedEntitiesFilter: DeploymentListComponent
   controller: Controller
   snapshotManager: ISnapshotManager
-  denylist: Denylist
   challengeSupervisor: IChallengeSupervisor
   contentCluster: ContentCluster
   pointerManager: PointerManager

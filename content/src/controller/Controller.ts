@@ -17,11 +17,8 @@ import destroy from 'destroy'
 import express from 'express'
 import fs from 'fs'
 import onFinished from 'on-finished'
-import { Denylist, DenylistOperationResult, isSuccessfulOperation } from '../denylist/Denylist'
-import { parseDenylistTypeAndId } from '../denylist/DenylistTarget'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { statusResponseFromComponents } from '../logic/status-checks'
-import { ContentAuthenticator } from '../service/auth/Authenticator'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
@@ -44,7 +41,6 @@ export class Controller {
       AppComponents,
       | 'synchronizationManager'
       | 'snapshotManager'
-      | 'denylist'
       | 'deployer'
       | 'challengeSupervisor'
       | 'logs'
@@ -646,93 +642,6 @@ export class Controller {
     } else {
       res.send(metadata)
     }
-  }
-
-  async addToDenylist(req: express.Request, res: express.Response): Promise<void> {
-    // Method: PUT
-    // Path: /denylist/{type}/{id}
-    // Body: JSON with ethAddress, signature and timestamp
-
-    const blocker: EthAddress = req.body.blocker
-    const timestamp: Timestamp = req.body.timestamp
-    const signature: Signature = req.body.signature
-    let authChain: AuthChain = req.body.authChain
-
-    const type = req.params.type
-    const id = req.params.id
-
-    const target = parseDenylistTypeAndId(type, id)
-
-    if (!authChain && blocker && signature) {
-      const messageToSign = Denylist.buildBlockMessageToSign(target, timestamp)
-      authChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
-    }
-
-    try {
-      const result: DenylistOperationResult = await this.components.denylist.addTarget(target, { timestamp, authChain })
-      if (isSuccessfulOperation(result)) {
-        res.status(201).send()
-      } else {
-        res.status(400).send(result.message)
-      }
-    } catch (error) {
-      res.status(500).send(error.message)
-    }
-  }
-
-  async removeFromDenylist(req: express.Request, res: express.Response): Promise<void> {
-    // Method: DELETE
-    // Path: /denylist/{type}/{id}
-    // Query String: ?blocker={ethAddress}&timestamp={timestamp}&signature={signature}
-
-    const blocker: EthAddress = req.query.blocker as EthAddress
-    const timestamp: Timestamp = req.query.timestamp as unknown as Timestamp
-    const signature: Signature = req.query.signature as Signature
-
-    const type = req.params.type
-    const id = req.params.id
-
-    const target = parseDenylistTypeAndId(type, id)
-    const messageToSign = Denylist.buildUnblockMessageToSign(target, timestamp)
-    const authChain: AuthChain = ContentAuthenticator.createSimpleAuthChain(messageToSign, blocker, signature)
-
-    try {
-      const result: DenylistOperationResult = await this.components.denylist.removeTarget(target, {
-        timestamp,
-        authChain
-      })
-      if (isSuccessfulOperation(result)) {
-        res.status(200).send()
-      } else {
-        res.status(400).send(result.message)
-      }
-    } catch (error) {
-      res.status(500).send(error.message)
-    }
-  }
-
-  async getAllDenylistTargets(req: express.Request, res: express.Response) {
-    // Method: GET
-    // Path: /denylist
-
-    const denylistTargets = await this.components.denylist.getAllDenylistedTargets()
-    const controllerTargets: ControllerDenylistData[] = denylistTargets.map(({ target, metadata }) => ({
-      target: target.asObject(),
-      metadata
-    }))
-    res.send(controllerTargets)
-  }
-
-  async isTargetDenylisted(req: express.Request, res: express.Response) {
-    // Method: HEAD
-    // Path: /denylist/{type}/{id}
-
-    const type = req.params.type
-    const id = req.params.id
-
-    const target = parseDenylistTypeAndId(type, id)
-    const isDenylisted = await this.components.denylist.isTargetDenylisted(target)
-    res.status(isDenylisted ? 200 : 404).send()
   }
 
   async getFailedDeployments(req: express.Request, res: express.Response) {
