@@ -6,8 +6,6 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import fs from 'fs'
 import path from 'path'
 import { Controller } from './controller/Controller'
-import { ActiveDenylist } from './denylist/ActiveDenylist'
-import { DenylistServiceDecorator } from './denylist/DenylistServiceDecorator'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
@@ -82,7 +80,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
 
-  let deployer: MetaverseContentService = ServiceFactory.create({
+  const deployer: MetaverseContentService = ServiceFactory.create({
     metrics,
     storage,
     deploymentManager,
@@ -97,18 +95,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     database,
     deployedEntitiesFilter
   })
-
-  const denylist = new ActiveDenylist(
-    repository,
-    authenticator,
-    contentCluster,
-    env.getConfig(EnvironmentConfig.ETH_NETWORK)
-  )
-
-  // TODO: move decorator logic to controllers
-  if (!env.getConfig(EnvironmentConfig.DISABLE_DENYLIST)) {
-    deployer = new DenylistServiceDecorator(deployer, denylist, repository)
-  }
 
   const snapshotManager = new SnapshotManager(
     { database, metrics, staticConfigs, logs, storage },
@@ -199,7 +185,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const controller = new Controller(
     {
       synchronizationManager,
-      denylist,
       challengeSupervisor,
       snapshotManager,
       deployer,
@@ -230,7 +215,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     repository,
     synchronizationManager,
     challengeSupervisor,
-    denylist,
     snapshotManager,
     contentCluster,
     deploymentManager,

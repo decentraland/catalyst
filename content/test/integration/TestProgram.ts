@@ -13,16 +13,13 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
-import { ControllerDenylistData } from '../../src/controller/Controller'
-import { buildContentTarget, buildEntityTarget, DenylistTarget } from '../../src/denylist/DenylistTarget'
 import { EnvironmentConfig } from '../../src/Environment'
 import { FailedDeployment } from '../../src/ports/failedDeploymentsCache'
 import { main } from '../../src/service'
 import { DeploymentOptions } from '../../src/service/deployments/types'
 import { isInvalidDeployment } from '../../src/service/Service'
 import { AppComponents } from '../../src/types'
-import { assertResponseIsOkOrThrow } from './E2EAssertions'
-import { deleteFolderRecursive, hashAndSignMessage, Identity } from './E2ETestUtils'
+import { deleteFolderRecursive } from './E2ETestUtils'
 
 process.env.RUNNING_TESTS = 'true'
 
@@ -117,73 +114,6 @@ export class TestProgram {
     const filters = Object.assign({ from: 1 }, options?.filters)
     const deployments = await this.components.deployer.getDeployments({ ...options, filters })
     return deployments.deployments
-  }
-
-  getDenylistTargets(): Promise<ControllerDenylistData[]> {
-    return this.makeRequest(`${this.getUrl()}/denylist`)
-  }
-
-  denylistEntity(
-    entity: ControllerEntity,
-    identity: Identity,
-    signatureOverwrite: string | undefined = undefined
-  ): Promise<void> {
-    const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-    return this.denylistTarget(entityTarget, identity, signatureOverwrite)
-  }
-
-  undenylistEntity(
-    entity: ControllerEntity,
-    identity: Identity,
-    signatureOverwrite: string | undefined = undefined
-  ): Promise<void> {
-    const entityTarget = buildEntityTarget(EntityType[entity.type.toUpperCase().trim()], entity.id)
-    return this.undenylistTarget(entityTarget, identity, signatureOverwrite)
-  }
-
-  async denylistContent(fileHash: ContentFileHash, identity: Identity): Promise<void> {
-    const contentTarget = buildContentTarget(fileHash)
-    return this.denylistTarget(contentTarget, identity)
-  }
-
-  private async denylistTarget(
-    target: DenylistTarget,
-    identity: Identity,
-    signatureOverwrite: string | undefined = undefined
-  ) {
-    const timestamp = Date.now()
-    const [address, calculatedSignature] = hashAndSignMessage(`block-${target.asString()}-${timestamp}`, identity)
-    const signature = signatureOverwrite ?? calculatedSignature
-
-    const body = {
-      timestamp: timestamp,
-      blocker: address,
-      signature: signature
-    }
-
-    const deployResponse = await fetch(`${this.getUrl()}/denylist/${target.getType()}/${target.getId()}`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' }
-    })
-    await assertResponseIsOkOrThrow(deployResponse)
-  }
-
-  private async undenylistTarget(
-    target: DenylistTarget,
-    identity: Identity,
-    signatureOverwrite: string | undefined = undefined
-  ) {
-    const timestamp = Date.now()
-    const [address, calculatedSignature] = hashAndSignMessage(`unblock-${target.asString()}-${timestamp}`, identity)
-    const signature = signatureOverwrite ?? calculatedSignature
-
-    const query = `blocker=${address}&timestamp=${timestamp}&signature=${signature}`
-    const deployResponse = await fetch(`${this.getUrl()}/denylist/${target.getType()}/${target.getId()}?${query}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    await assertResponseIsOkOrThrow(deployResponse)
   }
 
   private async makeRequest(url: string): Promise<any> {
