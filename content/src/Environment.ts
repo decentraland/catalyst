@@ -117,7 +117,6 @@ export enum EnvironmentConfig {
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
   SYNC_STREAM_TIMEOUT,
-  DISABLE_DENYLIST,
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
@@ -324,11 +323,6 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.SYNC_STREAM_TIMEOUT,
       () => process.env.SYNC_STREAM_TIMEOUT || DEFAULT_SYNC_STREAM_TIMEOUT
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.DISABLE_DENYLIST,
-      () => process.env.DISABLE_DENYLIST === 'true'
     )
 
     this.registerConfigIfNotAlreadySet(

@@ -1,7 +1,6 @@
 import pgPromise, { IBaseProtocol, IDatabase, IInitOptions, IMain } from 'pg-promise'
 import { retry } from '../helpers/RetryHelper'
 import { ContentFilesRepository } from './extensions/ContentFilesRepository'
-import { DenylistRepository } from './extensions/DenylistRepository'
 import { DeploymentPointerChangesRepository } from './extensions/DeploymentPointerChangesRepository'
 import { DeploymentsRepository } from './extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from './extensions/LastDeployedPointersRepository'
@@ -19,7 +18,6 @@ export interface IExtensions {
   pointerHistory: PointerHistoryRepository
   lastDeployedPointers: LastDeployedPointersRepository
   deploymentPointerChanges: DeploymentPointerChangesRepository
-  denylist: DenylistRepository
   systemProperties: SystemPropertiesRepository
 }
 
@@ -62,7 +60,6 @@ async function connectTo(
       obj.pointerHistory = new PointerHistoryRepository(obj)
       obj.lastDeployedPointers = new LastDeployedPointersRepository(obj)
       obj.deploymentPointerChanges = new DeploymentPointerChangesRepository(obj)
-      obj.denylist = new DenylistRepository(obj)
       obj.systemProperties = new SystemPropertiesRepository(obj)
     },
 
