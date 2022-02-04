@@ -1,7 +1,9 @@
 import { ChainId } from '@dcl/schemas'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
+import destroy from 'destroy'
 import { Request, Response } from 'express'
 import log4js from 'log4js'
+import onFinished from 'on-finished'
 import sharp from 'sharp'
 import { metricsComponent } from '../../../metrics'
 import { ServiceError } from '../../../utils/errors'
@@ -137,6 +139,8 @@ async function handleImageRequest(
 
     const [stream, length]: [NodeJS.ReadableStream, number] = await getImage(client, rootStorageLocation, imageRequest)
     sendImage(res, stream, length, imageRequest)
+    // Note: for context about why this is necessary, check https://github.com/nodejs/node/issues/1180
+    onFinished(res, () => destroy(stream))
   } catch (e) {
     if (e instanceof ServiceError) {
       res.status(e.statusCode).send(e.message)
