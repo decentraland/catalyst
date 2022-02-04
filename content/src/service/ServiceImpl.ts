@@ -126,7 +126,7 @@ export class ServiceImpl implements MetaverseContentService {
     const contextToDeploy: DeploymentContext = this.calculateIfLegacy(entity, auditInfo.authChain, context)
 
     try {
-      ServiceImpl.LOGGER.error(`Deploying entity`, {
+      ServiceImpl.LOGGER.info(`Deploying entity`, {
         entityId,
         pointers: entity.pointers.join(' ')
       })
@@ -148,7 +148,7 @@ export class ServiceImpl implements MetaverseContentService {
           context,
           storeResult: JSON.stringify(storeResult)
         })
-        return InvalidResult({ errors: ['An internal server error occured. This will raise an automatic alarm.'] })
+        return InvalidResult({ errors: ['An internal server error occurred. This will raise an automatic alarm.'] })
       } else if (isInvalidDeployment(storeResult)) {
         ServiceImpl.LOGGER.error(`Error deploying entity`, {
           entityId,
@@ -165,7 +165,7 @@ export class ServiceImpl implements MetaverseContentService {
         }
         return storeResult
       } else if (storeResult.wasEntityDeployed) {
-        ServiceImpl.LOGGER.error(`Entity deployed`, {
+        ServiceImpl.LOGGER.info(`Entity deployed`, {
           entityId,
           pointers: entity.pointers.join(' ')
         })
