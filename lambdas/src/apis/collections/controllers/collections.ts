@@ -1,12 +1,12 @@
 import { ChainId } from '@dcl/schemas'
 import { Entity, EntityType } from 'dcl-catalyst-commons'
 import { Request, Response } from 'express'
-import fs from 'fs'
 import log4js from 'log4js'
 import sharp from 'sharp'
 import { metricsComponent } from '../../../metrics'
 import { ServiceError } from '../../../utils/errors'
 import { checkFileExists, getFileStream } from '../../../utils/files'
+import { createImageStorageCache, ImageRequest } from '../../../utils/images-cache'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
 import { BASE_AVATARS_COLLECTION_ID } from '../off-chain/OffChainWearablesManager'
@@ -20,6 +20,8 @@ import {
 import { findHashForFile, preferEnglish } from '../Utils'
 
 const logger = log4js.getLogger('Lambdas Collections')
+
+const imagesCache = createImageStorageCache()
 
 export async function getStandardErc721(client: SmartContentClient, req: Request, res: Response): Promise<void> {
   // Method: GET
@@ -124,7 +126,7 @@ async function handleImageRequest(
     const entity = await fetchEntity(client, urn)
     const hash = getFileHash(entity, entity.metadata.thumbnail)
 
-    await pruneObsoleteImages(rootStorageLocation, urn, hash)
+    await imagesCache.pruneObsoleteImages(rootStorageLocation, urn, hash)
 
     const imageRequest = {
       urn,
@@ -149,7 +151,7 @@ function sendImage(res: Response, stream: NodeJS.ReadableStream, length: number,
   res.writeHead(200, {
     'Content-Type': 'application/octet-stream',
     'Content-Length': length,
-    ETag: JSON.stringify(getImageRequestId(imageRequest)),
+    ETag: JSON.stringify(imagesCache.getImageRequestId(imageRequest)),
     'Access-Control-Expose-Headers': '*',
     'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable'
   })
@@ -181,10 +183,6 @@ export async function getCollections(theGraphClient: TheGraphClient): Promise<Co
     },
     ...onChainCollections.map(({ urn, name }) => ({ id: urn, name }))
   ]
-}
-
-function getRarityImagePath(rarity: string) {
-  return `lambdas/resources/${rarity}.png`
 }
 
 function getProtocol(chainId: string): string | undefined {
@@ -245,31 +243,12 @@ function isValidSize(size: string): size is ValidSize {
   return sizes[size] !== undefined
 }
 
-function getImagePath(root: string, imageRequest: ImageRequest): string {
-  return root + `/images/` + getImageRequestId(imageRequest) + '.png'
-}
-
-// Using this folder structure allow us to find and remove older versions of the same urn (entity)
-function getImageRequestId({ urn, hash, size, rarityBackground }: ImageRequest): string {
-  return `${urn}/${hash}/${rarityBackground ?? 'thumbnail'}-${size}`
-}
-
-// Delete all images that are not the latest version (same hash)
-async function pruneObsoleteImages(root: string, urn: string, hash: string) {
-  const existsFolder = await checkFileExists(root + `/images/` + urn + '/' + hash)
-  if (!existsFolder) await cleanFolder(root + `/images/` + urn)
-}
-
-async function cleanFolder(folderPath: string) {
-  await fs.promises.rm(folderPath, { recursive: true, force: true })
-}
-
 async function getImage(
   client: SmartContentClient,
   rootStorageLocation: string,
   imageRequest: ImageRequest
 ): Promise<[NodeJS.ReadableStream, number]> {
-  const path = getImagePath(rootStorageLocation, imageRequest)
+  const path = imagesCache.getImagePath(rootStorageLocation, imageRequest)
 
   // Check if the image is already in the cache, otherwise build and store it
   if (await checkFileExists(path)) {
@@ -278,16 +257,11 @@ async function getImage(
     metricsComponent.increment('cache_miss', { image_size: imageRequest.size })
     await saveImage(client, rootStorageLocation, imageRequest)
 
-    const storageSize = await getStorageSize(rootStorageLocation)
+    const storageSize = await imagesCache.getStorageSize(rootStorageLocation)
     metricsComponent.observe('storage_size', {}, storageSize)
   }
 
   return await getFileStream(path)
-}
-
-async function getStorageSize(rootStorageLocation: string): Promise<number> {
-  const stat = await fs.promises.stat(rootStorageLocation + `/images`)
-  return stat.size
 }
 
 /**
@@ -308,33 +282,8 @@ async function saveImage(client: SmartContentClient, rootStorageLocation: string
   } else {
     finalImage = shouldResize ? sharp(image).resize(sizes[imageRequest.size], sizes[imageRequest.size]) : sharp(image)
   }
-  await storeImage(rootStorageLocation, imageRequest, finalImage)
+  await imagesCache.storeImage(rootStorageLocation, imageRequest, finalImage)
   endTimer()
-}
-
-async function storeImage(rootStoragePath: string, imageRequest: ImageRequest, finalImage: sharp.Sharp) {
-  const imagesFolder = rootStoragePath + `/images`
-  const urnFolder = imagesFolder + `/${imageRequest.urn}`
-  const hashFolder = urnFolder + `/${imageRequest.hash}`
-  const imagePath = getImagePath(rootStoragePath, imageRequest)
-
-  // ensure folder structure exists before write
-  await fs.promises.mkdir(hashFolder, { recursive: true })
-
-  const outputInfo = await finalImage.png().toFile(imagePath)
-
-  metricsComponent.increment('images_built_count', { image_dimensions: imageRequest.size, image_size: outputInfo.size })
-}
-
-async function getRarityBackground(rarity: string, size: string): Promise<Buffer> {
-  const sizedRarity = `${rarity}-${size}`
-  if (!rarityBackgrounds[sizedRarity]) {
-    let image = sharp(getRarityImagePath(rarity))
-    if (size !== DEFAULT_IMAGE_SIZE) image = image.resize(sizes[size], sizes[size])
-    rarityBackgrounds[sizedRarity] = await image.toBuffer()
-  }
-
-  return rarityBackgrounds[sizedRarity]
 }
 
 const RARITIES_EMISSIONS = {
@@ -347,15 +296,22 @@ const RARITIES_EMISSIONS = {
   unique: 1
 }
 
+export async function getRarityBackground(rarity: string, size: string): Promise<Buffer> {
+  const sizedRarity = `${rarity}-${size}`
+  if (!rarityBackgrounds[sizedRarity]) {
+    let image = sharp(getRarityImagePath(rarity))
+    if (size !== DEFAULT_IMAGE_SIZE) image = image.resize(sizes[size], sizes[size])
+    rarityBackgrounds[sizedRarity] = await image.toBuffer()
+  }
+
+  return rarityBackgrounds[sizedRarity]
+}
+
+function getRarityImagePath(rarity: string) {
+  return `lambdas/resources/${rarity}.png`
+}
+
+const rarityBackgrounds: Record<string, Buffer> = {}
 const DEFAULT_IMAGE_SIZE = '1024'
 type ValidSize = '128' | '256' | '512' | typeof DEFAULT_IMAGE_SIZE
 const sizes: Record<ValidSize, number> = { '128': 128, '256': 256, '512': 512, '1024': 1024 }
-
-const rarityBackgrounds: Record<string, Buffer> = {}
-
-type ImageRequest = {
-  urn: string
-  hash: string
-  size: string
-  rarityBackground?: string
-}
