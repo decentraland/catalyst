@@ -1,4 +1,3 @@
-import { IMetricsComponent } from '@well-known-components/interfaces'
 import { createTestMetricsComponent, validateMetricsDeclaration } from '@well-known-components/metrics'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
 
@@ -14,5 +13,4 @@ export const metrics = validateMetricsDeclaration({
   }
 })
 
-export const metricsComponent: IMetricsComponent<keyof typeof metrics> & { register: any } =
-  createTestMetricsComponent(metrics)
+export const metricsComponent = createTestMetricsComponent(metrics)
