@@ -45,7 +45,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     const result = await fetchActiveEntityByPointers(server, ...deployResult.entity.pointers)
 
     expect(result).toHaveLength(1)
-    expect(result[0].pointers).toBe(deployResult.entity.pointers)
+    expect(result[0].pointers).toContain(deployResult.entity.pointers[0])
+    expect(result[0].pointers).toContain(deployResult.entity.pointers[1])
   })
 
   async function fetchActiveEntityByIds(server: TestProgram, ...ids: string[]): Promise<Entity[]> {
