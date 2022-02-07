@@ -362,13 +362,15 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await getPointerChanges(this.components, {
-      filters: requestFilters,
-      offset,
-      limit,
-      lastId,
-      sortBy
-    })
+    } = await this.components.sequentialExecutor.run('GetPointerChangesEndpoint', () =>
+      getPointerChanges(this.components, {
+        filters: requestFilters,
+        offset,
+        limit,
+        lastId,
+        sortBy
+      })
+    )
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
@@ -520,7 +522,10 @@ export class Controller {
     }
 
     // don't replace this until the denylist is implemented outside of the service
-    const { deployments, filters, pagination } = await this.components.deployer.getDeployments(deploymentOptions)
+    const { deployments, filters, pagination } = await this.components.sequentialExecutor.run(
+      'GetDeploymentsEndpoint',
+      () => this.components.deployer.getDeployments(deploymentOptions)
+    )
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
     )
