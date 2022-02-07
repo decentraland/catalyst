@@ -52,6 +52,10 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
+  /**
+   * @deprecated
+   * this endpoint will be deprecated in favor of `getActiveEntities`
+   */
   async getEntities(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /entities/:type
@@ -88,6 +92,41 @@ export class Controller {
     }
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
+  }
+
+  async getActiveEntities(
+    req: express.Request<unknown, unknown, { ids: string[]; pointers: string[] }>,
+    res: express.Response
+  ): Promise<void> {
+    // Method: POST
+    // Path: /entities/active
+    // Body: { ids: string[], pointers: string[]}
+
+    const ids: EntityId[] = req.body.ids
+    const pointers: Pointer[] = req.body.pointers
+
+    console.log(JSON.stringify(req.body))
+    // Validate pointers or ids are present, but not both
+    if (
+      (ids && ids.length > 0 && pointers && pointers.length > 0) || // both present
+      ((!ids || ids.length == 0) && (!pointers || pointers.length == 0)) // none present
+    ) {
+      res.status(400).send({ error: 'ids or pointers must be present, but not both' })
+      return
+    }
+
+    let entities: Entity[] = []
+    if (ids && ids.length > 0) {
+      entities = await this.components.deployer.getEntitiesByIds(ids)
+    } else if (pointers && pointers.length > 0) {
+      for (const type of Object.values(EntityType)) {
+        entities = [...entities, ...(await this.components.deployer.getEntitiesByPointers(type, pointers))]
+      }
+    } else {
+      Controller.LOGGER.debug('There are no ids and no pointers, should never happen')
+    }
+
+    res.send(entities)
   }
 
   private parseEntityType(strType: string): EntityType {
