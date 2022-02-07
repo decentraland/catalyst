@@ -375,24 +375,17 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/schemas@3.5.0":
-  version "3.5.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.5.0.tgz#6557e7927edb115638e94854dbf39223eb238edf"
-  integrity sha512-uwsEHUVA7hGpKrWhCVWe9riaJ/sgJskDUwqlVud0or8Z9lunOEWYhX6bBr28S4Qfkne8MoVeG0wLz5ANdXandg==
-  dependencies:
-    ajv "^7.1.0"
-
-"@dcl/schemas@3.7.0", "@dcl/schemas@^3.1.1":
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.7.0.tgz#0c2add1b7c406d64a0f5145713a48721f61a53cb"
-  integrity sha512-uXFWmSIouSG5qZnJ+ngOyjS047VoPIfgpZ7Xi+UX485ZMw69+cZOkV6bYTOznr9v26RAddw3YaZ8UjOEp2bQDg==
-  dependencies:
-    ajv "^7.1.0"
-
 "@dcl/schemas@3.8.0":
   version "3.8.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.8.0.tgz#aa52d3565308997cfa17c4af5f1314db0f4c6f53"
   integrity sha512-oUq4JDzJmcLTmhFccby6UrAfDXJywOCWI4w3UenuQDE6TxfoR6c0cthGo/omFQkGRUkkKg8MM7Q3Q5ExxdCLRA==
+  dependencies:
+    ajv "^7.1.0"
+
+"@dcl/schemas@^3.1.1":
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.7.0.tgz#0c2add1b7c406d64a0f5145713a48721f61a53cb"
+  integrity sha512-uXFWmSIouSG5qZnJ+ngOyjS047VoPIfgpZ7Xi+UX485ZMw69+cZOkV6bYTOznr9v26RAddw3YaZ8UjOEp2bQDg==
   dependencies:
     ajv "^7.1.0"
 
@@ -3387,22 +3380,6 @@ dcl-catalyst-commons@7.2.1:
   integrity sha512-aXeKlJmQIJ0ihBJbaIfqYM++1ZqVpUTw9Rm0+CE+d9JOmAGQ4x+7ZSJ7XcgujPwOHhXwYpURJAVo2ud1dqC7EA==
   dependencies:
     "@dcl/schemas" "3.1.1"
-    abort-controller "^3.0.0"
-    cids "^1.1.9"
-    cookie "^0.4.1"
-    cross-fetch "^3.1.4"
-    dcl-crypto "^2.1.0"
-    ipfs-only-hash "^4.0.0"
-    ms "^2.1.2"
-    multihashing-async "^2.1.4"
-    node-fetch "^3.0.0"
-
-dcl-catalyst-commons@7.2.2:
-  version "7.2.2"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-7.2.2.tgz#88aa7ead766affd8fd1b1da8fb98e133f67beb92"
-  integrity sha512-/tspVyNjlgIiKMor4Wz21rmvzgZ41y54KtfdePRPJFecJqiaMaFb+lOkdE/4fi+MWS2d2+gQmjW7MYqMS9Aivw==
-  dependencies:
-    "@dcl/schemas" "3.5.0"
     abort-controller "^3.0.0"
     cids "^1.1.9"
     cookie "^0.4.1"
