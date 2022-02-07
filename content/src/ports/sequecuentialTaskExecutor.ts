@@ -31,6 +31,7 @@ export function createSequentialTaskExecutor(components: SequentialTaskComponent
   function run<T>(jobName: string, fn: () => Promise<T>): Promise<T> {
     const queue = getQueue(jobName)
 
+    metrics.increment('wkc_sequential_job_total', { job_name: jobName })
     const waitTimer = metrics.startTimer('wkc_sequential_job_wait_seconds', { job_name: jobName })
 
     return queue.add<T>(async () => {
@@ -60,6 +61,11 @@ export const sequentialJobMetrics = validateMetricsDeclaration({
     help: 'Total number of sequential jobs run',
     type: IMetricsComponent.CounterType,
     labelNames: ['job_name', 'error']
+  },
+  wkc_sequential_job_total: {
+    help: 'Total number of sequential jobs',
+    type: IMetricsComponent.CounterType,
+    labelNames: ['job_name']
   },
   wkc_sequential_job_duration_seconds: {
     help: 'Histogram of run time per job_name',
