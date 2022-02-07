@@ -8,6 +8,7 @@ import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
+import { createSecuentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
@@ -49,6 +50,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   }
 
   const database = await createDatabaseComponent({ logs, env })
+
+  const sequentialExecutor = createSecuentialTaskExecutor({ metrics, logs })
 
   const systemPropertiesManager = new SystemPropertiesManager(repository)
 
@@ -190,7 +193,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       deployer,
       logs,
       metrics,
-      database
+      database,
+      sequentialExecutor
     },
     ethNetwork
   )
@@ -230,6 +234,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     catalystFetcher,
     daoClient,
     server,
-    retryFailedDeployments
+    retryFailedDeployments,
+    sequentialExecutor
   }
 }

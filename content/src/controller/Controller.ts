@@ -46,6 +46,7 @@ export class Controller {
       | 'logs'
       | 'metrics'
       | 'database'
+      | 'sequentialExecutor'
     >,
     private readonly ethNetwork: string
   ) {
@@ -80,12 +81,14 @@ export class Controller {
     }
 
     // Calculate and mask entities
-    let entities: Entity[]
-    if (ids.length > 0) {
-      entities = await this.components.deployer.getEntitiesByIds(ids)
-    } else {
-      entities = await this.components.deployer.getEntitiesByPointers(type, pointers)
-    }
+    const entities: Entity[] = await this.components.sequentialExecutor.run('GetEntitiesEndpoint', async () => {
+      if (ids.length > 0) {
+        return await this.components.deployer.getEntitiesByIds(ids)
+      } else {
+        return await this.components.deployer.getEntitiesByPointers(type, pointers)
+      }
+    })
+
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
   }
