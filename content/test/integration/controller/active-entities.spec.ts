@@ -49,6 +49,104 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     expect(result[0].pointers).toContain(deployResult.entity.pointers[1])
   })
 
+  it('When asking for active entities, only active entities are returned', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
+
+    const deployResult = await buildDeployData(['0,0', '0,1'], {
+      metadata: 'this is just some metadata',
+      contentPaths: ['test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy entity
+    await server.deploy(deployResult.deployData)
+
+    const newDeployResult = await buildDeployData(['0,0', '0,1'], {
+      metadata: 'this is just some metadata 2',
+      contentPaths: ['test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy newer entity
+    await server.deploy(newDeployResult.deployData)
+
+    const result = await fetchActiveEntityByIds(server, newDeployResult.entity.id)
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe(newDeployResult.entity.id)
+  })
+
+  it('When there are multiple active entities, they are returned', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
+
+    const deployResult = await buildDeployData(['0,0', '0,1'], {
+      metadata: 'this is just some metadata',
+      contentPaths: ['test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy entity
+    await server.deploy(deployResult.deployData)
+
+    const deployResult2 = await buildDeployData(['2,0', '2,1'], {
+      metadata: 'this is just some metadata',
+      contentPaths: ['test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy other entity
+    await server.deploy(deployResult2.deployData)
+
+    const result = await fetchActiveEntityByIds(server, deployResult.entity.id, deployResult2.entity.id)
+    expect(result).toHaveLength(2)
+    expect(result.some((entity) => entity.id === deployResult.entity.id)).toBeTruthy()
+    expect(result.some((entity) => entity.id === deployResult2.entity.id)).toBeTruthy()
+  })
+
+  it('When asking with duplicated IDs, entity is returned once', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
+
+    const deployResult = await buildDeployData(['0,0', '0,1'], {
+      metadata: 'this is just some metadata',
+      contentPaths: ['test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy entity
+    await server.deploy(deployResult.deployData)
+
+    const result = await fetchActiveEntityByIds(server, deployResult.entity.id, deployResult.entity.id)
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe(deployResult.entity.id)
+  })
+
+  it('when asking with ID and pointer of same entity, result should be the same', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
+
+    const pointers = ['0,0', '0,1']
+    const deployResult = await buildDeployData(pointers, {
+      metadata: 'this is just some metadata',
+      contentPaths: ['test/integration/resources/some-binary-file.png']
+    })
+
+    // Deploy entity
+    await server.deploy(deployResult.deployData)
+    const resultWithId = await fetchActiveEntityByIds(server, deployResult.entity.id)
+    const resultWithPointers = await fetchActiveEntityByPointers(server, ...pointers)
+
+    expect(JSON.stringify(resultWithId)).toBe(JSON.stringify(resultWithPointers))
+  })
+
   async function fetchActiveEntityByIds(server: TestProgram, ...ids: string[]): Promise<Entity[]> {
     const url = server.getUrl() + `/entities/active`
 
