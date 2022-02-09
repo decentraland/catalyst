@@ -11,6 +11,7 @@ import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
+import { EntityCache } from './ports/entitiesCache'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { IDatabaseComponent } from './ports/postgres'
 import { Repository } from './repository/Repository'
@@ -65,6 +66,7 @@ export type AppComponents = {
   daoClient: DAOClient
   server: Server
   retryFailedDeployments: IRetryFailedDeploymentsComponent
+  entitiesCache: EntityCache
 
   // this will be replaced by `database` and removed from here
   repository: Repository

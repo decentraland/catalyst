@@ -11,6 +11,7 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
+import { createEntityCache } from './ports/entitiesCache'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
@@ -21,7 +22,7 @@ import { GarbageCollectionManager } from './service/garbage-collection/GarbageCo
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
 import { MetaverseContentService } from './service/Service'
-import { ServiceFactory } from './service/ServiceFactory'
+import { ServiceImpl } from './service/ServiceImpl'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
@@ -79,8 +80,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
+  const entitiesCache = createEntityCache({ database, env, logs })
 
-  const deployer: MetaverseContentService = ServiceFactory.create({
+  const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
     storage,
     deploymentManager,
@@ -93,7 +95,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     authenticator,
     database,
-    deployedEntitiesFilter
+    deployedEntitiesFilter,
+    entitiesCache
   })
 
   const snapshotManager = new SnapshotManager(
@@ -230,6 +233,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     catalystFetcher,
     daoClient,
     server,
-    retryFailedDeployments
+    retryFailedDeployments,
+    entitiesCache
   }
 }

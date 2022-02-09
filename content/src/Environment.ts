@@ -121,7 +121,7 @@ export enum EnvironmentConfig {
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
   REPOSITORY_QUEUE_TIMEOUT,
-  CACHE_SIZES,
+  ENTITIES_CACHE_SIZE,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
   VALIDATE_API,
@@ -351,14 +351,10 @@ export class EnvironmentBuilder {
       () => process.env.REPOSITORY_QUEUE_TIMEOUT ?? RepositoryQueue.DEFAULT_TIMEOUT
     )
 
-    /*
-     * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
-     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000'
-     */
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.CACHE_SIZES,
-      () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
+      EnvironmentConfig.ENTITIES_CACHE_SIZE,
+      () => process.env.ENTITIES_CACHE_SIZE ?? 15000
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
