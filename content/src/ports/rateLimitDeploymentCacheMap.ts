@@ -1,15 +1,24 @@
 import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import NodeCache from 'node-cache'
-import { Environment, EnvironmentConfig } from '../Environment'
 
 export type IRateLimitDeploymentCacheMapComponent = {
   newDeployment(entityType: EntityType, pointers: Pointer[], localTimestamp: Timestamp): void
   isRateLimited(entityType: EntityType, pointers: Pointer[]): boolean
 }
 
-export function createRateLimitDeploymentCacheMap(env: Environment): IRateLimitDeploymentCacheMapComponent {
-  const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> = generateDeploymentCacheMap(env)
+export type RateLimitConfig = {
+  defaultTtl: number
+  defaultMax: number
+  entitiesConfigTtl: Map<EntityType, number>
+  entitiesConfigMax: Map<EntityType, number>
+}
+
+export function createRateLimitDeploymentCacheMap(
+  rateLimitConfig: RateLimitConfig
+): IRateLimitDeploymentCacheMapComponent {
+  const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> =
+    generateDeploymentCacheMap(rateLimitConfig)
 
   function getFromCache(entityType: EntityType): { cache: NodeCache; maxSize: number } {
     const cache = deploymentCacheMap.get(entityType)
@@ -39,17 +48,17 @@ export function createRateLimitDeploymentCacheMap(env: Environment): IRateLimitD
   }
 }
 
-function generateDeploymentCacheMap(env: Environment): Map<EntityType, { cache: NodeCache; maxSize: number }> {
-  const envMaxPerEntity: Map<EntityType, number> = getMaxPerEntityMapConfig(env)
-  const envTtlPerEntity: Map<EntityType, number> = getTtlPerEntityMapConfig(env)
+function generateDeploymentCacheMap(
+  rateLimitConfig: RateLimitConfig
+): Map<EntityType, { cache: NodeCache; maxSize: number }> {
+  const envMaxPerEntity: Map<EntityType, number> = getMaxPerEntityMapConfig(rateLimitConfig.entitiesConfigMax)
+  const envTtlPerEntity: Map<EntityType, number> = getTtlPerEntityMapConfig(rateLimitConfig.entitiesConfigTtl)
 
   const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> = new Map()
 
   for (const entityType of Object.values(EntityType)) {
-    const ttl: number =
-      envTtlPerEntity.get(entityType) ?? env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL)
-    const maxSize: number =
-      envMaxPerEntity.get(entityType) ?? env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX)
+    const ttl: number = envTtlPerEntity.get(entityType) ?? rateLimitConfig.defaultTtl
+    const maxSize: number = envMaxPerEntity.get(entityType) ?? rateLimitConfig.defaultMax
 
     deploymentCacheMap.set(entityType, {
       cache: new NodeCache({ stdTTL: ttl, checkperiod: ttl }),
@@ -59,28 +68,22 @@ function generateDeploymentCacheMap(env: Environment): Map<EntityType, { cache: 
   return deploymentCacheMap
 }
 
-function getTtlPerEntityMapConfig(env: Environment) {
+function getTtlPerEntityMapConfig(config: Map<EntityType, number>) {
   const defaultTtlPerEntity: Map<EntityType, number> = new Map([
     [EntityType.PROFILE, ms('1m')],
     [EntityType.SCENE, ms('20s')],
     [EntityType.WEARABLE, ms('20s')],
     [EntityType.STORE, ms('1m')]
   ])
-  const envTtlPerEntityOverrideConfig: Map<EntityType, number> =
-    env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map()
-  const envTtlPerEntity: Map<EntityType, number> = new Map([...defaultTtlPerEntity, ...envTtlPerEntityOverrideConfig])
-  return envTtlPerEntity
+  return new Map([...defaultTtlPerEntity, ...config])
 }
 
-function getMaxPerEntityMapConfig(env: Environment) {
+function getMaxPerEntityMapConfig(config: Map<EntityType, number>) {
   const defaultMaxPerEntity: Map<EntityType, number> = new Map([
     [EntityType.PROFILE, 300],
     [EntityType.SCENE, 100000],
     [EntityType.WEARABLE, 100000],
     [EntityType.STORE, 300]
   ])
-  const envMaxPerEntityOverrideConfig: Map<EntityType, number> =
-    env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
-  const envMaxPerEntity: Map<EntityType, number> = new Map([...defaultMaxPerEntity, ...envMaxPerEntityOverrideConfig])
-  return envMaxPerEntity
+  return new Map([...defaultMaxPerEntity, ...config])
 }

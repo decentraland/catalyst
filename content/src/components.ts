@@ -3,7 +3,9 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { EntityType } from 'dcl-catalyst-commons'
 import fs from 'fs'
+import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
@@ -76,7 +78,14 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointerManager = new PointerManager()
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
-  const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(env)
+
+  const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap({
+    defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
+    defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
+    entitiesConfigTtl: env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
+    entitiesConfigMax: env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
+  })
+
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 

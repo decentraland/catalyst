@@ -4,6 +4,7 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
+import ms from 'ms'
 import { Environment } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
@@ -241,7 +242,8 @@ describe('Service', function () {
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
-    const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(env)
+    const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(
+      { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() })
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const logs = createLogComponent()
     const storage = new MockedStorage()
