@@ -12,7 +12,6 @@ import {
   Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
-import NodeCache from 'node-cache'
 import { EnvironmentConfig } from '../Environment'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
@@ -47,6 +46,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'storage'
       | 'pointerManager'
       | 'failedDeploymentsCache'
+      | 'rateLimitDeploymentCacheMap'
       | 'deploymentManager'
       | 'validator'
       | 'serverValidator'
@@ -57,8 +57,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'deployedEntitiesFilter'
       | 'env'
     >,
-    private readonly cache: CacheByType<Pointer, Entity>,
-    private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
+    private readonly cache: CacheByType<Pointer, Entity>
   ) {
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
   }
@@ -175,19 +174,18 @@ export class ServiceImpl implements MetaverseContentService {
         storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
 
         // Insert in deployments cache the updated entities
-        if (entity.type == EntityType.PROFILE) {
-          // Currently we are only checking profile deployments, in the future this may be refactored
-          entity.pointers.forEach((pointer) => {
-            this.deploymentsCache.cache.set(pointer, storeResult.auditInfoComplete.localTimestamp)
-          })
-        }
+        this.components.rateLimitDeploymentCacheMap.newDeployment(
+          entity.type,
+          entity.pointers,
+          storeResult.auditInfoComplete.localTimestamp
+        )
       }
 
       // add the entity to the bloom filter to prevent expensive operations during the sync
       this.components.deployedEntitiesFilter.add(entity.id)
 
       if (!storeResult.auditInfoComplete.localTimestamp) {
-        ServiceImpl.LOGGER.error(`auditInfoComplete is missbehaving`, {
+        ServiceImpl.LOGGER.error(`auditInfoComplete is misbehaving`, {
           auditInfoComplete: JSON.stringify(storeResult.auditInfoComplete)
         })
       }
@@ -400,19 +398,6 @@ export class ServiceImpl implements MetaverseContentService {
     return false
   }
 
-  /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
-   * and no more than max size of deployments were made either   */
-  private isEntityRateLimited(entity: Entity): boolean {
-    // Currently only for profiles
-    if (entity.type != EntityType.PROFILE) {
-      return false
-    }
-    return (
-      entity.pointers.some((p) => !!this.deploymentsCache.cache.get(p)) ||
-      this.deploymentsCache.cache.stats.keys > this.deploymentsCache.maxSize
-    )
-  }
-
   private async storeEntityContent(hashes: Map<ContentFileHash, Uint8Array>): Promise<any> {
     // Check for if content is already stored
     const alreadyStoredHashes: Map<ContentFileHash, boolean> = await this.components.storage.existMultiple(
@@ -500,7 +485,8 @@ export class ServiceImpl implements MetaverseContentService {
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
         this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
-      isEntityRateLimited: (entity) => this.isEntityRateLimited(entity),
+      isEntityRateLimited: (entity) =>
+        this.components.rateLimitDeploymentCacheMap.isRateLimited(entity.type, entity.pointers),
       isRequestTtlBackwards: (entity) =>
         Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     })

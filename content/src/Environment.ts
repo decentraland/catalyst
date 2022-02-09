@@ -1,10 +1,10 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { EntityVersion } from 'dcl-catalyst-commons'
+import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
 import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'
-import { AppComponents } from './types'
+import { AppComponents, parseEntityType } from './types'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
@@ -91,8 +91,8 @@ export enum EnvironmentConfig {
   SYNC_WITH_SERVERS_INTERVAL,
   CHECK_SYNC_RANGE,
   DECENTRALAND_ADDRESS,
-  DEPLOYMENTS_RATE_LIMIT_TTL,
-  DEPLOYMENTS_RATE_LIMIT_MAX,
+  DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL,
+  DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
   ETH_NETWORK,
   LOG_LEVEL,
   FETCH_REQUEST_TIMEOUT,
@@ -126,7 +126,9 @@ export enum EnvironmentConfig {
   BLOCKS_L2_SUBGRAPH_URL,
   VALIDATE_API,
   FOLDER_MIGRATION_MAX_CONCURRENCY,
-  RETRY_FAILED_DEPLOYMENTS_DELAY_TIME
+  RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
+  DEPLOYMENT_RATE_LIMIT_TTL,
+  DEPLOYMENT_RATE_LIMIT_MAX
 }
 
 export class EnvironmentBuilder {
@@ -184,13 +186,13 @@ export class EnvironmentBuilder {
       () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL, () =>
-      Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL, () =>
+      Math.floor(ms((process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX,
-      () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 300
+      EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
+      () => process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX ?? 300
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -360,6 +362,37 @@ export class EnvironmentBuilder {
       EnvironmentConfig.CACHE_SIZES,
       () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
     )
+
+    /*
+     * These are configured as 'DEPLOYMENT_RATE_LIMIT_MAX_{ENTITY_TYPE}=MAX_SIZE'.
+     * For example: 'DEPLOYMENT_RATE_LIMIT_MAX_PROFILE=300'
+     */
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX, () => {
+      const rateLimitMaxConfig: Map<EntityType, number> = new Map(
+        Object.entries(process.env)
+          .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_MAX_') && !!value)
+          .map(([name, value]) => [
+            parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_MAX_', '')) as EntityType,
+            value as any as number
+          ])
+      )
+      return rateLimitMaxConfig ?? new Map()
+    })
+    /*
+     * These are configured as 'DEPLOYMENT_RATE_LIMIT_TTL_{ENTITY_TYPE}=MAX_SIZE'.
+     * For example: 'DEPLOYMENT_RATE_LIMIT_TTL_PROFILE=1m'
+     */
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL, () => {
+      const rateLimitTtlConfig: Map<EntityType, number> = new Map(
+        Object.entries(process.env)
+          .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_TTL_') && !!value)
+          .map(([name, value]) => [
+            parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_TTL_', '')) as EntityType,
+            ms(value ?? '1m')
+          ])
+      )
+      return rateLimitTtlConfig ?? new Map()
+    })
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 

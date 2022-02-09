@@ -14,6 +14,7 @@ import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
+import { createRateLimitDeploymentCacheMap } from './ports/rateLimitDeploymentCacheMap'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -75,6 +76,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointerManager = new PointerManager()
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
+  const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(env)
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
@@ -85,6 +87,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     deploymentManager,
     failedDeploymentsCache,
+    rateLimitDeploymentCacheMap,
     pointerManager,
     repository,
     validator,
@@ -219,6 +222,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentCluster,
     deploymentManager,
     failedDeploymentsCache,
+    rateLimitDeploymentCacheMap,
     pointerManager,
     storage,
     authenticator,

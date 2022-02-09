@@ -29,7 +29,7 @@ import {
   LocalDeploymentAuditInfo
 } from '../service/Service'
 import { ContentItem, RawContent } from '../storage/ContentStorage'
-import { AppComponents } from '../types'
+import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
@@ -56,7 +56,7 @@ export class Controller {
     // Method: GET
     // Path: /entities/:type
     // Query String: ?{filter}&fields={fieldList}
-    const type: EntityType = this.parseEntityType(req.params.type)
+    const type: EntityType = parseEntityType(req.params.type)
     const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
     const ids: EntityId[] = this.asArray<EntityId>(req.query.id as string) ?? []
     const fields: string = req.query.fields as string
@@ -88,15 +88,6 @@ export class Controller {
     }
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
-  }
-
-  private parseEntityType(strType: string): EntityType {
-    if (strType.endsWith('s')) {
-      strType = strType.slice(0, -1)
-    }
-    strType = strType.toUpperCase().trim()
-    const type = EntityType[strType]
-    return type
   }
 
   private asArray<T>(elements: any | T | T[]): T[] | undefined {
@@ -252,7 +243,7 @@ export class Controller {
   async getAudit(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /audit/:type/:entityId
-    const type = this.parseEntityType(req.params.type)
+    const type = parseEntityType(req.params.type)
     const entityId = req.params.entityId
 
     // Validate type is valid
@@ -290,7 +281,7 @@ export class Controller {
     // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => this.parseEntityType(type))
+      ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
     // deprecated
     const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
@@ -419,7 +410,7 @@ export class Controller {
 
     const stringEntityTypes = this.asArray<string>(req.query.entityType as string | string[])
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => this.parseEntityType(type))
+      ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
     const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
@@ -614,7 +605,7 @@ export class Controller {
     // Method: GET
     // Path: /snapshot/:type
 
-    const type = this.parseEntityType(req.params.type)
+    const type = parseEntityType(req.params.type)
 
     // Validate type is valid
     if (!type) {

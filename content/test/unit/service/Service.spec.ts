@@ -9,6 +9,7 @@ import { metricsDeclaration } from '../../../src/metrics'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
+import { createRateLimitDeploymentCacheMap } from '../../../src/ports/rateLimitDeploymentCacheMap'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import * as deployments from '../../../src/service/deployments/deployments'
@@ -240,6 +241,7 @@ describe('Service', function () {
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
+    const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(env)
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const logs = createLogComponent()
     const storage = new MockedStorage()
@@ -252,6 +254,7 @@ describe('Service', function () {
       env,
       pointerManager,
       failedDeploymentsCache,
+      rateLimitDeploymentCacheMap,
       deploymentManager,
       storage,
       repository,
