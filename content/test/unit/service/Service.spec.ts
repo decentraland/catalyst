@@ -242,10 +242,10 @@ describe('Service', function () {
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
-    const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(
+    const logs = createLogComponent()
+    const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap({ logs },
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() })
     const metrics = createTestMetricsComponent(metricsDeclaration)
-    const logs = createLogComponent()
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
