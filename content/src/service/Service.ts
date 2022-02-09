@@ -33,7 +33,7 @@ export interface MetaverseContentService {
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): FailedDeployment[]
   getEntitiesByIds(ids: EntityId[]): Promise<Entity[]>
-  getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]>
+  getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]>
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,

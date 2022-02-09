@@ -39,7 +39,7 @@ export class Cache<Key, Value> {
     ]
   }
 
-  invalidate(key: Key) {
+  invalidate(key: Key): void {
     this.internalCache.del(key)
   }
 }

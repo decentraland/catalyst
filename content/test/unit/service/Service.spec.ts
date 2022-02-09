@@ -130,13 +130,13 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     // When a pointer is asked the first time, then the database is reached
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -151,13 +151,13 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
 
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -182,7 +182,7 @@ describe('Service', function () {
     jest.spyOn(service, 'getEntityById').mockResolvedValue({ entityId: entity.id, localTimestamp: entity.timestamp })
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
@@ -190,7 +190,7 @@ describe('Service', function () {
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
   })
 
@@ -214,7 +214,7 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
 
     // Make deployment that should invalidate the cache
@@ -229,7 +229,7 @@ describe('Service', function () {
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(EntityType.SCENE, POINTERS)
+    await service.getEntitiesByPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, POINTERS)
   })
 
@@ -267,7 +267,7 @@ describe('Service', function () {
 
   function expectSpyToBeCalled(serviceSpy: jest.SpyInstance, pointers: string[]) {
     expect(serviceSpy).toHaveBeenCalledWith(expect.anything(), {
-      filters: { entityTypes: [EntityType.SCENE], pointers: pointers, onlyCurrentlyPointed: true }
+      filters: { pointers: pointers, onlyCurrentlyPointed: true }
     })
   }
 

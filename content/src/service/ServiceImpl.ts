@@ -19,7 +19,7 @@ import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
 import { bufferToStream, ContentItem } from '../storage/ContentStorage'
 import { AppComponents } from '../types'
-import { CacheByType } from './caching/Cache'
+import { Cache as CacheByPointer } from './caching/Cache'
 import { getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
@@ -57,7 +57,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'deployedEntitiesFilter'
       | 'env'
     >,
-    private readonly cache: CacheByType<Pointer, Entity>,
+    private readonly cache: CacheByPointer<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
   ) {
     ServiceImpl.LOGGER = components.logs.getLogger('ServiceImpl')
@@ -172,7 +172,7 @@ export class ServiceImpl implements MetaverseContentService {
         this.components.metrics.increment('total_deployments_count', { entity_type: entity.type }, 1)
 
         // Invalidate cache for retrieving entities by id
-        storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
+        storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(pointer))
 
         // Insert in deployments cache the updated entities
         if (entity.type == EntityType.PROFILE) {
@@ -347,10 +347,10 @@ export class ServiceImpl implements MetaverseContentService {
     return this.mapDeploymentsToEntities(deployments)
   }
 
-  async getEntitiesByPointers(type: EntityType, pointers: Pointer[]): Promise<Entity[]> {
-    const allEntities = await this.cache.get(type, pointers, async (type, pointers) => {
+  async getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]> {
+    const allEntities = await this.cache.get(pointers, async (pointers) => {
       const deployments = await getDeployments(this.components, {
-        filters: { entityTypes: [type], pointers, onlyCurrentlyPointed: true }
+        filters: { pointers, onlyCurrentlyPointed: true }
       })
 
       const entities = this.mapDeploymentsToEntities(deployments)
