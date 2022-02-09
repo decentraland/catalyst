@@ -1,6 +1,8 @@
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import ms from 'ms'
 import NodeCache from 'node-cache'
+import { AppComponents } from '../types'
 
 export type IRateLimitDeploymentCacheMapComponent = {
   newDeployment(entityType: EntityType, pointers: Pointer[], localTimestamp: Timestamp): void
@@ -15,10 +17,15 @@ export type RateLimitConfig = {
 }
 
 export function createRateLimitDeploymentCacheMap(
+  components: Pick<AppComponents, 'logs'>,
   rateLimitConfig: RateLimitConfig
 ): IRateLimitDeploymentCacheMapComponent {
-  const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> =
-    generateDeploymentCacheMap(rateLimitConfig)
+  const logs: ILoggerComponent.ILogger = components.logs.getLogger('RateLimitDeploymentCacheMapComponent')
+
+  const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> = generateDeploymentCacheMap(
+    logs,
+    rateLimitConfig
+  )
 
   function getFromCache(entityType: EntityType): { cache: NodeCache; maxSize: number } {
     const cache = deploymentCacheMap.get(entityType)
@@ -49,6 +56,7 @@ export function createRateLimitDeploymentCacheMap(
 }
 
 function generateDeploymentCacheMap(
+  logs: ILoggerComponent.ILogger,
   rateLimitConfig: RateLimitConfig
 ): Map<EntityType, { cache: NodeCache; maxSize: number }> {
   const envMaxPerEntity: Map<EntityType, number> = getMaxPerEntityMapConfig(rateLimitConfig.entitiesConfigMax)
@@ -65,7 +73,25 @@ function generateDeploymentCacheMap(
       maxSize: maxSize
     })
   }
+  logs.info(
+    `Deployment Cache Map created to rate limit amount of deployments per entity with values: \n${toString(
+      deploymentCacheMap
+    )}`
+  )
+
   return deploymentCacheMap
+}
+
+function toString(deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }>): string {
+  const stringifyMap: string[] = []
+  for (const entityType of deploymentCacheMap.keys()) {
+    stringifyMap.push(
+      `${entityType}: { ttl: ${deploymentCacheMap.get(entityType)?.cache.options.stdTTL}, max: ${
+        deploymentCacheMap.get(entityType)?.maxSize
+      } }`
+    )
+  }
+  return stringifyMap.join('\n')
 }
 
 function getTtlPerEntityMapConfig(config: Map<EntityType, number>) {

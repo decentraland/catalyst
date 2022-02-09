@@ -79,12 +79,17 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
 
-  const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap({
-    defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
-    defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
-    entitiesConfigTtl: env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
-    entitiesConfigMax: env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
-  })
+  const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(
+    { logs },
+    {
+      defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
+      defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
+      entitiesConfigTtl:
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
+      entitiesConfigMax:
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
+    }
+  )
 
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
   const serverValidator = createServerValidator({ failedDeploymentsCache })
