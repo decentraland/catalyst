@@ -15,7 +15,7 @@ export function getCuratedLimit(options?: DeploymentOptions): number {
 }
 
 export async function getDeployments(
-  components: Pick<AppComponents, 'database'>,
+  components: Pick<AppComponents, 'database' | 'denylist'>,
   options?: DeploymentOptions
 ): Promise<PartialDeploymentHistory<Deployment>> {
   const curatedOffset = getCuratedOffset(options)
@@ -32,12 +32,18 @@ export async function getDeployments(
 
   const moreData = deploymentsWithExtra.length > curatedLimit
 
-  const deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
+  let deploymentsResult = deploymentsWithExtra.slice(0, curatedLimit)
+
   const deploymentIds = deploymentsResult.map(({ deploymentId }) => deploymentId)
+
   const content = await getContentFiles(components, deploymentIds)
 
   // TODO [new-sync]: migrationData nolonger required
   const migrationData = await getMigrationData(components, deploymentIds)
+
+  if (!options?.addDenylisted) {
+    deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenyListed(result.entityId))
+  }
 
   const deployments: Deployment[] = deploymentsResult.map((result) => ({
     entityVersion: result.version as EntityVersion,

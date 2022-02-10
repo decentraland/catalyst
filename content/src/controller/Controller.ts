@@ -53,6 +53,7 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
+  //TODO! Cambiar aca
   async getEntities(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /entities/:type
@@ -233,6 +234,7 @@ export class Controller {
     }
   }
 
+  //TODO! ver de cambiar aca
   async getAvailableContent(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /available-content
@@ -252,6 +254,7 @@ export class Controller {
     }
   }
 
+  //TODO! cambiar aca
   async getAudit(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /audit/:type/:entityId
@@ -267,7 +270,8 @@ export class Controller {
     // don't replace this until the denylist is implemented outside of the service
     const { deployments } = await this.components.deployer.getDeployments({
       fields: [DeploymentField.AUDIT_INFO],
-      filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true }
+      filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true },
+      addDenylisted: true
     })
 
     if (deployments.length > 0) {
@@ -417,6 +421,7 @@ export class Controller {
     res.json(result)
   }
 
+  //TODO! cambiar aca
   async getDeployments(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments

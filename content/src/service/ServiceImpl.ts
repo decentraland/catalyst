@@ -56,6 +56,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'database'
       | 'deployedEntitiesFilter'
       | 'env'
+      | 'denylist'
     >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }

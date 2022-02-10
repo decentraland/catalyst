@@ -8,13 +8,14 @@ import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
-import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
+import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -41,6 +42,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
+  const denylist = await createDenylistComponent({ env })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
@@ -96,7 +98,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     authenticator,
     database,
-    deployedEntitiesFilter
+    deployedEntitiesFilter,
+    denylist
   })
 
   const snapshotManager = new SnapshotManager(
@@ -235,6 +238,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     daoClient,
     server,
     retryFailedDeployments,
-    sequentialExecutor
+    sequentialExecutor,
+    denylist
   }
 }
