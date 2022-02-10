@@ -4,7 +4,7 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { Environment } from '../../../src/Environment'
+import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createEntityCache } from '../../../src/ports/entitiesCache'
@@ -272,7 +272,8 @@ describe('Service', function () {
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
-    const entitiesCache = createEntityCache({ database, logs, env })
+    env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
+    const entitiesCache = createEntityCache({ database, logs, env, metrics })
 
     return new ServiceImpl({
       env,

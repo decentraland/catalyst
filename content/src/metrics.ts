@@ -90,5 +90,10 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Files migrated to new folder structure',
     type: 'counter',
     labelNames: []
+  },
+  dcl_entities_cache_accesses_total: {
+    help: 'Entities cache accesses (miss or hit) by entity type',
+    type: 'counter',
+    labelNames: ['entity_type', 'result']
   }
 })

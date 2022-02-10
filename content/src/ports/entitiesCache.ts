@@ -25,12 +25,21 @@ const mapDeploymentsToEntities = (history: PartialDeploymentHistory<Deployment>)
   )
 }
 
-export const createEntityCache = (components: Pick<AppComponents, 'database' | 'env' | 'logs'>): EntityCache => {
+export const createEntityCache = (
+  components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics'>
+): EntityCache => {
   const logger = components.logs.getLogger('EntityCache')
   const cache = new LRU<EntityId, Entity>({
-    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE) ?? 15000
+    max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
   const entityIdByPointers = new Map<Pointer, EntityId>()
+
+  const reportCacheAccess = (entity: Entity, result: 'hit' | 'miss') => {
+    components.metrics.increment('dcl_entities_cache_accesses_total', {
+      entity_type: entity.type,
+      result: result
+    })
+  }
 
   const storeDeploymentsAsEntities = (deployments: PartialDeploymentHistory<Deployment>): Entity[] => {
     const entities = mapDeploymentsToEntities(deployments)
@@ -59,23 +68,28 @@ export const createEntityCache = (components: Pick<AppComponents, 'database' | '
   }
 
   const getByIds = async (...entityIds: EntityId[]): Promise<Entity[]> => {
-    // Check what is on the cache
+    // check what is on the cache
     const onCache: Entity[] = []
     const missing: EntityId[] = []
     for (const entityId of entityIds) {
       const entity = cache.get(entityId)
       if (entity) {
         onCache.push(entity)
+        reportCacheAccess(entity, 'hit')
       } else {
         logger.debug('Entity not found on cache', { entityId })
         missing.push(entityId)
       }
     }
 
-    // Calculate values for those missing keys
+    // calculate values for those missing keys
     const calculated: Entity[] = missing.length > 0 ? await findEntitiesByIds(missing) : []
 
-    // Concatenate the results and return them
+    // report miss access
+    for (const entity of calculated) {
+      reportCacheAccess(entity, 'miss')
+    }
+
     return [...onCache, ...calculated]
   }
 
@@ -95,8 +109,7 @@ export const createEntityCache = (components: Pick<AppComponents, 'database' | '
       for (const pointer of pointers) {
         const entityId = entityIdByPointers.get(pointer)
         if (!entityId) {
-          // this should not happen, but just in case
-          logger.debug('Entity with given pointer not found on cache, this should not happen', { pointer })
+          logger.debug('Entity with given pointer not found on cache', { pointer })
           missing.push(pointer)
         } else {
           uniqueEntityIds.add(entityId)
@@ -106,6 +119,11 @@ export const createEntityCache = (components: Pick<AppComponents, 'database' | '
 
       // find entities for missing pointers, probably not necessary
       const missingEntities = missing.length > 0 ? await findEntitiesByPointers(missing) : []
+
+      // report miss access
+      for (const entity of missingEntities) {
+        reportCacheAccess(entity, 'miss')
+      }
 
       return [...(await getByIds(...entityIds)), ...missingEntities]
     },
