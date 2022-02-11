@@ -11,7 +11,7 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
-import { createEntityCache } from './ports/entitiesCache'
+import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
@@ -80,7 +80,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
-  const entitiesCache = createEntityCache({ database, env, logs, metrics })
+  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics })
 
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
@@ -96,7 +96,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     authenticator,
     database,
     deployedEntitiesFilter,
-    entitiesCache
+    activeEntities
   })
 
   const snapshotManager = new SnapshotManager(
@@ -234,6 +234,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     daoClient,
     server,
     retryFailedDeployments,
-    entitiesCache
+    activeEntities
   }
 }

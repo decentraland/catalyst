@@ -4,11 +4,11 @@ import { EnvironmentConfig } from '../Environment'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
-export type EntityCache = {
-  getByPointers(...pointers: Pointer[]): Promise<Entity[]>
-  getByIds(...entityIds: EntityId[]): Promise<Entity[]>
-  invalidate(...pointers: Pointer[]): void
-  associate(pointer: Pointer, entityId: EntityId): void
+export type ActiveEntities = {
+  withPointers(...pointers: Pointer[]): Promise<Entity[]>
+  withIds(...entityIds: EntityId[]): Promise<Entity[]>
+  inactivate(...pointers: Pointer[]): void
+  activate(pointer: Pointer, entity: Entity): void
 }
 
 const mapDeploymentsToEntities = (history: PartialDeploymentHistory<Deployment>): Entity[] => {
@@ -25,10 +25,10 @@ const mapDeploymentsToEntities = (history: PartialDeploymentHistory<Deployment>)
   )
 }
 
-export const createEntityCache = (
+export const createActiveEntitiesComponent = (
   components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics'>
-): EntityCache => {
-  const logger = components.logs.getLogger('EntityCache')
+): ActiveEntities => {
+  const logger = components.logs.getLogger('ActiveEntities')
   const cache = new LRU<EntityId, Entity>({
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
@@ -41,11 +41,28 @@ export const createEntityCache = (
     })
   }
 
-  const storeDeploymentsAsEntities = (deployments: PartialDeploymentHistory<Deployment>): Entity[] => {
+  const cacheEntity = (entity: Entity): void => {
+    cache.set(entity.id, entity)
+  }
+
+  const invalidateEntity = (entityId: EntityId): void => {
+    const entity = cache.get(entityId)
+    if (entity) {
+      for (const pointer of entity.pointers) {
+        entityIdByPointers.delete(pointer)
+      }
+    }
+    cache.del(entityId)
+  }
+
+  const updateCacheAndReturnAsEntities = (deployments: PartialDeploymentHistory<Deployment>): Entity[] => {
     const entities = mapDeploymentsToEntities(deployments)
     // Save the calculated values
     for (const entity of entities) {
-      cache.set(entity.id, entity)
+      cacheEntity(entity)
+      for (const pointer of entity.pointers) {
+        entityIdByPointers.set(pointer, entity.id)
+      }
     }
     return entities
   }
@@ -54,7 +71,7 @@ export const createEntityCache = (
     const deployments = await getDeployments(components, {
       filters: { entityIds, onlyCurrentlyPointed: true }
     })
-    return storeDeploymentsAsEntities(deployments)
+    return updateCacheAndReturnAsEntities(deployments)
   }
 
   const findEntitiesByPointers = async (pointers: Pointer[]): Promise<Entity[]> => {
@@ -64,14 +81,15 @@ export const createEntityCache = (
     for (const deployment of deployments.deployments) {
       deployment.pointers.forEach((pointer) => entityIdByPointers.set(pointer, deployment.entityId))
     }
-    return storeDeploymentsAsEntities(deployments)
+    return updateCacheAndReturnAsEntities(deployments)
   }
 
   const getByIds = async (...entityIds: EntityId[]): Promise<Entity[]> => {
     // check what is on the cache
+    const uniqueEntityIds = new Set(entityIds)
     const onCache: Entity[] = []
     const missing: EntityId[] = []
-    for (const entityId of entityIds) {
+    for (const entityId of uniqueEntityIds) {
       const entity = cache.get(entityId)
       if (entity) {
         onCache.push(entity)
@@ -95,18 +113,19 @@ export const createEntityCache = (
 
   return {
     /**
-     * Get entities by their ids
+     * Retrieve active entities by their ids
      */
-    getByIds,
+    withIds: getByIds,
     /**
      * Retrieve active entities that are pointed by the given pointers
      */
-    getByPointers: async (...pointers) => {
+    withPointers: async (...pointers) => {
+      const uniquePointers = new Set(pointers)
       const uniqueEntityIds = new Set<EntityId>() // entityIds that are associated to the given pointers
       const missing: Pointer[] = [] // pointers that are not associated to any entity
 
       // get associated entity ids to pointers
-      for (const pointer of pointers) {
+      for (const pointer of uniquePointers) {
         const entityId = entityIdByPointers.get(pointer)
         if (!entityId) {
           logger.debug('Entity with given pointer not found on cache', { pointer })
@@ -131,20 +150,20 @@ export const createEntityCache = (
     /**
      * Invalidate the cache for the given pointers
      */
-    invalidate: (...pointers) => {
+    inactivate: (...pointers) => {
       for (const pointer of pointers) {
         const entityId = entityIdByPointers.get(pointer)
         if (entityId) {
-          cache.del(entityId)
-          entityIdByPointers.delete(pointer)
+          invalidateEntity(entityId)
         }
       }
     },
     /**
      * Save entityId for given pointer, useful to retrieve entities by pointers
      */
-    associate: (pointer, entityId) => {
-      entityIdByPointers.set(pointer, entityId)
+    activate: (pointer, entity) => {
+      entityIdByPointers.set(pointer, entity.id)
+      cacheEntity(entity)
     }
   }
 }

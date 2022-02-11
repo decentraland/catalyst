@@ -58,7 +58,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'database'
       | 'deployedEntitiesFilter'
       | 'env'
-      | 'entitiesCache'
+      | 'activeEntities'
     >
   ) {
     const ttl = components.env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
@@ -292,10 +292,10 @@ export class ServiceImpl implements MetaverseContentService {
             for (const pointerChange of pointersFromEntity) {
               if (pointerChange[1].after === DELTA_POINTER_RESULT.CLEARED) {
                 // invalidate pointer (points to an entity that is not active)
-                this.components.entitiesCache.invalidate(pointerChange[0])
+                this.components.activeEntities.inactivate(pointerChange[0])
               } else {
                 // update pointer (points to the new entity that is active)
-                this.components.entitiesCache.associate(pointerChange[0], entity.id)
+                this.components.activeEntities.activate(pointerChange[0], entity)
               }
             }
 
@@ -350,25 +350,18 @@ export class ServiceImpl implements MetaverseContentService {
   }
 
   async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
-    return this.components.entitiesCache.getByIds(...ids)
+    return this.components.activeEntities.withIds(...ids)
   }
 
   async getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]> {
-    return this.components.entitiesCache.getByPointers(...pointers)
+    return this.components.activeEntities.withPointers(...pointers)
   }
 
   /** Check if there are newer entities on the given entity's pointers */
   private async areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const { deployments: lastDeployments } = await getDeployments(this.components, {
-      filters: { entityTypes: [entity.type], pointers: entity.pointers }
-    })
-    for (const lastDeployment of lastDeployments) {
-      if (happenedBefore(entity, lastDeployment)) {
-        return true
-      }
-    }
-    return false
+    const activeEntities = await this.components.activeEntities.withPointers(...entity.pointers)
+    return activeEntities.some((activeEntity) => activeEntity.id !== entity.id)
   }
 
   /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl

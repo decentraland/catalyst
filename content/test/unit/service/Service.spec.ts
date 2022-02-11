@@ -7,7 +7,7 @@ import { Authenticator } from 'dcl-crypto'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
-import { createEntityCache } from '../../../src/ports/entitiesCache'
+import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -273,7 +273,7 @@ describe('Service', function () {
     const database = await createDatabaseComponent({ logs, env })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
-    const entitiesCache = createEntityCache({ database, logs, env, metrics })
+    const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics })
 
     return new ServiceImpl({
       env,
@@ -289,7 +289,7 @@ describe('Service', function () {
       authenticator,
       database,
       deployedEntitiesFilter,
-      entitiesCache
+      activeEntities
     })
   }
 
