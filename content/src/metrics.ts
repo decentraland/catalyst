@@ -1,10 +1,12 @@
 import { metricsDefinitions as snapshotFetcherMetricsDefinitions } from '@dcl/snapshots-fetcher'
 import { validateMetricsDeclaration } from '@well-known-components/metrics'
 import { getDefaultHttpMetrics } from '@well-known-components/metrics/dist/http'
+import { sequentialJobMetrics } from './ports/sequecuentialTaskExecutor'
 
 export const metricsDeclaration = validateMetricsDeclaration({
   ...getDefaultHttpMetrics(),
   ...snapshotFetcherMetricsDefinitions,
+  ...sequentialJobMetrics,
   total_deployments_count: {
     help: 'Total number of deployments made to the content server',
     type: 'counter',
