@@ -9,13 +9,13 @@ import { DeploymentPointerChanges, PartialDeploymentPointerChanges, PointerChang
 const MAX_HISTORY_LIMIT = 500
 
 export async function getPointerChanges(
-  components: Pick<AppComponents, 'database'>,
+  components: Pick<AppComponents, 'database' | 'denylist'>,
   options?: PointerChangesOptions
 ): Promise<PartialDeploymentPointerChanges> {
   const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0
   const curatedLimit =
     options?.limit && options?.limit > 0 && options?.limit <= MAX_HISTORY_LIMIT ? options?.limit : MAX_HISTORY_LIMIT
-  const deploymentsWithExtra = await getHistoricalDeployments(
+  let deploymentsWithExtra = await getHistoricalDeployments(
     components,
     curatedOffset,
     curatedLimit + 1,
@@ -23,6 +23,9 @@ export async function getPointerChanges(
     options?.sortBy,
     options?.lastId
   )
+
+  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenyListed(result.entityId))
+
   const moreData = deploymentsWithExtra.length > curatedLimit
 
   const deployments = deploymentsWithExtra.slice(0, curatedLimit)

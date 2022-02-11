@@ -470,20 +470,6 @@ export class ServiceImpl implements MetaverseContentService {
     return getDeployments(this.components, options)
   }
 
-  // This endpoint is for debugging purposes
-  getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.taskIf((task) =>
-          this.components.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)
-        ),
-      {
-        priority: DB_REQUEST_PRIORITY.LOW
-      }
-    )
-  }
-
   getAllFailedDeployments(): FailedDeployment[] {
     return this.components.failedDeploymentsCache.getAllFailedDeployments()
   }

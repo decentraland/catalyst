@@ -32,7 +32,10 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   }
 
   constructor(
-    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage'>,
+    private readonly components: Pick<
+      AppComponents,
+      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist'
+    >,
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
@@ -186,6 +189,10 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
+        if (this.components.denylist.isDenyListed(snapshotElem.entityId)) {
+          continue
+        }
+
         // TODO: [new-sync] filter out denylisted entities
 
         const str = JSON.stringify(snapshotElem) + '\n'

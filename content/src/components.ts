@@ -103,7 +103,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   const snapshotManager = new SnapshotManager(
-    { database, metrics, staticConfigs, logs, storage },
+    { database, metrics, staticConfigs, logs, storage, denylist },
     env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
   )
 
@@ -197,7 +197,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       logs,
       metrics,
       database,
-      sequentialExecutor
+      sequentialExecutor,
+      denylist
     },
     ethNetwork
   )

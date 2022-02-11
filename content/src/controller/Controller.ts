@@ -18,6 +18,7 @@ import express from 'express'
 import fs from 'fs'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
@@ -47,13 +48,13 @@ export class Controller {
       | 'metrics'
       | 'database'
       | 'sequentialExecutor'
+      | 'denylist'
     >,
     private readonly ethNetwork: string
   ) {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
-  //TODO! Cambiar aca
   async getEntities(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /entities/:type
@@ -234,7 +235,6 @@ export class Controller {
     }
   }
 
-  //TODO! ver de cambiar aca
   async getAvailableContent(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /available-content
@@ -244,7 +244,8 @@ export class Controller {
     if (!cids) {
       res.status(400).send('Please set at least one cid.')
     } else {
-      const availableContent = await this.components.deployer.isContentAvailable(cids)
+      const availableCids = cids.filter((cid) => !this.components.denylist.isDenyListed(cid))
+      const availableContent = await this.components.deployer.isContentAvailable(availableCids)
       res.send(
         Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
           cid: fileHash,
@@ -254,7 +255,6 @@ export class Controller {
     }
   }
 
-  //TODO! cambiar aca
   async getAudit(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /audit/:type/:entityId
@@ -411,7 +411,8 @@ export class Controller {
     // Path: /contents/:hashId/active-entities
     const hashId = req.params.hashId
 
-    const result = await this.components.deployer.getActiveDeploymentsByContentHash(hashId)
+    const result = await getActiveDeploymentsByContentHash(this.components, hashId)
+    result.filter((entityId) => !this.components.denylist.isDenyListed(entityId))
 
     if (result.length === 0) {
       res.status(404).send({ error: 'The entity was not found' })
@@ -421,7 +422,6 @@ export class Controller {
     res.json(result)
   }
 
-  //TODO! cambiar aca
   async getDeployments(req: express.Request, res: express.Response) {
     // Method: GET
     // Path: /deployments
