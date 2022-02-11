@@ -1,4 +1,4 @@
-import { Deployment, Entity, EntityId, PartialDeploymentHistory, Pointer } from 'dcl-catalyst-commons'
+import { Deployment, Entity, EntityId, Pointer } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import { getDeployments } from '../service/deployments/deployments'
@@ -11,18 +11,16 @@ export type ActiveEntities = {
   activate(pointer: Pointer, entity: Entity): void
 }
 
-const mapDeploymentsToEntities = (history: PartialDeploymentHistory<Deployment>): Entity[] => {
-  return history.deployments.map(
-    ({ entityVersion, entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
-      version: entityVersion,
-      id: entityId,
-      type: entityType,
-      pointers,
-      timestamp: entityTimestamp,
-      content: content?.map(({ key, hash }) => ({ file: key, hash })),
-      metadata
-    })
-  )
+const mapDeploymentsToEntities = (deployments: Deployment[]): Entity[] => {
+  return deployments.map(({ entityVersion, entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
+    version: entityVersion,
+    id: entityId,
+    type: entityType,
+    pointers,
+    timestamp: entityTimestamp,
+    content: content?.map(({ key, hash }) => ({ file: key, hash })),
+    metadata
+  }))
 }
 
 export const createActiveEntitiesComponent = (
@@ -55,7 +53,7 @@ export const createActiveEntitiesComponent = (
     cache.del(entityId)
   }
 
-  const updateCacheAndReturnAsEntities = (deployments: PartialDeploymentHistory<Deployment>): Entity[] => {
+  const updateCacheAndReturnAsEntities = (deployments: Deployment[]): Entity[] => {
     const entities = mapDeploymentsToEntities(deployments)
     // Save the calculated values
     for (const entity of entities) {
@@ -67,24 +65,32 @@ export const createActiveEntitiesComponent = (
     return entities
   }
 
+  /**
+   * Queries DB to retrieve deployments using the given ids as filter and return them as entities
+   * It also updates the cache
+   */
   const findEntitiesByIds = async (entityIds: EntityId[]): Promise<Entity[]> => {
-    const deployments = await getDeployments(components, {
+    const { deployments } = await getDeployments(components, {
       filters: { entityIds, onlyCurrentlyPointed: true }
     })
     return updateCacheAndReturnAsEntities(deployments)
   }
 
+  /**
+   * Queries DB to retrieve deployments using the given pointers as filter and return them as entities
+   * It also updates the cache
+   */
   const findEntitiesByPointers = async (pointers: Pointer[]): Promise<Entity[]> => {
-    const deployments = await getDeployments(components, {
+    const { deployments } = await getDeployments(components, {
       filters: { pointers, onlyCurrentlyPointed: true }
     })
-    for (const deployment of deployments.deployments) {
+    for (const deployment of deployments) {
       deployment.pointers.forEach((pointer) => entityIdByPointers.set(pointer, deployment.entityId))
     }
     return updateCacheAndReturnAsEntities(deployments)
   }
 
-  const getByIds = async (...entityIds: EntityId[]): Promise<Entity[]> => {
+  const withIds = async (...entityIds: EntityId[]): Promise<Entity[]> => {
     // check what is on the cache
     const uniqueEntityIds = new Set(entityIds)
     const onCache: Entity[] = []
@@ -115,7 +121,7 @@ export const createActiveEntitiesComponent = (
     /**
      * Retrieve active entities by their ids
      */
-    withIds: getByIds,
+    withIds,
     /**
      * Retrieve active entities that are pointed by the given pointers
      */
@@ -144,7 +150,7 @@ export const createActiveEntitiesComponent = (
         reportCacheAccess(entity, 'miss')
       }
 
-      return [...(await getByIds(...entityIds)), ...missingEntities]
+      return [...(await withIds(...entityIds)), ...missingEntities]
     },
 
     /**
