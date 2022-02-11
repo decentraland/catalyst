@@ -61,7 +61,8 @@ export class EntityFactory {
     }
   }
 
-  private static parseContent(contents: any[]): EntityContentItemReference[] {
+  private static parseContent(contents: any[]): EntityContentItemReference[] | undefined {
+    if (contents.length === 0) return
     return contents.map(({ file, hash }) => {
       if (!file || !hash) {
         throw new Error('Content must contain a file name and a file hash')

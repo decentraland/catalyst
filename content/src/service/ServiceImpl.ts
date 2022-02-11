@@ -357,11 +357,19 @@ export class ServiceImpl implements MetaverseContentService {
     return this.components.activeEntities.withPointers(...pointers)
   }
 
+  // todo: review if we can use entities cache to determine if there is a newer deployment
   /** Check if there are newer entities on the given entity's pointers */
   private async areThereNewerEntitiesOnPointers(entity: Entity): Promise<boolean> {
     // Validate that pointers aren't referring to an entity with a higher timestamp
-    const activeEntities = await this.components.activeEntities.withPointers(...entity.pointers)
-    return activeEntities.some((activeEntity) => activeEntity.id !== entity.id)
+    const { deployments: lastDeployments } = await getDeployments(this.components, {
+      filters: { entityTypes: [entity.type], pointers: entity.pointers }
+    })
+    for (const lastDeployment of lastDeployments) {
+      if (happenedBefore(entity, lastDeployment)) {
+        return true
+      }
+    }
+    return false
   }
 
   /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
