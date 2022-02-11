@@ -108,7 +108,6 @@ export class Controller {
     const ids: EntityId[] = req.body.ids
     const pointers: Pointer[] = req.body.pointers
 
-    console.log(JSON.stringify(req.body))
     // Validate pointers or ids are present, but not both
     if (
       (ids && ids.length > 0 && pointers && pointers.length > 0) || // both present
