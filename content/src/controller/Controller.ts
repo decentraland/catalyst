@@ -411,8 +411,8 @@ export class Controller {
     // Path: /contents/:hashId/active-entities
     const hashId = req.params.hashId
 
-    const result = await getActiveDeploymentsByContentHash(this.components, hashId)
-    result.filter((entityId) => !this.components.denylist.isDenyListed(entityId))
+    let result = await getActiveDeploymentsByContentHash(this.components, hashId)
+    result = result.filter((entityId) => !this.components.denylist.isDenyListed(entityId))
 
     if (result.length === 0) {
       res.status(404).send({ error: 'The entity was not found' })

@@ -1,4 +1,5 @@
 import { resolve } from 'path'
+import { createInterface } from 'readline'
 import { EnvironmentConfig } from '../Environment'
 import { createReadStream, promises } from '../helpers/fsWrapper'
 import { AppComponents } from '../types'
@@ -25,7 +26,12 @@ export async function createDenylistComponent(
       encoding: 'utf-8'
     })
 
-    for await (const line of content) {
+    const lines = createInterface({
+      input: content,
+      crlfDelay: Infinity
+    })
+
+    for await (const line of lines) {
       bannedList.add((line as string).trim())
     }
 

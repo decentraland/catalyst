@@ -1,11 +1,12 @@
 import { createLogComponent } from '@well-known-components/logger'
+import { Readable } from 'stream'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { createDenylistComponent } from '../../../src/ports/denylist'
 
-const lines = ['my', 'first', 'denylisted', 'item']
+const lines = ['my\n', 'first\n', 'denylisted\n', 'item\n']
 
 jest.mock('../../../src/helpers/fsWrapper', () => ({
-  createReadStream: () => lines,
+  createReadStream: () => Readable.from(lines),
   promises: { access: () => true }
 }))
 
@@ -19,7 +20,7 @@ describe('denylist', () => {
     it('should have denylisted each line from the file', async () => {
       const denylist = await createDenylistComponent({ env, logs })
 
-      expect(lines.every((line) => denylist.isDenyListed(line))).toBe(true)
+      expect(lines.every((line) => denylist.isDenyListed(line.trimEnd()))).toBe(true)
     })
 
     it('should not have denylisted another word', async () => {
