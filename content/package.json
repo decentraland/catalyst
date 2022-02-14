@@ -67,6 +67,8 @@
     "@types/parallel-transform": "^1",
     "@types/pg": "^8",
     "@types/uuid": "^8",
+    "chalk": "4.1.2",
+    "columnify": "1.6.0",
     "cpy-cli": "^3.1.1",
     "destroy": "1.0.4",
     "faker": "5.5.3",
