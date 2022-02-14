@@ -41,7 +41,7 @@ export async function getDeployments(
   // TODO [new-sync]: migrationData nolonger required
   const migrationData = await getMigrationData(components, deploymentIds)
 
-  if (!options?.addDenylisted) {
+  if (!options?.includeDenylisted) {
     deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenyListed(result.entityId))
   }
 

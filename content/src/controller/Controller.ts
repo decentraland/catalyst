@@ -271,7 +271,7 @@ export class Controller {
     const { deployments } = await this.components.deployer.getDeployments({
       fields: [DeploymentField.AUDIT_INFO],
       filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true },
-      addDenylisted: true
+      includeDenylisted: true
     })
 
     if (deployments.length > 0) {
