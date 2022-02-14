@@ -251,7 +251,7 @@ describe('Service', function () {
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
-    const denylist: DenylistComponent = await createDenylistComponent({ env })
+    const denylist: DenylistComponent = await createDenylistComponent({ env, logs })
 
     return ServiceFactory.create({
       env,

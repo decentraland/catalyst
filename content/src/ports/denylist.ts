@@ -7,7 +7,10 @@ export interface DenylistComponent {
   isDenyListed(hash: string): boolean
 }
 
-export async function createDenylistComponent(components: Pick<AppComponents, 'env'>): Promise<DenylistComponent> {
+export async function createDenylistComponent(
+  components: Pick<AppComponents, 'env' | 'logs'>
+): Promise<DenylistComponent> {
+  const logs = components.logs.getLogger('Denylist')
   const bannedList = new Set()
 
   const fileName = resolve(
@@ -17,6 +20,7 @@ export async function createDenylistComponent(components: Pick<AppComponents, 'e
 
   try {
     await promises.access(fileName)
+
     const content = await createReadStream(fileName, {
       encoding: 'utf-8'
     })
@@ -24,7 +28,11 @@ export async function createDenylistComponent(components: Pick<AppComponents, 'e
     for await (const line of content) {
       bannedList.add((line as string).trim())
     }
-  } catch (err) {}
+
+    logs.info('Load successfully the denylist')
+  } catch (err) {
+    logs.warn("Couldn't load a denylist")
+  }
 
   const isDenyListed = (hash: string): boolean => {
     return bannedList.has(hash)

@@ -42,7 +42,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
-  const denylist = await createDenylistComponent({ env })
+  const denylist = await createDenylistComponent({ env, logs })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
