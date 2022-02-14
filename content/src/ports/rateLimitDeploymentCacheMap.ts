@@ -59,14 +59,17 @@ function generateDeploymentCacheMap(
   logs: ILoggerComponent.ILogger,
   rateLimitConfig: RateLimitConfig
 ): Map<EntityType, { cache: NodeCache; maxSize: number }> {
-  const envMaxPerEntity: Map<EntityType, number> = getMaxPerEntityMapConfig(rateLimitConfig.entitiesConfigMax)
-  const envTtlPerEntity: Map<EntityType, number> = getTtlPerEntityMapConfig(rateLimitConfig.entitiesConfigTtl)
+  const configPerEntityType: Map<EntityType, { max: number; ttl: number }> = getCacheConfigPerEntityMap(
+    rateLimitConfig.entitiesConfigMax,
+    rateLimitConfig.entitiesConfigTtl
+  )
 
   const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> = new Map()
 
   for (const entityType of Object.values(EntityType)) {
-    const ttl: number = envTtlPerEntity.get(entityType) ?? rateLimitConfig.defaultTtl
-    const maxSize: number = envMaxPerEntity.get(entityType) ?? rateLimitConfig.defaultMax
+    // The default is used in case a new entity type is created and it doesn't have a custom config
+    const ttl: number = configPerEntityType.get(entityType)?.ttl ?? rateLimitConfig.defaultTtl
+    const maxSize: number = configPerEntityType.get(entityType)?.max ?? rateLimitConfig.defaultMax
 
     deploymentCacheMap.set(entityType, {
       cache: new NodeCache({ stdTTL: ttl, checkperiod: ttl }),
@@ -94,22 +97,38 @@ function toString(deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSiz
   return stringifyMap.join('\n')
 }
 
-function getTtlPerEntityMapConfig(config: Map<EntityType, number>) {
-  const defaultTtlPerEntity: Map<EntityType, number> = new Map([
-    [EntityType.PROFILE, ms('1m')],
-    [EntityType.SCENE, ms('20s')],
-    [EntityType.WEARABLE, ms('20s')],
-    [EntityType.STORE, ms('1m')]
+function getCacheConfigPerEntityMap(
+  entitiesConfigMax: Map<EntityType, number>,
+  entitiesConfigTtl: Map<EntityType, number>
+): Map<EntityType, { max: number; ttl: number }> {
+  return new Map([
+    [
+      EntityType.PROFILE,
+      {
+        max: entitiesConfigMax.get(EntityType.PROFILE) ?? 300,
+        ttl: entitiesConfigTtl.get(EntityType.PROFILE) ?? ms('1m')
+      }
+    ],
+    [
+      EntityType.SCENE,
+      {
+        max: entitiesConfigMax.get(EntityType.SCENE) ?? 100000,
+        ttl: entitiesConfigTtl.get(EntityType.SCENE) ?? ms('20s')
+      }
+    ],
+    [
+      EntityType.WEARABLE,
+      {
+        max: entitiesConfigMax.get(EntityType.WEARABLE) ?? 100000,
+        ttl: entitiesConfigTtl.get(EntityType.WEARABLE) ?? ms('20s')
+      }
+    ],
+    [
+      EntityType.STORE,
+      {
+        max: entitiesConfigMax.get(EntityType.STORE) ?? 300,
+        ttl: entitiesConfigTtl.get(EntityType.STORE) ?? ms('1m')
+      }
+    ]
   ])
-  return new Map([...defaultTtlPerEntity, ...config])
-}
-
-function getMaxPerEntityMapConfig(config: Map<EntityType, number>) {
-  const defaultMaxPerEntity: Map<EntityType, number> = new Map([
-    [EntityType.PROFILE, 300],
-    [EntityType.SCENE, 100000],
-    [EntityType.WEARABLE, 100000],
-    [EntityType.STORE, 300]
-  ])
-  return new Map([...defaultMaxPerEntity, ...config])
 }

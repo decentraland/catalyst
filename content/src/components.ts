@@ -10,7 +10,6 @@ import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
-import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
@@ -18,6 +17,7 @@ import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
 import { createRateLimitDeploymentCacheMap } from './ports/rateLimitDeploymentCacheMap'
+import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -95,7 +95,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   )
 
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
-  const serverValidator = createServerValidator({ failedDeploymentsCache })
+  const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
 

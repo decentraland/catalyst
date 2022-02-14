@@ -8,13 +8,13 @@ import { ILoggerComponent, IMetricsComponent } from '@well-known-components/inte
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
-import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { IDatabaseComponent } from './ports/postgres'
 import { IRateLimitDeploymentCacheMapComponent } from './ports/rateLimitDeploymentCacheMap'
+import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -95,7 +95,7 @@ export type IStatusCapableComponent = {
   getComponentStatus(): Promise<StatusProbeResult>
 }
 
-// TODO: Move this to catalyst-commons
+// TODO: Move this to catalyst-commons and remove the check for trailing s?
 export function parseEntityType(strType: string): EntityType {
   if (strType.endsWith('s')) {
     strType = strType.slice(0, -1)
