@@ -4,8 +4,9 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { Environment } from '../../../src/Environment'
+import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
+import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
@@ -236,6 +237,9 @@ describe('Service', function () {
   async function buildService() {
     const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
     const env = new Environment()
+    env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
+    env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
+
     const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
@@ -247,6 +251,7 @@ describe('Service', function () {
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
+    const denylist: DenylistComponent = await createDenylistComponent({ env })
 
     return ServiceFactory.create({
       env,
@@ -261,7 +266,8 @@ describe('Service', function () {
       logs,
       authenticator,
       database,
-      deployedEntitiesFilter
+      deployedEntitiesFilter,
+      denylist
     })
   }
 

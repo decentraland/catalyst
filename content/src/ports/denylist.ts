@@ -10,8 +10,6 @@ export interface DenylistComponent {
 export async function createDenylistComponent(components: Pick<AppComponents, 'env'>): Promise<DenylistComponent> {
   const bannedList = new Set()
 
-  console.log('storage', components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER))
-
   const fileName = resolve(
     components.env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER),
     components.env.getConfig(EnvironmentConfig.DENYLIST_FILE_NAME)

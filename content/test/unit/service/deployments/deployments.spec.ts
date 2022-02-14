@@ -14,7 +14,7 @@ import { AppComponents } from '../../../../src/types'
 
 describe('deployments service', () => {
   describe('getDeployments', () => {
-    let components: Pick<AppComponents, 'database'>
+    let components: Pick<AppComponents, 'database' | 'denylist'>
     let result: PartialDeploymentHistory<Deployment>
 
     const deploymentIds = [127, 255]
@@ -80,7 +80,7 @@ describe('deployments service', () => {
     }
 
     beforeAll(() => {
-      components = { database: { queryWithValues: () => {} } as any }
+      components = { database: { queryWithValues: () => {} } as any, denylist: { isDenyListed: () => false } }
       stub(components.database, 'queryWithValues')
         .onFirstCall()
         .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
