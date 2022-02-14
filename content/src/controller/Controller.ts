@@ -46,6 +46,7 @@ export class Controller {
       | 'logs'
       | 'metrics'
       | 'database'
+      | 'sequentialExecutor'
     >,
     private readonly ethNetwork: string
   ) {
@@ -80,12 +81,14 @@ export class Controller {
     }
 
     // Calculate and mask entities
-    let entities: Entity[]
-    if (ids.length > 0) {
-      entities = await this.components.deployer.getEntitiesByIds(ids)
-    } else {
-      entities = await this.components.deployer.getEntitiesByPointers(type, pointers)
-    }
+    const entities: Entity[] = await this.components.sequentialExecutor.run('GetEntitiesEndpoint', async () => {
+      if (ids.length > 0) {
+        return await this.components.deployer.getEntitiesByIds(ids)
+      } else {
+        return await this.components.deployer.getEntitiesByPointers(type, pointers)
+      }
+    })
+
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
   }
@@ -350,13 +353,15 @@ export class Controller {
       pointerChanges: deltas,
       filters,
       pagination
-    } = await getPointerChanges(this.components, {
-      filters: requestFilters,
-      offset,
-      limit,
-      lastId,
-      sortBy
-    })
+    } = await this.components.sequentialExecutor.run('GetPointerChangesEndpoint', () =>
+      getPointerChanges(this.components, {
+        filters: requestFilters,
+        offset,
+        limit,
+        lastId,
+        sortBy
+      })
+    )
     const controllerPointerChanges: ControllerPointerChanges[] = deltas.map((delta) => ({
       ...delta,
       changes: Array.from(delta.changes.entries()).map(([pointer, { before, after }]) => ({ pointer, before, after }))
@@ -508,7 +513,10 @@ export class Controller {
     }
 
     // don't replace this until the denylist is implemented outside of the service
-    const { deployments, filters, pagination } = await this.components.deployer.getDeployments(deploymentOptions)
+    const { deployments, filters, pagination } = await this.components.sequentialExecutor.run(
+      'GetDeploymentsEndpoint',
+      () => this.components.deployer.getDeployments(deploymentOptions)
+    )
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)
     )

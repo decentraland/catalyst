@@ -8,6 +8,7 @@ import { ILoggerComponent, IMetricsComponent } from '@well-known-components/inte
 import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
+import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
@@ -67,6 +68,7 @@ export type AppComponents = {
   daoClient: DAOClient
   server: Server
   retryFailedDeployments: IRetryFailedDeploymentsComponent
+  sequentialExecutor: ISequentialTaskExecutorComponent
 
   // this will be replaced by `database` and removed from here
   repository: Repository
