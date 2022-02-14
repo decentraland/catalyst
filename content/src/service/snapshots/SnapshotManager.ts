@@ -193,8 +193,6 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
           continue
         }
 
-        // TODO: [new-sync] filter out denylisted entities
-
         const str = JSON.stringify(snapshotElem) + '\n'
 
         // update ALL_ENTITIES timestamp
