@@ -23,6 +23,16 @@ export type ActiveEntities = {
    * useful to retrieve entities by pointers
    */
   update(pointers: Pointer[], entity: Entity): void
+  /**
+   * Returns the entity id if there is an active entity with given pointer
+   * Note: testing purposes
+   */
+  getActiveEntity(pointer: Pointer): EntityId | undefined
+  /**
+   * Returns true if there is an active entity cached with given id
+   * Note: testing purposes
+   */
+  isActiveEntityCached(entityId: EntityId): boolean
 }
 
 /**
@@ -133,6 +143,17 @@ export const createActiveEntitiesComponent = (
     // calculate values for those remaining keys
     const remainingEntities: Entity[] = remaining.length > 0 ? await findEntities({ entityIds: remaining }) : []
 
+    if (onCache.length + remainingEntities.length !== entityIds.length) {
+      const missingIds = entityIds
+        .filter((entityId) => {
+          const notInCache = !onCache.find((entity) => entity.id === entityId)
+          const notInRemaining = !remainingEntities.find((entity) => entity.id === entityId)
+          return notInCache && notInRemaining
+        })
+        .join(', ')
+      logger.debug('Some requested entities are not active or do not exist', { missingIds })
+    }
+
     return [...onCache, ...remainingEntities]
   }
 
@@ -169,6 +190,9 @@ export const createActiveEntitiesComponent = (
     withIds,
     withPointers,
     update,
-    invalidate
+    invalidate,
+
+    getActiveEntity: (pointer) => entityIdByPointers.get(pointer),
+    isActiveEntityCached: (entityId) => cache.has(entityId)
   }
 }

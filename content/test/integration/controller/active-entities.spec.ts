@@ -147,6 +147,152 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     expect(JSON.stringify(resultWithId)).toBe(JSON.stringify(resultWithPointers))
   })
 
+  describe('Active Entities cache', () => {
+    it('when fetching active entity by ids, then entity is cached', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointers = ['0,0', '0,1']
+      const deployResult = await buildDeployData(pointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity
+      await server.deploy(deployResult.deployData)
+      await fetchActiveEntityByIds(server, deployResult.entity.id)
+
+      const zeroZeroActiveEntityId = server.components.activeEntities.getActiveEntity('0,0')
+      const zeroOneActiveEntityId1 = server.components.activeEntities.getActiveEntity('0,1')
+      expect(zeroZeroActiveEntityId).toBeDefined()
+      expect(zeroOneActiveEntityId1).toBeDefined()
+      expect(zeroOneActiveEntityId1).toBe(zeroZeroActiveEntityId)
+      expect(zeroZeroActiveEntityId).toBe(deployResult.controllerEntity.id)
+
+      const isCached = server.components.activeEntities.isActiveEntityCached(zeroZeroActiveEntityId)
+      expect(isCached).toBeTruthy()
+    })
+
+    it('when fetching active entities by pointer but there is no one, then no entity is cached', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+
+      const somePointer = '0,0'
+      const result = await fetchActiveEntityByPointers(server, somePointer)
+      expect(result).toHaveLength(0)
+
+      const entityId = server.components.activeEntities.getActiveEntity(somePointer)
+      expect(entityId).toBeUndefined()
+    })
+
+    it('when fetching active entities by id but there is no one, then no entity is cached', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+
+      const someId = 'someId'
+      const result = await fetchActiveEntityByPointers(server, someId)
+      expect(result).toHaveLength(0)
+
+      const isCached = server.components.activeEntities.isActiveEntityCached(someId)
+      expect(isCached).toBeFalsy()
+    })
+
+    it('when overriding an entity, then cache is invalidated', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointers = ['0,0', '0,1']
+      const { deployData } = await buildDeployData(pointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity with pointers ['0,0', '0,1']
+      await server.deploy(deployData)
+
+      const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+      // Deploy entity with pointer ['0,1']
+      await server.deploy(secondDeployData) // Override entity and invalidate pointer ['0,0']
+
+      const result = await fetchActiveEntityByPointers(server, '0,0')
+      expect(result).toHaveLength(0)
+
+      const activeEntityForInvalidatedPointer = server.components.activeEntities.getActiveEntity('0,0')
+      expect(activeEntityForInvalidatedPointer).toBeUndefined()
+    })
+
+    it('when deploying a new entity with same pointer, then cache is updated', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const activeEntities = server.components.activeEntities
+      const pointers = ['0,0', '0,1']
+      const { deployData } = await buildDeployData(pointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity with pointers ['0,0', '0,1']
+      await server.deploy(deployData)
+
+      const result = await fetchActiveEntityByPointers(server, '0,0', '0,1')
+      expect(result).toHaveLength(1)
+
+      const entityId = activeEntities.getActiveEntity('0,0')
+      const secondEntityId = activeEntities.getActiveEntity('0,1')
+      expect(entityId).toBe(secondEntityId)
+      expect(activeEntities.isActiveEntityCached(entityId)).toBeTruthy()
+
+      const { deployData: secondDeployData } = await buildDeployData(pointers, {
+        metadata: 'this is just some metadata 2',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+      // Deploy new entity with pointers ['0,0', '0,1']
+      await server.deploy(secondDeployData)
+      const newEntityId = activeEntities.getActiveEntity('0,0')
+      expect(newEntityId).not.toBe(entityId)
+      expect(activeEntities.isActiveEntityCached(entityId)).toBeFalsy()
+      expect(activeEntities.isActiveEntityCached(newEntityId)).toBeTruthy()
+      expect(activeEntities.getActiveEntity('0,0')).toBe(newEntityId)
+      expect(activeEntities.getActiveEntity('0,1')).toBe(newEntityId)
+    })
+
+    it('when fetching multiple active entities, all are cached', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const activeEntities = server.components.activeEntities
+      const firstPointers = ['0,0', '0,1']
+      const { deployData } = await buildDeployData(firstPointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      const secondPointers = ['0,2', '0,3']
+      const { deployData: secondDeployData } = await buildDeployData(secondPointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      await server.deploy(deployData)
+      await server.deploy(secondDeployData)
+
+      const result = await fetchActiveEntityByPointers(server, ...firstPointers, ...secondPointers)
+      expect(result).toHaveLength(2)
+
+      const firstEntityId = result[0].id
+      const secondEntityId = result[1].id
+
+      expect(activeEntities.isActiveEntityCached(firstEntityId)).toBeTruthy()
+      expect(activeEntities.isActiveEntityCached(secondEntityId)).toBeTruthy()
+    })
+  })
+
   async function fetchActiveEntityByIds(server: TestProgram, ...ids: string[]): Promise<Entity[]> {
     const url = server.getUrl() + `/entities/active`
 
