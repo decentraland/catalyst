@@ -56,7 +56,7 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
-  async getEntities(req: express.Request, res: express.Response) {
+  async getEntities(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /entities/:type
     // Query String: ?{filter}&fields={fieldList}
@@ -199,7 +199,7 @@ export class Controller {
     )
   }
 
-  async headContent(req: express.Request, res: express.Response) {
+  async headContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: HEAD
     // Path: /contents/:hashId
     const hashId = req.params.hashId
@@ -215,7 +215,7 @@ export class Controller {
     }
   }
 
-  async getContent(req: express.Request, res: express.Response) {
+  async getContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /contents/:hashId
     const hashId = req.params.hashId
@@ -236,7 +236,7 @@ export class Controller {
     }
   }
 
-  async getAvailableContent(req: express.Request, res: express.Response) {
+  async getAvailableContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /available-content
     // Query String: ?cid={hashId1}&cid={hashId2}
@@ -256,7 +256,7 @@ export class Controller {
     }
   }
 
-  async getAudit(req: express.Request, res: express.Response) {
+  async getAudit(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /audit/:type/:entityId
     const type = this.parseEntityType(req.params.type)
@@ -291,7 +291,7 @@ export class Controller {
     }
   }
 
-  async getPointerChanges(req: express.Request, res: express.Response) {
+  async getPointerChanges(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /pointer-changes
     // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
@@ -299,10 +299,6 @@ export class Controller {
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
       ? stringEntityTypes.map((type) => this.parseEntityType(type))
       : undefined
-    // deprecated
-    const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
-    // deprecated
-    const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
     const from: Timestamp | undefined = this.asInt(req.query.from)
     const to: Timestamp | undefined = this.asInt(req.query.to)
     const offset: number | undefined = this.asInt(req.query.offset)
@@ -350,14 +346,10 @@ export class Controller {
       }
     }
 
-    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
-    const fromFilter = from ?? fromLocalTimestamp
-    const toFilter = to ?? toLocalTimestamp
-
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
-      from: fromFilter,
-      to: toFilter,
+      from: from,
+      to: to,
       includeAuthChain,
       includeOverwrittenInfo: includeAuthChain
     }
@@ -406,7 +398,7 @@ export class Controller {
     return '?' + nextQueryParams
   }
 
-  async getActiveDeploymentsByContentHash(req: express.Request, res: express.Response) {
+  async getActiveDeploymentsByContentHash(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /contents/:hashId/active-entities
     const hashId = req.params.hashId
@@ -422,7 +414,7 @@ export class Controller {
     res.json(result)
   }
 
-  async getDeployments(req: express.Request, res: express.Response) {
+  async getDeployments(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /deployments
     // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
@@ -445,10 +437,6 @@ export class Controller {
       req.query.sortingOrder as string
     )
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    // deprecated
-    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-    // deprecated
-    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const from: number | undefined = this.asInt(req.query.from)
     const to: number | undefined = this.asInt(req.query.to)
 
@@ -494,27 +482,13 @@ export class Controller {
       }
     }
 
-    // Validate to and from are valid
-    if (sortingField == SortingField.ENTITY_TIMESTAMP && (fromLocalTimestamp || toLocalTimestamp)) {
-      res.status(400).send({
-        error: 'The filters fromLocalTimestamp and toLocalTimestamp can not be used when sorting by entity timestamp.'
-      })
-      return
-    }
-
-    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
-    const fromFilter =
-      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && fromLocalTimestamp ? fromLocalTimestamp : from
-    const toFilter =
-      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && toLocalTimestamp ? toLocalTimestamp : to
-
     const requestFilters = {
       pointers,
       entityTypes: entityTypes as EntityType[],
       entityIds,
       onlyCurrentlyPointed,
-      from: fromFilter,
-      to: toFilter
+      from: from,
+      to: to
     }
 
     const deploymentOptions = {
@@ -602,7 +576,7 @@ export class Controller {
     return value ? value === 'true' : undefined
   }
 
-  async getStatus(req: express.Request, res: express.Response) {
+  async getStatus(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /status
 
@@ -622,7 +596,7 @@ export class Controller {
   /**
    * @deprecated
    */
-  async getSnapshot(req: express.Request, res: express.Response) {
+  async getSnapshot(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /snapshot/:type
 
@@ -643,7 +617,7 @@ export class Controller {
     }
   }
 
-  async getAllSnapshots(req: express.Request, res: express.Response) {
+  async getAllSnapshots(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /snapshot
 
@@ -656,7 +630,7 @@ export class Controller {
     }
   }
 
-  async getFailedDeployments(req: express.Request, res: express.Response) {
+  async getFailedDeployments(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /failed-deployments
 
@@ -664,7 +638,7 @@ export class Controller {
     res.send(failedDeployments)
   }
 
-  async getChallenge(req: express.Request, res: express.Response) {
+  async getChallenge(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /challenge
 

@@ -85,8 +85,6 @@ export class Environment {
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
   SERVER_PORT,
-  // @deprecated
-  METRICS,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
