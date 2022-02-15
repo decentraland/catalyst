@@ -171,7 +171,6 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SERVER_PORT,
       () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
       env,

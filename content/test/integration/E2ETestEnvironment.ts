@@ -32,7 +32,6 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
-      .setConfig(EnvironmentConfig.METRICS, false)
 
     if (overrideConfigs) {
       for (const key in overrideConfigs) {
@@ -202,7 +201,7 @@ export function loadTestEnvironment(
   return function (name, test) {
     describe(name, () => {
       const testEnv = new E2ETestEnvironment()
-      
+
       beforeAll(async () => {  await testEnv.start(overrideConfigs) })
 
       describe('use cases for test environment', () => {
@@ -217,7 +216,7 @@ export function loadTestEnvironment(
 
         test(testEnv)
       })
-      
+
       afterAll(async () => { await testEnv.stop() })
     })
   }
