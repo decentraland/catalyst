@@ -1,6 +1,5 @@
 import { Deployment, Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
-import { metricsDeclaration } from 'src/metrics'
 import { EnvironmentConfig } from '../Environment'
 import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
