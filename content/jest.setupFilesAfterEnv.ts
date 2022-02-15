@@ -2,6 +2,7 @@ import * as logger from '@well-known-components/logger'
 import fs from 'fs'
 import path from 'path'
 import jestConfig from './jest.config'
+import { ApiCoverage } from './jest.globalSetup'
 import { Server } from './src/service/Server'
 
 // Setup API Coverage Report process
@@ -32,7 +33,7 @@ if (process.env.LOG_LEVEL === 'off') {
 async function setupApiCoverage() {
   const coverageDir = path.join(__dirname, jestConfig.coverageDirectory)
   const coverageFilePath = path.join(coverageDir, 'api-coverage.json')
-  const coverage = JSON.parse(fs.readFileSync(coverageFilePath).toString())
+  const coverage: ApiCoverage = JSON.parse(fs.readFileSync(coverageFilePath).toString())
 
   // Hacky way of adding a middleware to keep track of the requests without changing the Server file
   const registerRoute = Server.prototype['registerRoute']

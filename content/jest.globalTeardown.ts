@@ -3,6 +3,7 @@ import columnify from 'columnify'
 import fs from 'fs'
 import path from 'path'
 import jestConfig from './jest.config'
+import { ApiCoverage } from './jest.globalSetup'
 
 const globalTeardown = async (): Promise<void> => {
   if (process.env.API_COVERAGE === 'true') {
@@ -12,11 +13,17 @@ const globalTeardown = async (): Promise<void> => {
   await globalThis.__POSTGRES_CONTAINER__?.stop()
 }
 
+type ApiCoverageRow = {
+  route: string,
+  method: string,
+  statuses: string[]
+}
+
 async function printApiCoverage() {
   const apiCoveragePath = path.join(__dirname, jestConfig.coverageDirectory, 'api-coverage.json')
-  const coverage = JSON.parse(((await fs.promises.readFile(apiCoveragePath)).toString()))
+  const coverage: ApiCoverage = JSON.parse(((await fs.promises.readFile(apiCoveragePath)).toString()))
 
-  const tableRows = []
+const tableRows: ApiCoverageRow[] = []
   for (const route in coverage) {
     for (const method in coverage[route]) {
       const statuses = Object.keys(coverage[route][method])
@@ -28,7 +35,7 @@ async function printApiCoverage() {
         (status) => coverage[route][method][status] ? chalk.green(status) : chalk.red(status)
       )
 
-      const row = {
+      const row: ApiCoverageRow = {
         route: coloredRoute,
         method: coloredMethod,
         statuses: coloredStatus,

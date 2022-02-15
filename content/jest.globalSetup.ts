@@ -83,9 +83,17 @@ class PostgresWaitStrategy extends LogWaitStrategy {
   }
 }
 
+export type ApiCoverage = {
+  [path: string]: {
+    [method: string]: {
+      [status: string]: boolean
+    }
+  }
+}
+
 async function initializeApiCoverage() {
   // Define an object to keep track of the API coverage
-  const coverage = {}
+  const coverage: ApiCoverage = {}
   // Fill the object with the definitions in the OpenAPI specs with default `false` values
   // Eg: { "/entities": { "POST": { "200": false, "400": false } }, "/status": { "GET": { "200": false } } }
   for (const apiPath in CONTENT_API.paths) {
