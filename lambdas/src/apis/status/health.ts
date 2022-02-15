@@ -29,7 +29,9 @@ export async function refreshContentServerStatus(
 
     const obtainDeploymentTimeIsTooLong = obtainDeploymentTime > ms(maxDeploymentObtentionTime)
 
-    if (hasOldInformation || obtainDeploymentTimeIsTooLong) {
+    const isBootstrapping = (serverStatus as any).synchronizationStatus?.synchronizationState === 'Bootstrapping'
+
+    if (hasOldInformation || obtainDeploymentTimeIsTooLong || isBootstrapping) {
       healthStatus = HealthStatus.UNHEALTHY
     } else {
       healthStatus = HealthStatus.HEALTHY

@@ -95,6 +95,32 @@ describe("Lambda's Controller Utils", () => {
       })
     })
 
+    describe('when the service is bootstrapping', () => {
+      const mockedUnhealthyStatus = {
+        currentTime: 100,
+        synchronizationStatus: {
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Bootstrapping',
+        }
+      }
+
+      beforeAll(() => {
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedUnhealthyStatus as any))
+        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+          Promise.resolve(mockedUnhealthyStatus as any)
+        )
+      })
+
+      it('should return an unhealthy status', async () => {
+        const logger = mock(Logger)
+
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.UNHEALTHY
+        )
+      })
+    })
+
     describe('when the request fails', () => {
       it('should return a down status', async () => {
         const logger = mock(Logger)
