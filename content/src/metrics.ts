@@ -97,5 +97,14 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Entities cache accesses (miss or hit) by entity type',
     type: 'counter',
     labelNames: ['entity_type', 'result']
+  },
+  dcl_entities_cache_storage_max_size: {
+    help: 'Entities cache storage max size',
+    type: 'gauge'
+  },
+  dcl_entities_cache_storage_size: {
+    help: 'Entities cache storage size',
+    type: 'gauge',
+    labelNames: ['entity_type']
   }
 })

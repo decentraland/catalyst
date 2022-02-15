@@ -1,5 +1,6 @@
 import { Deployment, Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
+import { metricsDeclaration } from 'src/metrics'
 import { EnvironmentConfig } from '../Environment'
 import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
@@ -50,6 +51,8 @@ export const createActiveEntitiesComponent = (
   })
   const entityIdByPointers = new Map<Pointer, EntityId>()
 
+  components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
+
   const reportCacheAccess = (entityType: EntityType, result: 'hit' | 'miss') => {
     components.metrics.increment('dcl_entities_cache_accesses_total', {
       entity_type: entityType,
@@ -64,6 +67,7 @@ export const createActiveEntitiesComponent = (
         entityIdByPointers.delete(pointer)
       }
       cache.del(entityId)
+      components.metrics.decrement('dcl_entities_cache_storage_size', { entity_type: entity.type })
     }
   }
 
@@ -89,6 +93,7 @@ export const createActiveEntitiesComponent = (
       entityIdByPointers.set(pointer, entity.id)
     }
     cache.set(entity.id, entity)
+    components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
   }
 
   const updateCacheAndReturnAsEntities = (deployments: Deployment[]): Entity[] => {
