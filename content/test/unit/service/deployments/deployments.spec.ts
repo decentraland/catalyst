@@ -23,7 +23,7 @@ describe('deployments service', () => {
     const historicalDeploymentsRows: HistoricalDeploymentsRow[] = [
       {
         auth_chain: [],
-        deleter_deployment: 1,
+        overwritten_by: '1',
         deployer_address: '1',
         entity_id: '1',
         entity_metadata: {},
@@ -36,7 +36,7 @@ describe('deployments service', () => {
       },
       {
         auth_chain: [],
-        deleter_deployment: 1,
+        overwritten_by: '1',
         deployer_address: '2',
         entity_id: '2',
         entity_metadata: {},

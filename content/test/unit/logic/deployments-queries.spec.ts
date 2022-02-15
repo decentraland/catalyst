@@ -128,7 +128,7 @@ describe('deployments-queries', () => {
       it('should add the expected where clause to the query', async () => {
         const result = getHistoricalDeploymentsQuery(offset, limit, { onlyCurrentlyPointed: true })
 
-        expect(result.text).toContain(`dep1.deleter_deployment IS NULL`)
+        expect(result.text).toContain(`dep1.overwritten_by IS NULL`)
       })
     })
 

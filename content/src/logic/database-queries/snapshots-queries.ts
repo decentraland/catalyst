@@ -27,7 +27,7 @@ export async function* streamActiveDeployments(
         auth_chain,
         date_part('epoch', local_timestamp) * 1000 AS local_timestamp
       FROM deployments d
-      WHERE d.deleter_deployment IS NULL
+      WHERE d.overwritten_by IS NULL
     `,
     options
   )) {

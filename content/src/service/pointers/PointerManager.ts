@@ -1,4 +1,4 @@
-import { Entity, Pointer } from 'dcl-catalyst-commons'
+import { Entity, EntityId, Pointer } from 'dcl-catalyst-commons'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
@@ -85,11 +85,15 @@ export class PointerManager {
   calculateOverwrites(
     pointerHistoryRepo: PointerHistoryRepository,
     entity: Entity
-  ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
+  ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: EntityId | null }> {
     return pointerHistoryRepo.calculateOverwrites(entity)
   }
 
-  addToHistory(pointerHistoryRepo: PointerHistoryRepository, deploymentId: DeploymentId, entity: Entity) {
+  addToHistory(
+    pointerHistoryRepo: PointerHistoryRepository,
+    deploymentId: DeploymentId,
+    entity: Entity
+  ): Promise<void> {
     return pointerHistoryRepo.addToHistory(deploymentId, entity)
   }
 }

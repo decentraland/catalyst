@@ -13,7 +13,7 @@ export type FullSnapshot = {
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
-  async getEntityById(entityId: EntityId) {
+  async getEntityById(entityId: EntityId): Promise<{ entityId: any; localTimestamp: any } | undefined> {
     const result = await this.db.map(
       `
         SELECT
@@ -51,9 +51,9 @@ export class DeploymentsRepository {
     )
   }
 
-  saveDeployment(entity: Entity, auditInfo: AuditInfo, overwrittenBy: DeploymentId | null): Promise<DeploymentId> {
+  saveDeployment(entity: Entity, auditInfo: AuditInfo, overwrittenBy: EntityId | null): Promise<DeploymentId> {
     return this.db.one(
-      `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment)` +
+      `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, overwritten_by)` +
         ` VALUES ` +
         `($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy))` +
         ` RETURNING id`,
@@ -68,10 +68,10 @@ export class DeploymentsRepository {
     )
   }
 
-  async setEntitiesAsOverwritten(allOverwritten: Set<DeploymentId>, overwrittenBy: DeploymentId): Promise<void> {
+  async setEntitiesAsOverwritten(allOverwritten: Set<DeploymentId>, overwrittenBy: EntityId): Promise<void> {
     await this.db.txIf((transaction) => {
       const updates = Array.from(allOverwritten.values()).map((overwritten) =>
-        this.db.none('UPDATE deployments SET deleter_deployment = $1 WHERE id = $2', [overwrittenBy, overwritten])
+        this.db.none('UPDATE deployments SET overwritten_by = $1 WHERE id = $2', [overwrittenBy, overwritten])
       )
       return transaction.batch(updates)
     })

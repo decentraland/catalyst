@@ -59,7 +59,7 @@ describe('DeploymentRepository', () => {
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
 
-        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
+        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, overwritten_by) VALUES ($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
 
         const args = capture(db.one).last()
         expect(args[0]).toEqual(expectedQuery)
@@ -95,7 +95,7 @@ describe('DeploymentRepository', () => {
         const overwrittenBy = 10
         await repository.saveDeployment(entity, auditInfo, overwrittenBy)
 
-        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, deleter_deployment) VALUES ($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
+        const expectedQuery = `INSERT INTO deployments (deployer_address, version, entity_type, entity_id, entity_timestamp, entity_pointers, entity_metadata, local_timestamp, auth_chain, overwritten_by) VALUES ($(deployer), $(entity.version), $(entity.type), $(entity.id), to_timestamp($(entity.timestamp) / 1000.0), $(entity.pointers), $(metadata), to_timestamp($(auditInfo.localTimestamp) / 1000.0), $(auditInfo.authChain:json), $(overwrittenBy)) RETURNING id`
 
         const args = capture(db.one).last()
         expect(args[0]).toEqual(expectedQuery)
@@ -144,7 +144,7 @@ describe('DeploymentRepository', () => {
       overwrittenDeployments.forEach((overwrittenDeployment) => {
         verify(
           db.none(
-            'UPDATE deployments SET deleter_deployment = $1 WHERE id = $2',
+            'UPDATE deployments SET overwritten_by = $1 WHERE id = $2',
             deepEqual([overwrittenBy, overwrittenDeployment])
           )
         ).once()

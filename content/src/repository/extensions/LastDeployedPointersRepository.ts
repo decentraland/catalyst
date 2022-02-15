@@ -22,7 +22,7 @@ export class LastDeployedPointersRepository {
                 deployments.entity_id,
                 date_part('epoch', deployments.entity_timestamp) * 1000 AS entity_timestamp,
                 deployments.entity_pointers,
-                CASE WHEN deployments.deleter_deployment IS NULL
+                CASE WHEN deployments.overwritten_by IS NULL
                     THEN FALSE
                     ELSE TRUE
                 END AS deleted

@@ -6,7 +6,8 @@ import {
   EntityVersion,
   Pointer,
   SortingField,
-  SortingOrder
+  SortingOrder,
+  Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import pg from 'pg'
@@ -16,15 +17,15 @@ import { AppComponents } from '../../types'
 export interface HistoricalDeployment {
   deploymentId: number
   entityType: EntityType
-  entityId: string
+  entityId: EntityId
   pointers: Pointer[]
-  entityTimestamp: number
+  entityTimestamp: Timestamp
   metadata: any
   deployerAddress: string
   version: EntityVersion
   authChain: AuthChain
-  localTimestamp: number
-  overwrittenBy?: string
+  localTimestamp: Timestamp
+  overwrittenBy: string | undefined
 }
 
 export interface HistoricalDeploymentsRow {
@@ -32,18 +33,19 @@ export interface HistoricalDeploymentsRow {
   deployer_address: string
   version: EntityVersion
   entity_type: EntityType
-  entity_id: string
+  entity_id: EntityId
   entity_metadata: any
-  entity_timestamp: number
+  entity_timestamp: Timestamp
   entity_pointers: Pointer[]
-  local_timestamp: number
+  local_timestamp: Timestamp
   auth_chain: AuthChain
-  deleter_deployment: number
-
-  overwritten_by?: string
+  overwritten_by: EntityId | undefined
 }
 
-export async function deploymentExists(components: Pick<AppComponents, 'database'>, entityId: string) {
+export async function deploymentExists(
+  components: Pick<AppComponents, 'database'>,
+  entityId: string
+): Promise<boolean> {
   const { database } = components
 
   const result = await database.queryWithValues(SQL`
@@ -55,7 +57,9 @@ export async function deploymentExists(components: Pick<AppComponents, 'database
   return result.rowCount > 0
 }
 
-export async function* streamAllEntityIds(components: Pick<AppComponents, 'database'>) {
+export async function* streamAllEntityIds(
+  components: Pick<AppComponents, 'database'>
+): AsyncGenerator<{ entityId: any }, void, unknown> {
   const { database } = components
 
   for await (const row of database.streamQuery(
@@ -83,38 +87,20 @@ export function getHistoricalDeploymentsQuery(
   const order: string = sorting.order
 
   // Generate the select according the info needed
-  let query: SQLStatement
-  if (!!filters?.includeOverwrittenInfo) {
-    query = SQL`
+  const query: SQLStatement = SQL`
               SELECT
-                  dep1.id,
-                  dep1.entity_type,
-                  dep1.entity_id,
-                  dep1.entity_pointers,
-                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                  dep1.entity_metadata,
-                  dep1.deployer_address,
-                  dep1.version,
-                  dep1.auth_chain,
-                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
-                  dep2.entity_id AS overwritten_by
-              FROM deployments AS dep1
-              LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
-  } else {
-    query = SQL`
-              SELECT
-                  dep1.id,
-                  dep1.entity_type,
-                  dep1.entity_id,
-                  dep1.entity_pointers,
-                  date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                  dep1.entity_metadata,
-                  dep1.deployer_address,
-                  dep1.version,
-                  dep1.auth_chain,
-                  date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp
-              FROM deployments AS dep1`
-  }
+                  dep.id,
+                  dep.entity_type,
+                  dep.entity_id,
+                  dep.entity_pointers,
+                  date_part('epoch', dep.entity_timestamp) * 1000 AS entity_timestamp,
+                  dep.entity_metadata,
+                  dep.deployer_address,
+                  dep.version,
+                  dep.auth_chain,
+                  date_part('epoch', dep.local_timestamp) * 1000 AS local_timestamp,
+                  dep.overwritten_by
+              FROM deployments AS dep`
 
   const whereClause: SQLStatement[] = []
   // Configure sort and order
@@ -122,21 +108,21 @@ export function getHistoricalDeploymentsQuery(
 
   if (filters?.entityTypes && filters.entityTypes.length > 0) {
     const entityTypes = filters.entityTypes
-    whereClause.push(SQL`dep1.entity_type = ANY (${entityTypes})`)
+    whereClause.push(SQL`dep.entity_type = ANY (${entityTypes})`)
   }
 
   if (filters?.entityIds && filters.entityIds.length > 0) {
     const entityIds = filters.entityIds
-    whereClause.push(SQL`dep1.entity_id = ANY (${entityIds})`)
+    whereClause.push(SQL`dep.entity_id = ANY (${entityIds})`)
   }
 
   if (filters?.onlyCurrentlyPointed) {
-    whereClause.push(SQL`dep1.deleter_deployment IS NULL`)
+    whereClause.push(SQL`dep.overwritten_by IS NULL`)
   }
 
   if (filters?.pointers && filters.pointers.length > 0) {
     const pointers = filters.pointers.map((p) => p.toLowerCase())
-    whereClause.push(SQL`dep1.entity_pointers && ${pointers}`)
+    whereClause.push(SQL`dep.entity_pointers && ${pointers}`)
   }
 
   let where = SQL``
@@ -149,9 +135,9 @@ export function getHistoricalDeploymentsQuery(
 
   query.append(where)
   query
-    .append(` ORDER BY dep1.`)
+    .append(` ORDER BY dep.`)
     .append(pg.Client.prototype.escapeIdentifier(timestampField))
-    .append(` ${order}, LOWER(dep1.entity_id) ${order} `) // raw values need to be strings not sql templates
+    .append(` ${order}, LOWER(dep.entity_id) ${order} `) // raw values need to be strings not sql templates
     .append(SQL`LIMIT ${limit} OFFSET ${offset}`)
 
   return query
@@ -177,7 +163,7 @@ function configureSortWhereClause(
     if (pageBorder == 'fromLocalTimestamp' && lastId) {
       whereClause.push(createOrClause('local_timestamp', '>', fromLocalTimestamp, lastId))
     } else {
-      whereClause.push(SQL`dep1.local_timestamp >= to_timestamp(${fromLocalTimestamp} / 1000.0)`)
+      whereClause.push(SQL`dep.local_timestamp >= to_timestamp(${fromLocalTimestamp} / 1000.0)`)
     }
   }
   if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
@@ -185,7 +171,7 @@ function configureSortWhereClause(
     if (pageBorder == 'toLocalTimestamp' && lastId) {
       whereClause.push(createOrClause('local_timestamp', '<', toLocalTimestamp, lastId))
     } else {
-      whereClause.push(SQL`dep1.local_timestamp <= to_timestamp(${toLocalTimestamp} / 1000.0)`)
+      whereClause.push(SQL`dep.local_timestamp <= to_timestamp(${toLocalTimestamp} / 1000.0)`)
     }
   }
 
@@ -194,7 +180,7 @@ function configureSortWhereClause(
     if (pageBorder == 'fromEntityTimestamp' && lastId) {
       whereClause.push(createOrClause('entity_timestamp', '>', fromEntityTimestamp, lastId))
     } else {
-      whereClause.push(SQL`dep1.entity_timestamp >= to_timestamp(${fromEntityTimestamp} / 1000.0)`)
+      whereClause.push(SQL`dep.entity_timestamp >= to_timestamp(${fromEntityTimestamp} / 1000.0)`)
     }
   }
   if (filters?.to && timestampField == SortingField.ENTITY_TIMESTAMP) {
@@ -202,7 +188,7 @@ function configureSortWhereClause(
     if (pageBorder == 'toEntityTimestamp' && lastId) {
       whereClause.push(createOrClause('entity_timestamp', '<', toEntityTimestamp, lastId))
     } else {
-      whereClause.push(SQL`dep1.entity_timestamp <= to_timestamp(${toEntityTimestamp} / 1000.0)`)
+      whereClause.push(SQL`dep.entity_timestamp <= to_timestamp(${toEntityTimestamp} / 1000.0)`)
     }
   }
 }
@@ -247,11 +233,11 @@ export function createOrClause(
   timestamp: number,
   lastId: string
 ): SQLStatement {
-  const entityIdEquality = SQL`(LOWER(dep1.entity_id) `.append(compare).append(SQL` LOWER(${lastId})`)
+  const entityIdEquality = SQL`(LOWER(dep.entity_id) `.append(compare).append(SQL` LOWER(${lastId})`)
   const equalWithEntityIdComparison = entityIdEquality
-    .append(` AND dep1.${pg.Client.prototype.escapeIdentifier(timestampField)}`)
+    .append(` AND dep.${pg.Client.prototype.escapeIdentifier(timestampField)}`)
     .append(SQL` = to_timestamp(${timestamp} / 1000.0))`)
-  const timestampComparison = SQL`(dep1.`
+  const timestampComparison = SQL`(dep.`
     .append(`${pg.Client.prototype.escapeIdentifier(timestampField)}`)
     .append(` ${compare}`) // raw values need to be strings not sql templates
     .append(SQL` to_timestamp(${timestamp} / 1000.0))`)
@@ -262,8 +248,9 @@ export async function getActiveDeploymentsByContentHash(
   components: Pick<AppComponents, 'database'>,
   contentHash: string
 ): Promise<EntityId[]> {
-  const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
-    WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
+  const query = SQL`SELECT deployment.entity_id FROM deployments as deployment
+    INNER JOIN content_files ON content_files.deployment=deployment.id
+    WHERE content_hash=${contentHash} AND deployment.overwritten_by IS NULL;`
 
   const queryResult = (await components.database.queryWithValues(query)).rows
 

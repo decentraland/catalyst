@@ -305,7 +305,7 @@ export class ServiceImpl implements MetaverseContentService {
             await this.components.deploymentManager.setEntitiesAsOverwritten(
               transaction.deployments,
               overwrote,
-              deploymentId
+              entityId
             )
           }),
         { priority: DB_REQUEST_PRIORITY.HIGH }

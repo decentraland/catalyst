@@ -1,20 +1,18 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity, EntityId } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
 
 export class PointerHistoryRepository {
   constructor(private readonly db: Database) {}
 
-  async calculateOverwrites(
-    entity: Entity
-  ): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: DeploymentId | null }> {
+  async calculateOverwrites(entity: Entity): Promise<{ overwrote: Set<DeploymentId>; overwrittenBy: EntityId | null }> {
     return this.db.taskIf(async (task) => {
       const overwrote: DeploymentId[] = await task.map(
         `
                 SELECT DISTINCT ON (pointer_history.pointer) dep1.id
                 FROM pointer_history
                 LEFT JOIN deployments AS dep1 ON pointer_history.deployment = dep1.id
-                LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id
+                LEFT JOIN deployments AS dep2 ON dep1.overwritten_by = dep2.entity_id
                 WHERE pointer_history.entity_type = $1 AND
                     pointer_history.pointer IN ($2:list) AND
                     (dep1.entity_timestamp < to_timestamp($3 / 1000.0) OR (dep1.entity_timestamp = to_timestamp($3 / 1000.0) AND dep1.entity_id < $4)) AND
@@ -26,7 +24,7 @@ export class PointerHistoryRepository {
 
       const overwrittenByMany = await task.manyOrNone(
         `
-                SELECT deployments.id
+                SELECT deployments.entity_id
                 FROM pointer_history
                 LEFT JOIN deployments ON pointer_history.deployment = deployments.id
                 WHERE pointer_history.entity_type = $1 AND
@@ -36,9 +34,9 @@ export class PointerHistoryRepository {
                 LIMIT 10`,
         [entity.type, entity.pointers, entity.timestamp, entity.id]
       )
-      let overwrittenBy: DeploymentId | null = null
+      let overwrittenBy: EntityId | null = null
       if (overwrittenByMany.length > 0) {
-        overwrittenBy = overwrittenByMany[0].id
+        overwrittenBy = overwrittenByMany[0].entity_id
       }
 
       return {

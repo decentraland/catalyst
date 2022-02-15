@@ -82,7 +82,7 @@ There are two kind of histories.
 
 This is the global history that all content servers agree on. This is determined by the entity timestamp, which can't be modified,
 so all content servers should have the same order and agree on 'who overwrote who'. This overwrite information is stored
-on the 'deployments' table, with the 'deleter_deployment' field. Each deployment will store who overwrote it (in this global order sense).
+on the 'deployments' table, with the 'overwritten_by' field. Each deployment will store who overwrote it (in this global order sense).
 
 ### Deployments/local history
 
