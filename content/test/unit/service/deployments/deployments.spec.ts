@@ -1,4 +1,5 @@
 import { Deployment, EntityType, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
+import { safe } from 'jest-extra-utils'
 import { restore, stub } from 'sinon'
 import { ContentFilesRow } from '../../../../src/logic/database-queries/content-files-queries'
 import { HistoricalDeploymentsRow } from '../../../../src/logic/database-queries/deployments-queries'
@@ -81,7 +82,7 @@ describe('deployments service', () => {
 
     describe('when no item is denylisted', () => {
       beforeAll(() => {
-        components = { database: { queryWithValues: () => {} } as any, denylist: { isDenyListed: () => false } }
+        components = { database: safe({ queryWithValues: () => {} }), denylist: { isDenyListed: () => false } }
         stub(components.database, 'queryWithValues')
           .onFirstCall()
           .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
@@ -112,7 +113,7 @@ describe('deployments service', () => {
 
     describe('with a denylisted item', () => {
       beforeAll(() => {
-        components = { database: { queryWithValues: () => {} } as any, denylist: { isDenyListed: () => false } }
+        components = { database: safe({ queryWithValues: () => {} }), denylist: { isDenyListed: () => false } }
         stub(components.database, 'queryWithValues')
           .onFirstCall()
           .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
@@ -143,7 +144,7 @@ describe('deployments service', () => {
 
     describe('with a denylisted item but with includeDenylisted param', () => {
       beforeAll(() => {
-        components = { database: { queryWithValues: () => {} } as any, denylist: { isDenyListed: () => false } }
+        components = { database: safe({ queryWithValues: () => {} }), denylist: { isDenyListed: () => false } }
         stub(components.database, 'queryWithValues')
           .onFirstCall()
           .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
