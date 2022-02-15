@@ -2,12 +2,12 @@ import { createLogComponent } from '@well-known-components/logger'
 import { Readable } from 'stream'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { createDenylistComponent } from '../../../src/ports/denylist'
+import { createFsComponent } from '../../../src/ports/fs'
 
 const lines = ['my\n', 'first\n', 'denylisted\n', 'item\n']
 
-jest.mock('../../../src/helpers/fsWrapper', () => ({
-  createReadStream: () => Readable.from(lines),
-  promises: { access: () => true }
+jest.mock('@catalyst/commons', () => ({
+  existPath: () => true
 }))
 
 describe('denylist', () => {
@@ -18,13 +18,17 @@ describe('denylist', () => {
     const logs = createLogComponent()
 
     it('should have denylisted each line from the file', async () => {
-      const denylist = await createDenylistComponent({ env, logs })
+      const fs = createFsComponent()
+      fs.createReadStream = jest.fn().mockResolvedValue(Readable.from(lines))
+      const denylist = await createDenylistComponent({ env, logs, fs })
 
       expect(lines.every((line) => denylist.isDenyListed(line.trimEnd()))).toBe(true)
     })
 
     it('should not have denylisted another word', async () => {
-      const denylist = await createDenylistComponent({ env, logs })
+      const fs = createFsComponent()
+      fs.createReadStream = jest.fn().mockResolvedValue(Readable.from(lines))
+      const denylist = await createDenylistComponent({ env, logs, fs })
 
       expect(denylist.isDenyListed('RANDOM')).toBe(false)
     })

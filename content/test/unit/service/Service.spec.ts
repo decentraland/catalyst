@@ -9,6 +9,7 @@ import { metricsDeclaration } from '../../../src/metrics'
 import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createFsComponent } from '../../../src/ports/fs'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
@@ -251,7 +252,8 @@ describe('Service', function () {
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
     const database = await createDatabaseComponent({ logs, env })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
-    const denylist: DenylistComponent = await createDenylistComponent({ env, logs })
+    const fs = createFsComponent()
+    const denylist: DenylistComponent = await createDenylistComponent({ env, logs, fs })
 
     return ServiceFactory.create({
       env,

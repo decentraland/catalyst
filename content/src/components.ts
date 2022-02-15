@@ -3,7 +3,6 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import fs from 'fs'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
@@ -14,6 +13,7 @@ import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
+import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
@@ -42,10 +42,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
-  const denylist = await createDenylistComponent({ env, logs })
+  const fs = createFsComponent()
+  const denylist = await createDenylistComponent({ env, logs, fs })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
-  await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
+  await fs.mkdir(tmpDownloadFolder, { recursive: true })
   const staticConfigs = {
     contentStorageFolder,
     tmpDownloadFolder
@@ -240,6 +241,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     server,
     retryFailedDeployments,
     sequentialExecutor,
-    denylist
+    denylist,
+    fs
   }
 }

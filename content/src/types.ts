@@ -13,6 +13,7 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { DenylistComponent } from './ports/denylist'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
+import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { Repository } from './repository/Repository'
@@ -69,6 +70,7 @@ export type AppComponents = {
   retryFailedDeployments: IRetryFailedDeploymentsComponent
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: DenylistComponent
+  fs: FSComponent
 
   // this will be replaced by `database` and removed from here
   repository: Repository

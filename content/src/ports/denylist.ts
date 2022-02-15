@@ -1,7 +1,7 @@
+import { existPath } from '@catalyst/commons'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { EnvironmentConfig } from '../Environment'
-import { createReadStream, promises } from '../helpers/fsWrapper'
 import { AppComponents } from '../types'
 
 export interface DenylistComponent {
@@ -9,7 +9,7 @@ export interface DenylistComponent {
 }
 
 export async function createDenylistComponent(
-  components: Pick<AppComponents, 'env' | 'logs'>
+  components: Pick<AppComponents, 'env' | 'logs' | 'fs'>
 ): Promise<DenylistComponent> {
   const logs = components.logs.getLogger('Denylist')
   const bannedList = new Set()
@@ -20,9 +20,9 @@ export async function createDenylistComponent(
   )
 
   try {
-    await promises.access(fileName)
+    await existPath(fileName)
 
-    const content = await createReadStream(fileName, {
+    const content = await components.fs.createReadStream(fileName, {
       encoding: 'utf-8'
     })
 
@@ -37,6 +37,7 @@ export async function createDenylistComponent(
 
     logs.info('Load successfully the denylist')
   } catch (err) {
+    console.log('ERR', err)
     logs.warn("Couldn't load a denylist")
   }
 
