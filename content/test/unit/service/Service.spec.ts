@@ -6,8 +6,8 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing
 import { Authenticator } from 'dcl-crypto'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
-import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
+import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
@@ -131,13 +131,13 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     // When a pointer is asked the first time, then the database is reached
     expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -152,13 +152,13 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
 
     expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
 
     // Reset spy and call again
     serviceSpy.mockReset()
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     expect(serviceSpy).not.toHaveBeenCalled()
   })
 
@@ -188,7 +188,7 @@ describe('Service', function () {
       .mockImplementation(() => Promise.resolve())
 
     // Call the first time
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
 
     // Make deployment that should update the cache
@@ -203,7 +203,7 @@ describe('Service', function () {
         pagination: { offset: 0, limit: 0, moreData: true }
       })
     )
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, { ids: ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'] })
   })
 
@@ -226,7 +226,7 @@ describe('Service', function () {
     )
 
     // Call the first time
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
 
     jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(() => Promise.resolve(1))
@@ -254,7 +254,7 @@ describe('Service', function () {
         pagination: { offset: 0, limit: 0, moreData: true }
       })
     )
-    await service.getEntitiesByPointers(POINTERS)
+    await service.components.activeEntities.withPointers(POINTERS)
     expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
   })
 

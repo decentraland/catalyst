@@ -38,8 +38,8 @@ describe('Integration - Server', () => {
 
     await server.start()
 
-    stub(components.deployer, 'getEntitiesByIds').resolves([entity1, entity2])
-    stub(components.deployer, 'getEntitiesByPointers').resolves([entity1, entity2])
+    stub(components.activeEntities, 'withIds').resolves([entity1, entity2])
+    stub(components.activeEntities, 'withPointers').resolves([entity1, entity2])
     stub(components.deployer, 'getContent').resolves(SimpleContentItem.fromBuffer(content.buffer))
   })
 

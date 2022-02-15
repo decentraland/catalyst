@@ -6,7 +6,6 @@ import {
   EntityId,
   EntityType,
   PartialDeploymentHistory,
-  Pointer,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
@@ -32,8 +31,6 @@ export interface MetaverseContentService {
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
   getAllFailedDeployments(): FailedDeployment[]
-  getEntitiesByIds(ids: EntityId[]): Promise<Entity[]>
-  getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]>
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,

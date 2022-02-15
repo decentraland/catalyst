@@ -31,11 +31,16 @@ export class Repository {
    */
   async stop(): Promise<void> {
     const DRAIN_TIMEOUT = 30_000 // 30 seconds
+    let drainTimeout: NodeJS.Timeout | undefined
     await Promise.race([
       // close pool
-      this.db.$pool.end(),
+      this.db.$pool.end().then(() => {
+        if (drainTimeout) {
+          clearTimeout(drainTimeout)
+        }
+      }),
       // or timeout
-      new Promise((_, reject) => setTimeout(reject, DRAIN_TIMEOUT))
+      new Promise((_, reject) => (drainTimeout = setTimeout(reject, DRAIN_TIMEOUT)))
     ])
   }
 

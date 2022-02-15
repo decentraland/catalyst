@@ -47,6 +47,7 @@ export class Controller {
       | 'metrics'
       | 'database'
       | 'sequentialExecutor'
+      | 'activeEntities'
     >,
     private readonly ethNetwork: string
   ) {
@@ -87,9 +88,9 @@ export class Controller {
     // Calculate and mask entities
     const entities: Entity[] = await this.components.sequentialExecutor.run('GetEntitiesEndpoint', async () => {
       if (ids.length > 0) {
-        return await this.components.deployer.getEntitiesByIds(ids)
+        return await this.components.activeEntities.withIds(ids)
       } else {
-        return await this.components.deployer.getEntitiesByPointers(pointers)
+        return await this.components.activeEntities.withPointers(pointers)
       }
     })
 
@@ -108,23 +109,22 @@ export class Controller {
     const ids: EntityId[] = req.body.ids
     const pointers: Pointer[] = req.body.pointers
 
-    // Validate pointers or ids are present, but not both
-    if (
-      (ids && ids.length > 0 && pointers && pointers.length > 0) || // both present
-      ((!ids || ids.length == 0) && (!pointers || pointers.length == 0)) // none present
-    ) {
+    const idsPresent = ids?.length > 0
+    const pointersPresent = pointers?.length > 0
+
+    const bothPresent = idsPresent && pointersPresent
+    const nonePresent = !idsPresent && !pointersPresent
+    if (bothPresent || nonePresent) {
       res.status(400).send({ error: 'ids or pointers must be present, but not both' })
       return
     }
 
-    let entities: Entity[] = []
-    if (ids && ids.length > 0) {
-      entities = await this.components.deployer.getEntitiesByIds(ids)
-    } else if (pointers && pointers.length > 0) {
-      entities = await this.components.deployer.getEntitiesByPointers(pointers)
-    } else {
-      Controller.LOGGER.debug('There are no ids and no pointers, should never happen')
-    }
+    const entities: Entity[] = await this.components.sequentialExecutor.run('GetActiveEntitiesEndpoint', async () => {
+      if (idsPresent) {
+        return await this.components.activeEntities.withIds(ids)
+      }
+      return await this.components.activeEntities.withPointers(pointers)
+    })
 
     res.send(entities)
   }

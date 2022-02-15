@@ -22,7 +22,7 @@ import { AppComponents } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
-import { DELTA_POINTER_RESULT } from './pointers/PointerManager'
+import { DELTA_POINTER_RESULT, DeploymentResult as PointerChanges } from './pointers/PointerManager'
 import {
   DeploymentContext,
   DeploymentFiles,
@@ -288,16 +288,8 @@ export class ServiceImpl implements MetaverseContentService {
               entity
             )
 
-            // Update pointers to entityId cache
-            for (const pointerChange of pointersFromEntity) {
-              if (pointerChange[1].after === DELTA_POINTER_RESULT.CLEARED) {
-                // invalidate pointer (points to an entity that is not active)
-                this.components.activeEntities.inactivate(pointerChange[0])
-              } else {
-                // update pointer (points to the new entity that is active)
-                this.components.activeEntities.activate(pointerChange[0], entity)
-              }
-            }
+            // Update pointers and active entities
+            this.updateActiveEntities(pointersFromEntity, entity)
 
             // Save deployment pointer changes
             await this.components.deploymentManager.savePointerChanges(
@@ -329,6 +321,23 @@ export class ServiceImpl implements MetaverseContentService {
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
 
+  private updateActiveEntities(pointersFromEntity: PointerChanges, entity: Entity) {
+    const { cleared, setted } = Array.from(pointersFromEntity).reduce(
+      (acc, current) => {
+        if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.cleared.push(current[0])
+        if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setted.push(current[0])
+        return acc
+      },
+      { cleared: [] as string[], setted: [] as string[] }
+    )
+    // invalidate pointers (points to an entity that is no longer active)
+    // this case happen when the entity is overwritten
+    this.components.activeEntities.invalidate(cleared)
+
+    // update pointer (points to the new entity that is active)
+    this.components.activeEntities.update(setted, entity)
+  }
+
   reportErrorDuringSync(
     entityType: EntityType,
     entityId: EntityId,
@@ -347,14 +356,6 @@ export class ServiceImpl implements MetaverseContentService {
       errorDescription,
       failureTimestamp: Date.now()
     })
-  }
-
-  async getEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
-    return this.components.activeEntities.withIds(...ids)
-  }
-
-  async getEntitiesByPointers(pointers: Pointer[]): Promise<Entity[]> {
-    return this.components.activeEntities.withPointers(...pointers)
   }
 
   // todo: review if we can use entities cache to determine if there is a newer deployment

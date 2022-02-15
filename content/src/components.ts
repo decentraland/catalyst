@@ -8,14 +8,14 @@ import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
-import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createDatabaseComponent } from './ports/postgres'
+import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -197,7 +197,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       logs,
       metrics,
       database,
-      sequentialExecutor
+      sequentialExecutor,
+      activeEntities
     },
     ethNetwork
   )
