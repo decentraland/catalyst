@@ -23,6 +23,7 @@ export class ServiceFactory {
       | 'authenticator'
       | 'database'
       | 'deployedEntitiesFilter'
+      | 'denylist'
     >
   ): ServiceImpl {
     const { env } = components

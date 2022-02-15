@@ -56,6 +56,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'database'
       | 'deployedEntitiesFilter'
       | 'env'
+      | 'denylist'
     >,
     private readonly cache: CacheByType<Pointer, Entity>,
     private readonly deploymentsCache: { cache: NodeCache; maxSize: number }
@@ -467,20 +468,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return getDeployments(this.components, options)
-  }
-
-  // This endpoint is for debugging purposes
-  getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.taskIf((task) =>
-          this.components.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)
-        ),
-      {
-        priority: DB_REQUEST_PRIORITY.LOW
-      }
-    )
   }
 
   getAllFailedDeployments(): FailedDeployment[] {

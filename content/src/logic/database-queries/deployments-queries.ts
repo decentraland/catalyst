@@ -1,6 +1,7 @@
 import {
   DeploymentFilters,
   DeploymentSorting,
+  EntityId,
   EntityType,
   EntityVersion,
   Pointer,
@@ -255,4 +256,18 @@ export function createOrClause(
     .append(` ${compare}`) // raw values need to be strings not sql templates
     .append(SQL` to_timestamp(${timestamp} / 1000.0))`)
   return SQL`(`.append(equalWithEntityIdComparison).append(' OR ').append(timestampComparison).append(')')
+}
+
+export async function getActiveDeploymentsByContentHash(
+  components: Pick<AppComponents, 'database'>,
+  contentHash: string
+): Promise<EntityId[]> {
+  const query = SQL`SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=deployment.id
+    WHERE content_hash=${contentHash} AND deployment.deleter_deployment IS NULL;`
+
+  const queryResult = (await components.database.queryWithValues(query)).rows
+
+  const entities = queryResult.map((deployment: { entity_id: EntityId }) => deployment.entity_id)
+
+  return entities
 }
