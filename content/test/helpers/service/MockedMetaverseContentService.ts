@@ -108,15 +108,6 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     })
   }
 
-  getActiveDeploymentsByContentHash(hash: string): Promise<EntityId[]> {
-    return Promise.resolve(
-      this.entities
-        .filter((entity) => entity.content?.find((item) => item.hash === hash) !== undefined)
-        .map((entity) => this.entityToDeployment(entity))
-        .map((entity) => entity.entityId)
-    )
-  }
-
   deployEntity(
     files: Buffer[],
     entityId: EntityId,

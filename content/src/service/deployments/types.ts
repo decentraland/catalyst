@@ -15,4 +15,5 @@ export type PointerChangesOptions = {
 
 export type DeploymentOptions = {
   fields?: DeploymentField[]
+  includeDenylisted?: boolean
 } & DeploymentRequestOptions

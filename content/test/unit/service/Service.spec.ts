@@ -7,8 +7,10 @@ import { Authenticator } from 'dcl-crypto'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
+import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createFsComponent } from '../../../src/ports/fs'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
@@ -261,6 +263,9 @@ describe('Service', function () {
   async function buildService() {
     const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
     const env = new Environment()
+    env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, 'inexistent')
+    env.setConfig(EnvironmentConfig.DENYLIST_FILE_NAME, 'file')
+
     const validator = new NoOpValidator()
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
@@ -273,7 +278,9 @@ describe('Service', function () {
     const database = await createDatabaseComponent({ logs, env })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
-    const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics })
+    const fs = createFsComponent()
+    const denylist: DenylistComponent = await createDenylistComponent({ env, logs, fs })
+    const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist })
 
     return new ServiceImpl({
       env,
@@ -289,7 +296,8 @@ describe('Service', function () {
       authenticator,
       database,
       deployedEntitiesFilter,
-      activeEntities
+      activeEntities,
+      denylist
     })
   }
 

@@ -59,6 +59,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'deployedEntitiesFilter'
       | 'env'
       | 'activeEntities'
+      | 'denylist'
     >
   ) {
     const ttl = components.env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
@@ -443,20 +444,6 @@ export class ServiceImpl implements MetaverseContentService {
 
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>> {
     return getDeployments(this.components, options)
-  }
-
-  // This endpoint is for debugging purposes
-  getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]> {
-    return this.components.repository.reuseIfPresent(
-      task,
-      (db) =>
-        db.taskIf((task) =>
-          this.components.deploymentManager.getActiveDeploymentsByContentHash(task.deployments, hash)
-        ),
-      {
-        priority: DB_REQUEST_PRIORITY.LOW
-      }
-    )
   }
 
   getAllFailedDeployments(): FailedDeployment[] {

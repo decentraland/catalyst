@@ -8,13 +8,15 @@ import { ILoggerComponent, IMetricsComponent } from '@well-known-components/inte
 import { Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
-import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
+import { DenylistComponent } from './ports/denylist'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { ActiveEntities } from './ports/activeEntities'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
+import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
+import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
 import { DeploymentManager } from './service/deployments/DeploymentManager'
@@ -69,6 +71,8 @@ export type AppComponents = {
   retryFailedDeployments: IRetryFailedDeploymentsComponent
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
+  denylist: DenylistComponent
+  fs: FSComponent
 
   // this will be replaced by `database` and removed from here
   repository: Repository

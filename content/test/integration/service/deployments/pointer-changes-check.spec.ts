@@ -105,7 +105,7 @@ loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv)
   }
 
   async function getChangesInPointersFor(
-    components: Pick<AppComponents, 'database'>,
+    components: Pick<AppComponents, 'database' | 'denylist'>,
     entityCombo: EntityCombo
   ): Promise<PointerChanges> {
     const result = await getPointerChanges(components, {

@@ -3,7 +3,6 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
-import fs from 'fs'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
@@ -11,9 +10,11 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
+import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
@@ -42,9 +43,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
+  const fs = createFsComponent()
+  const denylist = await createDenylistComponent({ env, logs, fs })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
-  await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
+  await fs.mkdir(tmpDownloadFolder, { recursive: true })
   const staticConfigs = {
     contentStorageFolder,
     tmpDownloadFolder
@@ -83,7 +86,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeploymentsCache })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
-  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics })
+  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist })
 
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
@@ -99,11 +102,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     authenticator,
     database,
     deployedEntitiesFilter,
-    activeEntities
+    activeEntities,
+    denylist
   })
 
   const snapshotManager = new SnapshotManager(
-    { database, metrics, staticConfigs, logs, storage },
+    { database, metrics, staticConfigs, logs, storage, denylist },
     env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
   )
 
@@ -198,7 +202,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       database,
       sequentialExecutor,
-      activeEntities
+      activeEntities,
+      denylist
     },
     ethNetwork
   )
@@ -240,6 +245,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     server,
     retryFailedDeployments,
     activeEntities,
-    sequentialExecutor
+    sequentialExecutor,
+    denylist,
+    fs
   }
 }

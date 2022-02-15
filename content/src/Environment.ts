@@ -9,6 +9,7 @@ import { AppComponents } from './types'
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
+const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 export const DEFAULT_ETH_NETWORK = 'ropsten'
@@ -127,7 +128,8 @@ export enum EnvironmentConfig {
   BLOCKS_L2_SUBGRAPH_URL,
   VALIDATE_API,
   FOLDER_MIGRATION_MAX_CONCURRENCY,
-  RETRY_FAILED_DEPLOYMENTS_DELAY_TIME
+  RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
+  DENYLIST_FILE_NAME
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -155,6 +157,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.STORAGE_ROOT_FOLDER,
       () => process.env.STORAGE_ROOT_FOLDER ?? DEFAULT_STORAGE_ROOT_FOLDER
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.DENYLIST_FILE_NAME,
+      () => process.env.DENYLIST_FILE_NAME ?? DEFAULT_DENYLIST_FILE_NAME
     )
     this.registerConfigIfNotAlreadySet(
       env,

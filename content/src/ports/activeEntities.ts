@@ -42,7 +42,7 @@ export type ActiveEntities = {
  *  - keep the relation between pointers and the active entity ids
  */
 export const createActiveEntitiesComponent = (
-  components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics'>
+  components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist'>
 ): ActiveEntities => {
   const logger = components.logs.getLogger('ActiveEntities')
   const cache = new LRU<EntityId, Entity>({
