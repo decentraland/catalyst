@@ -19,11 +19,10 @@ Get the health status for each server running in catalyst
 **Content example**
 
 ```json
-
 {
-    "comms": "Healthy",
-    "content": "Unhealthy",
-    "lambda": "Healthy"
+  "comms": "Healthy",
+  "content": "Unhealthy",
+  "lambda": "Healthy",
+  "readyToUse": false
 }
-
 ```
