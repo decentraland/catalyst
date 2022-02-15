@@ -4,7 +4,6 @@ import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { EntityType } from 'dcl-catalyst-commons'
-import fs from 'fs'
 import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
@@ -12,9 +11,11 @@ import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
+import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
 import { createRateLimitDeploymentCacheMap } from './ports/rateLimitDeploymentCacheMap'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
@@ -44,9 +45,11 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const repository = await RepositoryFactory.create({ env, metrics })
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
+  const fs = createFsComponent()
+  const denylist = await createDenylistComponent({ env, logs, fs })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
-  await fs.promises.mkdir(tmpDownloadFolder, { recursive: true })
+  await fs.mkdir(tmpDownloadFolder, { recursive: true })
   const staticConfigs = {
     contentStorageFolder,
     tmpDownloadFolder
@@ -113,11 +116,12 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     logs,
     authenticator,
     database,
-    deployedEntitiesFilter
+    deployedEntitiesFilter,
+    denylist
   })
 
   const snapshotManager = new SnapshotManager(
-    { database, metrics, staticConfigs, logs, storage },
+    { database, metrics, staticConfigs, logs, storage, denylist },
     env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
   )
 
@@ -211,7 +215,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       logs,
       metrics,
       database,
-      sequentialExecutor
+      sequentialExecutor,
+      denylist
     },
     ethNetwork
   )
@@ -253,6 +258,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     daoClient,
     server,
     retryFailedDeployments,
-    sequentialExecutor
+    sequentialExecutor,
+    denylist,
+    fs
   }
 }

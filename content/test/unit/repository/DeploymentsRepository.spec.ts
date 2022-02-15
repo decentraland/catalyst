@@ -153,23 +153,4 @@ describe('DeploymentRepository', () => {
       verify(db.batch(anything())).once()
     })
   })
-
-  describe('getDeploymentByHash', () => {
-    const dbResult = ['1', '2']
-    const hashToSearch = 'myCustomHash'
-
-    beforeEach(async () => {
-      db = mock(MockedDataBase)
-      repository = new DeploymentsRepository(instance(db) as any)
-
-      when(db.map(anything(), anything(), anything())).thenReturn(Promise.resolve(dbResult))
-      await repository.getActiveDeploymentsByContentHash(hashToSearch)
-    })
-
-    it('should call the db with the expected parameters', () => {
-      const expectedQuery = `SELECT deployment.entity_id FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`
-
-      verify(db.map(expectedQuery, deepEqual([hashToSearch]), anything())).once()
-    })
-  })
 })

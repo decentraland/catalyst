@@ -18,7 +18,9 @@ import express from 'express'
 import fs from 'fs'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
+import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
+import { getDeployments } from '../service/deployments/deployments'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
 import { DeploymentPointerChanges, PointerChangesFilters } from '../service/pointers/types'
@@ -47,6 +49,7 @@ export class Controller {
       | 'metrics'
       | 'database'
       | 'sequentialExecutor'
+      | 'denylist'
     >,
     private readonly ethNetwork: string
   ) {
@@ -233,7 +236,8 @@ export class Controller {
     if (!cids) {
       res.status(400).send('Please set at least one cid.')
     } else {
-      const availableContent = await this.components.deployer.isContentAvailable(cids)
+      const availableCids = cids.filter((cid) => !this.components.denylist.isDenyListed(cid))
+      const availableContent = await this.components.deployer.isContentAvailable(availableCids)
       res.send(
         Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
           cid: fileHash,
@@ -255,10 +259,10 @@ export class Controller {
       return
     }
 
-    // don't replace this until the denylist is implemented outside of the service
-    const { deployments } = await this.components.deployer.getDeployments({
+    const { deployments } = await getDeployments(this.components, {
       fields: [DeploymentField.AUDIT_INFO],
-      filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true }
+      filters: { entityIds: [entityId], entityTypes: [type], includeOverwrittenInfo: true },
+      includeDenylisted: true
     })
 
     if (deployments.length > 0) {
@@ -398,7 +402,8 @@ export class Controller {
     // Path: /contents/:hashId/active-entities
     const hashId = req.params.hashId
 
-    const result = await this.components.deployer.getActiveDeploymentsByContentHash(hashId)
+    let result = await getActiveDeploymentsByContentHash(this.components, hashId)
+    result = result.filter((entityId) => !this.components.denylist.isDenyListed(entityId))
 
     if (result.length === 0) {
       res.status(404).send({ error: 'The entity was not found' })
@@ -512,10 +517,9 @@ export class Controller {
       lastId: lastId
     }
 
-    // don't replace this until the denylist is implemented outside of the service
     const { deployments, filters, pagination } = await this.components.sequentialExecutor.run(
       'GetDeploymentsEndpoint',
-      () => this.components.deployer.getDeployments(deploymentOptions)
+      () => getDeployments(this.components, deploymentOptions)
     )
     const controllerDeployments = deployments.map((deployment) =>
       ControllerDeploymentFactory.deployment2ControllerEntity(deployment, enumFields)

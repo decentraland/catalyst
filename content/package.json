@@ -70,6 +70,7 @@
     "destroy": "1.0.4",
     "faker": "5.5.3",
     "jest": "27.4.7",
+    "jest-extra-utils": "^0.1.0",
     "jest-junit": "^13.0.0",
     "nyc": "^15.1.0",
     "on-finished": "2.3.0",

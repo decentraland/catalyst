@@ -1,4 +1,4 @@
-import { AuditInfo, Entity, EntityId } from 'dcl-catalyst-commons'
+import { AuditInfo, Entity } from 'dcl-catalyst-commons'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
@@ -17,13 +17,6 @@ export class DeploymentManager {
     | undefined
   > {
     return deploymentsRepository.getEntityById(entityId)
-  }
-
-  async getActiveDeploymentsByContentHash(
-    deploymentsRepository: DeploymentsRepository,
-    hash: string
-  ): Promise<EntityId[]> {
-    return deploymentsRepository.getActiveDeploymentsByContentHash(hash)
   }
 
   async saveDeployment(
