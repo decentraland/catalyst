@@ -140,6 +140,38 @@ describe('deployments service', () => {
         )
       })
     })
+
+    describe('with a denylisted item but with includeDenylisted param', () => {
+      beforeAll(() => {
+        components = { database: { queryWithValues: () => {} } as any, denylist: { isDenyListed: () => false } }
+        stub(components.database, 'queryWithValues')
+          .onFirstCall()
+          .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
+          .onSecondCall()
+          .resolves({ rows: contentFiles, rowCount: 2 })
+          .onThirdCall()
+          .resolves({ rows: migrationData, rowCount: 2 })
+      })
+
+      afterAll(() => {
+        restore()
+      })
+
+      it("should not return a deployment if it's denylisted", async () => {
+        stub(components.denylist, 'isDenyListed').onFirstCall().returns(true).returns(false)
+        result = await getDeployments(components, { ...options, includeDenylisted: true })
+
+        expect(result).toEqual(
+          expect.objectContaining({
+            deployments: expect.arrayContaining([
+              expect.objectContaining({ entityId: historicalDeploymentsRows[0].entity_id }),
+              expect.objectContaining({ entityId: historicalDeploymentsRows[1].entity_id })
+            ]),
+            filters: options.filters
+          })
+        )
+      })
+    })
   })
 
   describe('getCuratedOffset', () => {
