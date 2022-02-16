@@ -4,30 +4,30 @@ import ms from 'ms'
 import NodeCache from 'node-cache'
 import { AppComponents } from '../types'
 
-export type IRateLimitDeploymentCacheMapComponent = {
+export type IDeployRateLimiterComponent = {
   newDeployment(entityType: EntityType, pointers: Pointer[], localTimestamp: Timestamp): void
   isRateLimited(entityType: EntityType, pointers: Pointer[]): boolean
 }
 
-export type RateLimitConfig = {
+export type DeploymentRateLimitConfig = {
   defaultTtl: number
   defaultMax: number
   entitiesConfigTtl: Map<EntityType, number>
   entitiesConfigMax: Map<EntityType, number>
 }
 
-export function createRateLimitDeploymentCacheMap(
+export function createDeployRateLimiter(
   components: Pick<AppComponents, 'logs'>,
-  rateLimitConfig: RateLimitConfig
-): IRateLimitDeploymentCacheMapComponent {
-  const logs: ILoggerComponent.ILogger = components.logs.getLogger('RateLimitDeploymentCacheMapComponent')
+  rateLimitConfig: DeploymentRateLimitConfig
+): IDeployRateLimiterComponent {
+  const logs: ILoggerComponent.ILogger = components.logs.getLogger('DeployRateLimiterComponent')
 
   const deploymentCacheMap: Map<EntityType, { cache: NodeCache; maxSize: number }> = generateDeploymentCacheMap(
     logs,
     rateLimitConfig
   )
 
-  function getFromCache(entityType: EntityType): { cache: NodeCache; maxSize: number } {
+  function getCacheFromEntityType(entityType: EntityType): { cache: NodeCache; maxSize: number } {
     const cache = deploymentCacheMap.get(entityType)
     if (!cache) {
       throw new Error(`Invalid Entity Type: ${entityType}`)
@@ -37,7 +37,7 @@ export function createRateLimitDeploymentCacheMap(
 
   return {
     newDeployment(entityType: EntityType, pointers: Pointer[], localTimestamp: Timestamp): void {
-      const cacheByEntityType = getFromCache(entityType)
+      const cacheByEntityType = getCacheFromEntityType(entityType)
       for (const pointer in pointers) {
         cacheByEntityType.cache.set(pointer, localTimestamp)
       }
@@ -46,7 +46,7 @@ export function createRateLimitDeploymentCacheMap(
     /** Check if the entity should be rate limit: no deployment has been made for the same pointer in the last ttl
      * and no more than max size of deployments were made either   */
     isRateLimited(entityType: EntityType, pointers: Pointer[]): boolean {
-      const cacheByEntityType = getFromCache(entityType)
+      const cacheByEntityType = getCacheFromEntityType(entityType)
       return (
         pointers.some((p) => !!cacheByEntityType.cache.get(p)) ||
         cacheByEntityType.cache.stats.keys > cacheByEntityType.maxSize
@@ -57,7 +57,7 @@ export function createRateLimitDeploymentCacheMap(
 
 function generateDeploymentCacheMap(
   logs: ILoggerComponent.ILogger,
-  rateLimitConfig: RateLimitConfig
+  rateLimitConfig: DeploymentRateLimitConfig
 ): Map<EntityType, { cache: NodeCache; maxSize: number }> {
   const configPerEntityType: Map<EntityType, { max: number; ttl: number }> = getCacheConfigPerEntityMap(
     rateLimitConfig.entitiesConfigMax,

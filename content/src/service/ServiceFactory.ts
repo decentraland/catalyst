@@ -10,7 +10,7 @@ export class ServiceFactory {
       AppComponents,
       | 'pointerManager'
       | 'failedDeploymentsCache'
-      | 'rateLimitDeploymentCacheMap'
+      | 'deployRateLimiter'
       | 'deploymentManager'
       | 'storage'
       | 'repository'

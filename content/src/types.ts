@@ -12,10 +12,10 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { DenylistComponent } from './ports/denylist'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
+import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
-import { IRateLimitDeploymentCacheMapComponent } from './ports/rateLimitDeploymentCacheMap'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { Repository } from './repository/Repository'
 import { ContentAuthenticator } from './service/auth/Authenticator'
@@ -57,7 +57,7 @@ export type AppComponents = {
   contentCluster: ContentCluster
   pointerManager: PointerManager
   failedDeploymentsCache: IFailedDeploymentsCacheComponent
-  rateLimitDeploymentCacheMap: IRateLimitDeploymentCacheMapComponent
+  deployRateLimiter: IDeployRateLimiterComponent
   deploymentManager: DeploymentManager
   storage: ContentStorage
   authenticator: ContentAuthenticator

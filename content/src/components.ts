@@ -13,11 +13,11 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
+import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
 import { createDatabaseComponent } from './ports/postgres'
-import { createRateLimitDeploymentCacheMap } from './ports/rateLimitDeploymentCacheMap'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
 import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
@@ -85,7 +85,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
 
-  const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap(
+  const deployRateLimiter = createDeployRateLimiter(
     { logs },
     {
       defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
@@ -107,7 +107,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     deploymentManager,
     failedDeploymentsCache,
-    rateLimitDeploymentCacheMap,
+    deployRateLimiter,
     pointerManager,
     repository,
     validator,
@@ -245,7 +245,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentCluster,
     deploymentManager,
     failedDeploymentsCache,
-    rateLimitDeploymentCacheMap,
+    deployRateLimiter,
     pointerManager,
     storage,
     authenticator,

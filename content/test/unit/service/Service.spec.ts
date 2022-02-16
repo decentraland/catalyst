@@ -9,10 +9,10 @@ import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
+import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createFsComponent } from '../../../src/ports/fs'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
-import { createRateLimitDeploymentCacheMap } from '../../../src/ports/rateLimitDeploymentCacheMap'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import * as deployments from '../../../src/service/deployments/deployments'
@@ -248,7 +248,7 @@ describe('Service', function () {
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
     const logs = createLogComponent()
-    const rateLimitDeploymentCacheMap = createRateLimitDeploymentCacheMap({ logs },
+    const deployRateLimiter = createDeployRateLimiter({ logs },
       { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() })
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const storage = new MockedStorage()
@@ -263,7 +263,7 @@ describe('Service', function () {
       env,
       pointerManager,
       failedDeploymentsCache,
-      rateLimitDeploymentCacheMap,
+      deployRateLimiter,
       deploymentManager,
       storage,
       repository,

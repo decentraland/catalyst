@@ -46,7 +46,7 @@ export class ServiceImpl implements MetaverseContentService {
       | 'storage'
       | 'pointerManager'
       | 'failedDeploymentsCache'
-      | 'rateLimitDeploymentCacheMap'
+      | 'deployRateLimiter'
       | 'deploymentManager'
       | 'validator'
       | 'serverValidator'
@@ -175,7 +175,7 @@ export class ServiceImpl implements MetaverseContentService {
         storeResult.affectedPointers?.forEach((pointer) => this.cache.invalidate(entity.type, pointer))
 
         // Insert in deployments cache the updated entities
-        this.components.rateLimitDeploymentCacheMap.newDeployment(
+        this.components.deployRateLimiter.newDeployment(
           entity.type,
           entity.pointers,
           storeResult.auditInfoComplete.localTimestamp
@@ -472,8 +472,7 @@ export class ServiceImpl implements MetaverseContentService {
       isEntityDeployedAlready: () => isEntityDeployedAlready,
       isNotFailedDeployment: (entity) =>
         this.components.failedDeploymentsCache.findFailedDeployment(entity.id) === undefined,
-      isEntityRateLimited: (entity) =>
-        this.components.rateLimitDeploymentCacheMap.isRateLimited(entity.type, entity.pointers),
+      isEntityRateLimited: (entity) => this.components.deployRateLimiter.isRateLimited(entity.type, entity.pointers),
       isRequestTtlBackwards: (entity) =>
         Date.now() - entity.timestamp > this.components.env.getConfig<number>(EnvironmentConfig.REQUEST_TTL_BACKWARDS)
     })
