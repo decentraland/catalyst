@@ -12,7 +12,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 100,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
 
@@ -37,7 +38,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 1000000,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
 
@@ -62,7 +64,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 100,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
       let dateNowStub: sinon.SinonStub
