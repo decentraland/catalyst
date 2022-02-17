@@ -7,6 +7,7 @@ import {
   Entity,
   EntityId,
   EntityType,
+  Hashing,
   PartialDeploymentHistory,
   Pointer
 } from 'dcl-catalyst-commons'
