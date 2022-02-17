@@ -1,8 +1,9 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { hashV0 } from '@dcl/hashing'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
-import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
+import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
@@ -45,7 +46,7 @@ describe('Service', function () {
   // let service: ServiceImpl
 
   it('starts the variables', async () => {
-    randomFileHash = await Hashing.calculateBufferHash(randomFile)
+    randomFileHash = await hashV0(randomFile)
     ;[entity, entityFile] = await buildEntityAndFile(
       EntityType.SCENE,
       POINTERS,
@@ -248,8 +249,10 @@ describe('Service', function () {
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
     const logs = createLogComponent()
-    const deployRateLimiter = createDeployRateLimiter({ logs },
-      { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() })
+    const deployRateLimiter = createDeployRateLimiter(
+      { logs },
+      { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() }
+    )
     const metrics = createTestMetricsComponent(metricsDeclaration)
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()

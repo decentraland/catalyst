@@ -1,7 +1,8 @@
 import { delay } from '@catalyst/commons'
 import { hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, EntityType, Timestamp } from 'dcl-catalyst-commons'
+import { hashV1 } from '@dcl/hashing'
 import future from 'fp-future'
 import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
@@ -138,7 +139,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     const buffer = Buffer.from(JSON.stringify(inArrayFormat))
 
     // Calculate the snapshot's hash
-    const hash = await Hashing.calculateIPFSHash(buffer)
+    const hash = await hashV1(buffer)
 
     // Store the new snapshot
     await this.components.storage.storeStream(hash, bufferToStream(buffer))
