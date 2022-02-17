@@ -1,14 +1,25 @@
+import { runReportingQueryDurationMetric } from '../instrument'
+import { AppComponents } from '../types'
 import { Database, FullDatabase } from './Database'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from './RepositoryQueue'
 
 export class Repository {
-  constructor(private readonly db: FullDatabase, private readonly queue: RepositoryQueue) {}
+  constructor(
+    private readonly db: FullDatabase,
+    private readonly queue: RepositoryQueue,
+    private readonly components: Pick<AppComponents, 'metrics'>
+  ) {}
 
   /**
    * Run some query against the database
    */
   run<T>(execution: (db: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
-    return this.runInternal(execution, options)
+    if (!options.durationQueryNameLabel) {
+      return this.runInternal(execution, options)
+    }
+    return runReportingQueryDurationMetric(this.components, options.durationQueryNameLabel, () =>
+      this.runInternal(execution, options)
+    )
   }
 
   /**
@@ -74,4 +85,5 @@ export class Repository {
 
 type ExecutionOptions = {
   priority: DB_REQUEST_PRIORITY
+  durationQueryNameLabel?: string
 }

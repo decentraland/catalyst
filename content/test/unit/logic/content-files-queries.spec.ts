@@ -1,10 +1,15 @@
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { restore, stub } from 'sinon'
 import { ContentFilesRow, getContentFiles } from '../../../src/logic/database-queries/content-files-queries'
+import { metricsDeclaration } from '../../../src/metrics'
 import { AppComponents } from '../../../src/types'
 
 describe('content files queries', () => {
   describe('getContentFiles', () => {
-    const components: Pick<AppComponents, 'database'> = { database: { queryWithValues: () => {} } } as any
+    const components: Pick<AppComponents, 'database' | 'metrics'> = {
+      database: { queryWithValues: () => {} },
+      metrics: createTestMetricsComponent(metricsDeclaration)
+    } as any
 
     const deploymentIds = [127, 255]
 

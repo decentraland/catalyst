@@ -9,7 +9,7 @@ import { DeploymentPointerChanges, PartialDeploymentPointerChanges, PointerChang
 const MAX_HISTORY_LIMIT = 500
 
 export async function getPointerChanges(
-  components: Pick<AppComponents, 'database' | 'denylist'>,
+  components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
   options?: PointerChangesOptions
 ): Promise<PartialDeploymentPointerChanges> {
   const curatedOffset = options?.offset && options?.offset >= 0 ? options?.offset : 0

@@ -25,7 +25,6 @@ describe('Integration - Server', () => {
 
   afterAll(async () => {
     await testEnv.clearDatabases()
-    await testEnv.stopAllComponentsFromAllServersAndDeref()
     await testEnv.stop()
   })
 
