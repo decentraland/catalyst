@@ -14,7 +14,7 @@ export interface DeploymentDeltasRow {
 }
 
 export async function getPointerChangesForDeployments(
-  components: Pick<AppComponents, 'database'>,
+  components: Pick<AppComponents, 'database' | 'metrics'>,
   deploymentIds: DeploymentId[]
 ): Promise<
   Map<DeploymentId, Map<Pointer, { before?: EntityId; after: DELTA_POINTER_RESULT; authChain: AuthChain | null }>>
@@ -34,7 +34,8 @@ export async function getPointerChangesForDeployments(
             SELECT deployment, pointer, after, deployments.entity_id AS before, deployments.auth_chain AS auth_chain
             FROM deployment_deltas
             LEFT JOIN deployments on deployments.id = deployment_deltas.before
-            WHERE deployment = ANY (${deploymentIds})`
+            WHERE deployment = ANY (${deploymentIds})`,
+      'get_pointer_changes'
     )
   ).rows
 
