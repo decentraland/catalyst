@@ -1,4 +1,3 @@
-import { existPath } from '@catalyst/commons'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { EnvironmentConfig } from '../Environment'
@@ -6,6 +5,15 @@ import { AppComponents } from '../types'
 
 export interface DenylistComponent {
   isDenyListed(hash: string): boolean
+}
+
+async function existPath(components: Pick<AppComponents, 'fs'>, path: string): Promise<boolean> {
+  try {
+    await components.fs.access(path, components.fs.constants.F_OK | components.fs.constants.R_OK)
+    return true
+  } catch (error) {
+    return false
+  }
 }
 
 export async function createDenylistComponent(
@@ -20,9 +28,11 @@ export async function createDenylistComponent(
   )
 
   try {
-    await existPath(fileName)
-
-    const content = await components.fs.createReadStream(fileName, {
+    if (!(await existPath(components, fileName))) {
+      const denylistFile = await components.fs.open(fileName, 'a')
+      await denylistFile.close()
+    }
+    const content = components.fs.createReadStream(fileName, {
       encoding: 'utf-8'
     })
 
@@ -37,8 +47,7 @@ export async function createDenylistComponent(
 
     logs.info('Load successfully the denylist')
   } catch (err) {
-    console.log('ERR', err)
-    logs.warn("Couldn't load a denylist")
+    logs.warn("Couldn't load a denylist", err)
   }
 
   const isDenyListed = (hash: string): boolean => {

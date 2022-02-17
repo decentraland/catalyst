@@ -46,7 +46,6 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
-  const denylist = await createDenylistComponent({ env, logs, fs })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })
@@ -54,7 +53,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentStorageFolder,
     tmpDownloadFolder
   }
-
+  const denylist = await createDenylistComponent({ env, logs, fs })
   const database = await createDatabaseComponent({ logs, env, metrics })
 
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
