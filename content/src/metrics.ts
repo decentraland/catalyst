@@ -72,7 +72,7 @@ export const metricsDeclaration = validateMetricsDeclaration({
   dcl_deployments_endpoint_counter: {
     help: 'Total deployments through HTTP',
     type: 'counter',
-    labelNames: ['kind'] // kind=(success|validation|error)
+    labelNames: ['kind'] // kind=(success|validation_error|error)
   },
 
   dcl_deployment_time: {
@@ -100,5 +100,10 @@ export const metricsDeclaration = validateMetricsDeclaration({
     help: 'Files migrated to new folder structure',
     type: 'counter',
     labelNames: []
+  },
+  dcl_db_query_duration_seconds: {
+    help: 'Histogram of query duration to the database in seconds per query',
+    type: 'histogram',
+    labelNames: ['query', 'status'] // status=(success|error)
   }
 })

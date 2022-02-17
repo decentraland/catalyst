@@ -1,10 +1,12 @@
 import { IDatabase } from '@well-known-components/interfaces'
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { stub } from 'sinon'
 import {
   DeploymentDeltasRow,
   getPointerChangesForDeployments
 } from '../../../src/logic/database-queries/deployment-deltas-queries'
+import { metricsDeclaration } from '../../../src/metrics'
 import { IDatabaseComponent } from '../../../src/ports/postgres'
 import { DELTA_POINTER_RESULT } from '../../../src/service/pointers/PointerManager'
 
@@ -19,6 +21,7 @@ describe('deployment deltas queries', () => {
     describe('when the deployment ids list is not empty', () => {
       it('should return a map that for each deployment has a map from pointer to the delta information', async () => {
         const database: IDatabaseComponent = { queryWithValues: () => undefined } as any
+        const metrics = createTestMetricsComponent(metricsDeclaration)
 
         const repeatedDeploymentId = 1
         const anotherDeploymentId = 2
@@ -89,7 +92,7 @@ describe('deployment deltas queries', () => {
 
         stub(database, 'queryWithValues').resolves(dbResponse)
         expect(
-          await getPointerChangesForDeployments({ database }, [repeatedDeploymentId, anotherDeploymentId])
+          await getPointerChangesForDeployments({ database, metrics }, [repeatedDeploymentId, anotherDeploymentId])
         ).toEqual(expected)
       })
     })
