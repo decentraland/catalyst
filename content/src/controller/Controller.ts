@@ -339,8 +339,8 @@ export class Controller {
 
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
-      from: from,
-      to: to,
+      from,
+      to,
       includeAuthChain,
       includeOverwrittenInfo: includeAuthChain
     }
@@ -478,8 +478,8 @@ export class Controller {
       entityTypes: entityTypes as EntityType[],
       entityIds,
       onlyCurrentlyPointed,
-      from: from,
-      to: to
+      from,
+      to
     }
 
     const deploymentOptions = {
