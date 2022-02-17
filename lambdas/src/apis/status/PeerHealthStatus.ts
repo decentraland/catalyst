@@ -5,6 +5,13 @@ import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
 
 const REFRESH_TIME: string = '1m'
 
+type PeerStatus = {
+  lambda: HealthStatus
+  content: HealthStatus
+  comms: HealthStatus
+  readyToUse: boolean
+}
+
 export default class PeerHealthStatus {
   private static LOGGER: Logger = log4js.getLogger('ServiceImpl')
 
@@ -32,11 +39,20 @@ export default class PeerHealthStatus {
     this.commsServerStatus = new TimeRefreshedDataHolder(() => this.refreshCommsServerStatus(), REFRESH_TIME)
   }
 
-  async getPeerStatus(): Promise<Record<string, HealthStatus>> {
+  async getPeerStatus(): Promise<PeerStatus> {
+    const [lambda, content, comms] = await Promise.all([
+      this.lambdaServerStatus.get(),
+      this.contentServerStatus.get(),
+      this.commsServerStatus.get()
+    ])
+
+    const readyToUse = [lambda, content, comms].every((status) => status === HealthStatus.HEALTHY)
+
     const serversStatus = {
-      lambda: await this.lambdaServerStatus.get(),
-      content: await this.contentServerStatus.get(),
-      comms: await this.commsServerStatus.get()
+      lambda,
+      content,
+      comms,
+      readyToUse
     }
 
     return serversStatus

@@ -55,10 +55,18 @@ export const metricsDeclaration = validateMetricsDeclaration({
     labelNames: []
   },
 
+  // TODO: Unify this metrics
+
   dcl_content_failed_deployments_total: {
     help: 'Total failed deployments',
     type: 'counter',
     labelNames: []
+  },
+
+  dcl_content_rate_limited_deployments_total: {
+    help: 'Total failed deployments due rate limit',
+    type: 'counter',
+    labelNames: ['entity_type']
   },
 
   dcl_deployments_endpoint_counter: {

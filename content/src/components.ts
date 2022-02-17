@@ -3,6 +3,8 @@ import { createJobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/
 import { createJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
+import { EntityType } from 'dcl-catalyst-commons'
+import ms from 'ms'
 import path from 'path'
 import { Controller } from './controller/Controller'
 import { Environment, EnvironmentConfig } from './Environment'
@@ -12,6 +14,7 @@ import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
+import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
@@ -82,8 +85,21 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const pointerManager = new PointerManager()
 
   const failedDeploymentsCache = createFailedDeploymentsCache()
+
+  const deployRateLimiter = createDeployRateLimiter(
+    { logs },
+    {
+      defaultTtl: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL) ?? ms('1m'),
+      defaultMax: env.getConfig(EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX) ?? 300,
+      entitiesConfigTtl:
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL) ?? new Map(),
+      entitiesConfigMax:
+        env.getConfig<Map<EntityType, number>>(EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX) ?? new Map()
+    }
+  )
+
   const validator = createValidator({ storage, authenticator, catalystFetcher, env, logs })
-  const serverValidator = createServerValidator({ failedDeploymentsCache })
+  const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
   const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist })
@@ -93,6 +109,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     storage,
     deploymentManager,
     failedDeploymentsCache,
+    deployRateLimiter,
     pointerManager,
     repository,
     validator,
@@ -232,6 +249,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentCluster,
     deploymentManager,
     failedDeploymentsCache,
+    deployRateLimiter,
     pointerManager,
     storage,
     authenticator,
