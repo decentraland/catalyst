@@ -29,7 +29,10 @@ export async function refreshContentServerStatus(
 
     const obtainDeploymentTimeIsTooLong = obtainDeploymentTime > ms(maxDeploymentObtentionTime)
 
-    if (hasOldInformation || obtainDeploymentTimeIsTooLong) {
+    // This is the only valid syncronization state that ensures content is being served up to date
+    const isSyncStateOk = (serverStatus as any).synchronizationStatus?.synchronizationState === 'Syncing'
+
+    if (hasOldInformation || obtainDeploymentTimeIsTooLong || !isSyncStateOk) {
       healthStatus = HealthStatus.UNHEALTHY
     } else {
       healthStatus = HealthStatus.HEALTHY

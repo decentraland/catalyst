@@ -12,7 +12,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 100,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
 
@@ -37,7 +38,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 1000000,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
 
@@ -62,7 +64,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 100,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
       let dateNowStub: sinon.SinonStub
@@ -87,6 +90,32 @@ describe("Lambda's Controller Utils", () => {
       })
 
       it('should return aa unhealthy status', async () => {
+        const logger = mock(Logger)
+
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.UNHEALTHY
+        )
+      })
+    })
+
+    describe('when the service is bootstrapping', () => {
+      const mockedUnhealthyStatus = {
+        currentTime: 100,
+        synchronizationStatus: {
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Bootstrapping',
+        }
+      }
+
+      beforeAll(() => {
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedUnhealthyStatus as any))
+        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+          Promise.resolve(mockedUnhealthyStatus as any)
+        )
+      })
+
+      it('should return an unhealthy status', async () => {
         const logger = mock(Logger)
 
         expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(

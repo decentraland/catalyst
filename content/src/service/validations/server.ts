@@ -27,7 +27,11 @@ const isRequestTtlForwards: EntityCheck = (entity) => Date.now() - entity.timest
 /**
  * Checks when context is DeploymentContext.LOCAL
  */
-const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<string | undefined> => {
+const localChecks = async (
+  entity: Entity,
+  serviceCalls: ServiceCalls,
+  components: Pick<AppComponents, 'metrics'>
+): Promise<string | undefined> => {
   /** Validate that there are no newer deployments on the entity's pointers */
   if (await serviceCalls.areThereNewerEntities(entity))
     return `There is a newer entity pointed by one or more of the pointers you provided (entityId=${
@@ -39,8 +43,10 @@ const localChecks = async (entity: Entity, serviceCalls: ServiceCalls): Promise<
     return `This entity was already deployed. You can't redeploy it`
 
   /** Validate the deployment is not rate limited */
-  if (await serviceCalls.isEntityRateLimited(entity))
+  if (await serviceCalls.isEntityRateLimited(entity)) {
+    components.metrics.increment('dcl_content_rate_limited_deployments_total', { entity_type: entity.type })
     return `Entity rate limited (entityId=${entity.id} pointers=${entity.pointers.join(',')}).`
+  }
 
   /** Validate that the deployment is recent */
   if (await serviceCalls.isRequestTtlBackwards(entity))
@@ -69,7 +75,9 @@ export const IGNORING_FIX_ERROR = 'Ignoring fix for failed deployment since ther
 /**
  * Server side validations for current deploying entity for LOCAL and FIX_ATTEMPT contexts
  */
-export const createServerValidator = (components: Pick<AppComponents, 'failedDeploymentsCache'>): ServerValidator => ({
+export const createServerValidator = (
+  components: Pick<AppComponents, 'failedDeploymentsCache' | 'metrics'>
+): ServerValidator => ({
   validate: async (entity, context, serviceCalls) => {
     // these contexts doesn't validate anything in this side
     if (context === DeploymentContext.SYNCED || context === DeploymentContext.SYNCED_LEGACY_ENTITY) {
@@ -77,7 +85,7 @@ export const createServerValidator = (components: Pick<AppComponents, 'failedDep
     }
 
     if (context === DeploymentContext.LOCAL) {
-      const error = await localChecks(entity, serviceCalls)
+      const error = await localChecks(entity, serviceCalls, components)
       if (error) {
         return { ok: false, message: error }
       }
