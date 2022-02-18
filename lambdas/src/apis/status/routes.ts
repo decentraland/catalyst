@@ -29,7 +29,13 @@ export default (environment: Environment): Router => {
 
     peerHealthStatus
       .getPeerStatus()
-      .then(($) => res.send($))
+      .then(($) => {
+        const readyToUse = Object.values($).every((state) => state === 'Healthy')
+        if (!readyToUse) {
+          res.status(503)
+        }
+        res.send($)
+      })
       .catch((err) => {
         console.error(err)
         res.status(500)
