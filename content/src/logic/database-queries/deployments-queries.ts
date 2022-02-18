@@ -194,7 +194,7 @@ function configureSortWhereClause(
 }
 
 export async function getHistoricalDeployments(
-  components: Pick<AppComponents, 'database'>,
+  components: Pick<AppComponents, 'database' | 'metrics'>,
   offset: number,
   limit: number,
   filters?: DeploymentFilters,
@@ -203,7 +203,7 @@ export async function getHistoricalDeployments(
 ): Promise<HistoricalDeployment[]> {
   const query = getHistoricalDeploymentsQuery(offset, limit, filters, sortBy, lastId)
 
-  const historicalDeploymentsResponse = await components.database.queryWithValues(query)
+  const historicalDeploymentsResponse = await components.database.queryWithValues(query, 'get_historical_deployments')
 
   const historicalDeployments: HistoricalDeployment[] = historicalDeploymentsResponse.rows.map(
     (row: HistoricalDeploymentsRow): HistoricalDeployment => ({

@@ -5,13 +5,14 @@ import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'
 import { IDeployerComponent, RemoteEntityDeployment } from '@dcl/snapshots-fetcher/dist/types'
 import { IFetchComponent } from '@well-known-components/http-server'
 import { ILoggerComponent, IMetricsComponent } from '@well-known-components/interfaces'
-import { Fetcher } from 'dcl-catalyst-commons'
+import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
 import { DenylistComponent } from './ports/denylist'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
+import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { FSComponent } from './ports/fs'
 import { IDatabaseComponent } from './ports/postgres'
@@ -56,6 +57,7 @@ export type AppComponents = {
   contentCluster: ContentCluster
   pointerManager: PointerManager
   failedDeploymentsCache: IFailedDeploymentsCacheComponent
+  deployRateLimiter: IDeployRateLimiterComponent
   deploymentManager: DeploymentManager
   storage: ContentStorage
   authenticator: ContentAuthenticator
@@ -95,4 +97,14 @@ export type StatusProbeResult = {
 
 export type IStatusCapableComponent = {
   getComponentStatus(): Promise<StatusProbeResult>
+}
+
+// TODO: Move this to catalyst-commons and remove the check for trailing s?
+export function parseEntityType(strType: string): EntityType {
+  if (strType.endsWith('s')) {
+    strType = strType.slice(0, -1)
+  }
+  strType = strType.toUpperCase().trim()
+  const type = EntityType[strType]
+  return type
 }

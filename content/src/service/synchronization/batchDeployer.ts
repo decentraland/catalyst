@@ -115,8 +115,6 @@ export function createBatchDeployerComponent(
     }
   }
 
-  // TODO: [new-sync] every now and then cleanup the deploymentsMap of old deployments
-
   return {
     async stop() {
       // stop will wait for the queue to end.

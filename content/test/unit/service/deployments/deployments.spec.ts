@@ -1,9 +1,11 @@
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Deployment, EntityType, EntityVersion, PartialDeploymentHistory } from 'dcl-catalyst-commons'
 import { safe } from 'jest-extra-utils'
 import { restore, stub } from 'sinon'
 import { ContentFilesRow } from '../../../../src/logic/database-queries/content-files-queries'
 import { HistoricalDeploymentsRow } from '../../../../src/logic/database-queries/deployments-queries'
 import { MigrationDataRow } from '../../../../src/logic/database-queries/migration-data-queries'
+import { metricsDeclaration } from '../../../../src/metrics'
 import {
   getCuratedLimit,
   getCuratedOffset,
@@ -15,7 +17,7 @@ import { AppComponents } from '../../../../src/types'
 
 describe('deployments service', () => {
   describe('getDeployments', () => {
-    let components: Pick<AppComponents, 'database' | 'denylist'>
+    let components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>
     let result: PartialDeploymentHistory<Deployment>
 
     const deploymentIds = [127, 255]
@@ -82,7 +84,11 @@ describe('deployments service', () => {
 
     describe('when no item is denylisted', () => {
       beforeAll(() => {
-        components = { database: safe({ queryWithValues: () => {} }), denylist: { isDenyListed: () => false } }
+        components = {
+          database: safe({ queryWithValues: () => {} }),
+          denylist: { isDenyListed: () => false },
+          metrics: createTestMetricsComponent(metricsDeclaration)
+        }
         stub(components.database, 'queryWithValues')
           .onFirstCall()
           .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
@@ -113,7 +119,11 @@ describe('deployments service', () => {
 
     describe('with a denylisted item', () => {
       beforeAll(() => {
-        components = { database: safe({ queryWithValues: () => {} }), denylist: { isDenyListed: () => false } }
+        components = {
+          database: safe({ queryWithValues: () => {} }),
+          denylist: { isDenyListed: () => false },
+          metrics: createTestMetricsComponent(metricsDeclaration)
+        }
         stub(components.database, 'queryWithValues')
           .onFirstCall()
           .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })
@@ -144,7 +154,11 @@ describe('deployments service', () => {
 
     describe('with a denylisted item but with includeDenylisted param', () => {
       beforeAll(() => {
-        components = { database: safe({ queryWithValues: () => {} }), denylist: { isDenyListed: () => false } }
+        components = {
+          database: safe({ queryWithValues: () => {} }),
+          denylist: { isDenyListed: () => false },
+          metrics: createTestMetricsComponent(metricsDeclaration)
+        }
         stub(components.database, 'queryWithValues')
           .onFirstCall()
           .resolves({ rows: historicalDeploymentsRows, rowCount: 2 })

@@ -4,10 +4,12 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
+import ms from 'ms'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
+import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createFsComponent } from '../../../src/ports/fs'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
@@ -245,12 +247,14 @@ describe('Service', function () {
     const serverValidator = new NoOpServerValidator()
     const deploymentManager = new DeploymentManager()
     const failedDeploymentsCache = createFailedDeploymentsCache()
-    const metrics = createTestMetricsComponent(metricsDeclaration)
     const logs = createLogComponent()
+    const deployRateLimiter = createDeployRateLimiter({ logs },
+      { defaultMax: 300, defaultTtl: ms('1m'), entitiesConfigMax: new Map(), entitiesConfigTtl: new Map() })
+    const metrics = createTestMetricsComponent(metricsDeclaration)
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
-    const database = await createDatabaseComponent({ logs, env })
+    const database = await createDatabaseComponent({ logs, env, metrics })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
     const fs = createFsComponent()
     const denylist: DenylistComponent = await createDenylistComponent({ env, logs, fs })
@@ -259,6 +263,7 @@ describe('Service', function () {
       env,
       pointerManager,
       failedDeploymentsCache,
+      deployRateLimiter,
       deploymentManager,
       storage,
       repository,

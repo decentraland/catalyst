@@ -31,7 +31,7 @@ import {
   LocalDeploymentAuditInfo
 } from '../service/Service'
 import { ContentItem, RawContent } from '../storage/ContentStorage'
-import { AppComponents } from '../types'
+import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
 
@@ -56,11 +56,11 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
-  async getEntities(req: express.Request, res: express.Response) {
+  async getEntities(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /entities/:type
     // Query String: ?{filter}&fields={fieldList}
-    const type: EntityType = this.parseEntityType(req.params.type)
+    const type: EntityType = parseEntityType(req.params.type)
     const pointers: Pointer[] = this.asArray<Pointer>(req.query.pointer as string)?.map((p) => p.toLowerCase()) ?? []
     const ids: EntityId[] = this.asArray<EntityId>(req.query.id as string) ?? []
     const fields: string = req.query.fields as string
@@ -94,15 +94,6 @@ export class Controller {
 
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
-  }
-
-  private parseEntityType(strType: string): EntityType {
-    if (strType.endsWith('s')) {
-      strType = strType.slice(0, -1)
-    }
-    strType = strType.toUpperCase().trim()
-    const type = EntityType[strType]
-    return type
   }
 
   private asArray<T>(elements: any | T | T[]): T[] | undefined {
@@ -199,7 +190,7 @@ export class Controller {
     )
   }
 
-  async headContent(req: express.Request, res: express.Response) {
+  async headContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: HEAD
     // Path: /contents/:hashId
     const hashId = req.params.hashId
@@ -215,7 +206,7 @@ export class Controller {
     }
   }
 
-  async getContent(req: express.Request, res: express.Response) {
+  async getContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /contents/:hashId
     const hashId = req.params.hashId
@@ -236,7 +227,7 @@ export class Controller {
     }
   }
 
-  async getAvailableContent(req: express.Request, res: express.Response) {
+  async getAvailableContent(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /available-content
     // Query String: ?cid={hashId1}&cid={hashId2}
@@ -256,10 +247,10 @@ export class Controller {
     }
   }
 
-  async getAudit(req: express.Request, res: express.Response) {
+  async getAudit(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /audit/:type/:entityId
-    const type = this.parseEntityType(req.params.type)
+    const type = parseEntityType(req.params.type)
     const entityId = req.params.entityId
 
     // Validate type is valid
@@ -291,18 +282,14 @@ export class Controller {
     }
   }
 
-  async getPointerChanges(req: express.Request, res: express.Response) {
+  async getPointerChanges(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /pointer-changes
     // Query String: ?from={timestamp}&to={timestamp}&offset={number}&limit={number}&entityType={entityType}&includeAuthChain={boolean}
     const stringEntityTypes = this.asArray<string>(req.query.entityType)
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => this.parseEntityType(type))
+      ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
-    // deprecated
-    const fromLocalTimestamp: Timestamp | undefined = this.asInt(req.query.fromLocalTimestamp)
-    // deprecated
-    const toLocalTimestamp: Timestamp | undefined = this.asInt(req.query.toLocalTimestamp)
     const from: Timestamp | undefined = this.asInt(req.query.from)
     const to: Timestamp | undefined = this.asInt(req.query.to)
     const offset: number | undefined = this.asInt(req.query.offset)
@@ -350,14 +337,10 @@ export class Controller {
       }
     }
 
-    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
-    const fromFilter = from ?? fromLocalTimestamp
-    const toFilter = to ?? toLocalTimestamp
-
     const requestFilters = {
       entityTypes: entityTypes as EntityType[] | undefined,
-      from: fromFilter,
-      to: toFilter,
+      from,
+      to,
       includeAuthChain,
       includeOverwrittenInfo: includeAuthChain
     }
@@ -406,7 +389,7 @@ export class Controller {
     return '?' + nextQueryParams
   }
 
-  async getActiveDeploymentsByContentHash(req: express.Request, res: express.Response) {
+  async getActiveDeploymentsByContentHash(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /contents/:hashId/active-entities
     const hashId = req.params.hashId
@@ -422,14 +405,14 @@ export class Controller {
     res.json(result)
   }
 
-  async getDeployments(req: express.Request, res: express.Response) {
+  async getDeployments(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /deployments
     // Query String: ?from={timestamp}&toLocalTimestamp={timestamp}&entityType={entityType}&entityId={entityId}&onlyCurrentlyPointed={boolean}
 
     const stringEntityTypes = this.asArray<string>(req.query.entityType as string | string[])
     const entityTypes: (EntityType | undefined)[] | undefined = stringEntityTypes
-      ? stringEntityTypes.map((type) => this.parseEntityType(type))
+      ? stringEntityTypes.map((type) => parseEntityType(type))
       : undefined
     const entityIds: EntityId[] | undefined = this.asArray<EntityId>(req.query.entityId)
     const onlyCurrentlyPointed: boolean | undefined = this.asBoolean(req.query.onlyCurrentlyPointed)
@@ -445,10 +428,6 @@ export class Controller {
       req.query.sortingOrder as string
     )
     const lastId: string | undefined = (req.query.lastId as string)?.toLowerCase()
-    // deprecated
-    const fromLocalTimestamp: number | undefined = this.asInt(req.query.fromLocalTimestamp)
-    // deprecated
-    const toLocalTimestamp: number | undefined = this.asInt(req.query.toLocalTimestamp)
     const from: number | undefined = this.asInt(req.query.from)
     const to: number | undefined = this.asInt(req.query.to)
 
@@ -494,27 +473,13 @@ export class Controller {
       }
     }
 
-    // Validate to and from are valid
-    if (sortingField == SortingField.ENTITY_TIMESTAMP && (fromLocalTimestamp || toLocalTimestamp)) {
-      res.status(400).send({
-        error: 'The filters fromLocalTimestamp and toLocalTimestamp can not be used when sorting by entity timestamp.'
-      })
-      return
-    }
-
-    // TODO: remove this when to/from localTimestamp parameter is deprecated to use to/from
-    const fromFilter =
-      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && fromLocalTimestamp ? fromLocalTimestamp : from
-    const toFilter =
-      (!sortingField || sortingField == SortingField.LOCAL_TIMESTAMP) && toLocalTimestamp ? toLocalTimestamp : to
-
     const requestFilters = {
       pointers,
       entityTypes: entityTypes as EntityType[],
       entityIds,
       onlyCurrentlyPointed,
-      from: fromFilter,
-      to: toFilter
+      from,
+      to
     }
 
     const deploymentOptions = {
@@ -602,7 +567,7 @@ export class Controller {
     return value ? value === 'true' : undefined
   }
 
-  async getStatus(req: express.Request, res: express.Response) {
+  async getStatus(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /status
 
@@ -622,11 +587,11 @@ export class Controller {
   /**
    * @deprecated
    */
-  async getSnapshot(req: express.Request, res: express.Response) {
+  async getSnapshot(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /snapshot/:type
 
-    const type = this.parseEntityType(req.params.type)
+    const type = parseEntityType(req.params.type)
 
     // Validate type is valid
     if (!type) {
@@ -643,7 +608,7 @@ export class Controller {
     }
   }
 
-  async getAllSnapshots(req: express.Request, res: express.Response) {
+  async getAllSnapshots(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /snapshot
 
@@ -656,7 +621,7 @@ export class Controller {
     }
   }
 
-  async getFailedDeployments(req: express.Request, res: express.Response) {
+  async getFailedDeployments(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /failed-deployments
 
@@ -664,7 +629,7 @@ export class Controller {
     res.send(failedDeployments)
   }
 
-  async getChallenge(req: express.Request, res: express.Response) {
+  async getChallenge(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /challenge
 
