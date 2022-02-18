@@ -12,8 +12,8 @@ import {
   Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
-import { runReportingQueryDurationMetric } from '../../src/instrument'
 import { EnvironmentConfig } from '../Environment'
+import { runReportingQueryDurationMetric } from '../instrument'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
