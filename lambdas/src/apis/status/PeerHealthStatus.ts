@@ -9,7 +9,6 @@ type PeerStatus = {
   lambda: HealthStatus
   content: HealthStatus
   comms: HealthStatus
-  readyToUse: boolean
 }
 
 export default class PeerHealthStatus {
@@ -46,13 +45,10 @@ export default class PeerHealthStatus {
       this.commsServerStatus.get()
     ])
 
-    const readyToUse = [lambda, content, comms].every((status) => status === HealthStatus.HEALTHY)
-
     const serversStatus = {
       lambda,
       content,
-      comms,
-      readyToUse
+      comms
     }
 
     return serversStatus

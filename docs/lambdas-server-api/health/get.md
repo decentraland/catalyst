@@ -22,7 +22,6 @@ Get the health status for each server running in catalyst
 {
   "comms": "Healthy",
   "content": "Unhealthy",
-  "lambda": "Healthy",
-  "readyToUse": false
+  "lambda": "Healthy"
 }
 ```
