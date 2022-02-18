@@ -56,7 +56,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     tmpDownloadFolder
   }
 
-  const database = await createDatabaseComponent({ logs, env })
+  const database = await createDatabaseComponent({ logs, env, metrics })
 
   const sequentialExecutor = createSequentialTaskExecutor({ metrics, logs })
 

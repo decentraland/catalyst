@@ -1,5 +1,5 @@
-import { AppComponents } from '../types'
 import { Environment, EnvironmentConfig } from '../Environment'
+import { AppComponents } from '../types'
 import { build } from './Database'
 import { Repository } from './Repository'
 import { RepositoryQueue } from './RepositoryQueue'
@@ -26,7 +26,7 @@ export class RepositoryFactory {
 
     const options = RepositoryFactory.parseQueueOptions(env)
 
-    return new Repository(database, new RepositoryQueue(components, options))
+    return new Repository(database, new RepositoryQueue(components, options), components)
   }
 
   private static parseQueueOptions(env: Environment) {

@@ -10,7 +10,7 @@ export interface ContentFilesRow {
 }
 
 export async function getContentFiles(
-  components: Pick<AppComponents, 'database'>,
+  components: Pick<AppComponents, 'database' | 'metrics'>,
   deploymentIds: DeploymentId[]
 ): Promise<Map<DeploymentId, DeploymentContent[]>> {
   if (deploymentIds.length === 0) {
@@ -19,7 +19,8 @@ export async function getContentFiles(
 
   const queryResult = (
     await components.database.queryWithValues(
-      SQL`SELECT deployment, key, content_hash FROM content_files WHERE deployment = ANY (${deploymentIds})`
+      SQL`SELECT deployment, key, content_hash FROM content_files WHERE deployment = ANY (${deploymentIds})`,
+      'get_content_files'
     )
   ).rows
 

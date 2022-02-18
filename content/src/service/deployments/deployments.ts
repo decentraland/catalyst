@@ -15,7 +15,7 @@ export function getCuratedLimit(options?: DeploymentOptions): number {
 }
 
 export async function getDeployments(
-  components: Pick<AppComponents, 'database' | 'denylist'>,
+  components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
   options?: DeploymentOptions
 ): Promise<PartialDeploymentHistory<Deployment>> {
   const curatedOffset = getCuratedOffset(options)

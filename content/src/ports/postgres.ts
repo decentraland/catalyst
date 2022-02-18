@@ -4,10 +4,11 @@ import { Pool, PoolConfig } from 'pg'
 import QueryStream from 'pg-query-stream'
 import { SQLStatement } from 'sql-template-strings'
 import { EnvironmentConfig } from '../Environment'
+import { runReportingQueryDurationMetric } from '../instrument'
 import { AppComponents } from '../types'
 
 export interface IDatabaseComponent extends IDatabase {
-  queryWithValues<T>(sql: SQLStatement): Promise<IDatabase.IQueryResult<T>>
+  queryWithValues<T>(sql: SQLStatement, durationQueryNameLabel?: string): Promise<IDatabase.IQueryResult<T>>
   streamQuery<T = any>(sql: SQLStatement, config?: { batchSize?: number }): AsyncGenerator<T>
 
   start(): Promise<void>
@@ -31,7 +32,7 @@ export function createTestDatabaseComponent(): IDatabaseComponent {
 }
 
 export async function createDatabaseComponent(
-  components: Pick<AppComponents, 'logs' | 'env'>,
+  components: Pick<AppComponents, 'logs' | 'env' | 'metrics'>,
   options?: PoolConfig
 ): Promise<IDatabaseComponent & IBaseComponent> {
   const { logs } = components
@@ -63,7 +64,7 @@ export async function createDatabaseComponent(
     }
   }
 
-  async function query<T>(sql: string) {
+  async function query<T>(sql: string): Promise<IDatabase.IQueryResult<T>> {
     const rows = await pool.query<T[]>(sql)
     return {
       rows: rows.rows as any[],
@@ -71,8 +72,14 @@ export async function createDatabaseComponent(
     }
   }
 
-  async function queryWithValues<T>(sql: SQLStatement) {
-    const rows = await pool.query<T[]>(sql)
+  async function queryWithValues<T>(
+    sql: SQLStatement,
+    durationQueryNameLabel?: string
+  ): Promise<IDatabase.IQueryResult<T>> {
+    const rows = durationQueryNameLabel
+      ? await runReportingQueryDurationMetric(components, durationQueryNameLabel, () => pool.query(sql))
+      : await pool.query<T[]>(sql)
+
     return {
       rows: rows.rows as any[],
       rowCount: rows.rowCount

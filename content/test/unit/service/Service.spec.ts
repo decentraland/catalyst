@@ -281,7 +281,7 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
-    const database = await createDatabaseComponent({ logs, env })
+    const database = await createDatabaseComponent({ logs, env, metrics })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const fs = createFsComponent()
