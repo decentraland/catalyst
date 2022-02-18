@@ -57,7 +57,6 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
-
   /**
    * @deprecated
    * this endpoint will be deprecated in favor of `getActiveEntities`

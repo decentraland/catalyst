@@ -50,7 +50,11 @@ export const createActiveEntitiesComponent = (
   })
   const entityIdByPointers = new Map<Pointer, EntityId>()
 
+  // init gauge metrics
   components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
+  Object.values(EntityType).forEach((entityType) => {
+    components.metrics.observe('dcl_entities_cache_storage_size', { entity_type: entityType }, 0)
+  })
 
   const reportCacheAccess = (entityType: EntityType, result: 'hit' | 'miss') => {
     components.metrics.increment('dcl_entities_cache_accesses_total', {
