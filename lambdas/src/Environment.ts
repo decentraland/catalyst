@@ -204,7 +204,6 @@ export class EnvironmentBuilder {
       ms(process.env.PROFILE_WEARABLES_CACHE_TIMEOUT ?? '30m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PROOF_OF_WORK, () => process.env.PROOF_OF_WORK === 'true')
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
 
     this.registerConfigIfNotAlreadySet(
       env,

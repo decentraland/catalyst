@@ -33,7 +33,6 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
-      .setConfig(EnvironmentConfig.METRICS, false)
 
     if (overrideConfigs) {
       for (const key in overrideConfigs) {
