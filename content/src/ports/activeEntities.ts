@@ -1,38 +1,56 @@
-import { Deployment, Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
+import { Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
 import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
+export const NOT_ACTIVE = 'NONE'
+export type EntityCacheResult = Entity | typeof NOT_ACTIVE
+export type PointerToEntityId = EntityId | typeof NOT_ACTIVE
+
+const isEntityPresent = (result: EntityCacheResult | undefined): result is Entity => result !== NOT_ACTIVE
+const isPointingToEntity = (result: PointerToEntityId | undefined): result is EntityId => result !== NOT_ACTIVE
+
 export type ActiveEntities = {
   /**
    * Retrieve active entities that are pointed by the given pointers
+   * Note: result is cached, even if the pointer has no active entity
    */
   withPointers(pointers: Pointer[]): Promise<Entity[]>
   /**
    * Retrieve active entities by their ids
+   * Note: result is cached, even if the id has no active entity
    */
   withIds(entityIds: EntityId[]): Promise<Entity[]>
-  /**
-   * Invalidate the cache for the given pointers
-   */
-  invalidate(pointers: Pointer[]): void
   /**
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  update(pointers: Pointer[], entity: Entity): void
+  update(pointers: Pointer[], entity: EntityCacheResult): void
   /**
-   * Returns the entity id if there is an active entity with given pointer
+   * Returns the cached result:
+   *  - entity id if there is an active entity
+   *  - NONE if there is no active entity
+   *  - undefined if there is no cached result
    * Note: testing purposes
    */
-  getActiveEntity(pointer: Pointer): EntityId | undefined
+  getCachedActiveEntityOrNone(pointer: Pointer): PointerToEntityId | undefined
   /**
    * Returns true if there is an active entity cached with given id
    * Note: testing purposes
    */
   isActiveEntityCached(entityId: EntityId): boolean
+  /**
+   * Returns true if there is no active entity with given id
+   * Note: testing purposes
+   */
+  isEntityIdNotActive(entityId: EntityId): boolean
+  /**
+   * Returns true if there is no active entity with given pointer
+   * Note: testing purposes
+   */
+  hasNoActiveEntity(pointer: Pointer): boolean
 }
 
 /**
@@ -45,10 +63,10 @@ export const createActiveEntitiesComponent = (
   components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist'>
 ): ActiveEntities => {
   const logger = components.logs.getLogger('ActiveEntities')
-  const cache = new LRU<EntityId, Entity>({
+  const cache = new LRU<EntityId, EntityCacheResult>({
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
-  const entityIdByPointers = new Map<Pointer, EntityId>()
+  const entityIdByPointers = new Map<Pointer, PointerToEntityId>()
 
   // init gauge metrics
   components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
@@ -63,25 +81,18 @@ export const createActiveEntitiesComponent = (
     })
   }
 
-  const invalidateEntity = (entityId: EntityId): void => {
-    const entity = cache.get(entityId)
-    if (entity) {
-      for (const pointer of entity.pointers) {
-        entityIdByPointers.delete(pointer)
-      }
-      cache.del(entityId)
-      components.metrics.decrement('dcl_entities_cache_storage_size', { entity_type: entity.type })
-    }
-  }
-
-  /**
-   * Invalidate the cache for the given pointers
-   */
-  const invalidate = (pointers: string[]): void => {
-    for (const pointer of pointers) {
+  const setPreviousEntityAsNone = (pointer: Pointer): void => {
+    if (entityIdByPointers.has(pointer)) {
+      // pointer now have a different active entity, let's update the old one
       const entityId = entityIdByPointers.get(pointer)
-      if (entityId) {
-        invalidateEntity(entityId)
+      if (isPointingToEntity(entityId)) {
+        const entity = cache.get(entityId) // it should be present
+        if (isEntityPresent(entity)) {
+          cache.set(entityId, NOT_ACTIVE)
+          for (const pointer of entity.pointers) {
+            entityIdByPointers.set(pointer, NOT_ACTIVE)
+          }
+        }
       }
     }
   }
@@ -90,22 +101,45 @@ export const createActiveEntitiesComponent = (
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  const update = (pointers: Pointer[], entity: Entity) => {
-    invalidate(pointers)
+  const update = (pointers: Pointer[], entity: EntityCacheResult) => {
     for (const pointer of pointers) {
-      entityIdByPointers.set(pointer, entity.id)
+      setPreviousEntityAsNone(pointer)
+      entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
     }
-    cache.set(entity.id, entity)
-    components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
+    if (isEntityPresent(entity)) {
+      cache.set(entity.id, entity)
+      components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
+    }
   }
 
-  const updateCacheAndReturnAsEntities = (deployments: Deployment[]): Entity[] => {
-    const entities = mapDeploymentsToEntities(deployments)
+  const updateCache = (
+    entities: Entity[],
+    { pointers, entityIds }: { pointers?: string[]; entityIds?: string[] }
+  ): void => {
     // Update cache for each entity
     for (const entity of entities) {
       update(entity.pointers, entity)
     }
-    return entities
+    // Check which pointers or ids doesn't have an active entity and set as NONE
+    if (pointers) {
+      const pointersWithoutActiveEntity = pointers.filter(
+        (pointer) => !entities.some((entity) => entity.pointers.includes(pointer))
+      )
+
+      for (const pointer of pointersWithoutActiveEntity) {
+        entityIdByPointers.set(pointer, NOT_ACTIVE)
+        logger.debug('pointer has no active entity', { pointer })
+      }
+    } else if (entityIds) {
+      const entityIdsWithoutActiveEntity = entityIds.filter(
+        (entityId) => !entities.some((entity) => entity.id === entityId)
+      )
+
+      for (const entityId of entityIdsWithoutActiveEntity) {
+        cache.set(entityId, NOT_ACTIVE)
+        logger.debug('entityId has no active entity', { entityId })
+      }
+    }
   }
 
   /**
@@ -126,7 +160,11 @@ export const createActiveEntitiesComponent = (
     for (const deployment of deployments) {
       reportCacheAccess(deployment.entityType, 'miss')
     }
-    return updateCacheAndReturnAsEntities(deployments)
+
+    const entities = mapDeploymentsToEntities(deployments)
+    updateCache(entities, { pointers, entityIds })
+
+    return entities
   }
 
   /**
@@ -135,13 +173,15 @@ export const createActiveEntitiesComponent = (
   const withIds = async (entityIds: EntityId[]): Promise<Entity[]> => {
     // check what is on the cache
     const uniqueEntityIds = new Set(entityIds)
-    const onCache: Entity[] = []
+    const onCache: EntityCacheResult[] = []
     const remaining: EntityId[] = []
     for (const entityId of uniqueEntityIds) {
       const entity = cache.get(entityId)
       if (entity) {
         onCache.push(entity)
-        reportCacheAccess(entity.type, 'hit')
+        if (isEntityPresent(entity)) {
+          reportCacheAccess(entity.type, 'hit')
+        }
       } else {
         logger.debug('Entity not found on cache', { entityId })
         remaining.push(entityId)
@@ -151,18 +191,7 @@ export const createActiveEntitiesComponent = (
     // calculate values for those remaining keys
     const remainingEntities: Entity[] = remaining.length > 0 ? await findEntities({ entityIds: remaining }) : []
 
-    if (onCache.length + remainingEntities.length !== entityIds.length) {
-      const missingIds = entityIds
-        .filter((entityId) => {
-          const notInCache = !onCache.find((entity) => entity.id === entityId)
-          const notInRemaining = !remainingEntities.find((entity) => entity.id === entityId)
-          return notInCache && notInRemaining
-        })
-        .join(', ')
-      logger.debug('Some requested entities are not active or do not exist', { missingIds })
-    }
-
-    return [...onCache, ...remainingEntities]
+    return [...onCache.filter(isEntityPresent), ...remainingEntities]
   }
 
   /**
@@ -180,7 +209,11 @@ export const createActiveEntitiesComponent = (
         logger.debug('Entity with given pointer not found on cache', { pointer })
         remaining.push(pointer)
       } else {
-        uniqueEntityIds.add(entityId)
+        if (isPointingToEntity(entityId)) {
+          uniqueEntityIds.add(entityId)
+        } else {
+          logger.debug('Entity with given pointer is not active', { pointer })
+        }
       }
     }
 
@@ -198,9 +231,11 @@ export const createActiveEntitiesComponent = (
     withIds,
     withPointers,
     update,
-    invalidate,
 
-    getActiveEntity: (pointer) => entityIdByPointers.get(pointer),
-    isActiveEntityCached: (entityId) => cache.has(entityId)
+    getCachedActiveEntityOrNone: (pointer) => entityIdByPointers.get(pointer),
+    isActiveEntityCached: (entityId) => cache.has(entityId) && isEntityPresent(cache.get(entityId)),
+    isEntityIdNotActive: (entityId) => cache.has(entityId) && !isEntityPresent(cache.get(entityId)),
+    hasNoActiveEntity: (pointer) =>
+      entityIdByPointers.has(pointer) && !isPointingToEntity(entityIdByPointers.get(pointer))
   }
 }

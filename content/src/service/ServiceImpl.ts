@@ -14,6 +14,7 @@ import {
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
+import { NOT_ACTIVE } from '../ports/activeEntities'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
 import { DB_REQUEST_PRIORITY } from '../repository/RepositoryQueue'
@@ -337,7 +338,7 @@ export class ServiceImpl implements MetaverseContentService {
     )
     // invalidate pointers (points to an entity that is no longer active)
     // this case happen when the entity is overwritten
-    this.components.activeEntities.invalidate(cleared)
+    this.components.activeEntities.update(cleared, NOT_ACTIVE)
 
     // update pointer (points to the new entity that is active)
     this.components.activeEntities.update(setted, entity)

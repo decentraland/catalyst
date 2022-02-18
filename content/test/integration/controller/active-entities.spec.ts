@@ -1,13 +1,15 @@
 import { Entity } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
+import { NOT_ACTIVE } from '../../../src/ports/activeEntities'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
+import * as deployments from '../../../src/service/deployments/deployments'
 
 loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) => {
-  it('When asking by ID, it returns active entities with given ID', async () => {
+  it('when asking by ID, it returns active entities with given ID', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
 
     makeNoopValidator(server.components)
@@ -27,7 +29,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     expect(result[0].id).toBe(deployResult.entity.id)
   })
 
-  it('When asking by Pointer, it returns active entities with given pointer', async () => {
+  it('when asking by Pointer, it returns active entities with given pointer', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
 
     makeNoopValidator(server.components)
@@ -49,7 +51,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     expect(result[0].pointers).toContain(deployResult.entity.pointers[1])
   })
 
-  it('When asking for active entities, only active entities are returned', async () => {
+  it('when asking for active entities, only active entities are returned', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
 
     makeNoopValidator(server.components)
@@ -77,7 +79,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     expect(result[0].id).toBe(newDeployResult.entity.id)
   })
 
-  it('When there are multiple active entities, they are returned', async () => {
+  it('when there are multiple active entities, they are returned', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
 
     makeNoopValidator(server.components)
@@ -106,7 +108,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     expect(result.some((entity) => entity.id === deployResult2.entity.id)).toBeTruthy()
   })
 
-  it('When asking with duplicated IDs, entity is returned once', async () => {
+  it('when asking with duplicated IDs, entity is returned once', async () => {
     const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
 
     makeNoopValidator(server.components)
@@ -162,8 +164,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       await server.deploy(deployResult.deployData)
       await fetchActiveEntityByIds(server, deployResult.entity.id)
 
-      const zeroZeroActiveEntityId = server.components.activeEntities.getActiveEntity('0,0')
-      const zeroOneActiveEntityId1 = server.components.activeEntities.getActiveEntity('0,1')
+      const zeroZeroActiveEntityId = server.components.activeEntities.getCachedActiveEntityOrNone('0,0')
+      const zeroOneActiveEntityId1 = server.components.activeEntities.getCachedActiveEntityOrNone('0,1')
       expect(zeroZeroActiveEntityId).toBeDefined()
       expect(zeroOneActiveEntityId1).toBeDefined()
       expect(zeroOneActiveEntityId1).toBe(zeroZeroActiveEntityId)
@@ -173,7 +175,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(isCached).toBeTruthy()
     })
 
-    it('when fetching active entities by pointer but there is no one, then no entity is cached', async () => {
+    it('when fetching active entities by pointer but there is no one, then entity is cached as NOT_ACTIVE', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
@@ -182,24 +184,24 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const result = await fetchActiveEntityByPointers(server, somePointer)
       expect(result).toHaveLength(0)
 
-      const entityId = server.components.activeEntities.getActiveEntity(somePointer)
-      expect(entityId).toBeUndefined()
+      const entityId = server.components.activeEntities.getCachedActiveEntityOrNone(somePointer)
+      expect(entityId).toBe(NOT_ACTIVE)
     })
 
-    it('when fetching active entities by id but there is no one, then no entity is cached', async () => {
+    it('when fetching active entities by id but there is no one, then is cached as NOT_ACTIVE', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
 
       const someId = 'someId'
-      const result = await fetchActiveEntityByPointers(server, someId)
+      const result = await fetchActiveEntityByIds(server, someId)
       expect(result).toHaveLength(0)
 
-      const isCached = server.components.activeEntities.isActiveEntityCached(someId)
-      expect(isCached).toBeFalsy()
+      const isNotActiveButCached = server.components.activeEntities.isEntityIdNotActive(someId)
+      expect(isNotActiveButCached).toBeTruthy()
     })
 
-    it('when overriding an entity, then cache is invalidated', async () => {
+    it('when overriding an entity, then cache is updated', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
       await server.startProgram()
@@ -222,8 +224,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const result = await fetchActiveEntityByPointers(server, '0,0')
       expect(result).toHaveLength(0)
 
-      const activeEntityForInvalidatedPointer = server.components.activeEntities.getActiveEntity('0,0')
-      expect(activeEntityForInvalidatedPointer).toBeUndefined()
+      const activeEntityForOverwrittenPointer = server.components.activeEntities.getCachedActiveEntityOrNone('0,0')
+      expect(activeEntityForOverwrittenPointer).toBe(NOT_ACTIVE)
     })
 
     it('when deploying a new entity with same pointer, then cache is updated', async () => {
@@ -243,8 +245,8 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const result = await fetchActiveEntityByPointers(server, '0,0', '0,1')
       expect(result).toHaveLength(1)
 
-      const entityId = activeEntities.getActiveEntity('0,0')
-      const secondEntityId = activeEntities.getActiveEntity('0,1')
+      const entityId = activeEntities.getCachedActiveEntityOrNone('0,0')
+      const secondEntityId = activeEntities.getCachedActiveEntityOrNone('0,1')
       expect(entityId).toBe(secondEntityId)
       expect(activeEntities.isActiveEntityCached(entityId)).toBeTruthy()
 
@@ -254,12 +256,12 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
       // Deploy new entity with pointers ['0,0', '0,1']
       await server.deploy(secondDeployData)
-      const newEntityId = activeEntities.getActiveEntity('0,0')
+      const newEntityId = activeEntities.getCachedActiveEntityOrNone('0,0')
       expect(newEntityId).not.toBe(entityId)
-      expect(activeEntities.isActiveEntityCached(entityId)).toBeFalsy()
+      expect(activeEntities.isEntityIdNotActive(entityId)).toBeTruthy()
       expect(activeEntities.isActiveEntityCached(newEntityId)).toBeTruthy()
-      expect(activeEntities.getActiveEntity('0,0')).toBe(newEntityId)
-      expect(activeEntities.getActiveEntity('0,1')).toBe(newEntityId)
+      expect(activeEntities.getCachedActiveEntityOrNone('0,0')).toBe(newEntityId)
+      expect(activeEntities.getCachedActiveEntityOrNone('0,1')).toBe(newEntityId)
     })
 
     it('when fetching multiple active entities, all are cached', async () => {
@@ -290,6 +292,45 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       expect(activeEntities.isActiveEntityCached(firstEntityId)).toBeTruthy()
       expect(activeEntities.isActiveEntityCached(secondEntityId)).toBeTruthy()
+    })
+
+    it('when fetching a non active entity, result is cached', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+
+      const result = await fetchActiveEntityByIds(server, 'someId')
+      expect(result).toHaveLength(0)
+
+      // check cache
+      expect(server.components.activeEntities.isEntityIdNotActive('someId')).toBeTruthy()
+    })
+
+    it('when results are cached, getDeployments is not called', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointers = ['0,0', '0,1']
+      const { deployData } = await buildDeployData(pointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity with pointers ['0,0', '0,1']
+      await server.deploy(deployData)
+
+      const { deployData: secondDeployData } = await buildDeployData(['0,1'], {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+      // Deploy entity with pointer ['0,1']
+      await server.deploy(secondDeployData) // Override entity and invalidate pointer ['0,0']
+
+      // given one active entity and one non active entity cached, check getDeployments is not being called
+      const serviceSpy = jest.spyOn(deployments, 'getDeployments')
+      const result = await fetchActiveEntityByPointers(server, '0,0', '0,1')
+      expect(result).toHaveLength(1)
+      expect(serviceSpy).not.toHaveBeenCalled()
     })
   })
 
