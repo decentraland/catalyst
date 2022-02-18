@@ -1,5 +1,5 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { hashV0 } from '@dcl/hashing'
+import { hashV1 } from '@dcl/hashing'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
@@ -46,7 +46,7 @@ describe('Service', function () {
   // let service: ServiceImpl
 
   it('starts the variables', async () => {
-    randomFileHash = await hashV0(randomFile)
+    randomFileHash = await hashV1(randomFile)
     ;[entity, entityFile] = await buildEntityAndFile(
       EntityType.SCENE,
       POINTERS,
