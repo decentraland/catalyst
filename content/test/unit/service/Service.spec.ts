@@ -211,57 +211,6 @@ describe('Service', function () {
     expectSpyToBeCalled(serviceSpy, { ids: ['QmSQc2mGpzanz1DDtTf2ZCFnwTpJvAbcwzsS4An5PXaTqg'] })
   })
 
-  it(`When a pointer has no entity after a deployment, then it is invalidated from the cache`, async () => {
-    const service = await buildService()
-    jest.spyOn(service.components.pointerManager, 'referenceEntityFromPointers').mockImplementation(() =>
-      Promise.resolve(
-        new Map([
-          [POINTERS[0], { before: undefined, after: DELTA_POINTER_RESULT.CLEARED }],
-          [POINTERS[1], { before: undefined, after: DELTA_POINTER_RESULT.CLEARED }]
-        ])
-      )
-    )
-    const serviceSpy = jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
-    )
-
-    // Call the first time
-    await service.components.activeEntities.withPointers(POINTERS)
-    expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
-
-    jest.spyOn(service.components.deploymentManager, 'saveDeployment').mockImplementation(() => Promise.resolve(1))
-    jest.spyOn(service.components.deploymentManager, 'savePointerChanges').mockImplementation(() => Promise.resolve())
-    jest
-      .spyOn(service.components.deploymentManager, 'setEntitiesAsOverwritten')
-      .mockImplementation(() => Promise.resolve())
-
-    // Make deployment that should invalidate the cache
-    const [deleterEntity, deleterEntityFile] = await buildEntityAndFile(
-      EntityType.SCENE,
-      POINTERS.slice(0, 1),
-      Date.now(),
-      new Map([['file', randomFileHash]]),
-      'metadata'
-    )
-    await service.deployEntity([deleterEntityFile, randomFile], deleterEntity.id, auditInfo, DeploymentContext.LOCAL)
-
-    // Reset spy and call again
-    serviceSpy.mockReset()
-    jest.spyOn(deployments, 'getDeployments').mockImplementation(() =>
-      Promise.resolve({
-        deployments: [fakeDeployment()],
-        filters: {},
-        pagination: { offset: 0, limit: 0, moreData: true }
-      })
-    )
-    await service.components.activeEntities.withPointers(POINTERS)
-    expectSpyToBeCalled(serviceSpy, { pointers: POINTERS })
-  })
-
   async function buildService() {
     const repository = MockedRepository.build(new Map([[EntityType.SCENE, initialAmountOfDeployments]]))
     const env = new Environment()
