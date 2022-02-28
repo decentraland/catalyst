@@ -257,7 +257,7 @@ describe('Service', function () {
     const storage = new MockedStorage()
     const pointerManager = NoOpPointerManager.build()
     const authenticator = new ContentAuthenticator('', DECENTRALAND_ADDRESS)
-    const database = await createDatabaseComponent({ logs, env })
+    const database = await createDatabaseComponent({ logs, env, metrics })
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
     const fs = createFsComponent()
     const denylist: DenylistComponent = await createDenylistComponent({ env, logs, fs })

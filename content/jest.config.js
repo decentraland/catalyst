@@ -9,7 +9,7 @@ module.exports = {
     {
       globals: {
         'ts-jest': {
-          tsconfig: 'test/tsconfig.json'
+          tsconfig: '<rootDir>/test/tsconfig.json'
         }
       },
       displayName: 'unit',
@@ -19,7 +19,7 @@ module.exports = {
     {
       globals: {
         'ts-jest': {
-          tsconfig: 'test/tsconfig.json'
+          tsconfig: '<rootDir>/test/tsconfig.json'
         }
       },
       displayName: 'integration',

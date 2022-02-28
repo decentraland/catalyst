@@ -1,16 +1,17 @@
 import { DAOClient, ServerBaseUrl } from '@catalyst/commons'
 import { createLogComponent } from '@well-known-components/logger'
+import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
 import ms from 'ms'
 import { spy } from 'sinon'
 import { DEFAULT_DATABASE_CONFIG, Environment, EnvironmentBuilder, EnvironmentConfig } from '../../src/Environment'
 import { stopAllComponents } from '../../src/logic/components-lifecycle'
+import { metricsDeclaration } from '../../src/metrics'
 import { MigrationManagerFactory } from '../../src/migrations/MigrationManagerFactory'
 import { createDatabaseComponent, IDatabaseComponent } from '../../src/ports/postgres'
 import { AppComponents } from '../../src/types'
 import { MockedDAOClient } from '../helpers/service/synchronization/clients/MockedDAOClient'
 import { TestProgram } from './TestProgram'
-
 export class E2ETestEnvironment {
   public static TEST_SCHEMA = 'e2etest'
   public static POSTGRES_PORT = 5432
@@ -32,7 +33,6 @@ export class E2ETestEnvironment {
       .setConfig(EnvironmentConfig.LOG_REQUESTS, false)
       .setConfig(EnvironmentConfig.LOG_LEVEL, 'off')
       .setConfig(EnvironmentConfig.BOOTSTRAP_FROM_SCRATCH, false)
-      .setConfig(EnvironmentConfig.METRICS, false)
 
     if (overrideConfigs) {
       for (const key in overrideConfigs) {
@@ -41,9 +41,10 @@ export class E2ETestEnvironment {
         this.sharedEnv.setConfig(parseInt(key) as EnvironmentConfig, value)
       }
     }
-
+    const metrics = createTestMetricsComponent(metricsDeclaration)
     const logs = createLogComponent()
-    this.database = await createDatabaseComponent({ logs, env: this.sharedEnv })
+    this.database = await createDatabaseComponent({ logs, env: this.sharedEnv, metrics })
+    this.database.start()
   }
 
   async stop(): Promise<void> {
@@ -202,7 +203,7 @@ export function loadTestEnvironment(
   return function (name, test) {
     describe(name, () => {
       const testEnv = new E2ETestEnvironment()
-      
+
       beforeAll(async () => {  await testEnv.start(overrideConfigs) })
 
       describe('use cases for test environment', () => {
@@ -217,7 +218,7 @@ export function loadTestEnvironment(
 
         test(testEnv)
       })
-      
+
       afterAll(async () => { await testEnv.stop() })
     })
   }

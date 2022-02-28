@@ -85,8 +85,6 @@ export class Environment {
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
   SERVER_PORT,
-  // @deprecated
-  METRICS,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
@@ -175,7 +173,6 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SERVER_PORT,
       () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
       env,
