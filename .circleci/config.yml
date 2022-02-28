@@ -8,7 +8,7 @@ references:
       at: *workspace_root
 
   .image_client: &image_client
-    image: circleci/node:16-browsers
+    image: cimg/node:16.14-browsers
 
   .working_directory_root: &working_directory_root
     working_directory: *workspace_root
@@ -90,7 +90,7 @@ jobs:
   build-content:
     docker:
       - <<: *image_client
-      - image: circleci/postgres:12
+      - image: cimg/postgres:12.9
         command: postgres -c max_connections=300
         environment:
           POSTGRES_DB: postgres_test
@@ -160,7 +160,7 @@ jobs:
   publish-docker:
     <<: *base_env
     docker:
-      - image: circleci/node:16-browsers
+      - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
@@ -199,7 +199,7 @@ jobs:
   publish-docker-without-tag:
     <<: *base_env
     docker:
-      - image: circleci/node:16-browsers
+      - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
