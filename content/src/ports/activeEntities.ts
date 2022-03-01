@@ -62,7 +62,8 @@ export type ActiveEntities = {
 export const createActiveEntitiesComponent = (
   components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist'>
 ): ActiveEntities => {
-  const logger = components.logs.getLogger('ActiveEntities')
+  // TODO: logger commented out until we have LOG_LEVEL support (debug)
+  // const logger = components.logs.getLogger('ActiveEntities')
   const cache = new LRU<EntityId, EntityCacheResult>({
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
@@ -128,7 +129,7 @@ export const createActiveEntitiesComponent = (
 
       for (const pointer of pointersWithoutActiveEntity) {
         entityIdByPointers.set(pointer, NOT_ACTIVE)
-        logger.debug('pointer has no active entity', { pointer })
+        // logger.debug('pointer has no active entity', { pointer })
       }
     } else if (entityIds) {
       const entityIdsWithoutActiveEntity = entityIds.filter(
@@ -137,7 +138,7 @@ export const createActiveEntitiesComponent = (
 
       for (const entityId of entityIdsWithoutActiveEntity) {
         cache.set(entityId, NOT_ACTIVE)
-        logger.debug('entityId has no active entity', { entityId })
+        // logger.debug('entityId has no active entity', { entityId })
       }
     }
   }
@@ -183,7 +184,7 @@ export const createActiveEntitiesComponent = (
           reportCacheAccess(entity.type, 'hit')
         }
       } else {
-        logger.debug('Entity not found on cache', { entityId })
+        // logger.debug('Entity not found on cache', { entityId })
         remaining.push(entityId)
       }
     }
@@ -206,13 +207,13 @@ export const createActiveEntitiesComponent = (
     for (const pointer of uniquePointers) {
       const entityId = entityIdByPointers.get(pointer)
       if (!entityId) {
-        logger.debug('Entity with given pointer not found on cache', { pointer })
+        // logger.debug('Entity with given pointer not found on cache', { pointer })
         remaining.push(pointer)
       } else {
         if (isPointingToEntity(entityId)) {
           uniqueEntityIds.add(entityId)
         } else {
-          logger.debug('Entity with given pointer is not active', { pointer })
+          // logger.debug('Entity with given pointer is not active', { pointer })
         }
       }
     }
