@@ -60,7 +60,7 @@ export type ActiveEntities = {
  *  - keep the relation between pointers and the active entity ids
  */
 export const createActiveEntitiesComponent = (
-  components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist'>
+  components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor'>
 ): ActiveEntities => {
   // TODO: logger commented out until we have LOG_LEVEL support (debug)
   // const logger = components.logs.getLogger('ActiveEntities')
@@ -154,18 +154,20 @@ export const createActiveEntitiesComponent = (
     entityIds?: EntityId[]
     pointers?: Pointer[]
   }): Promise<Entity[]> => {
-    const filters = entityIds ? { entityIds } : { pointers }
-    const { deployments } = await getDeployments(components, {
-      filters: { ...filters, onlyCurrentlyPointed: true }
+    return components.sequentialExecutor.run('GetActiveEntities', async () => {
+      const filters = entityIds ? { entityIds } : { pointers }
+      const { deployments } = await getDeployments(components, {
+        filters: { ...filters, onlyCurrentlyPointed: true }
+      })
+      for (const deployment of deployments) {
+        reportCacheAccess(deployment.entityType, 'miss')
+      }
+
+      const entities = mapDeploymentsToEntities(deployments)
+      updateCache(entities, { pointers, entityIds })
+
+      return entities
     })
-    for (const deployment of deployments) {
-      reportCacheAccess(deployment.entityType, 'miss')
-    }
-
-    const entities = mapDeploymentsToEntities(deployments)
-    updateCache(entities, { pointers, entityIds })
-
-    return entities
   }
 
   /**

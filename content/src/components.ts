@@ -102,7 +102,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
-  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist })
+  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
   const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
