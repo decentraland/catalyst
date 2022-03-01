@@ -89,13 +89,10 @@ export class Controller {
     }
 
     // Calculate and mask entities
-    const entities: Entity[] = await this.components.sequentialExecutor.run('GetEntitiesEndpoint', async () => {
-      if (ids.length > 0) {
-        return await this.components.activeEntities.withIds(ids)
-      } else {
-        return await this.components.activeEntities.withPointers(pointers)
-      }
-    })
+    const entities: Entity[] =
+      ids.length > 0
+        ? await this.components.activeEntities.withIds(ids)
+        : await this.components.activeEntities.withPointers(pointers)
 
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
@@ -122,12 +119,10 @@ export class Controller {
       return
     }
 
-    const entities: Entity[] = await this.components.sequentialExecutor.run('GetActiveEntitiesEndpoint', async () => {
-      if (idsPresent) {
-        return await this.components.activeEntities.withIds(ids)
-      }
-      return await this.components.activeEntities.withPointers(pointers)
-    })
+    const entities: Entity[] =
+      ids.length > 0
+        ? await this.components.activeEntities.withIds(ids)
+        : await this.components.activeEntities.withPointers(pointers)
 
     res.send(entities)
   }
