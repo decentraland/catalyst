@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express'
 import PeerHealthStatus from '../../apis/status/PeerHealthStatus'
 import { Bean, Environment, EnvironmentConfig } from '../../Environment'
+import { HealthStatus } from './health'
 
 export default (environment: Environment): Router => {
   const router = Router()
@@ -30,7 +31,7 @@ export default (environment: Environment): Router => {
     peerHealthStatus
       .getPeerStatus()
       .then(($) => {
-        const readyToUse = Object.values($).every((state) => state === 'Healthy')
+        const readyToUse = Object.values($).every((state) => state === HealthStatus.HEALTHY)
         if (!readyToUse) {
           res.status(503)
         }
