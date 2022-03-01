@@ -1,7 +1,7 @@
 import { createValidator as validator, ExternalCalls, Validator as IValidatorComponent } from '@dcl/content-validator'
 import { Authenticator } from 'dcl-crypto'
 import { EnvironmentConfig } from '../../Environment'
-import { streamToBuffer } from '../../storage/ContentStorage'
+import { streamToBuffer } from '../../ports/contentStorage/contentStorage'
 import { AppComponents } from '../../types'
 
 export function createValidator(
