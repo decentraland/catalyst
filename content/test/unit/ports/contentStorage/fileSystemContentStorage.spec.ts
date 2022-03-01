@@ -1,11 +1,12 @@
 import path from 'path'
-import { bufferToStream } from '../../../src/storage/ContentStorage'
-import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
-import { FileSystemUtils as fsu } from './FileSystemUtils'
+import { bufferToStream, ContentStorage } from '../../../../src/ports/contentStorage/contentStorage'
+import { createFileSystemContentStorage } from '../../../../src/ports/contentStorage/fileSystemContentStorage'
+import { createFsComponent } from '../../../../src/ports/fs'
+import { FileSystemUtils as fsu } from '../../ports/contentStorage/FileSystemUtils'
 
-describe('FileSystemContentStorage', () => {
+describe('fileSystemContentStorage', () => {
   let tmpRootDir: string
-  let fss: FileSystemContentStorage
+  let fss: ContentStorage
   let id: string
   let content: Buffer
   let filePath: string
@@ -15,7 +16,8 @@ describe('FileSystemContentStorage', () => {
 
   beforeAll(async () => {
     tmpRootDir = fsu.createTempDirectory()
-    fss = await FileSystemContentStorage.build(tmpRootDir)
+    fss = await createFileSystemContentStorage({ fs: createFsComponent() }, tmpRootDir)
+
     // sha1('some-id') = 9584b661c135a43f2fbbe43cc5104f7bd693d048
     id = 'some-id'
     filePath = path.join(tmpRootDir, '9584', id)
@@ -25,7 +27,6 @@ describe('FileSystemContentStorage', () => {
     id2 = 'another-id'
     filePath2 = path.join(tmpRootDir, 'ea6c', id2)
     content2 = Buffer.from('456')
-    console.log(tmpRootDir)
   })
 
   it(`When content is stored, then the correct file structure is created`, async () => {
