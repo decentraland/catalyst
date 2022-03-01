@@ -76,8 +76,8 @@ export class Server implements IBaseComponent {
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any())
+    this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD) // Register before GET
     this.registerRoute('/contents/:hashId', controller, controller.getContent, HttpMethod.GET)
-    this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD)
     this.registerRoute('/available-content', controller, controller.getAvailableContent)
     this.registerRoute('/audit/:type/:entityId', controller, controller.getAudit)
     this.registerRoute('/deployments', controller, controller.getDeployments)

@@ -201,6 +201,7 @@ export class Controller {
       const rawStream = await contentItem.asRawStream()
       await setContentFileHeaders(rawStream, hashId, res)
       destroy(rawStream.stream)
+      res.send()
     } else {
       res.status(404).send()
     }
