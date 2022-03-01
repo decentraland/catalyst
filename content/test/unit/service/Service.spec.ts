@@ -30,6 +30,7 @@ import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../storage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
+import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 
 describe('Service', function () {
   const POINTERS = ['X1,Y1', 'X2,Y2']
@@ -235,7 +236,8 @@ describe('Service', function () {
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const fs = createFsComponent()
     const denylist: DenylistComponent = await createDenylistComponent({ env, logs, fs })
-    const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist })
+    const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
+    const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist, sequentialExecutor })
 
     return new ServiceImpl({
       env,

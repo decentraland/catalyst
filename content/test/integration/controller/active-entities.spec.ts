@@ -2,11 +2,11 @@ import { Entity } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import { NOT_ACTIVE } from '../../../src/ports/activeEntities'
+import * as deployments from '../../../src/service/deployments/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData } from '../E2ETestUtils'
 import { TestProgram } from '../TestProgram'
-import * as deployments from '../../../src/service/deployments/deployments'
 
 loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) => {
   it('when asking by ID, it returns active entities with given ID', async () => {

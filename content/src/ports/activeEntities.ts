@@ -153,8 +153,8 @@ export const createActiveEntitiesComponent = (
   }: {
     entityIds?: EntityId[]
     pointers?: Pointer[]
-  }): Promise<Entity[]> => {
-    return components.sequentialExecutor.run('GetActiveEntities', async () => {
+  }): Promise<Entity[]> =>
+    await components.sequentialExecutor.run('GetActiveEntities', async () => {
       const filters = entityIds ? { entityIds } : { pointers }
       const { deployments } = await getDeployments(components, {
         filters: { ...filters, onlyCurrentlyPointed: true }
@@ -168,7 +168,6 @@ export const createActiveEntitiesComponent = (
 
       return entities
     })
-  }
 
   /**
    * Retrieve active entities by their ids

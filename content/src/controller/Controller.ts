@@ -120,7 +120,7 @@ export class Controller {
     }
 
     const entities: Entity[] =
-      ids.length > 0
+      ids && ids.length > 0
         ? await this.components.activeEntities.withIds(ids)
         : await this.components.activeEntities.withPointers(pointers)
 
