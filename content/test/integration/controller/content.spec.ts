@@ -3,7 +3,7 @@ import fetch from 'node-fetch'
 import path from 'path'
 import { Controller } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
+import { FileSystemContentStorage } from '../../../src/ports/contentStorage/fileSystemContentStorage'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 
