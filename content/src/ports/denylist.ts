@@ -1,4 +1,3 @@
-import { existPath } from '@catalyst/commons'
 import { resolve } from 'path'
 import { createInterface } from 'readline'
 import { EnvironmentConfig } from '../Environment'
@@ -20,9 +19,9 @@ export async function createDenylistComponent(
   )
 
   try {
-    await existPath(fileName)
+    await components.fs.existPath(fileName)
 
-    const content = await components.fs.createReadStream(fileName, {
+    const content = components.fs.createReadStream(fileName, {
       encoding: 'utf-8'
     })
 

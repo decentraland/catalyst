@@ -6,10 +6,6 @@ import { createFsComponent } from '../../../src/ports/fs'
 
 const lines = ['my\n', 'first\n', 'denylisted\n', 'item\n']
 
-jest.mock('@catalyst/commons', () => ({
-  existPath: () => true
-}))
-
 describe('denylist', () => {
   describe('when creating a denylist it should read a file to load the denylisted items', () => {
     const env = new Environment()
@@ -19,7 +15,8 @@ describe('denylist', () => {
 
     it('should have denylisted each line from the file', async () => {
       const fs = createFsComponent()
-      fs.createReadStream = jest.fn().mockResolvedValue(Readable.from(lines))
+      fs.createReadStream = jest.fn().mockReturnValue(Readable.from(lines))
+      fs.existPath = jest.fn().mockResolvedValue(true)
       const denylist = await createDenylistComponent({ env, logs, fs })
 
       expect(lines.every((line) => denylist.isDenyListed(line.trimEnd()))).toBe(true)
@@ -27,7 +24,8 @@ describe('denylist', () => {
 
     it('should not have denylisted another word', async () => {
       const fs = createFsComponent()
-      fs.createReadStream = jest.fn().mockResolvedValue(Readable.from(lines))
+      fs.createReadStream = jest.fn().mockReturnValue(Readable.from(lines))
+      fs.existPath = jest.fn().mockResolvedValue(true)
       const denylist = await createDenylistComponent({ env, logs, fs })
 
       expect(denylist.isDenyListed('RANDOM')).toBe(false)
