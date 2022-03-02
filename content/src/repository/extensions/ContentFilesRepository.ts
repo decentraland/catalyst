@@ -5,16 +5,14 @@ import { DeploymentId } from './DeploymentsRepository'
 export class ContentFilesRepository {
   constructor(private readonly db: Database) {}
 
-  findContentHashesNotBeingUsedAnymore(lastGarbageCollection: Timestamp): Promise<ContentFileHash[]> {
+  async findContentHashesNotBeingUsedAnymore(lastGarbageCollection: Timestamp): Promise<ContentFileHash[]> {
     return this.db.map(
-      `
-            SELECT content_files.content_hash
-            FROM content_files
-            LEFT JOIN deployments AS dd ON deployments.overwritten_by=dd.entity_id
-            WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp($1 / 1000.0)
-            GROUP BY content_files.content_hash
-            HAVING bool_or(deployments.overwritten_by IS NULL) = FALSE
-            `,
+      `SELECT * FROM content_files
+    WHERE content_files.content_hash NOT IN (
+      SELECT content_hash FROM content_files
+      JOIN deployments on content_files.deployment=deployments.id
+      WHERE (deployments.overwritten_by IS NULL)
+    )`,
       [lastGarbageCollection],
       (row) => row.content_hash
     )

@@ -6,6 +6,13 @@ import { MigrationBuilder } from 'node-pg-migrate'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`ALTER TABLE deployments ADD COLUMN overwritten_by text DEFAULT NULL;`)
+
+  // pgm.sql(`ALTER TABLE deployments DROP CONSTRAINT id;`)
+  // pgm.sql(`ALTER TABLE deployments ADD PRIMARY KEY (entity_id);`)
+
+  // pgm.sql(`ALTER TABLE content_files ADD COLUMN entity_id text NOT NULL;`)
+  // pgm.sql(`ALTER TABLE migration_data ADD COLUMN entity_id text NOT NULL;`)
+
   // pgm.sql(`
   //   UPDATE deployments
   //   SET
