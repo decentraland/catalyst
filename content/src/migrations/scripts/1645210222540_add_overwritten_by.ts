@@ -10,9 +10,16 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   // pgm.sql(`ALTER TABLE deployments DROP CONSTRAINT id;`)
   // pgm.sql(`ALTER TABLE deployments ADD PRIMARY KEY (entity_id);`)
 
-  // pgm.sql(`ALTER TABLE content_files ADD COLUMN entity_id text NOT NULL;`)
   // pgm.sql(`ALTER TABLE migration_data ADD COLUMN entity_id text NOT NULL;`)
+  pgm.sql(`ALTER TABLE content_files ADD COLUMN entity_id text;`)
 
+  pgm.sql(`
+    UPDATE content_files
+    SET
+        entity_id = (SELECT entity_id FROM deployments WHERE deployments.id = content_files.deployment)
+  `)
+
+  pgm.sql(`ALTER TABLE content_files ALTER COLUMN entity_id NOT NULL;`)
   // pgm.sql(`
   //   UPDATE deployments
   //   SET

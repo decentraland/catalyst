@@ -33,7 +33,7 @@ export class DeploymentManager {
     }
 
     if (entity.content) {
-      await contentRepository.saveContentFiles(deploymentId, entity.content)
+      await contentRepository.saveContentFiles({ deploymentId, entityId: entity.id }, entity.content)
     }
 
     return deploymentId

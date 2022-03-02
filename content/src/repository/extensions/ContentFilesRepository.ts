@@ -1,6 +1,17 @@
-import { ContentFileHash, DeploymentContent, EntityContentItemReference, Timestamp } from 'dcl-catalyst-commons'
+import {
+  ContentFileHash,
+  DeploymentContent,
+  EntityContentItemReference,
+  EntityId,
+  Timestamp
+} from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from './DeploymentsRepository'
+
+export type DeploymentKey = {
+  deploymentId: DeploymentId
+  entityId: EntityId
+}
 
 export class ContentFilesRepository {
   constructor(private readonly db: Database) {}
@@ -36,14 +47,13 @@ export class ContentFilesRepository {
     return result
   }
 
-  async saveContentFiles(deploymentId: DeploymentId, content: EntityContentItemReference[]): Promise<void> {
+  async saveContentFiles(deployment: DeploymentKey, content: EntityContentItemReference[]): Promise<void> {
     await this.db.txIf((transaction) => {
       const contentPromises = content.map((item) =>
-        transaction.none('INSERT INTO content_files (deployment, key, content_hash) VALUES ($1, $2, $3)', [
-          deploymentId,
-          item.file,
-          item.hash
-        ])
+        transaction.none(
+          'INSERT INTO content_files (deployment, key, content_hash, entity_id) VALUES ($1, $2, $3, $4)',
+          [deployment.deploymentId, item.file, item.hash, deployment.entityId]
+        )
       )
       return transaction.batch(contentPromises)
     })
