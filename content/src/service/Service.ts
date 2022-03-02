@@ -10,6 +10,7 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
+import { ContentRange } from '../controller/Controller'
 import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
@@ -28,7 +29,7 @@ export interface MetaverseContentService {
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
+  getContent(fileHash: ContentFileHash, range?: ContentRange): Promise<ContentItem | undefined>
   getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
   getAllFailedDeployments(): FailedDeployment[]
   getEntitiesByIds(ids: EntityId[]): Promise<Entity[]>

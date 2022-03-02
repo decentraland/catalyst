@@ -2,6 +2,7 @@ import { createHash } from 'crypto'
 import path from 'path'
 import { pipeline, Readable } from 'stream'
 import { promisify } from 'util'
+import { ContentRange } from '../../controller/Controller'
 import { AppComponents } from '../../types'
 import { compressContentFile } from './compression'
 import { ContentEncoding, ContentItem, ContentStorage, SimpleContentItem } from './contentStorage'
@@ -30,13 +31,39 @@ export async function createFileSystemContentStorage(
 
   const retrieveWithEncoding = async (
     id: string,
-    encoding: ContentEncoding | null
+    encoding: ContentEncoding | null,
+    range?: ContentRange
   ): Promise<ContentItem | undefined> => {
     const extension = encoding ? '.' + encoding : ''
     const filePath = (await getFilePath(id)) + extension
 
     if (await components.fs.existPath(filePath)) {
       const stat = await components.fs.stat(filePath)
+
+      // Check if a file range is requested. Encoding is not supported
+      if (range && stat.size && !encoding) {
+        // Set default values for ranges when they are not defined
+        const rangeStart = range.start ?? 0
+        const rangeEnd = range.end ?? stat.size - 1
+
+        // Validate ranges
+        const isRangeStartValid = rangeStart >= 0 && rangeStart <= stat.size - 1
+        const isRangeEndValid = rangeEnd >= 0 && rangeEnd <= stat.size - 1
+        const isValidRange = isRangeStartValid && isRangeEndValid && rangeStart <= rangeEnd
+
+        // Return the file only when the range is valid. Otherwise, return the whole file
+        if (isValidRange) {
+          const ranges = { start: rangeStart, end: rangeEnd }
+          return new SimpleContentItem(
+            async () => components.fs.createReadStream(filePath, ranges),
+            stat.size,
+            encoding,
+            ranges
+          )
+        }
+      }
+
+      // Return the whole file
       return new SimpleContentItem(async () => components.fs.createReadStream(filePath), stat.size, encoding)
     }
   }
@@ -53,9 +80,9 @@ export async function createFileSystemContentStorage(
     await pipe(stream, components.fs.createWriteStream(await getFilePath(id)))
   }
 
-  const retrieve = async (id: string): Promise<ContentItem | undefined> => {
+  const retrieve = async (id: string, range?: ContentRange): Promise<ContentItem | undefined> => {
     try {
-      return (await retrieveWithEncoding(id, 'gzip')) || (await retrieveWithEncoding(id, null))
+      return (await retrieveWithEncoding(id, 'gzip', range)) || (await retrieveWithEncoding(id, null, range))
     } catch (error) {
       console.error(error)
     }

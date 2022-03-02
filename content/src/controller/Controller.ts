@@ -211,12 +211,17 @@ export class Controller {
     // Method: GET
     // Path: /contents/:hashId
     const hashId = req.params.hashId
+    const range = this.parseRangeHeader(req.headers.range)
 
-    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId)
+    const contentItem: ContentItem | undefined = await this.components.deployer.getContent(hashId, range)
 
     if (contentItem) {
       const rawStream = await contentItem.asRawStream()
       await setContentFileHeaders(rawStream, hashId, res)
+
+      if (rawStream.range) {
+        res.status(206)
+      }
 
       const { stream } = rawStream
       stream.pipe(res)
@@ -226,6 +231,23 @@ export class Controller {
     } else {
       res.status(404).send()
     }
+  }
+
+  private parseRangeHeader(rangeHeader?: string): ContentRange | undefined {
+    // Match `range` headers like "bytes=0-100", "bytes=0-", "bytes=-100"
+    const BYTES_RANGE_REGEXP = /^bytes=(\d+)?-(\d+)?$/
+
+    if (!rangeHeader || !BYTES_RANGE_REGEXP.test(rangeHeader)) {
+      return
+    }
+
+    // Parse `start` and `end` ranges
+    // Set default values when they are not provided
+    const ranges = rangeHeader.substring(6, rangeHeader.length).split('-')
+    const start = ranges[0] ? Number(ranges[0]) : undefined
+    const end = ranges[1] ? Number(ranges[1]) : undefined
+
+    return { start, end }
   }
 
   async getAvailableContent(req: express.Request, res: express.Response): Promise<void> {
@@ -647,9 +669,20 @@ async function setContentFileHeaders(content: RawContent, hashId: string, res: e
 
   if (content.encoding) {
     res.setHeader('Content-Encoding', content.encoding)
+  } else {
+    // Range requests are not supported for encoded files
+    res.setHeader('Accept-Ranges', 'bytes')
   }
 
-  if (content.size) {
+  if (content.size && content.range) {
+    // Eg: "Content-Range: bytes 0-1023/146515"
+    const rangeHeader = `bytes ${content.range.start}-${content.range.end}/${content.size}`
+    res.setHeader('Content-Range', rangeHeader)
+
+    // Calculate the size of the chunk. For a range `0-99`, the size is 100
+    const rangeLength = content.range.end - content.range.start + 1
+    res.setHeader('Content-Length', rangeLength.toString())
+  } else if (content.size) {
     res.setHeader('Content-Length', content.size.toString())
   }
 }
@@ -684,6 +717,11 @@ export type ControllerDenylistData = {
     timestamp: Timestamp
     authChain: AuthChain
   }
+}
+
+export type ContentRange = {
+  start?: number
+  end?: number
 }
 
 type ContentFile = {

@@ -1,5 +1,6 @@
 import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
+import { ContentRange } from '../../controller/Controller'
 
 export type ContentEncoding = 'gzip'
 
@@ -7,7 +8,7 @@ export interface ContentStorage {
   storeStream(fileId: string, content: Readable): Promise<void>
   storeStreamAndCompress(fileId: string, content: Readable): Promise<void>
   delete(fileIds: string[]): Promise<void>
-  retrieve(fileId: string): Promise<ContentItem | undefined>
+  retrieve(fileId: string, range?: ContentRange): Promise<ContentItem | undefined>
   exist(fileId: string): Promise<boolean>
   existMultiple(fileIds: string[]): Promise<Map<string, boolean>>
 }
@@ -16,6 +17,7 @@ export type RawContent = {
   stream: Readable
   encoding: ContentEncoding | null
   size: number | null
+  range: Required<ContentRange> | null
 }
 
 export interface ContentItem {
@@ -36,7 +38,8 @@ export class SimpleContentItem implements ContentItem {
   constructor(
     private streamCreator: () => Promise<Readable>,
     private length?: number,
-    private encoding?: ContentEncoding | null
+    private encoding?: ContentEncoding | null,
+    private range?: Required<ContentRange>
   ) {}
 
   static fromBuffer(buffer: Uint8Array): SimpleContentItem {
@@ -65,7 +68,8 @@ export class SimpleContentItem implements ContentItem {
     return {
       stream: await this.streamCreator(),
       encoding: this.encoding || null,
-      size: this.length || null
+      size: this.length || null,
+      range: this.range || null
     }
   }
 }

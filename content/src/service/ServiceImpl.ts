@@ -12,6 +12,7 @@ import {
   Pointer
 } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
+import { ContentRange } from '../controller/Controller'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
@@ -446,8 +447,8 @@ export class ServiceImpl implements MetaverseContentService {
     return IPFSv2.validate(hash)
   }
 
-  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined> {
-    return this.components.storage.retrieve(fileHash)
+  getContent(fileHash: ContentFileHash, range?: ContentRange): Promise<ContentItem | undefined> {
+    return this.components.storage.retrieve(fileHash, range)
   }
 
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>> {
