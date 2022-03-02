@@ -152,24 +152,20 @@ export const createActiveEntitiesComponent = (
   }: {
     entityIds?: EntityId[]
     pointers?: Pointer[]
-  }): Promise<Entity[]> =>
-    await components.sequentialExecutor.run('GetActiveEntities', async () => {
-      logger.debug(' * SEQUENTIAL EXECUTOR * findEntities', {
-        length: entityIds ? entityIds.length : pointers?.length ?? 0
-      })
-      const filters = entityIds ? { entityIds } : { pointers }
-      const { deployments } = await getDeployments(components, {
-        filters: { ...filters, onlyCurrentlyPointed: true }
-      })
-      for (const deployment of deployments) {
-        reportCacheAccess(deployment.entityType, 'miss')
-      }
-
-      const entities = mapDeploymentsToEntities(deployments)
-      updateCache(entities, { pointers, entityIds })
-
-      return entities
+  }): Promise<Entity[]> => {
+    const filters = entityIds ? { entityIds } : { pointers }
+    const { deployments } = await getDeployments(components, {
+      filters: { ...filters, onlyCurrentlyPointed: true }
     })
+    for (const deployment of deployments) {
+      reportCacheAccess(deployment.entityType, 'miss')
+    }
+
+    const entities = mapDeploymentsToEntities(deployments)
+    updateCache(entities, { pointers, entityIds })
+
+    return entities
+  }
 
   /**
    * Retrieve active entities by their ids
