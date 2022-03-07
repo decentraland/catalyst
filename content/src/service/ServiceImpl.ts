@@ -338,10 +338,10 @@ export class ServiceImpl implements MetaverseContentService {
     )
     // invalidate pointers (points to an entity that is no longer active)
     // this case happen when the entity is overwritten
-    this.components.activeEntities.update(cleared, NOT_ACTIVE)
+    if (cleared.length > 0) this.components.activeEntities.update(cleared, NOT_ACTIVE)
 
     // update pointer (points to the new entity that is active)
-    this.components.activeEntities.update(setted, entity)
+    if (setted.length > 0) this.components.activeEntities.update(setted, entity)
   }
 
   reportErrorDuringSync(
