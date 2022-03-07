@@ -46,7 +46,10 @@ async function setupApiCoverage() {
             // Convert OpenAPI paths to a format that is testable against the server API
             // Eg: /contents/{hashId}/active-entities -> /contents/[^\\/]*/active-entities
             // This allows testing against any resource path like /contents/Qws4djflKjf9dJsa/active-entities
-            const testablePath = `^${apiPath.replace(/\{.*\}/, '[^\\/]*')}$`
+            const replacedPath = apiPath
+              .replace(/\{.*?\}/, '[^\\/]*')
+              .replace(/\{.*?\}/, '[^\\/]*') // Replace a second time for URLs with two query params
+            const testablePath = `^${replacedPath}$`
             const matchesPath = new RegExp(testablePath).test(req.path)
 
             // Mark the path as tested if it is in the OpenAPI spec and it matches a tested path
