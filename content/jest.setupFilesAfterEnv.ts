@@ -49,9 +49,9 @@ async function setupApiCoverage() {
           const matchesPath = new RegExp(testablePath).test(req.path)
 
           // Mark the path as tested if it is in the OpenAPI spec and it matches a tested path
-          const wasTested = coverage[req.path]?.[req.method]?.[res.statusCode]
+          const wasTested = coverage[apiPath]?.[req.method]?.[res.statusCode]
           if (matchesPath && wasTested !== undefined) {
-            coverage[req.path][req.method][res.statusCode] = true
+            coverage[apiPath][req.method][res.statusCode] = true
           }
         }
         next()
