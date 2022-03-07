@@ -41,19 +41,21 @@ async function setupApiCoverage() {
     if (!this['_API_COVERED_']) {
       this['_API_COVERED_'] = true
       this['app'].use((req, res, next) => {
-        for (const apiPath in coverage) {
-          // Convert OpenAPI paths to a format that is testable against the server API
-          // Eg: /contents/{hashId}/active-entities -> /contents/[^\\/]*/active-entities
-          // This allows testing against any resource path like /contents/Qws4djflKjf9dJsa/active-entities
-          const testablePath = `^${apiPath.replace(/\{.*\}/, '[^\\/]*')}$`
-          const matchesPath = new RegExp(testablePath).test(req.path)
+        res.on('finish', () => {
+          for (const apiPath in coverage) {
+            // Convert OpenAPI paths to a format that is testable against the server API
+            // Eg: /contents/{hashId}/active-entities -> /contents/[^\\/]*/active-entities
+            // This allows testing against any resource path like /contents/Qws4djflKjf9dJsa/active-entities
+            const testablePath = `^${apiPath.replace(/\{.*\}/, '[^\\/]*')}$`
+            const matchesPath = new RegExp(testablePath).test(req.path)
 
-          // Mark the path as tested if it is in the OpenAPI spec and it matches a tested path
-          const wasTested = coverage[apiPath]?.[req.method]?.[res.statusCode]
-          if (matchesPath && wasTested !== undefined) {
-            coverage[apiPath][req.method][res.statusCode] = true
+            // Mark the path as tested if it is in the OpenAPI spec and it matches a tested path
+            const wasTested = coverage[apiPath]?.[req.method]?.[res.statusCode]
+            if (matchesPath && wasTested !== undefined) {
+              coverage[apiPath][req.method][res.statusCode] = true
+            }
           }
-        }
+        })
         next()
       })
     }
