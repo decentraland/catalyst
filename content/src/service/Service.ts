@@ -9,9 +9,9 @@ import {
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
+import { ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { ContentItem } from '../storage/ContentStorage'
 import { DeploymentOptions } from './deployments/types'
 
 /**x

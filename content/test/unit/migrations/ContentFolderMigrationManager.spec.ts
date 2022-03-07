@@ -1,37 +1,18 @@
-let files = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
-
-jest.mock('fs/promises', () => ({
-  opendir: function* () {
-    let current = 0
-    while (current < files.length) {
-      yield { name: files[current] }
-      current++
-    }
-  },
-  stat: () => ({
-    isDirectory: () => false
-  }),
-  unlink: async () => {}
-}))
-
-jest.mock('../../../src/helpers/fsWrapper', () => ({ createReadStream: (x) => x }))
-
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { Environment, EnvironmentConfig } from '../../../src/Environment'
 import { metricsDeclaration } from '../../../src/metrics'
 import { migrateContentFolderStructure } from '../../../src/migrations/ContentFolderMigrationManager'
-import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
-import { FileSystemUtils as fsu } from '../storage/FileSystemUtils'
+import { ContentStorage } from '../../../src/ports/contentStorage/contentStorage'
+import { createFsComponent } from '../../../src/ports/fs'
+import { FileSystemUtils as fsu } from '../ports/contentStorage/FileSystemUtils'
 
-jest.mock('@catalyst/commons', () => ({
-  ensureDirectoryExists: () => {}
-}))
+let files = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 describe('ContentFolderMigrationManager', () => {
   let storeStreamSpy: jest.Mock
 
-  let storage: FileSystemContentStorage
+  let storage: ContentStorage
 
   describe('when running the migration with no errors', () => {
     beforeAll(() => {
@@ -57,7 +38,7 @@ describe('ContentFolderMigrationManager', () => {
   })
 })
 
-async function runMigration(storage: FileSystemContentStorage) {
+async function runMigration(storage: ContentStorage) {
   const logs = createLogComponent()
   const metrics = createTestMetricsComponent(metricsDeclaration)
   const env = new Environment()
@@ -66,5 +47,18 @@ async function runMigration(storage: FileSystemContentStorage) {
   env.setConfig(EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY, 2)
   env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, dir)
 
-  await migrateContentFolderStructure({ logs, metrics, env, storage })
+  const fs = createFsComponent()
+  fs.unlink = async () => {}
+  fs.createReadStream = jest.fn().mockImplementation((x) => x)
+  fs.ensureDirectoryExists = async () => {}
+  fs.stat = jest.fn().mockResolvedValue(({ isDirectory: () => false }))
+  fs.opendir = jest.fn().mockImplementation(function* () {
+    let current = 0
+    while (current < files.length) {
+      yield { name: files[current] }
+      current++
+    }
+  })
+
+  await migrateContentFolderStructure({ logs, metrics, env, storage, fs })
 }

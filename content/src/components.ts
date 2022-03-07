@@ -12,6 +12,7 @@ import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
+import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
@@ -38,7 +39,6 @@ import { createSynchronizationManager } from './service/synchronization/Synchron
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { createServerValidator } from './service/validations/server'
 import { createValidator } from './service/validations/validator'
-import { ContentStorageFactory } from './storage/ContentStorageFactory'
 import { AppComponents } from './types'
 
 export async function initComponentsWithEnv(env: Environment): Promise<AppComponents> {
@@ -67,7 +67,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const catalystFetcher = FetcherFactory.create({ env })
   const daoClient = DAOClientFactory.create(env)
   const authenticator = AuthenticatorFactory.create(env)
-  const storage = await ContentStorageFactory.local(env)
+  const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+  const storage = await createFileSystemContentStorage({ fs }, contentFolder)
 
   const contentCluster = new ContentCluster(
     {
@@ -124,7 +125,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   })
 
   const snapshotManager = new SnapshotManager(
-    { database, metrics, staticConfigs, logs, storage, denylist },
+    { database, metrics, staticConfigs, logs, storage, denylist, fs },
     env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
   )
 
@@ -220,14 +221,15 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       database,
       sequentialExecutor,
       activeEntities,
-      denylist
+      denylist,
+      fs
     },
     ethNetwork
   )
 
   const migrationManager = MigrationManagerFactory.create({ logs, env })
 
-  const server = new Server({ controller, metrics, env, logs })
+  const server = new Server({ controller, metrics, env, logs, fs })
 
   return {
     env,

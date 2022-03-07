@@ -14,11 +14,11 @@ import {
 import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
+import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
 import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
 import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
 import { DeploymentPointerChanges } from '../../../src/service/pointers/types'
 import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
-import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStorage'
 import { IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
 import { buildEntityAndFile } from './EntityTestFactory'
 

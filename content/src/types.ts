@@ -10,6 +10,7 @@ import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
+import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { DenylistComponent } from './ports/denylist'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { ActiveEntities } from './ports/activeEntities'
@@ -32,7 +33,6 @@ import { IRetryFailedDeploymentsComponent } from './service/synchronization/retr
 import { ISynchronizationManager } from './service/synchronization/SynchronizationManager'
 import { SystemPropertiesManager } from './service/system-properties/SystemProperties'
 import { ServerValidator } from './service/validations/server'
-import { ContentStorage } from './storage/ContentStorage'
 
 // Minimum amount of needed stuff to make the sync work
 

@@ -6,7 +6,7 @@ import future from 'fp-future'
 import * as fs from 'fs'
 import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
-import { bufferToStream } from '../../storage/ContentStorage'
+import { bufferToStream } from '../../ports/contentStorage/contentStorage'
 import { AppComponents, IStatusCapableComponent } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')
@@ -34,7 +34,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
   constructor(
     private readonly components: Pick<
       AppComponents,
-      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist'
+      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist' | 'fs'
     >,
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {

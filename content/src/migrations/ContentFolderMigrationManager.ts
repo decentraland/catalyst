@@ -1,12 +1,10 @@
 import { ensureDirectoryExists } from '@catalyst/commons'
-import { opendir, stat, unlink } from 'fs/promises'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
 import { AppComponents } from '../../src/types'
 import { EnvironmentConfig } from '../Environment'
-import { createReadStream } from '../helpers/fsWrapper'
 
-export type ContentFolderMigrationComponents = Pick<AppComponents, 'logs' | 'env' | 'metrics' | 'storage'>
+export type ContentFolderMigrationComponents = Pick<AppComponents, 'logs' | 'env' | 'metrics' | 'storage' | 'fs'>
 
 export async function migrateContentFolderStructure(components: ContentFolderMigrationComponents) {
   const queue = new PQueue({
@@ -24,7 +22,7 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
 
   logs.debug('Running folder migration')
 
-  const files = await opendir(contentsFolder)
+  const files = await components.fs.opendir(contentsFolder)
 
   const failures: string[] = []
   const queued: Promise<void>[] = []
@@ -73,13 +71,13 @@ export async function migrateContentFolderStructure(components: ContentFolderMig
 
 async function processFile(components: ContentFolderMigrationComponents, folder: string, file: string): Promise<void> {
   const fileName = resolve(folder, file)
-  const fileStats = await stat(fileName)
+  const fileStats = await components.fs.stat(fileName)
 
   if (fileStats.isDirectory()) {
     return
   }
 
-  const stream = createReadStream(fileName)
+  const stream = components.fs.createReadStream(fileName)
 
   if (!stream) {
     throw new Error(`Couldn\' t find the file ${file}`)
@@ -87,7 +85,7 @@ async function processFile(components: ContentFolderMigrationComponents, folder:
 
   await components.storage.storeStream(file, stream)
 
-  await unlink(fileName)
+  await components.fs.unlink(fileName)
 
   components.metrics.increment('dcl_files_migrated')
 }
