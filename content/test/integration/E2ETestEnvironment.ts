@@ -1,4 +1,4 @@
-import { DAOClient, ServerBaseUrl } from '@catalyst/commons'
+import { DAOClient, ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import { random } from 'faker'
@@ -200,11 +200,11 @@ export function loadStandaloneTestEnvironment(overrideConfigs?: Record<number, a
 export function loadTestEnvironment(
   overrideConfigs?: Record<number, any>
 ): (name: string, test: (testEnv: E2ETestEnvironment) => void) => void {
-  return function (name, test) {
+  return function(name, test) {
     describe(name, () => {
       const testEnv = new E2ETestEnvironment()
 
-      beforeAll(async () => {  await testEnv.start(overrideConfigs) })
+      beforeAll(async () => { await testEnv.start(overrideConfigs) })
 
       describe('use cases for test environment', () => {
         beforeEach(() => {

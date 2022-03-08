@@ -5,8 +5,6 @@ RUN apk add --no-cache bash
 COPY package.json .
 COPY yarn.lock .
 COPY comms/lighthouse/package.json comms/lighthouse/
-COPY commons/package.json commons/
-COPY contracts/package.json contracts/
 COPY content/package.json content/
 COPY lambdas/package.json lambdas/
 
@@ -31,15 +29,11 @@ FROM base
 
 COPY entrypoint.sh .
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=dependencies /app/commons/node_modules ./node_modules/
-COPY --from=dependencies /app/contracts/node_modules ./node_modules/
 COPY --from=dependencies /app/comms/lighthouse/node_modules ./node_modules/
 COPY --from=dependencies /app/content/node_modules ./node_modules/
 # uncomment this if lambdas eventually get some dependencies there
 # COPY --from=dependencies /app/lambdas/node_modules ./node_modules/
 
-COPY --from=content-builder /app/contracts/dist contracts/
-COPY --from=content-builder /app/commons/dist commons/
 COPY --from=content-builder /app/content/dist/src content/
 COPY --from=comms-builder /app/comms/lighthouse/dist/src comms/lighthouse/
 COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/

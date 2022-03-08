@@ -1,4 +1,4 @@
-import { ensureDirectoryExists } from '@catalyst/commons'
+import { ensureDirectoryExists } from '@dcl/catalyst-node-commons'
 import PQueue from 'p-queue'
 import { join, resolve } from 'path'
 import { AppComponents } from '../../src/types'

@@ -1,4 +1,4 @@
-import { ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
 import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import future from 'fp-future'

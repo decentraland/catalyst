@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from '@catalyst/commons'
+import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { ILoggerComponent, Lifecycle } from '@well-known-components/interfaces'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import {

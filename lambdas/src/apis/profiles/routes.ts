@@ -1,4 +1,4 @@
-import { asyncHandler } from '@catalyst/commons'
+import { asyncHandler } from '@dcl/catalyst-node-commons'
 import { Request, RequestHandler, Response, Router } from 'express'
 import { SmartContentClient } from '../../utils/SmartContentClient'
 import { getIndividualProfileById, getProfilesById } from './controllers/profiles'

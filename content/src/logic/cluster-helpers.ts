@@ -1,4 +1,4 @@
-import { delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { delay, ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 

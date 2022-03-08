@@ -1,4 +1,4 @@
-import { untilTrue } from '@catalyst/commons'
+import { untilTrue } from '@dcl/catalyst-node-commons'
 import { Island } from '@dcl/archipelago'
 import { ConfigService, LighthouseConfig } from '../src/config/configService'
 import { ArchipelagoService } from '../src/peers/archipelagoService'
@@ -8,12 +8,12 @@ import { AppServices } from '../src/types'
 
 describe('Archipelago service', () => {
   function mockedArchipelagoParams(
-    onIslandChanged: (peerChangingId: string, island: Island, fromIsland: Island | undefined) => any = () => {},
+    onIslandChanged: (peerChangingId: string, island: Island, fromIsland: Island | undefined) => any = () => { },
     onUpdateSentToIsland: (
       peerId: string,
       island: Island,
       type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
-    ) => any = () => {}
+    ) => any = () => { }
   ): Pick<AppServices, 'configService' | 'peersService'> {
     return {
       configService: {
@@ -27,18 +27,18 @@ describe('Archipelago service', () => {
         }
       } as ConfigService,
       peersService: () =>
-        ({
-          sendUpdateToIsland(
-            peerId: string,
-            island: Island,
-            type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
-          ) {
-            onUpdateSentToIsland(peerId, island, type)
-          },
-          notifyIslandChange(peerChangingId: string, island: Island, fromIsland: Island | undefined) {
-            onIslandChanged(peerChangingId, island, fromIsland)
-          }
-        } as PeersService)
+      ({
+        sendUpdateToIsland(
+          peerId: string,
+          island: Island,
+          type: PeerOutgoingMessageType.PEER_JOINED_ISLAND | PeerOutgoingMessageType.PEER_LEFT_ISLAND
+        ) {
+          onUpdateSentToIsland(peerId, island, type)
+        },
+        notifyIslandChange(peerChangingId: string, island: Island, fromIsland: Island | undefined) {
+          onIslandChanged(peerChangingId, island, fromIsland)
+        }
+      } as PeersService)
     }
   }
 
@@ -60,7 +60,7 @@ describe('Archipelago service', () => {
     await untilTrue(
       () => processedPeerUpdates.length === 3,
       "All peers should have received island updates but they didn't. Received peer updates: " +
-        processedPeerUpdates.join(', ')
+      processedPeerUpdates.join(', ')
     )
 
     expect(await service.areInSameIsland('peer1', 'peer2')).toBe(true)
@@ -102,7 +102,7 @@ describe('Archipelago service', () => {
     await untilTrue(
       () => notifiedIslandChanges.length === 1,
       "Should have received an island update for peer3 but didn't. Received updates: " +
-        JSON.stringify(notifiedIslandChanges)
+      JSON.stringify(notifiedIslandChanges)
     )
 
     expect(findForPeer('peer3', notifiedIslandChanges).island.id).toEqual(peer1Island)

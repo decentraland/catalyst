@@ -1,4 +1,4 @@
-import { asyncHandler, validateSignatureFromHeaderHandler, validateSignatureHandler } from '@catalyst/commons'
+import { asyncHandler, validateSignatureFromHeaderHandler, validateSignatureHandler } from '@dcl/catalyst-node-commons'
 import { Island, PeerData } from '@dcl/archipelago'
 import express, { Request, Response } from 'express'
 import { LighthouseConfig } from './config/configService'

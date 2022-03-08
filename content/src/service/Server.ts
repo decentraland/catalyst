@@ -1,4 +1,4 @@
-import { initializeMetricsServer } from '@catalyst/commons'
+import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
 import { CONTENT_API } from '@dcl/catalyst-api-specs'
 import { IBaseComponent, ILoggerComponent } from '@well-known-components/interfaces'
 import compression from 'compression'

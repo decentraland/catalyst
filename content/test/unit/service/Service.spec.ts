@@ -1,4 +1,4 @@
-import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { DECENTRALAND_ADDRESS } from '@dcl/catalyst-node-commons'
 import { hashV1 } from '@dcl/hashing'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
@@ -33,7 +33,7 @@ import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 
-describe('Service', function () {
+describe('Service', function() {
   const POINTERS = ['X1,Y1', 'X2,Y2']
   const auditInfo: LocalDeploymentAuditInfo = {
     authChain: Authenticator.createSimpleAuthChain('entityId', 'ethAddress', 'signature')
@@ -49,13 +49,13 @@ describe('Service', function () {
   // starts the variables
   beforeAll(async () => {
     randomFileHash = await hashV1(randomFile)
-    ;[entity, entityFile] = await buildEntityAndFile(
-      EntityType.SCENE,
-      POINTERS,
-      Date.now(),
-      new Map([['file', randomFileHash]]),
-      'metadata'
-    )
+      ;[entity, entityFile] = await buildEntityAndFile(
+        EntityType.SCENE,
+        POINTERS,
+        Date.now(),
+        new Map([['file', randomFileHash]]),
+        'metadata'
+      )
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
