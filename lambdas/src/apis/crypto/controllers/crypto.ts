@@ -1,4 +1,4 @@
-import { httpProviderForNetwork } from 'catalyst-contracts'
+import { httpProviderForNetwork } from '@dcl/catalyst-contracts'
 import { Authenticator, AuthLink, ValidationResult } from 'dcl-crypto'
 import { Request, Response } from 'express'
 

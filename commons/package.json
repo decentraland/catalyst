@@ -13,6 +13,7 @@
     "test": "jest --coverage"
   },
   "dependencies": {
+    "@dcl/catalyst-contracts": "^0.1.0-20220308184742.commit-9403cb1",
     "@well-known-components/http-server": "^1.1.1",
     "@well-known-components/interfaces": "^1.1.0",
     "@well-known-components/metrics": "^1.1.3",
