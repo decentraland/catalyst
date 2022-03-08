@@ -11,7 +11,8 @@
     "start:db": "node ./dist/src/entrypoints/run-local-database.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles --coverage",
     "test:unit": "jest --selectProjects unit --runInBand --forceExit --detectOpenHandles --coverage",
-    "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage"
+    "test:integration": "jest --selectProjects integration --runInBand --forceExit --detectOpenHandles --coverage",
+    "report-api-coverage": "node ./reportApiCoverage.js"
   },
   "dependencies": {
     "@catalyst/commons": "0.1.0",

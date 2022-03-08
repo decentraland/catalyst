@@ -9,4 +9,6 @@ content/test
 lambdas/test
 comms/lighthouse/test
 jest.config.js
+printApiCoverage.js
+reportApiCoverage.js
 jest.*.ts

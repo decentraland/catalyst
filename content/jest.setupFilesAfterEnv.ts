@@ -1,7 +1,6 @@
 import * as logger from '@well-known-components/logger'
 import fs from 'fs'
 import path from 'path'
-import jestConfig from './jest.config'
 import { ApiCoverage } from './jest.globalSetup'
 import { Server } from './src/service/Server'
 import { isCI } from './test/integration/E2ETestUtils'
@@ -32,7 +31,7 @@ if (process.env.LOG_LEVEL === 'off') {
 }
 
 async function setupApiCoverage() {
-  const coverageDir = path.join(__dirname, jestConfig.coverageDirectory)
+  const coverageDir = path.join(__dirname, 'api-coverage')
   const coverageFilePath = path.join(coverageDir, 'api-coverage.json')
   const coverage: ApiCoverage = JSON.parse(fs.readFileSync(coverageFilePath).toString())
 

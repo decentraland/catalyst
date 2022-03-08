@@ -6,7 +6,6 @@ import { GenericContainer } from 'testcontainers'
 import { Container } from 'testcontainers/dist/container'
 import { LogWaitStrategy } from 'testcontainers/dist/wait-strategy'
 import { promisify } from 'util'
-import jestConfig from './jest.config'
 import { DEFAULT_DATABASE_CONFIG } from './src/Environment'
 import { E2ETestEnvironment } from './test/integration/E2ETestEnvironment'
 import { isCI } from './test/integration/E2ETestUtils'
@@ -108,7 +107,7 @@ async function initializeApiCoverage() {
   }
 
   // Write object to disk because Jest runs tests in isolated environments
-  const coverageDir = path.join(__dirname, jestConfig.coverageDirectory)
+  const coverageDir = path.join(__dirname, 'api-coverage')
   try {
     await fs.promises.access(coverageDir)
   } catch (err) {
