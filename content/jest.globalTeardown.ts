@@ -4,9 +4,10 @@ import fs from 'fs'
 import path from 'path'
 import jestConfig from './jest.config'
 import { ApiCoverage } from './jest.globalSetup'
+import { isCI } from './test/integration/E2ETestUtils'
 
 const globalTeardown = async (): Promise<void> => {
-  if (process.env.API_COVERAGE === 'true') {
+  if (process.env.API_COVERAGE === 'true' || isCI()) {
     await printApiCoverage()
   }
 

@@ -4,9 +4,10 @@ import path from 'path'
 import jestConfig from './jest.config'
 import { ApiCoverage } from './jest.globalSetup'
 import { Server } from './src/service/Server'
+import { isCI } from './test/integration/E2ETestUtils'
 
 // Setup API Coverage Report process
-if (process.env.API_COVERAGE === 'true') {
+if (process.env.API_COVERAGE === 'true' || isCI()) {
   setupApiCoverage()
 }
 

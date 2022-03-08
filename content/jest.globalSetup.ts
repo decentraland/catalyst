@@ -43,7 +43,7 @@ const globalSetup = async (): Promise<void> => {
   }
 
   // Initialize API Coverage Report
-  if (process.env.API_COVERAGE === 'true') {
+  if (process.env.API_COVERAGE === 'true' || isCI()) {
     await initializeApiCoverage()
   }
 }
