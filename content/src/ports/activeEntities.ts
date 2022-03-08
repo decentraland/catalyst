@@ -6,11 +6,12 @@ import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
 export const NOT_ACTIVE = 'NONE'
-export type EntityCacheResult = Entity | typeof NOT_ACTIVE
-export type PointerToEntityId = EntityId | typeof NOT_ACTIVE
+export type NotActiveEntity = typeof NOT_ACTIVE
 
-const isEntityPresent = (result: EntityCacheResult | undefined): result is Entity => result !== NOT_ACTIVE
-const isPointingToEntity = (result: PointerToEntityId | undefined): result is EntityId => result !== NOT_ACTIVE
+export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): result is Entity =>
+  result !== undefined && result !== NOT_ACTIVE
+export const isPointingToEntity = (result: EntityId | NotActiveEntity | undefined): result is EntityId =>
+  result !== undefined && result !== NOT_ACTIVE
 
 export type ActiveEntities = {
   /**
@@ -27,7 +28,7 @@ export type ActiveEntities = {
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  update(pointers: Pointer[], entity: EntityCacheResult): void
+  update(pointers: Pointer[], entity: Entity | NotActiveEntity): void
   /**
    * Set pointers and entity as NOT_ACTIVE
    */
@@ -39,22 +40,7 @@ export type ActiveEntities = {
    *  - undefined if there is no cached result
    * Note: testing purposes
    */
-  getCachedActiveEntityOrNone(pointer: Pointer): PointerToEntityId | undefined
-  /**
-   * Returns true if there is an active entity cached with given id
-   * Note: testing purposes
-   */
-  isActiveEntityCached(entityId: EntityId): boolean
-  /**
-   * Returns true if there is no active entity with given id
-   * Note: testing purposes
-   */
-  isEntityIdNotActive(entityId: EntityId): boolean
-  /**
-   * Returns true if there is no active entity with given pointer
-   * Note: testing purposes
-   */
-  hasNoActiveEntity(pointer: Pointer): boolean
+  getCachedEntity(pointer: Pointer): EntityId | NotActiveEntity | undefined
 }
 
 /**
@@ -67,10 +53,10 @@ export const createActiveEntitiesComponent = (
   components: Pick<AppComponents, 'database' | 'env' | 'logs' | 'metrics' | 'denylist' | 'sequentialExecutor'>
 ): ActiveEntities => {
   const logger = components.logs.getLogger('ActiveEntities')
-  const cache = new LRU<EntityId, EntityCacheResult>({
+  const cache = new LRU<EntityId, Entity | NotActiveEntity>({
     max: components.env.getConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE)
   })
-  const entityIdByPointers = new Map<Pointer, PointerToEntityId>()
+  const entityIdByPointers = new Map<Pointer, EntityId | NotActiveEntity>()
 
   // init gauge metrics
   components.metrics.observe('dcl_entities_cache_storage_max_size', {}, cache.max)
@@ -109,7 +95,7 @@ export const createActiveEntitiesComponent = (
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  const update = (pointers: Pointer[], entity: EntityCacheResult) => {
+  const update = (pointers: Pointer[], entity: Entity | NotActiveEntity) => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
@@ -181,7 +167,7 @@ export const createActiveEntitiesComponent = (
   const withIds = async (entityIds: EntityId[]): Promise<Entity[]> => {
     // check what is on the cache
     const uniqueEntityIds = new Set(entityIds)
-    const onCache: EntityCacheResult[] = []
+    const onCache: (Entity | NotActiveEntity)[] = []
     const remaining: EntityId[] = []
     for (const entityId of uniqueEntityIds) {
       const entity = cache.get(entityId)
@@ -241,10 +227,12 @@ export const createActiveEntitiesComponent = (
     update,
     clear,
 
-    getCachedActiveEntityOrNone: (pointer) => entityIdByPointers.get(pointer),
-    isActiveEntityCached: (entityId) => cache.has(entityId) && isEntityPresent(cache.get(entityId)),
-    isEntityIdNotActive: (entityId) => cache.has(entityId) && !isEntityPresent(cache.get(entityId)),
-    hasNoActiveEntity: (pointer) =>
-      entityIdByPointers.has(pointer) && !isPointingToEntity(entityIdByPointers.get(pointer))
+    getCachedEntity: (idOrPointer) => {
+      if (cache.has(idOrPointer)) {
+        const cachedEntity = cache.get(idOrPointer)
+        return isEntityPresent(cachedEntity) ? cachedEntity.id : cachedEntity
+      }
+      return entityIdByPointers.get(idOrPointer)
+    }
   }
 }
