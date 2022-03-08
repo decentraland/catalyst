@@ -5,7 +5,7 @@ import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
-const NOT_ACTIVE = 'NONE'
+export const NOT_ACTIVE = 'NONE'
 export type EntityCacheResult = Entity | typeof NOT_ACTIVE
 export type PointerToEntityId = EntityId | typeof NOT_ACTIVE
 
