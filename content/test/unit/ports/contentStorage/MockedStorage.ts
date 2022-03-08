@@ -1,5 +1,5 @@
 import { Readable } from 'stream'
-import { ContentItem, ContentStorage, SimpleContentItem, streamToBuffer } from '../../../src/storage/ContentStorage'
+import { ContentItem, ContentStorage, SimpleContentItem, streamToBuffer } from '../../../../src/ports/contentStorage/contentStorage'
 
 export class MockedStorage implements ContentStorage {
   private storage: Map<string, Uint8Array> = new Map()

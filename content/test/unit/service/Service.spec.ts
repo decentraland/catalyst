@@ -28,7 +28,7 @@ import { ServiceFactory } from '../../../src/service/ServiceFactory'
 import { MockedRepository } from '../../helpers/repository/MockedRepository'
 import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
-import { MockedStorage } from '../storage/MockedStorage'
+import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
 
 describe('Service', function () {

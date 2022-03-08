@@ -15,11 +15,11 @@ import {
 import { AuthChain, Authenticator, AuthLink, EthAddress, Signature } from 'dcl-crypto'
 import destroy from 'destroy'
 import express from 'express'
-import fs from 'fs'
 import onFinished from 'on-finished'
 import { CURRENT_CATALYST_VERSION, CURRENT_COMMIT_HASH, CURRENT_CONTENT_VERSION } from '../Environment'
 import { getActiveDeploymentsByContentHash } from '../logic/database-queries/deployments-queries'
 import { statusResponseFromComponents } from '../logic/status-checks'
+import { ContentItem, RawContent } from '../ports/contentStorage/contentStorage'
 import { getDeployments } from '../service/deployments/deployments'
 import { DeploymentOptions } from '../service/deployments/types'
 import { getPointerChanges } from '../service/pointers/pointers'
@@ -30,7 +30,6 @@ import {
   isSuccessfulDeployment,
   LocalDeploymentAuditInfo
 } from '../service/Service'
-import { ContentItem, RawContent } from '../storage/ContentStorage'
 import { AppComponents, parseEntityType } from '../types'
 import { ControllerDeploymentFactory } from './ControllerDeploymentFactory'
 import { ControllerEntityFactory } from './ControllerEntityFactory'
@@ -50,6 +49,7 @@ export class Controller {
       | 'database'
       | 'sequentialExecutor'
       | 'denylist'
+      | 'fs'
     >,
     private readonly ethNetwork: string
   ) {
@@ -171,7 +171,7 @@ export class Controller {
   }
 
   private async readFile(path: string): Promise<ContentFile> {
-    return { path, content: await fs.promises.readFile(path) }
+    return { path, content: await this.components.fs.readFile(path) }
   }
 
   private async deleteUploadedFiles(deployFiles: ContentFile[]): Promise<void> {
@@ -179,7 +179,7 @@ export class Controller {
       deployFiles.map(async (deployFile) => {
         if (deployFile.path) {
           try {
-            return await fs.promises.unlink(deployFile.path)
+            return await this.components.fs.unlink(deployFile.path)
           } catch (error) {
             // log and ignore errors
             console.error(error)
@@ -201,6 +201,7 @@ export class Controller {
       const rawStream = await contentItem.asRawStream()
       await setContentFileHeaders(rawStream, hashId, res)
       destroy(rawStream.stream)
+      res.send()
     } else {
       res.status(404).send()
     }

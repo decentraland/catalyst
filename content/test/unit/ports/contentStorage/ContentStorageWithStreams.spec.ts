@@ -1,19 +1,21 @@
-import { Environment, EnvironmentConfig } from '../../../src/Environment'
-import { bufferToStream, streamToBuffer } from '../../../src/storage/ContentStorage'
-import { ContentStorageFactory } from '../../../src/storage/ContentStorageFactory'
-import { FileSystemContentStorage } from '../../../src/storage/FileSystemContentStorage'
+import path from 'path'
+import { Environment, EnvironmentConfig } from '../../../../src/Environment'
+import { bufferToStream, ContentStorage, streamToBuffer } from '../../../../src/ports/contentStorage/contentStorage'
+import { createFileSystemContentStorage } from '../../../../src/ports/contentStorage/fileSystemContentStorage'
+import { createFsComponent } from '../../../../src/ports/fs'
 import { FileSystemUtils as fsu } from './FileSystemUtils'
 
 describe('ContentStorage', () => {
   let env: Environment
-  let storage: FileSystemContentStorage
+  let storage: ContentStorage
   let id: string
   let content: Buffer
 
   beforeAll(async () => {
     env = new Environment()
     env.setConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER, fsu.createTempDirectory())
-    storage = await ContentStorageFactory.local(env)
+    const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
+    storage = await createFileSystemContentStorage({ fs: createFsComponent() }, contentFolder)
 
     id = 'some-id'
     content = Buffer.from('123')
