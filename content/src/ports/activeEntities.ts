@@ -39,7 +39,7 @@ export type ActiveEntities = {
    *  - undefined if there is no cached result
    * Note: testing purposes
    */
-  getCachedEntity(pointer: Pointer): EntityId | NotActiveEntity | undefined
+  getCachedEntity(idOrPointer: EntityId | Pointer): EntityId | NotActiveEntity | undefined
 }
 
 /**
