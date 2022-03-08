@@ -5,7 +5,7 @@ import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
-export const NOT_ACTIVE = 'NONE'
+const NOT_ACTIVE = 'NONE'
 export type EntityCacheResult = Entity | typeof NOT_ACTIVE
 export type PointerToEntityId = EntityId | typeof NOT_ACTIVE
 
@@ -28,6 +28,10 @@ export type ActiveEntities = {
    * useful to retrieve entities by pointers
    */
   update(pointers: Pointer[], entity: EntityCacheResult): void
+  /**
+   * Set pointers and entity as NOT_ACTIVE
+   */
+  clear(pointers: Pointer[]): void
   /**
    * Returns the cached result:
    *  - entity id if there is an active entity
@@ -95,6 +99,10 @@ export const createActiveEntitiesComponent = (
         }
       }
     }
+  }
+
+  const clear = (pointers: Pointer[]) => {
+    update(pointers, NOT_ACTIVE)
   }
 
   /**
@@ -231,6 +239,7 @@ export const createActiveEntitiesComponent = (
     withIds,
     withPointers,
     update,
+    clear,
 
     getCachedActiveEntityOrNone: (pointer) => entityIdByPointers.get(pointer),
     isActiveEntityCached: (entityId) => cache.has(entityId) && isEntityPresent(cache.get(entityId)),

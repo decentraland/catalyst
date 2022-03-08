@@ -14,7 +14,6 @@ import {
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import { EnvironmentConfig } from '../Environment'
 import { runReportingQueryDurationMetric } from '../instrument'
-import { NOT_ACTIVE } from '../ports/activeEntities'
 import { bufferToStream, ContentItem } from '../ports/contentStorage/contentStorage'
 import { FailedDeployment, FailureReason } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
@@ -23,7 +22,7 @@ import { AppComponents } from '../types'
 import { getDeployments } from './deployments/deployments'
 import { DeploymentOptions } from './deployments/types'
 import { EntityFactory } from './EntityFactory'
-import { DELTA_POINTER_RESULT, DeploymentResult as PointerChanges } from './pointers/PointerManager'
+import { DELTA_POINTER_RESULT, DeploymentResult as DeploymentPointersResult } from './pointers/PointerManager'
 import {
   DeploymentContext,
   DeploymentFiles,
@@ -327,21 +326,21 @@ export class ServiceImpl implements MetaverseContentService {
     return { auditInfoComplete, wasEntityDeployed: !isEntityAlreadyDeployed }
   }
 
-  private updateActiveEntities(pointersFromEntity: PointerChanges, entity: Entity) {
-    const { cleared, setted } = Array.from(pointersFromEntity).reduce(
+  private updateActiveEntities(pointersFromEntity: DeploymentPointersResult, entity: Entity) {
+    const { clearedPointers, setPointers } = Array.from(pointersFromEntity).reduce(
       (acc, current) => {
-        if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.cleared.push(current[0])
-        if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setted.push(current[0])
+        if (current[1].after === DELTA_POINTER_RESULT.CLEARED) acc.clearedPointers.push(current[0])
+        if (current[1].after === DELTA_POINTER_RESULT.SET) acc.setPointers.push(current[0])
         return acc
       },
-      { cleared: [] as string[], setted: [] as string[] }
+      { clearedPointers: [] as string[], setPointers: [] as string[] }
     )
     // invalidate pointers (points to an entity that is no longer active)
     // this case happen when the entity is overwritten
-    if (cleared.length > 0) this.components.activeEntities.update(cleared, NOT_ACTIVE)
+    if (clearedPointers.length > 0) this.components.activeEntities.clear(clearedPointers)
 
     // update pointer (points to the new entity that is active)
-    if (setted.length > 0) this.components.activeEntities.update(setted, entity)
+    if (setPointers.length > 0) this.components.activeEntities.update(setPointers, entity)
   }
 
   reportErrorDuringSync(
