@@ -64,12 +64,15 @@ export class Server implements IBaseComponent {
     if (env.getConfig(EnvironmentConfig.LOG_REQUESTS)) {
       this.app.use(morgan('combined'))
     }
-    if (env.getConfig(EnvironmentConfig.VALIDATE_API)) {
+
+    if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
       this.app.use(
         OpenApiValidator.middleware({
           apiSpec: CONTENT_API,
-          validateResponses: process.env.CI == 'true',
-          validateRequests: true
+          validateResponses: true,
+          validateRequests: false,
+          ignoreUndocumented: true,
+          ignorePaths: /\/entities/
         })
       )
     }
@@ -89,6 +92,17 @@ export class Server implements IBaseComponent {
     this.registerRoute('/pointer-changes', controller, controller.getPointerChanges)
     this.registerRoute('/snapshot/:type', controller, controller.getSnapshot) // TODO: Deprecate
     this.registerRoute('/snapshot', controller, controller.getAllSnapshots)
+
+    if (env.getConfig(EnvironmentConfig.VALIDATE_API) || process.env.CI === 'true') {
+      this.app.use((err, req, res, next) => {
+        console.error(err)
+        res.status(err.status || 500).json({
+          message: err.message,
+          errors: err.errors
+        })
+        next()
+      })
+    }
   }
 
   /*
