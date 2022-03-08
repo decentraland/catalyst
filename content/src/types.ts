@@ -13,6 +13,7 @@ import { MigrationManager } from './migrations/MigrationManager'
 import { ContentStorage } from './ports/contentStorage/contentStorage'
 import { DenylistComponent } from './ports/denylist'
 import { DeploymentListComponent } from './ports/deploymentListComponent'
+import { ActiveEntities } from './ports/activeEntities'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { FSComponent } from './ports/fs'
@@ -70,6 +71,7 @@ export type AppComponents = {
   daoClient: DAOClient
   server: Server
   retryFailedDeployments: IRetryFailedDeploymentsComponent
+  activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: DenylistComponent
   fs: FSComponent

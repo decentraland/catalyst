@@ -101,6 +101,20 @@ export const metricsDeclaration = validateMetricsDeclaration({
     type: 'counter',
     labelNames: []
   },
+  dcl_entities_cache_accesses_total: {
+    help: 'Entities cache accesses (miss or hit) by entity type',
+    type: 'counter',
+    labelNames: ['entity_type', 'result']
+  },
+  dcl_entities_cache_storage_max_size: {
+    help: 'Entities cache storage max size',
+    type: 'gauge'
+  },
+  dcl_entities_cache_storage_size: {
+    help: 'Entities cache storage size',
+    type: 'gauge',
+    labelNames: ['entity_type']
+  },
   dcl_db_query_duration_seconds: {
     help: 'Histogram of query duration to the database in seconds per query',
     type: 'histogram',

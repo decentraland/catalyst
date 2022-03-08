@@ -64,7 +64,7 @@ export async function getDeployments(
   }))
 
   return {
-    deployments: deployments,
+    deployments,
     filters: {
       ...options?.filters
     },

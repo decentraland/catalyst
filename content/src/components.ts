@@ -11,6 +11,7 @@ import { Environment, EnvironmentConfig } from './Environment'
 import { FetcherFactory } from './helpers/FetcherFactory'
 import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
+import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
 import { createDenylistComponent } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
@@ -27,7 +28,7 @@ import { GarbageCollectionManager } from './service/garbage-collection/GarbageCo
 import { PointerManager } from './service/pointers/PointerManager'
 import { Server } from './service/Server'
 import { MetaverseContentService } from './service/Service'
-import { ServiceFactory } from './service/ServiceFactory'
+import { ServiceImpl } from './service/ServiceImpl'
 import { SnapshotManager } from './service/snapshots/SnapshotManager'
 import { createBatchDeployerComponent } from './service/synchronization/batchDeployer'
 import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
@@ -102,8 +103,9 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const serverValidator = createServerValidator({ failedDeploymentsCache, metrics })
 
   const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
+  const activeEntities = createActiveEntitiesComponent({ database, env, logs, metrics, denylist, sequentialExecutor })
 
-  const deployer: MetaverseContentService = ServiceFactory.create({
+  const deployer: MetaverseContentService = new ServiceImpl({
     metrics,
     storage,
     deploymentManager,
@@ -118,6 +120,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     authenticator,
     database,
     deployedEntitiesFilter,
+    activeEntities,
     denylist
   })
 
@@ -217,6 +220,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
       metrics,
       database,
       sequentialExecutor,
+      activeEntities,
       denylist,
       fs
     },
@@ -260,6 +264,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     daoClient,
     server,
     retryFailedDeployments,
+    activeEntities,
     sequentialExecutor,
     denylist,
     fs
