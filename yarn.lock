@@ -375,10 +375,17 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/schemas@3.8.0", "@dcl/schemas@^3.1.1":
+"@dcl/schemas@3.8.0":
   version "3.8.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.8.0.tgz#aa52d3565308997cfa17c4af5f1314db0f4c6f53"
   integrity sha512-oUq4JDzJmcLTmhFccby6UrAfDXJywOCWI4w3UenuQDE6TxfoR6c0cthGo/omFQkGRUkkKg8MM7Q3Q5ExxdCLRA==
+  dependencies:
+    ajv "^7.1.0"
+
+"@dcl/schemas@3.9.0", "@dcl/schemas@^3.1.1":
+  version "3.9.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.9.0.tgz#5e19c8c9be4bb6023009ab10afbf67278f13d424"
+  integrity sha512-1UBT8GF9STf/RxloRzc0vnIEf5xL7qZl2amhvTQvEXXCPmAmeOKz9kuMCSplzAXlKuHeN3atl6ePxTBZPzBqOQ==
   dependencies:
     ajv "^7.1.0"
 
