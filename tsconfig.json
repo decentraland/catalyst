@@ -27,9 +27,6 @@
   },
   "references": [
     {
-      "path": "./contracts"
-    },
-    {
       "path": "./commons"
     },
     {

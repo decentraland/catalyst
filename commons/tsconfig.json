@@ -4,8 +4,5 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["./index.ts", "servers", "test-utils", "utils"],
-  "references": [
-    { "path": "../contracts" }
-  ]
+  "include": ["./index.ts", "servers", "test-utils", "utils"]
 }

@@ -8,7 +8,6 @@
     "commons",
     "comms/lighthouse",
     "content",
-    "contracts",
     "lambdas"
   ],
   "scripts": {

@@ -1,4 +1,4 @@
-import { httpProviderForNetwork } from '@catalyst/contracts'
+import { httpProviderForNetwork } from 'catalyst-contracts'
 import { AuthChain, Authenticator, EthAddress, ValidationResult } from 'dcl-crypto'
 
 export class ContentAuthenticator extends Authenticator {

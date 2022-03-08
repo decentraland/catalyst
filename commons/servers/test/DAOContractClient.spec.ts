@@ -1,4 +1,4 @@
-import { CatalystData, CatalystId, DAOContract } from '@catalyst/contracts'
+import { CatalystData, CatalystId, DAOContract } from 'catalyst-contracts'
 import { anyNumber, anyString, instance, mock, verify, when } from 'ts-mockito'
 import { DAOContractClient } from '../DAOClient'
 import { ServerMetadata } from '../ServerMetadata'

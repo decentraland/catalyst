@@ -1,4 +1,4 @@
-import { DAOListContract } from '@catalyst/contracts'
+import { DAOListContract } from 'catalyst-contracts'
 
 export interface DAOListClient {
   getAllValues(): Promise<Set<string>>

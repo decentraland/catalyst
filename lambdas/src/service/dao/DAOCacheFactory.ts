@@ -1,5 +1,5 @@
 import { DAOContractClient } from '@catalyst/commons'
-import { DAOContract, DAOListContract, DAOListContractsKeys } from '@catalyst/contracts'
+import { DAOContract, DAOListContract, DAOListContractsKeys } from 'catalyst-contracts'
 import { Environment, EnvironmentConfig } from '../../Environment'
 import { DAOCache } from './DAOCache'
 import { DAOListContractClient } from './DAOListsClient'
