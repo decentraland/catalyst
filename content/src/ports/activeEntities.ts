@@ -5,13 +5,12 @@ import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
 
-export const NOT_ACTIVE = 'NONE'
-export type NotActiveEntity = typeof NOT_ACTIVE
+export type NotActiveEntity = 'NOT_ACTIVE_ENTITY'
 
 export const isEntityPresent = (result: Entity | NotActiveEntity | undefined): result is Entity =>
-  result !== undefined && result !== NOT_ACTIVE
+  result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 export const isPointingToEntity = (result: EntityId | NotActiveEntity | undefined): result is EntityId =>
-  result !== undefined && result !== NOT_ACTIVE
+  result !== undefined && result !== 'NOT_ACTIVE_ENTITY'
 
 export type ActiveEntities = {
   /**
@@ -78,9 +77,9 @@ export const createActiveEntitiesComponent = (
       if (isPointingToEntity(entityId)) {
         const entity = cache.get(entityId) // it should be present
         if (isEntityPresent(entity)) {
-          cache.set(entityId, NOT_ACTIVE)
+          cache.set(entityId, 'NOT_ACTIVE_ENTITY')
           for (const pointer of entity.pointers) {
-            entityIdByPointers.set(pointer, NOT_ACTIVE)
+            entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
           }
         }
       }
@@ -88,7 +87,7 @@ export const createActiveEntitiesComponent = (
   }
 
   const clear = (pointers: Pointer[]) => {
-    update(pointers, NOT_ACTIVE)
+    update(pointers, 'NOT_ACTIVE_ENTITY')
   }
 
   /**
@@ -121,7 +120,7 @@ export const createActiveEntitiesComponent = (
       )
 
       for (const pointer of pointersWithoutActiveEntity) {
-        entityIdByPointers.set(pointer, NOT_ACTIVE)
+        entityIdByPointers.set(pointer, 'NOT_ACTIVE_ENTITY')
         logger.debug('pointer has no active entity', { pointer })
       }
     } else if (entityIds) {
@@ -130,7 +129,7 @@ export const createActiveEntitiesComponent = (
       )
 
       for (const entityId of entityIdsWithoutActiveEntity) {
-        cache.set(entityId, NOT_ACTIVE)
+        cache.set(entityId, 'NOT_ACTIVE_ENTITY')
         logger.debug('entityId has no active entity', { entityId })
       }
     }

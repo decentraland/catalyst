@@ -1,7 +1,6 @@
 import { Entity } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { NOT_ACTIVE } from '../../../src/ports/activeEntities'
 import * as deployments from '../../../src/service/deployments/deployments'
 import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
@@ -182,7 +181,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(result).toHaveLength(0)
 
       const entityId = server.components.activeEntities.getCachedEntity(somePointer)
-      expect(entityId).toBe(NOT_ACTIVE)
+      expect(entityId).toBe('NOT_ACTIVE_ENTITY')
     })
 
     it('when fetching active entities by id but there is no one, then is cached as NOT_ACTIVE', async () => {
@@ -196,7 +195,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
       const cachedEntity = server.components.activeEntities.getCachedEntity(someId)
       expect(cachedEntity).toBeDefined()
-      expect(cachedEntity).toBe(NOT_ACTIVE)
+      expect(cachedEntity).toBe('NOT_ACTIVE_ENTITY')
     })
 
     it('when overriding an entity, then cache is updated', async () => {
@@ -223,7 +222,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(result).toHaveLength(0)
 
       const activeEntityForOverwrittenPointer = server.components.activeEntities.getCachedEntity('0,0')
-      expect(activeEntityForOverwrittenPointer).toBe(NOT_ACTIVE)
+      expect(activeEntityForOverwrittenPointer).toBe('NOT_ACTIVE_ENTITY')
     })
 
     it('when deploying a new entity with same pointer, then cache is updated', async () => {
@@ -247,7 +246,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const secondEntityId = activeEntities.getCachedEntity('0,1')
       expect(entityId).toBe(secondEntityId)
       expect(entityId).toBeDefined()
-      expect(entityId).not.toBe(NOT_ACTIVE)
+      expect(entityId).not.toBe('NOT_ACTIVE_ENTITY')
 
       const { deployData: secondDeployData } = await buildDeployData(pointers, {
         metadata: 'this is just some metadata 2',
@@ -258,11 +257,11 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const newEntityId = activeEntities.getCachedEntity('0,0')
       expect(newEntityId).toBeDefined()
       expect(newEntityId).not.toBe(entityId)
-      expect(newEntityId).not.toBe(NOT_ACTIVE)
+      expect(newEntityId).not.toBe('NOT_ACTIVE_ENTITY')
       expect(activeEntities.getCachedEntity('0,1')).toBe(newEntityId)
 
       const notActiveEntity = activeEntities.getCachedEntity(entityId)
-      expect(notActiveEntity).toBe(NOT_ACTIVE)
+      expect(notActiveEntity).toBe('NOT_ACTIVE_ENTITY')
     })
 
     it('when fetching multiple active entities, all are cached', async () => {
@@ -292,9 +291,9 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       const secondEntityId = result[1].id
 
       expect(firstEntityId).toBeDefined()
-      expect(firstEntityId).not.toBe(NOT_ACTIVE)
+      expect(firstEntityId).not.toBe('NOT_ACTIVE_ENTITY')
       expect(secondEntityId).toBeDefined()
-      expect(secondEntityId).not.toBe(NOT_ACTIVE)
+      expect(secondEntityId).not.toBe('NOT_ACTIVE_ENTITY')
     })
 
     it('when fetching a non active entity, result is cached', async () => {
@@ -306,7 +305,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(result).toHaveLength(0)
 
       // check cache
-      expect(server.components.activeEntities.getCachedEntity('someId')).toBe(NOT_ACTIVE)
+      expect(server.components.activeEntities.getCachedEntity('someId')).toBe('NOT_ACTIVE_ENTITY')
     })
 
     it('when results are cached, getDeployments is not called', async () => {
