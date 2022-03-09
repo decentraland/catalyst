@@ -355,10 +355,10 @@
   dependencies:
     yaml "1.10.2"
 
-"@dcl/catalyst-api-specs@1.0.2-20220307230343.commit-b0a78c1":
-  version "1.0.2-20220307230343.commit-b0a78c1"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.0.2-20220307230343.commit-b0a78c1.tgz#4fdccaca822c2295b2e1733c00cbae8c7cb6364a"
-  integrity sha512-rtN9nhfpu3DbvJOgQureysFTozhsH8B2G56K5GbqDGh5fXN27RILRmNn/QbS+s5kc8UaMPRaGwHhWyaZo04/Hg==
+"@dcl/catalyst-api-specs@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.1.0.tgz#71c7d7a125011f97f8bd34b49a30c139909702da"
+  integrity sha512-jelhOl/BS/W6cmrymlLN1riJpQghipXcXwV9dSv3mrEEsafsvqwuOpFHt0PZd6nKBYSq0phPjg3H1SMliJagPg==
   dependencies:
     yaml "1.10.2"
 
