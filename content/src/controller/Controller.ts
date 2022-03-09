@@ -48,6 +48,7 @@ export class Controller {
       | 'metrics'
       | 'database'
       | 'sequentialExecutor'
+      | 'activeEntities'
       | 'denylist'
       | 'fs'
     >,
@@ -56,6 +57,10 @@ export class Controller {
     Controller.LOGGER = components.logs.getLogger('Controller')
   }
 
+  /**
+   * @deprecated
+   * this endpoint will be deprecated in favor of `getActiveEntities`
+   */
   async getEntities(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /entities/:type
@@ -84,16 +89,42 @@ export class Controller {
     }
 
     // Calculate and mask entities
-    const entities: Entity[] = await this.components.sequentialExecutor.run('GetEntitiesEndpoint', async () => {
-      if (ids.length > 0) {
-        return await this.components.deployer.getEntitiesByIds(ids)
-      } else {
-        return await this.components.deployer.getEntitiesByPointers(type, pointers)
-      }
-    })
+    const entities: Entity[] =
+      ids.length > 0
+        ? await this.components.activeEntities.withIds(ids)
+        : await this.components.activeEntities.withPointers(pointers)
 
     const maskedEntities: Entity[] = entities.map((entity) => ControllerEntityFactory.maskEntity(entity, enumFields))
     res.send(maskedEntities)
+  }
+
+  async getActiveEntities(
+    req: express.Request<unknown, unknown, { ids: string[]; pointers: string[] }>,
+    res: express.Response
+  ): Promise<void> {
+    // Method: POST
+    // Path: /entities/active
+    // Body: { ids: string[], pointers: string[]}
+
+    const ids: EntityId[] = req.body.ids
+    const pointers: Pointer[] = req.body.pointers
+
+    const idsPresent = ids?.length > 0
+    const pointersPresent = pointers?.length > 0
+
+    const bothPresent = idsPresent && pointersPresent
+    const nonePresent = !idsPresent && !pointersPresent
+    if (bothPresent || nonePresent) {
+      res.status(400).send({ error: 'ids or pointers must be present, but not both' })
+      return
+    }
+
+    const entities: Entity[] =
+      ids && ids.length > 0
+        ? await this.components.activeEntities.withIds(ids)
+        : await this.components.activeEntities.withPointers(pointers)
+
+    res.send(entities)
   }
 
   private asArray<T>(elements: any | T | T[]): T[] | undefined {

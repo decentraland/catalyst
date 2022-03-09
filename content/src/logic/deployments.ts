@@ -1,4 +1,5 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
+import { Deployment, Entity } from 'dcl-catalyst-commons'
 import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { DeploymentContext } from '../service/Service'
 import { deployEntityFromRemoteServer } from '../service/synchronization/deployRemoteEntity'
@@ -68,4 +69,16 @@ export async function retryFailedDeploymentExecution(
       logs.info(`Can't retry failed deployment. Because it lacks of authChain`, { entityId, entityType })
     }
   }
+}
+
+export function mapDeploymentsToEntities(deployments: Deployment[]): Entity[] {
+  return deployments.map(({ entityVersion, entityId, entityType, pointers, entityTimestamp, content, metadata }) => ({
+    version: entityVersion,
+    id: entityId,
+    type: entityType,
+    pointers,
+    timestamp: entityTimestamp,
+    content: content?.map(({ key, hash }) => ({ file: key, hash })),
+    metadata
+  }))
 }

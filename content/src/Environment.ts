@@ -11,6 +11,7 @@ const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
 const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
+export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
@@ -120,7 +121,7 @@ export enum EnvironmentConfig {
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
   REPOSITORY_QUEUE_TIMEOUT,
-  CACHE_SIZES,
+  ENTITIES_CACHE_SIZE,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
   VALIDATE_API,
@@ -130,7 +131,6 @@ export enum EnvironmentConfig {
   DEPLOYMENT_RATE_LIMIT_MAX,
   DENYLIST_FILE_NAME
 }
-
 export class EnvironmentBuilder {
   private baseEnv: Environment
   constructor(other?: Environment | EnvironmentBuilder) {
@@ -357,14 +357,10 @@ export class EnvironmentBuilder {
       () => process.env.REPOSITORY_QUEUE_TIMEOUT ?? RepositoryQueue.DEFAULT_TIMEOUT
     )
 
-    /*
-     * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
-     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000'
-     */
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.CACHE_SIZES,
-      () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
+      EnvironmentConfig.ENTITIES_CACHE_SIZE,
+      () => process.env.ENTITIES_CACHE_SIZE ?? DEFAULT_ENTITIES_CACHE_SIZE
     )
 
     /*
