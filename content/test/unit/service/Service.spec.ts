@@ -1,8 +1,9 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { hashV1 } from '@dcl/hashing'
 import { createLogComponent } from '@well-known-components/logger'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
-import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion, Hashing } from 'dcl-catalyst-commons'
+import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import ms from 'ms'
@@ -47,7 +48,7 @@ describe('Service', function () {
 
   // starts the variables
   beforeAll(async () => {
-    randomFileHash = await Hashing.calculateBufferHash(randomFile)
+    randomFileHash = await hashV1(randomFile)
     ;[entity, entityFile] = await buildEntityAndFile(
       EntityType.SCENE,
       POINTERS,
