@@ -1,12 +1,13 @@
-import assert from 'assert'
-
 export function assertPromiseIsRejected(promiseExecution: () => Promise<any>): Promise<void> {
   return assertPromiseRejectionGeneric(promiseExecution, () => {})
 }
 
-export function assertPromiseRejectionIs(promiseExecution: () => Promise<any>, errorMessage: string): Promise<void> {
+export function assertPromiseRejectionMatches(
+  promiseExecution: () => Promise<any>,
+  errorMessage: string | RegExp
+): Promise<void> {
   return assertPromiseRejectionGeneric(promiseExecution, (returnedMessage) =>
-    assert.equal(returnedMessage, errorMessage)
+    expect(returnedMessage).toMatch(errorMessage)
   )
 }
 

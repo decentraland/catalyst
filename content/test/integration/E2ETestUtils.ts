@@ -1,14 +1,18 @@
 import { DeploymentBuilder, DeploymentData } from 'dcl-catalyst-client'
-import { Entity as ControllerEntity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
+import { Entity as ControllerEntity, Entity, EntityType, EntityVersion, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { Authenticator, EthAddress } from 'dcl-crypto'
 import EthCrypto from 'eth-crypto'
 import fs from 'fs'
 import path from 'path'
 import { ControllerEntityFactory } from '../../src/controller/ControllerEntityFactory'
 import { retry } from '../../src/helpers/RetryHelper'
-import { Entity } from '../../src/service/Entity'
 import { EntityFactory } from '../../src/service/EntityFactory'
-import { DeploymentResult, MetaverseContentService } from '../../src/service/Service'
+import {
+  DeploymentContext,
+  DeploymentResult,
+  isInvalidDeployment,
+  MetaverseContentService
+} from '../../src/service/Service'
 
 export async function buildDeployDataAfterEntity(
   afterEntity: { timestamp: Timestamp } | { entity: { timestamp: Timestamp } },
@@ -55,7 +59,7 @@ export async function buildDeployData(pointers: Pointer[], options?: DeploymentO
     deploymentPreparationData.entityId
   )
 
-  if (!entity.content || entity.content.size === 0) {
+  if (!entity.content || entity.content.length === 0) {
     delete entity.content
   }
 
@@ -113,13 +117,25 @@ export async function deployEntitiesCombo(
   service: MetaverseContentService,
   ...entitiesCombo: EntityCombo[]
 ): Promise<DeploymentResult> {
-  let deploymentResult: DeploymentResult = { errors: [] }
+  let ret: DeploymentResult = { errors: ['empty entities combo'] }
   for (const { deployData } of entitiesCombo) {
-    deploymentResult = await service.deployEntity(Array.from(deployData.files.values()), deployData.entityId, {
-      authChain: deployData.authChain
-    })
+    const deploymentResult = await service.deployEntity(
+      Array.from(deployData.files.values()),
+      deployData.entityId,
+      {
+        authChain: deployData.authChain
+      },
+      DeploymentContext.LOCAL
+    )
+    if (typeof deploymentResult == 'number') {
+      ret = deploymentResult
+    } else if (isInvalidDeployment(deploymentResult)) {
+      throw new Error(deploymentResult.errors.join(','))
+    } else {
+      throw new Error('invalid result from deployEntity ' + JSON.stringify({ deploymentResult, deployData }))
+    }
   }
-  return deploymentResult
+  return ret
 }
 
 export type Identity = {

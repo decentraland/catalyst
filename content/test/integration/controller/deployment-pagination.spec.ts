@@ -1,22 +1,23 @@
 import { toQueryParams } from '@catalyst/commons'
-import assert from 'assert'
 import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'
-import { DeploymentOptions, PointerChangesFilters } from '../../../src/service/deployments/DeploymentManager'
+import { DeploymentOptions } from '../../../src/service/deployments/types'
+import { PointerChangesFilters } from '../../../src/service/pointers/types'
+import { makeNoopValidator } from '../../helpers/service/validations/NoOpValidator'
 import { loadStandaloneTestEnvironment } from '../E2ETestEnvironment'
 import { buildDeployData, EntityCombo } from '../E2ETestUtils'
-import { TestServer } from '../TestServer'
+import { TestProgram } from '../TestProgram'
 
-describe('Integration - Deployment Pagination', () => {
+loadStandaloneTestEnvironment()('Integration - Deployment Pagination', (testEnv) => {
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo
 
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+  let server: TestProgram
 
   beforeEach(async () => {
     server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
-    await server.start()
+    makeNoopValidator(server.components)
+    await server.startProgram()
   })
 
   beforeAll(async () => {
@@ -207,50 +208,6 @@ describe('Integration - Deployment Pagination', () => {
     expect(nextLink).toContain(`lastId=${E2.entity.id}`)
   })
 
-  // TODO: Remove this test when toLocalTimestamp and fromLocalTimestamp are deleted
-  it('given deprecated filter, when local timestamp filter is set with asc order, then only from is modified in next', async () => {
-    // Deploy E1, E2 and E3 in that order
-    const [E1Timestamp, E2Timestamp, E3Timestamp] = await deploy(E1, E2, E3)
-
-    const url =
-      server.getAddress() +
-      `/deployments?` +
-      toQueryParams({
-        limit: 2,
-        sortingOrder: SortingOrder.ASCENDING,
-        fromLocalTimestamp: E1Timestamp,
-        toLocalTimestamp: E3Timestamp
-      })
-    const actualDeployments = (await fetchJson(url)) as any
-
-    expect(actualDeployments.deployments.length).toBe(2)
-    const nextLink = actualDeployments.pagination.next
-    expect(nextLink).toContain(`from=${E2Timestamp}`)
-    expect(nextLink).toContain(`to=${E3Timestamp}`)
-    expect(nextLink).toContain(`lastId=${E2.entity.id}`)
-  })
-
-  // TODO: Remove this test when toLocalTimestamp and fromLocalTimestamp are deleted
-  it('given deprecated filters, when order is by entity timestamp, then it fails', async () => {
-    // Deploy E1, E2 and E3 in that order
-    const [E1Timestamp, , E3Timestamp] = await deploy(E1, E2, E3)
-
-    try {
-      const url =
-        server.getAddress() +
-        `/deployments?` +
-        toQueryParams({
-          limit: 2,
-          sortingField: SortingField.ENTITY_TIMESTAMP,
-          fromLocalTimestamp: E1Timestamp,
-          toLocalTimestamp: E3Timestamp
-        })
-      await fetchJson(url)
-
-      assert.fail('When using deprecated filters it should fail.')
-    } catch (err) {}
-  })
-
   it('When getting pointer changes then the pagination is correctly done', async () => {
     // Deploy E1, E2 in that order
     const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
@@ -258,26 +215,6 @@ describe('Integration - Deployment Pagination', () => {
     const pointerChanges = await fetchPointerChanges({ from: E1Timestamp }, 1)
 
     expect(pointerChanges.deltas.length).toBe(1)
-    expect(pointerChanges.pagination.next).toContain(`to=${E2Timestamp}`)
-    expect(pointerChanges.pagination.next).toContain(`from=${E1Timestamp}`)
-    expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
-  })
-
-  // TODO: Remove this test when toLocalTimestamp and fromLocalTimestamp are deleted
-  it('When getting pointer changes with deprecated filter then the pagination is correctly done', async () => {
-    // Deploy E1, E2 in that order
-    const [E1Timestamp, E2Timestamp] = await deploy(E1, E2)
-
-    const url =
-      server.getAddress() +
-      `/pointer-changes?` +
-      toQueryParams({ fromLocalTimestamp: E1Timestamp, toLocalTimestamp: E2Timestamp, limit: 1 })
-
-    const pointerChanges = (await fetchJson(url)) as any
-
-    expect(pointerChanges.deltas.length).toBe(1)
-    expect(pointerChanges.pagination.next).not.toContain('toLocalTimestamp=')
-    expect(pointerChanges.pagination.next).not.toContain('fromLocalTimestamp')
     expect(pointerChanges.pagination.next).toContain(`to=${E2Timestamp}`)
     expect(pointerChanges.pagination.next).toContain(`from=${E1Timestamp}`)
     expect(pointerChanges.pagination.next).toContain(`lastId=${E2.entity.id}`)
@@ -303,7 +240,7 @@ describe('Integration - Deployment Pagination', () => {
     newOptions.sortBy = undefined
     newOptions.filters = undefined
     const url =
-      server.getAddress() +
+      server.getUrl() +
       `/deployments?` +
       toQueryParams({
         ...newOptions,
@@ -313,7 +250,7 @@ describe('Integration - Deployment Pagination', () => {
   }
 
   async function fetchPointerChanges(filters: PointerChangesFilters, limit: number) {
-    const url = server.getAddress() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
+    const url = server.getUrl() + `/pointer-changes?` + toQueryParams({ ...filters, limit: limit })
     return fetchJson(url) as any
   }
 })

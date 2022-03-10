@@ -4,34 +4,66 @@ import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import future from 'fp-future'
 import * as fs from 'fs'
-import * as path from 'path'
-import { streamActiveDeployments } from '../../logic/snapshots-queries'
+import { streamActiveDeployments } from '../../logic/database-queries/snapshots-queries'
 import { createContentFileWriterComponent } from '../../ports/contentFileWriter'
-import { compressContentFile } from '../../storage/compression'
-import { AppComponents } from '../../types'
-import { MetaverseContentService } from '../Service'
+import { bufferToStream } from '../../ports/contentStorage/contentStorage'
+import { AppComponents, IStatusCapableComponent } from '../../types'
 
 const ALL_ENTITIES = Symbol('allEntities')
 type ALL_ENTITIES = typeof ALL_ENTITIES
+const NAME_FOR_STATUS_ENDPOINT = 'snapshot'
 
-export class SnapshotManager {
+export type ISnapshotManager = {
+  getSnapshotMetadataPerEntityType(entityType: EntityType): SnapshotMetadata | undefined
+  getFullSnapshotMetadata(): FullSnapshotMetadata | undefined
+  generateSnapshots(): Promise<void>
+}
+
+export class SnapshotManager implements IStatusCapableComponent, ISnapshotManager {
   /** @deprecated */
   private lastSnapshots: Map<EntityType, SnapshotMetadata> = new Map()
   private lastSnapshotsPerEntityType: Map<EntityType | ALL_ENTITIES, SnapshotMetadata> = new Map()
   private LOGGER: ILoggerComponent.ILogger
+  private runningJobs: Set<() => Promise<any>> = new Set()
+
+  private statusEndpointData: { entities: Partial<Record<EntityType, number>>; lastUpdatedTime: number } = {
+    entities: {},
+    lastUpdatedTime: 0
+  }
 
   constructor(
-    private readonly components: Pick<AppComponents, 'database' | 'metrics' | 'staticConfigs' | 'logs'>,
-    private readonly service: MetaverseContentService,
+    private readonly components: Pick<
+      AppComponents,
+      'database' | 'metrics' | 'staticConfigs' | 'logs' | 'storage' | 'denylist' | 'fs'
+    >,
     private readonly snapshotFrequencyInMilliSeconds: number
   ) {
     this.LOGGER = components.logs.getLogger('SnapshotManager')
   }
 
-  async startCalculateFullSnapshots(): Promise<{ stop: () => Promise<boolean> }> {
+  async getComponentStatus() {
+    return {
+      name: NAME_FOR_STATUS_ENDPOINT,
+      data: this.statusEndpointData
+    }
+  }
+
+  async start() {
     // generate a first snapshot
     await this.generateSnapshots()
 
+    // start a job
+    await this.startCalculateFullSnapshots()
+  }
+
+  async stop() {
+    // end jobs
+    for (const stopFunction of this.runningJobs) {
+      await stopFunction()
+    }
+  }
+
+  async startCalculateFullSnapshots(): Promise<{ stop: () => Promise<boolean> }> {
     // async job to generate snapshots
     const stopPromise = future<void>()
 
@@ -44,7 +76,11 @@ export class SnapshotManager {
         try {
           await this.generateSnapshots()
         } catch (e: any) {
-          this.LOGGER.error(e)
+          if (!stopPromise.isPending && e.toString().includes('Cannot use a pool after calling end on the pool')) {
+            // noop
+          } else {
+            this.LOGGER.error(e)
+          }
         }
       }
 
@@ -52,12 +88,17 @@ export class SnapshotManager {
       resolve(true)
     })
 
+    const stop = () => {
+      this.runningJobs.delete(stop)
+      this.LOGGER.info('Stopping snapshot generation job')
+      stopPromise.resolve()
+      return stopped
+    }
+
+    this.runningJobs.add(stop)
+
     return {
-      stop: () => {
-        this.LOGGER.info('Stopping snapshot generation job')
-        stopPromise.resolve()
-        return stopped
-      }
+      stop
     }
   }
 
@@ -88,12 +129,10 @@ export class SnapshotManager {
    */
   private async generateLegacySnapshotPerEntityType(
     entityType: EntityType,
-    inArrayFormat: Array<[string, string[]]>
+    inArrayFormat: Array<[string, string[]]>,
+    lastIncludedDeploymentTimestamp: number
   ): Promise<void> {
     const previousSnapshot = this.lastSnapshots.get(entityType)
-
-    // Get the active entities
-    const snapshotTimestamp = 0
 
     // Format the snapshot in a buffer
     const buffer = Buffer.from(JSON.stringify(inArrayFormat))
@@ -102,18 +141,18 @@ export class SnapshotManager {
     const hash = await Hashing.calculateIPFSHash(buffer)
 
     // Store the new snapshot
-    await this.service.storeContent(hash, buffer)
+    await this.components.storage.storeStream(hash, bufferToStream(buffer))
 
     // Store the metadata
-    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp: snapshotTimestamp })
+    this.lastSnapshots.set(entityType, { hash, lastIncludedDeploymentTimestamp })
     // Log
     this.LOGGER.debug(
-      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${snapshotTimestamp}`
+      `Generated legacy snapshot for type: '${entityType}'. It includes ${inArrayFormat.length} active deployments. Last timestamp is ${lastIncludedDeploymentTimestamp}`
     )
 
     // Delete the previous snapshot (if it exists)
     if (previousSnapshot) {
-      await this.service.deleteContent([previousSnapshot.hash])
+      await this.components.storage.delete([previousSnapshot.hash])
     }
   }
   /** This methods queries the database and builds the snapshots, stores it on the content storage, and saves the metadata */
@@ -145,10 +184,14 @@ export class SnapshotManager {
       array.push(tuple)
     }
 
+    const newActiveEntitiesCount = {}
+
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
-        // TODO: [new-sync] filter out denylisted entities
+        if (this.components.denylist.isDenyListed(snapshotElem.entityId)) {
+          continue
+        }
 
         const str = JSON.stringify(snapshotElem) + '\n'
 
@@ -164,11 +207,23 @@ export class SnapshotManager {
         // write deployment to entityType file
         await fileWriterComponent.appendToFile(snapshotElem.entityType as EntityType, str)
 
-        // add the entoty to the inMemoryArray to be used by the legacy formatter
+        // add the entity to the inMemoryArray to be used by the legacy formatter
         appendToInMemoryArray(snapshotElem.entityType as EntityType, [snapshotElem.entityId, snapshotElem.pointers])
+
+        if (newActiveEntitiesCount[snapshotElem.entityType] != null) {
+          newActiveEntitiesCount[snapshotElem.entityType]++
+        } else {
+          newActiveEntitiesCount[snapshotElem.entityType] = 1
+        }
       }
     } finally {
       await fileWriterComponent.flushToDiskAndCloseFiles()
+    }
+
+    // update the snapshot sizes
+    this.statusEndpointData.lastUpdatedTime = Date.now()
+    for (const key in inMemoryArrays) {
+      this.statusEndpointData.entities[key] = inMemoryArrays[key]!.length
     }
 
     // Phase 3) hash generated files and move them to content folder
@@ -195,7 +250,11 @@ export class SnapshotManager {
         // dump legacy format
         if (entityType !== ALL_ENTITIES && inMemoryArrays[entityType]) {
           try {
-            await this.generateLegacySnapshotPerEntityType(entityType, inMemoryArrays[entityType]!)
+            await this.generateLegacySnapshotPerEntityType(
+              entityType,
+              inMemoryArrays[entityType]!,
+              timestamps[entityType] || 0
+            )
           } catch (e: any) {
             this.LOGGER.error(e)
           }
@@ -215,7 +274,7 @@ export class SnapshotManager {
     // the deletion of the files is deferred two minutes because there may be peers
     // still using the content files
     setTimeout(() => {
-      this.service.deleteContent([previousHash]).catch(this.LOGGER.error)
+      this.components.storage.delete([previousHash]).catch(this.LOGGER.error)
     }, 2 * 60000)
   }
 
@@ -226,20 +285,13 @@ export class SnapshotManager {
       snapshotTimestamp: number
     }
   ) {
-    const destinationFilename = path.resolve(this.components.staticConfigs.contentStorageFolder, options.hash)
-
-    const hasContent = await this.service.getContent(options.hash)
+    const hasContent = await this.components.storage.retrieve(options.hash)
 
     if (!hasContent) {
       // move and compress the file into the destinationFilename
-      await this.service.storeContent(options.hash, fs.createReadStream(tmpFile))
+      await this.components.storage.storeStreamAndCompress(options.hash, fs.createReadStream(tmpFile))
       this.LOGGER.info(
         `Generated snapshot. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
-      )
-      await compressContentFile(destinationFilename)
-    } else {
-      this.LOGGER.debug(
-        `Snapshot didn't change. hash=${options.hash} lastIncludedDeploymentTimestamp=${options.snapshotTimestamp}`
       )
     }
   }

@@ -19,11 +19,11 @@ export class OffChainWearablesManager {
   }: {
     client: SmartContentClient
     collections?: OffChainCollections
-    refreshTime?: string
+    refreshTime: string
   }) {
     this.definitions = new TimeRefreshedDataHolder(
       () => OffChainWearablesManager.fetchOffChain(client, collections ?? DEFAULT_COLLECTIONS),
-      refreshTime ?? '1d'
+      refreshTime
     )
   }
 

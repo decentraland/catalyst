@@ -8,7 +8,7 @@ references:
       at: *workspace_root
 
   .image_client: &image_client
-    image: circleci/node:16-browsers
+    image: cimg/node:16.14-browsers
 
   .working_directory_root: &working_directory_root
     working_directory: *workspace_root
@@ -21,7 +21,7 @@ references:
   .testing_branches: &testing_branches
     filters:
       branches:
-        ignore: master
+        ignore: main
       tags:
         ignore: /(.*)/
 
@@ -32,10 +32,10 @@ references:
       tags:
         only: /^\d+\.\d+\.\d(.*)/ # semver
 
-  .master_and_tags: &master_and_tags
+  .main_and_tags: &main_and_tags
     filters:
       branches:
-        only: master
+        only: main
       tags:
         only: /^\d+\.\d+\.\d(.*)/ # semver
 
@@ -90,26 +90,63 @@ jobs:
   build-content:
     docker:
       - <<: *image_client
-      - image: circleci/postgres:12
+      - image: cimg/postgres:12.9
         command: postgres -c max_connections=300
         environment:
           POSTGRES_DB: postgres_test
           POSTGRES_PASSWORD: '12345678'
           POSTGRES_USER: postgres
+    parallelism: 4
     working_directory: *workspace_root
     steps:
       - <<: *attach_root
       - run:
-          name: Run unit tests
-          command: yarn workspace @catalyst/content-server test:unit
+          name: Run tests
+          command: |
+            cd content
+            TESTFILES=$(circleci tests glob "test/**/*.spec.ts" | circleci tests split --split-by=timings)
+            yarn test $TESTFILES --coverageDirectory=reports --reporters=jest-junit --reporters=default
+            mv reports/coverage-final.json reports/coverage-${CIRCLE_NODE_INDEX:-0}.json
+            mv api-coverage/api-coverage.json api-coverage/api-coverage-${CIRCLE_NODE_INDEX:-0}.json
           environment:
             CI: 'true'
-      - run:
-          name: Run integration tests
-          command: yarn workspace @catalyst/content-server test:integration
-          environment:
-            CI: 'true'
+            JEST_JUNIT_OUTPUT_DIR: './test-result'
+            JEST_JUNIT_ADD_FILE_ATTRIBUTE: 'true'
+      - store_test_results:
+          path: content/test-result
+      - store_artifacts:
+          path: content/test-result
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - content/reports
+            - content/api-coverage
 
+  report-content-coverage:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Report coverage
+          command: |
+            cd content
+            yarn nyc merge reports
+            mkdir .nyc_output/
+            mv coverage.json .nyc_output/coverage.json
+            yarn nyc report --reporter=lcov --reporter=text
+      - store_test_results:
+          path: content/coverage
+      - store_artifacts:
+          path: content/coverage
+  report-content-api-coverage:
+    <<: *base_env
+    steps:
+      - <<: *attach_root
+      - run:
+          name: Report API coverage
+          command: |
+            cd content
+            yarn report-api-coverage
   build-lambdas:
     <<: *base_env
     steps:
@@ -134,7 +171,7 @@ jobs:
   publish-docker:
     <<: *base_env
     docker:
-      - image: circleci/node:16-browsers
+      - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
@@ -163,7 +200,7 @@ jobs:
               # TODO: publish SNS message for stable channel
             fi
 
-            if [ "${CIRCLE_BRANCH}" = "master" ]; then
+            if [ "${CIRCLE_BRANCH}" = "main" ]; then
               docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
               docker push "${DOCKER_IMAGE_NAME}:next"
 
@@ -173,7 +210,7 @@ jobs:
   publish-docker-without-tag:
     <<: *base_env
     docker:
-      - image: circleci/node:16-browsers
+      - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
           DOCKER_IMAGE_NAME: decentraland/katalyst
     steps:
@@ -213,31 +250,41 @@ workflows:
       - build-lighthouse:
           <<: *all_branches_and_tags
           requires:
-            - build-commons
+            - checkout
       - build-content:
           <<: *all_branches_and_tags
           requires:
-            - build-commons
+            - checkout
+      - report-content-coverage:
+          <<: *all_branches_and_tags
+          requires:
+            - build-content
+      - report-content-api-coverage:
+          <<: *all_branches_and_tags
+          requires:
+            - build-content
       - build-lambdas:
           <<: *all_branches_and_tags
           requires:
-            - linter
+            - checkout
       - build-commons:
           <<: *all_branches_and_tags
           requires:
-            - linter
+            - checkout
 
-      # publish docker image in "master" and semver tags
-      # master publishes to @next
+      # publish docker image in "main" and semver tags
+      # main publishes to @next
       # semver tags publish to @latest
       - publish-docker:
-          <<: *master_and_tags
+          <<: *main_and_tags
           requires:
             - build-lighthouse
             - build-content
+            - report-content-coverage
+            - report-content-api-coverage
             - build-lambdas
 
-      # NOT (master | semver) enables manual approval to release untagged docker images
+      # NOT (main | semver) enables manual approval to release untagged docker images
       - accept-publish-docker-for-testing:
           <<: *testing_branches
           type: approval

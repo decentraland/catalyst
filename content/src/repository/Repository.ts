@@ -1,15 +1,25 @@
-import { delay } from '@catalyst/commons'
+import { runReportingQueryDurationMetric } from '../instrument'
+import { AppComponents } from '../types'
 import { Database, FullDatabase } from './Database'
 import { DB_REQUEST_PRIORITY, RepositoryQueue } from './RepositoryQueue'
 
 export class Repository {
-  constructor(private readonly db: FullDatabase, private readonly queue: RepositoryQueue) {}
+  constructor(
+    private readonly db: FullDatabase,
+    private readonly queue: RepositoryQueue,
+    private readonly components: Pick<AppComponents, 'metrics'>
+  ) {}
 
   /**
    * Run some query against the database
    */
   run<T>(execution: (db: Database) => Promise<T>, options: ExecutionOptions): Promise<T> {
-    return this.runInternal(execution, options)
+    if (!options.durationQueryNameLabel) {
+      return this.runInternal(execution, options)
+    }
+    return runReportingQueryDurationMetric(this.components, options.durationQueryNameLabel, () =>
+      this.runInternal(execution, options)
+    )
   }
 
   /**
@@ -30,25 +40,19 @@ export class Repository {
   /**
    * Shutdown the database client
    */
-  async shutdown(): Promise<void> {
-    const promise = this.db.$pool.end()
-    let finished = false
-
-    promise.then(() => (finished = true)).catch(() => (finished = true))
-
-    while (!finished && this.db.$pool.totalCount | this.db.$pool.idleCount | this.db.$pool.waitingCount) {
-      if (this.db.$pool.totalCount) {
-        console.log('Draining connections', {
-          totalCount: this.db.$pool.totalCount,
-          idleCount: this.db.$pool.idleCount,
-          waitingCount: this.db.$pool.waitingCount
-        })
-      }
-
-      await delay(100)
-    }
-
-    await promise
+  async stop(): Promise<void> {
+    const DRAIN_TIMEOUT = 30_000 // 30 seconds
+    let drainTimeout: NodeJS.Timeout | undefined
+    await Promise.race([
+      // close pool
+      this.db.$pool.end().then(() => {
+        if (drainTimeout) {
+          clearTimeout(drainTimeout)
+        }
+      }),
+      // or timeout
+      new Promise((_, reject) => (drainTimeout = setTimeout(reject, DRAIN_TIMEOUT)))
+    ])
   }
 
   /**
@@ -86,4 +90,5 @@ export class Repository {
 
 type ExecutionOptions = {
   priority: DB_REQUEST_PRIORITY
+  durationQueryNameLabel?: string
 }

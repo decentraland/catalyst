@@ -1,41 +1,17 @@
 import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
-import { createLogComponent } from '@well-known-components/logger'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
-import NodeCache from 'node-cache'
-import path from 'path'
-import { ControllerFactory } from './controller/ControllerFactory'
-import { DenylistFactory } from './denylist/DenylistFactory'
-import { FetcherFactory } from './helpers/FetcherFactory'
-import { metricsComponent } from './metrics'
-import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
-import { createFetchComponent } from './ports/fetcher'
-import { createDatabaseComponent } from './ports/postgres'
-import { RepositoryFactory } from './repository/RepositoryFactory'
+import { initComponentsWithEnv } from './components'
 import { RepositoryQueue } from './repository/RepositoryQueue'
-import { AccessCheckerImplFactory } from './service/access/AccessCheckerImplFactory'
-import { AuthenticatorFactory } from './service/auth/AuthenticatorFactory'
-import { CacheManagerFactory } from './service/caching/CacheManagerFactory'
-import { DeploymentManagerFactory } from './service/deployments/DeploymentManagerFactory'
-import { FailedDeploymentsManager } from './service/errors/FailedDeploymentsManager'
-import { GarbageCollectionManagerFactory } from './service/garbage-collection/GarbageCollectionManagerFactory'
-import { PointerManagerFactory } from './service/pointers/PointerManagerFactory'
-import { ServiceFactory } from './service/ServiceFactory'
-import { SnapshotManager } from './service/snapshots/SnapshotManager'
-import { ChallengeSupervisor } from './service/synchronization/ChallengeSupervisor'
-import { DAOClientFactory } from './service/synchronization/clients/DAOClientFactory'
-import { ClusterSynchronizationManagerFactory } from './service/synchronization/ClusterSynchronizationManagerFactory'
-import { ContentClusterFactory } from './service/synchronization/ContentClusterFactory'
-import { EventDeployerFactory } from './service/synchronization/EventDeployerFactory'
-import { SystemPropertiesManagerFactory } from './service/system-properties/SystemPropertiesManagerFactory'
-import { ValidatorFactory } from './service/validations/ValidatorFactory'
-import { ContentStorageFactory } from './storage/ContentStorageFactory'
-import { AppComponents } from './types'
+import { AppComponents, parseEntityType } from './types'
 
 export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
+const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
+const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
+export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 export const DEFAULT_ETH_NETWORK = 'ropsten'
 export const DEFAULT_LAND_MANAGER_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
@@ -72,11 +48,9 @@ const DEFAULT_SYNC_STREAM_TIMEOUT = '10m'
 export class Environment {
   private static readonly LOGGER = log4js.getLogger('Environment')
   private configs: Map<EnvironmentConfig, any>
-  private beans: Map<Bean, any>
 
   constructor(otherEnv?: Environment) {
     this.configs = otherEnv ? new Map(otherEnv.configs) : new Map()
-    this.beans = otherEnv ? new Map(otherEnv.beans) : new Map()
   }
 
   getConfig<T>(key: EnvironmentConfig): T {
@@ -85,15 +59,6 @@ export class Environment {
 
   setConfig<T>(key: EnvironmentConfig, value: T): Environment {
     this.configs.set(key, value)
-    return this
-  }
-
-  getBean<T>(type: Bean): T {
-    return this.beans.get(type)
-  }
-
-  registerBean<T>(type: Bean, bean: T): Environment {
-    this.beans.set(type, bean)
     return this
   }
 
@@ -118,47 +83,16 @@ export class Environment {
   }
 }
 
-export const enum Bean {
-  STORAGE,
-  SERVICE,
-  CONTROLLER,
-  POINTER_MANAGER,
-  SEGMENT_IO_ANALYTICS,
-  SQS_DEPLOYMENT_REPORTER,
-  SYNCHRONIZATION_MANAGER,
-  DAO_CLIENT,
-  ACCESS_CHECKER,
-  DEPLOYMENT_MANAGER,
-  CONTENT_CLUSTER,
-  EVENT_DEPLOYER,
-  DENYLIST,
-  AUTHENTICATOR,
-  FAILED_DEPLOYMENTS_MANAGER,
-  FETCHER,
-  VALIDATOR,
-  CHALLENGE_SUPERVISOR,
-  REPOSITORY,
-  DEPLOYMENTS_RATE_LIMIT_CACHE,
-  MIGRATION_MANAGER,
-  GARBAGE_COLLECTION_MANAGER,
-  SYSTEM_PROPERTIES_MANAGER,
-  SNAPSHOT_MANAGER,
-  CACHE_MANAGER
-}
-
 export enum EnvironmentConfig {
   STORAGE_ROOT_FOLDER,
   SERVER_PORT,
-  // @deprecated
-  METRICS,
   LOG_REQUESTS,
   UPDATE_FROM_DAO_INTERVAL,
   SYNC_WITH_SERVERS_INTERVAL,
   CHECK_SYNC_RANGE,
-  ALLOW_LEGACY_ENTITIES,
   DECENTRALAND_ADDRESS,
-  DEPLOYMENTS_RATE_LIMIT_TTL,
-  DEPLOYMENTS_RATE_LIMIT_MAX,
+  DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL,
+  DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
   ETH_NETWORK,
   LOG_LEVEL,
   FETCH_REQUEST_TIMEOUT,
@@ -179,22 +113,24 @@ export enum EnvironmentConfig {
   PG_QUERY_TIMEOUT,
   GARBAGE_COLLECTION,
   GARBAGE_COLLECTION_INTERVAL,
-  SNAPSHOT_FREQUENCY,
   SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
   CUSTOM_DAO,
   DISABLE_SYNCHRONIZATION,
   SYNC_STREAM_TIMEOUT,
-  DISABLE_DENYLIST,
   CONTENT_SERVER_ADDRESS,
   REPOSITORY_QUEUE_MAX_CONCURRENCY,
   REPOSITORY_QUEUE_MAX_QUEUED,
   REPOSITORY_QUEUE_TIMEOUT,
-  CACHE_SIZES,
+  ENTITIES_CACHE_SIZE,
   BLOCKS_L1_SUBGRAPH_URL,
   BLOCKS_L2_SUBGRAPH_URL,
-  VALIDATE_API
+  VALIDATE_API,
+  FOLDER_MIGRATION_MAX_CONCURRENCY,
+  RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
+  DEPLOYMENT_RATE_LIMIT_TTL,
+  DEPLOYMENT_RATE_LIMIT_MAX,
+  DENYLIST_FILE_NAME
 }
-
 export class EnvironmentBuilder {
   private baseEnv: Environment
   constructor(other?: Environment | EnvironmentBuilder) {
@@ -209,17 +145,12 @@ export class EnvironmentBuilder {
     }
   }
 
-  withBean(bean: Bean, value: any): EnvironmentBuilder {
-    this.baseEnv.registerBean(bean, value)
-    return this
-  }
-
   withConfig(config: EnvironmentConfig, value: any): EnvironmentBuilder {
     this.baseEnv.setConfig(config, value)
     return this
   }
 
-  async build(): Promise<{ env: Environment; components: AppComponents }> {
+  async buildConfigAndComponents(): Promise<AppComponents> {
     const env = new Environment()
 
     this.registerConfigIfNotAlreadySet(
@@ -229,10 +160,19 @@ export class EnvironmentBuilder {
     )
     this.registerConfigIfNotAlreadySet(
       env,
+      EnvironmentConfig.DENYLIST_FILE_NAME,
+      () => process.env.DENYLIST_FILE_NAME ?? DEFAULT_DENYLIST_FILE_NAME
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.FOLDER_MIGRATION_MAX_CONCURRENCY,
+      () => process.env.FOLDER_MIGRATION_MAX_CONCURRENCY ?? DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
       EnvironmentConfig.SERVER_PORT,
       () => process.env.CONTENT_SERVER_PORT ?? DEFAULT_SERVER_PORT
     )
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.METRICS, () => process.env.METRICS !== 'false')
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.LOG_REQUESTS, () => process.env.LOG_REQUESTS !== 'false')
     this.registerConfigIfNotAlreadySet(
       env,
@@ -250,18 +190,13 @@ export class EnvironmentBuilder {
       () => process.env.CHECK_SYNC_RANGE ?? ms('20m')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DECENTRALAND_ADDRESS, () => DECENTRALAND_ADDRESS)
-    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL, () =>
-      Math.floor(ms((process.env.DEPLOYMENTS_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL, () =>
+      Math.floor(ms((process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_TTL ?? '1m') as string) / 1000)
     )
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_MAX,
-      () => process.env.DEPLOYMENTS_RATE_LIMIT_MAX ?? 100
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.ALLOW_LEGACY_ENTITIES,
-      () => process.env.ALLOW_LEGACY_ENTITIES === 'true'
+      EnvironmentConfig.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX,
+      () => process.env.DEPLOYMENTS_DEFAULT_RATE_LIMIT_MAX ?? 300
     )
     this.registerConfigIfNotAlreadySet(
       env,
@@ -376,22 +311,12 @@ export class EnvironmentBuilder {
       process.env.PG_IDLE_TIMEOUT ? ms(process.env.PG_IDLE_TIMEOUT) : ms('30s')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.PG_QUERY_TIMEOUT, () =>
-      process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('60s')
-    )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.SNAPSHOT_FREQUENCY,
-      () =>
-        new Map([
-          [EntityType.SCENE, 100],
-          [EntityType.PROFILE, 500],
-          [EntityType.WEARABLE, 50]
-        ])
+      process.env.PG_QUERY_TIMEOUT ? ms(process.env.PG_QUERY_TIMEOUT) : ms('180s')
     )
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS,
-      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('1h')
+      () => process.env.SNAPSHOT_FREQUENCY_IN_MILLISECONDS ?? ms('6h')
     )
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.CUSTOM_DAO, () => process.env.CUSTOM_DAO)
 
@@ -405,16 +330,13 @@ export class EnvironmentBuilder {
       EnvironmentConfig.SYNC_STREAM_TIMEOUT,
       () => process.env.SYNC_STREAM_TIMEOUT || DEFAULT_SYNC_STREAM_TIMEOUT
     )
-    this.registerConfigIfNotAlreadySet(
-      env,
-      EnvironmentConfig.DISABLE_DENYLIST,
-      () => process.env.DISABLE_DENYLIST === 'true'
-    )
 
     this.registerConfigIfNotAlreadySet(
       env,
       EnvironmentConfig.CONTENT_SERVER_ADDRESS,
-      () => process.env.CONTENT_SERVER_ADDRESS
+      () =>
+        process.env.CONTENT_SERVER_ADDRESS ||
+        'http://localhost:' + env.getConfig<number>(EnvironmentConfig.SERVER_PORT).toString()
     )
 
     this.registerConfigIfNotAlreadySet(
@@ -435,107 +357,55 @@ export class EnvironmentBuilder {
       () => process.env.REPOSITORY_QUEUE_TIMEOUT ?? RepositoryQueue.DEFAULT_TIMEOUT
     )
 
-    /*
-     * These are configured as 'CACHE_{CACHE_NAME}_{ENTITY_TYPE}=MAX_SIZE'.
-     * For example: 'CACHE_ENTITIES_BY_POINTERS_SCENE=1000'
-     */
     this.registerConfigIfNotAlreadySet(
       env,
-      EnvironmentConfig.CACHE_SIZES,
-      () => new Map(Object.entries(process.env).filter(([name]) => name.startsWith('CACHE')))
+      EnvironmentConfig.ENTITIES_CACHE_SIZE,
+      () => process.env.ENTITIES_CACHE_SIZE ?? DEFAULT_ENTITIES_CACHE_SIZE
     )
+
+    /*
+     * These are configured as 'DEPLOYMENT_RATE_LIMIT_MAX_{ENTITY_TYPE}=MAX_SIZE'.
+     * For example: 'DEPLOYMENT_RATE_LIMIT_MAX_PROFILE=300'
+     */
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_MAX, () => {
+      const rateLimitMaxConfig: Map<EntityType, number> = new Map(
+        Object.entries(process.env)
+          .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_MAX_') && !!value)
+          .map(([name, value]) => [
+            parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_MAX_', '')) as EntityType,
+            value as any as number
+          ])
+      )
+      return rateLimitMaxConfig ?? new Map()
+    })
+    /*
+     * These are configured as 'DEPLOYMENT_RATE_LIMIT_TTL_{ENTITY_TYPE}=MAX_SIZE'.
+     * For example: 'DEPLOYMENT_RATE_LIMIT_TTL_PROFILE=1m'
+     */
+    this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.DEPLOYMENT_RATE_LIMIT_TTL, () => {
+      const rateLimitTtlConfig: Map<EntityType, number> = new Map(
+        Object.entries(process.env)
+          .filter(([name, value]) => name.startsWith('DEPLOYMENT_RATE_LIMIT_TTL_') && !!value)
+          .map(([name, value]) => [
+            parseEntityType(name.replace('DEPLOYMENT_RATE_LIMIT_TTL_', '')) as EntityType,
+            ms(value ?? '1m')
+          ])
+      )
+      return rateLimitTtlConfig ?? new Map()
+    })
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.VALIDATE_API, () => process.env.VALIDATE_API == 'true')
 
-    // Please put special attention on the bean registration order.
-    // Some beans depend on other beans, so the required beans should be registered before
-
-    const repository = await RepositoryFactory.create(env)
-    const logs = createLogComponent()
-    const fetcher = createFetchComponent()
-    const metrics = metricsComponent
-    const staticConfigs: AppComponents['staticConfigs'] = {
-      contentStorageFolder: path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-    }
-    const database = await createDatabaseComponent(
-      { logs },
-      {
-        port: env.getConfig<number>(EnvironmentConfig.PSQL_PORT),
-        host: env.getConfig<string>(EnvironmentConfig.PSQL_HOST),
-        database: env.getConfig<string>(EnvironmentConfig.PSQL_DATABASE),
-        user: env.getConfig<string>(EnvironmentConfig.PSQL_USER),
-        password: env.getConfig<string>(EnvironmentConfig.PSQL_PASSWORD),
-        idleTimeoutMillis: env.getConfig<number>(EnvironmentConfig.PG_IDLE_TIMEOUT),
-        query_timeout: env.getConfig<number>(EnvironmentConfig.PG_QUERY_TIMEOUT)
-      }
-    )
-
-    await database.start()
-
-    this.registerBeanIfNotAlreadySet(env, Bean.REPOSITORY, () => repository)
-    this.registerBeanIfNotAlreadySet(env, Bean.SYSTEM_PROPERTIES_MANAGER, () =>
-      SystemPropertiesManagerFactory.create(env)
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.CHALLENGE_SUPERVISOR, () => new ChallengeSupervisor())
-    this.registerBeanIfNotAlreadySet(env, Bean.CACHE_MANAGER, () => CacheManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.FETCHER, () => FetcherFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DAO_CLIENT, () => DAOClientFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.AUTHENTICATOR, () => AuthenticatorFactory.create(env))
-    const localStorage = await ContentStorageFactory.local(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.STORAGE, () => localStorage)
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTENT_CLUSTER, () => ContentClusterFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DEPLOYMENT_MANAGER, () => DeploymentManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.DENYLIST, () => DenylistFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.POINTER_MANAGER, () => PointerManagerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.ACCESS_CHECKER, () => AccessCheckerImplFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.FAILED_DEPLOYMENTS_MANAGER, () => new FailedDeploymentsManager())
-    const ttl = env.getConfig(EnvironmentConfig.DEPLOYMENTS_RATE_LIMIT_TTL) as number
-    this.registerBeanIfNotAlreadySet(
+    this.registerConfigIfNotAlreadySet(
       env,
-      Bean.DEPLOYMENTS_RATE_LIMIT_CACHE,
-      () => new NodeCache({ stdTTL: ttl, checkperiod: ttl })
+      EnvironmentConfig.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
+      () => process.env.RETRY_FAILED_DEPLOYMENTS_DELAY_TIME ?? ms('15m')
     )
-    this.registerBeanIfNotAlreadySet(env, Bean.VALIDATOR, () => ValidatorFactory.create(env))
-    const deployer = ServiceFactory.create(env)
-    this.registerBeanIfNotAlreadySet(env, Bean.SERVICE, () => deployer)
-    this.registerBeanIfNotAlreadySet(
-      env,
-      Bean.SNAPSHOT_MANAGER,
-      () =>
-        new SnapshotManager(
-          { database, metrics, staticConfigs, logs },
-          env.getBean(Bean.SERVICE),
-          env.getConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY_IN_MILLISECONDS)
-        )
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.GARBAGE_COLLECTION_MANAGER, () =>
-      GarbageCollectionManagerFactory.create(env)
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.EVENT_DEPLOYER, () => EventDeployerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.SYNCHRONIZATION_MANAGER, () =>
-      ClusterSynchronizationManagerFactory.create(env)
-    )
-    this.registerBeanIfNotAlreadySet(env, Bean.CONTROLLER, () => ControllerFactory.create(env))
-    this.registerBeanIfNotAlreadySet(env, Bean.MIGRATION_MANAGER, () => MigrationManagerFactory.create(env))
 
-    return {
-      env,
-      components: {
-        database,
-        deployer,
-        metrics,
-        fetcher,
-        logs,
-        staticConfigs
-      }
-    }
+    return await initComponentsWithEnv(env)
   }
 
   private registerConfigIfNotAlreadySet(env: Environment, key: EnvironmentConfig, valueProvider: () => any): void {
     env.setConfig(key, this.baseEnv.getConfig(key) ?? valueProvider())
-  }
-
-  private registerBeanIfNotAlreadySet(env: Environment, key: Bean, valueProvider: () => any): void {
-    env.registerBean(key, this.baseEnv.getBean(key) ?? valueProvider())
   }
 }

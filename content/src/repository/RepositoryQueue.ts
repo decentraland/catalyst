@@ -1,6 +1,6 @@
 import ms from 'ms'
 import PQueue from 'p-queue'
-import { metricsComponent } from '../metrics'
+import { AppComponents } from '../types'
 
 /**
  * All database requests go through this queue. All pending requests will be queued as long as the limit isn't reached.
@@ -15,7 +15,7 @@ export class RepositoryQueue {
   private readonly maxQueued: number
   private readonly queue: PQueue
 
-  constructor(options?: Partial<QueueOptions>) {
+  constructor(public components: Pick<AppComponents, 'metrics'>, options?: Partial<QueueOptions>) {
     const withoutUndefined = options ? copyWithoutUndefinedValues(options) : {}
     const { maxConcurrency, maxQueued, timeout } = {
       maxConcurrency: RepositoryQueue.DEFAULT_MAX_CONCURRENCY,
@@ -23,19 +23,21 @@ export class RepositoryQueue {
       timeout: RepositoryQueue.DEFAULT_TIMEOUT,
       ...withoutUndefined
     }
-    this.queue = new PQueue({ concurrency: maxConcurrency, timeout: ms(timeout) })
+    this.queue = new PQueue({ concurrency: maxConcurrency, timeout: ms(timeout), autoStart: true })
     this.maxQueued = maxQueued
   }
 
   addDatabaseRequest<T>(priority: DB_REQUEST_PRIORITY, execution: () => Promise<T>): Promise<T> {
     const priorityLabel = DB_REQUEST_PRIORITY[priority]
-    metricsComponent.increment('db_queued_queries_count')
+    this.components.metrics.increment('db_queued_queries_count')
     if (this.queue.size >= this.maxQueued && priority === DB_REQUEST_PRIORITY.LOW) {
-      metricsComponent.increment('db_queued_queries_rejected_count')
+      this.components.metrics.increment('db_queued_queries_rejected_count')
       return Promise.reject(new Error(RepositoryQueue.TOO_MANY_QUEUED_ERROR))
     }
 
-    const { end: endTimer } = metricsComponent.startTimer('db_queued_queries_executed', { priority: priorityLabel })
+    const { end: endTimer } = this.components.metrics.startTimer('db_queued_queries_executed', {
+      priority: priorityLabel
+    })
 
     return this.queue.add(
       async () => {

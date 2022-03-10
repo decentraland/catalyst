@@ -1,12 +1,11 @@
-import { DAOClient, ServerMetadata } from '@catalyst/commons'
-import { ServerAddress } from 'dcl-catalyst-commons'
+import { DAOClient, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
 import { EthAddress } from 'dcl-crypto'
 
 export class MockedDAOClient implements DAOClient {
-  private readonly serversByAddress: Map<ServerAddress, ServerMetadata>
+  private readonly serversByAddress: Map<ServerBaseUrl, ServerMetadata>
 
-  private constructor(servers: { address: ServerAddress; owner: EthAddress }[]) {
-    this.serversByAddress = new Map(servers.map((server) => [server.address, { ...server, id: 'Id' }]))
+  private constructor(servers: { baseUrl: ServerBaseUrl; owner: EthAddress }[]) {
+    this.serversByAddress = new Map(servers.map((server) => [server.baseUrl, { ...server, id: 'Id' }]))
   }
 
   async getAllContentServers(): Promise<Set<ServerMetadata>> {
@@ -17,18 +16,19 @@ export class MockedDAOClient implements DAOClient {
     throw new Error('Not Implemented')
   }
 
-  add(address: ServerAddress) {
-    this.serversByAddress.set(address, { address, owner: '0x...', id: 'Id' })
+  add(baseUrl: ServerBaseUrl) {
+    this.serversByAddress.set(baseUrl, { baseUrl, owner: '0xCatalyst_owner_address_1', id: 'Id' })
   }
 
-  remove(address: ServerAddress) {
-    this.serversByAddress.delete(address)
+  remove(baseUrl: ServerBaseUrl) {
+    this.serversByAddress.delete(baseUrl)
   }
 
-  static withAddresses(...addresses: ServerAddress[]): MockedDAOClient {
-    return new MockedDAOClient(addresses.map((address) => ({ address, owner: '0x...' })))
+  static withAddresses(...servers: ServerBaseUrl[]): MockedDAOClient {
+    return new MockedDAOClient(servers.map((baseUrl) => ({ baseUrl, owner: '0xCatalyst_owner_address_0' })))
   }
-  static with(address: ServerAddress, owner: EthAddress): MockedDAOClient {
-    return new MockedDAOClient([{ address, owner }])
+
+  static with(baseUrl: ServerBaseUrl, owner: EthAddress): MockedDAOClient {
+    return new MockedDAOClient([{ baseUrl, owner }])
   }
 }

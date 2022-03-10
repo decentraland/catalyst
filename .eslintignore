@@ -1,6 +1,14 @@
  # We need to skip that file as it makes eslint to hang
+coverage/
 dist/
 node_modules/
 **/dist
 **/node_modules
 tmpbin
+content/test
+lambdas/test
+comms/lighthouse/test
+jest.config.js
+printApiCoverage.js
+reportApiCoverage.js
+jest.*.ts

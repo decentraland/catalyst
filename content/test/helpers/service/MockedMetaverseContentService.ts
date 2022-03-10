@@ -1,44 +1,37 @@
 import {
   AuditInfo,
   ContentFileHash,
+  Deployment,
+  Entity,
   EntityId,
   EntityType,
   EntityVersion,
   LegacyAuditInfo,
   PartialDeploymentHistory,
   Pointer,
-  ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
-import { AuthLinkType } from 'dcl-crypto'
+import { AuthChain, AuthLinkType } from 'dcl-crypto'
 import { random } from 'faker'
-import { Readable } from 'stream'
 import { CURRENT_CONTENT_VERSION } from '../../../src/Environment'
-import { Database } from '../../../src/repository/Database'
-import {
-  Deployment,
-  DeploymentOptions,
-  DeploymentPointerChanges,
-  PointerChangesOptions
-} from '../../../src/service/deployments/DeploymentManager'
-import { Entity } from '../../../src/service/Entity'
-import { FailedDeployment } from '../../../src/service/errors/FailedDeploymentsManager'
-import {
-  DeploymentContext,
-  DeploymentListener,
-  LocalDeploymentAuditInfo,
-  MetaverseContentService
-} from '../../../src/service/Service'
-import { ContentItem, SimpleContentItem } from '../../../src/storage/ContentStorage'
+import { ContentItem, SimpleContentItem } from '../../../src/ports/contentStorage/contentStorage'
+import { FailedDeployment } from '../../../src/ports/failedDeploymentsCache'
+import { DeploymentOptions, PointerChangesOptions } from '../../../src/service/deployments/types'
+import { DeploymentPointerChanges } from '../../../src/service/pointers/types'
+import { DeploymentContext, LocalDeploymentAuditInfo, MetaverseContentService } from '../../../src/service/Service'
+import { IStatusCapableComponent, StatusProbeResult } from '../../../src/types'
 import { buildEntityAndFile } from './EntityTestFactory'
 
-export class MockedMetaverseContentService implements MetaverseContentService {
-  static readonly STATUS: ServerStatus = {
+export class MockedMetaverseContentService implements MetaverseContentService, IStatusCapableComponent {
+  static readonly STATUS = {
     name: 'name',
     version: EntityVersion.V3,
     currentTime: Date.now(),
     lastImmutableTime: 0,
-    historySize: 0
+    snapshot: {
+      entities: {},
+      lastUpdated: Date.now()
+    }
   }
 
   static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {
@@ -63,16 +56,31 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     this.content = builder.content
     this.pointerChanges = builder.pointerChanges
   }
-
-  start(): Promise<void> {
-    return Promise.resolve()
+  async getComponentStatus(): Promise<StatusProbeResult> {
+    return {
+      name: 'mockedContentService',
+      data: MockedMetaverseContentService.STATUS
+    }
   }
-
-  deleteContent(fileHashes: string[]): Promise<void> {
+  reportErrorDuringSync(
+    entityType: EntityType,
+    entityId: string,
+    reason: string,
+    authChain: AuthChain,
+    errorDescription?: string
+  ): Promise<null> {
     throw new Error('Method not implemented.')
   }
 
-  getPointerChanges(task?: Database, options?: PointerChangesOptions) {
+  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void> {
+    throw new Error('Method not implemented.')
+  }
+
+  async deployEntityFromRemoteServer() {
+    // noop
+  }
+
+  getPointerChanges(options?: PointerChangesOptions) {
     return Promise.resolve({
       pointerChanges: this.pointerChanges,
       filters: {},
@@ -98,15 +106,6 @@ export class MockedMetaverseContentService implements MetaverseContentService {
         moreData: false
       }
     })
-  }
-
-  getActiveDeploymentsByContentHash(hash: string): Promise<EntityId[]> {
-    return Promise.resolve(
-      this.entities
-        .filter((entity) => entity.content?.has(hash))
-        .map((entity) => this.entityToDeployment(entity))
-        .map((entity) => entity.entityId)
-    )
   }
 
   deployEntity(
@@ -139,18 +138,7 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     }
   }
 
-  getStatus(): ServerStatus {
-    return MockedMetaverseContentService.STATUS
-  }
-
-  getAllFailedDeployments(): Promise<FailedDeployment[]> {
-    throw new Error('Method not implemented.')
-  }
-
-  storeContent(fileHash: string, content: Buffer | Readable): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  listenToDeployments(listener: DeploymentListener): void {
+  getAllFailedDeployments(): FailedDeployment[] {
     throw new Error('Method not implemented.')
   }
 
@@ -158,11 +146,9 @@ export class MockedMetaverseContentService implements MetaverseContentService {
     return Promise.resolve(this.entities.filter(({ id }) => ids.includes(id)))
   }
 
-  getEntitiesByPointers(type: EntityType, pointers: string[]): Promise<Entity[]> {
+  getEntitiesByPointers(pointers: string[]): Promise<Entity[]> {
     return Promise.resolve(
-      this.entities.filter(
-        (entity) => entity.type === type && entity.pointers.some((pointer) => pointers.includes(pointer))
-      )
+      this.entities.filter((entity) => entity.pointers.some((pointer) => pointers.includes(pointer)))
     )
   }
 
@@ -174,7 +160,8 @@ export class MockedMetaverseContentService implements MetaverseContentService {
       entityId: entity.id,
       entityTimestamp: entity.timestamp,
       deployedBy: '',
-      auditInfo: MockedMetaverseContentService.AUDIT_INFO
+      auditInfo: MockedMetaverseContentService.AUDIT_INFO,
+      content: entity.content?.map(({ file, hash }) => ({ key: file, hash })) ?? []
     }
   }
 

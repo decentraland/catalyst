@@ -44,7 +44,6 @@
   "devDependencies": {
     "@types/cors": "^2",
     "@types/express": "4.17.13",
-    "@types/jasmine": "3.9.1",
     "@types/morgan": "^1",
     "@types/node": "16.7.10",
     "@types/react": "^17",
@@ -52,17 +51,12 @@
     "@types/sinon": "10.0.4",
     "@types/uuid": "^8",
     "@typescript-eslint/eslint-plugin": "4.33.0",
-    "@typescript-eslint/parser": "4.30.0",
+    "@typescript-eslint/parser": "4.33.0",
     "cpy-cli": "^3.1.1",
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-prettier": "4.0.0",
-    "jasmine": "3.9.0",
-    "jasmine-core": "3.9.0",
-    "jasmine-spec-reporter": "7.0.0",
-    "jasmine-ts": "0.4.0",
-    "karma": "6.3.4",
-    "lint-staged": "11.2.0",
+    "lint-staged": "12.1.4",
     "mock-socket": "8.0.5",
     "node-pg-migrate": "6.0.0",
     "npm-run-all": "4.1.5",
@@ -75,5 +69,8 @@
     "ts-path-mapping": "0.1.4",
     "tsc": "2.0.3",
     "typescript": "^4.4.3"
+  },
+  "jest-junit": {
+    "addFileAttribute": "true"
   }
 }

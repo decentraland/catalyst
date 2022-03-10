@@ -23,7 +23,25 @@
       "program": "${workspaceFolder}/lighthouse:server",
       "outFiles": [
         "${workspaceFolder}/**/*.js"
-      ]
+      ],
+      "env": {
+        "CI": "true"
+      }
+    },
+    {
+      "name": "Debug Jest Tests - Content server",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/node_modules/.bin/jest",
+        "--runInBand",
+        "test/integration/service/concurrent-deployments.spec.ts"
+      ],
+      "cwd": "${workspaceFolder}/content",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "port": 9229
     }
   ]
 }

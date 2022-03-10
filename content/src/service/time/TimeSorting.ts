@@ -1,11 +1,4 @@
-import { EntityId, Timestamp } from 'dcl-catalyst-commons'
-import { Deployment } from '../deployments/DeploymentManager'
-import { Entity } from '../Entity'
-
-/** Sort comparable objects from oldest to newest */
-export function sortFromOldestToNewest<T extends EntityComparable>(comparableArray: T[]): T[] {
-  return comparableArray.sort((event1, event2) => comparatorOldestToNewest(event1, event2))
-}
+import { Deployment, Entity, EntityId, Timestamp } from 'dcl-catalyst-commons'
 
 /** Return true if the first object happened before the second one */
 function happenedBeforeComparable(comparable1: EntityComparable, comparable2: EntityComparable): boolean {
@@ -36,20 +29,6 @@ function toComparable(toBeComparable: EntityComparable | Deployment | Entity) {
     comparable = toBeComparable
   }
   return comparable
-}
-
-function comparatorOldestToNewest(comparable1: EntityComparable, comparable2: EntityComparable) {
-  return -1 * comparatorNewestToOldest(comparable1, comparable2)
-}
-
-function comparatorNewestToOldest(comparable1: EntityComparable, comparable2: EntityComparable) {
-  if (comparable1.entityId == comparable2.entityId) {
-    return 0
-  } else if (happenedBeforeComparable(comparable2, comparable1)) {
-    return -1
-  } else {
-    return 1
-  }
 }
 
 type EntityComparable = {

@@ -16,7 +16,7 @@ export class DAOContractClient {
 
   async getAllContentServers(): Promise<Set<ServerMetadata>> {
     const servers: Set<ServerMetadata> = await this.getAllServers()
-    return new Set(Array.from(servers.values()).map((server) => ({ ...server, address: server.address + '/content' })))
+    return new Set(Array.from(servers.values()).map((server) => ({ ...server, baseUrl: server.baseUrl + '/content' })))
   }
 
   async getAllServers(): Promise<Set<ServerMetadata>> {
@@ -56,17 +56,17 @@ export class DAOContractClient {
   private toMetadata(data: CatalystData): ServerMetadata | undefined {
     const { id, owner, domain } = data
 
-    let address = domain.trim()
+    let baseUrl = domain.trim()
 
-    if (address.startsWith('http://')) {
-      console.warn(`Catalyst node domain using http protocol, skipping ${address}`)
+    if (baseUrl.startsWith('http://')) {
+      console.warn(`Catalyst node domain using http protocol, skipping ${baseUrl}`)
       return undefined
     }
 
-    if (!address.startsWith('https://')) {
-      address = 'https://' + address
+    if (!baseUrl.startsWith('https://')) {
+      baseUrl = 'https://' + baseUrl
     }
 
-    return { address, owner, id }
+    return { baseUrl, owner, id }
   }
 }

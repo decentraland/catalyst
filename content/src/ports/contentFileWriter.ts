@@ -1,7 +1,6 @@
 import { checkFileExists } from '@dcl/snapshots-fetcher/dist/utils'
-import fs from 'fs'
 import path from 'path'
-import { AppComponents } from 'src/types'
+import { AppComponents } from '../types'
 
 // this component opens file descriptors and enables us to write to them and close all the FD at once
 // it also has a buffering algorithm to write to disk less often and reduce IO latency
@@ -24,7 +23,7 @@ export type FileInterface = {
 }
 
 export function createContentFileWriterComponent<T extends symbol | string>(
-  components: Pick<AppComponents, 'logs' | 'staticConfigs'>
+  components: Pick<AppComponents, 'logs' | 'staticConfigs' | 'fs'>
 ): IContentFileWriterComponent<T> {
   const logger = components.logs.getLogger('ContentFileWriter')
 
@@ -45,10 +44,10 @@ export function createContentFileWriterComponent<T extends symbol | string>(
     // if the process failed while creating the snapshot last time the file may still exists
     // deleting the staging tmpFile just in case
     if (await checkFileExists(fileName)) {
-      await fs.promises.unlink(fileName)
+      await components.fs.unlink(fileName)
     }
 
-    const file = fs.createWriteStream(fileName)
+    const file = components.fs.createWriteStream(fileName)
 
     const fileClosedFuture = new Promise<void>((resolve, reject) => {
       file.on('finish', resolve)
@@ -112,8 +111,7 @@ export function createContentFileWriterComponent<T extends symbol | string>(
       for (const [_, { fileName }] of allFiles) {
         if (await checkFileExists(fileName)) {
           try {
-            logger.debug('Deleting file', { fileName })
-            await fs.promises.unlink(fileName)
+            await components.fs.unlink(fileName)
           } catch (err) {
             logger.error(err)
           }

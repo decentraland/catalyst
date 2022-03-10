@@ -1,17 +1,6 @@
-import {
-  AuditInfo,
-  DeploymentFilters,
-  DeploymentSorting,
-  EntityId,
-  EntityType,
-  Pointer,
-  SortingField,
-  SortingOrder,
-  Timestamp
-} from 'dcl-catalyst-commons'
+import { AuditInfo, Entity, EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { AuthChain, Authenticator } from 'dcl-crypto'
 import { Database } from '../../repository/Database'
-import { Entity } from '../../service/Entity'
 
 export type FullSnapshot = {
   entityId: EntityId
@@ -24,18 +13,23 @@ export type FullSnapshot = {
 export class DeploymentsRepository {
   constructor(private readonly db: Database) {}
 
-  async areEntitiesDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>> {
-    if (entityIds.length === 0) {
-      return new Map()
-    }
+  async getEntityById(entityId: EntityId) {
     const result = await this.db.map(
-      'SELECT entity_id FROM deployments WHERE entity_id IN ($1:list)',
-      [entityIds],
-      ({ entity_id }) => entity_id
+      `
+        SELECT
+          d.entity_id AS entity_id,
+          date_part('epoch', d.local_timestamp) * 1000 AS local_timestamp
+        FROM deployments d WHERE d.entity_id = $1
+        LIMIT 1
+      `,
+      [entityId],
+      (row) => ({
+        entityId: row.entity_id,
+        localTimestamp: row.local_timestamp
+      })
     )
-
-    const deployedIds = new Set(result)
-    return new Map(entityIds.map((entityId) => [entityId, deployedIds.has(entityId)]))
+    if (!result || result.length == 0) return undefined
+    return result[0]
   }
 
   async getAmountOfDeployments(): Promise<Map<EntityType, number>> {
@@ -45,144 +39,6 @@ export class DeploymentsRepository {
       (row) => [row.entity_type, parseInt(row.count)]
     )
     return new Map(entries)
-  }
-
-  getHistoricalDeployments(
-    offset: number,
-    limit: number,
-    filters?: DeploymentFilters,
-    sortBy?: DeploymentSorting,
-    lastId?: string
-  ) {
-    const sorting = Object.assign({ field: SortingField.LOCAL_TIMESTAMP, order: SortingOrder.DESCENDING }, sortBy)
-    return this.getDeploymentsBy(sorting.field, sorting.order, offset, limit, filters, lastId)
-  }
-
-  private getDeploymentsBy(
-    timestampField: string,
-    order: string,
-    offset: number,
-    limit: number,
-    filters?: DeploymentFilters,
-    lastId?: string
-  ) {
-    let query = `
-            SELECT
-                dep1.id,
-                dep1.entity_type,
-                dep1.entity_id,
-                dep1.entity_pointers,
-                date_part('epoch', dep1.entity_timestamp) * 1000 AS entity_timestamp,
-                dep1.entity_metadata,
-                dep1.deployer_address,
-                dep1.version,
-                dep1.auth_chain,
-                date_part('epoch', dep1.local_timestamp) * 1000 AS local_timestamp,
-                dep2.entity_id AS overwritten_by
-            FROM deployments AS dep1
-            LEFT JOIN deployments AS dep2 ON dep1.deleter_deployment = dep2.id`
-
-    const whereClause: string[] = []
-
-    const values: any = {
-      limit,
-      offset
-    }
-
-    if (lastId) {
-      values.lastId = lastId
-    }
-
-    /**  The lastId is a field that we only want to compare with when paginating.
-     * If the filter specifies a timestamp value that it's repeated among many deployments,
-     * then to know where the page should start we will use the lastId.
-     */
-    const pageBorder: string =
-      (order === SortingOrder.ASCENDING ? 'from' : 'to') +
-      (timestampField === SortingField.ENTITY_TIMESTAMP ? 'EntityTimestamp' : 'LocalTimestamp')
-
-    if (filters?.from && timestampField == SortingField.LOCAL_TIMESTAMP) {
-      values.fromLocalTimestamp = filters.from
-      if (pageBorder == 'fromLocalTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('local_timestamp', '>', 'fromLocalTimestamp'))
-      } else {
-        whereClause.push(`dep1.local_timestamp >= to_timestamp($(fromLocalTimestamp) / 1000.0)`)
-      }
-    }
-    if (filters?.to && timestampField == SortingField.LOCAL_TIMESTAMP) {
-      values.toLocalTimestamp = filters.to
-      if (pageBorder == 'toLocalTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('local_timestamp', '<', 'toLocalTimestamp'))
-      } else {
-        whereClause.push(`dep1.local_timestamp <= to_timestamp($(toLocalTimestamp) / 1000.0)`)
-      }
-    }
-
-    if (filters?.from && timestampField == SortingField.ENTITY_TIMESTAMP) {
-      values.fromEntityTimestamp = filters.from
-      if (pageBorder == 'fromEntityTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('entity_timestamp', '>', 'fromEntityTimestamp'))
-      } else {
-        whereClause.push(`dep1.entity_timestamp >= to_timestamp($(fromEntityTimestamp) / 1000.0)`)
-      }
-    }
-    if (filters?.to && timestampField == SortingField.ENTITY_TIMESTAMP) {
-      values.toEntityTimestamp = filters.to
-      if (pageBorder == 'toEntityTimestamp' && lastId) {
-        whereClause.push(this.createOrClause('entity_timestamp', '<', 'toEntityTimestamp'))
-      } else {
-        whereClause.push(`dep1.entity_timestamp <= to_timestamp($(toEntityTimestamp) / 1000.0)`)
-      }
-    }
-
-    if (filters?.deployedBy && filters.deployedBy.length > 0) {
-      values.deployedBy = filters.deployedBy.map((deployedBy) => deployedBy.toLocaleLowerCase())
-      whereClause.push(`LOWER(dep1.deployer_address) IN ($(deployedBy:list))`)
-    }
-
-    if (filters?.entityTypes && filters.entityTypes.length > 0) {
-      values.entityTypes = filters.entityTypes
-      whereClause.push(`dep1.entity_type IN ($(entityTypes:list))`)
-    }
-
-    if (filters?.entityIds && filters.entityIds.length > 0) {
-      values.entityIds = filters.entityIds
-      whereClause.push(`dep1.entity_id IN ($(entityIds:list))`)
-    }
-
-    if (filters?.onlyCurrentlyPointed) {
-      whereClause.push(`dep1.deleter_deployment IS NULL`)
-    }
-
-    if (filters?.pointers && filters.pointers.length > 0) {
-      values.pointers = filters.pointers.map((p) => p.toLowerCase())
-      whereClause.push(`dep1.entity_pointers && ARRAY[$(pointers:list)]`)
-    }
-
-    const where = whereClause.length > 0 ? ' WHERE ' + whereClause.join(' AND ') : ''
-
-    query += where
-    query += ` ORDER BY dep1.${timestampField} ${order}, LOWER(dep1.entity_id) ${order} LIMIT $(limit) OFFSET $(offset)`
-
-    return this.db.map(query, values, (row) => ({
-      deploymentId: row.id,
-      entityType: row.entity_type,
-      entityId: row.entity_id,
-      pointers: row.entity_pointers,
-      entityTimestamp: row.entity_timestamp,
-      metadata: row.entity_metadata ? row.entity_metadata.v : undefined,
-      deployerAddress: row.deployer_address,
-      version: row.version,
-      authChain: row.auth_chain,
-      localTimestamp: row.local_timestamp,
-      overwrittenBy: row.overwritten_by ?? undefined
-    }))
-  }
-
-  private createOrClause(timestampField: string, compare: string, timestampFilter: string): string {
-    const equalWithEntityIdComparison = `(LOWER(dep1.entity_id) ${compare} LOWER($(lastId)) AND dep1.${timestampField} = to_timestamp($(${timestampFilter}) / 1000.0))`
-    const timestampComparison = `(dep1.${timestampField} ${compare} to_timestamp($(${timestampFilter}) / 1000.0))`
-    return `(${equalWithEntityIdComparison} OR ${timestampComparison})`
   }
 
   deploymentsSince(entityType: EntityType, timestamp: Timestamp): Promise<number> {
@@ -219,17 +75,6 @@ export class DeploymentsRepository {
       )
       return transaction.batch(updates)
     })
-  }
-
-  async getActiveDeploymentsByContentHash(contentHash: string): Promise<EntityId[]> {
-    return this.db.map(
-      `SELECT ` +
-        `deployment.entity_id ` +
-        `FROM deployments as deployment INNER JOIN content_files ON content_files.deployment=id ` +
-        `WHERE content_hash=$1 AND deployment.deleter_deployment IS NULL;`,
-      [contentHash],
-      (row) => row.entity_id
-    )
   }
 }
 

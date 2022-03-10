@@ -1,13 +1,11 @@
+import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, delay, Timestamp } from 'dcl-catalyst-commons'
-import log4js from 'log4js'
-import { metricsComponent } from '../../metrics'
-import { Repository } from '../../repository/Repository'
 import { DB_REQUEST_PRIORITY } from '../../repository/RepositoryQueue'
-import { SystemPropertiesManager, SystemProperty } from '../../service/system-properties/SystemProperties'
-import { MetaverseContentService } from '../Service'
+import { SystemProperty } from '../../service/system-properties/SystemProperties'
+import { AppComponents } from '../../types'
 
 export class GarbageCollectionManager {
-  private static readonly LOGGER = log4js.getLogger('GarbageCollectionManager')
+  private LOGGER: ILoggerComponent.ILogger
   private hashesDeletedInLastSweep: Set<ContentFileHash> = new Set()
   private lastTimeOfCollection: Timestamp
   private nextGarbageCollectionTimeout: NodeJS.Timeout
@@ -15,17 +13,20 @@ export class GarbageCollectionManager {
   private sweeping = false
 
   constructor(
-    private readonly systemPropertiesManager: SystemPropertiesManager,
-    private readonly repository: Repository,
-    private readonly service: MetaverseContentService,
+    private readonly components: Pick<
+      AppComponents,
+      'systemPropertiesManager' | 'repository' | 'deployer' | 'metrics' | 'logs' | 'storage'
+    >,
     private readonly performGarbageCollection: boolean,
     private readonly sweepInterval: number
-  ) {}
+  ) {
+    this.LOGGER = components.logs.getLogger('GarbageCollectionManager')
+  }
 
   async start(): Promise<void> {
     if (this.performGarbageCollection) {
       this.stopping = false
-      const lastCollectionTime = await this.systemPropertiesManager.getSystemProperty(
+      const lastCollectionTime = await this.components.systemPropertiesManager.getSystemProperty(
         SystemProperty.LAST_GARBAGE_COLLECTION_TIME
       )
       this.lastTimeOfCollection = lastCollectionTime ?? 0
@@ -49,17 +50,17 @@ export class GarbageCollectionManager {
     const newTimeOfCollection: Timestamp = Date.now()
     this.sweeping = true
     try {
-      await this.repository.tx(
+      await this.components.repository.tx(
         async (transaction) => {
-          const { end: endTimer } = metricsComponent.startTimer('dcl_content_garbage_collection_time')
+          const { end: endTimer } = this.components.metrics.startTimer('dcl_content_garbage_collection_time')
 
           const hashes = await transaction.content.findContentHashesNotBeingUsedAnymore(this.lastTimeOfCollection)
 
-          metricsComponent.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
+          this.components.metrics.increment('dcl_content_garbage_collection_items_total', {}, hashes.length)
 
-          GarbageCollectionManager.LOGGER.debug(`Hashes to delete are: ${hashes}`)
-          await this.service.deleteContent(hashes)
-          await this.systemPropertiesManager.setSystemProperty(
+          this.LOGGER.debug(`Hashes to delete are: (${hashes.join(',')})`)
+          await this.components.storage.delete(hashes)
+          await this.components.systemPropertiesManager.setSystemProperty(
             SystemProperty.LAST_GARBAGE_COLLECTION_TIME,
             newTimeOfCollection,
             transaction
@@ -72,7 +73,8 @@ export class GarbageCollectionManager {
       )
       this.lastTimeOfCollection = newTimeOfCollection
     } catch (error) {
-      GarbageCollectionManager.LOGGER.warn(`Failed to perform garbage collection. Reason:\n${error}`)
+      this.LOGGER.error(`Failed to perform garbage collection.`)
+      this.LOGGER.error(error)
     } finally {
       if (!this.stopping) {
         this.nextGarbageCollectionTimeout = setTimeout(() => this.performSweep(), this.sweepInterval)

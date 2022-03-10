@@ -36,23 +36,17 @@ yarn build
 yarn test
 ```
 
-## Contributions
+## Contributing
 
-If using Visual Studio, please download:
+### [Code of Conduct](https://github.com/decentraland/catalyst/blob/main/docs/CODE_OF_CONDUCT.md)
 
-- [`prettier` extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-- [`eslint` extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+Please read [the full text](https://github.com/decentraland/catalyst/blob/main/docs/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
-### Install Husky
+### [Contributing Guide](https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md)
 
-```
-yarn add husky
-yarn husky install
-yarn husky add .husky/pre-commit "yarn lint-staged"
-```
-
+Read our [contributing guide](https://github.com/decentraland/catalyst/blob/main/docs/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
 
 ## Release
 
-- Modify the version in https://github.com/decentraland/catalyst/blob/master/Dockerfile#L30
-- Create a tag release in Git with the same version
+- Create a tag release in Git
+- It will trigger the CI job which publishes a new docker image version under `@latest` tag

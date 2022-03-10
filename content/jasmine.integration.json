@@ -1,6 +1,0 @@
-{
-  "spec_dir": "test",
-  "spec_files": ["integration/**/*[sS]pec.ts"],
-  "random": false,
-  "helpers": ["helpers/reporter.ts"]
-}

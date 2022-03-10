@@ -1,8 +1,7 @@
-import { Pointer } from 'dcl-catalyst-commons'
+import { Entity, Pointer } from 'dcl-catalyst-commons'
 import { DeploymentId } from '../../repository/extensions/DeploymentsRepository'
 import { LastDeployedPointersRepository } from '../../repository/extensions/LastDeployedPointersRepository'
 import { PointerHistoryRepository } from '../../repository/extensions/PointerHistoryRepository'
-import { Entity } from '../../service/Entity'
 import { happenedBefore } from '../../service/time/TimeSorting'
 
 /**

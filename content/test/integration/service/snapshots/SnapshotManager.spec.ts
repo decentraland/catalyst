@@ -1,27 +1,22 @@
 import { processDeploymentsInStream } from '@dcl/snapshots-fetcher/dist/file-processor'
 import { EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import { inspect } from 'util'
-import { unzipSync } from 'zlib'
-import { Bean, EnvironmentBuilder, EnvironmentConfig } from '../../../../src/Environment'
-import { Repository } from '../../../../src/repository/Repository'
-import { MetaverseContentService } from '../../../../src/service/Service'
-import { SnapshotManager, SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
-import { bufferToStream, ContentItem, streamToBuffer } from '../../../../src/storage/ContentStorage'
-import { NoOpValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { EnvironmentBuilder } from '../../../../src/Environment'
+import { stopAllComponents } from '../../../../src/logic/components-lifecycle'
+import { ContentItem } from '../../../../src/ports/contentStorage/contentStorage'
+import { SnapshotMetadata } from '../../../../src/service/snapshots/SnapshotManager'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
 import { assertResultIsSuccessfulWithTimestamp } from '../../E2EAssertions'
 import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
-describe('Integration - Snapshot Manager', () => {
+loadStandaloneTestEnvironment()('Integration - Snapshot Manager', (testEnv) => {
   const P1 = 'X1,Y1',
     P2 = 'X2,Y2'
   let E1: EntityCombo, E2: EntityCombo
 
-  const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService
-  let snapshotManager: SnapshotManager
-  let db: any
-  let repository: Repository
+  let components: AppComponents
 
   beforeAll(async () => {
     E1 = await buildDeployData([P1], { type: EntityType.SCENE })
@@ -30,19 +25,13 @@ describe('Integration - Snapshot Manager', () => {
 
   beforeEach(async () => {
     const baseEnv = await testEnv.getEnvForNewDatabase()
-    const { env, components } = await new EnvironmentBuilder(baseEnv)
-      .withConfig(EnvironmentConfig.SNAPSHOT_FREQUENCY, new Map([[EntityType.SCENE, 3]]))
-      .withBean(Bean.VALIDATOR, new NoOpValidator())
-      .build()
-    db = components.database
-    service = env.getBean(Bean.SERVICE)
-    snapshotManager = env.getBean(Bean.SNAPSHOT_MANAGER)
-    repository = env.getBean(Bean.REPOSITORY)
+    components = await new EnvironmentBuilder(baseEnv).buildConfigAndComponents()
+    makeNoopValidator(components)
+    makeNoopServerValidator(components)
   })
 
   afterEach(async () => {
-    await db?.stop()
-    await repository.shutdown()
+    await stopAllComponents(components)
   })
 
   /**
@@ -50,8 +39,9 @@ describe('Integration - Snapshot Manager', () => {
    */
 
   it(`When snapshot manager starts the full snapshots, then full snapshots are generated`, async () => {
+    const { snapshotManager, deployer } = components
     // Deploy E1 and E2
-    const deploymentResult = await deployEntitiesCombo(service, E1, E2)
+    const deploymentResult = await deployEntitiesCombo(deployer, E1, E2)
 
     // force snapshot generation
     await snapshotManager.generateSnapshots()
@@ -66,8 +56,10 @@ describe('Integration - Snapshot Manager', () => {
   })
 
   it(`When snapshot manager starts the full snapshots, then entity type snapshots are generated`, async () => {
+    const { snapshotManager, deployer } = components
+
     // Deploy E1 and E2 scenes
-    const deploymentResult = await deployEntitiesCombo(service, E1, E2)
+    const deploymentResult = await deployEntitiesCombo(deployer, E1, E2)
 
     // force snapshot generation
     await snapshotManager.generateSnapshots()
@@ -85,8 +77,10 @@ describe('Integration - Snapshot Manager', () => {
   })
 
   it(`Given no deployments for entity type, When snapshot manager starts the full snapshots, then entity type snapshots is created with no timestamp`, async () => {
+    const { snapshotManager, deployer } = components
+
     // Deploy E1 and E2 scenes
-    await deployEntitiesCombo(service, E1, E2)
+    await deployEntitiesCombo(deployer, E1, E2)
 
     // force snapshot generation
     await snapshotManager.generateSnapshots()
@@ -98,6 +92,8 @@ describe('Integration - Snapshot Manager', () => {
   })
 
   it(`When snapshot manager starts, if there were no entities deployed, then the generated snapshot is empty`, async () => {
+    const { snapshotManager } = components
+
     // Assert there is no snapshot
     expect(snapshotManager.getFullSnapshotMetadata()).toBeUndefined()
 
@@ -118,23 +114,16 @@ describe('Integration - Snapshot Manager', () => {
     ...entitiesCombo: EntityCombo[]
   ) {
     const { hash } = snapshotMetadata!
-    const content: ContentItem = (await service.getContent(hash))!
-
-    let uncompressedFile: Buffer
-
-    if ((await content.contentEncoding()) === 'gzip') {
-      uncompressedFile = unzipSync(await streamToBuffer(await content.asStream()))
-    } else {
-      uncompressedFile = await streamToBuffer(await content.asStream())
-    }
+    const content: ContentItem = (await components.storage.retrieve(hash))!
 
     const snapshot: Map<EntityId, Pointer[]> = new Map()
 
-    const readStream = bufferToStream(uncompressedFile)
+    const readStream = await content.asStream()
 
     for await (const deployment of processDeploymentsInStream(readStream)) {
       snapshot.set(deployment.entityId, (deployment as any).pointers)
     }
+
     try {
       expect(snapshot.size).toBe(entitiesCombo.length)
 
@@ -142,7 +131,7 @@ describe('Integration - Snapshot Manager', () => {
         expect(snapshot.get(entity.id)).toEqual(entity.pointers)
       }
     } catch (e) {
-      process.stderr.write(inspect({ hash, content, snapshot, uncompressedFile: uncompressedFile.toString() }) + '\n')
+      process.stderr.write(inspect({ hash, content, snapshot }) + '\n')
       throw e
     }
   }

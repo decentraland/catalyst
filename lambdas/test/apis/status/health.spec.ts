@@ -12,14 +12,17 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 100,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
 
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchAllDeployments(anything())).thenReturn(Promise.resolve(mockedHealthyStatus as any))
+        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+          Promise.resolve(mockedHealthyStatus as any)
+        )
       })
 
       it('should return a healthy status', async () => {
@@ -31,41 +34,21 @@ describe("Lambda's Controller Utils", () => {
       })
     })
 
-    describe('when the service is bootstrapping', () => {
-      const mockedBootstrappingStatus = {
-        currentTime: 100,
-        synchronizationStatus: 'Bootstrapping'
-      }
-
-      beforeAll(() => {
-        contentClientMock = mock(SmartContentClient)
-        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedBootstrappingStatus as any))
-        when(contentClientMock.fetchAllDeployments(anything())).thenReturn(
-          Promise.resolve(mockedBootstrappingStatus as any)
-        )
-      })
-
-      it('should return an unhealthy status', async () => {
-        const logger = mock(Logger)
-
-        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
-          HealthStatus.UNHEALTHY
-        )
-      })
-    })
-
     describe('when the service has old information', () => {
       const mockedHealthyStatus = {
         currentTime: 1000000,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
 
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchAllDeployments(anything())).thenReturn(Promise.resolve(mockedHealthyStatus as any))
+        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+          Promise.resolve(mockedHealthyStatus as any)
+        )
       })
 
       it('should return an unhealthy status', async () => {
@@ -81,7 +64,8 @@ describe("Lambda's Controller Utils", () => {
       const mockedHealthyStatus = {
         currentTime: 100,
         synchronizationStatus: {
-          lastSyncWithOtherServers: 100
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Syncing',
         }
       }
       let dateNowStub: sinon.SinonStub
@@ -89,7 +73,9 @@ describe("Lambda's Controller Utils", () => {
       beforeAll(() => {
         contentClientMock = mock(SmartContentClient)
         when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedHealthyStatus as any))
-        when(contentClientMock.fetchAllDeployments(anything())).thenReturn(Promise.resolve(mockedHealthyStatus as any))
+        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+          Promise.resolve(mockedHealthyStatus as any)
+        )
 
         dateNowStub = sinon
           .stub(Date, 'now' as any)
@@ -104,6 +90,32 @@ describe("Lambda's Controller Utils", () => {
       })
 
       it('should return aa unhealthy status', async () => {
+        const logger = mock(Logger)
+
+        expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(
+          HealthStatus.UNHEALTHY
+        )
+      })
+    })
+
+    describe('when the service is bootstrapping', () => {
+      const mockedUnhealthyStatus = {
+        currentTime: 100,
+        synchronizationStatus: {
+          lastSyncWithOtherServers: 100,
+          synchronizationState: 'Bootstrapping',
+        }
+      }
+
+      beforeAll(() => {
+        contentClientMock = mock(SmartContentClient)
+        when(contentClientMock.fetchContentStatus()).thenReturn(Promise.resolve(mockedUnhealthyStatus as any))
+        when(contentClientMock.fetchEntitiesByPointers(anything(), anything())).thenReturn(
+          Promise.resolve(mockedUnhealthyStatus as any)
+        )
+      })
+
+      it('should return an unhealthy status', async () => {
         const logger = mock(Logger)
 
         expect(await refreshContentServerStatus(instance(contentClientMock), '10s', '10s', logger)).toEqual(

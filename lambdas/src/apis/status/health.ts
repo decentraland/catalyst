@@ -1,4 +1,3 @@
-import { SynchronizationState } from '@catalyst/commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { Logger } from 'log4js'
 import ms from 'ms'
@@ -29,9 +28,11 @@ export async function refreshContentServerStatus(
     const hasOldInformation = synchronizationDiff > ms(maxSynchronizationTime)
 
     const obtainDeploymentTimeIsTooLong = obtainDeploymentTime > ms(maxDeploymentObtentionTime)
-    const isBootstrapping = (serverStatus as any).synchronizationStatus === SynchronizationState.BOOTSTRAPPING
 
-    if (hasOldInformation || isBootstrapping || obtainDeploymentTimeIsTooLong) {
+    // This is the only valid syncronization state that ensures content is being served up to date
+    const isSyncStateOk = (serverStatus as any).synchronizationStatus?.synchronizationState === 'Syncing'
+
+    if (hasOldInformation || obtainDeploymentTimeIsTooLong || !isSyncStateOk) {
       healthStatus = HealthStatus.UNHEALTHY
     } else {
       healthStatus = HealthStatus.HEALTHY
@@ -46,12 +47,7 @@ export async function refreshContentServerStatus(
 
 async function timeContentDeployments(contentService: SmartContentClient): Promise<number> {
   const startingTime = Date.now()
-  await contentService.fetchAllDeployments(
-    {
-      filters: { pointers: ['0,0'], onlyCurrentlyPointed: true, entityTypes: [EntityType.SCENE] }
-    },
-    { timeout: '30s' }
-  )
+  await contentService.fetchEntitiesByPointers(EntityType.SCENE, ['0,0'])
   const endingTime = Date.now()
 
   return endingTime - startingTime

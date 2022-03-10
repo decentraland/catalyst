@@ -1,4 +1,4 @@
-import { ContentFileHash, Timestamp } from 'dcl-catalyst-commons'
+import { ContentFileHash, DeploymentContent, EntityContentItemReference, Timestamp } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { DeploymentId } from './DeploymentsRepository'
 
@@ -11,7 +11,7 @@ export class ContentFilesRepository {
             SELECT content_files.content_hash
             FROM content_files
             INNER JOIN deployments ON content_files.deployment=id
-            LEFT  JOIN deployments AS dd ON deployments.deleter_deployment=dd.id
+            LEFT JOIN deployments AS dd ON deployments.deleter_deployment=dd.id
             WHERE dd.local_timestamp IS NULL OR dd.local_timestamp > to_timestamp($1 / 1000.0)
             GROUP BY content_files.content_hash
             HAVING bool_or(deployments.deleter_deployment IS NULL) = FALSE
@@ -21,7 +21,7 @@ export class ContentFilesRepository {
     )
   }
 
-  async getContentFiles(deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, Map<string, ContentFileHash>>> {
+  async getContentFiles(deploymentIds: DeploymentId[]): Promise<Map<DeploymentId, DeploymentContent[]>> {
     if (deploymentIds.length === 0) {
       return new Map()
     }
@@ -29,23 +29,23 @@ export class ContentFilesRepository {
       'SELECT deployment, key, content_hash FROM content_files WHERE deployment IN ($1:list)',
       [deploymentIds]
     )
-    const result: Map<DeploymentId, Map<string, ContentFileHash>> = new Map()
+    const result: Map<DeploymentId, DeploymentContent[]> = new Map()
     queryResult.forEach((row) => {
       if (!result.has(row.deployment)) {
-        result.set(row.deployment, new Map())
+        result.set(row.deployment, [])
       }
-      result.get(row.deployment)!.set(row.key, row.content_hash)
+      result.get(row.deployment)?.push({ key: row.key, hash: row.content_hash })
     })
     return result
   }
 
-  async saveContentFiles(deploymentId: DeploymentId, content: Map<string, ContentFileHash>): Promise<void> {
+  async saveContentFiles(deploymentId: DeploymentId, content: EntityContentItemReference[]): Promise<void> {
     await this.db.txIf((transaction) => {
-      const contentPromises = Array.from(content.entries()).map(([name, hash]) =>
+      const contentPromises = content.map((item) =>
         transaction.none('INSERT INTO content_files (deployment, key, content_hash) VALUES ($1, $2, $3)', [
           deploymentId,
-          name,
-          hash
+          item.file,
+          item.hash
         ])
       )
       return transaction.batch(contentPromises)

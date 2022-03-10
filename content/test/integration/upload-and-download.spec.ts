@@ -1,24 +1,23 @@
+import { sleep } from '@dcl/snapshots-fetcher/dist/utils'
 import { DeploymentData } from 'dcl-catalyst-client'
 import { Entity as ControllerEntity, EntityType } from 'dcl-catalyst-commons'
-import { Bean } from '../../src/Environment'
-import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
-import { assertDeploymentFailsWith, assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
+import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
+import { makeNoopValidator } from '../helpers/service/validations/NoOpValidator'
+import { assertDeploymentsAreReported, buildDeployment } from './E2EAssertions'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData } from './E2ETestUtils'
-import { TestServer } from './TestServer'
+import { TestProgram } from './TestProgram'
 
-describe('End 2 end deploy test', () => {
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+loadStandaloneTestEnvironment()('End 2 end deploy test', (testEnv) => {
+  let server: TestProgram
   const POINTER0 = 'X0,Y0'
   const POINTER1 = 'X1,Y1'
 
   beforeEach(async () => {
-    server = await testEnv
-      .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
-      .andBuild()
-    await server.start()
+    server = await testEnv.configServer().andBuild()
+    makeNoopSynchronizationManager(server.components.synchronizationManager)
+    makeNoopValidator(server.components)
+    await server.startProgram()
   })
 
   it('When a user tries to deploy the same entity twice, then an exception is thrown', async () => {
@@ -26,13 +25,14 @@ describe('End 2 end deploy test', () => {
     const { deployData } = await buildDeployData([POINTER0, POINTER1], { metadata: 'this is just some metadata"' })
 
     // Execute first deploy
-    await server.deploy(deployData)
+    const ret1 = await server.deploy(deployData)
 
-    // Try to re deploy, and fail
-    await assertDeploymentFailsWith(
-      () => server.deploy(deployData),
-      "This entity was already deployed. You can't redeploy it"
-    )
+    await sleep(100)
+
+    const ret2 = await server.deploy(deployData)
+
+    // Try to re deploy, and don't fail since it is an idempotent operation
+    expect(ret1).toEqual(ret2)
   })
 
   it(`Deploy and retrieve some content`, async () => {

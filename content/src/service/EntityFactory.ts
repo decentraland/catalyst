@@ -1,5 +1,4 @@
-import { ContentFileHash, EntityId, EntityType, EntityVersion, Pointer } from 'dcl-catalyst-commons'
-import { Entity } from './Entity'
+import { Entity, EntityContentItemReference, EntityId, EntityType, EntityVersion, Pointer } from 'dcl-catalyst-commons'
 
 export class EntityFactory {
   static fromBufferWithId(buffer: Uint8Array, id: EntityId): Entity {
@@ -35,7 +34,7 @@ export class EntityFactory {
       throw new Error(`Please set a valid timestamp. We got ${object.timestamp}`)
     }
 
-    let content: Map<string, ContentFileHash> | undefined = undefined
+    let content: EntityContentItemReference[] | undefined = undefined
     if (object.content) {
       if (!Array.isArray(object.content)) {
         throw new Error(`Expected an array as content`)
@@ -62,19 +61,19 @@ export class EntityFactory {
     }
   }
 
-  private static parseContent(contents: any[]): Map<string, ContentFileHash> {
-    const entries: [string, ContentFileHash][] = contents.map((content) => {
-      if (!content.file || !content.hash) {
+  private static parseContent(contents: any[]): EntityContentItemReference[] | undefined {
+    if (contents.length === 0) return
+    return contents.map(({ file, hash }) => {
+      if (!file || !hash) {
         throw new Error('Content must contain a file name and a file hash')
       }
 
-      if (!this.isString(content.file) || !this.isString(content.hash)) {
+      if (!this.isString(file) || !this.isString(hash)) {
         throw new Error('Please make sure that all file names and a file hashes are valid strings')
       }
 
-      return [content.file, content.hash]
+      return { file, hash }
     })
-    return new Map(entries)
   }
 
   private static isPointerArray<T>(array: T[]): boolean {

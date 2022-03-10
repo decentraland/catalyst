@@ -1,72 +1,95 @@
 import { Pointer } from 'dcl-catalyst-commons'
-import { PointerChanges } from '../../../../src/service/deployments/DeploymentManager'
-import { MetaverseContentService } from '../../../../src/service/Service'
-import { loadStandaloneTestEnvironment } from '../../E2ETestEnvironment'
+import { getPointerChanges } from '../../../../src/service/pointers/pointers'
+import { PointerChanges } from '../../../../src/service/pointers/types'
+import { AppComponents } from '../../../../src/types'
+import { makeNoopServerValidator, makeNoopValidator } from '../../../helpers/service/validations/NoOpValidator'
+import { loadStandaloneTestEnvironment, testCaseWithComponents } from '../../E2ETestEnvironment'
 import { buildDeployData, buildDeployDataAfterEntity, deployEntitiesCombo, EntityCombo } from '../../E2ETestUtils'
 
 /**
  * This test verifies that the pointer changes are calculated correctly
  */
-describe('Integration - Pointer Changes Check', () => {
+loadStandaloneTestEnvironment()('Integration - Pointer Changes Check', (testEnv) => {
   const P1 = 'x1,y1'
   const P2 = 'x2,y2'
   const P3 = 'x3,y3'
   let E1: EntityCombo, E2: EntityCombo, E3: EntityCombo, E4: EntityCombo
 
-  const testEnv = loadStandaloneTestEnvironment()
-  let service: MetaverseContentService & { stop: () => Promise<void> }
-
-  beforeAll(async () => {
+  it('creates deploy data', async () => {
     E1 = await buildDeployData([P1])
     E2 = await buildDeployDataAfterEntity(E1, [P2])
     E3 = await buildDeployDataAfterEntity(E2, [P1, P2, P3])
     E4 = await buildDeployDataAfterEntity(E3, [P3])
   })
 
-  beforeEach(async () => {
-    service = await testEnv.buildService()
-  })
+  testCaseWithComponents(
+    testEnv,
+    'When an entity is deployed and set as active but it has no one to overwrite, then it is reported correctly',
+    async (components) => {
+      // make noop validator
+      makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
-  afterEach(async () => {
-    await service.stop()
-  })
+      await deployEntitiesCombo(components.deployer, E1)
 
-  it('When an entity is deployed and set as active but it has no one to overwrite, then it is reported correctly', async () => {
-    await deployEntitiesCombo(service, E1)
+      const changes = await getChangesInPointersFor(components, E1)
 
-    const changes = await getChangesInPointersFor(E1)
+      assertChangesAre(changes, [P1, { before: undefined, after: E1 }])
+    }
+  )
 
-    assertChangesAre(changes, [P1, { before: undefined, after: E1 }])
-  })
+  testCaseWithComponents(
+    testEnv,
+    'When an entity is deployed and set as active, and it overwrites others, then it is reported correctly',
+    async (components) => {
+      // make noop validator
+      makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
-  it('When an entity is deployed and set as active, and it overwrites others, then it is reported correctly', async () => {
-    await deployEntitiesCombo(service, E1, E3)
+      await deployEntitiesCombo(components.deployer, E1, E3)
 
-    const changes = await getChangesInPointersFor(E3)
+      const changes = await getChangesInPointersFor(components, E3)
 
-    assertChangesAre(
-      changes,
-      [P1, { before: E1, after: E3 }],
-      [P2, { before: undefined, after: E3 }],
-      [P3, { before: undefined, after: E3 }]
-    )
-  })
+      assertChangesAre(
+        changes,
+        [P1, { before: E1, after: E3 }],
+        [P2, { before: undefined, after: E3 }],
+        [P3, { before: undefined, after: E3 }]
+      )
+    }
+  )
 
-  it('When an entity is deployed but set as inactive, and it has no one to overwrite, then it is reported correctly', async () => {
-    await deployEntitiesCombo(service, E3, E1)
+  testCaseWithComponents(
+    testEnv,
+    'When an entity is deployed but set as inactive, and it has no one to overwrite, then it is reported correctly',
+    async (components) => {
+      // make noop validator
+      makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
-    const changes = await getChangesInPointersFor(E1)
+      await deployEntitiesCombo(components.deployer, E3, E1)
 
-    assertChangesAre(changes)
-  })
+      const changes = await getChangesInPointersFor(components, E1)
 
-  it('When an entity is deployed but set as inactive, and it overwrites others, then it is reported correctly', async () => {
-    await deployEntitiesCombo(service, E1, E2, E4, E3)
+      assertChangesAre(changes)
+    }
+  )
 
-    const changes = await getChangesInPointersFor(E3)
+  testCaseWithComponents(
+    testEnv,
+    'When an entity is deployed but set as inactive, and it overwrites others, then it is reported correctly',
+    async (components) => {
+      // make noop validator
+      makeNoopValidator(components)
+      makeNoopServerValidator(components)
 
-    assertChangesAre(changes, [P1, { before: E1, after: undefined }], [P2, { before: E2, after: undefined }])
-  })
+      await deployEntitiesCombo(components.deployer, E1, E2, E4, E3)
+
+      const changes = await getChangesInPointersFor(components, E3)
+
+      assertChangesAre(changes, [P1, { before: E1, after: undefined }], [P2, { before: E2, after: undefined }])
+    }
+  )
 
   function assertChangesAre(
     changes: PointerChanges,
@@ -81,11 +104,20 @@ describe('Integration - Pointer Changes Check', () => {
     expect(changes).toEqual(expectedChangesMap)
   }
 
-  async function getChangesInPointersFor(entityCombo: EntityCombo): Promise<PointerChanges> {
-    const { pointerChanges: deltas } = await service.getPointerChanges(undefined, {
+  async function getChangesInPointersFor(
+    components: Pick<AppComponents, 'database' | 'denylist' | 'metrics'>,
+    entityCombo: EntityCombo
+  ): Promise<PointerChanges> {
+    const result = await getPointerChanges(components, {
       filters: { entityTypes: [entityCombo.entity.type] }
     })
-    const { changes } = deltas.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
-    return changes
+    const pointerChanges = result.pointerChanges.filter((delta) => delta.entityId === entityCombo.entity.id)[0]
+
+    if (!pointerChanges) {
+      console.dir(result)
+      throw new Error(`There are no pointerChanges for entityId ${entityCombo.entity.id}`)
+    }
+
+    return pointerChanges.changes
   }
 })

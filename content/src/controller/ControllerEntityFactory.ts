@@ -1,16 +1,14 @@
-import { Entity as ControllerEntity, EntityContentItemReference } from 'dcl-catalyst-commons'
-import { Deployment } from '../service/deployments/DeploymentManager'
-import { Entity } from '../service/Entity'
+import { Entity, EntityContentItemReference } from 'dcl-catalyst-commons'
 import { EntityField } from './Controller'
 
 export class ControllerEntityFactory {
-  static maskEntity(fullEntity: Entity, fields?: EntityField[]): ControllerEntity {
+  static maskEntity(fullEntity: Entity, fields?: EntityField[]): Entity {
     const { id, type, timestamp, version } = fullEntity
     let content: EntityContentItemReference[] | undefined = undefined
     let metadata: any
     let pointers: string[] = []
     if ((!fields || fields.includes(EntityField.CONTENT)) && fullEntity.content) {
-      content = Array.from(fullEntity.content.entries()).map(([file, hash]) => ({ file, hash }))
+      content = fullEntity.content
     }
     if (!fields || fields.includes(EntityField.METADATA)) {
       metadata = fullEntity.metadata
@@ -19,16 +17,5 @@ export class ControllerEntityFactory {
       pointers = fullEntity.pointers
     }
     return { version, id, type, timestamp, pointers, content, metadata }
-  }
-
-  static maskDeployment(fullDeployment: Deployment, fields?: EntityField[]): ControllerEntity {
-    const entity: Entity = {
-      ...fullDeployment,
-      version: fullDeployment.entityVersion,
-      id: fullDeployment.entityId,
-      timestamp: fullDeployment.entityTimestamp,
-      type: fullDeployment.entityType
-    }
-    return this.maskEntity(entity, fields)
   }
 }

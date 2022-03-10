@@ -1,74 +1,43 @@
 import {
   AuditInfo,
   ContentFileHash,
+  Deployment,
+  Entity,
   EntityId,
   EntityType,
   PartialDeploymentHistory,
-  Pointer,
-  ServerStatus,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
-import { Readable } from 'stream'
+import { ContentItem } from '../ports/contentStorage/contentStorage'
+import { FailedDeployment } from '../ports/failedDeploymentsCache'
 import { Database } from '../repository/Database'
-import { ContentItem } from '../storage/ContentStorage'
-import {
-  Deployment,
-  DeploymentOptions,
-  PartialDeploymentPointerChanges,
-  PointerChangesOptions
-} from './deployments/DeploymentManager'
-import { Entity } from './Entity'
-import { FailedDeployment, FailureReason } from './errors/FailedDeploymentsManager'
+import { DeploymentOptions } from './deployments/types'
 
 /**x
  * This version of the service can tell clients about the state of the Metaverse. It assumes that all deployments
  * were done directly to it, and it is not aware that the service lives inside a cluster.
  */
 export interface MetaverseContentService {
-  start(): Promise<void>
   deployEntity(
     files: DeploymentFiles,
-    entityId: EntityId,
-    auditInfo: LocalDeploymentAuditInfo,
-    context?: DeploymentContext,
-    task?: Database
-  ): Promise<DeploymentResult>
-  isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
-  deleteContent(fileHashes: ContentFileHash[]): Promise<void>
-  storeContent(fileHash: ContentFileHash, content: Buffer | Readable): Promise<void>
-  getStatus(): ServerStatus
-  getDeployments(options?: DeploymentOptions, task?: Database): Promise<PartialDeploymentHistory<Deployment>>
-  getActiveDeploymentsByContentHash(hash: string, task?: Database): Promise<EntityId[]>
-  getAllFailedDeployments(): Promise<FailedDeployment[]>
-  getPointerChanges(task?: Database, options?: PointerChangesOptions): Promise<PartialDeploymentPointerChanges>
-  getEntitiesByIds(ids: EntityId[], task?: Database): Promise<Entity[]>
-  getEntitiesByPointers(type: EntityType, pointers: Pointer[], task?: Database): Promise<Entity[]>
-  listenToDeployments(listener: DeploymentListener): void
-}
-
-/**
- * This version of the service is aware of the fact that the content service lives inside a cluster,
- * and that deployments can also happen on other servers.
- */
-export interface ClusterDeploymentsService {
-  reportErrorDuringSync(
-    entityType: EntityType,
-    entityId: EntityId,
-    reason: FailureReason,
-    authChain: AuthChain,
-    errorDescription?: string
-  ): Promise<null>
-  deployEntity(
-    files: Uint8Array[],
     entityId: EntityId,
     auditInfo: LocalDeploymentAuditInfo,
     context: DeploymentContext,
     task?: Database
   ): Promise<DeploymentResult>
   isContentAvailable(fileHashes: ContentFileHash[]): Promise<Map<ContentFileHash, boolean>>
-  areEntitiesAlreadyDeployed(entityIds: EntityId[]): Promise<Map<EntityId, boolean>>
+  getContent(fileHash: ContentFileHash): Promise<ContentItem | undefined>
+  getDeployments(options?: DeploymentOptions): Promise<PartialDeploymentHistory<Deployment>>
+  getAllFailedDeployments(): FailedDeployment[]
+  reportErrorDuringSync(
+    entityType: EntityType,
+    entityId: EntityId,
+    reason: string,
+    authChain: AuthChain,
+    errorDescription?: string
+  ): void
+  getEntityById(entityId: EntityId): Promise<{ entityId: string; localTimestamp: number } | void>
 }
 
 export type LocalDeploymentAuditInfo = Pick<AuditInfo, 'authChain' | 'migrationData'>
@@ -78,9 +47,10 @@ export type DeploymentEvent = {
   auditInfo: AuditInfo
 }
 
-export type DeploymentListener = (deployment: DeploymentEvent) => void | Promise<void>
-
 export type InvalidResult = { errors: string[] }
+export function InvalidResult(val: InvalidResult): InvalidResult {
+  return val
+}
 
 export type DeploymentResult = Timestamp | InvalidResult
 
@@ -90,16 +60,17 @@ export function isSuccessfulDeployment(deploymentResult: DeploymentResult): depl
   return typeof deploymentResult === 'number'
 }
 
-export function isInvalidDeployment(deploymentResult: DeploymentResult): deploymentResult is InvalidResult {
-  return !isSuccessfulDeployment(deploymentResult)
+export function isInvalidDeployment(deploymentResult: any): deploymentResult is InvalidResult {
+  if (deploymentResult && typeof deploymentResult === 'object' && Array.isArray(deploymentResult['errors'])) {
+    return true
+  }
+
+  return false
 }
 
 export enum DeploymentContext {
   LOCAL = 'LOCAL',
-  LOCAL_LEGACY_ENTITY = 'LOCAL_LEGACY_ENTITY',
   SYNCED = 'SYNCED',
   SYNCED_LEGACY_ENTITY = 'SYNCED_LEGACY_ENTITY',
-  OVERWRITTEN = 'OVERWRITTEN',
-  OVERWRITTEN_LEGACY_ENTITY = 'OVERWRITTEN_LEGACY_ENTITY',
   FIX_ATTEMPT = 'FIX_ATTEMPT'
 }

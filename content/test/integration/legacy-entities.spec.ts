@@ -1,69 +1,58 @@
 import { addModelToFormData, DeploymentData } from 'dcl-catalyst-client'
-import { ContentFileHash } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { ContentFileHash, EntityType } from 'dcl-catalyst-commons'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
-import { Bean, EnvironmentConfig } from '../../src/Environment'
-import { assertPromiseRejectionIs } from '../helpers/PromiseAssertions'
-import { MockedSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
-import { assertResponseIsOkOrThrow } from './E2EAssertions'
+import { EnvironmentConfig } from '../../src/Environment'
+import { makeNoopSynchronizationManager } from '../helpers/service/synchronization/MockedSynchronizationManager'
 import { loadStandaloneTestEnvironment } from './E2ETestEnvironment'
 import { buildDeployData, createIdentity } from './E2ETestUtils'
-import { TestServer } from './TestServer'
+import { TestProgram } from './TestProgram'
 
-describe('End 2 end - Legacy Entities', () => {
+loadStandaloneTestEnvironment()('End 2 end - Legacy Entities', (testEnv) => {
   const identity = createIdentity()
-  const testEnv = loadStandaloneTestEnvironment()
-  let server: TestServer
+  let server: TestProgram
 
   beforeEach(async () => {
     server = await testEnv
       .configServer()
-      .withBean(Bean.SYNCHRONIZATION_MANAGER, new MockedSynchronizationManager())
       .withConfig(EnvironmentConfig.DECENTRALAND_ADDRESS, identity.address)
-      .withConfig(EnvironmentConfig.ALLOW_LEGACY_ENTITIES, true)
       .andBuild()
-    await server.start()
+    makeNoopSynchronizationManager(server.components.synchronizationManager)
+    await server.startProgram()
   })
 
   it(`When a non-decentraland address tries to deploy a legacy entity, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity: createIdentity() })
+    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity: createIdentity() })
 
     // Try to deploy the entity
-    await assertPromiseRejectionIs(
-      () => deployLegacy(server, deployData),
-      `Expected an address owned by decentraland. Instead, we found ${Authenticator.ownerAddress(deployData.authChain)}`
-    )
+    const result = await deployLegacy(server, deployData)
+    expect(result).toMatch(/The provided Eth Address does not have access to the following parcel/)
   })
 
-  it(`When a decentraland address tries to deploy a legacy entity, then it is successful`, async () => {
+  it(`When a decentraland address tries to deploy a legacy entity with new timestamp, then an exception is thrown`, async () => {
     // Prepare entity to deploy
-    const { deployData } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity })
+    const { deployData } = await buildDeployData(['0,0'], { metadata: 'metadata', identity })
 
-    // Deploy the entity
-    await deployLegacy(server, deployData)
+    // Try to deploy the entity
+    const result = await deployLegacy(server, deployData)
+    expect(result).toMatch(/The provided Eth Address does not have access to the following parcel/)
   })
 
-  it(`When a user tries to deploy a legacy entity over an entity with a higher version, then an error is thrown`, async () => {
+  it(`When a decentraland address tries to deploy a legacy wearable with old timestamp, then it fails as its old`, async () => {
     // Prepare entity to deploy
-    const { deployData: deployData1 } = await buildDeployData(['0,0', '0,1'], { metadata: 'metadata', identity })
-
-    // Deploy entity with current version
-    await server.deploy(deployData1)
-
-    // Prepare new entity to deploy
-    const { deployData: deployData2 } = await buildDeployData(['0,1'], { metadata: 'metadata', identity })
-
-    // Deploy the entity
-    await assertPromiseRejectionIs(
-      () => deployLegacy(server, deployData2),
-      'Found an overlapping entity with a higher version already deployed.'
+    const { deployData } = await buildDeployData(
+      ['urn:decentraland:ethereum:collections-v1:guest_artists_2021:hero_lower_body'],
+      { type: EntityType.WEARABLE, metadata: 'metadata', identity, timestamp: 1500000000000 }
     )
+
+    // Try to deploy the entity
+    const result = await deployLegacy(server, deployData)
+    expect(result).toMatch(/The request is not recent enough, please submit it again with a new timestamp/)
   })
 })
 
-async function deployLegacy(server: TestServer, deployData: DeploymentData) {
+async function deployLegacy(server: TestProgram, deployData: DeploymentData) {
   const form = new FormData()
   form.append('entityId', deployData.entityId)
   addModelToFormData(deployData.authChain, form, 'authChain')
@@ -74,8 +63,9 @@ async function deployLegacy(server: TestServer, deployData: DeploymentData) {
     form.append(hash, Buffer.isBuffer(f) ? f : Buffer.from(arrayBufferFrom(f)), { filename: hash })
   )
 
-  const deployResponse = await fetch(`${server.getAddress()}/legacy-entities`, { method: 'POST', body: form })
-  await assertResponseIsOkOrThrow(deployResponse)
+  const deployResponse = await fetch(`${server.getUrl()}/entities`, { method: 'POST', body: form })
+
+  return await deployResponse.text()
 }
 
 function arrayBufferFrom(value: Buffer | Uint8Array) {

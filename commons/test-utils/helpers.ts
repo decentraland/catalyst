@@ -1,3 +1,0 @@
-import { installReporter } from '.'
-
-installReporter()
