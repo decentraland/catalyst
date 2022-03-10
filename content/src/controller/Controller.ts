@@ -137,6 +137,16 @@ export class Controller {
     return [elements]
   }
 
+  async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /entities/currently-pointed/{urnPrefix}
+    const urnPrefix: string = parseEntityType(req.params.urnPrefix)
+
+    const entities: { urn: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(urnPrefix)
+
+    res.send(entities)
+  }
+
   async createEntity(req: express.Request, res: express.Response): Promise<void> {
     // Method: POST
     // Path: /entities

@@ -19,6 +19,10 @@ export type ActiveEntities = {
    */
   withPointers(pointers: Pointer[]): Promise<Entity[]>
   /**
+   * Retrieve active entities which their pointers match the given urn prefix
+   */
+  withPrefix(urnPrefix: string): Promise<{ urn: string; entityId: EntityId }[]>
+  /**
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity
    */
@@ -220,9 +224,17 @@ export const createActiveEntitiesComponent = (
     return [...entitiesById, ...remainingEntities]
   }
 
+  /**
+   * Retrieve active entities that are pointed by pointers that match the urn prefix
+   */
+  const withPrefix = async (urnPrefix: string) => {
+    return []
+  }
+
   return {
     withIds,
     withPointers,
+    withPrefix,
     update,
     clear,
 
