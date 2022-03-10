@@ -19,6 +19,8 @@ Some of the validations run in these functions are ownership related and for tha
 
 The [Catalyst Client](https://github.com/decentraland/catalyst-client) library can be used to interact with the Catalyst servers. You can both fetch data, or deploy new entities to the server you specify.
 
+Check full architecture [here](https://github.com/decentraland/architecture)
+
 ## Catalyst API
 
 This Server implements the v1 of the API Specification detailed [here](https://github.com/decentraland/catalyst-api-specs)
