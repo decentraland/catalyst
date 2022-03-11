@@ -1,4 +1,4 @@
-import { DAOContractClient, ServerMetadata } from '@catalyst/commons'
+import { DAOContractClient, ServerMetadata } from '@dcl/catalyst-node-commons'
 import { TimeRefreshedDataHolder } from '../../utils/TimeRefreshedDataHolder'
 import { DAOListClient } from './DAOListsClient'
 

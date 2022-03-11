@@ -1,4 +1,4 @@
-import { ensureDirectoryExists } from '@catalyst/commons'
+import { ensureDirectoryExists } from '@dcl/catalyst-node-commons'
 import destroy from 'destroy'
 import { Request, Response } from 'express'
 import fs from 'fs'

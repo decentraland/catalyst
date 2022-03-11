@@ -1,7 +1,7 @@
 // Because of Bazel sandboxing, we need this for the time being
 process.env.LIGHTHOUSE_STORAGE_LOCATION = '.'
 
-import { DAOClient, ServerMetadata } from '@catalyst/commons'
+import { DAOClient, ServerMetadata } from '@dcl/catalyst-node-commons'
 import { lighthouseStorage } from '../src/config/simpleStorage'
 import { defaultNames, pickName } from '../src/misc/naming'
 
@@ -17,7 +17,7 @@ const daoClient: DAOClient = {
 
 let existingName = 'fenrir'
 
-describe('picking a name', function () {
+describe('picking a name', function() {
   beforeAll(() => {
     global.fetch = (input, init) => {
       return Promise.resolve(new Response(`{"name": "${existingName}"}`))

@@ -4,8 +4,6 @@
     "sourceType": "module", // Allows for the use of imports
     "project": [
       // Specify it only for TypeScript files
-      "./contracts/tsconfig.json",
-      "./commons/tsconfig.json",
       "./comms/lighthouse/tsconfig.json",
       "./content/tsconfig.json",
       "./lambdas/tsconfig.json"

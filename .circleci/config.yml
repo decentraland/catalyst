@@ -157,16 +157,6 @@ jobs:
       - run:
           name: Run tests
           command: yarn workspace @catalyst/lambdas-server test
-  build-commons:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Build commons
-          command: yarn workspace @catalyst/commons build
-      - run:
-          name: Run commons tests
-          command: yarn workspace @catalyst/commons test
 
   publish-docker:
     <<: *base_env
@@ -264,10 +254,6 @@ workflows:
           requires:
             - build-content
       - build-lambdas:
-          <<: *all_branches_and_tags
-          requires:
-            - checkout
-      - build-commons:
           <<: *all_branches_and_tags
           requires:
             - checkout

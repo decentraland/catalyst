@@ -5,10 +5,8 @@
   "author": "Decentraland Contributors",
   "license": "Apache-2.0",
   "workspaces": [
-    "commons",
     "comms/lighthouse",
     "content",
-    "contracts",
     "lambdas"
   ],
   "scripts": {
@@ -25,7 +23,6 @@
     "test:lambdas": "yarn workspace @catalyst/lambdas-server test",
     "test:content": "yarn workspace @catalyst/content-server test",
     "test:comms": "yarn workspace @catalyst/lighthouse-server test",
-    "test:commons": "yarn workspace @catalyst/commons test",
     "lint:fix": "eslint '**/*.{js,ts}' --fix",
     "lint:check": "eslint '**/*.{js,ts}'",
     "migrate": "node-pg-migrate -m content/src/migrations/scripts -j ts"

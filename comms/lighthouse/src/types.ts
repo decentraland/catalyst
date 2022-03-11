@@ -1,4 +1,4 @@
-import { Position3D } from '@catalyst/commons'
+import { Position3D } from '@dcl/catalyst-node-commons'
 import { ConfigService } from './config/configService'
 import { ArchipelagoService } from './peers/archipelagoService'
 import { IdService } from './peers/idService'

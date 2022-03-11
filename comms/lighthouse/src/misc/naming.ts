@@ -1,4 +1,4 @@
-import { DAOClient, noReject, ServerMetadata } from '@catalyst/commons'
+import { DAOClient, noReject, ServerMetadata } from '@dcl/catalyst-node-commons'
 import { lighthouseStorage } from '../config/simpleStorage'
 
 export const defaultNames = [

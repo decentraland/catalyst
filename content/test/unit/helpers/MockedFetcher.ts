@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from '@catalyst/commons'
+import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { Fetcher } from 'dcl-catalyst-commons'
 
 export class MockedFetcher extends Fetcher {

@@ -1,4 +1,4 @@
-import { delay } from '@catalyst/commons'
+import { delay } from '@dcl/catalyst-node-commons'
 import assert from 'assert'
 import { ContentFileHash } from 'dcl-catalyst-commons'
 import ms from 'ms'
@@ -35,7 +35,7 @@ loadStandaloneTestEnvironment({
       contentPaths: ['test/integration/resources/some-binary-file.png']
     })
     E3 = await buildDeployDataAfterEntity(E2, [P2])
-    ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
+      ;[sharedContent, onlyE1Content] = E1.entity.content?.map(({ hash }) => hash) ?? []
   })
 
   beforeEach(async () => {

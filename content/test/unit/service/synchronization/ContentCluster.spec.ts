@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from '@catalyst/commons'
+import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { createLogComponent } from '@well-known-components/logger'
 import { Response } from 'node-fetch'
 import { stub } from 'sinon'
@@ -8,7 +8,7 @@ import { ChallengeSupervisor, IChallengeSupervisor } from '../../../../src/servi
 import { ContentCluster } from '../../../../src/service/synchronization/ContentCluster'
 import { MockedDAOClient } from '../../../helpers/service/synchronization/clients/MockedDAOClient'
 
-describe('ContentCluster', function () {
+describe('ContentCluster', function() {
   const address1: ServerBaseUrl = 'http://address1'
   const address2: ServerBaseUrl = 'http://address2'
   const challengeText: string = 'Some challenge text'
@@ -91,9 +91,9 @@ class ContentClusterBuilder {
 
     const challengeSupervisor: IChallengeSupervisor = this.localChallenge
       ? {
-          getChallengeText: () => this.localChallenge!,
-          isChallengeOk: (text: string) => this.localChallenge === text
-        }
+        getChallengeText: () => this.localChallenge!,
+        isChallengeOk: (text: string) => this.localChallenge === text
+      }
       : new ChallengeSupervisor()
 
     const logs = createLogComponent()

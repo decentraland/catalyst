@@ -11,10 +11,10 @@
     "test": "jest --runInBand --forceExit --coverage"
   },
   "dependencies": {
-    "@catalyst/commons": "0.1.0",
-    "@catalyst/contracts": "0.1.0",
     "@dcl/archipelago": "1.0.0",
     "@dcl/catalyst-api-specs": "1.0.1",
+    "@dcl/catalyst-contracts": "1.0.2",
+    "@dcl/catalyst-node-commons": "1.0.1",
     "cors": "2.8.5",
     "dcl-catalyst-commons": "^8.0.0",
     "dcl-crypto": "2.3.0",

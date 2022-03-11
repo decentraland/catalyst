@@ -1,4 +1,4 @@
-import { DECENTRALAND_ADDRESS } from '@catalyst/commons'
+import { DECENTRALAND_ADDRESS } from '@dcl/catalyst-node-commons'
 import { EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import log4js from 'log4js'
 import ms from 'ms'
