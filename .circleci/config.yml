@@ -39,6 +39,47 @@ references:
       tags:
         only: /^\d+\.\d+\.\d(.*)/ # semver
 
+commands:
+  login_dockerhub:
+    steps:
+      - run:
+          name: Log into DockerHub
+          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+  build_docker_image:
+    parameters:
+      dockerfile:
+        type: string
+    steps:
+      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
+      - run:
+          name: Build Docker image
+          command: |
+            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} -f <<parameters.dockerfile>> .
+            else
+              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} -f <<parameters.dockerfile>> .
+            fi
+  push_docker_image:
+    steps:
+      - run:
+          name: Push image
+          command: |
+            docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
+            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
+              docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
+              docker push "${DOCKER_IMAGE_NAME}:latest"
+              # TODO: publish SNS message for stable channel
+            fi
+
+            if [ "${CIRCLE_BRANCH}" = "main" ]; then
+              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
+              docker push "${DOCKER_IMAGE_NAME}:next"
+
+              # TODO: publish SNS message for latest channel
+            fi
+
 jobs:
   checkout:
     <<: *base_env
@@ -73,19 +114,6 @@ jobs:
     steps:
       - <<: *attach_root
       - run: yarn lint:check
-
-  build-lighthouse:
-    <<: *base_env
-    steps:
-      - <<: *attach_root
-      - run:
-          name: Build lighthouse
-          command: yarn workspace @catalyst/lighthouse-server build
-      - run:
-          name: Run tests
-          command: yarn workspace @catalyst/lighthouse-server test
-          environment:
-            CI: 'true'
 
   build-content:
     docker:
@@ -158,65 +186,59 @@ jobs:
           name: Run tests
           command: yarn workspace @catalyst/lambdas-server test
 
-  publish-docker:
+  publish-content-docker:
     <<: *base_env
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/katalyst
+          DOCKER_IMAGE_NAME: decentraland/catalyst-content
     steps:
       - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
+      - build_docker_image:
+          dockerfile: "Dockerfile.content"
+      - login_dockerhub
+      - push_docker_image
+
+  publish-lambdas-docker:
+    <<: *base_env
+    docker:
+      - image: cimg/node:16.14-browsers
+        environment: &ENVIRONMENT
+          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
+    steps:
+      - <<: *attach_root
+      - build_docker_image:
+          dockerfile: "Dockerfile.lambdas"
+      - login_dockerhub
+      - push_docker_image
+
+  publish-content-docker-without-tag:
+    <<: *base_env
+    docker:
+      - image: cimg/node:16.14-browsers
+        environment: &ENVIRONMENT
+          DOCKER_IMAGE_NAME: decentraland/catalyst-content
+    steps:
+      - <<: *attach_root
+      - build_docker_image:
+          dockerfile: "Dockerfile.content"
+      - login_dockerhub
       - run:
-          name: Build Docker image
-          command: |
-            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
-            else
-              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
-            fi
-      - run:
-          name: Log into DockerHub
-          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-      - run:
-          name: Push image
+          name: Push image (without tag)
           command: |
             docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}"
-            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
-              docker push "${DOCKER_IMAGE_NAME}:${CIRCLE_TAG}"
-              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:latest"
-              docker push "${DOCKER_IMAGE_NAME}:latest"
-              # TODO: publish SNS message for stable channel
-            fi
 
-            if [ "${CIRCLE_BRANCH}" = "main" ]; then
-              docker tag "${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" "${DOCKER_IMAGE_NAME}:next"
-              docker push "${DOCKER_IMAGE_NAME}:next"
-
-              # TODO: publish SNS message for latest channel
-            fi
-
-  publish-docker-without-tag:
+  publish-lambdas-docker-without-tag:
     <<: *base_env
     docker:
       - image: cimg/node:16.14-browsers
         environment: &ENVIRONMENT
-          DOCKER_IMAGE_NAME: decentraland/katalyst
+          DOCKER_IMAGE_NAME: decentraland/catalyst-lambdas
     steps:
       - <<: *attach_root
-      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.2 }
-      - run:
-          name: Build Docker image
-          command: |
-            if echo "${CIRCLE_TAG}" | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$"; then
-              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} --build-arg CATALYST_VERSION=${CIRCLE_TAG} .
-            else
-              DOCKER_BUILDKIT=1 docker build -t ${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1} --build-arg COMMIT_HASH=${CIRCLE_SHA1} .
-            fi
-      - run:
-          name: Log into DockerHub
-          command: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+      - build_docker_image:
+          dockerfile: "Dockerfile.lambdas"
+      - login_dockerhub
       - run:
           name: Push image (without tag)
           command: |
@@ -237,10 +259,6 @@ workflows:
             - checkout
 
       # build packages
-      - build-lighthouse:
-          <<: *all_branches_and_tags
-          requires:
-            - checkout
       - build-content:
           <<: *all_branches_and_tags
           requires:
@@ -258,16 +276,19 @@ workflows:
           requires:
             - checkout
 
-      # publish docker image in "main" and semver tags
+      # publish docker images in "main" and semver tags
       # main publishes to @next
       # semver tags publish to @latest
-      - publish-docker:
+      - publish-content-docker:
           <<: *main_and_tags
           requires:
-            - build-lighthouse
             - build-content
             - report-content-coverage
             - report-content-api-coverage
+
+      - publish-lambdas-docker:
+          <<: *main_and_tags
+          requires:
             - build-lambdas
 
       # NOT (main | semver) enables manual approval to release untagged docker images
@@ -275,10 +296,13 @@ workflows:
           <<: *testing_branches
           type: approval
           requires:
-            - build-lighthouse
             - build-content
             - build-lambdas
-      - publish-docker-without-tag:
+      - publish-content-docker-without-tag:
+          <<: *testing_branches
+          requires:
+            - accept-publish-docker-for-testing
+      - publish-lambdas-docker-without-tag:
           <<: *testing_branches
           requires:
             - accept-publish-docker-for-testing
