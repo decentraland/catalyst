@@ -4,7 +4,6 @@ RUN apk add --no-cache bash
 
 COPY package.json .
 COPY yarn.lock .
-COPY comms/lighthouse/package.json comms/lighthouse/
 COPY content/package.json content/
 COPY lambdas/package.json lambdas/
 
@@ -17,8 +16,6 @@ FROM base as catalyst-builder
 RUN yarn install --frozen-lockfile
 
 COPY . .
-FROM catalyst-builder as comms-builder
-RUN yarn workspace @catalyst/lighthouse-server build
 FROM catalyst-builder as content-builder
 RUN yarn workspace @catalyst/content-server build
 FROM catalyst-builder as lambdas-builder
@@ -29,13 +26,11 @@ FROM base
 
 COPY entrypoint.sh .
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=dependencies /app/comms/lighthouse/node_modules ./node_modules/
 COPY --from=dependencies /app/content/node_modules ./node_modules/
 # uncomment this if lambdas eventually get some dependencies there
 # COPY --from=dependencies /app/lambdas/node_modules ./node_modules/
 
 COPY --from=content-builder /app/content/dist/src content/
-COPY --from=comms-builder /app/comms/lighthouse/dist/src comms/lighthouse/
 COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/
 
 # https://docs.docker.com/engine/reference/builder/#arg
@@ -48,6 +43,5 @@ ENV COMMIT_HASH=${COMMIT_HASH:-local}
 
 EXPOSE 6969
 EXPOSE 7070
-EXPOSE 9000
 
 ENTRYPOINT [ "./entrypoint.sh" ]
