@@ -21,7 +21,6 @@ RUN yarn workspace @catalyst/content-server build
 # build final image with transpiled code and runtime dependencies
 FROM base
 
-COPY entrypoint.sh .
 COPY --from=dependencies /app/node_modules ./node_modules/
 COPY --from=dependencies /app/content/node_modules ./node_modules/
 
