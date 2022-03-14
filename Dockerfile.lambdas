@@ -1,4 +1,5 @@
 FROM node:16-alpine as base
+
 WORKDIR /app
 RUN apk add --no-cache bash
 
@@ -22,7 +23,6 @@ RUN yarn workspace @catalyst/lambdas-server build
 FROM base
 
 COPY --from=dependencies /app/node_modules ./node_modules/
-
 COPY --from=lambdas-builder /app/lambdas/dist/src lambdas/
 
 # https://docs.docker.com/engine/reference/builder/#arg
@@ -35,4 +35,15 @@ ENV COMMIT_HASH=${COMMIT_HASH:-local}
 
 EXPOSE 7070
 
-ENTRYPOINT [ "node", "--max-old-space-size=8192", "content/entrypoints/run-server.js" ]
+# Please _DO NOT_ use a custom ENTRYPOINT because it may prevent signals
+# (i.e. SIGTERM) to reach the service
+# Read more here: https://aws.amazon.com/blogs/containers/graceful-shutdowns-with-ecs/
+#            and: https://www.ctl.io/developers/blog/post/gracefully-stopping-docker-containers/
+
+# We use Tini to handle signals and PID1 (https://github.com/krallin/tini, read why here https://github.com/krallin/tini/issues/8)
+RUN apk add --no-cache tini
+
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Run the program under Tini
+CMD [ "/usr/local/bin/node", "--max-old-space-size=8192", "lambdas/entrypoints/run-server.js" ]
