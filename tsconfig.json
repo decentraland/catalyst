@@ -30,9 +30,6 @@
       "path": "./content"
     },
     {
-      "path": "./comms/lighthouse"
-    },
-    {
       "path": "./lambdas"
     }
   ],
