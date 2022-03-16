@@ -142,7 +142,9 @@ export class Controller {
     // Path: /entities/currently-pointed/{urnPrefix}
     const urnPrefix: string = parseEntityType(req.params.urnPrefix)
 
-    const entities: { urn: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(urnPrefix)
+    const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
+      urnPrefix
+    )
 
     res.send(entities)
   }

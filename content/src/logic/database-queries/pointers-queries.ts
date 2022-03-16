@@ -20,3 +20,26 @@ export async function getActiveDeploymentsByUrnPrefix(
 
   return entities
 }
+
+export async function updateActiveDeployments(
+  components: Pick<AppComponents, 'database'>,
+  pointers: Pointer[],
+  entityId: EntityId
+): Promise<void> {
+  const value_list = pointers
+    .filter((p) => !!p)
+    .map((p, i) => {
+      if (i < pointers.length - 1) {
+        return SQL`(${p}, ${entityId}),`
+      } else {
+        return SQL`(${p}, ${entityId})`
+      }
+    })
+  // sql-template-strings accepts only values on templates, to use structs you need to append queries
+  const query = SQL`INSERT INTO active_pointers(pointer, entity_id) VALUES `
+  value_list.forEach((v) => query.append(v))
+  query.append(SQL` ON CONFLICT(pointer) DO UPDATE SET entity_id = ${entityId};`)
+
+  console.log(query.query)
+  await components.database.queryWithValues(query)
+}

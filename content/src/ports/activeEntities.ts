@@ -1,6 +1,7 @@
 import { Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
+import { getActiveDeploymentsByUrnPrefix, updateActiveDeployments } from '../logic/database-queries/pointers-queries'
 import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
@@ -21,7 +22,7 @@ export type ActiveEntities = {
   /**
    * Retrieve active entities which their pointers match the given urn prefix
    */
-  withPrefix(urnPrefix: string): Promise<{ urn: string; entityId: EntityId }[]>
+  withPrefix(urnPrefix: string): Promise<{ pointer: Pointer; entityId: EntityId }[]>
   /**
    * Retrieve active entities by their ids
    * Note: result is cached, even if the id has no active entity
@@ -90,15 +91,15 @@ export const createActiveEntitiesComponent = (
     }
   }
 
-  const clear = (pointers: Pointer[]) => {
-    update(pointers, 'NOT_ACTIVE_ENTITY')
+  const clear = async (pointers: Pointer[]) => {
+    await update(pointers, 'NOT_ACTIVE_ENTITY')
   }
 
   /**
    * Save entityId for given pointer and store the entity in the cache,
    * useful to retrieve entities by pointers
    */
-  const update = (pointers: Pointer[], entity: Entity | NotActiveEntity) => {
+  const update = async (pointers: Pointer[], entity: Entity | NotActiveEntity) => {
     for (const pointer of pointers) {
       setPreviousEntityAsNone(pointer)
       entityIdByPointers.set(pointer, isEntityPresent(entity) ? entity.id : entity)
@@ -106,16 +107,18 @@ export const createActiveEntitiesComponent = (
     if (isEntityPresent(entity)) {
       cache.set(entity.id, entity)
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
+      // Store in the db the new entity pointed by pointers
+      await updateActiveDeployments({ database: components.database }, pointers, entity.id)
     }
   }
 
-  const updateCache = (
+  const updateCache = async (
     entities: Entity[],
     { pointers, entityIds }: { pointers?: string[]; entityIds?: string[] }
-  ): void => {
+  ): Promise<void> => {
     // Update cache for each entity
     for (const entity of entities) {
-      update(entity.pointers, entity)
+      await update(entity.pointers, entity)
     }
     // Check which pointers or ids doesn't have an active entity and set as NONE
     if (pointers) {
@@ -159,7 +162,7 @@ export const createActiveEntitiesComponent = (
     }
 
     const entities = mapDeploymentsToEntities(deployments)
-    updateCache(entities, { pointers, entityIds })
+    await updateCache(entities, { pointers, entityIds })
 
     return entities
   }
@@ -228,7 +231,7 @@ export const createActiveEntitiesComponent = (
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
   const withPrefix = async (urnPrefix: string) => {
-    return []
+    return await getActiveDeploymentsByUrnPrefix({ database: components.database }, urnPrefix)
   }
 
   return {
