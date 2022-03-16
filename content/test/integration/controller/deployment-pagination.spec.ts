@@ -1,4 +1,4 @@
-import { toQueryParams } from '@catalyst/commons'
+import { toQueryParams } from '@dcl/catalyst-node-commons'
 import { EntityType, fetchJson, SortingField, SortingOrder, Timestamp } from 'dcl-catalyst-commons'
 import { DeploymentField } from '../../../src/controller/Controller'
 import { EnvironmentConfig } from '../../../src/Environment'

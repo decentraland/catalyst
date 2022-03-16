@@ -12,13 +12,5 @@
     "declarationMap": false,
     "declaration": false,
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
-  },
-  "references": [
-    {
-      "path": "../commons"
-    },
-    {
-      "path": "../contracts"
-    }
-  ]
+  }
 }

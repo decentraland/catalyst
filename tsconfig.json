@@ -27,16 +27,7 @@
   },
   "references": [
     {
-      "path": "./contracts"
-    },
-    {
-      "path": "./commons"
-    },
-    {
       "path": "./content"
-    },
-    {
-      "path": "./comms/lighthouse"
     },
     {
       "path": "./lambdas"

@@ -1,4 +1,4 @@
-import { toQueryParams } from '@catalyst/commons'
+import { toQueryParams } from '@dcl/catalyst-node-commons'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
   ContentFileHash,

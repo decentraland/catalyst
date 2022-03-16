@@ -1,0 +1,70 @@
+digraph G {
+    label=""
+    labelloc="t"
+    fontsize =30
+    fontname="Helvetica,Arial,sans-serif"
+    compound=true;
+
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
+	graph [
+		newrank = true,
+		nodesep = .5,
+		ranksep = .4,
+		splines = true,
+	]
+	node [
+		fixedsize = false,
+		fontsize =21,
+		height = 1,
+		shape = box,
+        colorscheme="pubugn9"
+		style = "filled,setlinewidth(2)",
+        fillcolor=1
+		width = 2
+	]
+
+    subgraph cluster_catalyst {
+        label = <Catalyst <BR/> <FONT POINT-SIZE="15">Decentralized Servers</FONT>>
+        colorscheme="pubugn9"
+        bgcolor=4
+        fontsize=24.0
+        URL="https://github.com/decentraland/catalyst"
+        Comms [
+            label=<Comms<BR /> <FONT POINT-SIZE="10">Users P2P networks</FONT>>
+            URL="https://github.com/decentraland/catalyst/tree/main/comms/lighthouse"
+        ]
+        edge [
+            style = "invis"
+        ]
+        Nginx [
+            label=<Nginx<BR/> <FONT POINT-SIZE="10">Reverse Proxy</FONT>>
+        ]
+        Comms -> Lambdas -> Content
+        edge [
+            style = "normal"
+            dir=both
+        ]
+        Content:e -> Nginx [constraint=false]
+        Content [
+            label=<Content Server<BR/> <FONT POINT-SIZE="10">Assets Storage</FONT>>
+            URL="https://github.com/decentraland/catalyst/tree/main/content"
+        ]
+        Lambdas -> Nginx [constraint=false]
+        Lambdas [
+            label=<Lambdas<BR/> <FONT POINT-SIZE="10">Utilities to retrieve and validate data</FONT>>
+            URL="https://github.com/decentraland/catalyst/tree/main/lambdas"
+        ]
+        Comms -> Nginx [constraint=false]
+    }
+
+    TheGraph [
+        label=<The Graph<BR/> <FONT POINT-SIZE="10">Query the Blockchain</FONT>>
+        URL="https://thegraph.com/hosted-service/subgraph/decentraland/collections-matic-mainnet"
+    ]
+    Lambdas:ne -> TheGraph [ltail=cluster_catalyst]
+
+    edge [dir=both]
+    Nginx -> CatalystClient
+
+}

@@ -1,4 +1,4 @@
-import { delay } from '@catalyst/commons'
+import { delay } from '@dcl/catalyst-node-commons'
 import { hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'

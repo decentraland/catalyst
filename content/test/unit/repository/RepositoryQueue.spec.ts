@@ -1,4 +1,4 @@
-import { delay } from '@catalyst/commons'
+import { delay } from '@dcl/catalyst-node-commons'
 import { createTestMetricsComponent } from '@well-known-components/metrics'
 import future from 'fp-future'
 import { metricsDeclaration } from '../../../src/metrics'
@@ -144,7 +144,7 @@ class DBRequest implements Promise<void> {
   public started: boolean = false
   private readonly promise = future()
 
-  constructor() {}
+  constructor() { }
 
   then<TResult1 = void, TResult2 = never>(
     onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null,

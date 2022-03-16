@@ -1,3 +1,4 @@
+import { hashV0, hashV1 } from '@dcl/hashing'
 import assert from 'assert'
 import { DeploymentData } from 'dcl-catalyst-client'
 import {
@@ -6,7 +7,6 @@ import {
   Entity as ControllerEntity,
   EntityContentItemReference,
   EntityVersion,
-  Hashing,
   Timestamp
 } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
@@ -160,10 +160,7 @@ async function assertEntityIsOnServer(server: TestProgram, entity: ControllerEnt
 
 export async function assertFileIsOnServer(server: TestProgram, hash: ContentFileHash) {
   const content = await server.downloadContent(hash)
-  const downloadedContentHashes = await Promise.all([
-    Hashing.calculateBufferHash(content),
-    Hashing.calculateIPFSHash(content)
-  ])
+  const downloadedContentHashes = await Promise.all([hashV0(content), hashV1(content)])
   assert.ok(downloadedContentHashes.includes(hash))
 }
 

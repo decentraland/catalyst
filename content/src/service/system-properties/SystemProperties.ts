@@ -1,4 +1,4 @@
-import { ServerBaseUrl } from '@catalyst/commons'
+import { ServerBaseUrl } from '@dcl/catalyst-node-commons'
 import { EntityType, Timestamp } from 'dcl-catalyst-commons'
 import { Database } from '../../repository/Database'
 import { Repository } from '../../repository/Repository'

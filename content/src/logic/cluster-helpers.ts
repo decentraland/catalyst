@@ -1,4 +1,4 @@
-import { delay, ServerBaseUrl, ServerMetadata } from '@catalyst/commons'
+import { delay, ServerBaseUrl, ServerMetadata } from '@dcl/catalyst-node-commons'
 import { EnvironmentConfig } from '../Environment'
 import { AppComponents } from '../types'
 
@@ -9,10 +9,14 @@ export async function getChallengeInServer(
   components: Pick<AppComponents, 'fetcher'>,
   catalystBaseUrl: ServerBaseUrl
 ): Promise<string | undefined> {
-  const response = await components.fetcher.fetch(`${catalystBaseUrl}/challenge`)
-  if (!response || !response.ok) return undefined
-  const json: { challengeText: string } = await response.json()
-  return json.challengeText
+  try {
+    const response = await components.fetcher.fetch(`${catalystBaseUrl}/challenge`)
+    if (!response || !response.ok) return undefined
+    const json: { challengeText: string } = await response.json()
+    return json.challengeText
+  } catch {
+    return undefined
+  }
 }
 
 /**

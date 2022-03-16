@@ -1,4 +1,4 @@
-import { ensureDirectoryExists, existPath } from '@catalyst/commons'
+import { ensureDirectoryExists, existPath } from '@dcl/catalyst-node-commons'
 import fs from 'fs'
 import * as fsPromises from 'fs/promises'
 

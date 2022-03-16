@@ -1,4 +1,4 @@
-import { initializeMetricsServer } from '@catalyst/commons'
+import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
 import { LAMBDAS_API } from '@dcl/catalyst-api-specs'
 import compression from 'compression'
 import cors from 'cors'

@@ -1,4 +1,4 @@
-import { DAOClient } from '@catalyst/commons'
+import { DAOClient } from '@dcl/catalyst-node-commons'
 import { Validator } from '@dcl/content-validator'
 import { JobLifecycleManagerComponent } from '@dcl/snapshots-fetcher/dist/job-lifecycle-manager'
 import { IJobQueue } from '@dcl/snapshots-fetcher/dist/job-queue-port'

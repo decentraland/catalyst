@@ -1,5 +1,5 @@
-import { DAOClient, DAOContractClient } from '@catalyst/commons'
-import { DAOContract } from '@catalyst/contracts'
+import { DAOClient, DAOContractClient } from '@dcl/catalyst-node-commons'
+import { DAOContract } from '@dcl/catalyst-contracts'
 import { Environment, EnvironmentConfig } from '../../../Environment'
 import { DAOHardcodedClient } from './HardcodedDAOClient'
 

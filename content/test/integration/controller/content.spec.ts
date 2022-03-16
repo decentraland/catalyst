@@ -34,4 +34,34 @@ loadStandaloneTestEnvironment()('Integration - Get Content', (testEnv) => {
     expect(headContentSpy).toHaveBeenCalledTimes(1)
     expect(getContentSpy).toHaveBeenCalledTimes(0)
   })
+
+  it('returns 404 when the content file does not exist', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
+
+    const url = server.getUrl() + `/contents/non-existent-file`
+    const res = await fetch(url)
+
+    let text = (await res.buffer()).toString()
+
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when the content file does not exist for the head method', async () => {
+    const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+
+    makeNoopValidator(server.components)
+
+    await server.startProgram()
+
+    const url = server.getUrl() + `/contents/non-existent-file`
+    const res = await fetch(url, { method: 'HEAD' })
+
+    let text = (await res.buffer()).toString()
+
+    expect(res.status).toBe(404)
+  })
 })

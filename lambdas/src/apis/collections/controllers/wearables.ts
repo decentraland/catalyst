@@ -1,4 +1,4 @@
-import { toQueryParams } from '@catalyst/commons'
+import { toQueryParams } from '@dcl/catalyst-node-commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'

@@ -1,4 +1,4 @@
-import { ServerMetadata } from '@catalyst/commons'
+import { ServerMetadata } from '@dcl/catalyst-node-commons'
 import { Request, Response } from 'express'
 import { DAOCache } from '../../../service/dao/DAOCache'
 
