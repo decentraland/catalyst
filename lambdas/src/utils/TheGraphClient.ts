@@ -144,7 +144,7 @@ export class TheGraphClient {
     const urnList = wearableIds.map((wearableId) => `"${wearableId}"`).join(',')
     // We need to add a 'P' prefix, because the graph needs the fragment name to start with a letter
     return `
-      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1"], urn_in: [${urnList}] }, first: 1000) {
+      P${ethAddress}: nfts(where: { owner: "${ethAddress}", searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"], urn_in: [${urnList}] }, first: 1000) {
         urn
       }
     `
@@ -246,7 +246,7 @@ export class TheGraphClient {
   }
 
   private buildFilterQuery(filters: WearablesFilters & { lastId?: string }): string {
-    const whereClause: string[] = [`searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1"]`]
+    const whereClause: string[] = [`searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]`]
     const params: string[] = []
     if (filters.textSearch) {
       params.push('$textSearch: String')
@@ -350,7 +350,7 @@ export class TheGraphClient {
 
 const QUERY_WEARABLES_BY_OWNER: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
-    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1"]}, first: $first, skip: $skip) {
+    nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
       urn,
       collection {
         isApproved
