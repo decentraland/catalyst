@@ -19,7 +19,7 @@
     "@dcl/catalyst-contracts": "1.0.2",
     "@dcl/catalyst-node-commons": "1.0.1",
     "@dcl/content-validator": "1.3.0",
-    "@dcl/schemas": "3.9.0",
+    "@dcl/schemas": "3.10.0",
     "@dcl/snapshots-fetcher": "3.0.0",
     "@dcl/urn-resolver": "1.3.0",
     "@well-known-components/interfaces": "^1.1.1",
