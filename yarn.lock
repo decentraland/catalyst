@@ -6335,11 +6335,6 @@ jest-snapshot@^27.4.6:
     pretty-format "^27.4.6"
     semver "^7.3.2"
 
-jest-ts-auto-mock@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/jest-ts-auto-mock/-/jest-ts-auto-mock-2.1.0.tgz#56d665c1617944ebc7fe8efbc862e8c80e323991"
-  integrity sha512-ubL0pweKUHQNY2xCgwXjYllEQMgpKDojcEODpraQVevHqBFBsFDJZkpZp/2JsmujMu4TNJPzmSugXOLfKndmlQ==
-
 jest-util@^27.0.0, jest-util@^27.4.2:
   version "27.4.2"
   resolved "https://registry.yarnpkg.com/jest-util/-/jest-util-27.4.2.tgz#ed95b05b1adfd761e2cda47e0144c6a58e05a621"
