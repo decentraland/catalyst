@@ -5,8 +5,9 @@ import { createTestMetricsComponent } from '@well-known-components/metrics'
 import assert from 'assert'
 import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
-import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
 import ms from 'ms'
+import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
+import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
@@ -15,6 +16,7 @@ import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterCom
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
 import { createFsComponent } from '../../../src/ports/fs'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
+import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 import { ContentAuthenticator } from '../../../src/service/auth/Authenticator'
 import { DeploymentManager } from '../../../src/service/deployments/DeploymentManager'
 import * as deployments from '../../../src/service/deployments/deployments'
@@ -31,7 +33,6 @@ import { buildEntityAndFile } from '../../helpers/service/EntityTestFactory'
 import { NoOpServerValidator, NoOpValidator } from '../../helpers/service/validations/NoOpValidator'
 import { MockedStorage } from '../ports/contentStorage/MockedStorage'
 import { NoOpPointerManager } from './pointers/NoOpPointerManager'
-import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
 
 describe('Service', function() {
   const POINTERS = ['X1,Y1', 'X2,Y2']
@@ -56,6 +57,10 @@ describe('Service', function() {
         new Map([['file', randomFileHash]]),
         'metadata'
       )
+
+    jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() =>
+      Promise.resolve()
+    )
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {
