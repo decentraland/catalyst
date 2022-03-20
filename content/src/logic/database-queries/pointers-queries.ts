@@ -6,8 +6,9 @@ export async function getActiveDeploymentsByUrnPrefix(
   components: Pick<AppComponents, 'database'>,
   urnPrefix: string
 ): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
-  const query = SQL`SELECT * FROM active_pointers as p
-    WHERE p.pointer LIKE '${urnPrefix}%';`
+  // sql-template-strings doesn't allow ' in the query string
+  const matchingString = `${urnPrefix}%`
+  const query = SQL`SELECT * FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
 
   const queryResult = (await components.database.queryWithValues(query)).rows
 

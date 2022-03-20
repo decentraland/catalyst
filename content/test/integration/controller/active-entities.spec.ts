@@ -1,4 +1,4 @@
-import { Entity } from 'dcl-catalyst-commons'
+import { Entity, EntityId, Pointer } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { EnvironmentConfig } from '../../../src/Environment'
 import * as deployments from '../../../src/service/deployments/deployments'
@@ -336,6 +336,73 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
     })
   })
 
+
+  describe('Urn Prefix', () => {
+
+    it('when fetching entities by urn prefix, then matching entity is retrieved', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointer = ['urn:dcl:collection:itemId']
+      const deployResult = await buildDeployData(pointer, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity
+      await server.deploy(deployResult.deployData)
+      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:dcl:collection')
+
+      expect(response).toBeDefined()
+      expect(response.length).toBe(1)
+      expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
+    })
+
+    it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointer = ['urn:dcl:collection:itemId']
+      const deployResult = await buildDeployData(pointer, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity
+      await server.deploy(deployResult.deployData)
+      const response = await fetchActiveEntityByUrnPrefix(server, 'invalidPrefix')
+
+      expect(response).toBeDefined()
+      expect(response.length).toBe(0)
+    })
+
+
+    it('when pointer is updated and getting by prefix, the new one is retrieved', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointer = ['urn:dcl:collection:itemId']
+      const firstDeploy = await buildDeployData(pointer, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+      const secondDeploy = await buildDeployData(pointer, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity
+      await server.deploy(firstDeploy.deployData)
+      await server.deploy(secondDeploy.deployData)
+      const response = await fetchActiveEntityByUrnPrefix(server, 'urn:dcl:collection')
+
+      expect(response).toBeDefined()
+      expect(response.length).toBe(1)
+      expect(response[0].entityId).toBe(secondDeploy.controllerEntity.id)
+    })
+
+   })
+
   async function fetchActiveEntityByIds(server: TestProgram, ...ids: string[]): Promise<Entity[]> {
     const url = server.getUrl() + `/entities/active`
 
@@ -359,4 +426,17 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       })
     ).json()
   }
+
+
+  async function fetchActiveEntityByUrnPrefix(server: TestProgram, urnPrefix: string): Promise<{ pointer: Pointer; entityId: EntityId }[]> {
+    const url = server.getUrl() + `/entities/currently-pointed/${urnPrefix}`
+
+    return (
+      await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    ).json()
+  }
+
 })

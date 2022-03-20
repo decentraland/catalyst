@@ -140,7 +140,7 @@ export class Controller {
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /entities/currently-pointed/{urnPrefix}
-    const urnPrefix: string = parseEntityType(req.params.urnPrefix)
+    const urnPrefix: string = req.params.urnPrefix
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
       urnPrefix
