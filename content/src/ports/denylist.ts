@@ -29,12 +29,13 @@ export async function createDenylist(
         new URL(url)
         return true
       } catch {
+        logger.error(`Invalid url to fetch denylisted items: ${url}`)
         return false
       }
     })
     .map((url) => new URL(url))
-  logger.info(`File: ${fileName}`)
-  logger.info(`Urls: ${denylistsUrls}`)
+  logger.info(`Location of the denylist file: ${fileName}`)
+  logger.info(`Valid urls where to fetch denylisted items: ${denylistsUrls}`)
 
   const processLines = async (lines: Iterable<string> | AsyncIterable<string>) => {
     for await (const line of lines) {
@@ -76,14 +77,10 @@ export async function createDenylist(
 
   const loadDenylists = async () => {
     try {
-      const originalSize = deniedContentIdentifiers.size
       await loadDenylistFromFile()
 
       for (const url of denylistsUrls) {
         await loadDenylistFromUrl(url)
-      }
-      if (deniedContentIdentifiers.size > originalSize) {
-        logger.info('New elements where added')
       }
     } catch (err) {
       logger.error(err)
