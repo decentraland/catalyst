@@ -356,6 +356,7 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response).toBeDefined()
       expect(response.length).toBe(1)
       expect(response[0].entityId).toBe(deployResult.controllerEntity.id)
+      expect(response[0].pointer).toBe('urn:dcl:collection:itemid')
     })
 
     it('when fetching entities by not matching urn prefix, then none is retrieved', async () => {
@@ -399,6 +400,32 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
       expect(response).toBeDefined()
       expect(response.length).toBe(1)
       expect(response[0].entityId).toBe(secondDeploy.controllerEntity.id)
+      expect(response[0].pointer).toBe('urn:dcl:collection:itemid')
+    })
+
+    it('when pointer is invalidated with deleter deployment, none is retrieved', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
+      const pointers = ['0,0', '0,1']
+      const firstDeploy = await buildDeployData(pointers, {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+      const secondDeploy = await buildDeployData(['0,0'], {
+        metadata: 'this is just some metadata',
+        contentPaths: ['test/integration/resources/some-binary-file.png']
+      })
+
+      // Deploy entity
+      await server.deploy(firstDeploy.deployData)
+      await server.deploy(secondDeploy.deployData)
+      const response = await fetchActiveEntityByUrnPrefix(server, '0')
+
+      expect(response).toBeDefined()
+      expect(response.length).toBe(1)
+      expect(response[0].entityId).toBe(secondDeploy.controllerEntity.id)
+      expect(response[0].pointer).toBe('0,0')
     })
 
    })

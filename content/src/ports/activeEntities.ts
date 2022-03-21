@@ -1,7 +1,11 @@
 import { Entity, EntityId, EntityType, Pointer } from 'dcl-catalyst-commons'
 import LRU from 'lru-cache'
 import { EnvironmentConfig } from '../Environment'
-import { getActiveDeploymentsByUrnPrefix, updateActiveDeployments } from '../logic/database-queries/pointers-queries'
+import {
+  getActiveDeploymentsByUrnPrefix,
+  removeActiveDeployments,
+  updateActiveDeployments
+} from '../logic/database-queries/pointers-queries'
 import { mapDeploymentsToEntities } from '../logic/deployments'
 import { getDeployments } from '../service/deployments/deployments'
 import { AppComponents } from '../types'
@@ -109,6 +113,9 @@ export const createActiveEntitiesComponent = (
       components.metrics.increment('dcl_entities_cache_storage_size', { entity_type: entity.type })
       // Store in the db the new entity pointed by pointers
       await updateActiveDeployments({ database: components.database }, pointers, entity.id)
+    } else {
+      // Remove the row from active_pointers table
+      await removeActiveDeployments({ database: components.database }, pointers)
     }
   }
 
