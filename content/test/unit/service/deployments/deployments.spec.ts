@@ -7,10 +7,10 @@ import { HistoricalDeploymentsRow } from '../../../../src/logic/database-queries
 import { MigrationDataRow } from '../../../../src/logic/database-queries/migration-data-queries'
 import { metricsDeclaration } from '../../../../src/metrics'
 import {
-  getCuratedLimit,
-  getCuratedOffset,
-  getDeployments,
-  MAX_HISTORY_LIMIT
+    getCuratedLimit,
+    getCuratedOffset,
+    getDeployments,
+    MAX_HISTORY_LIMIT
 } from '../../../../src/service/deployments/deployments'
 import { DeploymentOptions } from '../../../../src/service/deployments/types'
 import { AppComponents } from '../../../../src/types'
@@ -86,7 +86,7 @@ describe('deployments service', () => {
       beforeAll(() => {
         components = {
           database: safe({ queryWithValues: () => {} }),
-          denylist: { isDenyListed: () => false },
+          denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
         stub(components.database, 'queryWithValues')
@@ -121,7 +121,7 @@ describe('deployments service', () => {
       beforeAll(() => {
         components = {
           database: safe({ queryWithValues: () => {} }),
-          denylist: { isDenyListed: () => false },
+          denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
         stub(components.database, 'queryWithValues')
@@ -138,7 +138,7 @@ describe('deployments service', () => {
       })
 
       it("should not return a deployment if it's denylisted", async () => {
-        stub(components.denylist, 'isDenyListed').onFirstCall().returns(true).returns(false)
+        stub(components.denylist, 'isDenylisted').onFirstCall().returns(true).returns(false)
         result = await getDeployments(components, options)
 
         expect(result).toEqual(
@@ -156,7 +156,7 @@ describe('deployments service', () => {
       beforeAll(() => {
         components = {
           database: safe({ queryWithValues: () => {} }),
-          denylist: { isDenyListed: () => false },
+          denylist: { isDenylisted: () => false },
           metrics: createTestMetricsComponent(metricsDeclaration)
         }
         stub(components.database, 'queryWithValues')
@@ -173,7 +173,7 @@ describe('deployments service', () => {
       })
 
       it("should not return a deployment if it's denylisted", async () => {
-        stub(components.denylist, 'isDenyListed').onFirstCall().returns(true).returns(false)
+        stub(components.denylist, 'isDenylisted').onFirstCall().returns(true).returns(false)
         result = await getDeployments(components, { ...options, includeDenylisted: true })
 
         expect(result).toEqual(
