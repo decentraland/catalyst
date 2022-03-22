@@ -189,7 +189,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
     // Phase 2) iterate all active deployments and write to files
     try {
       for await (const snapshotElem of streamActiveDeployments(this.components)) {
-        if (this.components.denylist.isDenyListed(snapshotElem.entityId)) {
+        if (this.components.denylist.isDenylisted(snapshotElem.entityId)) {
           continue
         }
 

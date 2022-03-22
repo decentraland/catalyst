@@ -10,10 +10,10 @@ import { Controller } from './controller/Controller'
 import { Environment } from './Environment'
 import { metricsDeclaration } from './metrics'
 import { MigrationManager } from './migrations/MigrationManager'
-import { ContentStorage } from './ports/contentStorage/contentStorage'
-import { DenylistComponent } from './ports/denylist'
-import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { ActiveEntities } from './ports/activeEntities'
+import { ContentStorage } from './ports/contentStorage/contentStorage'
+import { Denylist } from './ports/denylist'
+import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { FSComponent } from './ports/fs'
@@ -73,7 +73,7 @@ export type AppComponents = {
   retryFailedDeployments: IRetryFailedDeploymentsComponent
   activeEntities: ActiveEntities
   sequentialExecutor: ISequentialTaskExecutorComponent
-  denylist: DenylistComponent
+  denylist: Denylist
   fs: FSComponent
 
   // this will be replaced by `database` and removed from here
