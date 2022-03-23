@@ -66,8 +66,11 @@ export class Environment {
 
   logConfigValues() {
     Environment.LOGGER.info('These are the configuration values:')
+    const sensitiveEnvs = [EnvironmentConfig.PSQL_PASSWORD, EnvironmentConfig.PSQL_USER]
     for (const [config, value] of this.configs.entries()) {
-      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+      if (!sensitiveEnvs.includes(config)) {
+        Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+      }
     }
   }
 
