@@ -26,6 +26,10 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI =
+  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
 export const DEFAULT_BLOCKS_SUBGRAPH_ROPSTEN =
   'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-ropsten'
 export const DEFAULT_BLOCKS_SUBGRAPH_MAINNET =
@@ -107,6 +111,7 @@ export enum EnvironmentConfig {
   LAND_MANAGER_SUBGRAPH_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
+  THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
   PROOF_OF_WORK,
   PSQL_PASSWORD,
   PSQL_USER,
@@ -258,6 +263,16 @@ export class EnvironmentBuilder {
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL,
+      () =>
+        process.env.COLLECTIONS_L2_SUBGRAPH_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET
+          : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI)
     )
 
     this.registerConfigIfNotAlreadySet(
