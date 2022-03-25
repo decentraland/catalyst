@@ -140,7 +140,7 @@ export class Controller {
   async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
     // Method: GET
     // Path: /entities/currently-pointed/{urnPrefix}
-    const urnPrefix: string = req.params.urnPrefix
+    const urnPrefix: string = validateUrnFilter(req.params.urnPrefix)
 
     const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
       urnPrefix
@@ -739,3 +739,10 @@ const DEFAULT_FIELDS_ON_DEPLOYMENTS: DeploymentField[] = [
   DeploymentField.CONTENT,
   DeploymentField.METADATA
 ]
+function validateUrnFilter(urnPrefix: string): string {
+  const regex = /^[a-zA-Z0-9_.:,-]+$/g
+  if (!regex.test(urnPrefix)) {
+    throw new Error(`Invalid Urn prefix param: '${urnPrefix}'`)
+  }
+  return urnPrefix
+}

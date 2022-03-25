@@ -238,7 +238,7 @@ export const createActiveEntitiesComponent = (
    * Retrieve active entities that are pointed by pointers that match the urn prefix
    */
   const withPrefix = async (urnPrefix: string) => {
-    return await getActiveDeploymentsByUrnPrefix({ database: components.database }, urnPrefix)
+    return getActiveDeploymentsByUrnPrefix({ database: components.database }, urnPrefix)
   }
 
   return {
