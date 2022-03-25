@@ -10,6 +10,8 @@ export const CURRENT_CONTENT_VERSION: EntityVersion = EntityVersion.V3
 const DEFAULT_STORAGE_ROOT_FOLDER = 'storage'
 const DEFAULT_SERVER_PORT = 6969
 const DEFAULT_DENYLIST_FILE_NAME = 'denylist.txt'
+const DEFAULT_DENYLIST_URLS = 'https://config.decentraland.org/denylist'
+
 const DEFAULT_FOLDER_MIGRATION_MAX_CONCURRENCY = 1000
 export const DEFAULT_ENTITIES_CACHE_SIZE = 150000
 export const DEFAULT_ETH_NETWORK = 'ropsten'
@@ -64,8 +66,11 @@ export class Environment {
 
   logConfigValues() {
     Environment.LOGGER.info('These are the configuration values:')
+    const sensitiveEnvs = [EnvironmentConfig.PSQL_PASSWORD, EnvironmentConfig.PSQL_USER]
     for (const [config, value] of this.configs.entries()) {
-      Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+      if (!sensitiveEnvs.includes(config)) {
+        Environment.LOGGER.info(`${EnvironmentConfig[config]}: ${this.printObject(value)}`)
+      }
     }
   }
 
@@ -129,7 +134,8 @@ export enum EnvironmentConfig {
   RETRY_FAILED_DEPLOYMENTS_DELAY_TIME,
   DEPLOYMENT_RATE_LIMIT_TTL,
   DEPLOYMENT_RATE_LIMIT_MAX,
-  DENYLIST_FILE_NAME
+  DENYLIST_FILE_NAME,
+  DENYLIST_URLS
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -162,6 +168,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.DENYLIST_FILE_NAME,
       () => process.env.DENYLIST_FILE_NAME ?? DEFAULT_DENYLIST_FILE_NAME
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.DENYLIST_URLS,
+      () => process.env.DENYLIST_URLS ?? DEFAULT_DENYLIST_URLS
     )
     this.registerConfigIfNotAlreadySet(
       env,

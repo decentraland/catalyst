@@ -400,17 +400,17 @@
     ipfs-unixfs-importer "^7.0.3"
     multiformats "^9.6.3"
 
+"@dcl/schemas@3.13.0", "@dcl/schemas@^3.1.1", "@dcl/schemas@^3.8.0":
+  version "3.13.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.13.0.tgz#8fd18f253f00237627e29b23dd6c6d8f1f5b31f6"
+  integrity sha512-PCwogjKmVTfGLQaSbrQcTJXj76n5rCFb5uVKZ2lX0k3GAQg+PGzFttZCWW89PjXFCr48ciVMgH4jXf0xxgS8Qw==
+  dependencies:
+    ajv "^7.1.0"
+
 "@dcl/schemas@3.8.0":
   version "3.8.0"
   resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.8.0.tgz#aa52d3565308997cfa17c4af5f1314db0f4c6f53"
   integrity sha512-oUq4JDzJmcLTmhFccby6UrAfDXJywOCWI4w3UenuQDE6TxfoR6c0cthGo/omFQkGRUkkKg8MM7Q3Q5ExxdCLRA==
-  dependencies:
-    ajv "^7.1.0"
-
-"@dcl/schemas@3.9.0", "@dcl/schemas@^3.1.1", "@dcl/schemas@^3.8.0":
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-3.9.0.tgz#5e19c8c9be4bb6023009ab10afbf67278f13d424"
-  integrity sha512-1UBT8GF9STf/RxloRzc0vnIEf5xL7qZl2amhvTQvEXXCPmAmeOKz9kuMCSplzAXlKuHeN3atl6ePxTBZPzBqOQ==
   dependencies:
     ajv "^7.1.0"
 
@@ -6993,9 +6993,9 @@ minimist-options@4.1.0, minimist-options@^4.0.2:
     kind-of "^6.0.3"
 
 minimist@^1.2.0, minimist@^1.2.3, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.npmjs.org/minimist/-/minimist-1.2.5.tgz"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 minipass@^2.6.0, minipass@^2.9.0:
   version "2.9.0"

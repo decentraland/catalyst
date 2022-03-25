@@ -13,7 +13,7 @@ import { metricsDeclaration } from './metrics'
 import { MigrationManagerFactory } from './migrations/MigrationManagerFactory'
 import { createActiveEntitiesComponent } from './ports/activeEntities'
 import { createFileSystemContentStorage } from './ports/contentStorage/fileSystemContentStorage'
-import { createDenylistComponent } from './ports/denylist'
+import { createDenylist } from './ports/denylist'
 import { createDeploymentListComponent } from './ports/deploymentListComponent'
 import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
@@ -47,7 +47,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const logs = createLogComponent()
   const fetcher = createFetchComponent()
   const fs = createFsComponent()
-  const denylist = await createDenylistComponent({ env, logs, fs })
+  const denylist = await createDenylist({ env, logs, fs, fetcher })
   const contentStorageFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
   const tmpDownloadFolder = path.join(contentStorageFolder, '_tmp')
   await fs.mkdir(tmpDownloadFolder, { recursive: true })

@@ -7,8 +7,9 @@ const jestConfig = require('./jest.config')
 function printApiCoverage() {
   let coverage = {}
   const apiCoveragePath = path.join(__dirname, 'api-coverage', 'api-coverage.json')
+
+  // Combine API coverage results files with parallel processing in the CI
   if (process.env.CI === 'true') {
-    // Merge partial results from parallel processing
     fs.readdirSync(path.join(__dirname, 'api-coverage')).forEach(file => {
       if (file.startsWith('api-coverage-')) {
         const partialCoverage = JSON.parse(((fs.readFileSync(path.resolve(__dirname, 'api-coverage', file))).toString()))
@@ -24,9 +25,11 @@ function printApiCoverage() {
       }
     })
   } else {
+    // Read the full API coverage file for local development
     coverage = JSON.parse(((fs.readFileSync(apiCoveragePath)).toString()))
   }
 
+  // Pretty print the API coverage in a table
   const tableRows = []
   for (const route in coverage) {
     for (const method in coverage[route]) {
@@ -53,6 +56,17 @@ function printApiCoverage() {
 
   console.info('\nAPI Coverage:')
   console.info(columnify(filteredData, { columnSplitter: ' | ' }))
+
+  // Throw an error if some endpoint/method is not tested
+  for (const apiPath in coverage) {
+    for (const method in coverage[apiPath]) {
+      for (const status in coverage[apiPath][method]) {
+        if (!coverage[apiPath][method][status]) {
+          throw new Error('There are some endpoints that are not fully tested')
+        }
+      }
+    }
+  }
 }
 
 module.exports = printApiCoverage

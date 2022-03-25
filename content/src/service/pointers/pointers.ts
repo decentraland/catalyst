@@ -24,7 +24,7 @@ export async function getPointerChanges(
     options?.lastId
   )
 
-  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenyListed(result.entityId))
+  deploymentsWithExtra = deploymentsWithExtra.filter((result) => !components.denylist.isDenylisted(result.entityId))
 
   const moreData = deploymentsWithExtra.length > curatedLimit
 
