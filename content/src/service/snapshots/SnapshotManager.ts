@@ -83,7 +83,6 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
           }
         }
       }
-
       // signal that stop finished correctly
       resolve(true)
     })
