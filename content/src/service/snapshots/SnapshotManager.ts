@@ -1,5 +1,5 @@
 import { delay } from '@dcl/catalyst-node-commons'
-import { hashStreamV1 } from '@dcl/snapshots-fetcher/dist/utils'
+import { hashV1 } from '@dcl/hashing'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { ContentFileHash, EntityType, Hashing, Timestamp } from 'dcl-catalyst-commons'
 import future from 'fp-future'
@@ -83,7 +83,6 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
           }
         }
       }
-
       // signal that stop finished correctly
       resolve(true)
     })
@@ -233,7 +232,7 @@ export class SnapshotManager implements IStatusCapableComponent, ISnapshotManage
         const previousHash = this.lastSnapshotsPerEntityType.get(entityType)?.hash
 
         // Hash the snapshot
-        const hash = await hashStreamV1(fs.createReadStream(fileName) as any)
+        const hash = await hashV1(fs.createReadStream(fileName) as any)
 
         // if success move the file to the contents folder
         await this.moveSnapshotFileToContentFolder(fileName, { hash, snapshotTimestamp: timestamps[entityType] || 0 })

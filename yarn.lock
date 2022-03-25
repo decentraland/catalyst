@@ -414,16 +414,14 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/snapshots-fetcher@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.0.tgz#2e19dc8b232c9f1647603a6b963b16c550a809f5"
-  integrity sha512-izoqQYOHjOSLhoyM2RO+httwKTi6j/tZUu9P9CuXGhEzvePOcgOD+KViNW3bZJE6IP7dTDRtsi0BmAeSStFaFQ==
+"@dcl/snapshots-fetcher@3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@dcl/snapshots-fetcher/-/snapshots-fetcher-3.0.1.tgz#b5ab68b610edd5e892fd20c1a69d10b3fbde0536"
+  integrity sha512-uPYhedYFww7576CBcDaj8xZCvuRZnESG1eIVQ61TZEp69VcY6HfikHRsglCyFrgCbndizQCDci4xQsVdTSYcmg==
   dependencies:
+    "@dcl/hashing" "^1.0.0"
     "@well-known-components/interfaces" "^1.1.0"
     "@well-known-components/metrics" "^1.1.2"
-    cids "^1.1.9"
-    ipfs-unixfs-importer "^7.0.3"
-    multihashes "^4.0.3"
     p-queue "^6.6.2"
 
 "@dcl/urn-resolver@1.2.1":
@@ -7147,7 +7145,7 @@ multiformats@^9.6.3:
   resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-9.6.4.tgz#5dce1f11a407dbb69aa612cb7e5076069bb759ca"
   integrity sha512-fCCB6XMrr6CqJiHNjfFNGT0v//dxOBMrOMqUIzpPc/mmITweLEyhvMpY9bF+jZ9z3vaMAau5E8B68DW77QMXkg==
 
-multihashes@^4.0.1, multihashes@^4.0.2, multihashes@^4.0.3:
+multihashes@^4.0.1, multihashes@^4.0.2:
   version "4.0.3"
   resolved "https://registry.npmjs.org/multihashes/-/multihashes-4.0.3.tgz"
   integrity sha512-0AhMH7Iu95XjDLxIeuCOOE4t9+vQZsACyKZ9Fxw2pcsRmlX4iCn1mby0hS0bb+nQOVpdQYWPpnyusw4da5RPhA==
