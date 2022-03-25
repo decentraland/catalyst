@@ -10,10 +10,11 @@ import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../
 import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
-import { createDenylistComponent, DenylistComponent } from '../../../src/ports/denylist'
+import { Denylist } from '../../../src/ports/denylist'
 import { createDeploymentListComponent } from '../../../src/ports/deploymentListComponent'
 import { createDeployRateLimiter } from '../../../src/ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from '../../../src/ports/failedDeploymentsCache'
+import { createFetchComponent } from '../../../src/ports/fetcher'
 import { createFsComponent } from '../../../src/ports/fs'
 import { createDatabaseComponent } from '../../../src/ports/postgres'
 import { createSequentialTaskExecutor } from '../../../src/ports/sequecuentialTaskExecutor'
@@ -241,7 +242,8 @@ describe('Service', function() {
     const deployedEntitiesFilter = createDeploymentListComponent({ database, logs })
     env.setConfig(EnvironmentConfig.ENTITIES_CACHE_SIZE, DEFAULT_ENTITIES_CACHE_SIZE)
     const fs = createFsComponent()
-    const denylist: DenylistComponent = await createDenylistComponent({ env, logs, fs })
+    const fetcher = createFetchComponent()
+    const denylist: Denylist = { isDenylisted: () => false }
     const sequentialExecutor = createSequentialTaskExecutor({ logs, metrics })
     const activeEntities = createActiveEntitiesComponent({ database, logs, env, metrics, denylist, sequentialExecutor })
 

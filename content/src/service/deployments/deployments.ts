@@ -42,7 +42,7 @@ export async function getDeployments(
   const migrationData = await getMigrationData(components, deploymentIds)
 
   if (!options?.includeDenylisted) {
-    deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenyListed(result.entityId))
+    deploymentsResult = deploymentsResult.filter((result) => !components.denylist.isDenylisted(result.entityId))
   }
 
   const deployments: Deployment[] = deploymentsResult.map((result) => ({

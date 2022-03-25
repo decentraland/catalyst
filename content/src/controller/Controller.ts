@@ -280,7 +280,7 @@ export class Controller {
     if (!cids) {
       res.status(400).send('Please set at least one cid.')
     } else {
-      const availableCids = cids.filter((cid) => !this.components.denylist.isDenyListed(cid))
+      const availableCids = cids.filter((cid) => !this.components.denylist.isDenylisted(cid))
       const availableContent = await this.components.deployer.isContentAvailable(availableCids)
       res.send(
         Array.from(availableContent.entries()).map(([fileHash, isAvailable]) => ({
@@ -439,7 +439,7 @@ export class Controller {
     const hashId = req.params.hashId
 
     let result = await getActiveDeploymentsByContentHash(this.components, hashId)
-    result = result.filter((entityId) => !this.components.denylist.isDenyListed(entityId))
+    result = result.filter((entityId) => !this.components.denylist.isDenylisted(entityId))
 
     if (result.length === 0) {
       res.status(404).send({ error: 'The entity was not found' })
