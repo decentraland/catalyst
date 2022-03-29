@@ -31,7 +31,8 @@ export function createValidator(
       },
       L2: {
         blocks: components.env.getConfig(EnvironmentConfig.BLOCKS_L2_SUBGRAPH_URL),
-        collections: components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL)
+        collections: components.env.getConfig(EnvironmentConfig.COLLECTIONS_L2_SUBGRAPH_URL),
+        thirdPartyRegistry: components.env.getConfig(EnvironmentConfig.THIRD_PARTY_REGISTRY_L2_SUBGRAPH_URL)
       }
     }
   }
