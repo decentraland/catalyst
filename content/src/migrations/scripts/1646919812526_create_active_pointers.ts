@@ -29,19 +29,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN ('QmfReuGvY7w5M8ruy7P6mdy7iWLi9FQvEWsLM1e26jVkso',
-    'QmUDC8pScvsTDPLMsa7zmh1y9uczA2EAeqYQktBMQMDhiK',
-    'QmcQ86oa5xpJPrxv438PxnhaYwd2Xtn4A4WGS7mEVFP13T',
-    'QmTQJdtNd75iN6zqdFTq4bgm3TSDggLBunduaKHJLewypX',
-    'QmfSLhQcYxFGW8tX4A5XEJJh3FJLGsmFwqegSYhEHFGgLF',
-    'QmdHGYemGN6pRjJRmuEEJQ8ab4Kk2ukoccjYZmbS8swdrW',
-    'Qmajbneoes27V7UKnGFS8a2BN9z1fFU1Y9ciGN4KVU4nU1',
-    'QmPC1fZdg8h17q635W12wCLfHeSRvPWtF9N7oBitvmAqEn',
-    'QmcsbmLBsy9TrGJGT6kKDDH4HNMCyKworDmuWcZ2L16QwW',
-    'QmSzKrauugtQn8LV1HDKG3c5yeoikM2uWCsYUe92xBC1og',
-    'QmP1fHp9nqRDYGsb16z72VZbGYcmKo8YvFcagggoiAvDnh',
-    'QmUxM21yTjrv132SkygBwCupntqJmC3WadCHSjha1envDc',
-    'Qmb4Xob2q1ZkR5Rv1xjEboGJDWyvHBRAquqBePSKdJ5Dgp')
+    e.entity_id IN (
+      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+      'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
+      'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
+      'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
+      'QmdBL5BSsH71RPFCSDVuQjBgDB75MaFD1129t13LLwU7Uo',
+      'QmW41RH1q6cNeXt1HGoX5ALk36svRrpgtrQMk4fhHkz8Q8',
+      'QmUt14KwbLQ8jmwYSUPqbPkFQbU8ndMXhjoyFPX44DijEP',
+      'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
+      'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
+      'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
   );`)
 
   pgm.sql(` DELETE FROM last_deployed_pointers
@@ -49,19 +48,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN ('QmfReuGvY7w5M8ruy7P6mdy7iWLi9FQvEWsLM1e26jVkso',
-    'QmUDC8pScvsTDPLMsa7zmh1y9uczA2EAeqYQktBMQMDhiK',
-    'QmcQ86oa5xpJPrxv438PxnhaYwd2Xtn4A4WGS7mEVFP13T',
-    'QmTQJdtNd75iN6zqdFTq4bgm3TSDggLBunduaKHJLewypX',
-    'QmfSLhQcYxFGW8tX4A5XEJJh3FJLGsmFwqegSYhEHFGgLF',
-    'QmdHGYemGN6pRjJRmuEEJQ8ab4Kk2ukoccjYZmbS8swdrW',
-    'Qmajbneoes27V7UKnGFS8a2BN9z1fFU1Y9ciGN4KVU4nU1',
-    'QmPC1fZdg8h17q635W12wCLfHeSRvPWtF9N7oBitvmAqEn',
-    'QmcsbmLBsy9TrGJGT6kKDDH4HNMCyKworDmuWcZ2L16QwW',
-    'QmSzKrauugtQn8LV1HDKG3c5yeoikM2uWCsYUe92xBC1og',
-    'QmP1fHp9nqRDYGsb16z72VZbGYcmKo8YvFcagggoiAvDnh',
-    'QmUxM21yTjrv132SkygBwCupntqJmC3WadCHSjha1envDc',
-    'Qmb4Xob2q1ZkR5Rv1xjEboGJDWyvHBRAquqBePSKdJ5Dgp')
+    e.entity_id IN (
+      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+      'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
+      'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
+      'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
+      'QmdBL5BSsH71RPFCSDVuQjBgDB75MaFD1129t13LLwU7Uo',
+      'QmW41RH1q6cNeXt1HGoX5ALk36svRrpgtrQMk4fhHkz8Q8',
+      'QmUt14KwbLQ8jmwYSUPqbPkFQbU8ndMXhjoyFPX44DijEP',
+      'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
+      'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
+      'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
   );`)
 
   pgm.sql(` DELETE FROM pointer_history
@@ -69,19 +67,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN ('QmfReuGvY7w5M8ruy7P6mdy7iWLi9FQvEWsLM1e26jVkso',
-    'QmUDC8pScvsTDPLMsa7zmh1y9uczA2EAeqYQktBMQMDhiK',
-    'QmcQ86oa5xpJPrxv438PxnhaYwd2Xtn4A4WGS7mEVFP13T',
-    'QmTQJdtNd75iN6zqdFTq4bgm3TSDggLBunduaKHJLewypX',
-    'QmfSLhQcYxFGW8tX4A5XEJJh3FJLGsmFwqegSYhEHFGgLF',
-    'QmdHGYemGN6pRjJRmuEEJQ8ab4Kk2ukoccjYZmbS8swdrW',
-    'Qmajbneoes27V7UKnGFS8a2BN9z1fFU1Y9ciGN4KVU4nU1',
-    'QmPC1fZdg8h17q635W12wCLfHeSRvPWtF9N7oBitvmAqEn',
-    'QmcsbmLBsy9TrGJGT6kKDDH4HNMCyKworDmuWcZ2L16QwW',
-    'QmSzKrauugtQn8LV1HDKG3c5yeoikM2uWCsYUe92xBC1og',
-    'QmP1fHp9nqRDYGsb16z72VZbGYcmKo8YvFcagggoiAvDnh',
-    'QmUxM21yTjrv132SkygBwCupntqJmC3WadCHSjha1envDc',
-    'Qmb4Xob2q1ZkR5Rv1xjEboGJDWyvHBRAquqBePSKdJ5Dgp')
+    e.entity_id IN (
+      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+      'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
+      'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
+      'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
+      'QmdBL5BSsH71RPFCSDVuQjBgDB75MaFD1129t13LLwU7Uo',
+      'QmW41RH1q6cNeXt1HGoX5ALk36svRrpgtrQMk4fhHkz8Q8',
+      'QmUt14KwbLQ8jmwYSUPqbPkFQbU8ndMXhjoyFPX44DijEP',
+      'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
+      'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
+      'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
   );`)
 
   pgm.sql(` DELETE FROM content_files
@@ -89,36 +86,33 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN ('QmfReuGvY7w5M8ruy7P6mdy7iWLi9FQvEWsLM1e26jVkso',
-    'QmUDC8pScvsTDPLMsa7zmh1y9uczA2EAeqYQktBMQMDhiK',
-    'QmcQ86oa5xpJPrxv438PxnhaYwd2Xtn4A4WGS7mEVFP13T',
-    'QmTQJdtNd75iN6zqdFTq4bgm3TSDggLBunduaKHJLewypX',
-    'QmfSLhQcYxFGW8tX4A5XEJJh3FJLGsmFwqegSYhEHFGgLF',
-    'QmdHGYemGN6pRjJRmuEEJQ8ab4Kk2ukoccjYZmbS8swdrW',
-    'Qmajbneoes27V7UKnGFS8a2BN9z1fFU1Y9ciGN4KVU4nU1',
-    'QmPC1fZdg8h17q635W12wCLfHeSRvPWtF9N7oBitvmAqEn',
-    'QmcsbmLBsy9TrGJGT6kKDDH4HNMCyKworDmuWcZ2L16QwW',
-    'QmSzKrauugtQn8LV1HDKG3c5yeoikM2uWCsYUe92xBC1og',
-    'QmP1fHp9nqRDYGsb16z72VZbGYcmKo8YvFcagggoiAvDnh',
-    'QmUxM21yTjrv132SkygBwCupntqJmC3WadCHSjha1envDc',
-    'Qmb4Xob2q1ZkR5Rv1xjEboGJDWyvHBRAquqBePSKdJ5Dgp')
+    e.entity_id IN (
+      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+      'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
+      'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
+      'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
+      'QmdBL5BSsH71RPFCSDVuQjBgDB75MaFD1129t13LLwU7Uo',
+      'QmW41RH1q6cNeXt1HGoX5ALk36svRrpgtrQMk4fhHkz8Q8',
+      'QmUt14KwbLQ8jmwYSUPqbPkFQbU8ndMXhjoyFPX44DijEP',
+      'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
+      'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
+      'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
   );`)
 
   pgm.sql(`DELETE FROM deployments
-  WHERE entity_id IN
-  ('QmfReuGvY7w5M8ruy7P6mdy7iWLi9FQvEWsLM1e26jVkso',
-  'QmUDC8pScvsTDPLMsa7zmh1y9uczA2EAeqYQktBMQMDhiK',
-  'QmcQ86oa5xpJPrxv438PxnhaYwd2Xtn4A4WGS7mEVFP13T',
-  'QmTQJdtNd75iN6zqdFTq4bgm3TSDggLBunduaKHJLewypX',
-  'QmfSLhQcYxFGW8tX4A5XEJJh3FJLGsmFwqegSYhEHFGgLF',
-  'QmdHGYemGN6pRjJRmuEEJQ8ab4Kk2ukoccjYZmbS8swdrW',
-  'Qmajbneoes27V7UKnGFS8a2BN9z1fFU1Y9ciGN4KVU4nU1',
-  'QmPC1fZdg8h17q635W12wCLfHeSRvPWtF9N7oBitvmAqEn',
-  'QmcsbmLBsy9TrGJGT6kKDDH4HNMCyKworDmuWcZ2L16QwW',
-  'QmSzKrauugtQn8LV1HDKG3c5yeoikM2uWCsYUe92xBC1og',
-  'QmP1fHp9nqRDYGsb16z72VZbGYcmKo8YvFcagggoiAvDnh',
-  'QmUxM21yTjrv132SkygBwCupntqJmC3WadCHSjha1envDc',
-  'Qmb4Xob2q1ZkR5Rv1xjEboGJDWyvHBRAquqBePSKdJ5Dgp');`)
+  WHERE entity_id IN (
+      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+      'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
+      'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
+      'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
+      'QmdBL5BSsH71RPFCSDVuQjBgDB75MaFD1129t13LLwU7Uo',
+      'QmW41RH1q6cNeXt1HGoX5ALk36svRrpgtrQMk4fhHkz8Q8',
+      'QmUt14KwbLQ8jmwYSUPqbPkFQbU8ndMXhjoyFPX44DijEP',
+      'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
+      'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
+      'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU');`)
 
   pgm.sql('ALTER TABLE deployments DROP CONSTRAINT IF EXISTS deployments_uniq_entity_id_entity_type;')
   pgm.sql(`ALTER TABLE deployments ADD UNIQUE (entity_id);`)
