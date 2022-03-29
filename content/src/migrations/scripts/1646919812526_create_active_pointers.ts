@@ -28,8 +28,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN (
-      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+    e.entity_id IN ('QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
       'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
       'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
       'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
@@ -47,8 +46,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN (
-      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+    e.entity_id IN ('QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
       'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
       'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
       'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
@@ -66,8 +64,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN (
-      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+    e.entity_id IN ('QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
       'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
       'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
       'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
@@ -85,8 +82,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   deployment = ANY (
     SELECT id FROM deployments as e
     WHERE
-    e.entity_id IN (
-      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+    e.entity_id IN ('QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
       'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
       'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
       'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
@@ -100,8 +96,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   );`)
 
   pgm.sql(`DELETE FROM deployments
-  WHERE entity_id IN (
-      'QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
+  WHERE entity_id IN ('QmXVu6DMfRbVrzGFVbjNhKik8H4hE5X7yFFf4cWCGpZ6CL',
       'QmbAMNjND7rPZyMBX8yWyvTod9a1zvbhXDRnT9jyJiz4Md',
       'QmR1bYDjkfgAwagtp4qQPnKosWUU6mMGnWeYhf29T2zwe7',
       'QmcfZ7PBZQeoom9LD1AjvjwJZyXdugo3a37jGW2jPJYGSi',
