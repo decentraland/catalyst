@@ -138,6 +138,20 @@ export class TheGraphClient {
     return this.runQuery(query, { thirdPartyType: 'third_party_v1' })
   }
 
+  /**
+   * This method returns the third party resolver API to be used to query assets from any collection
+   * of given third party integration
+   */
+  public async findThirdPartyResolver(subgraph: keyof URLs, id: string): Promise<string | undefined> {
+    const query: Query<{ thirdParties: [{ resolver: string }] }, string | undefined> = {
+      description: 'fetch third party resolver',
+      subgraph: subgraph,
+      query: QUERY_THIRD_PARTY_RESOLVER,
+      mapper: (response) => response.thirdParties[0]?.resolver
+    }
+    return await this.runQuery(query, { id })
+  }
+
   private getOwnersByWearable(
     wearableIdsToCheck: [string, string[]][],
     subgraph: keyof URLs
@@ -375,6 +389,15 @@ query ThirdParties() {
         description
       }
     }
+  }
+}
+`
+
+const QUERY_THIRD_PARTY_RESOLVER = `
+query ThirdPartyResolver($id: String!) {
+  thirdParties(where: {id: $id}) {
+    id
+    resolver
   }
 }
 `
