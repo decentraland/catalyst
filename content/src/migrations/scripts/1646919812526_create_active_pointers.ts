@@ -38,7 +38,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
       'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
       'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
-      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU',
+      'Qmc5ZxCYQJvuwPynda8akcqJymNbL8YdNCT6WXry7DkgtJ')
   );`)
 
   pgm.sql(` DELETE FROM last_deployed_pointers
@@ -56,7 +57,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
       'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
       'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
-      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU',
+      'Qmc5ZxCYQJvuwPynda8akcqJymNbL8YdNCT6WXry7DkgtJ')
   );`)
 
   pgm.sql(` DELETE FROM pointer_history
@@ -74,7 +76,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
       'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
       'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
-      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU',
+      'Qmc5ZxCYQJvuwPynda8akcqJymNbL8YdNCT6WXry7DkgtJ')
   );`)
 
   pgm.sql(` DELETE FROM content_files
@@ -92,7 +95,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
       'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
       'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
-      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU')
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU',
+      'Qmc5ZxCYQJvuwPynda8akcqJymNbL8YdNCT6WXry7DkgtJ')
   );`)
 
   pgm.sql(`DELETE FROM deployments
@@ -106,7 +110,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmTjFHnepcu5NSTcofCZzpkVmkLkApBzKiDqa18xdek8Gg',
       'QmVttiMyAu2FXwfLHDSbWZRQeXKA8NU3gqBi39ETFLK4i5',
       'QmUGEFccxPpXx2EVWWwj98ZU3EjsUyALfBQLBmB2QrMSu8',
-      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU');`)
+      'QmSMQUriiP7hMvJn7RpK2mWaXAgRvCbKkUfgh83iYZ1wNU',
+      'Qmc5ZxCYQJvuwPynda8akcqJymNbL8YdNCT6WXry7DkgtJ');`)
 
   pgm.sql('ALTER TABLE deployments DROP CONSTRAINT IF EXISTS deployments_uniq_entity_id_entity_type;')
   pgm.sql(`ALTER TABLE deployments ADD UNIQUE (entity_id);`)
