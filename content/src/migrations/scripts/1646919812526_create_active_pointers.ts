@@ -8,18 +8,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
   // Delete invalid deployments:
   // PROD:
-  // "QmYgsjNDKzoCLtmhGfWnoXHbKtpJ3hjsqSktKwSN14NGRt"
-  // "QmX5HsazaYxox9NmCYHMKwRwMRiXDC7qWsrySXMid5gdTH"
-  // "Qmd2nKrPjSZB4FWsXEWSwkRJJ37iEEVr7NoGnqkdcacVNe"
-  // "QmRJhrvSRWYx2WD9yWcwNekCgRSaoSMfWcubDS4pSi1tJR"
-  // "QmQJJA5rVujKKqvYdCfxUJUUYJ1AckW2AQCEhM7ARUynME"
-  // "QmTN4VzJYnabWAafkgqScnvqeQ3VD3hj9W7jnxBN6e2gdJ"
-  // "QmUN62XUhMuZb5GeviCZ3v9H3H1ZE3cbYJASqH4Fdh1hSP"
-  // "QmecbenQT8VJHHg86pLvr6khHrEFaCwK6T2jMHFg85eLAR"
-  // "QmfBQHZUaGmcGtpy8bbq9gFK4iXdWdpikWt61VcgA25kW3"
-  // "QmZDsE3zwmhin3p4DP5niQDGHxXBXJ4YZsDehj8K751JHi"
-  // "QmfVr3wwfqiKqVbA8yW4buMqD215kPRdQrAFhhoQ8RENtY"
-  // "QmbPu37FBPQVWWmKoCUZf11HrzDvuaKXYJ3dXeK8SzhvfZ"
+  // 'QmYgsjNDKzoCLtmhGfWnoXHbKtpJ3hjsqSktKwSN14NGRt',
+  // 'QmX5HsazaYxox9NmCYHMKwRwMRiXDC7qWsrySXMid5gdTH',
+  // 'Qmd2nKrPjSZB4FWsXEWSwkRJJ37iEEVr7NoGnqkdcacVNe',
+  // 'QmRJhrvSRWYx2WD9yWcwNekCgRSaoSMfWcubDS4pSi1tJR',
+  // 'QmQJJA5rVujKKqvYdCfxUJUUYJ1AckW2AQCEhM7ARUynME',
+  // 'QmTN4VzJYnabWAafkgqScnvqeQ3VD3hj9W7jnxBN6e2gdJ',
+  // 'QmUN62XUhMuZb5GeviCZ3v9H3H1ZE3cbYJASqH4Fdh1hSP',
+  // 'QmecbenQT8VJHHg86pLvr6khHrEFaCwK6T2jMHFg85eLAR',
+  // 'QmfBQHZUaGmcGtpy8bbq9gFK4iXdWdpikWt61VcgA25kW3',
+  // 'QmZDsE3zwmhin3p4DP5niQDGHxXBXJ4YZsDehj8K751JHi',
+  // 'QmfVr3wwfqiKqVbA8yW4buMqD215kPRdQrAFhhoQ8RENtY',
+  // 'QmbPu37FBPQVWWmKoCUZf11HrzDvuaKXYJ3dXeK8SzhvfZ'
 
   // .ZONE:
 
