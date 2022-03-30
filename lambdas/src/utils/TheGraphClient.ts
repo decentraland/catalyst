@@ -2,7 +2,7 @@ import { parseUrn } from '@dcl/urn-resolver'
 import { Fetcher } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import log4js from 'log4js'
-import { WearableId, WearablesFilters } from '../apis/collections/types'
+import { ThirdPartyIntegration, WearableId, WearablesFilters } from '../apis/collections/types'
 
 export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
@@ -119,6 +119,23 @@ export class TheGraphClient {
       TheGraphClient.LOGGER.error(error)
       return []
     }
+  }
+
+  /**
+   * This method returns the list of third party integrations as well as collections
+   */
+  public async getThirdPartyIntegrations(): Promise<ThirdPartyIntegration[]> {
+    const query: Query<
+      { thirdParties: { id: string; metadata: { thirdParty: { description: string } } }[] },
+      ThirdPartyIntegration[]
+    > = {
+      description: 'fetch third parties',
+      subgraph: 'thirdPartyRegistrySubgraph',
+      query: QUERY_THIRD_PARTIES,
+      mapper: (response) =>
+        response.thirdParties.map((tp) => ({ urn: tp.id, description: tp.metadata.thirdParty.description }))
+    }
+    return this.runQuery(query, { thirdPartyType: 'third_party_v1' })
   }
 
   private getOwnersByWearable(
@@ -348,6 +365,20 @@ export class TheGraphClient {
   }
 }
 
+const QUERY_THIRD_PARTIES = `
+query ThirdParties() {
+  thirdParties {
+    id
+		metadata {
+      thirdParty {
+        id
+        description
+      }
+    }
+  }
+}
+`
+
 const QUERY_WEARABLES_BY_OWNER: string = `
   query WearablesByOwner($owner: String, $first: Int, $skip: Int) {
     nfts(where: {owner: $owner, searchItemType_in: ["wearable_v1", "wearable_v2", "smart_wearable_v1", "emote_v1"]}, first: $first, skip: $skip) {
@@ -393,4 +424,5 @@ type URLs = {
   ensSubgraph: string
   collectionsSubgraph: string
   maticCollectionsSubgraph: string
+  thirdPartyRegistrySubgraph: string
 }
