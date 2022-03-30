@@ -75,3 +75,8 @@ export type ERC721StandardTrait = {
   trait_type: string
   value: string
 }
+
+export type ThirdPartyIntegration = {
+  urn: string
+  description: string
+}
