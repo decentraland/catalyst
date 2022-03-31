@@ -1,5 +1,5 @@
-import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
 import { LAMBDAS_API } from '@dcl/catalyst-api-specs'
+import { initializeMetricsServer } from '@dcl/catalyst-node-commons'
 import compression from 'compression'
 import cors from 'cors'
 import express from 'express'
@@ -18,6 +18,7 @@ import { EnsOwnership } from './apis/profiles/EnsOwnership'
 import { initializeIndividualProfileRoutes, initializeProfilesRoutes } from './apis/profiles/routes'
 import { WearablesOwnership } from './apis/profiles/WearablesOwnership'
 import statusRouter from './apis/status/routes'
+import { initializeThirdPartyIntegrationsRoutes } from './apis/third-party/routes'
 import { Bean, Environment, EnvironmentConfig } from './Environment'
 import { metricsComponent } from './metrics'
 import { SmartContentClient } from './utils/SmartContentClient'
@@ -120,6 +121,8 @@ export class Server {
 
     // Functionality for Explore use case
     this.app.use('/explore', initializeExploreRoutes(express.Router(), env.getBean(Bean.DAO), contentClient))
+
+    this.app.use('/third-party-integrations', initializeThirdPartyIntegrationsRoutes(theGraphClient, express.Router()))
   }
 
   async start(): Promise<void> {

@@ -3664,7 +3664,7 @@ dcl-catalyst-commons@8.1.0:
     ms "^2.1.2"
     node-fetch "^3.0.0"
 
-dcl-catalyst-commons@8.1.2:
+dcl-catalyst-commons@8.1.2, dcl-catalyst-commons@^8.1.2:
   version "8.1.2"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.1.2.tgz#12a274bc89507d19d57d61323d64e6bd074e9c90"
   integrity sha512-MLgjSskdANljg3Ie68UYPmXdvEEziJPPmTlMv7mwoiYJ0D76H0ixCQOnCjw7/+uzl3rSm0p0ofjtHYufHoVlqw==

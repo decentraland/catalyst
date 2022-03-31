@@ -22,6 +22,10 @@ export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai'
 export const DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET =
   'https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mainnet'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI =
+  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mumbai'
+export const DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET =
+  'https://api.thegraph.com/subgraphs/name/decentraland/tpr-matic-mainnet'
 
 const DEFAULT_MAX_SYNCHRONIZATION_TIME = '15m'
 const DEFAULT_MAX_DEPLOYMENT_OBTENTION_TIME = '3s'
@@ -81,6 +85,7 @@ export const enum EnvironmentConfig {
   ENS_OWNER_PROVIDER_URL,
   COLLECTIONS_L1_SUBGRAPH_URL,
   COLLECTIONS_L2_SUBGRAPH_URL,
+  THIRD_PARTY_REGISTRY_SUBGRAPH_URL,
   COMMIT_HASH,
   CATALYST_VERSION,
   USE_COMPRESSION_MIDDLEWARE,
@@ -167,6 +172,16 @@ export class EnvironmentBuilder {
         (process.env.ETH_NETWORK === 'mainnet'
           ? DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MAINNET
           : DEFAULT_COLLECTIONS_SUBGRAPH_MATIC_MUMBAI)
+    )
+
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.THIRD_PARTY_REGISTRY_SUBGRAPH_URL,
+      () =>
+        process.env.THIRD_PARTY_SUBGRAPH_URL ??
+        (process.env.ETH_NETWORK === 'mainnet'
+          ? DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MAINNET
+          : DEFAULT_THIRD_PARTY_REGISTRY_SUBGRAPH_MATIC_MUMBAI)
     )
 
     this.registerConfigIfNotAlreadySet(env, EnvironmentConfig.COMMIT_HASH, () => process.env.COMMIT_HASH ?? 'Unknown')
