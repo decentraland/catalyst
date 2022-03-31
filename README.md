@@ -21,7 +21,6 @@ The [Catalyst Client](https://github.com/decentraland/catalyst-client) library c
 
 Check full architecture [here](https://github.com/decentraland/architecture)
 
-
 ## Catalyst API
 
 This Server implements the v1 of the API Specification detailed [here](https://github.com/decentraland/catalyst-api-specs)
