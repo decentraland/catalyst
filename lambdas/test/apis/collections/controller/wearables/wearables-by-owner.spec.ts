@@ -86,7 +86,7 @@ describe('wearables by owner', () => {
     const resolver = await thirdPartyResolver(
       thirdPartyGraphClientInstance,
       thirdPartyFetcherInstance,
-      'someCollection'
+      'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
     )
     const { instance: contentClient, mock: contentClientMock } = contentServerThatReturns(WEARABLE_ID_1)
 
@@ -103,7 +103,7 @@ describe('wearables by owner', () => {
   })
 
   it(`When there is no third party registered for a collectionId, it should return an error`, async () => {
-    const collectionId = 'someCollection'
+    const collectionId = 'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
     const { instance } = noThirdPartyRegistered()
     const { instance: thirdPartyFetcherInstance } = thirdPartyFetcher([])
     await expect(thirdPartyResolver(instance, thirdPartyFetcherInstance, collectionId)).rejects.toThrowError(
@@ -115,7 +115,11 @@ describe('wearables by owner', () => {
     const { instance: thirdPartyFetcher } = undefinedThirdPartyFetcher()
     const { instance: thirdPartyGraphClientInstance } = thirdPartyGraphClient()
 
-    const resolver = await thirdPartyResolver(thirdPartyGraphClientInstance, thirdPartyFetcher, 'someCollection')
+    const resolver = await thirdPartyResolver(
+      thirdPartyGraphClientInstance,
+      thirdPartyFetcher,
+      'urn:decentraland:mumbai:collections-thirdparty:some-third-party'
+    )
 
     const { instance: contentClient } = contentServerThatReturns(WEARABLE_ID_1)
 
