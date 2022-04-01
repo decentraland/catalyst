@@ -8,7 +8,7 @@ export class TheGraphClient {
   public static readonly MAX_PAGE_SIZE = 1000
   private static readonly LOGGER = log4js.getLogger('TheGraphClient')
 
-  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) { }
+  constructor(private readonly urls: URLs, private readonly fetcher: Fetcher) {}
 
   public async findOwnersByName(names: string[]): Promise<{ name: string; owner: EthAddress }[]> {
     const query: Query<
@@ -126,14 +126,13 @@ export class TheGraphClient {
    */
   public async getThirdPartyIntegrations(): Promise<ThirdPartyIntegration[]> {
     const query: Query<
-      { thirdParties: { id: string; metadata: { thirdParty: { name: string, description: string } } }[] },
+      { thirdParties: { id: string; metadata: { thirdParty: { name: string; description: string } } }[] },
       ThirdPartyIntegration[]
     > = {
       description: 'fetch third parties',
       subgraph: 'thirdPartyRegistrySubgraph',
       query: QUERY_THIRD_PARTIES,
-      mapper: (response) =>
-        response.thirdParties.map((tp) => ({ urn: tp.id, ...tp.metadata.thirdParty }))
+      mapper: (response) => response.thirdParties.map((tp) => ({ urn: tp.id, ...tp.metadata.thirdParty }))
     }
     return this.runQuery(query, { thirdPartyType: 'third_party_v1' })
   }
