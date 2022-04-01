@@ -28,10 +28,10 @@ export async function getWearablesByOwnerEndpoint(
   res: Response
 ): Promise<void> {
   // Method: GET
-  // Path: /wearables-by-owner/:owner?collectionId={string}
+  // Path: /wearables-by-owner/:owner?thirdPartyId={string}
 
   const { owner } = req.params
-  const { collectionId } = req.query
+  const { thirdPartyId } = req.query
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
   try {
@@ -39,8 +39,8 @@ export async function getWearablesByOwnerEndpoint(
       owner,
       includeDefinition,
       client,
-      collectionId
-        ? await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId as string)
+      thirdPartyId
+        ? await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), thirdPartyId as string)
         : theGraphClient
     )
     res.send(wearablesByOwner)
