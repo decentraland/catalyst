@@ -12,27 +12,17 @@ export interface ThirdPartyFetcher {
 }
 
 export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
-  fetchAssets: async (url: string, thirdPartyId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
-    const parts = thirdPartyId.split(':')
-    if (parts.length === 0) {
-      throw new Error(
-        `Invalid collectionId: ${thirdPartyId}. It must something like: urn:decentraland:{protocol}:collections-thirdparty:{third-party-name}`
-      )
-    }
-
-    // We get the last part of the URN:
-    // => urn:decentraland:{protocol}:collections-thirdparty:{third-party-name} => {third-party-name}
-    const registryId = parts[parts.length - 1]
+  fetchAssets: async (url: string, collectionId: string, owner: EthAddress): Promise<ThirdPartyAsset[]> => {
     try {
-      const assetsByOnwer = (await fetchJson(`${url}/registry/${registryId}/address/${owner}/assets`, {
+      const assetsByOnwer = (await fetchJson(`${url}/registry/${collectionId}/address/${owner}/assets`, {
         timeout: '5000'
       })) as ThirdPartyAssets
 
       if (!assetsByOnwer)
-        LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
+        LOGGER.debug(`No assets found with owner: ${owner}, url: ${url} and registryId: ${collectionId}`)
       return assetsByOnwer?.assets ?? []
     } catch (e) {
-      throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${registryId}`)
+      throw new Error(`Error fetching assets with owner: ${owner}, url: ${url} and registryId: ${collectionId}`)
     }
   }
 })
@@ -40,14 +30,14 @@ export const createThirdPartyFetcher = (): ThirdPartyFetcher => ({
 export const createThirdPartyResolver = async (
   theGraphClient: TheGraphClient,
   thirdPartyFetcher: ThirdPartyFetcher,
-  thirdPartyId: string
+  collectionId: string
 ): Promise<FindWearablesByOwner> => {
-  const thirdPartyResolverAPI = await theGraphClient.findThirdPartyResolver('thirdPartyRegistrySubgraph', thirdPartyId)
-  if (!thirdPartyResolverAPI) throw new Error(`Could not find third party resolver for collectionId: ${thirdPartyId}`)
+  const thirdPartyResolverAPI = await theGraphClient.findThirdPartyResolver('thirdPartyRegistrySubgraph', collectionId)
+  if (!thirdPartyResolverAPI) throw new Error(`Could not find third party resolver for collectionId: ${collectionId}`)
 
   return {
     findWearablesByOwner: async (owner) => {
-      const assetsByOwner = await thirdPartyFetcher.fetchAssets(thirdPartyResolverAPI, thirdPartyId, owner)
+      const assetsByOwner = await thirdPartyFetcher.fetchAssets(thirdPartyResolverAPI, collectionId, owner)
       if (!assetsByOwner) throw new Error(`Could not fetch assets for owner: ${owner}`)
       return assetsByOwner?.map((asset) => asset.urn.decentraland) ?? []
     }
