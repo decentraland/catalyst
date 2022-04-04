@@ -126,14 +126,13 @@ export class TheGraphClient {
    */
   public async getThirdPartyIntegrations(): Promise<ThirdPartyIntegration[]> {
     const query: Query<
-      { thirdParties: { id: string; metadata: { thirdParty: { description: string } } }[] },
+      { thirdParties: { id: string; metadata: { thirdParty: { name: string; description: string } } }[] },
       ThirdPartyIntegration[]
     > = {
       description: 'fetch third parties',
       subgraph: 'thirdPartyRegistrySubgraph',
       query: QUERY_THIRD_PARTIES,
-      mapper: (response) =>
-        response.thirdParties.map((tp) => ({ urn: tp.id, description: tp.metadata.thirdParty.description }))
+      mapper: (response) => response.thirdParties.map((tp) => ({ urn: tp.id, ...tp.metadata.thirdParty }))
     }
     return this.runQuery(query, { thirdPartyType: 'third_party_v1' })
   }
@@ -385,7 +384,7 @@ const QUERY_THIRD_PARTIES = `
     id
 		metadata {
       thirdParty {
-        id
+        name
         description
       }
     }
