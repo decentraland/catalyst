@@ -415,10 +415,17 @@
   dependencies:
     ajv "^7.1.0"
 
-"@dcl/schemas@4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.0.0.tgz#838f415720a4e5e22da01a3c9632ba67824f71dd"
-  integrity sha512-qwmHo/TuJ3Ix+2WroMCFnbZn+xFvipBRfSda0B4elDAvqElqfApfWPZnsl6KTbbajnMWs3B/+0Wef2An1YHJdw==
+"@dcl/schemas@4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.1.0.tgz#6c3616e86f21ee546e690857aa9dcf8a6ee3aae2"
+  integrity sha512-NCKWoK1KtrMlsP0hRM/4Btb4+o48gpi6ZCaEyDnDLYwuCJcApXISB3qaQY/FzdKuyfx6C3MEbjeCGZbhlEIhpQ==
+  dependencies:
+    ajv "^7.1.0"
+
+"@dcl/schemas@4.2.0":
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/schemas/-/schemas-4.2.0.tgz#3bfb90bbd46a9a469c45ab30d4c77e0c5d13f48c"
+  integrity sha512-+YwEYRkUPtDuGhUFKSEKZxMe+ETqdIn0TBMyY8cJt+FijalXzOEFAPVj17TTCxz4V8SOW5qj2022N7FYzM/Qew==
   dependencies:
     ajv "^7.1.0"
 
@@ -626,7 +633,7 @@
     "@ethersproject/logger" "^5.4.0"
     "@ethersproject/rlp" "^5.4.0"
 
-"@ethersproject/address@5.5.0", "@ethersproject/address@^5.4.0":
+"@ethersproject/address@5.5.0":
   version "5.5.0"
   resolved "https://registry.yarnpkg.com/@ethersproject/address/-/address-5.5.0.tgz#bcc6f576a553f21f3dd7ba17248f81b473c9c78f"
   integrity sha512-l4Nj0eWlTUh6ro5IbPTgbpT4wRbdH5l8CQf7icF7sb/SI3Nhd9Y9HzhonTSTi6CefI0necIw7LJqQPopPLZyWw==
@@ -637,7 +644,7 @@
     "@ethersproject/logger" "^5.5.0"
     "@ethersproject/rlp" "^5.5.0"
 
-"@ethersproject/address@^5.0.9", "@ethersproject/address@^5.6.0":
+"@ethersproject/address@^5.0.9", "@ethersproject/address@^5.4.0", "@ethersproject/address@^5.6.0":
   version "5.6.0"
   resolved "https://registry.yarnpkg.com/@ethersproject/address/-/address-5.6.0.tgz#13c49836d73e7885fc148ad633afad729da25012"
   integrity sha512-6nvhYXjbXsHPS+30sHZ+U4VMagFC/9zAk6Gd/h3S21YW4+yfb0WfRtaAIZ4kfM4rrVwqiy284LP0GtL5HXGLxQ==
@@ -3664,6 +3671,7 @@ dcl-catalyst-commons@8.1.0:
     ms "^2.1.2"
     node-fetch "^3.0.0"
 
+<<<<<<< HEAD
 dcl-catalyst-commons@8.1.2:
   version "8.1.2"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.1.2.tgz#12a274bc89507d19d57d61323d64e6bd074e9c90"
@@ -3683,9 +3691,15 @@ dcl-catalyst-commons@^8.1.1:
   version "8.1.1"
   resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.1.1.tgz#640e1e8096206c8999bce15addff9f30140cc589"
   integrity sha512-cFRt+M+YYPJC1c9Tz08PUeKPkdKuPDccr5f7dFa1Lk5fPI9y1eEXkWYZUrxMEv1oyW1rrxlLKErYFlM+QjbzAQ==
+=======
+dcl-catalyst-commons@8.1.2, dcl-catalyst-commons@^8.1.2:
+  version "8.1.2"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.1.2.tgz#12a274bc89507d19d57d61323d64e6bd074e9c90"
+  integrity sha512-MLgjSskdANljg3Ie68UYPmXdvEEziJPPmTlMv7mwoiYJ0D76H0ixCQOnCjw7/+uzl3rSm0p0ofjtHYufHoVlqw==
+>>>>>>> main
   dependencies:
     "@dcl/hashing" "^1.0.0"
-    "@dcl/schemas" "4.0.0"
+    "@dcl/schemas" "4.1.0"
     abort-controller "^3.0.0"
     cids "^1.1.9"
     cookie "^0.4.1"
