@@ -338,7 +338,18 @@ loadStandaloneTestEnvironment()('Integration - Get Active Entities', (testEnv) =
 
 
   describe('Urn Prefix', () => {
+    it('when fetching entities by invalid urn prefix, then a client error is returned', async () => {
+      const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
+      makeNoopValidator(server.components)
+      await server.startProgram()
 
+      const response = await fetch(server.getUrl() + `/entities/currently-pointed/in!valid`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+      })
+
+      expect(response.status).toBe(400)
+    })
     it('when fetching entities by urn prefix, then matching entity is retrieved', async () => {
       const server = await testEnv.configServer().withConfig(EnvironmentConfig.DISABLE_SYNCHRONIZATION, true).andBuild()
       makeNoopValidator(server.components)
