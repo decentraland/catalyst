@@ -384,14 +384,14 @@
   resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.2.tgz#a7677825183605e8011a8efe45912c64486a0b7f"
   integrity sha512-uX3LfF844r7eBxmd6wE8uYU1as/MQfmTov2im6PXu/nI+AMxF+YNzLKDQ4mB0OVtAL3Yy0SEQpAPQgs3GbraXA==
 
-"@dcl/content-validator@1.4.2-20220404115627.commit-3a68ed1":
-  version "1.4.2-20220404115627.commit-3a68ed1"
-  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.2-20220404115627.commit-3a68ed1.tgz#19a0c136214f8a92dcf36355c60b87dad55da535"
-  integrity sha512-rk67cSOqVwrGZNYZmoTr1mi6fnnt3gUfwhhNY+BYVMk9JbXyoev9YB6FQREyzA+rPeyonUqhxyGUUeFgkKFFOw==
+"@dcl/content-validator@1.4.2":
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.2.tgz#758afc7e0d12dc5ed737effe17e0f08b29bcc7ae"
+  integrity sha512-+n02kRbn+clIsobpb7YsVUYam3qnK8nkkI9RaEw5BueJZSJthzGaFIsTPdc2zdbxOR0Ks+mkrMiWPjKw9dVYkw==
   dependencies:
     "@dcl/content-hash-tree" "1.1.2"
     "@dcl/hashing" "1.1.0"
-    "@dcl/schemas" "4.1.0"
+    "@dcl/schemas" "4.2.0"
     "@dcl/urn-resolver" "1.3.0"
     "@ethersproject/address" "5.5.0"
     "@well-known-components/interfaces" "1.1.1"
