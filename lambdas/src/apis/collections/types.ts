@@ -75,3 +75,24 @@ export type ERC721StandardTrait = {
   trait_type: string
   value: string
 }
+
+export type ThirdPartyIntegration = {
+  urn: string
+  name: string
+  description: string
+}
+
+export type ThirdPartyAsset = {
+  id: string
+  amount: number
+  urn: {
+    decentraland: string
+  }
+}
+
+export type ThirdPartyAssets = {
+  address: EthAddress
+  total: number
+  page: number
+  assets: ThirdPartyAsset[]
+}
