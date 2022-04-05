@@ -92,7 +92,7 @@ export async function getProfilesById(
   profilesCacheTTL: number,
   req: Request,
   res: Response
-) {
+): Promise<Response<any, Record<string, any>> | undefined> {
   const profileIds: EthAddress[] | undefined = asArray(req.query.id as string)
   const fields: string[] | undefined = asArray(req.query.field as string)
   if (!profileIds) {

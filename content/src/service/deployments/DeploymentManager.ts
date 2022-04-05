@@ -1,8 +1,6 @@
 import { AuditInfo, Entity } from 'dcl-catalyst-commons'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
-import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
-import { DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
   async getEntityById(
@@ -40,13 +38,5 @@ export class DeploymentManager {
     overwrittenBy: DeploymentId
   ): Promise<void> {
     return deploymentsRepository.setEntitiesAsOverwritten(overwritten, overwrittenBy)
-  }
-
-  savePointerChanges(
-    deploymentPointerChangesRepo: DeploymentPointerChangesRepository,
-    deploymentId: DeploymentId,
-    result: DeploymentResult
-  ): Promise<void> {
-    return deploymentPointerChangesRepo.savePointerChanges(deploymentId, result)
   }
 }

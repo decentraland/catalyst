@@ -1,12 +1,13 @@
+import { EntityId, EntityType, Pointer, Timestamp } from 'dcl-catalyst-commons'
 import { AuthChain } from 'dcl-crypto'
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
 
 export type DeploymentWithAuthChain = {
-  entityId: string
-  entityType: string
-  pointers: string[]
-  localTimestamp: number
+  entityId: EntityId
+  entityType: EntityType
+  pointers: Pointer[]
+  localTimestamp: Timestamp
   authChain: AuthChain
 }
 

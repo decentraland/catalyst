@@ -1,8 +1,8 @@
 import { Entity as ControllerEntity, Entity, EntityType } from 'dcl-catalyst-commons'
 import fetch from 'node-fetch'
 import { stub } from 'sinon'
-import { ControllerPointerChanges } from '../../src/controller/Controller'
 import { EnvironmentConfig } from '../../src/Environment'
+import { DeploymentWithAuthChain } from '../../src/logic/database-queries/snapshots-queries'
 import { SimpleContentItem } from '../../src/ports/contentStorage/contentStorage'
 import { Server } from '../../src/service/Server'
 import { randomEntity } from '../helpers/service/EntityTestFactory'
@@ -90,7 +90,7 @@ describe('Integration - Server', () => {
   it(`PointerChanges`, async () => {
     const response = await fetch(`${address}/pointer-changes?entityType=${entity1.type}`)
     expect(response.ok).toBe(true)
-    const { deltas }: { deltas: ControllerPointerChanges[] } = await response.json()
+    const { deltas }: { deltas: DeploymentWithAuthChain[] } = await response.json()
     expect(Array.isArray(deltas)).toBe(true)
   })
 
