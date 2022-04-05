@@ -2,9 +2,11 @@ import { toQueryParams } from '@dcl/catalyst-node-commons'
 import { EntityType } from 'dcl-catalyst-commons'
 import { EthAddress } from 'dcl-crypto'
 import { Request, Response } from 'express'
+import log4js from 'log4js'
 import { asArray, asInt } from '../../../utils/ControllerUtils'
 import { SmartContentClient } from '../../../utils/SmartContentClient'
 import { TheGraphClient } from '../../../utils/TheGraphClient'
+import { createThirdPartyFetcher, createThirdPartyResolver } from '../../../utils/third-party'
 import { BASE_AVATARS_COLLECTION_ID, OffChainWearablesManager } from '../off-chain/OffChainWearablesManager'
 import { Wearable, WearableId, WearablesFilters, WearablesPagination } from '../types'
 import { isBaseAvatar, translateEntityIntoWearable } from '../Utils'
@@ -17,34 +19,48 @@ const INCLUDE_DEFINITION_VERSIONS = [
   'includedefinitions'
 ]
 
+const LOGGER = log4js.getLogger('TheGraphClient')
+
 export async function getWearablesByOwnerEndpoint(
   client: SmartContentClient,
   theGraphClient: TheGraphClient,
   req: Request,
   res: Response
-) {
+): Promise<void> {
   // Method: GET
-  // Path: /wearables-by-owner/:owner
+  // Path: /wearables-by-owner/:owner?collectionId={string}
 
   const { owner } = req.params
+  const { collectionId } = req.query
   const includeDefinition = INCLUDE_DEFINITION_VERSIONS.some((version) => version in req.query)
 
   try {
-    const result = await getWearablesByOwner(owner, includeDefinition, client, theGraphClient)
-    res.send(result)
+    const wearablesByOwner = await getWearablesByOwner(
+      owner,
+      includeDefinition,
+      client,
+      collectionId
+        ? await createThirdPartyResolver(theGraphClient, createThirdPartyFetcher(), collectionId as string)
+        : theGraphClient
+    )
+    res.send(wearablesByOwner)
   } catch (e) {
-    res.status(500).send(`Failed to fetch wearables by owner. Reason was ${e}`)
+    LOGGER.error(e)
+    res.status(500).send(`Failed to fetch wearables by owner.`)
   }
+}
+export interface FindWearablesByOwner {
+  findWearablesByOwner: (owner: EthAddress) => Promise<WearableId[]>
 }
 
 export async function getWearablesByOwner(
   owner: EthAddress,
   includeDefinition: boolean,
   client: SmartContentClient,
-  theGraphClient: TheGraphClient
+  wearablesResolver: FindWearablesByOwner
 ): Promise<{ urn: WearableId; amount: number; definition?: Wearable | undefined }[]> {
   // Fetch wearables & definitions (if needed)
-  const wearablesByOwner = await theGraphClient.findWearablesByOwner(owner)
+  const wearablesByOwner = await wearablesResolver.findWearablesByOwner(owner)
   const definitions: Map<WearableId, Wearable> = includeDefinition
     ? await fetchDefinitions(wearablesByOwner, client)
     : new Map()
@@ -72,7 +88,7 @@ export async function getWearablesEndpoint(
   offChainManager: OffChainWearablesManager,
   req: Request,
   res: Response
-) {
+): Promise<unknown> {
   // Method: GET
   // Path: /wearables/?filters&limit={number}&lastId={string}
 
