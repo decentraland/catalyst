@@ -46,13 +46,13 @@ export function createBatchDeployerComponent(
    * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
    */
   async function shouldRemoteEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
-    // ignore entities if those were successfully deployed during this execution
-    if (successfulDeployments.has(entity.entityId)) return true
-
     // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
     if (syncOptions.ignoredTypes.has(entity.entityType)) {
       return true
     }
+
+    // ignore entities if those were successfully deployed during this execution
+    if (successfulDeployments.has(entity.entityId)) return true
 
     // ignore entities that are already deployed locally
     if (await isEntityDeployed(components, entity.entityId)) {
