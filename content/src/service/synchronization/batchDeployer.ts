@@ -28,11 +28,14 @@ export function createBatchDeployerComponent(
     | 'deployedEntitiesFilter'
     | 'storage'
   >,
-  queueOptions: createJobQueue.Options
+  syncOptions: {
+    ignoredTypes: Set<string>
+    queueOptions: createJobQueue.Options
+  }
 ): IDeployerComponent & IBaseComponent {
   const logs = components.logs.getLogger('DeployerComponent')
 
-  const parallelDeploymentJobs = createJobQueue(queueOptions)
+  const parallelDeploymentJobs = createJobQueue(syncOptions.queueOptions)
 
   // accumulator of all deployments
   const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
@@ -41,6 +44,11 @@ export function createBatchDeployerComponent(
   async function shouldEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
     // ignore entities if those were successfully deployed during this execution
     if (successfulDeployments.has(entity.entityId)) return true
+
+    // ignore specific entity types using EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES
+    if (syncOptions.ignoredTypes.has(entity.entityType)) {
+      return true
+    }
 
     // ignore entities that are already deployed locally
     if (await isEntityDeployed(components, entity.entityId)) {

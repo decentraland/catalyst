@@ -140,7 +140,10 @@ export enum EnvironmentConfig {
   DEPLOYMENT_RATE_LIMIT_TTL,
   DEPLOYMENT_RATE_LIMIT_MAX,
   DENYLIST_FILE_NAME,
-  DENYLIST_URLS
+  DENYLIST_URLS,
+
+  // List of entity types ignored during the synchronization
+  SYNC_IGNORED_ENTITY_TYPES
 }
 export class EnvironmentBuilder {
   private baseEnv: Environment
@@ -178,6 +181,11 @@ export class EnvironmentBuilder {
       env,
       EnvironmentConfig.DENYLIST_URLS,
       () => process.env.DENYLIST_URLS ?? DEFAULT_DENYLIST_URLS
+    )
+    this.registerConfigIfNotAlreadySet(
+      env,
+      EnvironmentConfig.SYNC_IGNORED_ENTITY_TYPES,
+      () => process.env.SYNC_IGNORED_ENTITY_TYPES ?? ''
     )
     this.registerConfigIfNotAlreadySet(
       env,
