@@ -45,7 +45,7 @@ export async function getWearablesByOwnerEndpoint(
     )
     res.send(wearablesByOwner)
   } catch (e) {
-    LOGGER.debug(e)
+    LOGGER.error(e)
     res.status(500).send(`Failed to fetch wearables by owner.`)
   }
 }
