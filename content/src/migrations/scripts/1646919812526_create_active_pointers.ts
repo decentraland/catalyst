@@ -5,9 +5,10 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pointer: { type: 'text', primaryKey: true },
     entity_id: { type: 'text', notNull: true }
   })
-  pgm.sql(` CREATE INDEX active_pointers_pointer_ops  ON active_pointers USING gin  (pointer gin_trgm_ops);`)
+  pgm.sql(`CREATE EXTENSION pg_trgm;`)
+  pgm.sql(`CREATE INDEX active_pointers_pointer_ops ON active_pointers USING gin (pointer gin_trgm_ops);`)
 
-  pgm.sql(` DELETE FROM deployment_deltas
+  pgm.sql(`DELETE FROM deployment_deltas
   WHERE
   deployment = ANY (
     SELECT id FROM deployments as e
@@ -54,7 +55,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmSCR66NTA79DrjojcHf1sRHjHqH4RLWPK1jSrnxrYufqa')
   );`)
 
-  pgm.sql(` DELETE FROM last_deployed_pointers
+  pgm.sql(`DELETE FROM last_deployed_pointers
   WHERE
   deployment = ANY (
     SELECT id FROM deployments as e
@@ -101,7 +102,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmSCR66NTA79DrjojcHf1sRHjHqH4RLWPK1jSrnxrYufqa')
   );`)
 
-  pgm.sql(` DELETE FROM pointer_history
+  pgm.sql(`DELETE FROM pointer_history
   WHERE
   deployment = ANY (
     SELECT id FROM deployments as e
@@ -148,7 +149,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       'QmSCR66NTA79DrjojcHf1sRHjHqH4RLWPK1jSrnxrYufqa')
   );`)
 
-  pgm.sql(` DELETE FROM content_files
+  pgm.sql(`DELETE FROM content_files
   WHERE
   deployment = ANY (
     SELECT id FROM deployments as e
