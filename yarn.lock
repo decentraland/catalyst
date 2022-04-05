@@ -384,7 +384,6 @@
   resolved "https://registry.yarnpkg.com/@dcl/content-hash-tree/-/content-hash-tree-1.1.2.tgz#a7677825183605e8011a8efe45912c64486a0b7f"
   integrity sha512-uX3LfF844r7eBxmd6wE8uYU1as/MQfmTov2im6PXu/nI+AMxF+YNzLKDQ4mB0OVtAL3Yy0SEQpAPQgs3GbraXA==
 
-
 "@dcl/content-validator@1.4.2":
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/@dcl/content-validator/-/content-validator-1.4.2.tgz#758afc7e0d12dc5ed737effe17e0f08b29bcc7ae"

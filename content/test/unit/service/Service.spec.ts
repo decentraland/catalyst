@@ -7,6 +7,7 @@ import { ContentFileHash, Deployment, Entity, EntityType, EntityVersion } from '
 import { Authenticator } from 'dcl-crypto'
 import ms from 'ms'
 import { DEFAULT_ENTITIES_CACHE_SIZE, Environment, EnvironmentConfig } from '../../../src/Environment'
+import * as pointers from '../../../src/logic/database-queries/pointers-queries'
 import { metricsDeclaration } from '../../../src/metrics'
 import { createActiveEntitiesComponent } from '../../../src/ports/activeEntities'
 import { Denylist } from '../../../src/ports/denylist'
@@ -57,6 +58,10 @@ describe('Service', function() {
         new Map([['file', randomFileHash]]),
         'metadata'
       )
+
+    jest.spyOn(pointers, 'updateActiveDeployments').mockImplementation(() =>
+      Promise.resolve()
+    )
   })
 
   it(`When no file matches the given entity id, then deployment fails`, async () => {

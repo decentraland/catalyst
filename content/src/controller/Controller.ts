@@ -137,6 +137,26 @@ export class Controller {
     return [elements]
   }
 
+  async filterByUrn(req: express.Request, res: express.Response): Promise<void> {
+    // Method: GET
+    // Path: /entities/currently-pointed/{urnPrefix}
+    const urnPrefix: string = req.params.urnPrefix
+
+    const regex = /^[a-zA-Z0-9_.:,-]+$/g
+    if (!regex.test(urnPrefix)) {
+      return res
+        .status(400)
+        .send({ errors: `Invalid Urn prefix param: '${urnPrefix}'` })
+        .end()
+    }
+
+    const entities: { pointer: string; entityId: EntityId }[] = await this.components.activeEntities.withPrefix(
+      urnPrefix
+    )
+
+    res.send(entities)
+  }
+
   async createEntity(req: express.Request, res: express.Response): Promise<void> {
     // Method: POST
     // Path: /entities
