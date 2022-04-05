@@ -2,11 +2,11 @@ import { MigrationBuilder } from 'node-pg-migrate'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createTable('active_pointers', {
-    pointer: { type: 'text', primaryKey: true },
+    pointer: { type: 'varchar', primaryKey: true },
     entity_id: { type: 'text', notNull: true }
   })
-  pgm.sql(`CREATE EXTENSION pg_trgm;`)
-  pgm.sql(`CREATE INDEX active_pointers_pointer_ops ON active_pointers USING gin (pointer gin_trgm_ops);`)
+
+  pgm.sql(`CREATE INDEX active_pointers_pointer_ops_idx ON active_pointers (pointer varchar_pattern_ops);`)
 
   pgm.sql(`DELETE FROM deployment_deltas
   WHERE
