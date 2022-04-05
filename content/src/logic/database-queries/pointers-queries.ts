@@ -10,7 +10,7 @@ export async function getActiveDeploymentsByUrnPrefix(
   const matchingString = `${urnPrefix}%`
   const query = SQL`SELECT * FROM active_pointers as p WHERE p.pointer LIKE ${matchingString};`
 
-  const queryResult = (await components.database.queryWithValues(query)).rows
+  const queryResult = (await components.database.queryWithValues(query, 'filter_by_urn_prefix')).rows
 
   const entities = queryResult.map((deployment: { entity_id: EntityId; pointer: Pointer }) => {
     return {

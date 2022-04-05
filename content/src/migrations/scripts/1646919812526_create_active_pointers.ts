@@ -5,6 +5,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pointer: { type: 'text', primaryKey: true },
     entity_id: { type: 'text', notNull: true }
   })
+  pgm.sql(` CREATE INDEX active_pointers_pointer_ops  ON active_pointers USING gin  (pointer gin_trgm_ops);`)
 
   pgm.sql(` DELETE FROM deployment_deltas
   WHERE
@@ -249,4 +250,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.dropTable('active_pointers')
+  pgm.sql(`ALTER TABLE deployments DROP CONSTRAINT IF EXISTS deployments_uniq_entity_id;`)
+  pgm.sql(`ALTER TABLE deployments ADD UNIQUE (entity_id, entity_type);`)
 }
