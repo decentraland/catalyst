@@ -41,7 +41,11 @@ export function createBatchDeployerComponent(
   const deploymentsMap = new Map<string, CannonicalEntityDeployment>()
   const successfulDeployments = new Set<string>()
 
-  async function shouldEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
+  /**
+   * This function is used to filter out (ignore) deployments coming from remote
+   * servers only. Local deployments using POST /entities _ARE NOT_ filtered by this function.
+   */
+  async function shouldRemoteEntityDeploymentBeIgnored(entity: RemoteEntityDeployment): Promise<boolean> {
     // ignore entities if those were successfully deployed during this execution
     if (successfulDeployments.has(entity.entityId)) return true
 
@@ -60,7 +64,7 @@ export function createBatchDeployerComponent(
   }
 
   async function handleDeploymentFromServer(entity: RemoteEntityDeployment, contentServer: string) {
-    if (await shouldEntityDeploymentBeIgnored(entity)) {
+    if (await shouldRemoteEntityDeploymentBeIgnored(entity)) {
       // early return to prevent noops
       components.metrics.increment('dcl_ignored_sync_deployments')
       return
