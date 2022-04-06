@@ -20,7 +20,7 @@ describe('clean snapshots', () => {
     const minimumSnapshotSizeInBytes = 50
     const bigSnapshotFilepath = 'modern-snapshot.txt'
     const filepathToContent = new Map([
-      [bigSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
+      [bigSnapshotFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
     // To do: return also mocks
     const fs = createFsMockWithFiles(filepathToContent)
@@ -38,7 +38,7 @@ describe('clean snapshots', () => {
     const bigSnapshotFilepath = 'legacy-snapshot.txt'
 
     const filepathToContent = new Map([
-      [bigSnapshotFilepath, createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)]
+      [bigSnapshotFilepath, legacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)]
     ])
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
@@ -54,8 +54,8 @@ describe('clean snapshots', () => {
     const bigSnapshotFilepath = 'modern-snapshot.txt'
     const bigNotSnapshotFilepath = 'big-not-snapshot.txt'
     const filepathToContent = new Map([
-      [bigSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
-      [bigNotSnapshotFilepath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigSnapshotFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigNotSnapshotFilepath, nonSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
     ])
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
@@ -76,9 +76,9 @@ describe('clean snapshots', () => {
     const bigNotSnapshotFilepath = 'big-not-snapshot.txt'
 
     const filepathToContent = new Map([
-      [bigModernSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
-      [bigLegacySnapshotFilepath, createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)],
-      [bigNotSnapshotFilepath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
+      [bigModernSnapshotFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigLegacySnapshotFilepath, legacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)],
+      [bigNotSnapshotFilepath, nonSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
@@ -100,17 +100,26 @@ describe('clean snapshots', () => {
     const bigModernSnapshotGzipFilepath = bigModernSnapshotFilepath + '.gzip'
 
     const filepathToContent = new Map([
-      [bigModernSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
-      // fake the gzip content
-      [bigModernSnapshotGzipFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
+      [bigModernSnapshotGzipFilepath, nonSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
-    const fs = createFsMockWithFiles(filepathToContent)
+    const fs = createFsMock()
+    fs.addFile(bigModernSnapshotFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes))
+    const gzipCompressor: FileCompressor = {
+      compress: jest.fn(),
+      decompress: jest.fn()
+    }
+    const decompressStub = sinon.stub(gzipCompressor, 'decompress')
+      .withArgs(sinon.match(bigModernSnapshotGzipFilepath), sinon.match(bigModernSnapshotFilepath))
+      .callsFake((source, dest) => {
+        fs.addFile(dest, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes))
+        return Promise.resolve(true)
+    })
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
-    expect(gzipCompressor.decompress).toBeCalledWith(bigModernSnapshotGzipFilepath, bigModernSnapshotFilepath)
+    sinon.assert.calledWith(decompressStub, bigModernSnapshotGzipFilepath, bigModernSnapshotFilepath)
     expect(fs.createReadStream).toBeCalledWith(bigModernSnapshotFilepath, {'end': 59})
     expect(fs.createReadStream).not.toBeCalledWith(bigModernSnapshotGzipFilepath, {'end': 59})
     expect(fs.unlink).toBeCalledWith(bigModernSnapshotGzipFilepath)
@@ -123,19 +132,29 @@ describe('clean snapshots', () => {
     const bigNonSnapshotGzipFilePath = bigNonSnapshotFilepath + '.gzip'
 
     const filepathToContent = new Map([
-      [bigNonSnapshotGzipFilePath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
-      [bigNonSnapshotFilepath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
+      [bigNonSnapshotGzipFilePath, nonSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
     ])
-    const fs = createFsMockWithFiles(filepathToContent)
-    const executeCommandMock = jest.fn().mockResolvedValue({
-      stdout: bigNonSnapshotGzipFilePath + '\n',
-      stderr: ''
+
+    const fs = createFsMock()
+    fs.addFile(bigNonSnapshotGzipFilePath, nonSnapshotContentWithSize(minimumSnapshotSizeInBytes))
+
+    const gzipCompressor: FileCompressor = {
+      compress: jest.fn(),
+      decompress: jest.fn()
+    }
+    const decompressStub = sinon.stub(gzipCompressor, 'decompress')
+      .withArgs(sinon.match(bigNonSnapshotGzipFilePath), sinon.match(bigNonSnapshotFilepath))
+      .callsFake((source, dest) => {
+        fs.addFile(dest, nonSnapshotContentWithSize(minimumSnapshotSizeInBytes))
+        return Promise.resolve(true)
     })
+
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
-    expect(gzipCompressor.decompress).toBeCalledWith(bigNonSnapshotGzipFilePath, bigNonSnapshotFilepath)
+    sinon.assert.calledWith(decompressStub, bigNonSnapshotGzipFilePath, bigNonSnapshotFilepath)
     expect(fs.createReadStream).toBeCalledWith(bigNonSnapshotFilepath, {'end': 59})
     expect(fs.unlink).toBeCalledWith(bigNonSnapshotFilepath)
     expect(fs.createReadStream).not.toBeCalledWith(bigNonSnapshotGzipFilePath, {'end': 59})
@@ -144,14 +163,14 @@ describe('clean snapshots', () => {
 
   it('auxiliar test - should create snapshot content with specified size', () => {
     const minimumSnapshotSizeInBytes = 50
-    const modernSnapshotContent = createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)
-    const legacySnapshotContent = createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)
+    const modernSnapshotContent = modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)
+    const legacySnapshotContent = legacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)
     expect(modernSnapshotContent.length).toBe(minimumSnapshotSizeInBytes)
     expect(legacySnapshotContent.length >= minimumSnapshotSizeInBytes).toBeTruthy()
   })
 })
 
-function createModernSnapshotContentWithSize(snapshotSizeInBytes: number): Buffer {
+function modernSnapshotContentWithSize(snapshotSizeInBytes: number): Buffer {
   const header = '### Decentraland json snapshot\n'
   if (snapshotSizeInBytes < header.length) {
     throw new Error('bad input')
@@ -160,14 +179,14 @@ function createModernSnapshotContentWithSize(snapshotSizeInBytes: number): Buffe
   return Buffer.from('### Decentraland json snapshot\n' + 'a'.repeat(numberOfCharactersMissing))
 }
 
-function createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes: number): Buffer {
+function legacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes: number): Buffer {
   const anElement = '["QmbG1pfz6Lsk9BAcTXvPXLTVd4XAzvbMG61o7h5KPVzqSb",["0xd65a0a2d8770f7876567a3470274d6e3f3cf5e1f"]]'
   const numberOfElements = Math.ceil(minimumSnapshotSizeInBytes / anElement.length)
   const elements = Array(numberOfElements).fill(anElement)
   return Buffer.from(`[${elements.join(',')}]`)
 }
 
-function createNonSnapshotContentWithSize(nonSnapshotSizeInBytes: number): Buffer {
+function nonSnapshotContentWithSize(nonSnapshotSizeInBytes: number): Buffer {
   return Buffer.from('a'.repeat(nonSnapshotSizeInBytes))
 }
 
@@ -178,15 +197,36 @@ function createExecuteCommandMockWithStdoutListingFiles(files: Map<string, any>)
   })
 }
 
-function createFsMockWithFiles(filepathToContent: Map<string, Buffer>) {
+function createFsMock() {
   const filepathToReadStream = new Map()
-  filepathToContent.forEach((content, filepath) => {
-    const readStreamMock = { close: jest.fn() }
-    filepathToReadStream.set(filepath, readStreamMock)
-    streamToBufferStub.withArgs(sinon.match(readStreamMock)).resolves(content)
-  })
   return {
     createReadStream: jest.fn().mockImplementation((filepath) => filepathToReadStream.get(filepath)),
-    unlink: jest.fn()
+    unlink: jest.fn(),
+    addFile: (filepath: string, content: Buffer) => {
+      const readStreamMock = { close: jest.fn() }
+      filepathToReadStream.set(filepath, readStreamMock)
+      streamToBufferStub.withArgs(sinon.match(readStreamMock)).resolves(content)
+    }
   }
 }
+
+function createFsMockWithFiles(filepathToContent: Map<string, Buffer>) {
+  const fsMock = createFsMock()
+  filepathToContent.forEach((content, filepath) => {
+    fsMock.addFile(filepath, content)
+  })
+  return fsMock
+}
+
+// function createFsMockWithFiles(filepathToContent: Map<string, Buffer>) {
+//   const filepathToReadStream = new Map()
+//   filepathToContent.forEach((content, filepath) => {
+//     const readStreamMock = { close: jest.fn() }
+//     filepathToReadStream.set(filepath, readStreamMock)
+//     streamToBufferStub.withArgs(sinon.match(readStreamMock)).resolves(content)
+//   })
+//   return {
+//     createReadStream: jest.fn().mockImplementation((filepath) => filepathToReadStream.get(filepath)),
+//     unlink: jest.fn()
+//   }
+// }
