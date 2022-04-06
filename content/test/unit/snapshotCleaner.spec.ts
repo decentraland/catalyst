@@ -1,9 +1,11 @@
 import { createLogComponent } from '@well-known-components/logger'
-import { FileHandle } from 'fs/promises'
 import path from 'path'
+import sinon from 'sinon'
+import * as ct from '../../src/ports/contentStorage/contentStorage'
 import { FileCompressor } from '../../src/ports/gzipCompressor'
 import { cleanSnapshots } from '../../src/snapshotCleaner'
 
+const streamToBufferStub = sinon.stub(ct, 'streamToBuffer')
 describe('clean snapshots', () => {
   const tmpRootDir = path.resolve('some-tmp-dir')
   const logs = createLogComponent()
@@ -12,80 +14,81 @@ describe('clean snapshots', () => {
     decompress: jest.fn()
   }
 
+  beforeEach(() => streamToBufferStub.reset())
+
   it('should delete a modern snapshot bigger than 50 bytes', async () => {
     const minimumSnapshotSizeInBytes = 50
-    const modernSnapshotContent = createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)
     const bigSnapshotFilepath = 'modern-snapshot.txt'
-    const bigFiles = new Map([
-      [bigSnapshotFilepath, createOpenFileMockWithReadResultContent(modernSnapshotContent)]
+    const filepathToContent = new Map([
+      [bigSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
-    const fs = createFsMockWithFiles(bigFiles)
-    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(bigFiles)
+    // To do: return also mocks
+    const fs = createFsMockWithFiles(filepathToContent)
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
 
-    expect(fs.open).toBeCalledWith(bigSnapshotFilepath, fs.constants.O_RDONLY)
-    expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
+    expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, { end: 59 })
+    expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
   })
 
   it('should delete a legacy snapshot bigger than 50 bytes', async () => {
     const minimumSnapshotSizeInBytes = 50
-    const legacySnapshotContent = createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)
     const bigSnapshotFilepath = 'legacy-snapshot.txt'
-    const bigFiles = new Map([
-      [bigSnapshotFilepath, createOpenFileMockWithReadResultContent(legacySnapshotContent)]
+
+    const filepathToContent = new Map([
+      [bigSnapshotFilepath, createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)]
     ])
-    const fs = createFsMockWithFiles(bigFiles)
-    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(bigFiles)
+    const fs = createFsMockWithFiles(filepathToContent)
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor } , tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
-    expect(fs.open).toBeCalledWith(bigSnapshotFilepath, fs.constants.O_RDONLY)
+    expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, { end: 59 })
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
   })
   it('should delete only the modern snapshot bigger from the two files bigger than 50 bytes', async () => {
     const minimumSnapshotSizeInBytes = 50
-    const modernSnapshotContent = createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)
     const bigSnapshotFilepath = 'modern-snapshot.txt'
     const bigNotSnapshotFilepath = 'big-not-snapshot.txt'
-    const bigFiles = new Map([
-      [bigSnapshotFilepath, createOpenFileMockWithReadResultContent(modernSnapshotContent)],
-      [bigNotSnapshotFilepath, createOpenFileMockWithReadResultContent(createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes))],
+    const filepathToContent = new Map([
+      [bigSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigNotSnapshotFilepath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
     ])
-    const fs = createFsMockWithFiles(bigFiles)
-    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(bigFiles)
+    const fs = createFsMockWithFiles(filepathToContent)
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor } , tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
-    expect(fs.open).toBeCalledWith(bigSnapshotFilepath, fs.constants.O_RDONLY)
-    expect(fs.open).toBeCalledWith(bigNotSnapshotFilepath, fs.constants.O_RDONLY)
     expect(fs.unlink).toBeCalledWith(bigSnapshotFilepath)
     expect(fs.unlink).not.toBeCalledWith(bigNotSnapshotFilepath)
+    expect(fs.createReadStream).toBeCalledWith(bigSnapshotFilepath, {'end': 59})
+    expect(fs.createReadStream).toBeCalledWith(bigNotSnapshotFilepath, {'end': 59})
   })
 
   it('should delete only modern and legacy snapshots and not other files', async () => {
     const minimumSnapshotSizeInBytes = 50
-    const modernSnapshotContent = createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)
-    const legacySnapshotContent = createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)
     const bigLegacySnapshotFilepath = 'legacy-snapshot.txt'
     const bigModernSnapshotFilepath = 'modern-snapshot.txt'
     const bigNotSnapshotFilepath = 'big-not-snapshot.txt'
-    const bigFiles = new Map([
-      [bigModernSnapshotFilepath, createOpenFileMockWithReadResultContent(modernSnapshotContent)],
-      [bigLegacySnapshotFilepath, createOpenFileMockWithReadResultContent(legacySnapshotContent)],
-      [bigNotSnapshotFilepath, createOpenFileMockWithReadResultContent(createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes))],
-    ])
-    const fs = createFsMockWithFiles(bigFiles)
 
-    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(bigFiles)
+    const filepathToContent = new Map([
+      [bigModernSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigLegacySnapshotFilepath, createLegacySnapshotContentBiggerThan(minimumSnapshotSizeInBytes)],
+      [bigNotSnapshotFilepath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
+    ])
+    const fs = createFsMockWithFiles(filepathToContent)
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
+
+
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
-    expect(fs.open).toBeCalledWith(bigModernSnapshotFilepath, fs.constants.O_RDONLY)
-    expect(fs.open).toBeCalledWith(bigLegacySnapshotFilepath, fs.constants.O_RDONLY)
-    expect(fs.open).toBeCalledWith(bigNotSnapshotFilepath, fs.constants.O_RDONLY)
+    expect(fs.createReadStream).toBeCalledWith(bigModernSnapshotFilepath, {'end': 59})
+    expect(fs.createReadStream).toBeCalledWith(bigLegacySnapshotFilepath, {'end': 59})
+    expect(fs.createReadStream).toBeCalledWith(bigNotSnapshotFilepath, {'end': 59})
     expect(fs.unlink).toBeCalledWith(bigModernSnapshotFilepath)
     expect(fs.unlink).toBeCalledWith(bigLegacySnapshotFilepath)
     expect(fs.unlink).not.toBeCalledWith(bigNotSnapshotFilepath)
@@ -95,21 +98,21 @@ describe('clean snapshots', () => {
     const minimumSnapshotSizeInBytes = 50
     const bigModernSnapshotFilepath = 'modern-snapshot-hash'
     const bigModernSnapshotGzipFilepath = bigModernSnapshotFilepath + '.gzip'
-    const bigFiles = new Map([
-      [bigModernSnapshotGzipFilepath, createOpenFileMockWithReadResultContent(
-        createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes))],
-      [bigModernSnapshotFilepath, createOpenFileMockWithReadResultContent(
-        createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes))],
+
+    const filepathToContent = new Map([
+      [bigModernSnapshotFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      // fake the gzip content
+      [bigModernSnapshotGzipFilepath, createModernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
-    const fs = createFsMockWithFiles(bigFiles)
-    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(bigFiles)
+    const fs = createFsMockWithFiles(filepathToContent)
+    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(gzipCompressor.decompress).toBeCalledWith(bigModernSnapshotGzipFilepath, bigModernSnapshotFilepath)
-    expect(fs.open).toBeCalledWith(bigModernSnapshotFilepath, fs.constants.O_RDONLY)
-    expect(fs.open).not.toBeCalledWith(bigModernSnapshotGzipFilepath, fs.constants.O_RDONLY)
+    expect(fs.createReadStream).toBeCalledWith(bigModernSnapshotFilepath, {'end': 59})
+    expect(fs.createReadStream).not.toBeCalledWith(bigModernSnapshotGzipFilepath, {'end': 59})
     expect(fs.unlink).toBeCalledWith(bigModernSnapshotGzipFilepath)
     expect(fs.unlink).toBeCalledWith(bigModernSnapshotFilepath)
   })
@@ -118,20 +121,25 @@ describe('clean snapshots', () => {
     const minimumSnapshotSizeInBytes = 50
     const bigNonSnapshotFilepath = 'modern-snapshot-hash'
     const bigNonSnapshotGzipFilePath = bigNonSnapshotFilepath + '.gzip'
-    const bigFiles = new Map([
-      [bigNonSnapshotGzipFilePath, createOpenFileMockWithReadResultContent(createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes))],
-      [bigNonSnapshotFilepath, createOpenFileMockWithReadResultContent(createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes))],
+
+    const filepathToContent = new Map([
+      [bigNonSnapshotGzipFilePath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)],
+      [bigNonSnapshotFilepath, createNonSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
-    const fs = createFsMockWithFiles(bigFiles)
-    const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(bigFiles)
+    const fs = createFsMockWithFiles(filepathToContent)
+    const executeCommandMock = jest.fn().mockResolvedValue({
+      stdout: bigNonSnapshotGzipFilePath + '\n',
+      stderr: ''
+    })
 
     await cleanSnapshots(executeCommandMock, { fs, logs, gzipCompressor }, tmpRootDir, minimumSnapshotSizeInBytes)
 
     expect(executeCommandMock).toBeCalledWith(`find ${tmpRootDir} -type f -size +${minimumSnapshotSizeInBytes - 1}c`)
     expect(gzipCompressor.decompress).toBeCalledWith(bigNonSnapshotGzipFilePath, bigNonSnapshotFilepath)
-    expect(fs.open).toBeCalledWith(bigNonSnapshotFilepath, fs.constants.O_RDONLY)
-    expect(fs.unlink).not.toBeCalledWith(bigNonSnapshotGzipFilePath)
+    expect(fs.createReadStream).toBeCalledWith(bigNonSnapshotFilepath, {'end': 59})
     expect(fs.unlink).toBeCalledWith(bigNonSnapshotFilepath)
+    expect(fs.createReadStream).not.toBeCalledWith(bigNonSnapshotGzipFilePath, {'end': 59})
+    expect(fs.unlink).not.toBeCalledWith(bigNonSnapshotGzipFilePath)
   })
 
   it('auxiliar test - should create snapshot content with specified size', () => {
@@ -163,45 +171,22 @@ function createNonSnapshotContentWithSize(nonSnapshotSizeInBytes: number): Buffe
   return Buffer.from('a'.repeat(nonSnapshotSizeInBytes))
 }
 
-function createExecuteCommandMockWithStdoutListingFiles(files: Map<string, FileHandle>) {
+function createExecuteCommandMockWithStdoutListingFiles(files: Map<string, any>) {
   return jest.fn().mockResolvedValue({
     stdout: Array.from(files.keys()).join('\n'),
     stderr: ''
   })
 }
 
-function createFsMockWithFiles(files: Map<string, FileHandle>) {
+function createFsMockWithFiles(filepathToContent: Map<string, Buffer>) {
+  const filepathToReadStream = new Map()
+  filepathToContent.forEach((content, filepath) => {
+    const readStreamMock = { close: jest.fn() }
+    filepathToReadStream.set(filepath, readStreamMock)
+    streamToBufferStub.withArgs(sinon.match(readStreamMock)).resolves(content)
+  })
   return {
-    open: jest.fn().mockImplementation((path) => files.get(path)),
-    constants: {
-      F_OK: 1,
-      R_OK: 2,
-      O_RDONLY: 3
-    },
+    createReadStream: jest.fn().mockImplementation((filepath) => filepathToReadStream.get(filepath)),
     unlink: jest.fn()
-  }
-}
-
-function createOpenFileMockWithReadResultContent(readResultContentBuffer: Buffer): FileHandle {
-  const throwNotImplemented = () => { throw new Error('Function not implemented.') }
-  return {
-    fd: 0,
-    read: jest.fn().mockResolvedValue({
-      buffer: readResultContentBuffer
-    }),
-    close: jest.fn(),
-    appendFile: () =>  throwNotImplemented(),
-    chown: () =>  throwNotImplemented(),
-    chmod: () =>  throwNotImplemented(),
-    datasync: () =>  throwNotImplemented(),
-    sync: () =>  throwNotImplemented(),
-    readFile: () =>  throwNotImplemented(),
-    stat: () =>  throwNotImplemented(),
-    truncate: () =>  throwNotImplemented(),
-    utimes: () =>  throwNotImplemented(),
-    writeFile: () =>  throwNotImplemented(),
-    write: () =>  throwNotImplemented(),
-    writev: () =>  throwNotImplemented(),
-    readv: () =>  throwNotImplemented()
   }
 }

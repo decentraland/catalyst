@@ -1,13 +1,14 @@
-import { FileHandle } from 'fs/promises'
+import { ReadStream } from 'fs'
 import PQueue from 'p-queue'
 import path from 'path'
+import { streamToBuffer } from './ports/contentStorage/contentStorage'
 import { FSComponent } from './ports/fs'
 import { AppComponents } from './types'
 
 export async function cleanSnapshots(
   executeCommand: (command: string) => Promise<{ stdout: string; stderr: string }>,
   components: Pick<AppComponents, 'logs' | 'gzipCompressor'> & {
-    fs: Pick<FSComponent, 'constants' | 'open' | 'unlink'>
+    fs: Pick<FSComponent, 'unlink' | 'createReadStream'>
   },
   storageDirectory: string,
   minimumSnapshotSizeInBytes: number
@@ -18,15 +19,15 @@ export async function cleanSnapshots(
   const isLegacySnapshotHeader = (header: string): boolean => header.match(/\[\[\"Qm.+?(?=\",\[\")/) !== null
 
   const isSnapshot = async (filepath: string): Promise<boolean> => {
-    let openFile: FileHandle | undefined
+    let readStream: ReadStream | undefined
     try {
-      openFile = await components.fs.open(filepath, components.fs.constants.O_RDONLY)
-      const header = await openFile.read({ length: 60 })
-      const potentialSnapshotHeader = header.buffer.toString('utf8', 0, 60)
+      readStream = components.fs.createReadStream(filepath, { end: 59 })
+      const header = await streamToBuffer(readStream)
+      const potentialSnapshotHeader = header.toString('utf8')
       return isModernSnapshotHeader(potentialSnapshotHeader) || isLegacySnapshotHeader(potentialSnapshotHeader)
     } finally {
-      if (openFile) {
-        await openFile.close()
+      if (readStream) {
+        readStream.close()
       }
     }
   }
@@ -39,14 +40,14 @@ export async function cleanSnapshots(
         await components.gzipCompressor.decompress(filepath, potentialSnapshotFilepath)
       }
       if (await isSnapshot(potentialSnapshotFilepath)) {
-        logger.debug(`deleting snapshot: ${filepath}`)
+        logger.debug(`Deleting snapshot: ${filepath}`)
         await components.fs.unlink(filepath)
       }
       if (isCompressed) {
         await components.fs.unlink(potentialSnapshotFilepath)
       }
     } catch (error) {
-      logger.error(`Error processing file: ${filepath}. Error: ${JSON.stringify(error)}`)
+      logger.error(error, { filepath })
     }
   }
 

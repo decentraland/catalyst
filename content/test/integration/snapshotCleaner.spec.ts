@@ -20,7 +20,6 @@ describe('clean snapshots', () => {
   beforeEach(async () => {
     tmpRootDir = mkdtempSync(path.join(os.tmpdir(), 'snapshot-cleaner-'))
     contentStorage = await createFileSystemContentStorage({ fs }, tmpRootDir)
-    // console.log(tmpRootDir)
   })
 
   it('should delete a modern snapshot bigger than 50 bytes', async () => {
