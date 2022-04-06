@@ -19,6 +19,7 @@ import { createDeployRateLimiter } from './ports/deployRateLimiterComponent'
 import { createFailedDeploymentsCache } from './ports/failedDeploymentsCache'
 import { createFetchComponent } from './ports/fetcher'
 import { createFsComponent } from './ports/fs'
+import { createGzipCompressor } from './ports/gzipCompressor'
 import { createDatabaseComponent } from './ports/postgres'
 import { createSequentialTaskExecutor } from './ports/sequecuentialTaskExecutor'
 import { RepositoryFactory } from './repository/RepositoryFactory'
@@ -55,6 +56,8 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     contentStorageFolder,
     tmpDownloadFolder
   }
+
+  const gzipCompressor = createGzipCompressor({ logs, fs })
 
   const database = await createDatabaseComponent({ logs, env, metrics })
 
@@ -267,6 +270,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
     activeEntities,
     sequentialExecutor,
     denylist,
-    fs
+    fs,
+    gzipCompressor
   }
 }

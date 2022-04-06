@@ -17,6 +17,7 @@ import { DeploymentListComponent } from './ports/deploymentListComponent'
 import { IDeployRateLimiterComponent } from './ports/deployRateLimiterComponent'
 import { IFailedDeploymentsCacheComponent } from './ports/failedDeploymentsCache'
 import { FSComponent } from './ports/fs'
+import { FileCompressor } from './ports/gzipCompressor'
 import { IDatabaseComponent } from './ports/postgres'
 import { ISequentialTaskExecutorComponent } from './ports/sequecuentialTaskExecutor'
 import { Repository } from './repository/Repository'
@@ -75,6 +76,7 @@ export type AppComponents = {
   sequentialExecutor: ISequentialTaskExecutorComponent
   denylist: Denylist
   fs: FSComponent
+  gzipCompressor: FileCompressor
 
   // this will be replaced by `database` and removed from here
   repository: Repository
