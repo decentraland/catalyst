@@ -78,6 +78,7 @@ export class Server implements IBaseComponent {
     }
 
     this.registerRoute('/entities/:type', controller, controller.getEntities)
+    this.registerRoute('/entities/currently-pointed/:urnPrefix', controller, controller.filterByUrn)
     this.registerRoute('/entities', controller, controller.createEntity, HttpMethod.POST, upload.any()) // TODO: Deprecate
     this.registerRoute('/entities/active', controller, controller.getActiveEntities, HttpMethod.POST)
     this.registerRoute('/contents/:hashId', controller, controller.headContent, HttpMethod.HEAD) // Register before GET
