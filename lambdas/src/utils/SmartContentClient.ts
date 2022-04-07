@@ -7,6 +7,7 @@ import {
   DeploymentPreparationData
 } from 'dcl-catalyst-client'
 import {
+  AuditInfo,
   AvailableContentResult,
   CompleteRequestOptions,
   ContentFileHash,
@@ -14,7 +15,6 @@ import {
   EntityId,
   EntityType,
   Fetcher,
-  LegacyAuditInfo,
   Pointer,
   RequestOptions,
   ServerStatus,
@@ -49,7 +49,7 @@ export class SmartContentClient implements ContentAPI {
     return client.fetchEntityById(type, id, options)
   }
 
-  async fetchAuditInfo(type: EntityType, id: EntityId, options?: RequestOptions): Promise<LegacyAuditInfo> {
+  async fetchAuditInfo(type: EntityType, id: EntityId, options?: RequestOptions): Promise<AuditInfo> {
     const client = await this.getClient()
     return client.fetchAuditInfo(type, id, options)
   }

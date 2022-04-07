@@ -6,7 +6,6 @@ import {
   EntityId,
   EntityType,
   EntityVersion,
-  LegacyAuditInfo,
   PartialDeploymentHistory,
   Pointer,
   Timestamp
@@ -34,9 +33,8 @@ export class MockedMetaverseContentService implements MetaverseContentService, I
     }
   }
 
-  static readonly AUDIT_INFO: AuditInfo & LegacyAuditInfo = {
+  static readonly AUDIT_INFO: AuditInfo = {
     localTimestamp: Date.now(),
-    deployedTimestamp: Date.now(),
     authChain: [
       {
         type: AuthLinkType.ECDSA_PERSONAL_SIGNED_ENTITY,

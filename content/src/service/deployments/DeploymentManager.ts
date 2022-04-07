@@ -2,7 +2,6 @@ import { AuditInfo, Entity } from 'dcl-catalyst-commons'
 import { ContentFilesRepository } from '../../repository/extensions/ContentFilesRepository'
 import { DeploymentPointerChangesRepository } from '../../repository/extensions/DeploymentPointerChangesRepository'
 import { DeploymentId, DeploymentsRepository } from '../../repository/extensions/DeploymentsRepository'
-import { MigrationDataRepository } from '../../repository/extensions/MigrationDataRepository'
 import { DeploymentResult } from '../pointers/PointerManager'
 
 export class DeploymentManager {
@@ -21,16 +20,12 @@ export class DeploymentManager {
 
   async saveDeployment(
     deploymentsRepository: DeploymentsRepository,
-    migrationDataRepository: MigrationDataRepository,
     contentRepository: ContentFilesRepository,
     entity: Entity,
     auditInfo: AuditInfo,
     overwrittenBy: DeploymentId | null
   ): Promise<DeploymentId> {
     const deploymentId = await deploymentsRepository.saveDeployment(entity, auditInfo, overwrittenBy)
-    if (auditInfo.migrationData) {
-      await migrationDataRepository.saveMigrationData(deploymentId, auditInfo.migrationData)
-    }
 
     if (entity.content) {
       await contentRepository.saveContentFiles(deploymentId, entity.content)
