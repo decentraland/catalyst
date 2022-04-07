@@ -1,12 +1,12 @@
 import { toQueryParams } from '@dcl/catalyst-node-commons'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import {
+  AuditInfo,
   ContentFileHash,
   Deployment,
   Entity,
   EntityId,
   EntityType,
-  LegacyAuditInfo,
   Pointer,
   SortingField,
   SortingOrder,
@@ -319,16 +319,15 @@ export class Controller {
 
     if (deployments.length > 0) {
       const { auditInfo } = deployments[0]
-      const legacyAuditInfo: LegacyAuditInfo = {
+      const response: AuditInfo = {
         version: auditInfo.version,
-        deployedTimestamp: auditInfo.localTimestamp,
+        localTimestamp: auditInfo.localTimestamp,
         authChain: auditInfo.authChain,
         overwrittenBy: auditInfo.overwrittenBy,
         isDenylisted: auditInfo.isDenylisted,
-        denylistedContent: auditInfo.denylistedContent,
-        originalMetadata: auditInfo.migrationData
+        denylistedContent: auditInfo.denylistedContent
       }
-      res.send(legacyAuditInfo)
+      res.send(response)
     } else {
       res.status(404).send()
     }
