@@ -22,7 +22,7 @@ describe('clean snapshots', () => {
     const filepathToContent = new Map([
       [bigSnapshotFilepath, modernSnapshotContentWithSize(minimumSnapshotSizeInBytes)]
     ])
-    // To do: return also mocks
+    // To do: return also mocks ?
     const fs = createFsMockWithFiles(filepathToContent)
     const executeCommandMock = createExecuteCommandMockWithStdoutListingFiles(filepathToContent)
 
@@ -190,7 +190,7 @@ function nonSnapshotContentWithSize(nonSnapshotSizeInBytes: number): Buffer {
   return Buffer.from('a'.repeat(nonSnapshotSizeInBytes))
 }
 
-function createExecuteCommandMockWithStdoutListingFiles(files: Map<string, any>) {
+function createExecuteCommandMockWithStdoutListingFiles(files: Map<string, Buffer>) {
   return jest.fn().mockResolvedValue({
     stdout: Array.from(files.keys()).join('\n'),
     stderr: ''

@@ -70,8 +70,7 @@ export async function initComponentsWithEnv(env: Environment): Promise<AppCompon
   const catalystFetcher = FetcherFactory.create({ env })
   const daoClient = DAOClientFactory.create(env)
   const authenticator = AuthenticatorFactory.create(env)
-  const contentFolder = path.join(env.getConfig(EnvironmentConfig.STORAGE_ROOT_FOLDER), 'contents')
-  const storage = await createFileSystemContentStorage({ fs }, contentFolder)
+  const storage = await createFileSystemContentStorage({ fs }, staticConfigs.contentStorageFolder)
 
   const contentCluster = new ContentCluster(
     {

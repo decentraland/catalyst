@@ -1,13 +1,14 @@
 import { ReadStream } from 'fs'
 import PQueue from 'p-queue'
 import path from 'path'
+import { getUsedHashes } from '../src/logic/database-queries/snapshot-cleaner-queries'
 import { streamToBuffer } from './ports/contentStorage/contentStorage'
 import { FSComponent } from './ports/fs'
 import { AppComponents } from './types'
 
 export async function cleanSnapshots(
   executeCommand: (command: string) => Promise<{ stdout: string; stderr: string }>,
-  components: Pick<AppComponents, 'logs' | 'gzipCompressor'> & {
+  components: Pick<AppComponents, 'logs' | 'gzipCompressor' | 'database'> & {
     fs: Pick<FSComponent, 'unlink' | 'createReadStream'>
   },
   storageDirectory: string,
@@ -66,11 +67,18 @@ export async function cleanSnapshots(
   logger.info(`Cleaning old snapshots in ${resolvedPath}...`)
   const pathsOfBigFiles = await getPathsOfBigFiles(resolvedPath)
 
+  const hashes = pathsOfBigFiles.map((filepath) => filepath.substring(filepath.lastIndexOf('/') + 1))
   // Filter files that are being referenced in the DB
+  const usedHashes = await getUsedHashes(components, hashes)
 
-  logger.debug(`Big files to process: ${JSON.stringify(pathsOfBigFiles)}`)
+  const pathsOfBigNonContentFiles = pathsOfBigFiles.filter((filepath) => {
+    const hash = filepath.substring(filepath.lastIndexOf('/') + 1)
+    return !usedHashes.includes(hash)
+  })
+
+  logger.debug(`Big files to process: ${JSON.stringify(pathsOfBigNonContentFiles)}`)
   const queue = new PQueue({ concurrency: 2 })
-  const proms = pathsOfBigFiles.map((file) => queue.add(async () => deleteIfItIsASnapshot(file)))
+  const proms = pathsOfBigNonContentFiles.map((file) => queue.add(async () => deleteIfItIsASnapshot(file)))
 
   await Promise.all(proms)
   logger.info('Old snapshots cleaned')
