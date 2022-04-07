@@ -341,10 +341,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/catalyst-api-specs@tag-rm-legacy-audit-info":
-  version "1.1.1-20220407193907.commit-c8cc5dc"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.1.1-20220407193907.commit-c8cc5dc.tgz#ac08af39280cf33669b945cbf26db309bbb1e09e"
-  integrity sha512-R7dOl4jrXSRsnz5SOuJKCKJ7BMTnKA4pteOmjrCXVSGUYM8xqtIVhOA59hA3wewTNzeqd/ZQGSvZsjXD5BtZrQ==
+"@dcl/catalyst-api-specs@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.2.0.tgz#08f68767816bd186a8dd7b108210a5f473fc28b4"
+  integrity sha512-lJmxsPRJW86e6LMKUYMUarr1uva/1+umq1FYI3k1TrSYBVKk0B08AvY3YpJDxN9PVrxEhIQG6DXhWxO+o6FS4A==
   dependencies:
     yaml "1.10.2"
 
@@ -3615,16 +3615,16 @@ date-format@^4.0.3:
   resolved "https://registry.yarnpkg.com/date-format/-/date-format-4.0.3.tgz#f63de5dc08dc02efd8ef32bf2a6918e486f35873"
   integrity sha512-7P3FyqDcfeznLZp2b+OMitV9Sz2lUnsT87WaTat9nVwqsBkTzPG3lPLNwW3en6F4pHUiWzr6vb8CLhjdK9bcxQ==
 
-dcl-catalyst-client@tag-rm-legacy-auditinfo:
-  version "11.2.1-20220407183041.commit-5b0791a"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-11.2.1-20220407183041.commit-5b0791a.tgz#7af272c224af4af31bd844da2284338c6d163f85"
-  integrity sha512-X3GNxwkWicOXz6MMe8Q9YUfZWr1YGk9FYJYD0BsgdX6FEvskPXrz/HMsF4Lgm6ZIUEMsn6xmoteDydPCEn4/Ww==
+dcl-catalyst-client@^11.3.0:
+  version "11.3.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-client/-/dcl-catalyst-client-11.3.0.tgz#4709b1b3950bd2384736b1b9d86d46e2c2724815"
+  integrity sha512-1332euZ2lrwpyuinxZhT8kfoAYgYvQ12oxBdU59NZ7jE7hLD8DlC/LKv2h16lFqgQX/RCQrVMngaK5+z+3i1sg==
   dependencies:
     "@dcl/hashing" "^1.0.0"
     "@dcl/schemas" "^4.0.0"
     "@types/form-data" "^2.5.0"
     cookie "^0.4.1"
-    dcl-catalyst-commons tag-rm-legacy-auditinfo
+    dcl-catalyst-commons "^8.2.0"
     dcl-crypto "^2.2.0"
     form-data "^4.0.0"
 
@@ -3643,10 +3643,10 @@ dcl-catalyst-commons@8.1.2:
     ms "^2.1.2"
     node-fetch "^3.0.0"
 
-dcl-catalyst-commons@tag-rm-legacy-auditinfo:
-  version "8.1.3-20220407154249.commit-48c6895"
-  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.1.3-20220407154249.commit-48c6895.tgz#be841527a18cb0138c551f49124fa168da84da1d"
-  integrity sha512-J/ymLHRiuoVNNomBQQMEbrk1iOD5e/lR+h0MwZwYQ5hjrr350Tc/Q9FM+9GBYqC4tzkxbekmePGFQNDLZzaNDg==
+dcl-catalyst-commons@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/dcl-catalyst-commons/-/dcl-catalyst-commons-8.2.0.tgz#0bac92646516b52c0a49007acf2c8d43ce808ddc"
+  integrity sha512-ZHk+ghQxOnexuE2tWisMv6fQv/w2vYVFxQEcePMkYhxgtSoXuWDXQtp9vrkdvR8WZ+TlJTZjnD6avF2Yq5nPJg==
   dependencies:
     "@dcl/hashing" "^1.0.0"
     "@dcl/schemas" "4.2.0"
