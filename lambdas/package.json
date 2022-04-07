@@ -11,7 +11,7 @@
     "test": "jest --runInBand --forceExit --coverage"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "1.0.1",
+    "@dcl/catalyst-api-specs": "tag-rm-legacy-audit-info",
     "@dcl/catalyst-contracts": "1.0.2",
     "@dcl/catalyst-node-commons": "1.0.1",
     "@dcl/schemas": "4.2.0",

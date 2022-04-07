@@ -15,7 +15,7 @@
     "report-api-coverage": "node ./reportApiCoverage.js"
   },
   "dependencies": {
-    "@dcl/catalyst-api-specs": "1.1.0",
+    "@dcl/catalyst-api-specs": "tag-rm-legacy-audit-info",
     "@dcl/catalyst-contracts": "1.0.2",
     "@dcl/catalyst-node-commons": "1.0.1",
     "@dcl/content-validator": "1.4.2",

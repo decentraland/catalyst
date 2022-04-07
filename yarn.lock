@@ -341,17 +341,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcl/catalyst-api-specs@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.0.1.tgz"
-  integrity sha512-8CDVUWo57aKg+R1b9Mz8daWTTa0w8gjnvwmVBOxyx1Moqf9acCM14MlgqwdxW+u11NkNjl+O/MC6XGD5r3bSRw==
-  dependencies:
-    yaml "1.10.2"
-
-"@dcl/catalyst-api-specs@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.1.0.tgz#71c7d7a125011f97f8bd34b49a30c139909702da"
-  integrity sha512-jelhOl/BS/W6cmrymlLN1riJpQghipXcXwV9dSv3mrEEsafsvqwuOpFHt0PZd6nKBYSq0phPjg3H1SMliJagPg==
+"@dcl/catalyst-api-specs@tag-rm-legacy-audit-info":
+  version "1.1.1-20220407193907.commit-c8cc5dc"
+  resolved "https://registry.yarnpkg.com/@dcl/catalyst-api-specs/-/catalyst-api-specs-1.1.1-20220407193907.commit-c8cc5dc.tgz#ac08af39280cf33669b945cbf26db309bbb1e09e"
+  integrity sha512-R7dOl4jrXSRsnz5SOuJKCKJ7BMTnKA4pteOmjrCXVSGUYM8xqtIVhOA59hA3wewTNzeqd/ZQGSvZsjXD5BtZrQ==
   dependencies:
     yaml "1.10.2"
 

@@ -5,7 +5,7 @@ import { bootstrapFromSnapshots } from './service/synchronization/bootstrapFromS
 import { AppComponents } from './types'
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
-export async function main(program: Lifecycle.EntryPointParameters<AppComponents>) {
+export async function main(program: Lifecycle.EntryPointParameters<AppComponents>): Promise<void> {
   const { components, startComponents } = program
 
   await migrateContentFolderStructure(components)
