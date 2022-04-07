@@ -268,7 +268,6 @@ export class ServiceImpl implements MetaverseContentService {
             const deploymentId = await runReportingQueryDurationMetric(this.components, 'save_deployment', () =>
               this.components.deploymentManager.saveDeployment(
                 transaction.deployments,
-                transaction.migrationData,
                 transaction.content,
                 entity,
                 auditInfoComplete,
